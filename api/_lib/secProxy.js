@@ -23,41 +23,6 @@ const REQUEST_HEADER_ALLOWLIST = new Set([
   'range',
 ]);
 
-function normalizePath(value) {
-  if (Array.isArray(value)) {
-    return value.join('/');
-  }
-  return String(value || '').replace(/^\/+/, '');
-}
-
-function appendQueryParams(url, query) {
-  for (const [key, value] of Object.entries(query || {})) {
-    if (key === 'path' || value == null) continue;
-    if (Array.isArray(value)) {
-      for (const item of value) {
-        url.searchParams.append(key, String(item));
-      }
-    } else {
-      url.searchParams.append(key, String(value));
-    }
-  }
-}
-
-function copyRequestHeaders(req) {
-  const headers = {
-    'User-Agent': DEFAULT_USER_AGENT,
-  };
-
-  for (const [key, value] of Object.entries(req.headers || {})) {
-    const lower = key.toLowerCase();
-    if (!REQUEST_HEADER_ALLOWLIST.has(lower)) continue;
-    if (value == null) continue;
-    headers[key] = Array.isArray(value) ? value.join(', ') : value;
-  }
-
-  return headers;
-}
-
 function rewriteSecAbsoluteLinks(text) {
   return text
     .replace(/https:\/\/www\.sec\.gov\/assets\//gi, '/sec-proxy/assets/')
@@ -68,42 +33,75 @@ function rewriteSecAbsoluteLinks(text) {
     .replace(/([("'=\s])\/assets\//g, '$1/sec-proxy/assets/');
 }
 
-function writeResponseHeaders(res, headers) {
-  for (const [key, value] of headers.entries()) {
-    const lower = key.toLowerCase();
-    if (RESPONSE_HEADER_BLACKLIST.has(lower)) continue;
-    res.setHeader(key, value);
+function copyRequestHeaders(request) {
+  const headers = new Headers();
+  headers.set('User-Agent', DEFAULT_USER_AGENT);
+
+  for (const [key, value] of request.headers.entries()) {
+    if (REQUEST_HEADER_ALLOWLIST.has(key.toLowerCase())) {
+      headers.set(key, value);
+    }
   }
+
+  return headers;
 }
 
-export async function proxySecRequest(req, res, upstreamBaseUrl) {
-  if (!['GET', 'HEAD'].includes(req.method || 'GET')) {
-    res.statusCode = 405;
-    res.setHeader('Allow', 'GET, HEAD');
-    res.end('Method Not Allowed');
-    return;
-  }
-
-  const path = normalizePath(req.query?.path);
+function buildTargetUrl(request, upstreamBaseUrl) {
+  const incomingUrl = new URL(request.url);
+  const path = (incomingUrl.searchParams.get('path') || '').replace(/^\/+/, '');
   const targetUrl = new URL(path, `${upstreamBaseUrl.replace(/\/$/, '')}/`);
-  appendQueryParams(targetUrl, req.query);
 
-  const upstreamResponse = await fetch(targetUrl, {
-    method: req.method,
-    headers: copyRequestHeaders(req),
-    redirect: 'follow',
-  });
-
-  res.statusCode = upstreamResponse.status;
-  writeResponseHeaders(res, upstreamResponse.headers);
-
-  const contentType = upstreamResponse.headers.get('content-type') || '';
-  if (contentType.includes('text/html') || contentType.includes('text/css') || contentType.includes('application/xhtml+xml')) {
-    const text = await upstreamResponse.text();
-    res.end(rewriteSecAbsoluteLinks(text));
-    return;
+  for (const [key, value] of incomingUrl.searchParams.entries()) {
+    if (key !== 'path') {
+      targetUrl.searchParams.append(key, value);
+    }
   }
 
-  const buffer = Buffer.from(await upstreamResponse.arrayBuffer());
-  res.end(buffer);
+  return targetUrl;
+}
+
+function filterResponseHeaders(upstreamHeaders) {
+  const headers = new Headers();
+  for (const [key, value] of upstreamHeaders.entries()) {
+    if (!RESPONSE_HEADER_BLACKLIST.has(key.toLowerCase())) {
+      headers.set(key, value);
+    }
+  }
+  return headers;
+}
+
+export async function proxySecRequest(request, upstreamBaseUrl) {
+  if (!['GET', 'HEAD'].includes(request.method || 'GET')) {
+    return new Response('Method Not Allowed', {
+      status: 405,
+      headers: { Allow: 'GET, HEAD' },
+    });
+  }
+
+  try {
+    const upstreamResponse = await fetch(buildTargetUrl(request, upstreamBaseUrl), {
+      method: request.method,
+      headers: copyRequestHeaders(request),
+      redirect: 'follow',
+    });
+
+    const headers = filterResponseHeaders(upstreamResponse.headers);
+    const contentType = upstreamResponse.headers.get('content-type') || '';
+
+    if (contentType.includes('text/html') || contentType.includes('text/css') || contentType.includes('application/xhtml+xml')) {
+      const rewrittenText = rewriteSecAbsoluteLinks(await upstreamResponse.text());
+      return new Response(rewrittenText, {
+        status: upstreamResponse.status,
+        headers,
+      });
+    }
+
+    return new Response(await upstreamResponse.arrayBuffer(), {
+      status: upstreamResponse.status,
+      headers,
+    });
+  } catch (error) {
+    console.error('SEC proxy request failed:', error);
+    return Response.json({ error: 'SEC proxy request failed' }, { status: 502 });
+  }
 }
