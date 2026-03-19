@@ -2,8 +2,9 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, Bookmark, MessageSquare, ExternalLink, Columns, Highlighter, Settings2, Download, List, AlertCircle, FileText, Loader2 } from 'lucide-react';
 import { useApp } from '../context/AppState';
-import { buildSecDocumentUrl, buildSecProxyUrl, fetchCompanySubmissions } from '../services/secApi';
-import { openCleanPrintView } from '../services/filingExport';
+import { buildSecDocumentUrl, buildSecProxyUrl, fetchCompanySubmissions, fetchFilingText, type SecSubmission } from '../services/secApi';
+import { createPrintWindow, renderCleanPrintView } from '../services/filingExport';
+import { buildDisclosureDiff, downloadTextFile, extractTablesFromHtml, tablesToCsv, type DisclosureDiffSummary } from '../services/filingDetailTools';
 import './FilingDetail.css';
 
 interface TocEntry {
@@ -20,18 +21,114 @@ interface FilingRouteState {
   auditor?: string;
 }
 
+interface ComparableFiling {
+  accessionNumber: string;
+  filingDate: string;
+  formType: string;
+  primaryDocument: string;
+}
+
+interface FilingAnnotation {
+  id: string;
+  quote: string;
+  note: string;
+  section: string | null;
+  createdAt: string;
+}
+
+const ANNOTATIONS_STORAGE_KEY = 'vara.filing.annotations.v1';
+
+function normalizeComparableForm(formType: string): string {
+  return formType.trim().toUpperCase().replace(/\s+/g, '').replace(/\/A$/, '');
+}
+
+function toDateValue(value: string): number {
+  const result = Date.parse(value);
+  return Number.isNaN(result) ? 0 : result;
+}
+
+function loadAnnotations(filingId: string): FilingAnnotation[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = window.localStorage.getItem(ANNOTATIONS_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as Record<string, FilingAnnotation[]>;
+    return parsed[filingId] || [];
+  } catch {
+    return [];
+  }
+}
+
+function saveAnnotations(filingId: string, annotations: FilingAnnotation[]): void {
+  if (typeof window === 'undefined') return;
+  try {
+    const raw = window.localStorage.getItem(ANNOTATIONS_STORAGE_KEY);
+    const parsed = raw ? (JSON.parse(raw) as Record<string, FilingAnnotation[]>) : {};
+    parsed[filingId] = annotations;
+    window.localStorage.setItem(ANNOTATIONS_STORAGE_KEY, JSON.stringify(parsed));
+  } catch {
+    // Ignore storage failures and keep notes in-memory.
+  }
+}
+
+function pickPreviousComparableFiling(
+  submissions: SecSubmission,
+  currentAccession: string,
+  currentFormType: string,
+  currentFilingDate: string
+): ComparableFiling | null {
+  const recent = submissions.filings.recent;
+  const targetForm = normalizeComparableForm(currentFormType);
+  const currentDateValue = toDateValue(currentFilingDate);
+
+  let bestMatch: ComparableFiling | null = null;
+  let bestScore = Number.POSITIVE_INFINITY;
+
+  recent.accessionNumber.forEach((accessionNumber, index) => {
+    if (accessionNumber === currentAccession) return;
+
+    const filingDate = recent.filingDate[index] || '';
+    const formType = recent.form[index] || '';
+    const primaryDocument = recent.primaryDocument[index] || '';
+    if (!filingDate || !primaryDocument) return;
+    if (normalizeComparableForm(formType) !== targetForm) return;
+
+    const candidateDateValue = toDateValue(filingDate);
+    if (!candidateDateValue || !currentDateValue || candidateDateValue >= currentDateValue) {
+      return;
+    }
+
+    const daysApart = Math.abs(currentDateValue - candidateDateValue) / (1000 * 60 * 60 * 24);
+    const score = Math.abs(daysApart - 365);
+    if (score < bestScore) {
+      bestScore = score;
+      bestMatch = {
+        accessionNumber,
+        filingDate,
+        formType,
+        primaryDocument,
+      };
+    }
+  });
+
+  return bestMatch;
+}
+
 export default function FilingDetail() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { setChatOpen, setCurrentFilingContext } = useApp();
+  const { addToWatchlist, setChatOpen, setCurrentFilingContext } = useApp();
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const currentHtmlRef = useRef<string | null>(null);
+  const currentTextRef = useRef<string | null>(null);
   const routeState = (location.state as FilingRouteState | null) || null;
 
   const id = location.pathname.replace(/^\/filing\//, '');
 
   const [showSidebar, setShowSidebar] = useState(true);
   const [redlineMode, setRedlineMode] = useState(false);
-  const [activeTab, setActiveTab] = useState<'toc'|'metadata'|'related'>('toc');
+  const [annotationMode, setAnnotationMode] = useState(false);
+  const [activeTab, setActiveTab] = useState<'toc'|'metadata'|'tools'>('toc');
   const [iframeError, setIframeError] = useState(false);
   const [tocEntries, setTocEntries] = useState<TocEntry[]>([]);
   const [tocLoading, setTocLoading] = useState(false);
@@ -44,6 +141,33 @@ export default function FilingDetail() {
     auditor: routeState?.auditor || '',
   });
   const [exportingPdf, setExportingPdf] = useState(false);
+  const [extractingTables, setExtractingTables] = useState(false);
+  const [toolMessage, setToolMessage] = useState('');
+  const [companyTickers, setCompanyTickers] = useState<string[]>([]);
+  const [iframeLoadedToken, setIframeLoadedToken] = useState(0);
+  const [annotations, setAnnotations] = useState<FilingAnnotation[]>(() => loadAnnotations(id));
+  const [selectedQuote, setSelectedQuote] = useState('');
+  const [annotationDraft, setAnnotationDraft] = useState('');
+  const [redlineLoading, setRedlineLoading] = useState(false);
+  const [redlineError, setRedlineError] = useState('');
+  const [comparedFiling, setComparedFiling] = useState<ComparableFiling | null>(null);
+  const [redlineSummary, setRedlineSummary] = useState<DisclosureDiffSummary | null>(null);
+
+  useEffect(() => {
+    currentHtmlRef.current = null;
+    currentTextRef.current = null;
+    setAnnotations(loadAnnotations(id));
+    setSelectedQuote('');
+    setAnnotationDraft('');
+    setToolMessage('');
+    setRedlineError('');
+    setComparedFiling(null);
+    setRedlineSummary(null);
+  }, [id]);
+
+  useEffect(() => {
+    saveAnnotations(id, annotations);
+  }, [annotations, id]);
 
   // Set filing context for AI chat panel
   useEffect(() => {
@@ -79,16 +203,106 @@ export default function FilingDetail() {
   const secUrl = buildSecDocumentUrl(cik, accession, primaryDoc);
   const formattedAccession = accession.replace(/-/g, '');
 
+  const fetchCurrentFilingHtml = useCallback(async (): Promise<string> => {
+    if (currentHtmlRef.current) {
+      return currentHtmlRef.current;
+    }
+
+    const response = await fetch(buildSecProxyUrl(`Archives/edgar/data/${cik}/${formattedAccession}/${primaryDoc}`));
+    if (!response.ok) {
+      throw new Error(`Unable to fetch filing HTML (${response.status})`);
+    }
+
+    const html = await response.text();
+    currentHtmlRef.current = html;
+    return html;
+  }, [cik, formattedAccession, primaryDoc]);
+
+  const fetchCurrentFilingText = useCallback(async (): Promise<string> => {
+    if (currentTextRef.current) {
+      return currentTextRef.current;
+    }
+
+    const text = await fetchFilingText(cik, accession, primaryDoc);
+    currentTextRef.current = text;
+    return text;
+  }, [accession, cik, primaryDoc]);
+
+  const handleAddToWatchlist = useCallback(() => {
+    const ticker = companyTickers[0];
+    if (!ticker) {
+      setToolMessage('No ticker symbol is attached to this filing yet, so there is nothing to save to the watchlist.');
+      return;
+    }
+
+    addToWatchlist(ticker);
+    setToolMessage(`${ticker} was added to your watchlist.`);
+  }, [addToWatchlist, companyTickers]);
+
+  const handleSaveAnnotation = useCallback(() => {
+    if (!selectedQuote.trim() || !annotationDraft.trim()) {
+      setToolMessage('Select text in the filing and add a note before saving an annotation.');
+      return;
+    }
+
+    setAnnotations(prev => [
+      {
+        id: `note-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        quote: selectedQuote.trim(),
+        note: annotationDraft.trim(),
+        section: activeSection,
+        createdAt: new Date().toISOString(),
+      },
+      ...prev,
+    ]);
+    setAnnotationDraft('');
+    setSelectedQuote('');
+    setToolMessage('Annotation saved locally for this filing.');
+  }, [activeSection, annotationDraft, selectedQuote]);
+
+  const handleRemoveAnnotation = useCallback((annotationId: string) => {
+    setAnnotations(prev => prev.filter(note => note.id !== annotationId));
+  }, []);
+
+  const handleTableExtract = useCallback(async () => {
+    setExtractingTables(true);
+    setToolMessage('');
+    try {
+      const html = await fetchCurrentFilingHtml();
+      const tables = extractTablesFromHtml(html);
+      if (tables.length === 0) {
+        setToolMessage('No structured HTML tables were found in this filing.');
+        return;
+      }
+
+      const csv = tablesToCsv(tables);
+      const fileStub = (filingMeta.companyName || primaryDoc)
+        .replace(/[^a-z0-9]+/gi, '-')
+        .replace(/^-+|-+$/g, '')
+        .toLowerCase();
+      downloadTextFile(`${fileStub || 'filing'}-tables.csv`, csv, 'text/csv;charset=utf-8');
+      setToolMessage(`Downloaded ${tables.length} table${tables.length === 1 ? '' : 's'} as CSV.`);
+      setActiveTab('tools');
+    } catch (error) {
+      console.error('Table extraction failed:', error);
+      setToolMessage('Unable to extract filing tables right now.');
+    } finally {
+      setExtractingTables(false);
+    }
+  }, [fetchCurrentFilingHtml, filingMeta.companyName, primaryDoc]);
+
   useEffect(() => {
     let cancelled = false;
 
     async function hydrateMetadata() {
+      const submissions = await fetchCompanySubmissions(cik);
+      if (!submissions || cancelled) return;
+
+      setCompanyTickers(submissions.tickers || []);
+
       if (routeState?.companyName && routeState?.filingDate && routeState?.formType) {
         return;
       }
-
-      const submissions = await fetchCompanySubmissions(cik);
-      if (!submissions || cancelled) return;
 
       const recent = submissions.filings.recent;
       const matchIndex = recent.accessionNumber.findIndex(item => item === accession);
@@ -205,6 +419,7 @@ export default function FilingDetail() {
         const entries = parseToc(frame.contentDocument);
         setTocEntries(entries);
         setTocLoading(false);
+        setIframeLoadedToken(prev => prev + 1);
       }
     } catch {
       // Cross-origin — can't inspect. TOC unavailable.
@@ -233,26 +448,135 @@ export default function FilingDetail() {
     }
   }, []);
 
+  useEffect(() => {
+    if (!annotationMode) {
+      return;
+    }
+
+    const doc = iframeRef.current?.contentDocument;
+    if (!doc) {
+      return;
+    }
+
+    const captureSelection = () => {
+      const selection = doc.getSelection?.();
+      const text = selection?.toString().replace(/\s+/g, ' ').trim() || '';
+      if (text.length < 16) {
+        return;
+      }
+
+      setSelectedQuote(text.slice(0, 800));
+      setActiveTab('tools');
+    };
+
+    doc.addEventListener('mouseup', captureSelection);
+    doc.addEventListener('keyup', captureSelection);
+    return () => {
+      doc.removeEventListener('mouseup', captureSelection);
+      doc.removeEventListener('keyup', captureSelection);
+    };
+  }, [annotationMode, iframeLoadedToken]);
+
+  useEffect(() => {
+    if (!redlineMode || redlineSummary || redlineLoading || redlineError) {
+      return;
+    }
+
+    if (!filingMeta.formType || !filingMeta.filingDate) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadRedlineSummary() {
+      setRedlineLoading(true);
+      setRedlineError('');
+      setToolMessage('');
+
+      try {
+        const submissions = await fetchCompanySubmissions(cik);
+        if (!submissions || cancelled) {
+          return;
+        }
+
+        const previousFiling = pickPreviousComparableFiling(
+          submissions,
+          accession,
+          filingMeta.formType || '',
+          filingMeta.filingDate || ''
+        );
+
+        if (!previousFiling) {
+          if (!cancelled) {
+            setComparedFiling(null);
+            setRedlineSummary(null);
+            setRedlineError('No comparable prior filing was found to build a year-over-year redline.');
+          }
+          return;
+        }
+
+        const [currentText, previousText] = await Promise.all([
+          fetchCurrentFilingText(),
+          fetchFilingText(cik, previousFiling.accessionNumber, previousFiling.primaryDocument),
+        ]);
+
+        if (cancelled) {
+          return;
+        }
+
+        if (!currentText || !previousText) {
+          setComparedFiling(previousFiling);
+          setRedlineSummary(null);
+          setRedlineError('Unable to retrieve both filings needed for a redline comparison.');
+          return;
+        }
+
+        setComparedFiling(previousFiling);
+        setRedlineSummary(buildDisclosureDiff(currentText, previousText));
+        setActiveTab('tools');
+      } catch (error) {
+        console.error('Redline load failed:', error);
+        if (!cancelled) {
+          setComparedFiling(null);
+          setRedlineSummary(null);
+          setRedlineError('Unable to generate the year-over-year redline right now.');
+        }
+      } finally {
+        if (!cancelled) {
+          setRedlineLoading(false);
+        }
+      }
+    }
+
+    void loadRedlineSummary();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [accession, cik, fetchCurrentFilingText, filingMeta.filingDate, filingMeta.formType, redlineError, redlineLoading, redlineMode, redlineSummary]);
+
   const handleCleanPdfExport = useCallback(async () => {
     setExportingPdf(true);
+    const title = `${filingMeta.companyName || 'SEC Filing'} ${filingMeta.formType || primaryDoc}`;
+    const printWindow = createPrintWindow(title);
+    if (!printWindow) {
+      setExportingPdf(false);
+      setToolMessage('Your browser blocked the print window. Please allow pop-ups for PDF export.');
+      return;
+    }
+
     try {
-      const response = await fetch(buildSecProxyUrl(`Archives/edgar/data/${cik}/${formattedAccession}/${primaryDoc}`));
-      if (!response.ok) {
-        throw new Error(`Unable to fetch filing HTML (${response.status})`);
-      }
-      const html = await response.text();
-      openCleanPrintView(
-        `${filingMeta.companyName || 'SEC Filing'} ${filingMeta.formType || primaryDoc}`,
-        html,
-        secUrl
-      );
+      const html = await fetchCurrentFilingHtml();
+      renderCleanPrintView(printWindow, title, html, secUrl);
+      setToolMessage('Opened a clean print view. Use your browser print dialog to save the filing as PDF.');
     } catch (error) {
       console.error('Clean PDF export failed:', error);
-      alert('Unable to create the clean print view for this filing.');
+      printWindow.close();
+      setToolMessage('Unable to create the clean print view for this filing.');
     } finally {
       setExportingPdf(false);
     }
-  }, [cik, filingMeta.companyName, filingMeta.formType, formattedAccession, primaryDoc, secUrl]);
+  }, [fetchCurrentFilingHtml, filingMeta.companyName, filingMeta.formType, primaryDoc, secUrl]);
 
   return (
     <div className="filing-detail-container">
@@ -273,16 +597,37 @@ export default function FilingDetail() {
           <div className="tool-toggle-group">
             <button
               className={`tool-btn ${redlineMode ? 'active' : ''}`}
-              onClick={() => setRedlineMode(!redlineMode)}
+              onClick={() => {
+                const next = !redlineMode;
+                setRedlineMode(next);
+                if (next) {
+                  setRedlineError('');
+                  setComparedFiling(null);
+                  setRedlineSummary(null);
+                }
+                setActiveTab('tools');
+              }}
               title="Compare to Previous Year (Redline)"
             >
               <Columns size={16} /> YoY Redline
             </button>
-            <button className="tool-btn" title="Highlight Text" onClick={() => alert('Annotation mode: Select text in the document to highlight and add notes.')}>
+            <button
+              className={`tool-btn ${annotationMode ? 'active' : ''}`}
+              title="Capture selected text and save notes"
+              onClick={() => {
+                setAnnotationMode(prev => !prev);
+                setActiveTab('tools');
+                setToolMessage(
+                  !annotationMode
+                    ? 'Annotation mode is on. Select text inside the filing, then add your note in the Tools tab.'
+                    : 'Annotation mode is off.'
+                );
+              }}
+            >
               <Highlighter size={16} /> Annotate
             </button>
-            <button className="tool-btn" title="Extract Financial Tables to CSV" onClick={() => alert('Table Extraction: In production, this parses XBRL-tagged financial tables from the filing and exports them as a downloadable CSV file.')}>
-              <Download size={16} /> Extract Tables
+            <button className="tool-btn" title="Extract Financial Tables to CSV" onClick={() => void handleTableExtract()} disabled={extractingTables}>
+              {extractingTables ? <Loader2 size={16} className="spinner" /> : <Download size={16} />} Extract Tables
             </button>
             <button className="tool-btn" title="Open a clean print view for PDF export" onClick={() => void handleCleanPdfExport()} disabled={exportingPdf}>
               {exportingPdf ? <Loader2 size={16} className="spinner" /> : <Download size={16} />} Print / Save PDF
@@ -291,7 +636,7 @@ export default function FilingDetail() {
         </div>
 
         <div className="header-actions">
-          <button className="icon-btn" title="Save to Watchlist"><Bookmark size={18} /></button>
+          <button className="icon-btn" title="Save to Watchlist" onClick={handleAddToWatchlist}><Bookmark size={18} /></button>
           <a href={secUrl} target="_blank" rel="noreferrer" className="icon-btn" title="Open in SEC.gov"><ExternalLink size={18} /></a>
           <button
             className={`icon-btn ${showSidebar ? 'active-icon' : ''}`}
@@ -313,7 +658,14 @@ export default function FilingDetail() {
           {redlineMode && (
             <div className="redline-banner">
               <AlertCircle size={16} className="text-orange" />
-              <span>Year-over-Year Redline Mode Active. Deletions in <span className="text-red-400">red</span>, additions in <span className="text-green-400">green</span>.</span>
+              <span>
+                Year-over-year redline mode compares this filing against the closest prior comparable filing and summarizes added versus removed disclosure blocks.
+              </span>
+            </div>
+          )}
+          {toolMessage && (
+            <div className="tool-status-banner">
+              {toolMessage}
             </div>
           )}
           <div className="doc-header-nav">
@@ -355,8 +707,8 @@ export default function FilingDetail() {
               <button className={activeTab === 'metadata' ? 'active' : ''} onClick={() => setActiveTab('metadata')}>
                 Details
               </button>
-              <button className={activeTab === 'related' ? 'active' : ''} onClick={() => setActiveTab('related')}>
-                Related
+              <button className={activeTab === 'tools' ? 'active' : ''} onClick={() => setActiveTab('tools')}>
+                Tools
               </button>
             </div>
 
@@ -432,22 +784,127 @@ export default function FilingDetail() {
                 </div>
               )}
 
-              {activeTab === 'related' && (
+              {activeTab === 'tools' && (
                 <div className="related-panel">
-                  <h4>Associated Documents</h4>
-                  <div className="related-card">
-                    <span className="type">EX-99.1</span>
-                    <span className="desc">Press Release</span>
-                  </div>
-                  <div className="related-card">
-                    <span className="type">EX-10.1</span>
-                    <span className="desc">Material Agreement</span>
+                  <h4>Workflow Tools</h4>
+
+                  <div className="tool-panel-card">
+                    <div className="tool-panel-header">
+                      <span className="type">Redline</span>
+                      <span className="desc">{redlineMode ? 'Active' : 'Off'}</span>
+                    </div>
+                    {!redlineMode ? (
+                      <p className="tool-panel-copy">Turn on YoY Redline above to compare this filing against the closest prior comparable filing.</p>
+                    ) : redlineLoading ? (
+                      <div className="tool-loading"><Loader2 size={16} className="toc-spinner" /> Building comparison...</div>
+                    ) : redlineError ? (
+                      <p className="tool-panel-copy">{redlineError}</p>
+                    ) : redlineSummary && comparedFiling ? (
+                      <div className="tool-panel-stack">
+                        <p className="tool-panel-copy">
+                          Comparing against {comparedFiling.formType} filed on {comparedFiling.filingDate}.
+                        </p>
+                        <div className="tool-metric-grid">
+                          <div className="tool-metric">
+                            <span className="tool-metric-label">Added blocks</span>
+                            <strong>{redlineSummary.addedCount}</strong>
+                          </div>
+                          <div className="tool-metric">
+                            <span className="tool-metric-label">Removed blocks</span>
+                            <strong>{redlineSummary.removedCount}</strong>
+                          </div>
+                          <div className="tool-metric">
+                            <span className="tool-metric-label">Retained blocks</span>
+                            <strong>{redlineSummary.retainedCount}</strong>
+                          </div>
+                        </div>
+
+                        {redlineSummary.addedBlocks.length > 0 && (
+                          <div>
+                            <h4 className="tool-subheading">Current-only disclosure blocks</h4>
+                            {redlineSummary.addedBlocks.map((block, index) => (
+                              <div key={`added-${index}`} className="related-card tool-positive-card">
+                                <span className="desc">{block}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {redlineSummary.removedBlocks.length > 0 && (
+                          <div>
+                            <h4 className="tool-subheading">Prior-only disclosure blocks</h4>
+                            {redlineSummary.removedBlocks.map((block, index) => (
+                              <div key={`removed-${index}`} className="related-card comment-letter">
+                                <span className="desc">{block}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="tool-panel-copy">No comparison summary is available yet.</p>
+                    )}
                   </div>
 
-                  <h4 className="mt-6">SEC Comment Letters</h4>
-                  <div className="related-card comment-letter">
-                    <span className="type text-orange">UPLOAD</span>
-                    <span className="desc">SEC Correspondence (None found for this specific accession)</span>
+                  <div className="tool-panel-card">
+                    <div className="tool-panel-header">
+                      <span className="type">Annotations</span>
+                      <span className="desc">{annotationMode ? 'Selection capture on' : 'Selection capture off'}</span>
+                    </div>
+                    <p className="tool-panel-copy">
+                      Select text inside the filing viewer while annotation mode is on, then save your note below.
+                    </p>
+                    {selectedQuote && (
+                      <div className="annotation-draft">
+                        <span className="annotation-label">Selected text</span>
+                        <blockquote>{selectedQuote}</blockquote>
+                        <textarea
+                          value={annotationDraft}
+                          onChange={event => setAnnotationDraft(event.target.value)}
+                          placeholder="Add your note, issue framing, or follow-up..."
+                        />
+                        <div className="annotation-actions">
+                          <button className="secondary-btn" onClick={handleSaveAnnotation}>Save Note</button>
+                          <button
+                            className="secondary-btn"
+                            onClick={() => {
+                              setSelectedQuote('');
+                              setAnnotationDraft('');
+                            }}
+                          >
+                            Clear
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="tool-panel-stack">
+                      {annotations.length === 0 ? (
+                        <p className="tool-panel-copy">No annotations saved for this filing yet.</p>
+                      ) : (
+                        annotations.map(note => (
+                          <div key={note.id} className="related-card">
+                            <span className="type">{note.section || 'General note'}</span>
+                            <span className="desc annotation-quote">{note.quote}</span>
+                            <span className="desc">{note.note}</span>
+                            <div className="annotation-meta">
+                              <span>{new Date(note.createdAt).toLocaleString()}</span>
+                              <button className="annotation-link" onClick={() => handleRemoveAnnotation(note.id)}>Remove</button>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="tool-panel-card">
+                    <div className="tool-panel-header">
+                      <span className="type">Exports</span>
+                      <span className="desc">Current filing</span>
+                    </div>
+                    <p className="tool-panel-copy">
+                      Use Extract Tables to download HTML tables as CSV, or Print / Save PDF to open a print-friendly filing view.
+                    </p>
                   </div>
                 </div>
               )}

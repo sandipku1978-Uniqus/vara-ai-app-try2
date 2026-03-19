@@ -6,11 +6,34 @@ function escapeHtml(value: string): string {
     .replace(/"/g, '&quot;');
 }
 
-function sanitizeFilingHtml(html: string): string {
+function absolutizeResourceUrls(doc: Document, sourceUrl: string): void {
+  doc.querySelectorAll('[src]').forEach(node => {
+    const current = node.getAttribute('src');
+    if (!current || current.startsWith('data:') || current.startsWith('javascript:')) return;
+    try {
+      node.setAttribute('src', new URL(current, sourceUrl).toString());
+    } catch {
+      // Ignore malformed resource paths.
+    }
+  });
+
+  doc.querySelectorAll('[href]').forEach(node => {
+    const current = node.getAttribute('href');
+    if (!current || current.startsWith('javascript:')) return;
+    try {
+      node.setAttribute('href', new URL(current, sourceUrl).toString());
+    } catch {
+      // Ignore malformed link paths.
+    }
+  });
+}
+
+function sanitizeFilingHtml(html: string, sourceUrl: string): string {
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, 'text/html');
 
   doc.querySelectorAll('script, style, noscript, iframe, form, button').forEach(node => node.remove());
+  absolutizeResourceUrls(doc, sourceUrl);
   doc.querySelectorAll('[style]').forEach(node => node.removeAttribute('style'));
   doc.querySelectorAll('[class]').forEach(node => node.removeAttribute('class'));
   doc.querySelectorAll('[id]').forEach(node => node.removeAttribute('id'));
@@ -23,13 +46,63 @@ function sanitizeFilingHtml(html: string): string {
   return `<pre>${escapeHtml(doc.body?.textContent || html)}</pre>`;
 }
 
-export function openCleanPrintView(title: string, html: string, sourceUrl: string): boolean {
-  const printWindow = window.open('', '_blank', 'noopener,noreferrer');
+function writeLoadingShell(printWindow: Window, title: string): void {
+  printWindow.document.write(`
+    <!doctype html>
+    <html>
+      <head>
+        <meta charset="utf-8" />
+        <title>${escapeHtml(title)}</title>
+        <style>
+          body {
+            margin: 0;
+            font-family: Georgia, "Times New Roman", serif;
+            background: #ffffff;
+            color: #111827;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+          }
+          .loading-shell {
+            text-align: center;
+            padding: 24px;
+          }
+          .loading-shell h1 {
+            margin: 0 0 10px;
+            font-size: 20px;
+          }
+          .loading-shell p {
+            margin: 0;
+            color: #4b5563;
+            line-height: 1.5;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="loading-shell">
+          <h1>${escapeHtml(title)}</h1>
+          <p>Preparing clean print view...</p>
+        </div>
+      </body>
+    </html>
+  `);
+  printWindow.document.close();
+}
+
+export function createPrintWindow(title: string): Window | null {
+  const printWindow = window.open('', '_blank');
   if (!printWindow) {
-    return false;
+    return null;
   }
 
-  const sanitized = sanitizeFilingHtml(html);
+  writeLoadingShell(printWindow, title);
+  return printWindow;
+}
+
+export function renderCleanPrintView(printWindow: Window, title: string, html: string, sourceUrl: string): void {
+  const sanitized = sanitizeFilingHtml(html, sourceUrl);
+  printWindow.document.open();
   printWindow.document.write(`
     <!doctype html>
     <html>
@@ -83,6 +156,9 @@ export function openCleanPrintView(title: string, html: string, sourceUrl: strin
             color: #4b5563;
             font-size: 12px;
           }
+          .meta a {
+            word-break: break-all;
+          }
           @media print {
             header {
               position: static;
@@ -101,7 +177,18 @@ export function openCleanPrintView(title: string, html: string, sourceUrl: strin
     </html>
   `);
   printWindow.document.close();
-  printWindow.focus();
-  setTimeout(() => printWindow.print(), 250);
+  setTimeout(() => {
+    printWindow.focus();
+    printWindow.print();
+  }, 350);
+}
+
+export function openCleanPrintView(title: string, html: string, sourceUrl: string): boolean {
+  const printWindow = createPrintWindow(title);
+  if (!printWindow) {
+    return false;
+  }
+
+  renderCleanPrintView(printWindow, title, html, sourceUrl);
   return true;
 }

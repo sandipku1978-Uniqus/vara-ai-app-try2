@@ -5,8 +5,15 @@ import './APIPortal.css';
 export default function APIPortal() {
   const [activeTab, setActiveTab] = useState<'overview' | 'docs' | 'keys'>('overview');
   const [copied, setCopied] = useState(false);
+  const sampleCurl = `curl -X GET "https://api.intelligize-plus.com/v1/filings/search?q=cybersecurity&formType=10-K" \\
+-H "Authorization: Bearer YOUR_API_KEY"`;
 
-  const handleCopyCode = () => {
+  const handleCopyCode = async () => {
+    try {
+      await navigator.clipboard.writeText(sampleCurl);
+    } catch {
+      // Keep the UI feedback even if clipboard permissions fail.
+    }
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -19,6 +26,19 @@ export default function APIPortal() {
           <p>Connect your internal systems directly to our normalized SEC XBRL and full-text databases.</p>
         </div>
         <button className="primary-btn sm shadow-lg shadow-blue-500/20" onClick={() => alert('API Key Generated! Your new key would appear in the API Keys & Usage tab. (Demo)')}><Key size={16}/> Generate New Key</button>
+      </div>
+
+      <div
+        className="glass-card"
+        style={{
+          marginBottom: '20px',
+          padding: '14px 18px',
+          border: '1px solid rgba(245, 158, 11, 0.25)',
+          background: 'rgba(245, 158, 11, 0.08)',
+          color: '#FDE68A',
+        }}
+      >
+        Demo only. This page is a mock API portal. Keys, usage numbers, endpoints, and buttons here are illustrative and do not provision or manage a real production API.
       </div>
 
       <div className="api-layout">
@@ -83,8 +103,7 @@ export default function APIPortal() {
                     </div>
                     <pre className="bg-slate-950 p-4 rounded-b-lg overflow-x-auto text-sm font-mono text-blue-300">
                       <code>
-{`curl -X GET "https://api.intelligize-plus.com/v1/filings/search?q=cybersecurity&formType=10-K" \\
--H "Authorization: Bearer YOUR_API_KEY"`}
+{sampleCurl}
                       </code>
                     </pre>
                   </div>
