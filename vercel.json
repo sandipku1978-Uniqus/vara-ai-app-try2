@@ -1,0 +1,13 @@
+{
+  "routes": [
+    { "src": "^/sec-proxy/?$", "dest": "/api/sec-proxy" },
+    { "src": "^/sec-proxy/(.*)$", "dest": "/api/sec-proxy?path=$1" },
+    { "src": "^/sec-data/?$", "dest": "/api/sec-data" },
+    { "src": "^/sec-data/(.*)$", "dest": "/api/sec-data?path=$1" },
+    { "src": "^/sec-efts/?$", "dest": "/api/sec-efts" },
+    { "src": "^/sec-efts/(.*)$", "dest": "/api/sec-efts?path=$1" },
+    { "src": "^/(ix|ixviewer|Archives|include|files|cdata|js|css|images)/(.*)$", "dest": "/api/sec-proxy?path=$1/$2" },
+    { "handle": "filesystem" },
+    { "src": "/.*", "dest": "/" }
+  ]
+}

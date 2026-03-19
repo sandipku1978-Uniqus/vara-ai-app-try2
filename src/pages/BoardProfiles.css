@@ -1,0 +1,99 @@
+.board-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  height: calc(100vh - 120px);
+}
+
+.board-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.board-title h1 {
+  font-size: 1.8rem;
+  margin-bottom: 4px;
+}
+
+.board-title p {
+  color: var(--text-secondary);
+}
+
+.board-layout {
+  display: flex;
+  gap: 24px;
+  flex: 1;
+  min-height: 0;
+}
+
+.board-sidebar {
+  width: 260px;
+  flex-shrink: 0;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.board-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.board-nav .nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: var(--text-secondary);
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.board-nav .nav-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+}
+
+.board-nav .nav-btn.active {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--accent-blue);
+  box-shadow: inset 3px 0 0 var(--accent-blue);
+}
+
+.gov-metric {
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.gov-metric:last-child {
+  border-bottom: none;
+}
+
+.board-main {
+  flex: 1;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Reusing tab-pane and pane-header styles universally */
+.pane-header h2 {
+  font-size: 1.4rem;
+  color: var(--text-primary);
+}
+
+.table-container {
+  /* Enforces rounded corners on table borders */
+  background: rgba(10, 15, 30, 0.5);
+}

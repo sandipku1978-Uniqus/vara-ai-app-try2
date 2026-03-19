@@ -1,0 +1,328 @@
+.support-container {
+  padding: 40px;
+  height: 100%;
+  animation: fadeIn 0.4s ease-out;
+  overflow-y: auto;
+}
+
+/* Header & Search */
+.support-header {
+  text-align: center;
+  padding: 48px 0;
+}
+
+.support-header h1 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 16px;
+}
+
+.support-search-wrapper {
+  max-width: 576px;
+  margin: 0 auto;
+  position: relative;
+}
+
+.support-search-wrapper .support-search-icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.support-search-wrapper input {
+  width: 100%;
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid var(--glass-border);
+  border-radius: 999px;
+  padding: 14px 24px 14px 48px;
+  color: white;
+  font-size: 0.95rem;
+  outline: none;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  transition: border-color 0.2s;
+}
+
+.support-search-wrapper input::placeholder {
+  color: var(--text-muted);
+}
+
+.support-search-wrapper input:focus {
+  border-color: var(--accent-blue);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+/* Support Grid */
+.support-grid {
+  max-width: 960px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+
+.support-card {
+  padding: 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.support-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.icon-wrapper {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  transition: transform 0.2s ease;
+}
+
+.icon-wrapper.blue { background: rgba(59, 130, 246, 0.1); color: #60A5FA; }
+.icon-wrapper.purple { background: rgba(139, 92, 246, 0.1); color: #A78BFA; }
+.icon-wrapper.green { background: rgba(16, 185, 129, 0.1); color: #34D399; }
+
+.support-card:hover .icon-wrapper {
+  transform: scale(1.1);
+}
+
+.support-card h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: white;
+  margin-bottom: 8px;
+}
+
+.support-card p {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+  min-height: 40px;
+}
+
+.support-card .card-link {
+  font-weight: 500;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.support-card .card-link.blue { color: #60A5FA; }
+.support-card .card-link.purple { color: #A78BFA; }
+.support-card .card-link.green { color: #34D399; }
+
+/* Tutorials */
+.tutorials-section {
+  max-width: 960px;
+  margin: 64px auto 0;
+}
+
+.tutorials-section h2 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: white;
+  margin-bottom: 24px;
+}
+
+.tutorials-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 24px;
+}
+
+.tutorial-card {
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.tutorial-card:hover {
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.tutorial-thumb {
+  height: 128px;
+  background: rgba(30, 41, 59, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+.tutorial-card:hover .tutorial-thumb {
+  background: rgba(51, 65, 85, 0.8);
+}
+
+.tutorial-thumb svg {
+  color: rgba(255, 255, 255, 0.4);
+  transition: color 0.2s;
+}
+
+.tutorial-card:hover .tutorial-thumb svg {
+  color: white;
+}
+
+.tutorial-info {
+  padding: 16px;
+}
+
+.tutorial-info h4 {
+  color: white;
+  font-weight: 500;
+  margin-bottom: 4px;
+  transition: color 0.2s;
+}
+
+.tutorial-card:hover .tutorial-info h4 {
+  color: var(--accent-blue);
+}
+
+.tutorial-info p {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+/* Chat Widget */
+.chat-widget {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 320px;
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  animation: slideUp 0.3s ease-out;
+}
+
+.chat-widget-header {
+  background: var(--accent-blue);
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+}
+
+.chat-widget-header-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chat-agent-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: white;
+  font-size: 0.75rem;
+  position: relative;
+}
+
+.chat-agent-avatar .online-dot {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 10px;
+  height: 10px;
+  background: #34D399;
+  border: 2px solid var(--accent-blue);
+  border-radius: 50%;
+}
+
+.chat-agent-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: white;
+}
+
+.chat-agent-status {
+  font-size: 0.75rem;
+  color: rgba(191, 219, 254, 0.9);
+}
+
+.chat-widget-body {
+  height: 256px;
+  background: rgba(2, 6, 23, 0.8);
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.chat-bubble-agent {
+  background: rgba(30, 41, 59, 0.8);
+  color: #E2E8F0;
+  font-size: 0.85rem;
+  padding: 12px;
+  border-radius: 8px;
+  border-top-left-radius: 0;
+  max-width: 85%;
+  border: 1px solid var(--glass-border);
+}
+
+.chat-widget-input {
+  padding: 12px;
+  border-top: 1px solid var(--glass-border);
+}
+
+.chat-widget-input input {
+  width: 100%;
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  color: white;
+  outline: none;
+}
+
+.chat-widget-input input::placeholder {
+  color: var(--text-muted);
+}
+
+.chat-widget-input input:focus {
+  border-color: var(--accent-blue);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 768px) {
+  .support-grid {
+    grid-template-columns: 1fr;
+  }
+  .tutorials-grid {
+    grid-template-columns: 1fr;
+  }
+}

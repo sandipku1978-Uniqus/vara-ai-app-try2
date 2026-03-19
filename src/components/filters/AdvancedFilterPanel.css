@@ -1,0 +1,174 @@
+.adv-filter-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+}
+
+.afp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  margin-bottom: 4px;
+}
+
+.afp-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: white;
+  font-size: 0.9rem;
+}
+
+.afp-count {
+  background: rgba(59, 130, 246, 0.2);
+  color: #60A5FA;
+  font-size: 0.7rem;
+  padding: 1px 6px;
+  border-radius: 9999px;
+  font-weight: 700;
+}
+
+.afp-clear {
+  background: none;
+  border: none;
+  color: #60A5FA;
+  cursor: pointer;
+  font-size: 0.75rem;
+  padding: 0;
+}
+
+.afp-clear:hover {
+  text-decoration: underline;
+}
+
+.afp-keyword-input {
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+  font-size: 0.85rem;
+  outline: none;
+}
+
+.afp-keyword-input:focus {
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.afp-section {
+  border-top: 1px solid rgba(51, 65, 85, 0.3);
+  padding-top: 8px;
+}
+
+.afp-section-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #94A3B8;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.025em;
+  cursor: pointer;
+  padding: 4px 0;
+  user-select: none;
+}
+
+.afp-section-header:hover {
+  color: #CBD5E1;
+}
+
+.afp-section-body {
+  padding: 8px 0 4px 0;
+}
+
+.afp-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.afp-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(59, 130, 246, 0.15);
+  color: #60A5FA;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.afp-chip button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  color: inherit;
+  display: flex;
+}
+
+.afp-checkboxes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.afp-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  color: #CBD5E1;
+  font-size: 0.8rem;
+}
+
+.afp-checkbox input[type="checkbox"] {
+  accent-color: #3B82F6;
+  width: 14px;
+  height: 14px;
+}
+
+.afp-date-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.afp-date-input {
+  flex: 1;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  color: white;
+  font-size: 0.8rem;
+  outline: none;
+}
+
+.afp-date-input:focus {
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.afp-apply-btn {
+  margin-top: 8px;
+  padding: 8px 16px;
+  background: #3B82F6;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: background 0.15s;
+}
+
+.afp-apply-btn:hover {
+  background: #2563EB;
+}

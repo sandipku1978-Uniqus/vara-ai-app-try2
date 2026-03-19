@@ -1,0 +1,458 @@
+.benchmarking-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  min-height: calc(100vh - 120px);
+}
+
+.benchmark-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.benchmark-title h1 {
+  font-size: 1.8rem;
+  margin-bottom: 4px;
+}
+
+.benchmark-title p {
+  color: var(--text-secondary);
+}
+
+.benchmark-actions .icon-btn {
+  width: auto;
+  border-radius: 8px;
+  padding: 8px 16px;
+  gap: 8px;
+}
+
+.benchmark-controls {
+  padding: 16px 24px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 32px;
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.control-group label, .legend-group label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.select-input {
+  background: var(--bg-primary);
+  border: 1px solid var(--glass-border);
+  color: var(--text-primary);
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  outline: none;
+  min-width: 220px;
+}
+
+.select-input:focus {
+  border-color: var(--accent-blue);
+}
+
+.comparison-selector {
+  flex: 1;
+}
+
+.active-selectors {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.selected-company-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: white;
+  padding: 0;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  overflow: visible;
+}
+
+.selected-company-badge button {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+.selected-company-badge button:hover {
+  color: white;
+}
+
+.select-input.add-company {
+  min-width: 160px;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.legend-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.diff-legend {
+  display: flex;
+  gap: 12px;
+}
+
+.legend-pill {
+  font-size: 0.8rem;
+  padding: 4px 10px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  font-weight: 500;
+}
+
+.legend-pill.unique {
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.3);
+  color: #10B981;
+}
+
+.legend-pill.similar {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: #F59E0B;
+}
+
+.legend-pill.boilerplate {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: var(--text-muted);
+}
+
+/* Comparison Grid */
+.comparison-grid {
+  display: flex;
+  gap: 24px;
+  flex: 1;
+  min-height: 0;
+}
+
+.comparison-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.column-header {
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--glass-border);
+  background: rgba(10, 15, 30, 0.6);
+}
+
+.col-ticker {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--accent-blue);
+  margin-bottom: 4px;
+}
+
+.col-name {
+  font-size: 0.95rem;
+  font-weight: 500;
+}
+
+.col-doc {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-top: 4px;
+}
+
+.column-body {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+  line-height: 1.8;
+}
+
+/* Diffing Highlighting */
+.diff-chunk {
+  padding: 2px 0;
+  border-radius: 2px;
+  transition: background 0.2s;
+}
+
+.diff-chunk:hover {
+  filter: brightness(1.2);
+}
+
+.diff-unique {
+  background: rgba(16, 185, 129, 0.15);
+  border-bottom: 2px solid rgba(16, 185, 129, 0.5);
+}
+
+.diff-similar {
+  background: rgba(245, 158, 11, 0.15);
+  border-bottom: 2px solid rgba(245, 158, 11, 0.5);
+}
+
+.diff-boilerplate {
+  color: var(--text-muted);
+}
+
+.empty-comparison {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  text-align: center;
+}
+
+.empty-comparison h3 {
+  font-size: 1.25rem;
+}
+.empty-comparison p {
+  color: var(--text-secondary);
+}
+
+@media (max-width: 1024px) {
+  .benchmark-controls {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+/* Ticker text input */
+.ticker-input-wrap {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.ticker-text-input {
+  background: var(--bg-primary);
+  border: 1px solid var(--glass-border);
+  border-radius: 6px;
+  padding: 8px 12px;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  width: 180px;
+  outline: none;
+  text-transform: uppercase;
+  transition: border-color 0.2s;
+}
+.ticker-text-input:focus {
+  border-color: var(--accent-blue);
+}
+.ticker-text-input::placeholder {
+  text-transform: none;
+  font-family: var(--font-sans);
+}
+
+.add-ticker-btn {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--accent-blue);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: var(--font-sans);
+}
+.add-ticker-btn:hover:not(:disabled) {
+  background: rgba(59, 130, 246, 0.25);
+}
+.add-ticker-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Year selector inside company badge */
+.year-select {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  color: white;
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+  padding: 2px 4px;
+  cursor: pointer;
+  outline: none;
+  max-width: 80px;
+}
+.year-select:focus {
+  border-color: rgba(255, 255, 255, 0.5);
+}
+.year-select option {
+  background: #1E293B;
+  color: white;
+}
+
+/* View mode toggle buttons */
+.toggle-view-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  background: transparent;
+  color: var(--text-muted);
+  transition: all 0.15s;
+  font-family: var(--font-sans);
+}
+.toggle-view-btn.active {
+  background: var(--accent-blue);
+  color: white;
+  box-shadow: 0 1px 2px rgba(0,0,0,.05);
+}
+.toggle-view-btn:hover:not(.active) {
+  color: var(--text-primary);
+}
+
+/* ===== KPI Summary Cards ===== */
+.kpi-cards-row {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.kpi-card {
+  min-width: 220px;
+  flex: 1;
+  padding: 20px !important;
+}
+
+.kpi-card-header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.kpi-card-ticker {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: white;
+}
+
+.kpi-card-fy {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.kpi-card-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.kpi-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.kpi-card-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.kpi-card-value {
+  font-size: 0.95rem;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  color: #E2E8F0;
+  display: flex;
+  align-items: center;
+}
+
+/* ===== Chart Grid Layouts ===== */
+.charts-grid-3col {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.charts-grid-2col {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.chart-title {
+  font-size: 0.85rem;
+  color: #94A3B8;
+  margin-bottom: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.chart-subtitle {
+  color: #475569;
+  font-weight: 400;
+}
+
+/* ===== Table Enhancements ===== */
+.financial-table .table-data-row {
+  border-bottom: 1px solid rgba(51,65,85,0.3);
+  transition: background 0.15s;
+}
+
+.financial-table .table-data-row:hover {
+  background: rgba(59, 130, 246, 0.04);
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 1200px) {
+  .charts-grid-3col {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .charts-grid-3col,
+  .charts-grid-2col {
+    grid-template-columns: 1fr;
+  }
+
+  .kpi-cards-row {
+    flex-direction: column;
+  }
+
+  .kpi-card {
+    min-width: unset;
+  }
+}
+
