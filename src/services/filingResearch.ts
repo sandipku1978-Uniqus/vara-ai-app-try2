@@ -92,6 +92,14 @@ function includesNormalized(haystack: string, needle: string): boolean {
   return normalize(haystack).includes(normalize(needle));
 }
 
+function normalizeLooseText(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function buildFilingUrl(cik: string, accessionNumber: string, primaryDocument: string): string {
   const cleanAccession = accessionNumber.replace(/-/g, '');
   return `https://www.sec.gov/Archives/edgar/data/${cik}/${cleanAccession}/${primaryDocument}`;
@@ -113,22 +121,28 @@ function normalizeFormTypes(filters: SearchFilters, defaultForms = ''): string {
   return defaultForms;
 }
 
+function parseFormScope(formScope: string): string[] {
+  return formScope
+    .split(',')
+    .map(form => form.trim())
+    .filter(Boolean);
+}
+
+function normalizeFormValue(value: string): string {
+  return value.trim().toUpperCase().replace(/\s+/g, '');
+}
+
+function normalizeBaseForm(value: string): string {
+  return normalizeFormValue(value).replace(/\/A$/, '');
+}
+
 function buildServerQuery(rawQuery: string, filters: SearchFilters, mode: ResearchSearchMode): string {
-  const parts = [rawQuery.trim()];
-
-  if (filters.sectionKeywords.trim()) {
-    parts.push(filters.sectionKeywords.trim());
-  }
-
-  if (filters.accessionNumber.trim()) {
-    parts.push(filters.accessionNumber.trim());
-  }
-
-  if (filters.fileNumber.trim()) {
-    parts.push(filters.fileNumber.trim());
-  }
-
-  const combined = parts.filter(Boolean).join(' ').trim();
+  const primaryQuery = rawQuery.trim();
+  const combined =
+    primaryQuery ||
+    filters.accessionNumber.trim() ||
+    filters.fileNumber.trim() ||
+    filters.sectionKeywords.trim();
   if (!combined) {
     return '';
   }
@@ -219,6 +233,101 @@ async function getFilingSignal(cik: string, accessionNumber: string, primaryDocu
   return filingSignalCache.get(cacheKey)!;
 }
 
+function getSignalCacheKey(result: Pick<FilingResearchResult, 'cik' | 'accessionNumber' | 'primaryDocument'>): string {
+  return `${result.cik}:${result.accessionNumber}:${result.primaryDocument}`;
+}
+
+function matchesEntityFilter(result: FilingResearchResult, entityName: string): boolean {
+  const rawNeedle = entityName.trim();
+  if (!rawNeedle) return true;
+
+  const cikNeedle = rawNeedle.replace(/\D/g, '').replace(/^0+/, '');
+  if (cikNeedle && result.cik === cikNeedle) {
+    return true;
+  }
+
+  const tickerNeedle = rawNeedle.toUpperCase();
+  if (result.tickers.some(ticker => ticker.toUpperCase() === tickerNeedle)) {
+    return true;
+  }
+
+  const normalizedNeedle = normalizeLooseText(rawNeedle);
+  if (!normalizedNeedle) return true;
+
+  return [result.entityName, result.companyName, ...result.tickers]
+    .filter(Boolean)
+    .some(candidate => normalizeLooseText(candidate).includes(normalizedNeedle));
+}
+
+function matchesDateRange(result: FilingResearchResult, dateFrom: string, dateTo: string): boolean {
+  if (!dateFrom && !dateTo) {
+    return true;
+  }
+
+  if (!result.fileDate) {
+    return false;
+  }
+
+  if (dateFrom && result.fileDate < dateFrom) {
+    return false;
+  }
+
+  if (dateTo && result.fileDate > dateTo) {
+    return false;
+  }
+
+  return true;
+}
+
+function matchesFormScope(result: FilingResearchResult, formScope: string[]): boolean {
+  if (formScope.length === 0) {
+    return true;
+  }
+
+  const normalizedResultForm = normalizeFormValue(result.formType);
+  const normalizedResultBaseForm = normalizeBaseForm(result.formType);
+
+  return formScope.some(form => {
+    const normalizedForm = normalizeFormValue(form);
+    const normalizedBaseForm = normalizeBaseForm(form);
+    return (
+      normalizedResultForm === normalizedForm ||
+      normalizedResultBaseForm === normalizedBaseForm ||
+      normalizedResultForm.startsWith(`${normalizedForm}/`) ||
+      normalizedResultForm.startsWith(`${normalizedBaseForm}/`)
+    );
+  });
+}
+
+function parseSectionKeywordOptions(sectionKeywords: string): string[] {
+  return sectionKeywords
+    .split(/[,\n;|]+/)
+    .map(keyword => normalizeLooseText(keyword))
+    .filter(Boolean);
+}
+
+function matchesSectionKeywords(filingText: string, sectionKeywords: string): boolean {
+  const options = parseSectionKeywordOptions(sectionKeywords);
+  if (options.length === 0) {
+    return true;
+  }
+
+  const normalizedText = normalizeLooseText(filingText);
+  if (!normalizedText) {
+    return false;
+  }
+
+  return options.some(option => normalizedText.includes(option));
+}
+
+function sortResearchResults(results: FilingResearchResult[]): FilingResearchResult[] {
+  return results.sort((a, b) => {
+    const byDate = b.fileDate.localeCompare(a.fileDate);
+    if (byDate !== 0) return byDate;
+    return b.score - a.score;
+  });
+}
+
 function matchesFilerKeys(selected: string[], result: FilingResearchResult): boolean {
   if (selected.length === 0) return true;
   const signal = normalize(result.acceleratedStatus);
@@ -254,7 +363,19 @@ function matchesFilerKeys(selected: string[], result: FilingResearchResult): boo
   });
 }
 
-function matchesMetadataFilters(result: FilingResearchResult, filters: SearchFilters): boolean {
+function matchesBaseFilters(result: FilingResearchResult, filters: SearchFilters, formScope: string[]): boolean {
+  if (!matchesEntityFilter(result, filters.entityName)) {
+    return false;
+  }
+
+  if (!matchesDateRange(result, filters.dateFrom.trim(), filters.dateTo.trim())) {
+    return false;
+  }
+
+  if (!matchesFormScope(result, formScope)) {
+    return false;
+  }
+
   if (filters.accessionNumber.trim() && !includesNormalized(result.accessionNumber, filters.accessionNumber)) {
     return false;
   }
@@ -284,6 +405,14 @@ function matchesMetadataFilters(result: FilingResearchResult, filters: SearchFil
   }
 
   if (filters.fiscalYearEnd.trim() && result.fiscalYearEnd !== filters.fiscalYearEnd.trim()) {
+    return false;
+  }
+
+  return true;
+}
+
+function matchesSignalFilters(result: FilingResearchResult, filters: SearchFilters, filingText: string): boolean {
+  if (filters.sectionKeywords.trim() && !matchesSectionKeywords(filingText, filters.sectionKeywords)) {
     return false;
   }
 
@@ -326,10 +455,7 @@ function mapSearchHit(hit: EdgarSearchHit): FilingResearchResult {
   };
 }
 
-async function hydrateResult(
-  result: FilingResearchResult,
-  needsTextSignals: boolean
-): Promise<FilingResearchResult> {
+async function hydrateCompanyMetadata(result: FilingResearchResult): Promise<FilingResearchResult> {
   const metadata = await getCompanyMetadata(result.cik);
   if (metadata) {
     result.companyName = metadata.companyName || result.companyName || result.entityName;
@@ -343,20 +469,18 @@ async function hydrateResult(
     result.fileNumber = metadata.fileNumbersByAccession[result.accessionNumber] || result.fileNumber;
   }
 
-  if (needsTextSignals) {
-    const signal = await getFilingSignal(result.cik, result.accessionNumber, result.primaryDocument);
-    result.auditor = signal.auditor;
-    result.acceleratedStatus = signal.acceleratedStatus;
-  }
-
   return result;
 }
 
-function requiresTextSignals(filters: SearchFilters, rawQuery: string, mode: ResearchSearchMode, hydrateTextSignals = false): boolean {
-  if (hydrateTextSignals) {
-    return true;
-  }
-  if (filters.accountant.trim() || filters.acceleratedStatus.length > 0) {
+async function hydrateResultSignals(result: FilingResearchResult): Promise<FilingSignal> {
+  const signal = await getFilingSignal(result.cik, result.accessionNumber, result.primaryDocument);
+  result.auditor = signal.auditor;
+  result.acceleratedStatus = signal.acceleratedStatus;
+  return signal;
+}
+
+function requiresTextFiltering(filters: SearchFilters, rawQuery: string, mode: ResearchSearchMode): boolean {
+  if (filters.accountant.trim() || filters.acceleratedStatus.length > 0 || filters.sectionKeywords.trim()) {
     return true;
   }
   if (mode === 'boolean') {
@@ -376,6 +500,7 @@ export async function executeFilingResearchSearch({
 }: ExecuteSearchOptions): Promise<FilingResearchResult[]> {
   const serverQuery = buildServerQuery(query || filters.keyword, filters, mode);
   const formTypes = normalizeFormTypes(filters, defaultForms);
+  const formScope = parseFormScope(formTypes);
   const hits = await searchEdgarFilings(
     serverQuery,
     formTypes,
@@ -384,37 +509,42 @@ export async function executeFilingResearchSearch({
     filters.entityName || undefined
   );
 
-  const needsSignals = requiresTextSignals(filters, query, mode, hydrateTextSignals);
-  let results = uniqueById(hits.map(mapSearchHit)).slice(0, Math.max(limit * 2, 60));
+  const needsTextFiltering = requiresTextFiltering(filters, query, mode);
+  const shouldHydrateSignals = hydrateTextSignals || needsTextFiltering;
+  const candidateLimit = Math.max(limit * 3, 90);
+  let results = uniqueById(hits.map(mapSearchHit)).slice(0, candidateLimit);
 
-  results = await Promise.all(results.map(result => hydrateResult(result, needsSignals)));
+  results = await Promise.all(results.map(result => hydrateCompanyMetadata(result)));
+  results = results.filter(result => matchesBaseFilters(result, filters, formScope));
+  results = sortResearchResults(results);
 
-  if (mode === 'boolean') {
+  if (!shouldHydrateSignals) {
+    return results.slice(0, limit);
+  }
+
+  const signalMap = new Map<string, FilingSignal>();
+  await Promise.all(
+    results.map(async result => {
+      const signal = await hydrateResultSignals(result);
+      signalMap.set(getSignalCacheKey(result), signal);
+    })
+  );
+
+  if (needsTextFiltering && mode === 'boolean') {
     const parsed = parseBooleanQuery(query);
     if (parsed.expression) {
-      const filtered: FilingResearchResult[] = [];
-      for (const result of results) {
-        const signal =
-          needsSignals
-            ? await getFilingSignal(result.cik, result.accessionNumber, result.primaryDocument)
-            : { text: '', auditor: result.auditor, acceleratedStatus: result.acceleratedStatus };
-        if (signal.text && booleanQueryMatches(query, signal.text)) {
-          filtered.push(result);
-        }
-      }
-      results = filtered;
+      results = results.filter(result => {
+        const signal = signalMap.get(getSignalCacheKey(result));
+        return Boolean(signal?.text && booleanQueryMatches(query, signal.text));
+      });
     }
   }
 
-  results = results.filter(result => matchesMetadataFilters(result, filters));
+  if (needsTextFiltering) {
+    results = results.filter(result => matchesSignalFilters(result, filters, signalMap.get(getSignalCacheKey(result))?.text || ''));
+  }
 
-  return results
-    .sort((a, b) => {
-      const byDate = b.fileDate.localeCompare(a.fileDate);
-      if (byDate !== 0) return byDate;
-      return b.score - a.score;
-    })
-    .slice(0, limit);
+  return sortResearchResults(results).slice(0, limit);
 }
 
 export async function buildSearchTrendSummary(
