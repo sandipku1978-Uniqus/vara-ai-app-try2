@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, X, Loader2 } from 'lucide-react';
-import { loadTickerMap } from '../../services/secApi';
+import { buildSecProxyUrl, loadTickerMap } from '../../services/secApi';
 
 interface CompanySearchInputProps {
   onSelect: (ticker: string, cik: string) => void;
@@ -25,7 +25,7 @@ export default function CompanySearchInput({ onSelect, placeholder = 'Search tic
       setTickerMap(map);
       // Also load titles for display
       try {
-        const resp = await fetch('/files/company_tickers.json');
+        const resp = await fetch(buildSecProxyUrl('files/company_tickers.json'));
         if (resp.ok) {
           const data = await resp.json();
           const titles: Record<string, string> = {};

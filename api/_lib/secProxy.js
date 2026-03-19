@@ -7,6 +7,7 @@ const RESPONSE_HEADER_BLACKLIST = new Set([
   'content-security-policy',
   'content-security-policy-report-only',
   'x-frame-options',
+  'content-encoding',
   'content-length',
   'transfer-encoding',
   'connection',

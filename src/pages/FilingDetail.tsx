@@ -2,7 +2,7 @@ import { useState, useRef, useCallback, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ArrowLeft, Bookmark, MessageSquare, ExternalLink, Columns, Highlighter, Settings2, Download, List, AlertCircle, FileText, Loader2 } from 'lucide-react';
 import { useApp } from '../context/AppState';
-import { buildSecDocumentUrl, fetchCompanySubmissions } from '../services/secApi';
+import { buildSecDocumentUrl, buildSecProxyUrl, fetchCompanySubmissions } from '../services/secApi';
 import { openCleanPrintView } from '../services/filingExport';
 import './FilingDetail.css';
 
@@ -236,7 +236,7 @@ export default function FilingDetail() {
   const handleCleanPdfExport = useCallback(async () => {
     setExportingPdf(true);
     try {
-      const response = await fetch(`/sec-proxy/Archives/edgar/data/${cik}/${formattedAccession}/${primaryDoc}`);
+      const response = await fetch(buildSecProxyUrl(`Archives/edgar/data/${cik}/${formattedAccession}/${primaryDoc}`));
       if (!response.ok) {
         throw new Error(`Unable to fetch filing HTML (${response.status})`);
       }
@@ -336,7 +336,7 @@ export default function FilingDetail() {
           ) : (
             <iframe
               ref={iframeRef}
-              src={`/sec-proxy/Archives/edgar/data/${cik}/${formattedAccession}/${primaryDoc}`}
+              src={buildSecProxyUrl(`Archives/edgar/data/${cik}/${formattedAccession}/${primaryDoc}`)}
               title="SEC Document View"
               className="sec-iframe"
               onError={() => setIframeError(true)}

@@ -2,6 +2,7 @@
 // SEC EDGAR requires a descriptive User-Agent string
 
 const USER_AGENT = import.meta.env.VITE_EDGAR_USER_AGENT || 'Vara AI Research App contact@vara.ai';
+const USE_DIRECT_VERCEL_API = !import.meta.env.DEV;
 
 // Cache for CIKs to avoid redundant lookups if doing bulk mappings 
 // (In a real app, you'd likely hit an internal DB, but here we'll map top tickers)
@@ -21,6 +22,50 @@ const getHeaders = () => ({
   'Accept-Encoding': 'gzip, deflate'
 });
 
+function buildProxyUrl(
+  type: 'proxy' | 'data' | 'efts',
+  path: string,
+  params?: Record<string, string | number | undefined> | URLSearchParams
+): string {
+  const cleanPath = path.replace(/^\/+/, '');
+  const searchParams = params instanceof URLSearchParams ? new URLSearchParams(params) : new URLSearchParams();
+
+  if (!(params instanceof URLSearchParams) && params) {
+    for (const [key, value] of Object.entries(params)) {
+      if (value != null) {
+        searchParams.set(key, String(value));
+      }
+    }
+  }
+
+  if (!USE_DIRECT_VERCEL_API) {
+    const base =
+      type === 'data'
+        ? `/sec-data/${cleanPath}`
+        : type === 'efts'
+          ? `/sec-efts/${cleanPath}`
+          : `/sec-proxy/${cleanPath}`;
+    const query = searchParams.toString();
+    return query ? `${base}?${query}` : base;
+  }
+
+  const functionName = type === 'data' ? 'sec-data.js' : type === 'efts' ? 'sec-efts.js' : 'sec-proxy.js';
+  searchParams.set('path', cleanPath);
+  return `/api/${functionName}?${searchParams.toString()}`;
+}
+
+export function buildSecProxyUrl(path: string, params?: Record<string, string | number | undefined> | URLSearchParams): string {
+  return buildProxyUrl('proxy', path, params);
+}
+
+export function buildSecDataUrl(path: string, params?: Record<string, string | number | undefined> | URLSearchParams): string {
+  return buildProxyUrl('data', path, params);
+}
+
+export function buildSecEftsUrl(path: string, params?: Record<string, string | number | undefined> | URLSearchParams): string {
+  return buildProxyUrl('efts', path, params);
+}
+
 // Cache of all tickers loaded from SEC
 let _tickerCache: Record<string, string> | null = null;
 let _tickerCachePromise: Promise<Record<string, string>> | null = null;
@@ -35,7 +80,7 @@ export async function loadTickerMap(): Promise<Record<string, string>> {
 
   _tickerCachePromise = (async () => {
     try {
-      const response = await fetch('/files/company_tickers.json', {
+      const response = await fetch(buildSecProxyUrl('files/company_tickers.json'), {
         headers: getHeaders()
       });
       if (!response.ok) throw new Error('Failed to load ticker map');
@@ -104,7 +149,7 @@ export interface SecSubmission {
 export async function fetchCompanySubmissions(cik: string): Promise<SecSubmission | null> {
   const paddedCik = cik.padStart(10, '0');
   try {
-    const response = await fetch(`/sec-data/submissions/CIK${paddedCik}.json`, {
+    const response = await fetch(buildSecDataUrl(`submissions/CIK${paddedCik}.json`), {
       headers: getHeaders()
     });
     
@@ -160,7 +205,7 @@ export interface CompanyFacts {
 export async function fetchCompanyFacts(cik: string): Promise<CompanyFacts | null> {
   const paddedCik = cik.padStart(10, '0');
   try {
-    const response = await fetch(`/sec-data/api/xbrl/companyfacts/CIK${paddedCik}.json`, {
+    const response = await fetch(buildSecDataUrl(`api/xbrl/companyfacts/CIK${paddedCik}.json`), {
       headers: getHeaders()
     });
     if (!response.ok) throw new Error(`XBRL API Error: ${response.statusText}`);
@@ -333,7 +378,7 @@ export async function searchEdgarFilings(
       enddt: endDate || new Date().toISOString().split('T')[0],
     });
     if (entityName) params.set('entityName', entityName);
-    const response = await fetch(`/sec-efts/LATEST/search-index?${params}`, {
+    const response = await fetch(buildSecEftsUrl('LATEST/search-index', params), {
       headers: getHeaders()
     });
     if (!response.ok) throw new Error(`EDGAR Search Error: ${response.statusText}`);
@@ -359,7 +404,15 @@ export interface FilingDocument {
 export async function fetchFilingIndex(accessionNumber: string): Promise<FilingDocument[]> {
   try {
     // The EDGAR filing index JSON endpoint
-    const response = await fetch(`/sec-proxy/cgi-bin/browse-edgar?action=getcompany&accession=${accessionNumber}&type=&dateb=&owner=include&count=40&search_text=&action=getcompany`, {
+    const response = await fetch(buildSecProxyUrl('cgi-bin/browse-edgar', {
+      action: 'getcompany',
+      accession: accessionNumber,
+      type: '',
+      dateb: '',
+      owner: 'include',
+      count: 40,
+      search_text: '',
+    }), {
       headers: getHeaders()
     });
     if (!response.ok) throw new Error(`Filing index Error: ${response.statusText}`);
@@ -378,7 +431,7 @@ export async function fetchFilingIndex(accessionNumber: string): Promise<FilingD
 export async function fetchFilingText(cik: string, accessionNumber: string, primaryDocument: string): Promise<string> {
   try {
     const cleanAccession = accessionNumber.replace(/-/g, '');
-    const response = await fetch(`/sec-proxy/Archives/edgar/data/${cik}/${cleanAccession}/${primaryDocument}`, {
+    const response = await fetch(buildSecProxyUrl(`Archives/edgar/data/${cik}/${cleanAccession}/${primaryDocument}`), {
       headers: getHeaders()
     });
     if (!response.ok) throw new Error(`Filing fetch Error: ${response.statusText}`);
@@ -546,7 +599,7 @@ export async function searchFormADV(query: string, dateFrom?: string, dateTo?: s
  */
 export async function fetchLitigationReleases(): Promise<{ date: string; title: string; url: string; releaseNumber: string }[]> {
   try {
-    const response = await fetch('/sec-proxy/litigation/litreleases.htm', { headers: getHeaders() });
+    const response = await fetch(buildSecProxyUrl('litigation/litreleases.htm'), { headers: getHeaders() });
     if (!response.ok) return [];
     const html = await response.text();
     const parser = new DOMParser();

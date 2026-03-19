@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Download, X, ArrowRightLeft, Loader2, Sparkles, LayoutGrid, Type, DollarSign, TrendingUp, TrendingDown, Users } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell, RadarChart, PolarGrid, PolarAngleAxis, Radar, Legend } from 'recharts';
-import { fetchCompanySubmissions, fetchCompanySubmissionsBatch, fetchCompanyFacts, extractFinancials, getAvailableYears, formatFinancialValue, CIK_MAP, SecSubmission, FinancialMetric, CompanyFacts, lookupCIK, extractCompanyMetadata, loadTickerMap } from '../services/secApi';
+import { fetchCompanySubmissions, fetchCompanySubmissionsBatch, fetchCompanyFacts, extractFinancials, getAvailableYears, formatFinancialValue, CIK_MAP, SecSubmission, FinancialMetric, CompanyFacts, lookupCIK, extractCompanyMetadata, loadTickerMap, buildSecProxyUrl } from '../services/secApi';
 import { aiSummarize } from '../services/geminiApi';
 import ResponsibleAIBanner from '../components/ResponsibleAIBanner';
 import { renderMarkdown } from '../utils/markdownRenderer';
@@ -424,7 +424,7 @@ export default function Benchmarking() {
         const primaryDoc = data.filings.recent.primaryDocument[recentIdx];
         const cleanAccession = accession.replace(/-/g, '');
         try {
-          const resp = await fetch(`/sec-proxy/Archives/edgar/data/${data.cik}/${cleanAccession}/${primaryDoc}`);
+          const resp = await fetch(buildSecProxyUrl(`Archives/edgar/data/${data.cik}/${cleanAccession}/${primaryDoc}`));
           const html = await resp.text();
           const parser = new DOMParser();
           const doc = parser.parseFromString(html, 'text/html');
