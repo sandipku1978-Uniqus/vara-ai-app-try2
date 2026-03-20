@@ -93,6 +93,7 @@ function extractDocumentTextFromHtml(html: string): string {
 // Cache of all tickers loaded from SEC
 let _tickerCache: Record<string, string> | null = null;
 let _tickerCachePromise: Promise<Record<string, string>> | null = null;
+const filingTextCache = new Map<string, Promise<string>>();
 
 /**
  * Load the full SEC ticker-to-CIK mapping (company_tickers.json).
@@ -589,18 +590,27 @@ export async function fetchFilingIndex(accessionNumber: string): Promise<FilingD
  * Returns raw text extracted from the HTML filing.
  */
 export async function fetchFilingText(cik: string, accessionNumber: string, primaryDocument: string): Promise<string> {
-  try {
-    const cleanAccession = accessionNumber.replace(/-/g, '');
-    const response = await fetch(buildSecProxyUrl(`Archives/edgar/data/${cik}/${cleanAccession}/${primaryDocument}`), {
-      headers: getHeaders()
-    });
-    if (!response.ok) throw new Error(`Filing fetch Error: ${response.statusText}`);
-    const html = await response.text();
-    return extractDocumentTextFromHtml(html);
-  } catch (error) {
-    console.error('Failed to fetch filing text:', error);
-    return '';
+  const cleanAccession = accessionNumber.replace(/-/g, '');
+  const cacheKey = `${cik}:${cleanAccession}:${primaryDocument}`;
+
+  if (!filingTextCache.has(cacheKey)) {
+    filingTextCache.set(cacheKey, (async () => {
+      try {
+        const response = await fetch(buildSecProxyUrl(`Archives/edgar/data/${cik}/${cleanAccession}/${primaryDocument}`), {
+          headers: getHeaders()
+        });
+        if (!response.ok) throw new Error(`Filing fetch Error: ${response.statusText}`);
+        const html = await response.text();
+        return extractDocumentTextFromHtml(html);
+      } catch (error) {
+        console.error('Failed to fetch filing text:', error);
+        filingTextCache.delete(cacheKey);
+        return '';
+      }
+    })());
   }
+
+  return filingTextCache.get(cacheKey)!;
 }
 
 /**

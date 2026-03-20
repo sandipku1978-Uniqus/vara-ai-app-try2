@@ -25,6 +25,7 @@ interface FilingRouteState {
   highlightQuery?: string;
   highlightMode?: ResearchSearchMode;
   highlightSectionKeywords?: string;
+  originatingSearchSessionId?: string | null;
 }
 
 interface ComparableFiling {
@@ -43,6 +44,7 @@ interface FilingAnnotation {
 }
 
 const ANNOTATIONS_STORAGE_KEY = 'vara.filing.annotations.v1';
+const REDLINE_SUMMARY_CACHE = new Map<string, { comparedFiling: ComparableFiling; summary: DisclosureDiffSummary }>();
 
 function normalizeComparableForm(formType: string): string {
   return formType.trim().toUpperCase().replace(/\s+/g, '').replace(/\/A$/, '');
@@ -169,6 +171,7 @@ export default function FilingDetail() {
   const [redlineError, setRedlineError] = useState('');
   const [comparedFiling, setComparedFiling] = useState<ComparableFiling | null>(null);
   const [redlineSummary, setRedlineSummary] = useState<DisclosureDiffSummary | null>(null);
+  const [redlineCandidate, setRedlineCandidate] = useState<ComparableFiling | null>(null);
 
   useEffect(() => {
     currentHtmlRef.current = null;
@@ -180,6 +183,7 @@ export default function FilingDetail() {
     setRedlineError('');
     setComparedFiling(null);
     setRedlineSummary(null);
+    setRedlineCandidate(null);
   }, [id]);
 
   useEffect(() => {
@@ -223,6 +227,47 @@ export default function FilingDetail() {
 
   const secUrl = buildSecDocumentUrl(cik, accession, primaryDoc);
   const formattedAccession = accession.replace(/-/g, '');
+
+  useEffect(() => {
+    if (!filingMeta.formType || !filingMeta.filingDate) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function prefetchRedlineCandidate() {
+      try {
+        const submissions = await fetchCompanySubmissions(cik);
+        if (!submissions || cancelled) {
+          return;
+        }
+
+        const candidate = pickPreviousComparableFiling(
+          submissions,
+          accession,
+          filingMeta.formType || '',
+          filingMeta.filingDate || ''
+        );
+
+        if (cancelled) {
+          return;
+        }
+
+        setRedlineCandidate(candidate);
+        if (candidate) {
+          void fetchFilingText(cik, candidate.accessionNumber, candidate.primaryDocument);
+        }
+      } catch (error) {
+        console.error('Redline prefetch failed:', error);
+      }
+    }
+
+    void prefetchRedlineCandidate();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [accession, cik, filingMeta.filingDate, filingMeta.formType]);
 
   const fetchCurrentFilingHtml = useCallback(async (): Promise<string> => {
     if (currentHtmlRef.current) {
@@ -547,17 +592,20 @@ export default function FilingDetail() {
       setToolMessage('');
 
       try {
-        const submissions = await fetchCompanySubmissions(cik);
-        if (!submissions || cancelled) {
-          return;
-        }
+        let previousFiling = redlineCandidate;
+        if (!previousFiling) {
+          const submissions = await fetchCompanySubmissions(cik);
+          if (!submissions || cancelled) {
+            return;
+          }
 
-        const previousFiling = pickPreviousComparableFiling(
-          submissions,
-          accession,
-          filingMeta.formType || '',
-          filingMeta.filingDate || ''
-        );
+          previousFiling = pickPreviousComparableFiling(
+            submissions,
+            accession,
+            filingMeta.formType || '',
+            filingMeta.filingDate || ''
+          );
+        }
 
         if (!previousFiling) {
           if (!cancelled) {
@@ -565,6 +613,15 @@ export default function FilingDetail() {
             setRedlineSummary(null);
             setRedlineError('No comparable prior filing was found to build a year-over-year redline.');
           }
+          return;
+        }
+
+        const cacheKey = `${accession}:${previousFiling.accessionNumber}:${previousFiling.primaryDocument}`;
+        const cachedSummary = REDLINE_SUMMARY_CACHE.get(cacheKey);
+        if (cachedSummary) {
+          setComparedFiling(cachedSummary.comparedFiling);
+          setRedlineSummary(cachedSummary.summary);
+          setActiveTab('tools');
           return;
         }
 
@@ -585,7 +642,12 @@ export default function FilingDetail() {
         }
 
         setComparedFiling(previousFiling);
-        setRedlineSummary(buildDisclosureDiff(currentText, previousText));
+        const summary = buildDisclosureDiff(currentText, previousText);
+        REDLINE_SUMMARY_CACHE.set(cacheKey, {
+          comparedFiling: previousFiling,
+          summary,
+        });
+        setRedlineSummary(summary);
         setActiveTab('tools');
       } catch (error) {
         console.error('Redline load failed:', error);
@@ -606,7 +668,7 @@ export default function FilingDetail() {
     return () => {
       cancelled = true;
     };
-  }, [accession, cik, fetchCurrentFilingText, filingMeta.filingDate, filingMeta.formType, redlineError, redlineLoading, redlineMode, redlineSummary]);
+  }, [accession, cik, fetchCurrentFilingText, filingMeta.filingDate, filingMeta.formType, redlineCandidate, redlineError, redlineLoading, redlineMode, redlineSummary]);
 
   const handleCleanPdfExport = useCallback(async () => {
     setExportingPdf(true);
@@ -636,7 +698,16 @@ export default function FilingDetail() {
       {/* Top action bar */}
       <div className="filing-header-bar glass-card">
         <div className="header-left">
-          <button className="back-btn" onClick={() => navigate(-1)}>
+          <button
+            className="back-btn"
+            onClick={() => {
+              if (routeState?.originatingSearchSessionId) {
+                navigate(`/search?tab=${encodeURIComponent(routeState.originatingSearchSessionId)}`);
+                return;
+              }
+              navigate(-1);
+            }}
+          >
             <ArrowLeft size={18} /> Back
           </button>
           <div className="header-metadata">
@@ -699,7 +770,7 @@ export default function FilingDetail() {
             <Settings2 size={18} />
           </button>
           <button className="primary-btn sm ml-2" onClick={() => setChatOpen(true)}>
-            <MessageSquare size={16} /> Ask Claude
+            <MessageSquare size={16} /> Ask Vara Copilot
           </button>
         </div>
       </div>
@@ -725,6 +796,29 @@ export default function FilingDetail() {
             <h3 className="doc-title">{primaryDoc}</h3>
             <a href={secUrl} target="_blank" rel="noreferrer" className="icon-btn text-muted" title="Open on SEC.gov"><ExternalLink size={16}/></a>
           </div>
+          {annotationMode && selectedQuote && (
+            <div className="annotation-composer-overlay">
+              <span className="annotation-label">Selected text</span>
+              <blockquote>{selectedQuote}</blockquote>
+              <textarea
+                value={annotationDraft}
+                onChange={event => setAnnotationDraft(event.target.value)}
+                placeholder="Add your note, issue framing, or follow-up..."
+              />
+              <div className="annotation-actions">
+                <button className="secondary-btn" onClick={handleSaveAnnotation}>Save Note</button>
+                <button
+                  className="secondary-btn"
+                  onClick={() => {
+                    setSelectedQuote('');
+                    setAnnotationDraft('');
+                  }}
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+          )}
           {primaryDoc.endsWith('.xml') || iframeError ? (
             <div className="iframe-fallback">
               <FileText size={48} style={{ color: 'var(--accent-blue)', marginBottom: '16px' }} />
@@ -908,26 +1002,8 @@ export default function FilingDetail() {
                       Select text inside the filing viewer while annotation mode is on, then save your note below.
                     </p>
                     {selectedQuote && (
-                      <div className="annotation-draft">
-                        <span className="annotation-label">Selected text</span>
-                        <blockquote>{selectedQuote}</blockquote>
-                        <textarea
-                          value={annotationDraft}
-                          onChange={event => setAnnotationDraft(event.target.value)}
-                          placeholder="Add your note, issue framing, or follow-up..."
-                        />
-                        <div className="annotation-actions">
-                          <button className="secondary-btn" onClick={handleSaveAnnotation}>Save Note</button>
-                          <button
-                            className="secondary-btn"
-                            onClick={() => {
-                              setSelectedQuote('');
-                              setAnnotationDraft('');
-                            }}
-                          >
-                            Clear
-                          </button>
-                        </div>
+                      <div className="annotation-inline-hint">
+                        A note draft is open over the filing preview so you can capture it without leaving the document.
                       </div>
                     )}
 

@@ -42,10 +42,48 @@ function normalize(value: string): string {
     .trim();
 }
 
+function inferPhraseCandidates(value: string): string[] {
+  const tokens = value
+    .split(/\s+/)
+    .map(token => token.replace(/^[^A-Za-z0-9]+|[^A-Za-z0-9]+$/g, ''))
+    .filter(Boolean);
+  const phrases: string[] = [];
+  let buffer: string[] = [];
+
+  const flush = () => {
+    if (buffer.length >= 2) {
+      const longest = buffer.slice(0, Math.min(buffer.length, 4)).join(' ');
+      phrases.push(longest);
+      if (buffer.length >= 3) {
+        phrases.push(buffer.slice(Math.max(0, buffer.length - 4)).join(' '));
+      }
+    }
+    buffer = [];
+  };
+
+  for (const token of tokens) {
+    const normalized = normalize(token);
+    if (
+      normalized &&
+      /[A-Za-z]/.test(token) &&
+      normalized.length > 2 &&
+      !STOPWORDS.has(normalized)
+    ) {
+      buffer.push(token);
+    } else {
+      flush();
+    }
+  }
+
+  flush();
+  return Array.from(new Set(phrases));
+}
+
 function buildKeywordQuery(value: string): string {
   const quotedPhrases = Array.from(value.matchAll(/"([^"]+)"/g))
     .map(match => match[1].replace(/\s+/g, ' ').trim())
     .filter(Boolean);
+  const inferredPhrases = inferPhraseCandidates(value);
 
   const remaining = value.replace(/"([^"]+)"/g, ' ');
   const tokens = remaining
@@ -60,7 +98,10 @@ function buildKeywordQuery(value: string): string {
       return !STOPWORDS.has(normalized);
     });
 
-  const unique = Array.from(new Set([...quotedPhrases, ...tokens]));
+  const phraseTerms = Array.from(new Set([...quotedPhrases, ...inferredPhrases]))
+    .slice(0, 3)
+    .map(term => `"${term}"`);
+  const unique = Array.from(new Set([...phraseTerms, ...tokens]));
   return unique.slice(0, 10).join(' ').trim();
 }
 

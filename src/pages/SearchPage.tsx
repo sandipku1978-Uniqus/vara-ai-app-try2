@@ -1,18 +1,43 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
-import { BellRing, Building2, FileText, Filter, Hash, Loader2, MessageSquare, Search, Sparkles } from 'lucide-react';
-import DataTable, { type ColumnDef } from '../components/tables/DataTable';
+import {
+  BellRing,
+  Building2,
+  ExternalLink,
+  FileText,
+  Hash,
+  Loader2,
+  MessageSquare,
+  Search,
+  Sparkles,
+  X,
+} from 'lucide-react';
 import SearchFilterBar, { defaultSearchFilters, type SearchFilters } from '../components/filters/SearchFilterBar';
+import { useApp } from '../context/AppState';
 import { aiSummarize } from '../services/aiApi';
+import { clearDocumentHighlights, highlightDocumentSearchTerms } from '../services/filingHighlights';
 import {
   buildSearchTrendSummary,
   executeFilingResearchSearch,
   type FilingResearchResult,
   type ResearchSearchMode,
 } from '../services/filingResearch';
-import { fetchCompanySubmissions, lookupCIK } from '../services/secApi';
-import { useApp } from '../context/AppState';
-import { interpretSearchPrompt } from '../services/searchAssist';
+import {
+  buildSecDocumentUrl,
+  buildSecProxyUrl,
+  fetchCompanySubmissions,
+  lookupCIK,
+} from '../services/secApi';
+import {
+  buildSearchSignature,
+  buildResearchSessionTitle,
+  cloneSearchFilters,
+  createResearchSessionId,
+  loadResearchSessions,
+  saveResearchSessions,
+  type ResearchSearchSession,
+} from '../services/researchSessions';
+import { buildHighlightTerms, interpretSearchPrompt } from '../services/searchAssist';
 import './SearchPage.css';
 
 const DEFAULT_FORM_SCOPE = '10-K,10-Q,8-K,DEF 14A,20-F,S-1';
@@ -25,15 +50,45 @@ const SAMPLE_SEARCHES = [
 ];
 
 const NAME_TO_TICKER: Record<string, string> = {
-  'APPLE': 'AAPL', 'AAPL': 'AAPL',
-  'MICROSOFT': 'MSFT', 'MSFT': 'MSFT',
-  'GOOGLE': 'GOOGL', 'ALPHABET': 'GOOGL', 'GOOGL': 'GOOGL',
-  'TESLA': 'TSLA', 'TSLA': 'TSLA',
-  'AMAZON': 'AMZN', 'AMZN': 'AMZN',
-  'NVIDIA': 'NVDA', 'NVDA': 'NVDA',
-  'META': 'META', 'FACEBOOK': 'META',
-  'JPMORGAN': 'JPM', 'JPM': 'JPM', 'JP MORGAN': 'JPM',
+  APPLE: 'AAPL', AAPL: 'AAPL',
+  MICROSOFT: 'MSFT', MSFT: 'MSFT',
+  GOOGLE: 'GOOGL', ALPHABET: 'GOOGL', GOOGL: 'GOOGL',
+  TESLA: 'TSLA', TSLA: 'TSLA',
+  AMAZON: 'AMZN', AMZN: 'AMZN',
+  NVIDIA: 'NVDA', NVDA: 'NVDA',
+  META: 'META', FACEBOOK: 'META',
+  JPMORGAN: 'JPM', JPM: 'JPM', 'JP MORGAN': 'JPM',
 };
+
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function renderHighlightedText(text: string, terms: string[]) {
+  if (!text.trim()) {
+    return text;
+  }
+
+  const uniqueTerms = Array.from(
+    new Set(
+      terms
+        .map(term => term.replace(/\s+/g, ' ').trim())
+        .filter(Boolean)
+    )
+  )
+    .sort((a, b) => b.length - a.length)
+    .slice(0, 10);
+
+  if (uniqueTerms.length === 0) {
+    return text;
+  }
+
+  const pattern = new RegExp(`(${uniqueTerms.map(term => escapeRegex(term)).join('|')})`, 'ig');
+  return text.split(pattern).map((part, index) => {
+    const isHit = uniqueTerms.some(term => term.toLowerCase() === part.toLowerCase());
+    return isHit ? <mark key={`${part}-${index}`}>{part}</mark> : <span key={`${part}-${index}`}>{part}</span>;
+  });
+}
 
 async function resolveEntityHint(rawQuery: string): Promise<{ entityName: string; query: string }> {
   const upper = rawQuery.toUpperCase().trim();
@@ -78,11 +133,19 @@ function buildAlertName(query: string, filters: SearchFilters): string {
   return 'Custom research alert';
 }
 
+function buildRouteParams(sessionId: string | null, query: string): URLSearchParams {
+  const params = new URLSearchParams();
+  if (sessionId) params.set('tab', sessionId);
+  if (query.trim()) params.set('q', query.trim());
+  return params;
+}
+
 export default function SearchPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const initialQuery = searchParams.get('q') || '';
+  const activeTabId = searchParams.get('tab');
   const {
     addSavedAlert,
     savedAlerts,
@@ -92,6 +155,7 @@ export default function SearchPage() {
     setChatOpen,
   } = useApp();
 
+  const [sessions, setSessions] = useState<ResearchSearchSession[]>(() => loadResearchSessions());
   const [query, setQuery] = useState(initialQuery);
   const [searchMode, setSearchMode] = useState<ResearchSearchMode>('semantic');
   const [filters, setFilters] = useState<SearchFilters>({
@@ -118,57 +182,104 @@ export default function SearchPage() {
       formTypes: ['10-K', '10-Q'],
     },
   });
+  const [previewError, setPreviewError] = useState(false);
+  const [previewLoadedToken, setPreviewLoadedToken] = useState(0);
+
+  const previewFrameRef = useRef<HTMLIFrameElement>(null);
+  const bootstrappedInitialSearch = useRef(false);
+  const handledAlertIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
-    if (initialQuery) {
-      setQuery(initialQuery);
-      void handleSearch(initialQuery);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialQuery]);
+    saveResearchSessions(sessions);
+  }, [sessions]);
 
-  useEffect(() => {
-    const alertId = (location.state as { alertId?: string } | null)?.alertId;
-    if (!alertId) return;
-    const alert = savedAlerts.find(item => item.id === alertId);
-    if (!alert) return;
+  const activeSession = useMemo(() => {
+    if (sessions.length === 0) return null;
+    if (!activeTabId) return sessions[0];
+    return sessions.find(session => session.id === activeTabId) || sessions[0];
+  }, [activeTabId, sessions]);
 
-    setQuery(alert.query);
-    setSearchMode(alert.mode);
-    setFilters(alert.filters);
-    void handleSearch(alert.query);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.state, savedAlerts]);
+  const displayResults = activeSession?.results || results;
+  const activeResolvedSearch = activeSession?.resolvedSearch || lastResolvedSearch;
+  const previewHighlightTerms = useMemo(
+    () => buildHighlightTerms(
+      activeResolvedSearch.query,
+      activeResolvedSearch.mode,
+      activeResolvedSearch.filters.sectionKeywords
+    ),
+    [activeResolvedSearch]
+  );
+
+  const selectedResult = useMemo(() => {
+    if (displayResults.length === 0) return null;
+    if (!activeSession?.selectedResultId) return displayResults[0];
+    return displayResults.find(item => item.id === activeSession.selectedResultId) || displayResults[0];
+  }, [activeSession?.selectedResultId, displayResults]);
 
   const metrics = useMemo(() => {
-    const companies = new Set(results.map(result => result.entityName)).size;
-    const auditors = results.reduce<Record<string, number>>((acc, result) => {
+    const companies = new Set(displayResults.map(result => result.entityName)).size;
+    const auditors = displayResults.reduce<Record<string, number>>((acc, result) => {
       const key = result.auditor || 'Unknown';
       acc[key] = (acc[key] || 0) + 1;
       return acc;
     }, {});
     const topAuditor = Object.entries(auditors).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Unknown';
-    const forms = results.reduce<Record<string, number>>((acc, result) => {
+    const forms = displayResults.reduce<Record<string, number>>((acc, result) => {
       acc[result.formType] = (acc[result.formType] || 0) + 1;
       return acc;
     }, {});
     const topForm = Object.entries(forms).sort((a, b) => b[1] - a[1])[0]?.[0] || 'N/A';
     return { companies, topAuditor, topForm };
-  }, [results]);
+  }, [displayResults]);
 
-  const handleSearch = useCallback(async (searchQuery = query, overrideFilters = filters, overrideMode = searchMode) => {
+  const setRouteForSession = useCallback((sessionId: string | null, nextQuery: string, replace = false) => {
+    setSearchParams(buildRouteParams(sessionId, nextQuery), { replace });
+  }, [setSearchParams]);
+
+  const upsertSession = useCallback((session: ResearchSearchSession, replaceUrl = false) => {
+    setSessions(prev => {
+      const existingIndex = prev.findIndex(item => item.id === session.id);
+      if (existingIndex === -1) {
+        return [session, ...prev].slice(0, 8);
+      }
+
+      const next = [...prev];
+      next[existingIndex] = session;
+      return next;
+    });
+    setRouteForSession(session.id, session.query, replaceUrl);
+  }, [setRouteForSession]);
+
+  const syncActiveSearchContext = useCallback((session: ResearchSearchSession | null) => {
+    if (!session) {
+      setActiveSearchContext(null);
+      return;
+    }
+
+    setActiveSearchContext({
+      surface: 'research',
+      query: session.resolvedSearch.query,
+      mode: session.resolvedSearch.mode,
+      filters: session.resolvedSearch.filters,
+      results: session.results,
+      updatedAt: session.updatedAt,
+    });
+  }, [setActiveSearchContext]);
+
+  const handleSearch = useCallback(async (
+    searchQuery = query,
+    overrideFilters = filters,
+    overrideMode = searchMode,
+    options: { preferredSessionId?: string; replaceUrl?: boolean } = {}
+  ) => {
     const trimmed = searchQuery.trim();
+    const nextFilters = cloneSearchFilters(overrideFilters);
     const interpreted =
       overrideMode === 'semantic' && trimmed
-        ? interpretSearchPrompt(trimmed, overrideFilters)
+        ? interpretSearchPrompt(trimmed, nextFilters)
         : {
             query: trimmed,
-            filters: {
-              ...overrideFilters,
-              formTypes: [...overrideFilters.formTypes],
-              exchange: [...overrideFilters.exchange],
-              acceleratedStatus: [...overrideFilters.acceleratedStatus],
-            },
+            filters: nextFilters,
             appliedHints: [] as string[],
           };
 
@@ -182,12 +293,22 @@ export default function SearchPage() {
       return;
     }
 
-    setSearchInterpretation(interpreted.appliedHints);
     setLoading(true);
     setSearched(true);
     setErrorMsg('');
     setAlertMessage('');
     setTrendReport('');
+    setSearchInterpretation(interpreted.appliedHints);
+
+    const draftSignature = buildSearchSignature(trimmed, overrideMode, nextFilters);
+    const activeSignature = activeSession
+      ? buildSearchSignature(activeSession.query, activeSession.mode, activeSession.filters)
+      : '';
+    const targetSessionId =
+      options.preferredSessionId ||
+      (activeSession && (!activeSession.searched || activeSignature === draftSignature)
+        ? activeSession.id
+        : createResearchSessionId());
 
     try {
       let effectiveQuery = interpreted.query || trimmed;
@@ -216,62 +337,227 @@ export default function SearchPage() {
         mode: overrideMode,
         filters: effectiveFilters,
       });
-      setActiveSearchContext({
-        surface: 'research',
-        query: effectiveQuery || trimmed,
+
+      const session: ResearchSearchSession = {
+        id: targetSessionId,
+        title: buildResearchSessionTitle(trimmed, nextFilters),
+        query: trimmed,
         mode: overrideMode,
-        filters: effectiveFilters,
+        filters: nextFilters,
         results: matches,
+        searched: true,
+        errorMsg:
+          matches.length === 0
+            ? 'No filings matched that search. Try widening the date range, removing an auditor filter, or broadening the Boolean expression.'
+            : '',
+        interpretation: interpreted.appliedHints,
+        resolvedSearch: {
+          query: effectiveQuery || trimmed,
+          mode: overrideMode,
+          filters: effectiveFilters,
+        },
+        selectedResultId: matches[0]?.id || null,
+        createdAt: activeSession?.id === targetSessionId ? activeSession.createdAt : new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-      });
+      };
+
+      upsertSession(session, options.replaceUrl);
+      syncActiveSearchContext(session);
+
       if (matches.length === 0) {
-        setErrorMsg('No filings matched that search. Try widening the date range, removing an auditor filter, or broadening the Boolean expression.');
+        setErrorMsg(session.errorMsg);
       }
     } catch (error) {
       console.error('Research search failed:', error);
       setResults([]);
-      setErrorMsg('Research search failed. Check the SEC proxy path or try a narrower query.');
+      const failedSession: ResearchSearchSession = {
+        id: targetSessionId,
+        title: buildResearchSessionTitle(trimmed, nextFilters),
+        query: trimmed,
+        mode: overrideMode,
+        filters: nextFilters,
+        results: [],
+        searched: true,
+        errorMsg: 'Research search failed. Check the SEC proxy path or try a narrower query.',
+        interpretation: interpreted.appliedHints,
+        resolvedSearch: {
+          query: trimmed,
+          mode: overrideMode,
+          filters: nextFilters,
+        },
+        selectedResultId: null,
+        createdAt: activeSession?.id === targetSessionId ? activeSession.createdAt : new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      setErrorMsg(failedSession.errorMsg);
+      upsertSession(failedSession, options.replaceUrl);
+      syncActiveSearchContext(failedSession);
     } finally {
       setLoading(false);
     }
-  }, [filters, query, searchMode, setActiveSearchContext]);
+  }, [
+    activeSession,
+    filters,
+    query,
+    searchMode,
+    syncActiveSearchContext,
+    upsertSession,
+  ]);
+
+  useEffect(() => {
+    if (activeSession) {
+      setQuery(activeSession.query);
+      setSearchMode(activeSession.mode);
+      setFilters(cloneSearchFilters(activeSession.filters));
+      setResults(activeSession.results);
+      setSearched(activeSession.searched);
+      setErrorMsg(activeSession.errorMsg);
+      setSearchInterpretation([...activeSession.interpretation]);
+      setLastResolvedSearch({
+        query: activeSession.resolvedSearch.query,
+        mode: activeSession.resolvedSearch.mode,
+        filters: cloneSearchFilters(activeSession.resolvedSearch.filters),
+      });
+      setTrendReport('');
+      setAlertMessage('');
+      syncActiveSearchContext(activeSession);
+      return;
+    }
+
+    if (!bootstrappedInitialSearch.current && initialQuery) {
+      bootstrappedInitialSearch.current = true;
+      setQuery(initialQuery);
+      void handleSearch(initialQuery, {
+        ...defaultSearchFilters,
+        formTypes: ['10-K', '10-Q'],
+      }, 'semantic', { replaceUrl: true });
+    }
+  }, [activeSession, handleSearch, initialQuery, syncActiveSearchContext]);
+
+  useEffect(() => {
+    const alertId = (location.state as { alertId?: string } | null)?.alertId;
+    if (!alertId || handledAlertIdsRef.current.has(alertId)) return;
+    const alert = savedAlerts.find(item => item.id === alertId);
+    if (!alert) return;
+
+    handledAlertIdsRef.current.add(alertId);
+    setQuery(alert.query);
+    setSearchMode(alert.mode);
+    setFilters(cloneSearchFilters(alert.filters));
+    void handleSearch(alert.query, alert.filters, alert.mode);
+  }, [handleSearch, location.state, savedAlerts]);
 
   useEffect(() => {
     if (!pendingSearchIntent || pendingSearchIntent.surface !== 'research') return;
 
-    setQuery(pendingSearchIntent.query);
-    setSearchMode(pendingSearchIntent.mode);
-    setFilters(pendingSearchIntent.filters);
-
+    const sessionId = createResearchSessionId();
     if (pendingSearchIntent.prefetchedResults) {
-      setResults(pendingSearchIntent.prefetchedResults);
-      setSearched(true);
-      setLoading(false);
-      setLastResolvedSearch({
+      const session: ResearchSearchSession = {
+        id: sessionId,
+        title: buildResearchSessionTitle(pendingSearchIntent.query, pendingSearchIntent.filters),
         query: pendingSearchIntent.query,
         mode: pendingSearchIntent.mode,
-        filters: pendingSearchIntent.filters,
-      });
-      setErrorMsg(
-        pendingSearchIntent.prefetchedResults.length === 0
-          ? 'No filings matched that search. Try widening the date range, removing an auditor filter, or broadening the Boolean expression.'
-          : ''
-      );
-      setActiveSearchContext({
-        surface: 'research',
-        query: pendingSearchIntent.query,
-        mode: pendingSearchIntent.mode,
-        filters: pendingSearchIntent.filters,
+        filters: cloneSearchFilters(pendingSearchIntent.filters),
         results: pendingSearchIntent.prefetchedResults,
+        searched: true,
+        errorMsg:
+          pendingSearchIntent.prefetchedResults.length === 0
+            ? 'No filings matched that search. Try widening the date range, removing an auditor filter, or broadening the Boolean expression.'
+            : '',
+        interpretation: [],
+        resolvedSearch: {
+          query: pendingSearchIntent.query,
+          mode: pendingSearchIntent.mode,
+          filters: cloneSearchFilters(pendingSearchIntent.filters),
+        },
+        selectedResultId: pendingSearchIntent.prefetchedResults[0]?.id || null,
+        createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-      });
-      setPendingSearchIntent(null);
+      };
+      upsertSession(session);
+      syncActiveSearchContext(session);
+    } else {
+      void handleSearch(
+        pendingSearchIntent.query,
+        pendingSearchIntent.filters,
+        pendingSearchIntent.mode,
+        { preferredSessionId: sessionId }
+      );
+    }
+
+    setPendingSearchIntent(null);
+  }, [handleSearch, pendingSearchIntent, setPendingSearchIntent, syncActiveSearchContext, upsertSession]);
+
+  useEffect(() => {
+    setPreviewError(false);
+    setPreviewLoadedToken(0);
+  }, [selectedResult?.id]);
+
+  const handlePreviewLoad = useCallback((event: React.SyntheticEvent<HTMLIFrameElement>) => {
+    const frame = event.target as HTMLIFrameElement;
+    try {
+      if (frame.contentDocument?.body?.innerHTML === '') {
+        setPreviewError(true);
+        return;
+      }
+      setPreviewLoadedToken(prev => prev + 1);
+    } catch {
+      setPreviewError(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    const doc = previewFrameRef.current?.contentDocument;
+    if (!doc) {
       return;
     }
 
-    void handleSearch(pendingSearchIntent.query, pendingSearchIntent.filters, pendingSearchIntent.mode);
-    setPendingSearchIntent(null);
-  }, [handleSearch, pendingSearchIntent, setActiveSearchContext, setPendingSearchIntent]);
+    clearDocumentHighlights(doc);
+    if (previewHighlightTerms.length === 0) return;
+
+    const marks = highlightDocumentSearchTerms(doc, previewHighlightTerms);
+    if (marks.length > 0) {
+      marks[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [previewHighlightTerms, previewLoadedToken, selectedResult?.id]);
+
+  const updateSelectedResult = useCallback((resultId: string) => {
+    if (!activeSession) return;
+    const updatedSession: ResearchSearchSession = {
+      ...activeSession,
+      selectedResultId: resultId,
+      updatedAt: new Date().toISOString(),
+    };
+    upsertSession(updatedSession, true);
+  }, [activeSession, upsertSession]);
+
+  const closeSession = useCallback((sessionId: string) => {
+    setSessions(prev => {
+      const next = prev.filter(item => item.id !== sessionId);
+      const nextActive =
+        (activeTabId === sessionId ? next[0] : next.find(item => item.id === activeTabId)) ||
+        next[0] ||
+        null;
+      setRouteForSession(nextActive?.id || null, nextActive?.query || '');
+      if (!nextActive) {
+        setResults([]);
+        setSearched(false);
+        setErrorMsg('');
+        setSearchInterpretation([]);
+        setLastResolvedSearch({
+          query: '',
+          mode: 'semantic',
+          filters: {
+            ...defaultSearchFilters,
+            formTypes: ['10-K', '10-Q'],
+          },
+        });
+        setActiveSearchContext(null);
+      }
+      return next;
+    });
+  }, [activeTabId, setActiveSearchContext, setRouteForSession]);
 
   const buildFilingRouteState = useCallback((row: FilingResearchResult) => ({
     companyName: row.entityName,
@@ -279,21 +565,28 @@ export default function SearchPage() {
     formType: row.formType,
     fileNumber: row.fileNumber,
     auditor: row.auditor,
-    highlightQuery: lastResolvedSearch.query,
-    highlightMode: lastResolvedSearch.mode,
-    highlightSectionKeywords: lastResolvedSearch.filters.sectionKeywords,
-  }), [lastResolvedSearch]);
+    highlightQuery: activeResolvedSearch.query,
+    highlightMode: activeResolvedSearch.mode,
+    highlightSectionKeywords: activeResolvedSearch.filters.sectionKeywords,
+    originatingSearchSessionId: activeSession?.id || null,
+  }), [activeResolvedSearch, activeSession?.id]);
+
+  const openFiling = useCallback((row: FilingResearchResult) => {
+    navigate(`/filing/${row.cik}_${row.accessionNumber}_${row.primaryDocument}`, {
+      state: buildFilingRouteState(row),
+    });
+  }, [buildFilingRouteState, navigate]);
 
   async function handleTrendReport() {
-    if (results.length === 0) return;
+    if (displayResults.length === 0) return;
 
     setTrendLoading(true);
     try {
-      const statsSummary = await buildSearchTrendSummary(results.slice(0, 20), query, filters);
+      const statsSummary = await buildSearchTrendSummary(displayResults.slice(0, 20), query, filters);
       const aiResponse = await aiSummarize(
-        `You are an SEC accounting research analyst. Create a concise market trend report from this filing search dataset.\n\n${statsSummary}\n\nTop results:\n${results
+        `You are an SEC accounting research analyst. Create a concise market trend report from this filing search dataset.\n\n${statsSummary}\n\nTop results:\n${displayResults
           .slice(0, 12)
-          .map(result => `- ${result.fileDate} | ${result.entityName} | ${result.formType} | ${result.description || 'No description'} | Auditor: ${result.auditor || 'Unknown'} | SIC: ${result.sicDescription || result.sic || 'Unknown'}`)
+          .map(result => `- ${result.fileDate} | ${result.entityName} | ${result.formType} | ${result.matchSnippet || result.description || 'No description'} | Auditor: ${result.auditor || 'Unknown'} | SIC: ${result.sicDescription || result.sic || 'Unknown'}`)
           .join('\n')}\n\nProvide a short report with: overall trend, what peers appear to be doing, and what to investigate next.`
       );
 
@@ -308,7 +601,7 @@ export default function SearchPage() {
       }
     } catch (error) {
       console.error('Trend report error:', error);
-      setTrendReport(await buildSearchTrendSummary(results.slice(0, 20), query, filters));
+      setTrendReport(await buildSearchTrendSummary(displayResults.slice(0, 20), query, filters));
     } finally {
       setTrendLoading(false);
     }
@@ -323,116 +616,59 @@ export default function SearchPage() {
       mode: searchMode,
       filters,
       defaultForms: DEFAULT_FORM_SCOPE,
-      lastSeenAccessions: results.map(result => result.accessionNumber),
+      lastSeenAccessions: displayResults.map(result => result.accessionNumber),
       latestNewAccessions: [],
-      latestResultCount: results.length,
+      latestResultCount: displayResults.length,
     });
     setAlertMessage('Alert saved locally. It will show up in the dashboard alert center and can be checked for new filings.');
   }
 
-  const columns: ColumnDef<FilingResearchResult>[] = [
-    { key: 'fileDate', header: 'Date', sortable: true, width: '110px' },
-    { key: 'formType', header: 'Form', sortable: true, width: '90px' },
-    { key: 'entityName', header: 'Company', sortable: true, width: '190px' },
-    { key: 'auditor', header: 'Auditor', sortable: true, width: '120px' },
-    { key: 'sicDescription', header: 'Industry', sortable: true, width: '180px' },
-    { key: 'acceleratedStatus', header: 'Filer Status', sortable: true, width: '170px' },
-    {
-      key: 'description',
-      header: 'Why It Matched',
-      render: row => row.description || row.primaryDocument || 'Matched on filing metadata',
-    },
-    {
-      key: 'accessionNumber',
-      header: 'Open',
-      width: '120px',
-      render: row => (
-        <button
-          className="secondary-btn"
-          style={{ padding: '6px 10px', fontSize: '0.78rem' }}
-          onClick={event => {
-            event.stopPropagation();
-            navigate(`/filing/${row.cik}_${row.accessionNumber}_${row.primaryDocument}`, {
-              state: buildFilingRouteState(row),
-            });
-          }}
-        >
-          View
-        </button>
-      ),
-    },
-  ];
+  const selectedDocumentUrl = selectedResult
+    ? buildSecDocumentUrl(selectedResult.cik, selectedResult.accessionNumber, selectedResult.primaryDocument)
+    : '';
+  const selectedProxyUrl = selectedResult
+    ? buildSecProxyUrl(`Archives/edgar/data/${selectedResult.cik}/${selectedResult.accessionNumber.replace(/-/g, '')}/${selectedResult.primaryDocument}`)
+    : '';
 
   return (
-    <div style={{ padding: '32px', maxWidth: '1320px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
-        <div>
-          <h1 style={{ fontSize: '1.7rem', fontWeight: 700, color: 'white', marginBottom: '6px' }}>Research Workbench</h1>
-          <p style={{ color: '#94A3B8', maxWidth: '880px' }}>
-            Search across filings, filter by auditor or industry, run pointed Boolean queries like <code>ASR w/5 derivative</code>, and save curated alerts for new filings.
+    <div className="research-shell">
+      <aside className="research-rail glass-card">
+        <div className="research-rail-copy">
+          <h1>Research Workbench</h1>
+          <p>
+            Run natural-language or Boolean research, keep each search in its own tab, and review matched filings in a split workspace instead of losing context.
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button className="secondary-btn" onClick={handleCreateAlert} disabled={!query.trim() && !filters.entityName.trim()}>
-            <BellRing size={16} /> Save Alert
-          </button>
-          <button className="primary-btn" onClick={handleTrendReport} disabled={results.length === 0 || trendLoading}>
-            {trendLoading ? <Loader2 size={16} className="spinner" /> : <Sparkles size={16} />} Trend Report
-          </button>
-        </div>
-      </div>
 
-      <div className="glass-card" style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            gap: '12px',
-            alignItems: 'center',
-            flexWrap: 'wrap',
-            padding: '14px 16px',
-            borderRadius: '12px',
-            background: 'linear-gradient(135deg, rgba(59,130,246,0.12), rgba(14,165,233,0.06))',
-            border: '1px solid rgba(96,165,250,0.2)',
-          }}
-        >
+        <div className="research-rail-banner">
           <div>
-            <div style={{ color: '#DBEAFE', fontSize: '0.86rem', fontWeight: 700, marginBottom: '4px' }}>Natural-language search is on</div>
-            <div style={{ color: '#BFDBFE', fontSize: '0.82rem', maxWidth: '760px' }}>
-              Type plain English and Vara will pull out forms, date windows, and auditors before searching EDGAR.
-            </div>
+            <div className="eyebrow">Natural-language search</div>
+            <div className="copy">Vara now rewrites prompts into forms, date windows, auditors, and tighter phrase queries before hitting EDGAR.</div>
           </div>
           <button className="secondary-btn" onClick={() => setChatOpen(true)}>
             <MessageSquare size={16} /> Ask Vara Copilot
           </button>
         </div>
 
-        <div style={{ display: 'flex', gap: '12px', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', gap: '8px' }}>
-            <button
-              className={`toggle-btn ${searchMode === 'semantic' ? 'active' : ''}`}
-              onClick={() => setSearchMode('semantic')}
-            >
-              <Sparkles size={16} /> Filing Research
-            </button>
-            <button
-              className={`toggle-btn ${searchMode === 'boolean' ? 'active' : ''}`}
-              onClick={() => setSearchMode('boolean')}
-            >
-              <Hash size={16} /> Boolean / Proximity
-            </button>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#94A3B8', fontSize: '0.8rem' }}>
-            <Filter size={14} />
-            Works best with 10-K / 10-Q / 8-K / DEF 14A
-          </div>
+        <div className="research-mode-switch">
+          <button
+            className={`toggle-btn ${searchMode === 'semantic' ? 'active' : ''}`}
+            onClick={() => setSearchMode('semantic')}
+          >
+            <Sparkles size={16} /> Filing Research
+          </button>
+          <button
+            className={`toggle-btn ${searchMode === 'boolean' ? 'active' : ''}`}
+            onClick={() => setSearchMode('boolean')}
+          >
+            <Hash size={16} /> Boolean / Proximity
+          </button>
         </div>
 
         <form
           className="search-bar-container glass-card"
           onSubmit={event => {
             event.preventDefault();
-            navigate(`/search?q=${encodeURIComponent(query)}`);
             void handleSearch(query);
           }}
         >
@@ -441,36 +677,21 @@ export default function SearchPage() {
             type="text"
             placeholder={
               searchMode === 'semantic'
-                ? 'Describe the issue you want to research (e.g. lease concessions, ASU adoption, cybersecurity comments)...'
-                : 'Example: ASR w/5 derivative OR "accelerated share repurchase"'
+                ? 'Describe the issue you want to research...'
+                : 'Example: "car parking" w/10 installation'
             }
             value={query}
             onChange={event => setQuery(event.target.value)}
           />
-          <button type="submit" className="primary-btn shrink-0 ml-2" disabled={loading}>
+          <button type="submit" className="primary-btn" disabled={loading}>
             {loading ? <Loader2 size={16} className="spinner" /> : 'Search'}
           </button>
         </form>
 
         {searchInterpretation.length > 0 && (
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <div className="research-chip-row">
             {searchInterpretation.map(item => (
-              <span
-                key={item}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  padding: '4px 10px',
-                  borderRadius: '999px',
-                  background: 'rgba(96,165,250,0.12)',
-                  border: '1px solid rgba(96,165,250,0.24)',
-                  color: '#BFDBFE',
-                  fontSize: '0.76rem',
-                  fontWeight: 600,
-                }}
-              >
-                {item}
-              </span>
+              <span key={item} className="research-chip">{item}</span>
             ))}
           </div>
         )}
@@ -498,14 +719,13 @@ export default function SearchPage() {
           loading={loading}
         />
 
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+        <div className="research-sample-block">
           {SAMPLE_SEARCHES.map(sample => (
             <button
               key={sample}
               className="sample-pill"
               onClick={() => {
                 setQuery(sample);
-                navigate(`/search?q=${encodeURIComponent(sample)}`);
                 void handleSearch(sample);
               }}
             >
@@ -515,99 +735,210 @@ export default function SearchPage() {
         </div>
 
         {searchMode === 'boolean' && (
-          <div style={{ padding: '14px 16px', borderRadius: '12px', background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.2)', color: '#BFDBFE', fontSize: '0.84rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '10px' }}>
-              <div style={{ fontWeight: 700 }}>Boolean / Proximity Guide</div>
-              <button
-                type="button"
-                onClick={() => navigate('/support')}
-                style={{ background: 'none', border: 'none', color: '#93C5FD', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600 }}
-              >
-                Open full help
-              </button>
+          <div className="research-guide-card">
+            <div className="guide-header">
+              <div className="guide-title">Boolean / Proximity Guide</div>
+              <button type="button" onClick={() => navigate('/support')}>Open full help</button>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '10px' }}>
+            <div className="guide-grid">
               {[
                 { operator: 'AND', meaning: 'Both terms must appear', example: 'temporary AND equity' },
                 { operator: 'OR', meaning: 'Either term can appear', example: 'ASR OR repurchase' },
                 { operator: 'NOT', meaning: 'Exclude a term', example: 'equity NOT mezzanine' },
                 { operator: '"phrase"', meaning: 'Match exact wording', example: '"accelerated share repurchase"' },
-                { operator: 'w/#', meaning: 'Terms near each other', example: 'ASR w/5 derivative' },
+                { operator: 'w/#', meaning: 'Terms must appear within the stated word distance', example: '"car parking" w/10 installation' },
               ].map(item => (
-                <div key={item.operator} style={{ padding: '10px 12px', borderRadius: '10px', background: 'rgba(15,23,42,0.45)', border: '1px solid rgba(255,255,255,0.06)' }}>
-                  <div style={{ color: 'white', fontWeight: 700, marginBottom: '4px' }}>{item.operator}</div>
-                  <div style={{ color: '#BFDBFE', fontSize: '0.78rem', marginBottom: '4px' }}>{item.meaning}</div>
-                  <code style={{ color: '#93C5FD', fontSize: '0.76rem' }}>{item.example}</code>
+                <div key={item.operator} className="guide-card">
+                  <div className="operator">{item.operator}</div>
+                  <div className="meaning">{item.meaning}</div>
+                  <code>{item.example}</code>
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {alertMessage && (
-          <div style={{ color: '#4ADE80', fontSize: '0.85rem' }}>{alertMessage}</div>
-        )}
-      </div>
+        {alertMessage && <div className="research-alert-msg">{alertMessage}</div>}
+      </aside>
 
-      {results.length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
-          {[
-            { label: 'Matched Filings', value: results.length.toString(), icon: <FileText size={18} /> },
-            { label: 'Issuers', value: metrics.companies.toString(), icon: <Building2 size={18} /> },
-            { label: 'Top Form', value: metrics.topForm, icon: <Hash size={18} /> },
-            { label: 'Top Auditor', value: metrics.topAuditor, icon: <BellRing size={18} /> },
-          ].map(card => (
-            <div key={card.label} className="glass-card" style={{ padding: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#60A5FA', marginBottom: '8px' }}>{card.icon}{card.label}</div>
-              <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'white' }}>{card.value}</div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {trendReport && (
-        <div className="glass-card" style={{ padding: '18px 20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-            <Sparkles size={18} className="text-blue" />
-            <h2 style={{ fontSize: '1rem', fontWeight: 600, color: 'white' }}>Trend Report</h2>
+      <section className="research-main">
+        <div className="research-toolbar glass-card">
+          <div className="research-tab-strip">
+            {sessions.length === 0 ? (
+              <div className="research-empty-tab">Searches open here as tabs so you can move between result sets without losing context.</div>
+            ) : (
+              sessions.map(session => (
+                <button
+                  key={session.id}
+                  className={`research-tab ${activeSession?.id === session.id ? 'active' : ''}`}
+                  onClick={() => setRouteForSession(session.id, session.query)}
+                >
+                  <span>{session.title}</span>
+                  <span className="count">{session.results.length}</span>
+                  <span
+                    className="close"
+                    onClick={event => {
+                      event.stopPropagation();
+                      closeSession(session.id);
+                    }}
+                  >
+                    <X size={12} />
+                  </span>
+                </button>
+              ))
+            )}
           </div>
-          <div className="md-content" style={{ color: '#CBD5E1' }}>
-            {trendReport.split('\n').map((line, index) => (
-              <p key={index}>{line}</p>
+
+          <div className="research-toolbar-actions">
+            <button className="secondary-btn" onClick={handleCreateAlert} disabled={!query.trim() && !filters.entityName.trim()}>
+              <BellRing size={16} /> Save Alert
+            </button>
+            <button className="primary-btn" onClick={handleTrendReport} disabled={displayResults.length === 0 || trendLoading}>
+              {trendLoading ? <Loader2 size={16} className="spinner" /> : <Sparkles size={16} />} Trend Report
+            </button>
+          </div>
+        </div>
+
+        {displayResults.length > 0 && (
+          <div className="research-metric-grid">
+            {[
+              { label: 'Matched Filings', value: displayResults.length.toString(), icon: <FileText size={18} /> },
+              { label: 'Issuers', value: metrics.companies.toString(), icon: <Building2 size={18} /> },
+              { label: 'Top Form', value: metrics.topForm, icon: <Hash size={18} /> },
+              { label: 'Top Auditor', value: metrics.topAuditor, icon: <BellRing size={18} /> },
+            ].map(card => (
+              <div key={card.label} className="glass-card research-metric-card">
+                <div className="label">{card.icon}{card.label}</div>
+                <div className="value">{card.value}</div>
+              </div>
             ))}
           </div>
-        </div>
-      )}
+        )}
 
-      {loading ? (
-        <div className="glass-card" style={{ padding: '48px', textAlign: 'center', color: '#64748B' }}>
-          <Loader2 size={28} className="spinner" style={{ marginBottom: '10px' }} />
-          <div>Searching EDGAR and hydrating filer metadata...</div>
+        {trendReport && (
+          <div className="glass-card research-trend-card">
+            <div className="trend-title"><Sparkles size={18} /> Trend Report</div>
+            <div className="md-content" style={{ color: '#CBD5E1' }}>
+              {trendReport.split('\n').map((line, index) => <p key={index}>{line}</p>)}
+            </div>
+          </div>
+        )}
+
+        <div className="research-workspace">
+          <div className="research-hit-list glass-card">
+            <div className="pane-header">
+              <div>
+                <div className="eyebrow">Search hits</div>
+                <h2>{displayResults.length > 0 ? `${displayResults.length} filings` : 'No results yet'}</h2>
+              </div>
+              <div className="pane-hint">Select a filing to preview it here, then open the full workspace only when you need the full toolset.</div>
+            </div>
+
+            {loading ? (
+              <div className="research-empty-state">
+                <Loader2 size={28} className="spinner" />
+                <div>Searching EDGAR, validating text matches, and ranking the strongest hits...</div>
+              </div>
+            ) : displayResults.length > 0 ? (
+              <div className="research-hit-scroll">
+                {displayResults.map(result => (
+                  <button
+                    key={result.id}
+                    className={`research-hit-card ${selectedResult?.id === result.id ? 'active' : ''}`}
+                    onClick={() => updateSelectedResult(result.id)}
+                  >
+                    <div className="topline">
+                      <span className="date">{result.fileDate}</span>
+                      <span className="form">{result.formType}</span>
+                    </div>
+                    <div className="company">{result.entityName}</div>
+                    <div className="meta">
+                      <span>{result.auditor || 'Auditor unavailable'}</span>
+                      <span>{result.sicDescription || result.sic || 'Industry unavailable'}</span>
+                    </div>
+                    <div className="match-reason">{result.matchReason || 'Matched filing text'}</div>
+                    <div className="snippet">
+                      {renderHighlightedText(result.matchSnippet || result.description || 'Matched on filing metadata.', previewHighlightTerms)}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            ) : searched ? (
+              <div className="research-empty-state">
+                <div>{errorMsg || 'No filings matched your search.'}</div>
+              </div>
+            ) : (
+              <div className="research-empty-state">
+                <div>Run a search to open a dedicated tab and preview the best hits side-by-side.</div>
+              </div>
+            )}
+          </div>
+
+          <div className="research-preview glass-card">
+            {selectedResult ? (
+              <>
+                <div className="pane-header preview-header">
+                  <div>
+                    <div className="eyebrow">{selectedResult.formType} preview</div>
+                    <h2>{selectedResult.entityName}</h2>
+                    <div className="preview-meta-row">
+                      <span>{selectedResult.fileDate}</span>
+                      <span>{selectedResult.auditor || 'Auditor not detected'}</span>
+                      <span>{selectedResult.fileNumber || 'File number unavailable'}</span>
+                    </div>
+                  </div>
+                  <div className="preview-actions">
+                    <button className="secondary-btn" onClick={() => openFiling(selectedResult)}>
+                      Open Filing
+                    </button>
+                    <a href={selectedDocumentUrl} target="_blank" rel="noreferrer" className="secondary-btn">
+                      <ExternalLink size={14} /> SEC.gov
+                    </a>
+                  </div>
+                </div>
+
+                <div className="research-selected-snippet">
+                  <div className="selected-match-label">{selectedResult.matchReason || 'Matched filing text'}</div>
+                  <div>{renderHighlightedText(selectedResult.matchSnippet || selectedResult.description || 'Matched on filing metadata.', previewHighlightTerms)}</div>
+                </div>
+
+                <div className="research-preview-frame-wrap">
+                  {previewError || selectedResult.primaryDocument.endsWith('.xml') ? (
+                    <div className="research-preview-fallback">
+                      <FileText size={42} />
+                      <h3>Inline preview unavailable</h3>
+                      <p>
+                        This filing cannot be rendered inline with highlights in the embedded preview. Open the full filing workspace or SEC.gov instead.
+                      </p>
+                      <div className="preview-actions">
+                        <button className="secondary-btn" onClick={() => openFiling(selectedResult)}>
+                          Open Filing
+                        </button>
+                        <a href={selectedDocumentUrl} target="_blank" rel="noreferrer" className="secondary-btn">
+                          <ExternalLink size={14} /> SEC.gov
+                        </a>
+                      </div>
+                    </div>
+                  ) : (
+                    <iframe
+                      ref={previewFrameRef}
+                      src={selectedProxyUrl}
+                      title={`${selectedResult.entityName} filing preview`}
+                      className="research-preview-frame"
+                      onLoad={handlePreviewLoad}
+                      onError={() => setPreviewError(true)}
+                    />
+                  )}
+                </div>
+              </>
+            ) : (
+              <div className="research-empty-state preview-empty">
+                <div>Select a result to preview the filing and jump into the strongest matching context.</div>
+              </div>
+            )}
+          </div>
         </div>
-      ) : results.length > 0 ? (
-        <DataTable
-          columns={columns}
-          data={results}
-          pageSize={20}
-          onRowClick={row => navigate(`/filing/${row.cik}_${row.accessionNumber}_${row.primaryDocument}`, {
-            state: buildFilingRouteState(row),
-          })}
-        />
-      ) : searched ? (
-        <div className="glass-card" style={{ padding: '40px', textAlign: 'center', color: '#94A3B8' }}>
-          {errorMsg || 'No filings matched your search.'}
-        </div>
-      ) : (
-        <div className="glass-card" style={{ padding: '40px', color: '#94A3B8' }}>
-          <p style={{ marginBottom: '10px' }}>Use this page for the workflows like:</p>
-          <ul style={{ paddingLeft: '20px', lineHeight: 1.8 }}>
-            <li>Cross-company accounting policy research</li>
-            <li>Peer benchmarking by SIC, auditor, or filer status</li>
-            <li>Pointed Boolean / proximity searches like <code>ASR w/5 derivative</code></li>
-            <li>Saved alerts for recurring issues, issuers, or filing cohorts</li>
-          </ul>
-        </div>
-      )}
+      </section>
     </div>
   );
 }

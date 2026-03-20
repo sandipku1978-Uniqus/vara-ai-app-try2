@@ -6,7 +6,12 @@ import {
   type EdgarSearchHit,
 } from './secApi';
 import { parseSearchHit } from '../hooks/useEdgarSearch';
-import { buildCandidateQueryFromBoolean, booleanQueryMatches, parseBooleanQuery } from '../utils/booleanSearch';
+import {
+  buildCandidateQueryFromBoolean,
+  booleanQueryMatches,
+  extractBooleanMatchSnippet,
+  parseBooleanQuery,
+} from '../utils/booleanSearch';
 
 export type ResearchSearchMode = 'semantic' | 'boolean';
 
@@ -19,7 +24,10 @@ export interface FilingResearchResult {
   accessionNumber: string;
   primaryDocument: string;
   description: string;
+  matchSnippet: string;
+  matchReason: string;
   score: number;
+  relevanceScore: number;
   filingUrl: string;
   companyName: string;
   tickers: string[];
@@ -98,6 +106,153 @@ function normalizeLooseText(value: string): string {
     .replace(/[^a-z0-9]+/gi, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function buildSearchTerms(query: string, mode: ResearchSearchMode, sectionKeywords: string): string[] {
+  const quoted = Array.from(query.matchAll(/"([^"]+)"/g))
+    .map(match => match[1].replace(/\s+/g, ' ').trim())
+    .filter(Boolean);
+  const baseQuery = mode === 'boolean' ? buildCandidateQueryFromBoolean(query) : query;
+  const rawTerms = `${baseQuery} ${sectionKeywords}`
+    .split(/[,\n;|]+/)
+    .flatMap(part => part.split(/\s+/))
+    .map(part => part.trim())
+    .filter(Boolean);
+
+  const phraseTerms = rawTerms
+    .join(' ')
+    .split(/\s{2,}/)
+    .map(part => part.trim())
+    .filter(Boolean);
+
+  const unique = Array.from(
+    new Set(
+      [...quoted, ...phraseTerms, ...rawTerms]
+        .map(term => term.replace(/^"+|"+$/g, '').trim())
+        .filter(Boolean)
+    )
+  );
+
+  return unique
+    .sort((a, b) => {
+      const wordDelta = b.split(/\s+/).length - a.split(/\s+/).length;
+      if (wordDelta !== 0) return wordDelta;
+      return b.length - a.length;
+    })
+    .slice(0, 14);
+}
+
+function buildKeywordSnippet(text: string, terms: string[]): string {
+  if (!text.trim()) return '';
+  const compact = text.replace(/\s+/g, ' ').trim();
+  if (!compact) return '';
+
+  const sortedTerms = [...terms]
+    .map(term => term.replace(/\s+/g, ' ').trim())
+    .filter(Boolean)
+    .sort((a, b) => {
+      const wordDelta = b.split(/\s+/).length - a.split(/\s+/).length;
+      if (wordDelta !== 0) return wordDelta;
+      return b.length - a.length;
+    });
+
+  for (const term of sortedTerms) {
+    const regex = new RegExp(`\\b${escapeRegex(term).replace(/\s+/g, '\\s+')}\\b`, 'i');
+    const match = regex.exec(compact);
+    if (!match) continue;
+
+    const start = Math.max(0, match.index - 180);
+    const end = Math.min(compact.length, match.index + match[0].length + 220);
+    const excerpt = compact.slice(start, end).trim();
+    return `${start > 0 ? '... ' : ''}${excerpt}${end < compact.length ? ' ...' : ''}`;
+  }
+
+  return '';
+}
+
+function countMatchedTerms(text: string, terms: string[]): number {
+  const normalizedText = normalizeLooseText(text);
+  if (!normalizedText) return 0;
+  return terms.filter(term => {
+    const normalizedTerm = normalizeLooseText(term);
+    return normalizedTerm ? normalizedText.includes(normalizedTerm) : false;
+  }).length;
+}
+
+function computeRelevanceScore(
+  result: FilingResearchResult,
+  rawQuery: string,
+  filters: SearchFilters,
+  mode: ResearchSearchMode,
+  filingText: string,
+  terms: string[],
+  proximityDistance: number | null
+): number {
+  let score = result.score || 0;
+  const matchedTermCount = countMatchedTerms(filingText, terms);
+
+  if (terms.length > 0) {
+    score += matchedTermCount * 18;
+    score += (matchedTermCount / terms.length) * 75;
+  }
+
+  if (mode === 'boolean' && rawQuery.trim()) {
+    score += 25;
+    if (proximityDistance != null) {
+      score += Math.max(30 - proximityDistance * 2, 8);
+    }
+  }
+
+  if (filters.sectionKeywords.trim() && matchesSectionKeywords(filingText, filters.sectionKeywords)) {
+    score += 16;
+  }
+
+  if (filters.accountant.trim() && result.auditor) {
+    score += 10;
+  }
+
+  return score;
+}
+
+function annotateResultMatchContext(
+  result: FilingResearchResult,
+  rawQuery: string,
+  filters: SearchFilters,
+  mode: ResearchSearchMode,
+  filingText: string
+): FilingResearchResult {
+  const terms = buildSearchTerms(rawQuery, mode, filters.sectionKeywords);
+  let proximityDistance: number | null = null;
+  let matchSnippet = '';
+
+  if (mode === 'boolean' && rawQuery.trim()) {
+    const booleanSnippet = extractBooleanMatchSnippet(rawQuery, filingText);
+    if (booleanSnippet) {
+      matchSnippet = booleanSnippet.excerpt;
+      proximityDistance = booleanSnippet.distance;
+    }
+  }
+
+  if (!matchSnippet) {
+    matchSnippet = buildKeywordSnippet(filingText, terms);
+  }
+
+  result.matchSnippet = matchSnippet;
+  result.matchReason =
+    proximityDistance != null
+      ? proximityDistance === 0
+        ? 'Matched adjacent proximity terms'
+        : `Matched within ${proximityDistance} words`
+      : matchSnippet
+        ? 'Matched filing text'
+        : 'Matched filing metadata';
+  result.relevanceScore = computeRelevanceScore(result, rawQuery, filters, mode, filingText, terms, proximityDistance);
+
+  return result;
 }
 
 function buildFilingUrl(cik: string, accessionNumber: string, primaryDocument: string): string {
@@ -320,8 +475,14 @@ function matchesSectionKeywords(filingText: string, sectionKeywords: string): bo
   return options.some(option => normalizedText.includes(option));
 }
 
-function sortResearchResults(results: FilingResearchResult[]): FilingResearchResult[] {
+function sortResearchResults(results: FilingResearchResult[], preferRelevance: boolean): FilingResearchResult[] {
   return results.sort((a, b) => {
+    if (preferRelevance) {
+      const byRelevance = (b.relevanceScore ?? b.score) - (a.relevanceScore ?? a.score);
+      if (Math.abs(byRelevance) > 0.01) {
+        return byRelevance;
+      }
+    }
     const byDate = b.fileDate.localeCompare(a.fileDate);
     if (byDate !== 0) return byDate;
     return b.score - a.score;
@@ -449,7 +610,10 @@ function mapSearchHit(hit: EdgarSearchHit): FilingResearchResult {
     accessionNumber: base.accessionNumber,
     primaryDocument: base.primaryDocument,
     description: base.description,
+    matchSnippet: '',
+    matchReason: '',
     score: hit._score,
+    relevanceScore: hit._score,
     filingUrl: buildFilingUrl(base.cik, base.accessionNumber, base.primaryDocument),
     companyName: source?.entity_name || base.entityName,
     tickers: [],
@@ -511,6 +675,7 @@ export async function executeFilingResearchSearch({
   const serverQuery = buildServerQuery(query || filters.keyword, filters, mode);
   const formTypes = normalizeFormTypes(filters, defaultForms);
   const formScope = parseFormScope(formTypes);
+  const preferRelevance = Boolean((query || filters.keyword).trim() || filters.sectionKeywords.trim());
   const hits = await searchEdgarFilings(
     serverQuery,
     formTypes,
@@ -521,12 +686,12 @@ export async function executeFilingResearchSearch({
 
   const needsTextFiltering = requiresTextFiltering(filters, query, mode);
   const shouldHydrateSignals = hydrateTextSignals || needsTextFiltering;
-  const candidateLimit = Math.max(limit * 3, 90);
+  const candidateLimit = Math.max(limit * (mode === 'boolean' ? 4 : 3), mode === 'boolean' ? 140 : 90);
   let results = uniqueById(hits.map(mapSearchHit)).slice(0, candidateLimit);
 
   results = await Promise.all(results.map(result => hydrateCompanyMetadata(result)));
   results = results.filter(result => matchesBaseFilters(result, filters, formScope));
-  results = sortResearchResults(results);
+  results = sortResearchResults(results, preferRelevance);
 
   if (!shouldHydrateSignals) {
     return results.slice(0, limit);
@@ -554,7 +719,12 @@ export async function executeFilingResearchSearch({
     results = results.filter(result => matchesSignalFilters(result, filters, signalMap.get(getSignalCacheKey(result))?.text || ''));
   }
 
-  return sortResearchResults(results).slice(0, limit);
+  results = results.map(result => {
+    const filingText = signalMap.get(getSignalCacheKey(result))?.text || '';
+    return annotateResultMatchContext(result, query, filters, mode, filingText);
+  });
+
+  return sortResearchResults(results, preferRelevance).slice(0, limit);
 }
 
 export async function buildSearchTrendSummary(

@@ -21,6 +21,11 @@ export interface ParsedBooleanQuery {
   error?: string;
 }
 
+export interface BooleanMatchSnippet {
+  excerpt: string;
+  distance: number | null;
+}
+
 interface ParserState {
   tokens: Token[];
   index: number;
@@ -29,6 +34,59 @@ interface ParserState {
 interface TextIndex {
   normalizedText: string;
   tokens: string[];
+}
+
+function isTextToken(token?: Token): token is Extract<Token, { type: 'TERM' | 'PHRASE' }> {
+  return Boolean(token && (token.type === 'TERM' || token.type === 'PHRASE'));
+}
+
+function mergeAdjacentTermsForProximity(tokens: Token[]): Token[] {
+  const merged = [...tokens];
+  let index = 0;
+
+  while (index < merged.length) {
+    if (merged[index].type !== 'PROX') {
+      index += 1;
+      continue;
+    }
+
+    let leftStart = index - 1;
+    while (leftStart >= 0 && isTextToken(merged[leftStart])) {
+      leftStart -= 1;
+    }
+    leftStart += 1;
+    const leftEnd = index - 1;
+    if (leftEnd - leftStart >= 1) {
+      merged.splice(leftStart, leftEnd - leftStart + 1, {
+        type: 'PHRASE',
+        value: merged
+          .slice(leftStart, leftEnd + 1)
+          .map(token => (token as Extract<Token, { type: 'TERM' | 'PHRASE' }>).value)
+          .join(' '),
+      });
+      index = leftStart + 1;
+    }
+
+    let rightEnd = index + 1;
+    while (rightEnd < merged.length && isTextToken(merged[rightEnd])) {
+      rightEnd += 1;
+    }
+    rightEnd -= 1;
+    const rightStart = index + 1;
+    if (rightEnd - rightStart >= 1) {
+      merged.splice(rightStart, rightEnd - rightStart + 1, {
+        type: 'PHRASE',
+        value: merged
+          .slice(rightStart, rightEnd + 1)
+          .map(token => (token as Extract<Token, { type: 'TERM' | 'PHRASE' }>).value)
+          .join(' '),
+      });
+    }
+
+    index += 1;
+  }
+
+  return merged;
 }
 
 function normalizeWhitespace(value: string): string {
@@ -216,7 +274,7 @@ export function parseBooleanQuery(query: string): ParsedBooleanQuery {
   }
 
   try {
-    const state: ParserState = { tokens: tokenize(trimmed), index: 0 };
+    const state: ParserState = { tokens: mergeAdjacentTermsForProximity(tokenize(trimmed)), index: 0 };
     if (state.tokens.length === 0) {
       return { expression: null };
     }
@@ -243,6 +301,14 @@ function createTextIndex(text: string): TextIndex {
     .filter(Boolean);
 
   return { normalizedText, tokens };
+}
+
+function buildSnippetFromSpan(index: TextIndex, start: number, end: number, contextWords = 14): string {
+  const snippetStart = Math.max(0, start - contextWords);
+  const snippetEnd = Math.min(index.tokens.length, end + contextWords + 1);
+  const excerpt = index.tokens.slice(snippetStart, snippetEnd).join(' ').trim();
+  if (!excerpt) return '';
+  return `${snippetStart > 0 ? '... ' : ''}${excerpt}${snippetEnd < index.tokens.length ? ' ...' : ''}`;
 }
 
 function includesToken(tokens: string[], value: string): boolean {
@@ -309,6 +375,76 @@ function matchesProximity(node: Extract<BooleanSearchNode, { type: 'PROX' }>, in
   return false;
 }
 
+function findBestProximitySpan(
+  node: BooleanSearchNode,
+  index: TextIndex
+): { start: number; end: number; distance: number } | null {
+  if (node.type === 'PROX') {
+    const leftSpans = findOperandSpans(node.left, index);
+    const rightSpans = findOperandSpans(node.right, index);
+    let best: { start: number; end: number; distance: number } | null = null;
+
+    for (const left of leftSpans) {
+      for (const right of rightSpans) {
+        const gap =
+          left.end < right.start
+            ? right.start - left.end - 1
+            : left.start > right.end
+              ? left.start - right.end - 1
+              : 0;
+        if (gap > node.distance) continue;
+
+        const candidate = {
+          start: Math.min(left.start, right.start),
+          end: Math.max(left.end, right.end),
+          distance: gap,
+        };
+
+        if (
+          !best ||
+          candidate.distance < best.distance ||
+          (candidate.distance === best.distance && (candidate.end - candidate.start) < (best.end - best.start))
+        ) {
+          best = candidate;
+        }
+      }
+    }
+
+    return best;
+  }
+
+  if (node.type === 'AND' || node.type === 'OR') {
+    return findBestProximitySpan(node.left, index) || findBestProximitySpan(node.right, index);
+  }
+
+  if (node.type === 'NOT') {
+    return null;
+  }
+
+  return null;
+}
+
+function extractPositiveSnippet(index: TextIndex, expression: BooleanSearchNode): string | null {
+  const positiveTerms = Array.from(collectPositiveTerms(expression))
+    .map(term => normalizeWhitespace(term))
+    .filter(Boolean)
+    .sort((a, b) => b.length - a.length);
+
+  for (const term of positiveTerms) {
+    const spans = findOperandSpans(
+      term.includes(' ')
+        ? { type: 'PHRASE', value: term }
+        : { type: 'TERM', value: term },
+      index
+    );
+    if (spans.length > 0) {
+      return buildSnippetFromSpan(index, spans[0].start, spans[0].end);
+    }
+  }
+
+  return null;
+}
+
 function evaluate(node: BooleanSearchNode, index: TextIndex): boolean {
   switch (node.type) {
     case 'TERM':
@@ -334,6 +470,32 @@ export function booleanQueryMatches(query: string, text: string): boolean {
     return false;
   }
   return evaluate(parsed.expression, createTextIndex(text));
+}
+
+export function extractBooleanMatchSnippet(query: string, text: string): BooleanMatchSnippet | null {
+  const parsed = parseBooleanQuery(query);
+  if (!parsed.expression) {
+    return null;
+  }
+
+  const index = createTextIndex(text);
+  const proxSpan = findBestProximitySpan(parsed.expression, index);
+  if (proxSpan) {
+    return {
+      excerpt: buildSnippetFromSpan(index, proxSpan.start, proxSpan.end),
+      distance: proxSpan.distance,
+    };
+  }
+
+  const excerpt = extractPositiveSnippet(index, parsed.expression);
+  if (!excerpt) {
+    return null;
+  }
+
+  return {
+    excerpt,
+    distance: null,
+  };
 }
 
 function collectPositiveTerms(node: BooleanSearchNode, negated = false, bucket = new Set<string>()): Set<string> {

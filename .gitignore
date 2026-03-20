@@ -2,6 +2,7 @@ node_modules/
 dist/
 .vercel/
 .vite/
+audit-output/
 .env
 .env.*
 !.env.example

@@ -146,6 +146,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  position: relative;
   border-radius: 0;
   border: none;
   background: white;
@@ -374,6 +375,59 @@
   color: var(--text-secondary);
   line-height: 1.55;
   margin: 0;
+}
+
+.annotation-composer-overlay {
+  position: absolute;
+  right: 20px;
+  bottom: 20px;
+  z-index: 3;
+  width: min(380px, calc(100% - 40px));
+  border-radius: 14px;
+  padding: 14px;
+  background: rgba(15, 23, 42, 0.96);
+  border: 1px solid rgba(96, 165, 250, 0.24);
+  box-shadow: 0 18px 40px rgba(2, 6, 23, 0.4);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.annotation-composer-overlay blockquote,
+.annotation-draft blockquote {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  color: #E2E8F0;
+  font-size: 0.84rem;
+  line-height: 1.55;
+  max-height: 140px;
+  overflow: auto;
+}
+
+.annotation-composer-overlay textarea,
+.annotation-draft textarea {
+  min-height: 88px;
+  resize: vertical;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.04);
+  color: white;
+  padding: 10px 12px;
+  font-family: var(--font-sans);
+  font-size: 0.84rem;
+}
+
+.annotation-inline-hint {
+  margin-top: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(59, 130, 246, 0.18);
+  color: #BFDBFE;
+  font-size: 0.8rem;
+  line-height: 1.5;
 }
 
 .tool-panel-stack {
