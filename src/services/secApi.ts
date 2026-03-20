@@ -69,6 +69,27 @@ export function buildSecEftsUrl(path: string, params?: Record<string, string | n
   return buildProxyUrl('efts', path, params);
 }
 
+function extractDocumentTextFromHtml(html: string): string {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  const body = doc.body;
+  if (!body) return '';
+
+  const clone = body.cloneNode(true) as HTMLElement;
+  clone.querySelectorAll('script, style, noscript, template').forEach(node => node.remove());
+  clone.querySelectorAll('ix\\:header, ix\\:hidden, xbrli\\:context, xbrli\\:unit').forEach(node => node.remove());
+
+  const text = clone.innerText || clone.textContent || '';
+  return text
+    .replace(/\r/g, '\n')
+    .replace(/\u00a0/g, ' ')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n[ \t]+/g, '\n')
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 // Cache of all tickers loaded from SEC
 let _tickerCache: Record<string, string> | null = null;
 let _tickerCachePromise: Promise<Record<string, string>> | null = null;
@@ -439,10 +460,7 @@ export async function fetchFilingText(cik: string, accessionNumber: string, prim
     });
     if (!response.ok) throw new Error(`Filing fetch Error: ${response.statusText}`);
     const html = await response.text();
-    // Extract text from HTML
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, 'text/html');
-    return doc.body?.textContent?.trim() || '';
+    return extractDocumentTextFromHtml(html);
   } catch (error) {
     console.error('Failed to fetch filing text:', error);
     return '';

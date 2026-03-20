@@ -97,14 +97,24 @@ function parseHtml(html: string): Document {
   return parser.parseFromString(html, 'text/html');
 }
 
-function locateSectionTarget(doc: Document, entry: FilingSectionReference): Element | null {
+function locateSectionTargets(doc: Document, entry: FilingSectionReference): Element[] {
+  const targets: Element[] = [];
+  const seen = new Set<Element>();
+
+  function pushTarget(target: Element | null) {
+    if (!target || seen.has(target)) return;
+    seen.add(target);
+    targets.push(target);
+  }
+
   if (entry.anchorName) {
-    return doc.querySelector(`a[name="${entry.anchorName}"], a[id="${entry.anchorName}"], [id="${entry.anchorName}"]`);
+    const matches = doc.querySelectorAll(`a[name="${entry.anchorName}"], a[id="${entry.anchorName}"], [id="${entry.anchorName}"]`);
+    matches.forEach(match => pushTarget(match));
   }
   if (entry.elementId) {
-    return doc.getElementById(entry.elementId);
+    pushTarget(doc.getElementById(entry.elementId));
   }
-  return null;
+  return targets;
 }
 
 function parseFilingSectionsFromDocument(doc: Document): FilingSectionReference[] {
@@ -177,16 +187,98 @@ function collectTextFromTarget(target: Element | null, maxChars = 1400): string 
   return chunks.join(' ').slice(0, maxChars).trim();
 }
 
-function fallbackSnippetFromText(text: string, label: string, maxChars = 1200): string {
+function normalizeSectionSearchText(text: string): string {
+  return text
+    .replace(/\r/g, '\n')
+    .replace(/\u00a0/g, ' ')
+    .replace(/([^\n])\b(PART\s+[IVX]+)\b/gi, '$1\n$2')
+    .replace(/([^\n])\b(ITEM\s+\d{1,2}[A-Z]?\.?)(?=\s)/gi, '$1\n$2')
+    .replace(/([^\n])\b(Prospectus Summary|Risk Factors|Use of Proceeds|Dividend Policy|Capitalization|Dilution|Business|Management|Underwriting|Financial Statements)\b/gi, '$1\n$2')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n[ \t]+/g, '\n')
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+function isLikelyHeading(text: string): boolean {
+  const trimmed = text.trim();
+  return SECTION_PATTERNS.some(pattern => pattern.re.test(trimmed));
+}
+
+function scoreExcerptQuality(text: string): number {
+  const cleaned = text.replace(/\s+/g, ' ').trim();
+  if (!cleaned) return Number.NEGATIVE_INFINITY;
+
+  const words = cleaned.split(/\s+/).length;
+  const sentenceCount = (cleaned.match(/[.?!]/g) || []).length;
+  const alphaCount = (cleaned.match(/[A-Za-z]/g) || []).length;
+  const digitCount = (cleaned.match(/\d/g) || []).length;
+  const taxonomyHits = (cleaned.match(/\b(?:us-gaap|dei|xbrl|nonnumeric|nonfraction|statement of|balance sheets?|cash flows?|table of contents|index to financial statements)\b/gi) || []).length;
+  const shortPenalty = words < 35 ? 50 : 0;
+  const numericPenalty = digitCount > alphaCount * 0.3 ? 35 : 0;
+
+  return Math.min(words, 240) + sentenceCount * 22 - taxonomyHits * 12 - shortPenalty - numericPenalty;
+}
+
+function chooseBestExcerpt(candidates: string[]): string {
+  const ranked = candidates
+    .map(candidate => ({
+      text: candidate.replace(/\s+/g, ' ').trim(),
+      score: scoreExcerptQuality(candidate),
+    }))
+    .filter(item => item.text.length > 0)
+    .sort((a, b) => b.score - a.score || b.text.length - a.text.length);
+
+  return ranked[0]?.text || '';
+}
+
+function extractSectionBlockFromText(text: string, label: string, maxChars = 1600): string {
   const pattern = getSectionPattern(label);
   if (!pattern) return text.slice(0, maxChars).trim();
 
-  const lines = text.split('\n');
-  const startIndex = lines.findIndex(line => pattern.test(line.trim()));
-  if (startIndex === -1) return text.slice(0, maxChars).trim();
+  const normalized = normalizeSectionSearchText(text);
+  const lines = normalized.split('\n').map(line => line.trim()).filter(Boolean);
+  const startIndices = lines
+    .map((line, index) => (pattern.test(line.trim()) ? index : -1))
+    .filter(index => index >= 0);
+  if (startIndices.length === 0) return '';
 
-  const slice = lines.slice(startIndex, startIndex + 40).join(' ').replace(/\s+/g, ' ').trim();
-  return slice.slice(0, maxChars).trim();
+  const candidates = startIndices.map(startIndex => {
+    let endIndex = Math.min(lines.length, startIndex + 80);
+    for (let index = startIndex + 1; index < Math.min(lines.length, startIndex + 80); index += 1) {
+      if (isLikelyHeading(lines[index])) {
+        endIndex = index;
+        break;
+      }
+    }
+
+    return lines
+      .slice(startIndex, endIndex)
+      .filter((line, index) => {
+        if (index === 0) return true;
+        if (/^table of contents$/i.test(line)) return false;
+        if (/^index to financial statements$/i.test(line)) return false;
+        if (/^\d+$/.test(line)) return false;
+        return true;
+      })
+      .join(' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, maxChars)
+      .trim();
+  });
+
+  return chooseBestExcerpt(candidates);
+}
+
+function collectBestTargetExcerpt(doc: Document, entry: FilingSectionReference | null, maxChars = 1600): string {
+  if (!entry) return '';
+  const candidates = locateSectionTargets(doc, entry)
+    .map(target => collectTextFromTarget(target, maxChars))
+    .filter(Boolean);
+
+  return chooseBestExcerpt(candidates);
 }
 
 function createSectionCitation(locator: FilingLocator, label: string, excerpt: string): AgentCitation {
@@ -334,7 +426,10 @@ export function buildSectionSnippet(
 ): FilingSectionSnippet | null {
   const doc = parseHtml(html);
   const entry = sections.find(item => item.label.toLowerCase() === label.toLowerCase()) || null;
-  const excerpt = collectTextFromTarget(entry ? locateSectionTarget(doc, entry) : null) || fallbackSnippetFromText(text, label);
+  const excerpt = chooseBestExcerpt([
+    collectBestTargetExcerpt(doc, entry),
+    extractSectionBlockFromText(text, label),
+  ]);
   if (!excerpt) return null;
 
   return {
