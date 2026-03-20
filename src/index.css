@@ -11,6 +11,7 @@
   --glass-bg: rgba(26, 34, 59, 0.6);
   --glass-border: rgba(255, 255, 255, 0.08);
   --glow-shadow: 0 0 20px rgba(59, 130, 246, 0.15);
+  --copilot-sidebar-width: clamp(380px, 32vw, 520px);
   
   --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;

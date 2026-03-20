@@ -4,6 +4,7 @@ import type { ResearchSearchMode } from './filingResearch';
 
 const FORM_TYPES = ['10-K', '10-Q', '8-K', 'DEF 14A', '20-F', '6-K', 'S-1'] as const;
 const AUDITORS = ['Deloitte', 'PwC', 'EY', 'KPMG', 'BDO', 'Grant Thornton', 'RSM'];
+const LATEST_FILING_PATTERN = '(?:latest|most\\s+recent|newest|current)';
 
 function makeAction(type: AgentToolName, title: string, input: Record<string, unknown>, reason?: string): AgentAction {
   return {
@@ -19,9 +20,25 @@ function normalize(value: string): string {
   return value.toLowerCase().replace(/\s+/g, ' ').trim();
 }
 
+function cleanCompanyHint(value: string): string {
+  return value
+    .replace(/^(?:can you\s+|please\s+)?(?:open|show|summarize|find|search|compare|benchmark)\s+/i, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function findFormType(prompt: string): string | null {
-  const upper = prompt.toUpperCase();
-  return FORM_TYPES.find(form => upper.includes(form)) || null;
+  const matchers: Array<{ form: (typeof FORM_TYPES)[number]; re: RegExp }> = [
+    { form: '10-K', re: /\b10[\s-]?k\b/i },
+    { form: '10-Q', re: /\b10[\s-]?q\b/i },
+    { form: '8-K', re: /\b8[\s-]?k\b/i },
+    { form: 'DEF 14A', re: /\bdef[\s-]?14a\b/i },
+    { form: '20-F', re: /\b20[\s-]?f\b/i },
+    { form: '6-K', re: /\b6[\s-]?k\b/i },
+    { form: 'S-1', re: /\bs[\s-]?1\b/i },
+  ];
+
+  return matchers.find(item => item.re.test(prompt))?.form || null;
 }
 
 function hasBooleanSyntax(prompt: string): boolean {
@@ -83,7 +100,7 @@ function extractCompareCompanies(prompt: string): string[] {
   if (!compareMatch) return [];
 
   const tail = compareMatch[1]
-    .replace(/\b(latest|filings?|10-k|10-q|same auditor|same-auditor|peers?|companies|company|for me)\b/gi, ' ')
+    .replace(/\b(latest|most recent|newest|current|filings?|10-k|10-q|same auditor|same-auditor|peers?|companies|company|for me)\b/gi, ' ')
     .replace(/\s+/g, ' ')
     .trim();
 
@@ -96,13 +113,20 @@ function extractCompareCompanies(prompt: string): string[] {
 
 function extractCompanyHint(prompt: string, context: AgentContextSnapshot): string {
   const compareCompanies = extractCompareCompanies(prompt);
-  if (compareCompanies.length > 0) return compareCompanies[0];
+  if (compareCompanies.length > 0) return cleanCompanyHint(compareCompanies[0]);
 
-  const possessiveMatch = prompt.match(/([A-Za-z][A-Za-z0-9.&\- ]+?)['’]s\s+latest/i);
-  if (possessiveMatch) return possessiveMatch[1].trim();
+  const possessiveMatch = prompt.match(new RegExp(`([A-Za-z][A-Za-z0-9.&\\- ]+?)(?:'s|\\u2019s)\\s+${LATEST_FILING_PATTERN}`, 'i'));
+  if (possessiveMatch) return cleanCompanyHint(possessiveMatch[1]);
 
-  const openMatch = prompt.match(/open\s+([A-Za-z][A-Za-z0-9.&\- ]+?)\s+(?:latest|10-k|10-q|8-k|def 14a|20-f|s-1)/i);
-  if (openMatch) return openMatch[1].trim();
+  const openMatch = prompt.match(
+    new RegExp(`open\\s+([A-Za-z][A-Za-z0-9.&\\- ]+?)\\s+(?:(?:${LATEST_FILING_PATTERN})\\s+)?(?:10-k|10 q|10-q|8-k|8 k|def 14a|def-14a|20-f|20 f|6-k|6 k|s-1|s 1)`, 'i')
+  );
+  if (openMatch) return cleanCompanyHint(openMatch[1]);
+
+  const latestFormMatch = prompt.match(
+    new RegExp(`([A-Za-z][A-Za-z0-9.&\\- ]+?)\\s+${LATEST_FILING_PATTERN}\\s+(?:10-k|10 q|10-q|8-k|8 k|def 14a|def-14a|20-f|20 f|6-k|6 k|s-1|s 1)`, 'i')
+  );
+  if (latestFormMatch) return cleanCompanyHint(latestFormMatch[1]);
 
   if (/this filing|current filing|this company/i.test(prompt) && context.filing?.companyName) {
     return context.filing.companyName;
@@ -124,7 +148,7 @@ function buildSearchQuery(prompt: string, companyHints: string[], formType: stri
   }
 
   query = query
-    .replace(/\b(can you|please|open|show|find|search|summarize|compare|benchmark|build|create|draft|save|set up|setup|alert|latest|important parts|important|for me|the|a|an)\b/gi, ' ')
+    .replace(/\b(can you|please|open|show|find|search|summarize|compare|benchmark|build|create|draft|save|set up|setup|alert|latest|most recent|newest|current|important parts|important|for me|it|the|a|an)\b/gi, ' ')
     .replace(/\b(comment letters?|sec comment letters?|same[-\s]?auditor|same big 4|same big four|peer groups?|peers?)\b/gi, ' ')
     .replace(/\s+/g, ' ')
     .trim();
@@ -168,9 +192,12 @@ export function buildHeuristicAgentPlan(prompt: string, context: AgentContextSna
   const isCompareRequest = /\bcompare\b|\bbenchmark\b|\bpeer\b/i.test(prompt);
   const isSummaryRequest = /\bsummarize\b|\bimportant parts\b|\bkey points?\b/i.test(prompt);
   const isOpenRequest = /\bopen\b|\bshow\b/i.test(prompt);
-  const isLatestFilingRequest = /\blatest\b.*\b(10-k|10-q|8-k|def 14a|20-f|s-1)\b/i.test(prompt);
+  const hasDirectFilingIntent =
+    !isCommentLetterRequest &&
+    !isCompareRequest &&
+    (Boolean(context.filing) || ((isOpenRequest || isSummaryRequest) && Boolean(formType) && Boolean(companyHint)));
 
-  if ((isOpenRequest || isSummaryRequest) && (isLatestFilingRequest || context.filing)) {
+  if (hasDirectFilingIntent) {
     const targetCompany = companyHint || context.filing?.companyName || '';
     const targetForm = formType || context.filing?.formType || '10-K';
 
@@ -388,6 +415,10 @@ function isAllowedActionType(value: string): value is AgentToolName {
   ].includes(value);
 }
 
+function hasAction(actions: AgentAction[], type: AgentToolName): boolean {
+  return actions.some(action => action.type === type);
+}
+
 export function sanitizeAgentPlan(candidate: unknown, prompt: string, context: AgentContextSnapshot): AgentPlan {
   const fallback = buildHeuristicAgentPlan(prompt, context);
   if (!candidate || typeof candidate !== 'object') return fallback;
@@ -409,6 +440,22 @@ export function sanitizeAgentPlan(candidate: unknown, prompt: string, context: A
 
   if (actions.length === 0) {
     return fallback;
+  }
+
+  const fallbackRequiresDirectFilingWorkflow =
+    hasAction(fallback.actions, 'find_latest_filing') ||
+    hasAction(fallback.actions, 'open_filing') ||
+    hasAction(fallback.actions, 'summarize_filing');
+
+  if (fallbackRequiresDirectFilingWorkflow) {
+    const missingCriticalAction =
+      (hasAction(fallback.actions, 'find_latest_filing') && !hasAction(actions, 'find_latest_filing')) ||
+      (hasAction(fallback.actions, 'open_filing') && !hasAction(actions, 'open_filing')) ||
+      (hasAction(fallback.actions, 'summarize_filing') && !hasAction(actions, 'summarize_filing'));
+
+    if (missingCriticalAction) {
+      return fallback;
+    }
   }
 
   return {

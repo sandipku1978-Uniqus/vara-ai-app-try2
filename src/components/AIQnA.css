@@ -1,25 +1,30 @@
 .ai-panel {
   position: fixed;
-  bottom: 24px;
-  right: 24px;
-  width: min(440px, calc(100vw - 32px));
-  height: min(720px, calc(100vh - 48px));
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(var(--copilot-sidebar-width), 100vw);
+  height: 100vh;
+  border-radius: 0;
+  border-top: none;
+  border-right: none;
+  border-bottom: none;
   z-index: 100;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  box-shadow: 0 24px 48px rgba(2, 6, 23, 0.5), var(--glow-shadow);
-  animation: slideUp 0.28s ease;
+  box-shadow: -24px 0 48px rgba(2, 6, 23, 0.45), var(--glow-shadow);
+  animation: slideInSidebar 0.24s ease;
 }
 
-@keyframes slideUp {
+@keyframes slideInSidebar {
   from {
     opacity: 0;
-    transform: translateY(18px);
+    transform: translateX(20px);
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translateX(0);
   }
 }
 
@@ -391,10 +396,8 @@
 
 @media (max-width: 768px) {
   .ai-panel {
-    right: 12px;
-    left: 12px;
-    bottom: 12px;
-    width: auto;
-    height: min(78vh, 720px);
+    left: 0;
+    width: 100vw;
+    height: 100dvh;
   }
 }

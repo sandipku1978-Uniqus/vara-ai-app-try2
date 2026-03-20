@@ -180,9 +180,10 @@ export function Navbar() {
 export function Layout() {
   const location = useLocation();
   const isLanding = location.pathname === '/';
+  const { isChatOpen } = useApp();
 
   return (
-    <div className={`app-wrapper ${isLanding ? 'is-landing' : 'has-sidebar'}`}>
+    <div className={`app-wrapper ${isLanding ? 'is-landing' : 'has-sidebar'} ${!isLanding && isChatOpen ? 'has-copilot' : ''}`}>
       <Sidebar />
       <div className="main-content">
         <Navbar />
