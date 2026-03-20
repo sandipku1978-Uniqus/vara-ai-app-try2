@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { BookOpen, CheckSquare, Sparkles, Search, ChevronRight, FileText, Loader2, BellRing, Building2 } from 'lucide-react';
 import DataTable, { type ColumnDef } from '../components/tables/DataTable';
 import SearchFilterBar, { defaultSearchFilters, type SearchFilters } from '../components/filters/SearchFilterBar';
-import { aiAscLookup, aiSummarize } from '../services/geminiApi';
+import { aiAscLookup, aiSummarize } from '../services/aiApi';
 import { buildSearchTrendSummary, executeFilingResearchSearch, type FilingResearchResult, type ResearchSearchMode } from '../services/filingResearch';
 import ResponsibleAIBanner from '../components/ResponsibleAIBanner';
 import { renderMarkdown } from '../utils/markdownRenderer';

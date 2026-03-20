@@ -11,7 +11,7 @@ A comprehensive, production-grade SEC compliance and research platform modeled a
 6. **Board & Exec Comp Profiles:** Track board diversity matrices, analyze Executive Compensation (PvP, Summary Comp tables).
 7. **IPO Readiness Center:** Track global IPO pipelines, benchmark deal sizes, and analyze frequently drafted S-1 risk factors.
 8. **M&A Transactional Screener:** Screen precedent Merger Agreements and compare negotiated clauses (e.g., Material Adverse Effect definitions).
-9. **Protégé AI Layer:** A unified generative AI assistant (powered by Gemini 2.5 Flash) integrated across the platform for answering technical queries, summarizing filings, and generating peer comparisons.
+9. **Protege AI Layer:** A unified generative AI assistant (powered by Claude) integrated across the platform for answering technical queries, summarizing filings, and generating peer comparisons.
 
 ## Tech Stack
 - **Framework:** React 18, Vite, TypeScript
@@ -19,7 +19,7 @@ A comprehensive, production-grade SEC compliance and research platform modeled a
 - **Routing:** React Router DOM (v6)
 - **Styling:** Custom Vanilla CSS with a Dark Mode Glassmorphism aesthetic (Deep Navy `#0A0F1E` backgrounds, CSS variables)
 - **Icons & Charts:** `lucide-react`, `recharts`
-- **AI Integration:** `@google/generative-ai` SDK (Gemini 2.5 Flash)
+- **AI Integration:** Anthropic Claude via a server-side `/api/claude` endpoint
 
 ## Setup & Run Instructions
 
@@ -38,12 +38,14 @@ A comprehensive, production-grade SEC compliance and research platform modeled a
    ```
 
 ### Environment Setup
-Add a `.env` file at the root to configure the live SEC API and Gemini integrations:
+Add a `.env` file at the root to configure the live SEC API and Claude integration:
 ```env
 # Required for SEC EDGAR requests (Format: Name Email)
 VITE_EDGAR_USER_AGENT="YourName contact@yourdomain.com"
-# Required for all Protégé AI Insights & Comparisons
-VITE_GEMINI_API_KEY="AIzaSy..."
+# Required for all Protege AI insights and comparisons
+ANTHROPIC_API_KEY="sk-ant-..."
+# Optional override if you want a different Claude model
+ANTHROPIC_MODEL="claude-sonnet-4-20250514"
 ```
 
 ### Running Locally
@@ -52,6 +54,8 @@ Start the local Vite development server:
 npm run dev
 ```
 Open `http://localhost:5173` in your browser.
+
+The Vite dev server now exposes `/api/claude` locally, so Claude-backed features work in development without exposing the Anthropic key to the browser.
 
 ## Deploying To Vercel
 
@@ -66,7 +70,8 @@ This repo includes Vercel serverless SEC proxy routes in `api/` plus route handl
 4. Add these environment variables in Vercel:
    ```env
    VITE_EDGAR_USER_AGENT="Your Name contact@yourdomain.com"
-   VITE_GEMINI_API_KEY="AIzaSy..."
+   ANTHROPIC_API_KEY="sk-ant-..."
+   ANTHROPIC_MODEL="claude-sonnet-4-20250514"
    ```
 5. Deploy.
 
@@ -74,9 +79,10 @@ This repo includes Vercel serverless SEC proxy routes in `api/` plus route handl
 - `/sec-proxy/*` is proxied through a Vercel function to `https://www.sec.gov/*`
 - `/sec-data/*` is proxied through a Vercel function to `https://data.sec.gov/*`
 - `/sec-efts/*` is proxied through a Vercel function to `https://efts.sec.gov/*`
+- `/api/claude` is handled server-side so the Anthropic API key stays off the client
 - SPA routes fall back to the app entry point through `vercel.json`
 - Use `.env.example` as the template and do not commit your real `.env`
 
 ## Architecture Notes
 - **API Strategy:** To ensure a structured demo without hitting prohibitive SEC rate limits or CORS boundaries, the platform uses a hybrid approach. Certain features fetch live SEC JSON schemas (e.g., fetching 10-Ks), while specialized analytical views (ESG mapping, M&A clauses, Board tables) orchestrate highly realistic mock data to simulate proprietary NLP extraction pipelines.
-- **AI "Protégé":** The `src/services/geminiApi.ts` layer governs all generative tasks, enforcing a professional, technical persona across all chat interfaces and benchmarking summaries. Always verified alongside the `ResponsibleAIBanner`.
+- **AI "Protege":** The `src/services/aiApi.ts` layer governs all generative tasks, routing Claude requests through `/api/claude` so the Anthropic API key stays server-side. Always verified alongside the `ResponsibleAIBanner`.

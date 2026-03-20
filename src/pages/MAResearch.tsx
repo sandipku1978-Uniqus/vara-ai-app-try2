@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { FileSearch, Scale, Link2, Search, Briefcase, Loader2 } from 'lucide-react';
 import { searchEdgarFilings, fetchFilingText } from '../services/secApi';
-import { aiExtractDealDetails, aiExtractClauses, type DealDetailsResult } from '../services/geminiApi';
+import { aiExtractDealDetails, aiExtractClauses, type DealDetailsResult } from '../services/aiApi';
 import './MAResearch.css';
 
 interface DealFiling {

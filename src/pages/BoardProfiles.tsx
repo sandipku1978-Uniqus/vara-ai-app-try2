@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Users, PieChart, DollarSign, Search, CheckCircle2, Loader2 } from 'lucide-react';
 import { fetchCompanySubmissions, lookupCIK, findLatestFiling, fetchFilingText, SecSubmission } from '../services/secApi';
-import { aiExtractBoardData, BoardDataResult } from '../services/geminiApi';
+import { aiExtractBoardData, BoardDataResult } from '../services/aiApi';
 import './BoardProfiles.css';
 
 // Module-level cache for board data
@@ -180,7 +180,7 @@ export default function BoardProfiles() {
                   <h2>Board of Directors — {companyName}</h2>
                   <p className="text-sm text-slate-400" style={{ marginTop: '4px' }}>AI-extracted from most recent DEF 14A proxy statement.</p>
                 </div>
-                <span className="badge" style={{ fontSize: '0.7rem' }}>Gemini AI Extracted</span>
+                <span className="badge" style={{ fontSize: '0.7rem' }}>Claude AI Extracted</span>
               </div>
 
               <div style={{ border: '1px solid rgba(51,65,85,0.5)', borderRadius: '12px', overflow: 'hidden' }}>
@@ -289,7 +289,7 @@ export default function BoardProfiles() {
                   <h2>Executive Compensation — {companyName}</h2>
                   <p className="text-sm text-slate-400" style={{ marginTop: '4px' }}>Named Executive Officers (NEOs) from DEF 14A proxy statement.</p>
                 </div>
-                <span className="badge" style={{ fontSize: '0.7rem' }}>Gemini AI Extracted</span>
+                <span className="badge" style={{ fontSize: '0.7rem' }}>Claude AI Extracted</span>
               </div>
 
               <div style={{ border: '1px solid rgba(51,65,85,0.5)', borderRadius: '12px', overflow: 'hidden', marginBottom: '32px' }}>

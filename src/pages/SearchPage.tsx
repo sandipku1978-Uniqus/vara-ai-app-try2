@@ -3,7 +3,7 @@ import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { BellRing, Building2, FileText, Filter, Hash, Loader2, MessageSquare, Search, Sparkles } from 'lucide-react';
 import DataTable, { type ColumnDef } from '../components/tables/DataTable';
 import SearchFilterBar, { defaultSearchFilters, type SearchFilters } from '../components/filters/SearchFilterBar';
-import { aiSummarize } from '../services/geminiApi';
+import { aiSummarize } from '../services/aiApi';
 import {
   buildSearchTrendSummary,
   executeFilingResearchSearch,

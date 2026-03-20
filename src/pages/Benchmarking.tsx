@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { Download, X, ArrowRightLeft, Loader2, Sparkles, LayoutGrid, Type, DollarSign, TrendingUp, TrendingDown, Users } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell, RadarChart, PolarGrid, PolarAngleAxis, Radar, Legend } from 'recharts';
 import { fetchCompanySubmissions, fetchCompanySubmissionsBatch, fetchCompanyFacts, extractFinancials, getAvailableYears, formatFinancialValue, CIK_MAP, SecSubmission, FinancialMetric, CompanyFacts, lookupCIK, extractCompanyMetadata, loadTickerMap, buildSecProxyUrl } from '../services/secApi';
-import { aiSummarize } from '../services/geminiApi';
+import { aiSummarize } from '../services/aiApi';
 import ResponsibleAIBanner from '../components/ResponsibleAIBanner';
 import { renderMarkdown } from '../utils/markdownRenderer';
 import CompanySearchInput from '../components/filters/CompanySearchInput';
@@ -932,7 +932,7 @@ Keep it crisp and practical.`;
         <div className="ai-comparison-panel glass-card" style={{ padding: '24px', marginBottom: '8px', borderLeft: '4px solid #3B82F6' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
             <Sparkles className="text-blue-400" size={20} />
-            <h3 style={{ fontWeight: 600, color: 'white', margin: 0 }}>Gemini 2.5 AI Structural Compare</h3>
+            <h3 style={{ fontWeight: 600, color: 'white', margin: 0 }}>Claude AI Structural Compare</h3>
           </div>
           {aiAnalyzing ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: '#CBD5E1' }}>

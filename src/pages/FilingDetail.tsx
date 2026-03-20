@@ -699,7 +699,7 @@ export default function FilingDetail() {
             <Settings2 size={18} />
           </button>
           <button className="primary-btn sm ml-2" onClick={() => setChatOpen(true)}>
-            <MessageSquare size={16} /> Ask Gemini
+            <MessageSquare size={16} /> Ask Claude
           </button>
         </div>
       </div>

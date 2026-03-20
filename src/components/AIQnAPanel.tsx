@@ -37,7 +37,7 @@ import {
   resolveCompanyHint,
 } from '../services/agentEvidence';
 import { buildSearchTrendSummary, executeFilingResearchSearch, type FilingResearchResult, type ResearchSearchMode } from '../services/filingResearch';
-import { generateAgentAnswer, generateFilingSummary, planAgentRun } from '../services/geminiApi';
+import { generateAgentAnswer, generateFilingSummary, planAgentRun } from '../services/aiApi';
 import { openCleanPrintView } from '../services/filingExport';
 import './AIQnA.css';
 

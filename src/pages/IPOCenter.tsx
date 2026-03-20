@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { Rocket, TrendingUp, BarChart, BookOpen, Clock, Activity, Download, Settings, ChevronRight, Search, FileText, AlertCircle, Loader2, ArrowLeft, ExternalLink, Shield, DollarSign, Users, Briefcase, PieChart } from 'lucide-react';
 import { searchEdgarFilings, fetchFilingText, fetchCompanySubmissions, CIK_MAP, lookupCIK } from '../services/secApi';
-import { aiAnalyzeS1 } from '../services/geminiApi';
+import { aiAnalyzeS1 } from '../services/aiApi';
 import './IPOCenter.css';
 
 interface PipelineIPO {
@@ -464,7 +464,7 @@ export default function IPOCenter() {
                     {analyses[activeAnalysisTab]?.loading ? (
                       <div className="s1-analysis-loading">
                         <Loader2 size={28} className="spin" />
-                        <p>Analyzing {analyses[activeAnalysisTab]?.label.toLowerCase()} with Gemini AI...</p>
+                        <p>Analyzing {analyses[activeAnalysisTab]?.label.toLowerCase()} with Claude AI...</p>
                         <p className="s1-hint">This may take 10-30 seconds depending on filing length.</p>
                       </div>
                     ) : analyses[activeAnalysisTab]?.content ? (

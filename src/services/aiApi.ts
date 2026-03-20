@@ -1,4 +1,3 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import type {
   AgentContextSnapshot,
   AgentEvidencePacket,
@@ -8,66 +7,85 @@ import type {
 } from '../types/agent';
 import { buildHeuristicAgentPlan, sanitizeAgentPlan } from './agentPlanner';
 
-// Initialize the Gemini API client
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY || '';
-const genAI = new GoogleGenerativeAI(API_KEY);
+const CLAUDE_API_ENDPOINT = '/api/claude';
 
-function getGeminiModel() {
-  return genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+interface ClaudeRequestOptions {
+  maxTokens?: number;
+  temperature?: number;
 }
 
-export async function askGemini(question: string, context?: string): Promise<string> {
-  if (!API_KEY) {
-    return 'Warning: Gemini API Key is missing. Please add VITE_GEMINI_API_KEY to your .env file.';
+interface ClaudeResponsePayload {
+  text?: string;
+  error?: string;
+}
+
+async function callClaude(prompt: string, options: ClaudeRequestOptions = {}): Promise<string> {
+  const response = await fetch(CLAUDE_API_ENDPOINT, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      prompt,
+      maxTokens: options.maxTokens,
+      temperature: options.temperature,
+    }),
+  });
+
+  const payload = (await response.json().catch(() => null)) as ClaudeResponsePayload | null;
+
+  if (!response.ok) {
+    throw new Error(payload?.error || 'Claude request failed.');
   }
 
+  const text = payload?.text?.trim();
+  if (!text) {
+    throw new Error('Claude returned an empty response.');
+  }
+
+  return text;
+}
+
+function getUserFacingError(error: unknown, fallback: string): string {
+  if (error instanceof Error && /ANTHROPIC_API_KEY/i.test(error.message)) {
+    return error.message;
+  }
+
+  return fallback;
+}
+
+export async function askAi(question: string, context?: string): Promise<string> {
   try {
-    const model = getGeminiModel();
-    
     let prompt = `You are an expert AI assistant for Vara AI, an SEC Compliance Intelligence Platform. You help financial, legal, and compliance professionals understand SEC filings.\n\n`;
-    
+
     if (context) {
       prompt += `CONTEXT FROM CURRENT PREVIEWED DOCUMENT / SEARCH:\n${context}\n\n`;
     }
-    
+
     prompt += `USER QUESTION:\n${question}\n\n`;
     prompt += `Provide a professional, clear, and direct answer based on the context (if available) or your general financial knowledge. Use markdown formatting for readability.`;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    return response.text();
+    return await callClaude(prompt, { maxTokens: 1400, temperature: 0.3 });
   } catch (error) {
-    console.error('Gemini API Error:', error);
-    return 'I encountered an error while trying to process your request with Gemini.';
+    console.error('Claude API Error:', error);
+    return getUserFacingError(error, 'I encountered an error while trying to process your request with Claude.');
   }
 }
 
 export async function aiSummarize(text: string): Promise<string> {
-  if (!API_KEY) {
-    return 'AI Summary unavailable (API key missing).';
-  }
-
   try {
-    const model = getGeminiModel();
-    const prompt = `You are an SEC compliance expert for Vara AI. ${text}`;
-    
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    return response.text().trim();
+    return await callClaude(`You are an SEC compliance expert for Vara AI. ${text}`, {
+      maxTokens: 1400,
+      temperature: 0.2,
+    });
   } catch (error) {
-    console.error('Gemini Summarize Error:', error);
-    return 'Summary unavailable due to an error.';
+    console.error('Claude Summarize Error:', error);
+    return getUserFacingError(error, 'Summary unavailable due to an error.');
   }
 }
 
 export async function aiAnalyzeS1(filingText: string, section: string): Promise<string> {
-  if (!API_KEY) {
-    return 'AI Analysis unavailable (API key missing). Configure VITE_GEMINI_API_KEY in your .env file.';
-  }
-
   try {
-    const model = getGeminiModel();
-
     const sectionPrompts: Record<string, string> = {
       'overview': `Analyze this S-1 registration statement and provide a concise **Business Overview**. Cover: what the company does, its products/services, target market, competitive positioning, revenue model, and growth strategy. Highlight any unique aspects of the business.`,
       'risk-factors': `Analyze the **Risk Factors** in this S-1 registration statement. Identify and categorize the top 8-10 most material risks into groups (e.g., Business/Operational, Financial, Regulatory, Market). For each risk, provide a one-line summary. Flag any unusual or noteworthy risks that stand out compared to typical S-1 filings.`,
@@ -78,8 +96,6 @@ export async function aiAnalyzeS1(filingText: string, section: string): Promise<
     };
 
     const sectionPrompt = sectionPrompts[section] || sectionPrompts['overview'];
-
-    // Truncate filing text to fit within context limits (keep first ~60k chars)
     const truncatedText = filingText.length > 60000 ? filingText.substring(0, 60000) + '\n\n[... Document truncated for analysis ...]' : filingText;
 
     const prompt = `You are a senior IPO analyst for Vara AI, an SEC Compliance Intelligence Platform. You are analyzing an S-1 registration statement filed with the SEC.
@@ -91,12 +107,10 @@ Format your response in clear markdown with headers, bullet points, and bold key
 S-1 FILING TEXT:
 ${truncatedText}`;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    return response.text().trim();
+    return await callClaude(prompt, { maxTokens: 2200, temperature: 0.2 });
   } catch (error) {
-    console.error('Gemini S-1 Analysis Error:', error);
-    return 'S-1 analysis encountered an error. Please try again.';
+    console.error('Claude S-1 Analysis Error:', error);
+    return getUserFacingError(error, 'S-1 analysis encountered an error. Please try again.');
   }
 }
 
@@ -128,7 +142,6 @@ function truncateText(text: string, max = 55000): string {
 
 function parseJsonResponse<T>(text: string): T | null {
   try {
-    // Strip markdown code fences if present
     const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim();
     return JSON.parse(cleaned);
   } catch {
@@ -172,12 +185,8 @@ function fallbackFilingSummary(locator: FilingLocator, sections: FilingSectionSn
 
 export async function planAgentRun(prompt: string, context: AgentContextSnapshot): Promise<AgentPlan> {
   const fallbackPlan = buildHeuristicAgentPlan(prompt, context);
-  if (!API_KEY) {
-    return fallbackPlan;
-  }
 
   try {
-    const model = getGeminiModel();
     const planningPrompt = `You are Vara Copilot, a structured planning model for an SEC research platform.
 
 Return ONLY valid JSON with this schema:
@@ -211,11 +220,10 @@ ${JSON.stringify(context, null, 2)}
 User prompt:
 ${prompt}`;
 
-    const result = await model.generateContent(planningPrompt);
-    const text = (await result.response).text().trim();
+    const text = await callClaude(planningPrompt, { maxTokens: 1400, temperature: 0 });
     return sanitizeAgentPlan(parseJsonResponse<AgentPlan>(text), prompt, context);
   } catch (error) {
-    console.error('Gemini planner error:', error);
+    console.error('Claude planner error:', error);
     return fallbackPlan;
   }
 }
@@ -224,12 +232,7 @@ export async function generateAgentAnswer(
   evidence: AgentEvidencePacket,
   context: AgentContextSnapshot
 ): Promise<string> {
-  if (!API_KEY) {
-    return fallbackEvidenceAnswer(evidence);
-  }
-
   try {
-    const model = getGeminiModel();
     const prompt = `You are Vara Copilot, an SEC accounting and disclosure research assistant.
 
 Write a concise, practical answer based only on the evidence below.
@@ -262,12 +265,10 @@ ${JSON.stringify(
   2
 )}`;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text().trim();
+    const text = await callClaude(prompt, { maxTokens: 1600, temperature: 0.2 });
     return text || fallbackEvidenceAnswer(evidence);
   } catch (error) {
-    console.error('Gemini agent answer error:', error);
+    console.error('Claude agent answer error:', error);
     return fallbackEvidenceAnswer(evidence);
   }
 }
@@ -277,12 +278,7 @@ export async function generateFilingSummary(
   sections: FilingSectionSnippet[],
   mode = 'default'
 ): Promise<string> {
-  if (!API_KEY) {
-    return fallbackFilingSummary(locator, sections, mode);
-  }
-
   try {
-    const model = getGeminiModel();
     const sectionPayload = sections.map(section => ({
       label: section.label,
       excerpt: section.excerpt,
@@ -310,12 +306,10 @@ If mode is "important-parts", structure the answer with:
 
 Use only the provided sections. If a requested section is missing, say that directly. Reference section labels inline in parentheses. Keep the answer concise and practical.`;
 
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text().trim();
+    const text = await callClaude(prompt, { maxTokens: 2000, temperature: 0.2 });
     return text || fallbackFilingSummary(locator, sections, mode);
   } catch (error) {
-    console.error('Gemini filing summary error:', error);
+    console.error('Claude filing summary error:', error);
     return fallbackFilingSummary(locator, sections, mode);
   }
 }
@@ -324,9 +318,7 @@ Use only the provided sections. If a requested section is missing, say that dire
  * Extract board of directors, compensation, diversity, and governance data from DEF 14A text.
  */
 export async function aiExtractBoardData(proxyText: string): Promise<BoardDataResult | null> {
-  if (!API_KEY) return null;
   try {
-    const model = getGeminiModel();
     const prompt = `You are an SEC compliance expert. Extract structured data from this DEF 14A proxy statement.
 
 Return ONLY valid JSON (no markdown, no explanation) with this exact schema:
@@ -345,11 +337,10 @@ If data for a field is not found, use reasonable defaults: empty arrays, 0, or "
 DEF 14A TEXT:
 ${truncateText(proxyText)}`;
 
-    const result = await model.generateContent(prompt);
-    const text = (await result.response).text().trim();
+    const text = await callClaude(prompt, { maxTokens: 1600, temperature: 0 });
     return parseJsonResponse<BoardDataResult>(text);
   } catch (error) {
-    console.error('Gemini Board Data Extraction Error:', error);
+    console.error('Claude Board Data Extraction Error:', error);
     return null;
   }
 }
@@ -361,9 +352,7 @@ export async function aiRateESGDisclosure(
   filingText: string,
   topics: string[]
 ): Promise<Record<string, 'high' | 'medium' | 'low'> | null> {
-  if (!API_KEY) return null;
   try {
-    const model = getGeminiModel();
     const prompt = `You are an ESG disclosure analyst. Rate how thoroughly this 10-K filing discloses each of these ESG topics.
 
 Topics to rate: ${JSON.stringify(topics)}
@@ -379,11 +368,10 @@ Return ONLY valid JSON (no markdown, no explanation) mapping each topic to its r
 10-K TEXT:
 ${truncateText(filingText)}`;
 
-    const result = await model.generateContent(prompt);
-    const text = (await result.response).text().trim();
+    const text = await callClaude(prompt, { maxTokens: 1200, temperature: 0 });
     return parseJsonResponse<Record<string, 'high' | 'medium' | 'low'>>(text);
   } catch (error) {
-    console.error('Gemini ESG Rating Error:', error);
+    console.error('Claude ESG Rating Error:', error);
     return null;
   }
 }
@@ -392,9 +380,7 @@ ${truncateText(filingText)}`;
  * Extract M&A deal details from an 8-K or SC 13D filing.
  */
 export async function aiExtractDealDetails(filingText: string): Promise<DealDetailsResult | null> {
-  if (!API_KEY) return null;
   try {
-    const model = getGeminiModel();
     const prompt = `You are an M&A analyst. Extract deal details from this SEC filing (8-K, SC 13D, or SC TO-T).
 
 Return ONLY valid JSON (no markdown, no explanation):
@@ -405,11 +391,10 @@ If a field cannot be determined, use "N/A".
 FILING TEXT:
 ${truncateText(filingText)}`;
 
-    const result = await model.generateContent(prompt);
-    const text = (await result.response).text().trim();
+    const text = await callClaude(prompt, { maxTokens: 1200, temperature: 0 });
     return parseJsonResponse<DealDetailsResult>(text);
   } catch (error) {
-    console.error('Gemini Deal Extraction Error:', error);
+    console.error('Claude Deal Extraction Error:', error);
     return null;
   }
 }
@@ -421,9 +406,7 @@ export async function aiExtractClauses(
   agreementText: string,
   clauseTypes: string[]
 ): Promise<Record<string, { text: string; section: string }> | null> {
-  if (!API_KEY) return null;
   try {
-    const model = getGeminiModel();
     const prompt = `You are an M&A attorney reviewing a merger agreement. Extract the following clause types from this agreement.
 
 Clause types to find: ${JSON.stringify(clauseTypes)}
@@ -438,29 +421,20 @@ If a clause type is not found, include it with text "Not found in this agreement
 AGREEMENT TEXT:
 ${truncateText(agreementText)}`;
 
-    const result = await model.generateContent(prompt);
-    const text = (await result.response).text().trim();
+    const text = await callClaude(prompt, { maxTokens: 1800, temperature: 0 });
     return parseJsonResponse<Record<string, { text: string; section: string }>>(text);
   } catch (error) {
-    console.error('Gemini Clause Extraction Error:', error);
+    console.error('Claude Clause Extraction Error:', error);
     return null;
   }
 }
 
 export async function aiAscLookup(query: string): Promise<string> {
-  if (!API_KEY) {
-    return 'Summary unavailable due to missing API key.';
-  }
-
   try {
-    const model = getGeminiModel();
     const prompt = `You are an expert technical accountant for Vara AI. The user is asking a question about accounting standards (e.g., US GAAP, FASB ASC, IFRS). Provide a clear, structured summary citing specific ASC topics/subtopics where applicable. Be direct and professional. USER QUERY: ${query}`;
-    
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    return response.text().trim();
+    return await callClaude(prompt, { maxTokens: 1400, temperature: 0.2 });
   } catch (error) {
-    console.error('Gemini ASC Error:', error);
-    return 'Detailed ASC lookup unavailable due to an error.';
+    console.error('Claude ASC Error:', error);
+    return getUserFacingError(error, 'Detailed ASC lookup unavailable due to an error.');
   }
 }

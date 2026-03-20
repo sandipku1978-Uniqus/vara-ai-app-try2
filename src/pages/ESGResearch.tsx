@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Globe, LayoutGrid, FileAudio, Search, Target, Activity, ChevronRight, BarChart3, Loader2 } from 'lucide-react';
 import { lookupCIK, fetchCompanySubmissions, findLatestFiling, fetchFilingText, searchEdgarFilings } from '../services/secApi';
-import { aiRateESGDisclosure, aiSummarize } from '../services/geminiApi';
+import { aiRateESGDisclosure, aiSummarize } from '../services/aiApi';
 import './ESGResearch.css';
 
 const frameworks = [
@@ -289,7 +289,7 @@ export default function ESGResearch() {
               <div className="pane-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
                 <div>
                   <h2>AI-Rated ESG Disclosure Heatmap</h2>
-                  <p className="text-sm text-slate-400" style={{ marginTop: '4px' }}>Gemini AI rates disclosure depth from each company's latest 10-K filing.</p>
+                  <p className="text-sm text-slate-400" style={{ marginTop: '4px' }}>Claude AI rates disclosure depth from each company's latest 10-K filing.</p>
                 </div>
                 <span className="badge" style={{ fontSize: '0.7rem' }}>SEC EDGAR + AI</span>
               </div>
