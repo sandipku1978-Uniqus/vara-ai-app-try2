@@ -203,6 +203,7 @@ Rules:
 - Alerts must be drafted for review before save.
 - If the user asks for "important parts" of a 10-K, plan to open the filing and summarize it.
 - Prefer the current filing, search, and compare context when the prompt implies "this filing" or "same auditor".
+- Always include the concrete action inputs needed for execution. Do not leave companyHint, formType, query, sectionLabel, or compare tickers blank when the action depends on them.
 
 Current app context:
 ${JSON.stringify(context, null, 2)}
@@ -237,9 +238,10 @@ Write a concise, practical answer based only on the evidence below.
 - Mention the most relevant sections or filings by name.
 - End with 2-3 practical follow-up suggestions.
 - Do not invent facts beyond the evidence packet.
+- Keep continuity with the recent conversation context when it matters, but still ground every claim in the current evidence packet.
 
 Current app context:
-${JSON.stringify({ pagePath: context.pagePath, pageLabel: context.pageLabel }, null, 2)}
+${JSON.stringify({ pagePath: context.pagePath, pageLabel: context.pageLabel, conversation: context.conversation }, null, 2)}
 
 Evidence packet:
 ${JSON.stringify(

@@ -419,6 +419,51 @@ function hasAction(actions: AgentAction[], type: AgentToolName): boolean {
   return actions.some(action => action.type === type);
 }
 
+function hasMeaningfulValue(value: unknown): boolean {
+  if (typeof value === 'string') return value.trim().length > 0;
+  if (Array.isArray(value)) return value.length > 0;
+  if (value && typeof value === 'object') return Object.keys(value as Record<string, unknown>).length > 0;
+  return value !== undefined && value !== null;
+}
+
+function mergeActionInput(
+  generatedInput: Record<string, unknown>,
+  fallbackInput: Record<string, unknown>
+): Record<string, unknown> {
+  const merged: Record<string, unknown> = { ...fallbackInput };
+
+  for (const [key, value] of Object.entries(generatedInput)) {
+    if (hasMeaningfulValue(value)) {
+      merged[key] = value;
+    } else if (!(key in merged)) {
+      merged[key] = value;
+    }
+  }
+
+  return merged;
+}
+
+function repairActionsWithFallback(actions: AgentAction[], fallbackActions: AgentAction[]): AgentAction[] {
+  const typeCounts = new Map<AgentToolName, number>();
+
+  return actions.map(action => {
+    const occurrenceIndex = typeCounts.get(action.type) || 0;
+    typeCounts.set(action.type, occurrenceIndex + 1);
+
+    const fallbackAction = fallbackActions.filter(item => item.type === action.type)[occurrenceIndex];
+    if (!fallbackAction) {
+      return action;
+    }
+
+    return {
+      ...action,
+      title: action.title.trim() || fallbackAction.title,
+      reason: action.reason || fallbackAction.reason,
+      input: mergeActionInput(action.input, fallbackAction.input),
+    };
+  });
+}
+
 export function sanitizeAgentPlan(candidate: unknown, prompt: string, context: AgentContextSnapshot): AgentPlan {
   const fallback = buildHeuristicAgentPlan(prompt, context);
   if (!candidate || typeof candidate !== 'object') return fallback;
@@ -442,6 +487,8 @@ export function sanitizeAgentPlan(candidate: unknown, prompt: string, context: A
     return fallback;
   }
 
+  const repairedActions = repairActionsWithFallback(actions, fallback.actions);
+
   const fallbackRequiresDirectFilingWorkflow =
     hasAction(fallback.actions, 'find_latest_filing') ||
     hasAction(fallback.actions, 'open_filing') ||
@@ -449,9 +496,9 @@ export function sanitizeAgentPlan(candidate: unknown, prompt: string, context: A
 
   if (fallbackRequiresDirectFilingWorkflow) {
     const missingCriticalAction =
-      (hasAction(fallback.actions, 'find_latest_filing') && !hasAction(actions, 'find_latest_filing')) ||
-      (hasAction(fallback.actions, 'open_filing') && !hasAction(actions, 'open_filing')) ||
-      (hasAction(fallback.actions, 'summarize_filing') && !hasAction(actions, 'summarize_filing'));
+      (hasAction(fallback.actions, 'find_latest_filing') && !hasAction(repairedActions, 'find_latest_filing')) ||
+      (hasAction(fallback.actions, 'open_filing') && !hasAction(repairedActions, 'open_filing')) ||
+      (hasAction(fallback.actions, 'summarize_filing') && !hasAction(repairedActions, 'summarize_filing'));
 
     if (missingCriticalAction) {
       return fallback;
@@ -462,7 +509,7 @@ export function sanitizeAgentPlan(candidate: unknown, prompt: string, context: A
     goal: typeof record.goal === 'string' && record.goal.trim() ? record.goal : fallback.goal,
     rationale: typeof record.rationale === 'string' && record.rationale.trim() ? record.rationale : fallback.rationale,
     confidence: record.confidence === 'high' || record.confidence === 'medium' || record.confidence === 'low' ? record.confidence : fallback.confidence,
-    actions,
+    actions: repairedActions,
     followUps: Array.isArray(record.followUps)
       ? record.followUps.filter((item): item is string => typeof item === 'string' && item.trim().length > 0).slice(0, 6)
       : fallback.followUps,

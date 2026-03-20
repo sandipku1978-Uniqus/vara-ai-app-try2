@@ -85,7 +85,8 @@
 
 .ai-panel-body {
   flex: 1;
-  overflow-y: auto;
+  min-height: 0;
+  overflow: hidden;
   padding: 16px;
   display: flex;
   flex-direction: column;
@@ -182,6 +183,10 @@
 }
 
 .run-card {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   border-radius: 18px;
   overflow: hidden;
 }
@@ -255,6 +260,9 @@
 }
 
 .panel-tab-content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
   padding: 14px 16px 16px;
   display: flex;
   flex-direction: column;
@@ -345,6 +353,9 @@
 .empty-copilot-state {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
   gap: 12px;
 }
 

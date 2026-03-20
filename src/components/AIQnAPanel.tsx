@@ -134,7 +134,29 @@ function buildContextSnapshot(app: ReturnType<typeof useApp>, pathname: string):
           selectedSection: app.activeCompareContext.selectedSection,
         }
       : null,
+    conversation: app.agentRuns
+      .slice(0, 6)
+      .reverse()
+      .filter(run => run.prompt.trim().length > 0)
+      .map(run => ({
+        prompt: run.prompt,
+        answer: run.answer,
+        startedAt: run.startedAt,
+      })),
   };
+}
+
+function deriveCompanyHintFromTitle(title: string): string {
+  const trimmed = title.trim();
+  if (!trimmed) return '';
+
+  const resolveMatch = trimmed.match(/^resolve\s+(.+)$/i);
+  if (resolveMatch) return resolveMatch[1].trim();
+
+  const filingMatch = trimmed.match(/\bfor\s+(.+)$/i);
+  if (filingMatch) return filingMatch[1].trim();
+
+  return '';
 }
 
 function createInitialRuntimeState(): AgentRuntimeState {
@@ -239,7 +261,7 @@ export function AIQnAPanel() {
       for (const action of plan.actions) {
         try {
           if (action.type === 'resolve_company') {
-            const companyHint = String(action.input.companyHint || '').trim();
+            const companyHint = String(action.input.companyHint || deriveCompanyHintFromTitle(action.title) || '').trim();
             if (!companyHint) {
               appendAgentLog(runId, { actionId: action.id, type: action.type, title: action.title, detail: 'Skipped because no company hint was provided.', status: 'skipped' });
               continue;
@@ -259,7 +281,7 @@ export function AIQnAPanel() {
           }
 
           if (action.type === 'find_latest_filing') {
-            const explicitCompanyHint = String(action.input.companyHint || '').trim();
+            const explicitCompanyHint = String(action.input.companyHint || deriveCompanyHintFromTitle(action.title) || '').trim();
             const company = runtime.resolvedCompanies[0] || (explicitCompanyHint ? await resolveCompanyHint(explicitCompanyHint) : null);
             const formType = String(action.input.formType || '10-K').trim();
 
@@ -398,7 +420,7 @@ export function AIQnAPanel() {
           }
 
           if (action.type === 'find_peers') {
-            const hint = String(action.input.companyHint || runtime.resolvedCompanies[0]?.title || '').trim();
+            const hint = String(action.input.companyHint || deriveCompanyHintFromTitle(action.title) || runtime.resolvedCompanies[0]?.title || '').trim();
             const seed = runtime.resolvedCompanies[0] || (hint ? await resolveCompanyHint(hint) : null);
             if (!seed) {
               appendAgentLog(runId, { actionId: action.id, type: action.type, title: action.title, detail: 'No seed issuer was available for peer discovery.', status: 'failed' });

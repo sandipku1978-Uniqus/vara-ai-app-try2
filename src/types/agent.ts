@@ -89,6 +89,12 @@ export interface AgentRun {
   evidence: AgentEvidencePacket | null;
 }
 
+export interface AgentConversationTurn {
+  prompt: string;
+  answer: string;
+  startedAt: string;
+}
+
 export interface AgentContextSnapshot {
   pagePath: string;
   pageLabel: string;
@@ -116,6 +122,7 @@ export interface AgentContextSnapshot {
     viewMode: 'financials' | 'text-diff' | 'audit-matrix';
     selectedSection: string;
   } | null;
+  conversation: AgentConversationTurn[];
 }
 
 export interface PendingSearchIntent {
