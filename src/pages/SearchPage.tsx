@@ -81,7 +81,7 @@ export default function SearchPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const initialQuery = searchParams.get('q') || '';
-  const { addSavedAlert, savedAlerts } = useApp();
+  const { addSavedAlert, savedAlerts, pendingSearchIntent, setPendingSearchIntent, setActiveSearchContext } = useApp();
 
   const [query, setQuery] = useState(initialQuery);
   const [searchMode, setSearchMode] = useState<ResearchSearchMode>('semantic');
@@ -134,9 +134,9 @@ export default function SearchPage() {
     return { companies, topAuditor, topForm };
   }, [results]);
 
-  async function handleSearch(searchQuery = query) {
+  async function handleSearch(searchQuery = query, overrideFilters = filters, overrideMode = searchMode) {
     const trimmed = searchQuery.trim();
-    if (!trimmed && !filters.entityName.trim()) return;
+    if (!trimmed && !overrideFilters.entityName.trim()) return;
 
     setLoading(true);
     setSearched(true);
@@ -146,7 +146,7 @@ export default function SearchPage() {
 
     try {
       let effectiveQuery = trimmed;
-      let effectiveFilters = { ...filters };
+      let effectiveFilters = { ...overrideFilters };
 
       if (!effectiveFilters.entityName.trim() && trimmed) {
         const hint = await resolveEntityHint(trimmed);
@@ -159,13 +159,21 @@ export default function SearchPage() {
       const matches = await executeFilingResearchSearch({
         query: effectiveQuery || trimmed,
         filters: effectiveFilters,
-        mode: searchMode,
+        mode: overrideMode,
         defaultForms: DEFAULT_FORM_SCOPE,
         limit: 50,
         hydrateTextSignals: true,
       });
 
       setResults(matches);
+      setActiveSearchContext({
+        surface: 'research',
+        query: effectiveQuery || trimmed,
+        mode: overrideMode,
+        filters: effectiveFilters,
+        results: matches,
+        updatedAt: new Date().toISOString(),
+      });
       if (matches.length === 0) {
         setErrorMsg('No filings matched that search. Try widening the date range, removing an auditor filter, or broadening the Boolean expression.');
       }
@@ -177,6 +185,38 @@ export default function SearchPage() {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    if (!pendingSearchIntent || pendingSearchIntent.surface !== 'research') return;
+
+    setQuery(pendingSearchIntent.query);
+    setSearchMode(pendingSearchIntent.mode);
+    setFilters(pendingSearchIntent.filters);
+
+    if (pendingSearchIntent.prefetchedResults) {
+      setResults(pendingSearchIntent.prefetchedResults);
+      setSearched(true);
+      setLoading(false);
+      setErrorMsg(
+        pendingSearchIntent.prefetchedResults.length === 0
+          ? 'No filings matched that search. Try widening the date range, removing an auditor filter, or broadening the Boolean expression.'
+          : ''
+      );
+      setActiveSearchContext({
+        surface: 'research',
+        query: pendingSearchIntent.query,
+        mode: pendingSearchIntent.mode,
+        filters: pendingSearchIntent.filters,
+        results: pendingSearchIntent.prefetchedResults,
+        updatedAt: new Date().toISOString(),
+      });
+      setPendingSearchIntent(null);
+      return;
+    }
+
+    void handleSearch(pendingSearchIntent.query, pendingSearchIntent.filters, pendingSearchIntent.mode);
+    setPendingSearchIntent(null);
+  }, [handleSearch, pendingSearchIntent, setActiveSearchContext, setPendingSearchIntent]);
 
   async function handleTrendReport() {
     if (results.length === 0) return;

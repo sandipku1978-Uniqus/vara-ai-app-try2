@@ -3,6 +3,7 @@ import { Mail, Search, Loader2, ExternalLink, TrendingUp } from 'lucide-react';
 import DataTable, { type ColumnDef } from '../components/tables/DataTable';
 import SearchFilterBar, { type SearchFilters, defaultSearchFilters } from '../components/filters/SearchFilterBar';
 import { executeFilingResearchSearch } from '../services/filingResearch';
+import { useApp } from '../context/AppState';
 
 interface LetterRow {
   entityName: string;
@@ -23,6 +24,7 @@ const cardStyle: React.CSSProperties = {
 };
 
 export default function CommentLetters() {
+  const { pendingSearchIntent, setPendingSearchIntent, setActiveSearchContext } = useApp();
   const [filters, setFilters] = useState<SearchFilters>({ ...defaultSearchFilters, keyword: '' });
   const [results, setResults] = useState<LetterRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -64,6 +66,14 @@ export default function CommentLetters() {
         defaultForms: 'CORRESP,UPLOAD',
         limit: 50,
       });
+      setActiveSearchContext({
+        surface: 'comment-letters',
+        query: filters.keyword || 'comment',
+        mode: 'semantic',
+        filters,
+        results: matches,
+        updatedAt: new Date().toISOString(),
+      });
       setResults(matches.map(match => ({
         entityName: match.entityName,
         fileDate: match.fileDate,
@@ -77,6 +87,41 @@ export default function CommentLetters() {
       setResults([]);
     } finally { setLoading(false); }
   }
+
+  useEffect(() => {
+    if (!pendingSearchIntent || pendingSearchIntent.surface !== 'comment-letters') return;
+
+    setFilters(prev => ({
+      ...prev,
+      ...pendingSearchIntent.filters,
+      keyword: pendingSearchIntent.query,
+    }));
+
+    if (pendingSearchIntent.prefetchedResults) {
+      setResults(pendingSearchIntent.prefetchedResults.map(match => ({
+        entityName: match.entityName,
+        fileDate: match.fileDate,
+        formType: match.formType,
+        cik: match.cik,
+        accessionNumber: match.accessionNumber,
+        primaryDocument: match.primaryDocument,
+      })));
+      setSearched(true);
+      setLoading(false);
+      setActiveSearchContext({
+        surface: 'comment-letters',
+        query: pendingSearchIntent.query,
+        mode: pendingSearchIntent.mode,
+        filters: pendingSearchIntent.filters,
+        results: pendingSearchIntent.prefetchedResults,
+        updatedAt: new Date().toISOString(),
+      });
+      setPendingSearchIntent(null);
+      return;
+    }
+
+    setPendingSearchIntent(null);
+  }, [pendingSearchIntent, setActiveSearchContext, setPendingSearchIntent]);
 
   function viewFiling(row: LetterRow) {
     const accNum = row.accessionNumber.replace(/-/g, '');

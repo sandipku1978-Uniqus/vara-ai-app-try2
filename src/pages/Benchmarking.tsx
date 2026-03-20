@@ -8,6 +8,7 @@ import ResponsibleAIBanner from '../components/ResponsibleAIBanner';
 import { renderMarkdown } from '../utils/markdownRenderer';
 import CompanySearchInput from '../components/filters/CompanySearchInput';
 import SectionMatrix, { type MatrixCell } from '../components/tables/SectionMatrix';
+import { useApp } from '../context/AppState';
 import './Benchmarking.css';
 
 const CHART_COLORS = ['#3B82F6', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444', '#EC4899', '#06B6D4', '#84CC16', '#F97316', '#6366F1'];
@@ -156,6 +157,7 @@ const GRID_STROKE = 'rgba(51,65,85,0.4)';
 type RatioResult = { display: string; value: number | null };
 
 export default function Benchmarking() {
+  const { pendingCompareIntent, setPendingCompareIntent, setActiveCompareContext } = useApp();
   const [selectedTickers, setSelectedTickers] = useState<string[]>(['AAPL', 'MSFT']);
   // Multi-year per ticker: { AAPL: [2024, 2023], MSFT: [2024] }
   const [selectedYearsPerTicker, setSelectedYearsPerTicker] = useState<Record<string, number[]>>({});
@@ -203,6 +205,35 @@ export default function Benchmarking() {
       setPeerSicCode(meta.sic);
     }
   }, [selectedTickers, companiesData, peerSicCode]);
+
+  useEffect(() => {
+    if (!pendingCompareIntent) return;
+
+    setSelectedTickers(pendingCompareIntent.tickers.slice(0, 10));
+    if (pendingCompareIntent.sicCode) {
+      setPeerSicCode(pendingCompareIntent.sicCode);
+    }
+    if (pendingCompareIntent.viewMode) {
+      setViewMode(pendingCompareIntent.viewMode);
+    }
+    if (pendingCompareIntent.selectedSection) {
+      setSelectedSection(pendingCompareIntent.selectedSection);
+    }
+    if (pendingCompareIntent.message) {
+      setPeerDiscoveryMessage(pendingCompareIntent.message);
+    }
+    setPendingCompareIntent(null);
+  }, [pendingCompareIntent, setPendingCompareIntent]);
+
+  useEffect(() => {
+    setActiveCompareContext({
+      tickers: selectedTickers,
+      sicCode: peerSicCode,
+      viewMode,
+      selectedSection,
+      updatedAt: new Date().toISOString(),
+    });
+  }, [peerSicCode, selectedSection, selectedTickers, setActiveCompareContext, viewMode]);
 
   // Derived: all active columns in order
   const columns = useMemo(() =>

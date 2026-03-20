@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { BookOpen, CheckSquare, Sparkles, Search, ChevronRight, FileText, Loader2, BellRing, Building2 } from 'lucide-react';
 import DataTable, { type ColumnDef } from '../components/tables/DataTable';
@@ -40,7 +40,7 @@ function buildAlertName(query: string, filters: SearchFilters): string {
 
 export default function AccountingHub() {
   const navigate = useNavigate();
-  const { addSavedAlert } = useApp();
+  const { addSavedAlert, pendingSearchIntent, setPendingSearchIntent, setActiveSearchContext } = useApp();
 
   const [activeTab, setActiveTab] = useState<'standards' | 'checklist' | 'research' | 'ai'>('research');
 
@@ -127,8 +127,8 @@ export default function AccountingHub() {
     }
   };
 
-  const runResearch = async (nextQuery = researchQuery) => {
-    if (!nextQuery.trim() && !researchFilters.entityName.trim()) return;
+  const runResearch = async (nextQuery = researchQuery, overrideFilters = researchFilters, overrideMode = researchMode) => {
+    if (!nextQuery.trim() && !overrideFilters.entityName.trim()) return;
 
     setResearchLoading(true);
     setResearchError('');
@@ -138,14 +138,22 @@ export default function AccountingHub() {
     try {
       const matches = await executeFilingResearchSearch({
         query: nextQuery,
-        filters: researchFilters,
-        mode: researchMode,
+        filters: overrideFilters,
+        mode: overrideMode,
         defaultForms: RESEARCH_DEFAULT_FORMS,
         limit: 40,
         hydrateTextSignals: true,
       });
 
       setResearchResults(matches);
+      setActiveSearchContext({
+        surface: 'accounting',
+        query: nextQuery,
+        mode: overrideMode,
+        filters: overrideFilters,
+        results: matches,
+        updatedAt: new Date().toISOString(),
+      });
       if (matches.length === 0) {
         setResearchError('No matching filings found. Try widening the date range, removing the auditor filter, or switching to a broader semantic query.');
       }
@@ -157,6 +165,37 @@ export default function AccountingHub() {
       setResearchLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!pendingSearchIntent || pendingSearchIntent.surface !== 'accounting') return;
+
+    setResearchQuery(pendingSearchIntent.query);
+    setResearchMode(pendingSearchIntent.mode);
+    setResearchFilters(pendingSearchIntent.filters);
+
+    if (pendingSearchIntent.prefetchedResults) {
+      setResearchResults(pendingSearchIntent.prefetchedResults);
+      setResearchLoading(false);
+      setResearchError(
+        pendingSearchIntent.prefetchedResults.length === 0
+          ? 'No matching filings found. Try widening the date range, removing the auditor filter, or switching to a broader semantic query.'
+          : ''
+      );
+      setActiveSearchContext({
+        surface: 'accounting',
+        query: pendingSearchIntent.query,
+        mode: pendingSearchIntent.mode,
+        filters: pendingSearchIntent.filters,
+        results: pendingSearchIntent.prefetchedResults,
+        updatedAt: new Date().toISOString(),
+      });
+      setPendingSearchIntent(null);
+      return;
+    }
+
+    void runResearch(pendingSearchIntent.query, pendingSearchIntent.filters, pendingSearchIntent.mode);
+    setPendingSearchIntent(null);
+  }, [pendingSearchIntent, runResearch, setActiveSearchContext, setPendingSearchIntent]);
 
   const handleGenerateMemo = async () => {
     if (researchResults.length === 0) return;

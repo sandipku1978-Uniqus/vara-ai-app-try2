@@ -117,7 +117,14 @@ function pickPreviousComparableFiling(
 export default function FilingDetail() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { addToWatchlist, setChatOpen, setCurrentFilingContext } = useApp();
+  const {
+    addToWatchlist,
+    setChatOpen,
+    setCurrentFilingContext,
+    setCurrentFilingSections,
+    pendingFilingSectionLabel,
+    setPendingFilingSectionLabel,
+  } = useApp();
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const currentHtmlRef = useRef<string | null>(null);
   const currentTextRef = useRef<string | null>(null);
@@ -180,10 +187,14 @@ export default function FilingDetail() {
         companyName: filingMeta.companyName || '',
         formType: filingMeta.formType || '',
         filingDate: filingMeta.filingDate || '',
+        auditor: filingMeta.auditor || '',
       });
     }
-    return () => { setCurrentFilingContext(null); };
-  }, [filingMeta.companyName, filingMeta.filingDate, filingMeta.formType, id, setCurrentFilingContext]);
+    return () => {
+      setCurrentFilingContext(null);
+      setCurrentFilingSections([]);
+    };
+  }, [filingMeta.auditor, filingMeta.companyName, filingMeta.filingDate, filingMeta.formType, id, setCurrentFilingContext, setCurrentFilingSections]);
 
   if (!id || !id.includes('_')) {
     return (
@@ -418,15 +429,17 @@ export default function FilingDetail() {
         setTocLoading(true);
         const entries = parseToc(frame.contentDocument);
         setTocEntries(entries);
+        setCurrentFilingSections(entries);
         setTocLoading(false);
         setIframeLoadedToken(prev => prev + 1);
       }
     } catch {
       // Cross-origin — can't inspect. TOC unavailable.
       setTocEntries([]);
+      setCurrentFilingSections([]);
       setTocLoading(false);
     }
-  }, [parseToc]);
+  }, [parseToc, setCurrentFilingSections]);
 
   const scrollToSection = useCallback((entry: TocEntry) => {
     const frame = iframeRef.current;
@@ -476,6 +489,21 @@ export default function FilingDetail() {
       doc.removeEventListener('keyup', captureSelection);
     };
   }, [annotationMode, iframeLoadedToken]);
+
+  useEffect(() => {
+    if (!pendingFilingSectionLabel || tocEntries.length === 0) return;
+
+    const match = tocEntries.find(entry =>
+      entry.label.toLowerCase() === pendingFilingSectionLabel.toLowerCase() ||
+      entry.label.toLowerCase().includes(pendingFilingSectionLabel.toLowerCase()) ||
+      pendingFilingSectionLabel.toLowerCase().includes(entry.label.toLowerCase())
+    );
+
+    if (!match) return;
+
+    scrollToSection(match);
+    setPendingFilingSectionLabel(null);
+  }, [pendingFilingSectionLabel, scrollToSection, setPendingFilingSectionLabel, tocEntries]);
 
   useEffect(() => {
     if (!redlineMode || redlineSummary || redlineLoading || redlineError) {

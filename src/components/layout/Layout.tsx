@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import {
   Search, LayoutDashboard, BarChart2, MessageSquare, Menu,
@@ -121,7 +122,31 @@ export function Sidebar() {
 export function Navbar() {
   const location = useLocation();
   const isLanding = location.pathname === '/';
-  const { setChatOpen } = useApp();
+  const { setChatOpen, setCurrentPageContext } = useApp();
+
+  useEffect(() => {
+    const pageLabels: Record<string, string> = {
+      '/': 'Home',
+      '/dashboard': 'Dashboard',
+      '/search': 'Research',
+      '/filing': 'Filing Detail',
+      '/compare': 'Benchmarking',
+      '/accounting': 'Accounting Hub',
+      '/comment-letters': 'Comment Letters',
+      '/boards': 'Board Profiles',
+      '/esg': 'ESG Research',
+      '/ipo': 'IPO Center',
+      '/mna': 'M&A Research',
+    };
+
+    const matchingLabel = Object.entries(pageLabels).find(([path]) =>
+      path === '/'
+        ? location.pathname === path
+        : location.pathname === path || location.pathname.startsWith(`${path}/`)
+    )?.[1] || 'Workspace';
+
+    setCurrentPageContext({ path: location.pathname, label: matchingLabel });
+  }, [location.pathname, setCurrentPageContext]);
 
   return (
     <header className={`navbar ${isLanding ? 'landing-nav' : ''}`}>
@@ -142,7 +167,7 @@ export function Navbar() {
 
       <div className="navbar-actions">
         {!isLanding && (
-          <button className="icon-btn" onClick={() => setChatOpen(true)} title="AI Assistant">
+          <button className="icon-btn" onClick={() => setChatOpen(true)} title="Open Vara Copilot">
             <MessageSquare size={20} />
           </button>
         )}
