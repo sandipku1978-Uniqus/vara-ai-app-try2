@@ -2,6 +2,10 @@ const DEFAULT_USER_AGENT =
   process.env.EDGAR_USER_AGENT ||
   process.env.VITE_EDGAR_USER_AGENT ||
   'Vara AI Research App contact@vara.ai';
+const DEV_EFTS_FALLBACK_BASE =
+  process.env.SEC_PROXY_FALLBACK_BASE ||
+  process.env.VITE_SEC_PROXY_FALLBACK_BASE ||
+  'https://vara-ai-app.vercel.app';
 
 const RESPONSE_HEADER_BLACKLIST = new Set([
   'content-security-policy',
@@ -61,6 +65,20 @@ function buildTargetUrl(request, upstreamBaseUrl) {
   return targetUrl;
 }
 
+function shouldUseDevEftsFallback(upstreamBaseUrl, responseStatus) {
+  return (
+    process.env.NODE_ENV !== 'production' &&
+    upstreamBaseUrl === 'https://efts.sec.gov' &&
+    (responseStatus === 403 || responseStatus === 429) &&
+    DEV_EFTS_FALLBACK_BASE
+  );
+}
+
+function buildFallbackProxyUrl(request) {
+  const incomingUrl = new URL(request.url);
+  return new URL(`${incomingUrl.pathname}${incomingUrl.search}`, DEV_EFTS_FALLBACK_BASE).toString();
+}
+
 function filterResponseHeaders(upstreamHeaders) {
   const headers = new Headers();
   for (const [key, value] of upstreamHeaders.entries()) {
@@ -80,11 +98,19 @@ export async function proxySecRequest(request, upstreamBaseUrl) {
   }
 
   try {
-    const upstreamResponse = await fetch(buildTargetUrl(request, upstreamBaseUrl), {
+    let upstreamResponse = await fetch(buildTargetUrl(request, upstreamBaseUrl), {
       method: request.method,
       headers: copyRequestHeaders(request),
       redirect: 'follow',
     });
+
+    if (shouldUseDevEftsFallback(upstreamBaseUrl, upstreamResponse.status)) {
+      upstreamResponse = await fetch(buildFallbackProxyUrl(request), {
+        method: request.method,
+        headers: copyRequestHeaders(request),
+        redirect: 'follow',
+      });
+    }
 
     const headers = filterResponseHeaders(upstreamResponse.headers);
     const contentType = upstreamResponse.headers.get('content-type') || '';

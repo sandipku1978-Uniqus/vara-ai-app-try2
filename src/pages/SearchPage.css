@@ -409,21 +409,23 @@
 
 .research-shell {
   display: grid;
-  grid-template-columns: minmax(320px, 360px) minmax(0, 1fr);
+  grid-template-columns: minmax(300px, 360px) minmax(0, 1fr);
   gap: 20px;
-  padding: 24px;
-  max-width: 1680px;
-  margin: 0 auto;
-  align-items: start;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  align-items: stretch;
+  overflow: hidden;
 }
 
 .research-rail {
-  position: sticky;
-  top: 94px;
   padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 16px;
+  min-height: 0;
+  max-height: 100%;
+  overflow-y: auto;
 }
 
 .research-rail-copy h1 {
@@ -556,24 +558,70 @@
   font-size: 0.85rem;
 }
 
+.research-query-panel {
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.research-query-form {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.research-query-form .search-icon {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.research-query-form input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 1.02rem;
+  outline: none;
+  font-family: var(--font-sans);
+}
+
+.research-query-form input::placeholder {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.research-query-form .primary-btn {
+  flex: 0 0 auto;
+}
+
 .research-main {
   display: flex;
   flex-direction: column;
   gap: 16px;
   min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .research-toolbar {
   padding: 14px 16px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  min-width: 0;
 }
 
 .research-tab-strip {
   display: flex;
   gap: 8px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   min-width: 0;
   flex: 1;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-bottom: 4px;
+  scrollbar-width: thin;
 }
 
 .research-tab {
@@ -586,7 +634,8 @@
   background: rgba(15, 23, 42, 0.55);
   color: #CBD5E1;
   cursor: pointer;
-  max-width: 320px;
+  flex: 0 0 auto;
+  max-width: 260px;
 }
 
 .research-tab span:first-child {
@@ -618,7 +667,8 @@
 .research-toolbar-actions {
   display: flex;
   gap: 8px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  flex: 0 0 auto;
 }
 
 .research-metric-grid {
@@ -662,7 +712,7 @@
   display: grid;
   grid-template-columns: minmax(340px, 420px) minmax(0, 1fr);
   gap: 16px;
-  min-height: 72vh;
+  min-height: 60vh;
 }
 
 .research-hit-list,
@@ -689,6 +739,8 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
+  flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding-right: 4px;
 }
@@ -778,7 +830,7 @@
 .research-preview-frame {
   width: 100%;
   height: 100%;
-  min-height: 62vh;
+  min-height: 0;
   border: none;
   background: #fff;
 }
@@ -822,23 +874,52 @@
 @media (max-width: 1100px) {
   .research-shell {
     grid-template-columns: 1fr;
+    height: auto;
+    overflow: visible;
   }
 
   .research-rail {
-    position: static;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .research-main {
+    overflow: visible;
   }
 
   .research-workspace {
     grid-template-columns: 1fr;
   }
+
+  .research-toolbar {
+    flex-wrap: wrap;
+  }
+
+  .research-tab-strip {
+    flex-wrap: wrap;
+    overflow: visible;
+  }
+
+  .research-toolbar-actions {
+    flex-wrap: wrap;
+  }
 }
 
 @media (max-width: 768px) {
   .research-shell {
-    padding: 16px;
+    gap: 16px;
   }
 
-  .research-preview-frame {
+  .research-query-form {
+    flex-wrap: wrap;
+  }
+
+  .research-query-form .primary-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .research-workspace {
     min-height: 52vh;
   }
 }

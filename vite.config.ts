@@ -2,6 +2,9 @@ import type { IncomingMessage, ServerResponse } from 'node:http'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { buildClaudeRequest, createClaudeMessage } from './api/_lib/claude.js'
+import secProxyHandler from './api/sec-proxy.js'
+import secDataHandler from './api/sec-data.js'
+import secEftsHandler from './api/sec-efts.js'
 
 function readJsonBody(req: IncomingMessage): Promise<unknown> {
   return new Promise((resolve, reject) => {
@@ -29,25 +32,64 @@ function sendJson(res: ServerResponse, status: number, payload: unknown) {
   res.end(JSON.stringify(payload))
 }
 
+async function sendFetchResponse(res: ServerResponse, response: Response) {
+  res.statusCode = response.status
+  response.headers.forEach((value, key) => {
+    res.setHeader(key, value)
+  })
+  const buffer = Buffer.from(await response.arrayBuffer())
+  res.end(buffer)
+}
+
 const claudeDevApiPlugin = {
   name: 'claude-dev-api',
   configureServer(server: any) {
     server.middlewares.use(async (req: IncomingMessage, res: ServerResponse, next: () => void) => {
-      if (!req.url?.startsWith('/api/claude')) {
-        next()
-        return
-      }
-
-      if (req.method !== 'POST') {
-        sendJson(res, 405, { error: 'Method not allowed.' })
-        return
-      }
-
       try {
-        const body = await readJsonBody(req)
-        const payload = buildClaudeRequest(body)
-        const result = await createClaudeMessage(payload)
-        sendJson(res, 200, result)
+        const requestUrl = new URL(req.url || '/', 'http://127.0.0.1:5173')
+
+        if (requestUrl.pathname === '/api/claude') {
+          if (req.method !== 'POST') {
+            sendJson(res, 405, { error: 'Method not allowed.' })
+            return
+          }
+
+          const body = await readJsonBody(req)
+          const payload = buildClaudeRequest(body)
+          const result = await createClaudeMessage(payload)
+          sendJson(res, 200, result)
+          return
+        }
+
+        const targetHandler =
+          requestUrl.pathname === '/api/sec-proxy'
+            ? secProxyHandler
+            : requestUrl.pathname === '/api/sec-data'
+              ? secDataHandler
+              : requestUrl.pathname === '/api/sec-efts'
+                ? secEftsHandler
+                : null
+
+        if (!targetHandler) {
+          next()
+          return
+        }
+
+        const headers = new Headers()
+        for (const [key, value] of Object.entries(req.headers)) {
+          if (Array.isArray(value)) {
+            headers.set(key, value.join(', '))
+          } else if (value != null) {
+            headers.set(key, value)
+          }
+        }
+
+        const request = new Request(requestUrl.toString(), {
+          method: req.method || 'GET',
+          headers,
+        })
+        const response = await targetHandler(request)
+        await sendFetchResponse(res, response)
       } catch (error) {
         const status = typeof (error as { status?: unknown })?.status === 'number'
           ? Number((error as { status?: unknown }).status)

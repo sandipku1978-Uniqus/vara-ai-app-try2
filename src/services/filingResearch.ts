@@ -7,6 +7,7 @@ import {
 } from './secApi';
 import { parseSearchHit } from '../hooks/useEdgarSearch';
 import {
+  buildBooleanCandidateQueries,
   buildCandidateQueryFromBoolean,
   booleanQueryMatches,
   extractBooleanMatchSnippet,
@@ -20,6 +21,7 @@ export interface FilingResearchResult {
   entityName: string;
   fileDate: string;
   formType: string;
+  documentType: string;
   cik: string;
   accessionNumber: string;
   primaryDocument: string;
@@ -67,6 +69,10 @@ interface ExecuteSearchOptions {
   defaultForms?: string;
   limit?: number;
   hydrateTextSignals?: boolean;
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 const companyMetadataCache = new Map<string, Promise<CompanyResearchMetadata | null>>();
@@ -307,6 +313,35 @@ function buildServerQuery(rawQuery: string, filters: SearchFilters, mode: Resear
   }
 
   return combined;
+}
+
+function buildSemanticCandidateQueries(serverQuery: string, filters: SearchFilters): string[] {
+  const baseQuery = serverQuery.trim();
+  const queries: string[] = [];
+
+  function pushQuery(value: string) {
+    const trimmed = value.replace(/\s+/g, ' ').trim();
+    if (!trimmed) return;
+    if (!queries.some(item => normalizeLooseText(item) === normalizeLooseText(trimmed))) {
+      queries.push(trimmed);
+    }
+  }
+
+  pushQuery(baseQuery);
+
+  if (baseQuery && filters.accountant.trim()) {
+    pushQuery(`${baseQuery} ${filters.accountant.trim()}`);
+  }
+
+  if (baseQuery && filters.sectionKeywords.trim()) {
+    pushQuery(`${baseQuery} ${filters.sectionKeywords.trim()}`);
+  }
+
+  if (baseQuery && filters.accountant.trim() && filters.sectionKeywords.trim()) {
+    pushQuery(`${baseQuery} ${filters.accountant.trim()} ${filters.sectionKeywords.trim()}`);
+  }
+
+  return queries.slice(0, 4);
 }
 
 async function getCompanyMetadata(cik: string): Promise<CompanyResearchMetadata | null> {
@@ -606,6 +641,7 @@ function mapSearchHit(hit: EdgarSearchHit): FilingResearchResult {
     entityName: base.entityName,
     fileDate: base.fileDate,
     formType: base.formType,
+    documentType: (base as { documentType?: string }).documentType || base.formType,
     cik: base.cik,
     accessionNumber: base.accessionNumber,
     primaryDocument: base.primaryDocument,
@@ -676,17 +712,77 @@ export async function executeFilingResearchSearch({
   const formTypes = normalizeFormTypes(filters, defaultForms);
   const formScope = parseFormScope(formTypes);
   const preferRelevance = Boolean((query || filters.keyword).trim() || filters.sectionKeywords.trim());
-  const hits = await searchEdgarFilings(
-    serverQuery,
-    formTypes,
-    filters.dateFrom || undefined,
-    filters.dateTo || undefined,
-    filters.entityName || undefined
-  );
-
+  const candidateLimit = Math.max(limit * (mode === 'boolean' ? 5 : 3), mode === 'boolean' ? 220 : 90);
   const needsTextFiltering = requiresTextFiltering(filters, query, mode);
   const shouldHydrateSignals = hydrateTextSignals || needsTextFiltering;
-  const candidateLimit = Math.max(limit * (mode === 'boolean' ? 4 : 3), mode === 'boolean' ? 140 : 90);
+  const booleanServerQueries = mode === 'boolean' ? buildBooleanCandidateQueries(query || filters.keyword).slice(0, 5) : [];
+  const semanticServerQueries = mode === 'semantic' ? buildSemanticCandidateQueries(serverQuery, filters) : [];
+
+  const serverQueries =
+    mode === 'boolean'
+      ? (booleanServerQueries.length > 0 ? booleanServerQueries : [serverQuery])
+      : (semanticServerQueries.length > 0 ? semanticServerQueries : [serverQuery]);
+
+  const hitMap = new Map<string, { hit: EdgarSearchHit; queryPriority: number; score: number }>();
+  let lastSearchError: Error | null = null;
+
+  const filteredServerQueries = serverQueries.filter(Boolean);
+
+  for (const [queryIndex, candidateQuery] of filteredServerQueries.entries()) {
+    try {
+      const batch = await searchEdgarFilings(
+        candidateQuery,
+        formTypes,
+        filters.dateFrom || undefined,
+        filters.dateTo || undefined,
+        filters.entityName || undefined
+      );
+
+      const queryPriority = filteredServerQueries.length - queryIndex;
+
+      for (const hit of batch) {
+        const previous = hitMap.get(hit._id);
+        if (
+          !previous ||
+          queryPriority > previous.queryPriority ||
+          (queryPriority === previous.queryPriority && hit._score > previous.score)
+        ) {
+          hitMap.set(hit._id, {
+            hit,
+            queryPriority,
+            score: hit._score,
+          });
+        }
+      }
+
+      if (hitMap.size >= candidateLimit * (mode === 'boolean' ? 2 : 1)) {
+        break;
+      }
+
+      if (mode === 'boolean') {
+        await delay(180);
+      }
+    } catch (error) {
+      lastSearchError = error instanceof Error ? error : new Error('EDGAR search failed');
+      if (mode !== 'boolean') {
+        throw lastSearchError;
+      }
+    }
+  }
+
+  if (hitMap.size === 0 && lastSearchError) {
+    throw lastSearchError;
+  }
+
+  const hits = Array.from(hitMap.values())
+    .sort((a, b) => {
+      if (b.queryPriority !== a.queryPriority) {
+        return b.queryPriority - a.queryPriority;
+      }
+      return b.score - a.score;
+    })
+    .map(entry => entry.hit)
+    .slice(0, candidateLimit * (mode === 'boolean' ? 2 : 1));
   let results = uniqueById(hits.map(mapSearchHit)).slice(0, candidateLimit);
 
   results = await Promise.all(results.map(result => hydrateCompanyMetadata(result)));
@@ -698,31 +794,51 @@ export async function executeFilingResearchSearch({
   }
 
   const signalMap = new Map<string, FilingSignal>();
-  await Promise.all(
-    results.map(async result => {
-      const signal = await hydrateResultSignals(result);
-      signalMap.set(getSignalCacheKey(result), signal);
-    })
-  );
+  const filteredResults: FilingResearchResult[] = [];
+  const batchSize = mode === 'boolean' ? 4 : 6;
+  const bufferedTarget = Math.max(limit, Math.min(limit * 2, mode === 'boolean' ? 24 : 40));
+  const maxValidationCandidates =
+    mode === 'boolean'
+      ? Math.min(results.length, Math.max(limit + 30, 80))
+      : results.length;
+  const parsedBooleanQuery = mode === 'boolean' ? parseBooleanQuery(query) : { expression: null };
 
-  if (needsTextFiltering && mode === 'boolean') {
-    const parsed = parseBooleanQuery(query);
-    if (parsed.expression) {
-      results = results.filter(result => {
-        const signal = signalMap.get(getSignalCacheKey(result));
-        return Boolean(signal?.text && booleanQueryMatches(query, signal.text));
-      });
+  for (let index = 0; index < maxValidationCandidates; index += batchSize) {
+    const chunk = results.slice(index, Math.min(index + batchSize, maxValidationCandidates));
+
+    await Promise.all(
+      chunk.map(async result => {
+        const signal = await hydrateResultSignals(result);
+        signalMap.set(getSignalCacheKey(result), signal);
+      })
+    );
+
+    for (const result of chunk) {
+      const filingText = signalMap.get(getSignalCacheKey(result))?.text || '';
+
+      if (needsTextFiltering && mode === 'boolean' && parsedBooleanQuery.expression) {
+        if (!filingText || !booleanQueryMatches(query, filingText)) {
+          continue;
+        }
+      }
+
+      if (needsTextFiltering && !matchesSignalFilters(result, filters, filingText)) {
+        continue;
+      }
+
+      filteredResults.push(annotateResultMatchContext(result, query, filters, mode, filingText));
+    }
+
+    if (filteredResults.length >= bufferedTarget) {
+      break;
+    }
+
+    if (index + batchSize < maxValidationCandidates) {
+      await delay(120);
     }
   }
 
-  if (needsTextFiltering) {
-    results = results.filter(result => matchesSignalFilters(result, filters, signalMap.get(getSignalCacheKey(result))?.text || ''));
-  }
-
-  results = results.map(result => {
-    const filingText = signalMap.get(getSignalCacheKey(result))?.text || '';
-    return annotateResultMatchContext(result, query, filters, mode, filingText);
-  });
+  results = filteredResults;
 
   return sortResearchResults(results, preferRelevance).slice(0, limit);
 }

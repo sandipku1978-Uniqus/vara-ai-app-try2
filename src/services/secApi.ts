@@ -3,6 +3,7 @@
 
 const USER_AGENT = import.meta.env.VITE_EDGAR_USER_AGENT || 'Vara AI Research App contact@vara.ai';
 const USE_DIRECT_VERCEL_API = !import.meta.env.DEV;
+const edgarSearchCache = new Map<string, Promise<EdgarSearchHit[]>>();
 
 // Cache for CIKs to avoid redundant lookups if doing bulk mappings 
 // (In a real app, you'd likely hit an internal DB, but here we'll map top tickers)
@@ -39,12 +40,15 @@ function buildProxyUrl(
   }
 
   if (!USE_DIRECT_VERCEL_API) {
+    if (type === 'efts') {
+      searchParams.set('path', cleanPath);
+      return `/api/sec-efts?${searchParams.toString()}`;
+    }
+
     const base =
       type === 'data'
         ? `/sec-data/${cleanPath}`
-        : type === 'efts'
-          ? `/sec-efts/${cleanPath}`
-          : `/sec-proxy/${cleanPath}`;
+        : `/sec-proxy/${cleanPath}`;
     const query = searchParams.toString();
     return query ? `${base}?${query}` : base;
   }
@@ -55,6 +59,10 @@ function buildProxyUrl(
   }
   searchParams.set('path', cleanPath);
   return `/api/${functionName}?${searchParams.toString()}`;
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
 }
 
 export function buildSecProxyUrl(path: string, params?: Record<string, string | number | undefined> | URLSearchParams): string {
@@ -530,25 +538,48 @@ export async function searchEdgarFilings(
   endDate?: string,
   entityName?: string
 ): Promise<EdgarSearchHit[]> {
-  try {
-    const params = new URLSearchParams({
-      q: query,
-      forms: forms,
-      dateRange: 'custom',
-      startdt: startDate || '2020-01-01',
-      enddt: endDate || new Date().toISOString().split('T')[0],
-    });
-    if (entityName) params.set('entityName', entityName);
-    const response = await fetch(buildSecEftsUrl('LATEST/search-index', params), {
-      headers: getHeaders()
-    });
-    if (!response.ok) throw new Error(`EDGAR Search Error: ${response.statusText}`);
-    const data: EdgarSearchResult = await response.json();
-    return data.hits?.hits || [];
-  } catch (error) {
-    console.error('EDGAR search failed:', error);
-    throw error instanceof Error ? error : new Error('EDGAR search failed');
+  const params = new URLSearchParams({
+    q: query,
+    forms: forms,
+    dateRange: 'custom',
+    startdt: startDate || '2020-01-01',
+    enddt: endDate || new Date().toISOString().split('T')[0],
+  });
+  if (entityName) params.set('entityName', entityName);
+
+  const cacheKey = params.toString();
+  if (!edgarSearchCache.has(cacheKey)) {
+    edgarSearchCache.set(cacheKey, (async () => {
+      try {
+        let lastResponse: Response | null = null;
+        for (let attempt = 0; attempt < 2; attempt += 1) {
+          const response = await fetch(buildSecEftsUrl('LATEST/search-index', params), {
+            headers: getHeaders()
+          });
+          lastResponse = response;
+          if (response.ok) {
+            const data: EdgarSearchResult = await response.json();
+            return data.hits?.hits || [];
+          }
+
+          if ((response.status === 403 || response.status === 429) && attempt === 0) {
+            await delay(700);
+            continue;
+          }
+
+          throw new Error(`EDGAR Search Error: ${response.status} ${response.statusText}`);
+        }
+
+        throw new Error(`EDGAR Search Error: ${lastResponse?.status || 0} ${lastResponse?.statusText || 'Unknown error'}`);
+      } catch (error) {
+        edgarSearchCache.delete(cacheKey);
+        console.error('EDGAR search failed:', error);
+        throw error instanceof Error ? error : new Error('EDGAR search failed');
+      }
+    })());
   }
+
+  return edgarSearchCache.get(cacheKey)!;
 }
 
 /**
@@ -596,12 +627,26 @@ export async function fetchFilingText(cik: string, accessionNumber: string, prim
   if (!filingTextCache.has(cacheKey)) {
     filingTextCache.set(cacheKey, (async () => {
       try {
-        const response = await fetch(buildSecProxyUrl(`Archives/edgar/data/${cik}/${cleanAccession}/${primaryDocument}`), {
-          headers: getHeaders()
-        });
-        if (!response.ok) throw new Error(`Filing fetch Error: ${response.statusText}`);
-        const html = await response.text();
-        return extractDocumentTextFromHtml(html);
+        let lastResponse: Response | null = null;
+        for (let attempt = 0; attempt < 2; attempt += 1) {
+          const response = await fetch(buildSecProxyUrl(`Archives/edgar/data/${cik}/${cleanAccession}/${primaryDocument}`), {
+            headers: getHeaders()
+          });
+          lastResponse = response;
+          if (response.ok) {
+            const html = await response.text();
+            return extractDocumentTextFromHtml(html);
+          }
+
+          if ((response.status === 403 || response.status === 429) && attempt === 0) {
+            await delay(500);
+            continue;
+          }
+
+          throw new Error(`Filing fetch Error: ${response.status} ${response.statusText}`);
+        }
+
+        throw new Error(`Filing fetch Error: ${lastResponse?.status || 0} ${lastResponse?.statusText || 'Unknown error'}`);
       } catch (error) {
         console.error('Failed to fetch filing text:', error);
         filingTextCache.delete(cacheKey);

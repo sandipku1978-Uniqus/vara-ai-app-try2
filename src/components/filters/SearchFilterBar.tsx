@@ -244,6 +244,31 @@ export default function SearchFilterBar({ config, filters, onChange, onSearch, l
         {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
       </button>
 
+      {!expanded && activeCount > 0 && (
+        <div style={{
+          display: 'flex',
+          gap: '6px',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          marginTop: '10px',
+        }}>
+          {chips.slice(0, 4).map((c, i) => (
+            <span key={i} style={chipStyle}>
+              {c.label}
+              <button onClick={c.clear} style={{ background: 'none', border: 'none', color: '#60A5FA', cursor: 'pointer', padding: 0 }}>
+                <X size={10} />
+              </button>
+            </span>
+          ))}
+          {chips.length > 4 && (
+            <span style={{ color: '#64748B', fontSize: '0.74rem' }}>+{chips.length - 4} more</span>
+          )}
+          <button onClick={handleClear} style={{ background: 'none', border: 'none', color: '#F87171', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 500 }}>
+            Clear All
+          </button>
+        </div>
+      )}
+
       {/* Expanded filter panel */}
       {expanded && (
         <div style={{

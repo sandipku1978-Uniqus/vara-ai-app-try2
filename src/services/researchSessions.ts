@@ -76,7 +76,10 @@ function sanitizeSession(session: ResearchSearchSession): ResearchSearchSession 
     ...session,
     filters: cloneSearchFilters(session.filters),
     interpretation: [...session.interpretation],
-    results: session.results.map(result => ({ ...result })),
+    results: session.results.map(result => ({
+      ...result,
+      documentType: result.documentType || result.formType || '',
+    })),
     resolvedSearch: {
       query: session.resolvedSearch.query,
       mode: session.resolvedSearch.mode,

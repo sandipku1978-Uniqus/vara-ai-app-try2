@@ -36,6 +36,11 @@ interface TextIndex {
   tokens: string[];
 }
 
+const BOOLEAN_SYNTAX_RE = /\b(?:AND|OR|NOT)\b|(?:W|WITHIN|NEAR)\/\d+|["()]/i;
+const TERM_EQUIVALENTS: Record<string, string[]> = {
+  asr: ['accelerated share repurchase', 'accelerated stock repurchase'],
+};
+
 function isTextToken(token?: Token): token is Extract<Token, { type: 'TERM' | 'PHRASE' }> {
   return Boolean(token && (token.type === 'TERM' || token.type === 'PHRASE'));
 }
@@ -99,6 +104,62 @@ function normalizeTokenValue(value: string): string {
       .toLowerCase()
       .replace(/[^a-z0-9]+/gi, ' ')
   );
+}
+
+function buildTermMatchVariants(value: string): string[] {
+  const normalized = normalizeTokenValue(value);
+  if (!normalized || normalized.includes(' ')) {
+    return normalized ? [normalized] : [];
+  }
+
+  const variants = new Set<string>([normalized]);
+
+  const add = (candidate: string) => {
+    const clean = normalizeTokenValue(candidate);
+    if (clean) {
+      variants.add(clean);
+    }
+  };
+
+  if (normalized.length >= 5) {
+    if (normalized.endsWith('s')) add(normalized.slice(0, -1));
+    if (normalized.endsWith('es')) add(normalized.slice(0, -2));
+    if (normalized.endsWith('ed')) add(normalized.slice(0, -2));
+    if (normalized.endsWith('ing')) {
+      add(normalized.slice(0, -3));
+      add(`${normalized.slice(0, -3)}e`);
+    }
+    if (normalized.endsWith('ation') && normalized.length > 8) {
+      const root = normalized.slice(0, -5);
+      add(root);
+      add(`${root}ed`);
+      add(`${root}ing`);
+      add(`${root}s`);
+    }
+  }
+
+  return Array.from(variants).filter(Boolean);
+}
+
+function getEquivalentSearchValues(value: string): string[] {
+  const normalized = normalizeTokenValue(value);
+  if (!normalized) return [];
+
+  const equivalents = TERM_EQUIVALENTS[normalized] || [];
+  return Array.from(
+    new Set([normalized, ...equivalents.map(candidate => normalizeTokenValue(candidate)).filter(Boolean)])
+  );
+}
+
+function tokenMatchesTerm(actualToken: string, value: string): boolean {
+  const variants = buildTermMatchVariants(value);
+  return variants.some(variant => {
+    if (actualToken === variant) {
+      return true;
+    }
+
+    return variant.length >= 5 && actualToken.startsWith(variant) && actualToken.length - variant.length <= 4;
+  });
 }
 
 function tokenize(query: string): Token[] {
@@ -292,6 +353,10 @@ export function parseBooleanQuery(query: string): ParsedBooleanQuery {
   }
 }
 
+export function looksLikeBooleanQuery(query: string): boolean {
+  return BOOLEAN_SYNTAX_RE.test(query);
+}
+
 function createTextIndex(text: string): TextIndex {
   const normalizedText = normalizeWhitespace(text.toLowerCase());
   const tokens = normalizedText
@@ -312,9 +377,7 @@ function buildSnippetFromSpan(index: TextIndex, start: number, end: number, cont
 }
 
 function includesToken(tokens: string[], value: string): boolean {
-  const normalized = normalizeTokenValue(value);
-  if (!normalized) return false;
-  return tokens.includes(normalized);
+  return tokens.some(token => tokenMatchesTerm(token, value));
 }
 
 function includesPhrase(normalizedText: string, value: string): boolean {
@@ -323,28 +386,47 @@ function includesPhrase(normalizedText: string, value: string): boolean {
   return normalizedText.includes(normalized);
 }
 
+function findPhraseSpans(index: TextIndex, normalizedPhrase: string): Array<{ start: number; end: number }> {
+  const phraseTokens = normalizedPhrase.split(' ').filter(Boolean);
+  if (phraseTokens.length === 0) return [];
+
+  const spans: Array<{ start: number; end: number }> = [];
+  for (let i = 0; i <= index.tokens.length - phraseTokens.length; i += 1) {
+    const slice = index.tokens.slice(i, i + phraseTokens.length);
+    if (slice.join(' ') === normalizedPhrase) {
+      spans.push({ start: i, end: i + phraseTokens.length - 1 });
+    }
+  }
+  return spans;
+}
+
 function findOperandSpans(node: BooleanSearchNode, index: TextIndex): Array<{ start: number; end: number }> {
   if (node.type === 'TERM') {
-    const normalized = normalizeTokenValue(node.value);
-    if (!normalized) return [];
-    return index.tokens
-      .map((token, position) => (token === normalized ? { start: position, end: position } : null))
+    const equivalents = getEquivalentSearchValues(node.value);
+    if (equivalents.length === 0) return [];
+
+    const tokenVariants = Array.from(
+      new Set(
+        equivalents
+          .filter(value => !value.includes(' '))
+          .flatMap(buildTermMatchVariants)
+      )
+    );
+
+    const tokenSpans = index.tokens
+      .map((token, position) => (tokenVariants.some(variant => tokenMatchesTerm(token, variant)) ? { start: position, end: position } : null))
       .filter((value): value is { start: number; end: number } => value !== null);
+
+    const phraseSpans = equivalents
+      .filter(value => value.includes(' '))
+      .flatMap(value => findPhraseSpans(index, value));
+
+    return [...tokenSpans, ...phraseSpans];
   }
 
   if (node.type === 'PHRASE') {
     const normalized = normalizeTokenValue(node.value);
-    const phraseTokens = normalized.split(' ').filter(Boolean);
-    if (phraseTokens.length === 0) return [];
-
-    const spans: Array<{ start: number; end: number }> = [];
-    for (let i = 0; i <= index.tokens.length - phraseTokens.length; i += 1) {
-      const slice = index.tokens.slice(i, i + phraseTokens.length);
-      if (slice.join(' ') === normalized) {
-        spans.push({ start: i, end: i + phraseTokens.length - 1 });
-      }
-    }
-    return spans;
+    return normalized ? findPhraseSpans(index, normalized) : [];
   }
 
   return [];
@@ -525,14 +607,101 @@ function collectPositiveTerms(node: BooleanSearchNode, negated = false, bucket =
 }
 
 export function buildCandidateQueryFromBoolean(query: string): string {
+  return buildBooleanCandidateQueries(query)[0] || normalizeWhitespace(query);
+}
+
+function formatCandidateQueryTerm(term: string): string {
+  const trimmed = normalizeWhitespace(term);
+  if (!trimmed) return '';
+  return /\s/.test(trimmed) ? `"${trimmed}"` : trimmed;
+}
+
+function buildCompoundCandidateQueries(terms: string[]): string[] {
+  if (terms.length < 2 || terms.length > 3) {
+    return [];
+  }
+
+  const optionSets = terms.map(term => {
+    const equivalents = getEquivalentSearchValues(term);
+    return Array.from(
+      new Set(
+        [formatCandidateQueryTerm(term), ...equivalents.map(formatCandidateQueryTerm)].filter(Boolean)
+      )
+    ).slice(0, 3);
+  });
+
+  let combinations = [''];
+  for (const options of optionSets) {
+    const next: string[] = [];
+    for (const prefix of combinations) {
+      for (const option of options) {
+        const candidate = normalizeWhitespace([prefix, option].filter(Boolean).join(' '));
+        if (candidate) {
+          next.push(candidate);
+        }
+      }
+    }
+    combinations = next.slice(0, 8);
+  }
+
+  return Array.from(new Set(combinations)).filter(Boolean);
+}
+
+export function buildBooleanCandidateQueries(query: string): string[] {
   const parsed = parseBooleanQuery(query);
   if (!parsed.expression) {
-    return normalizeWhitespace(query);
+    const normalized = normalizeWhitespace(query);
+    return normalized ? [normalized] : [];
   }
 
   const terms = Array.from(collectPositiveTerms(parsed.expression))
     .map(term => normalizeWhitespace(term))
     .filter(Boolean);
 
-  return terms.length > 0 ? terms.join(' ') : normalizeWhitespace(query);
+  if (terms.length === 0) {
+    const normalized = normalizeWhitespace(query);
+    return normalized ? [normalized] : [];
+  }
+
+  const formattedTerms = terms.map(formatCandidateQueryTerm).filter(Boolean);
+  const compoundQueries = buildCompoundCandidateQueries(terms);
+  const flatTerms = terms
+    .flatMap(term => term.split(/\s+/))
+    .map(term => normalizeWhitespace(term))
+    .filter(Boolean);
+  const expandedFlatTerms = Array.from(
+    new Set(
+      flatTerms.flatMap(term => {
+        const equivalents = getEquivalentSearchValues(term);
+        return equivalents.flatMap(value => {
+          if (value.includes(' ')) {
+            return [value];
+          }
+
+          const variants = buildTermMatchVariants(value);
+          const base = normalizeTokenValue(value);
+          return base ? [base, ...variants] : variants;
+        });
+      })
+    )
+  )
+    .filter(Boolean)
+    .map(formatCandidateQueryTerm);
+  const phraseTerms = formattedTerms.filter(term => term.startsWith('"') && term.endsWith('"'));
+  const sortedTerms = [...formattedTerms].sort((a, b) => b.replace(/"/g, '').length - a.replace(/"/g, '').length);
+  const tokenOrQuery = flatTerms.join(' OR ').trim();
+  const expandedTokenOrQuery = expandedFlatTerms.join(' OR ').trim();
+  const phraseAndTokenQuery = Array.from(new Set([...phraseTerms, ...expandedFlatTerms])).join(' OR ').trim();
+  const queries = [
+    ...compoundQueries,
+    formattedTerms.join(' ').trim(),
+    phraseAndTokenQuery,
+    expandedTokenOrQuery,
+    tokenOrQuery,
+    formattedTerms.join(' OR ').trim(),
+    phraseTerms.join(' OR ').trim(),
+    sortedTerms[0] || '',
+  ].filter(Boolean);
+
+  return Array.from(new Set(queries));
 }

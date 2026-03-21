@@ -17,7 +17,11 @@ function buildHighlightRegex(terms: string[]): RegExp | null {
   return pattern ? new RegExp(`(${pattern})`, 'gi') : null;
 }
 
-export function clearDocumentHighlights(doc: Document): void {
+export function clearDocumentHighlights(doc: Document | null | undefined): void {
+  if (!doc?.body) {
+    return;
+  }
+
   const marks = Array.from(doc.querySelectorAll('mark[data-vara-search-hit]'));
   for (const mark of marks) {
     const parent = mark.parentNode;

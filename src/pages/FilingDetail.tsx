@@ -512,7 +512,15 @@ export default function FilingDetail() {
     }
 
     if (target) {
-      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const frameWindow = frame.contentWindow;
+      const targetRect = target.getBoundingClientRect();
+      const currentOffset = frameWindow?.scrollY ?? frame.contentDocument.documentElement.scrollTop ?? 0;
+      const targetTop = Math.max(targetRect.top + currentOffset - 24, 0);
+
+      frameWindow?.scrollTo({
+        top: targetTop,
+        behavior: 'smooth',
+      });
     }
   }, []);
 
@@ -556,7 +564,16 @@ export default function FilingDetail() {
 
     const marks = highlightDocumentSearchTerms(doc, highlightTerms);
     if (marks.length > 0) {
-      marks[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const frameWindow = iframeRef.current?.contentWindow;
+      const markRect = marks[0].getBoundingClientRect();
+      const currentOffset = frameWindow?.scrollY ?? doc.documentElement.scrollTop ?? 0;
+      const viewportHeight = frameWindow?.innerHeight || iframeRef.current?.clientHeight || 0;
+      const targetTop = Math.max(currentOffset + markRect.top - Math.max((viewportHeight - markRect.height) / 2, 48), 0);
+
+      frameWindow?.scrollTo({
+        top: targetTop,
+        behavior: 'smooth',
+      });
     }
   }, [highlightTerms, iframeLoadedToken]);
 

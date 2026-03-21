@@ -57,13 +57,16 @@ export function parseSearchHit(hit: EdgarSearchHit) {
   const src = hit._source as any;
   const entityName = (src?.display_names?.[0] || src?.entity_name || '').replace(/\s*\(CIK\s+\d+\)/, '').trim();
   const idParts = hit._id.split(':');
+  const filingFormType = src?.form || src?.root_forms?.[0] || src?.file_type || '';
+  const documentType = src?.file_type || filingFormType || '';
   return {
     entityName,
     fileDate: src?.file_date || '',
-    formType: src?.file_type || src?.form || '',
+    formType: filingFormType,
+    documentType,
     accessionNumber: src?.adsh || '',
     cik: (src?.ciks?.[0] || '').replace(/^0+/, ''),
     primaryDocument: idParts.length > 1 ? idParts[1] : '',
-    description: src?.file_description || '',
+    description: src?.file_description || documentType || '',
   };
 }

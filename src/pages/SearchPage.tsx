@@ -38,9 +38,11 @@ import {
   type ResearchSearchSession,
 } from '../services/researchSessions';
 import { buildHighlightTerms, interpretSearchPrompt } from '../services/searchAssist';
+import { looksLikeBooleanQuery } from '../utils/booleanSearch';
 import './SearchPage.css';
 
-const DEFAULT_FORM_SCOPE = '10-K,10-Q,8-K,DEF 14A,20-F,S-1';
+const DEFAULT_FORM_SCOPE = '10-K,10-Q,8-K,8-K/A,DEF 14A,20-F,6-K,S-1';
+const LEGACY_DEFAULT_FORM_SCOPE = ['10-K', '10-Q'];
 const SAMPLE_SEARCHES = [
   'ASC 842 adoption w/10 lease',
   'ASR w/5 derivative',
@@ -88,6 +90,15 @@ function renderHighlightedText(text: string, terms: string[]) {
     const isHit = uniqueTerms.some(term => term.toLowerCase() === part.toLowerCase());
     return isHit ? <mark key={`${part}-${index}`}>{part}</mark> : <span key={`${part}-${index}`}>{part}</span>;
   });
+}
+
+function formatResultFormLabel(result: FilingResearchResult): string {
+  const filingForm = (result.formType || '').trim();
+  const documentType = (result.documentType || '').trim();
+  if (!documentType || documentType.toUpperCase() === filingForm.toUpperCase()) {
+    return filingForm;
+  }
+  return `${filingForm} · ${documentType}`;
 }
 
 async function resolveEntityHint(rawQuery: string): Promise<{ entityName: string; query: string }> {
@@ -140,6 +151,38 @@ function buildRouteParams(sessionId: string | null, query: string): URLSearchPar
   return params;
 }
 
+function queryMentionsFormScope(value: string): boolean {
+  return /\b(?:10[\s-]?k|10[\s-]?q|8[\s-]?k(?:\/a)?|6[\s-]?k|20[\s-]?f|def[\s-]?14a|s[\s-]?1)\b/i.test(value);
+}
+
+function hasOnlyLegacyDefaultFormScope(filters: SearchFilters): boolean {
+  const normalizedForms = [...filters.formTypes].map(form => form.trim().toUpperCase()).sort();
+  const isLegacyDefault =
+    normalizedForms.length === LEGACY_DEFAULT_FORM_SCOPE.length &&
+    normalizedForms.every((form, index) => form === LEGACY_DEFAULT_FORM_SCOPE[index]);
+
+  if (!isLegacyDefault) {
+    return false;
+  }
+
+  return !(
+    filters.keyword.trim() ||
+    filters.dateFrom.trim() ||
+    filters.dateTo.trim() ||
+    filters.entityName.trim() ||
+    filters.sectionKeywords.trim() ||
+    filters.sicCode.trim() ||
+    filters.stateOfInc.trim() ||
+    filters.headquarters.trim() ||
+    filters.accountant.trim() ||
+    filters.accessionNumber.trim() ||
+    filters.fileNumber.trim() ||
+    filters.fiscalYearEnd.trim() ||
+    filters.exchange.length > 0 ||
+    filters.acceleratedStatus.length > 0
+  );
+}
+
 export default function SearchPage() {
   const location = useLocation();
   const navigate = useNavigate();
@@ -160,7 +203,6 @@ export default function SearchPage() {
   const [searchMode, setSearchMode] = useState<ResearchSearchMode>('semantic');
   const [filters, setFilters] = useState<SearchFilters>({
     ...defaultSearchFilters,
-    formTypes: ['10-K', '10-Q'],
   });
   const [results, setResults] = useState<FilingResearchResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -179,7 +221,6 @@ export default function SearchPage() {
     mode: 'semantic',
     filters: {
       ...defaultSearchFilters,
-      formTypes: ['10-K', '10-Q'],
     },
   });
   const [previewError, setPreviewError] = useState(false);
@@ -188,6 +229,7 @@ export default function SearchPage() {
   const previewFrameRef = useRef<HTMLIFrameElement>(null);
   const bootstrappedInitialSearch = useRef(false);
   const handledAlertIdsRef = useRef<Set<string>>(new Set());
+  const handleSearchRef = useRef<((searchQuery?: string, overrideFilters?: SearchFilters, overrideMode?: ResearchSearchMode, options?: { preferredSessionId?: string; replaceUrl?: boolean }) => Promise<void>) | null>(null);
 
   useEffect(() => {
     saveResearchSessions(sessions);
@@ -273,15 +315,36 @@ export default function SearchPage() {
     options: { preferredSessionId?: string; replaceUrl?: boolean } = {}
   ) => {
     const trimmed = searchQuery.trim();
-    const nextFilters = cloneSearchFilters(overrideFilters);
+    let nextFilters = cloneSearchFilters(overrideFilters);
+    const autoScopeHints: string[] = [];
+
+    if (hasOnlyLegacyDefaultFormScope(nextFilters) && !queryMentionsFormScope(trimmed)) {
+      nextFilters = {
+        ...nextFilters,
+        formTypes: [],
+      };
+      autoScopeHints.push('Form scope: all core filings');
+    }
+
+    const effectiveMode: ResearchSearchMode =
+      overrideMode === 'semantic' && looksLikeBooleanQuery(trimmed)
+        ? 'boolean'
+        : overrideMode;
     const interpreted =
-      overrideMode === 'semantic' && trimmed
+      effectiveMode === 'semantic' && trimmed
         ? interpretSearchPrompt(trimmed, nextFilters)
         : {
             query: trimmed,
             filters: nextFilters,
-            appliedHints: [] as string[],
+            appliedHints:
+              effectiveMode !== overrideMode
+                ? ['Detected Boolean / proximity syntax']
+                : [] as string[],
           };
+
+    if (autoScopeHints.length > 0) {
+      interpreted.appliedHints = [...autoScopeHints, ...interpreted.appliedHints];
+    }
 
     if (
       !trimmed &&
@@ -300,7 +363,7 @@ export default function SearchPage() {
     setTrendReport('');
     setSearchInterpretation(interpreted.appliedHints);
 
-    const draftSignature = buildSearchSignature(trimmed, overrideMode, nextFilters);
+    const draftSignature = buildSearchSignature(trimmed, effectiveMode, nextFilters);
     const activeSignature = activeSession
       ? buildSearchSignature(activeSession.query, activeSession.mode, activeSession.filters)
       : '';
@@ -325,7 +388,7 @@ export default function SearchPage() {
       const matches = await executeFilingResearchSearch({
         query: effectiveQuery || trimmed,
         filters: effectiveFilters,
-        mode: overrideMode,
+        mode: effectiveMode,
         defaultForms: DEFAULT_FORM_SCOPE,
         limit: 50,
         hydrateTextSignals: true,
@@ -334,7 +397,7 @@ export default function SearchPage() {
       setResults(matches);
       setLastResolvedSearch({
         query: effectiveQuery || trimmed,
-        mode: overrideMode,
+        mode: effectiveMode,
         filters: effectiveFilters,
       });
 
@@ -342,7 +405,7 @@ export default function SearchPage() {
         id: targetSessionId,
         title: buildResearchSessionTitle(trimmed, nextFilters),
         query: trimmed,
-        mode: overrideMode,
+        mode: effectiveMode,
         filters: nextFilters,
         results: matches,
         searched: true,
@@ -353,7 +416,7 @@ export default function SearchPage() {
         interpretation: interpreted.appliedHints,
         resolvedSearch: {
           query: effectiveQuery || trimmed,
-          mode: overrideMode,
+          mode: effectiveMode,
           filters: effectiveFilters,
         },
         selectedResultId: matches[0]?.id || null,
@@ -374,7 +437,7 @@ export default function SearchPage() {
         id: targetSessionId,
         title: buildResearchSessionTitle(trimmed, nextFilters),
         query: trimmed,
-        mode: overrideMode,
+        mode: effectiveMode,
         filters: nextFilters,
         results: [],
         searched: true,
@@ -382,7 +445,7 @@ export default function SearchPage() {
         interpretation: interpreted.appliedHints,
         resolvedSearch: {
           query: trimmed,
-          mode: overrideMode,
+          mode: effectiveMode,
           filters: nextFilters,
         },
         selectedResultId: null,
@@ -406,34 +469,42 @@ export default function SearchPage() {
   ]);
 
   useEffect(() => {
-    if (activeSession) {
-      setQuery(activeSession.query);
-      setSearchMode(activeSession.mode);
-      setFilters(cloneSearchFilters(activeSession.filters));
-      setResults(activeSession.results);
-      setSearched(activeSession.searched);
-      setErrorMsg(activeSession.errorMsg);
-      setSearchInterpretation([...activeSession.interpretation]);
-      setLastResolvedSearch({
-        query: activeSession.resolvedSearch.query,
-        mode: activeSession.resolvedSearch.mode,
-        filters: cloneSearchFilters(activeSession.resolvedSearch.filters),
-      });
-      setTrendReport('');
-      setAlertMessage('');
-      syncActiveSearchContext(activeSession);
+    handleSearchRef.current = handleSearch;
+  }, [handleSearch]);
+
+  useEffect(() => {
+    if (!activeSession) {
       return;
     }
 
-    if (!bootstrappedInitialSearch.current && initialQuery) {
-      bootstrappedInitialSearch.current = true;
-      setQuery(initialQuery);
-      void handleSearch(initialQuery, {
-        ...defaultSearchFilters,
-        formTypes: ['10-K', '10-Q'],
-      }, 'semantic', { replaceUrl: true });
+    setQuery(activeSession.query);
+    setSearchMode(activeSession.mode);
+    setFilters(cloneSearchFilters(activeSession.filters));
+    setResults(activeSession.results);
+    setSearched(activeSession.searched);
+    setErrorMsg(activeSession.errorMsg);
+    setSearchInterpretation([...activeSession.interpretation]);
+    setLastResolvedSearch({
+      query: activeSession.resolvedSearch.query,
+      mode: activeSession.resolvedSearch.mode,
+      filters: cloneSearchFilters(activeSession.resolvedSearch.filters),
+    });
+    setTrendReport('');
+    setAlertMessage('');
+    syncActiveSearchContext(activeSession);
+  }, [activeSession, syncActiveSearchContext]);
+
+  useEffect(() => {
+    if (activeSession || bootstrappedInitialSearch.current || !initialQuery) {
+      return;
     }
-  }, [activeSession, handleSearch, initialQuery, syncActiveSearchContext]);
+
+    bootstrappedInitialSearch.current = true;
+    setQuery(initialQuery);
+    void handleSearchRef.current?.(initialQuery, {
+      ...defaultSearchFilters,
+    }, 'semantic', { replaceUrl: true });
+  }, [activeSession, initialQuery]);
 
   useEffect(() => {
     const alertId = (location.state as { alertId?: string } | null)?.alertId;
@@ -665,37 +736,6 @@ export default function SearchPage() {
           </button>
         </div>
 
-        <form
-          className="search-bar-container glass-card"
-          onSubmit={event => {
-            event.preventDefault();
-            void handleSearch(query);
-          }}
-        >
-          <Search className="search-icon" size={20} />
-          <input
-            type="text"
-            placeholder={
-              searchMode === 'semantic'
-                ? 'Describe the issue you want to research...'
-                : 'Example: "car parking" w/10 installation'
-            }
-            value={query}
-            onChange={event => setQuery(event.target.value)}
-          />
-          <button type="submit" className="primary-btn" disabled={loading}>
-            {loading ? <Loader2 size={16} className="spinner" /> : 'Search'}
-          </button>
-        </form>
-
-        {searchInterpretation.length > 0 && (
-          <div className="research-chip-row">
-            {searchInterpretation.map(item => (
-              <span key={item} className="research-chip">{item}</span>
-            ))}
-          </div>
-        )}
-
         <SearchFilterBar
           config={{
             showEntityName: true,
@@ -762,6 +802,40 @@ export default function SearchPage() {
       </aside>
 
       <section className="research-main">
+        <div className="research-query-panel glass-card">
+          <div className="eyebrow">Search query</div>
+          <form
+            className="research-query-form"
+            onSubmit={event => {
+              event.preventDefault();
+              void handleSearch(query);
+            }}
+          >
+            <Search className="search-icon" size={20} />
+            <input
+              type="text"
+              placeholder={
+                searchMode === 'semantic'
+                  ? 'Describe the issue you want to research...'
+                  : 'Example: "car parking" w/10 installation'
+              }
+              value={query}
+              onChange={event => setQuery(event.target.value)}
+            />
+            <button type="submit" className="primary-btn" disabled={loading}>
+              {loading ? <Loader2 size={16} className="spinner" /> : 'Search'}
+            </button>
+          </form>
+
+          {searchInterpretation.length > 0 && (
+            <div className="research-chip-row">
+              {searchInterpretation.map(item => (
+                <span key={item} className="research-chip">{item}</span>
+              ))}
+            </div>
+          )}
+        </div>
+
         <div className="research-toolbar glass-card">
           <div className="research-tab-strip">
             {sessions.length === 0 ? (
@@ -849,7 +923,7 @@ export default function SearchPage() {
                   >
                     <div className="topline">
                       <span className="date">{result.fileDate}</span>
-                      <span className="form">{result.formType}</span>
+                      <span className="form">{formatResultFormLabel(result)}</span>
                     </div>
                     <div className="company">{result.entityName}</div>
                     <div className="meta">
@@ -879,7 +953,7 @@ export default function SearchPage() {
               <>
                 <div className="pane-header preview-header">
                   <div>
-                    <div className="eyebrow">{selectedResult.formType} preview</div>
+                    <div className="eyebrow">{formatResultFormLabel(selectedResult)} preview</div>
                     <h2>{selectedResult.entityName}</h2>
                     <div className="preview-meta-row">
                       <span>{selectedResult.fileDate}</span>
