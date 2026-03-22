@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { buildHeuristicAgentPlan, sanitizeAgentPlan } from '../services/agentPlanner';
-import type { AgentContextSnapshot, AgentPlan } from '../types/agent';
+import type { AgentContextSnapshot } from '../types/agent';
 
 const emptyContext: AgentContextSnapshot = {
   pagePath: '/search',
@@ -164,7 +164,7 @@ describe('agentPlanner', () => {
         actions: [{ type: 'invalid_action', title: 'Bad', input: {} }],
       };
       const plan = sanitizeAgentPlan(candidate, 'search', emptyContext);
-      expect(plan.actions.every(a => a.type !== 'invalid_action')).toBe(true);
+      expect(plan.actions.some(a => a.title === 'Bad')).toBe(false);
     });
 
     it('preserves valid actions', () => {

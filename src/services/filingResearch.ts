@@ -4,6 +4,7 @@ import {
   fetchFilingText,
   searchEdgarFilings,
   type EdgarSearchHit,
+  type ElasticSearchExtendedParams,
   type SecSubmission,
 } from './secApi';
 import {
@@ -798,6 +799,14 @@ async function hydrateResultSignals(result: FilingResearchResult): Promise<Filin
   return signal;
 }
 
+function buildExtendedSearchParams(filters: SearchFilters): ElasticSearchExtendedParams {
+  return {
+    auditor: canonicalizeAuditorInput(filters.accountant.trim()) || undefined,
+    acceleratedStatus: filters.acceleratedStatus.length > 0 ? filters.acceleratedStatus.join(',') : undefined,
+    sicCode: filters.sicCode.trim() ? filters.sicCode.trim().match(/\d{3,4}/)?.[0] : undefined,
+  };
+}
+
 function requiresTextFiltering(filters: SearchFilters, rawQuery: string, mode: ResearchSearchMode): boolean {
   if (filters.accountant.trim() || filters.acceleratedStatus.length > 0 || filters.sectionKeywords.trim()) {
     return true;
@@ -882,7 +891,8 @@ export async function executeFilingResearchSearch({
           filters.dateFrom || undefined,
           filters.dateTo || undefined,
           filters.entityName || undefined,
-          fastCandidateCollection ? Math.min(perQueryResultLimit, 140) : perQueryResultLimit
+          fastCandidateCollection ? Math.min(perQueryResultLimit, 140) : perQueryResultLimit,
+          buildExtendedSearchParams(filters)
         );
 
         const queryPriority = filteredServerQueries.length - queryIndex;
@@ -944,7 +954,8 @@ export async function executeFilingResearchSearch({
         filters.dateFrom || undefined,
         filters.dateTo || undefined,
         filters.entityName || undefined,
-        wavePerQueryLimit
+        wavePerQueryLimit,
+        buildExtendedSearchParams(filters)
       );
     } catch (error) {
       lastSearchError = error instanceof Error ? error : new Error('EDGAR search failed');

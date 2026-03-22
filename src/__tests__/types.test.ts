@@ -15,15 +15,9 @@ import type {
   AgentPlan,
   AgentRun,
   AgentCitation,
-  AgentAction,
-  AgentEvidencePacket,
-  AgentContextSnapshot,
   FilingSectionReference,
   FilingLocator,
-  FilingSectionSnippet,
   PendingSearchIntent,
-  PendingCompareIntent,
-  PendingAlertDraft,
   ResolvedCompany,
 } from '../types/agent';
 

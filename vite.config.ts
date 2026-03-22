@@ -61,6 +61,18 @@ const claudeDevApiPlugin = {
           return
         }
 
+        if (requestUrl.pathname === '/api/es-search') {
+          try {
+            const esSearchHandler = (await import('./api/es-search.js')).default
+            const esRequest = new Request(requestUrl.toString(), { method: req.method || 'GET' })
+            const esResponse = await esSearchHandler(esRequest)
+            await sendFetchResponse(res, esResponse)
+          } catch (error) {
+            sendJson(res, 503, { error: 'Elasticsearch not configured', hits: { hits: [], total: { value: 0 } } })
+          }
+          return
+        }
+
         const targetHandler =
           requestUrl.pathname === '/api/sec-proxy'
             ? secProxyHandler

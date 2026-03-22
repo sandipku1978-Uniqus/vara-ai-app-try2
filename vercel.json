@@ -6,6 +6,7 @@
     { "src": "^/sec-data/(.*)$", "dest": "/api/sec-proxy?upstream=data&path=$1" },
     { "src": "^/sec-efts/?$", "dest": "/api/sec-proxy?upstream=efts" },
     { "src": "^/sec-efts/(.*)$", "dest": "/api/sec-proxy?upstream=efts&path=$1" },
+    { "src": "^/api/es-search", "dest": "/api/es-search" },
     { "src": "^/(ix|ixviewer|Archives|include|files|cdata|js|css|images)/(.*)$", "dest": "/api/sec-proxy?path=$1/$2" },
     { "handle": "filesystem" },
     { "src": "/.*", "dest": "/" }

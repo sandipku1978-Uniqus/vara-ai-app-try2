@@ -6,6 +6,7 @@ describe('useEdgarSearch', () => {
   describe('parseSearchHit', () => {
     const makeHit = (overrides: Partial<EdgarSearchHit> = {}): EdgarSearchHit => ({
       _id: '0000320193-23-000106:aapl-20230930.htm',
+      _score: 1,
       _source: {
         display_names: ['Apple Inc (CIK 0000320193)'],
         entity_name: 'Apple Inc',

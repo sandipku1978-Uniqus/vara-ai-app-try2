@@ -3,6 +3,7 @@
 
 const USER_AGENT = import.meta.env.VITE_EDGAR_USER_AGENT || 'Vara AI Research App contact@vara.ai';
 const USE_DIRECT_VERCEL_API = !import.meta.env.DEV;
+const USE_ELASTICSEARCH = Boolean(import.meta.env.VITE_USE_ELASTICSEARCH);
 const edgarSearchCache = new Map<string, Promise<EdgarSearchHit[]>>();
 
 // Cache for CIKs to avoid redundant lookups if doing bulk mappings 
@@ -539,8 +540,72 @@ export interface EdgarSearchResult {
   };
 }
 
+export interface ElasticSearchExtendedParams {
+  auditor?: string;
+  acceleratedStatus?: string;
+  sicCode?: string;
+}
+
+/**
+ * Search filings via Elasticsearch when available, otherwise fall back to EDGAR EFTS.
+ */
+async function searchViaElasticsearch(
+  query: string,
+  forms: string,
+  startDate: string,
+  endDate: string,
+  entityName: string,
+  maxResults: number,
+  extended: ElasticSearchExtendedParams = {}
+): Promise<EdgarSearchHit[]> {
+  const params = new URLSearchParams({
+    q: query,
+    forms,
+    startdt: startDate,
+    enddt: endDate,
+    from: '0',
+    size: String(Math.min(maxResults, 500)),
+  });
+  if (entityName) params.set('entityName', entityName);
+  if (extended.auditor) params.set('auditor', extended.auditor);
+  if (extended.acceleratedStatus) params.set('acceleratedStatus', extended.acceleratedStatus);
+  if (extended.sicCode) params.set('sicCode', extended.sicCode);
+
+  const results: EdgarSearchHit[] = [];
+  const seenIds = new Set<string>();
+  let totalHits = Number.POSITIVE_INFINITY;
+  const pageSize = Math.min(maxResults, 500);
+
+  for (let offset = 0; offset < maxResults && results.length < maxResults && offset < totalHits; offset += pageSize) {
+    params.set('from', String(offset));
+    params.set('size', String(Math.min(pageSize, maxResults - results.length)));
+
+    const response = await fetch(`/api/es-search?${params.toString()}`);
+    if (!response.ok) {
+      throw new Error(`ES Search Error: ${response.status}`);
+    }
+
+    const data: EdgarSearchResult = await response.json();
+    const pageHits = data.hits?.hits || [];
+    totalHits = data.hits?.total?.value || pageHits.length;
+
+    for (const hit of pageHits) {
+      if (seenIds.has(hit._id)) continue;
+      seenIds.add(hit._id);
+      results.push(hit);
+      if (results.length >= maxResults) break;
+    }
+
+    if (pageHits.length < pageSize) break;
+    if (offset + pageSize < maxResults) await delay(50);
+  }
+
+  return results;
+}
+
 /**
  * Search EDGAR full-text search for specific form types.
+ * Routes through Elasticsearch when VITE_USE_ELASTICSEARCH is set.
  */
 export async function searchEdgarFilings(
   query: string,
@@ -548,8 +613,20 @@ export async function searchEdgarFilings(
   startDate?: string,
   endDate?: string,
   entityName?: string,
-  maxResults = 100
+  maxResults = 100,
+  extended: ElasticSearchExtendedParams = {}
 ): Promise<EdgarSearchHit[]> {
+  if (USE_ELASTICSEARCH) {
+    return searchViaElasticsearch(
+      query,
+      forms,
+      startDate || '2020-01-01',
+      endDate || new Date().toISOString().split('T')[0],
+      entityName || '',
+      maxResults,
+      extended
+    );
+  }
   const baseParams = new URLSearchParams({
     q: query,
     forms: forms,
