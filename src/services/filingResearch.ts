@@ -81,6 +81,7 @@ interface ExecuteSearchOptions {
   hydrateTextSignals?: boolean;
   deferTextValidation?: boolean;
   preferFastCandidateCollection?: boolean;
+  onProgress?: (results: FilingResearchResult[]) => void;
 }
 
 function delay(ms: number): Promise<void> {
@@ -433,28 +434,39 @@ async function getFilingSignal(
     filingSignalCache.set(
       cacheKey,
       (async () => {
-        const text = await fetchFilingText(cik, accessionNumber, primaryDocument);
-        let parentText = '';
-        let auditor = canonicalizeAuditorInput(detectAuditor(text));
-        let acceleratedStatus = detectAcceleratedStatus(text);
+        try {
+          const text = await fetchFilingText(cik, accessionNumber, primaryDocument);
+          let parentText = '';
+          let auditor = canonicalizeAuditorInput(detectAuditor(text));
+          let acceleratedStatus = detectAcceleratedStatus(text);
 
-        if (filingPrimaryDocument && filingPrimaryDocument !== primaryDocument) {
-          parentText = await fetchFilingText(cik, accessionNumber, filingPrimaryDocument);
+          if (filingPrimaryDocument && filingPrimaryDocument !== primaryDocument) {
+            try {
+              parentText = await fetchFilingText(cik, accessionNumber, filingPrimaryDocument);
+            } catch {
+              // Parent document fetch failed — continue with what we have.
+            }
 
-          if (!auditor) {
-            auditor = canonicalizeAuditorInput(detectAuditor(parentText));
+            if (!auditor) {
+              auditor = canonicalizeAuditorInput(detectAuditor(parentText));
+            }
+
+            if (!acceleratedStatus) {
+              acceleratedStatus = detectAcceleratedStatus(parentText);
+            }
           }
 
-          if (!acceleratedStatus) {
-            acceleratedStatus = detectAcceleratedStatus(parentText);
-          }
+          return {
+            text: text || parentText,
+            auditor,
+            acceleratedStatus,
+          };
+        } catch {
+          // Filing text fetch failed (rate limit, network error, etc.)
+          // Remove from cache so a future attempt can retry.
+          filingSignalCache.delete(cacheKey);
+          return { text: '', auditor: '', acceleratedStatus: '' };
         }
-
-        return {
-          text: text || parentText,
-          auditor,
-          acceleratedStatus,
-        };
       })()
     );
   }
@@ -806,6 +818,7 @@ export async function executeFilingResearchSearch({
   hydrateTextSignals = false,
   deferTextValidation = false,
   preferFastCandidateCollection = false,
+  onProgress,
 }: ExecuteSearchOptions): Promise<FilingResearchResult[]> {
   const serverQuery = buildServerQuery(query || filters.keyword, filters, mode);
   const formTypes = normalizeFormTypes(filters, defaultForms);
@@ -816,26 +829,10 @@ export async function executeFilingResearchSearch({
   const requestedLimit = Math.max(limit, 1);
   const fastPass = deferTextValidation;
   const fastCandidateCollection = deferTextValidation || preferFastCandidateCollection;
-  const displayLimit =
-    mode === 'boolean'
-      ? Math.min(requestedLimit, 200)
-      : semanticAuditorSearch
-        ? Math.min(requestedLimit, 500)
-        : Math.min(requestedLimit, 300);
-  const candidateLimit =
-    fastCandidateCollection
-      ? mode === 'boolean'
-        ? Math.min(Math.max(displayLimit * 2, 70), 120)
-        : semanticAuditorSearch
-          ? Math.min(Math.max(displayLimit + 20, 100), 140)
-          : Math.min(Math.max(displayLimit + 20, 80), 120)
-      : mode === 'boolean'
-        ? Math.min(Math.max(displayLimit * 2, 220), 320)
-        : semanticAuditorSearch
-          ? Math.min(Math.max(displayLimit + 180, 450), 700)
-          : Math.min(Math.max(displayLimit + 80, 180), 320);
+  const displayLimit = Math.min(requestedLimit, 500);
   const needsTextFiltering = requiresTextFiltering(filters, query, mode);
   const shouldHydrateSignals = !fastPass && (hydrateTextSignals || needsTextFiltering);
+
   const booleanServerQueries = mode === 'boolean' ? buildBooleanCandidateQueries(query || filters.keyword).slice(0, 5) : [];
   const semanticServerQueries = mode === 'semantic' ? buildSemanticCandidateQueries(serverQuery, filters) : [];
 
@@ -844,165 +841,175 @@ export async function executeFilingResearchSearch({
       ? (booleanServerQueries.length > 0 ? booleanServerQueries : [serverQuery])
       : (semanticServerQueries.length > 0 ? semanticServerQueries : [serverQuery]);
 
-  const hitMap = new Map<string, { hit: EdgarSearchHit; queryPriority: number; score: number }>();
-  let lastSearchError: Error | null = null;
-
   const filteredServerQueries = (
     fastCandidateCollection
       ? serverQueries.slice(0, mode === 'boolean' ? 3 : semanticAuditorSearch ? 2 : 3)
       : serverQueries
   ).filter(Boolean);
+
+  // ── Collect-then-validate pipeline ──
+  // For text-filtered searches (auditor, boolean, section keywords) we use a
+  // wave-based strategy: collect a batch of candidates from EDGAR, validate them,
+  // and if we haven't filled displayLimit yet, collect more from the next query
+  // variant. This avoids fetching thousands of candidates up-front while still
+  // being uncapped — the loop only stops when displayLimit is reached or all
+  // query variants are exhausted.
+
   const perQueryResultLimit =
     fastCandidateCollection
-      ? mode === 'boolean'
-        ? Math.min(Math.max(candidateLimit, 70), 100)
-        : semanticAuditorSearch
-          ? Math.min(Math.max(candidateLimit, 100), 140)
-          : Math.min(Math.max(candidateLimit, 80), 120)
-      : mode === 'boolean'
-        ? Math.min(Math.max(candidateLimit, 120), 240)
-        : semanticAuditorSearch
-          ? Math.min(Math.max(candidateLimit, 320), 500)
-          : Math.min(Math.max(candidateLimit, 140), 220);
-  const collectionTarget =
-    fastCandidateCollection
-      ? mode === 'boolean'
-        ? Math.min(candidateLimit + 20, 140)
-        : semanticAuditorSearch
-          ? Math.min(candidateLimit + 20, 180)
-          : Math.min(candidateLimit + 10, 130)
-      : mode === 'boolean'
-        ? candidateLimit * 2
-        : semanticAuditorSearch
-          ? Math.min(candidateLimit + 180, 900)
-          : candidateLimit;
+      ? Math.min(Math.max(displayLimit, 80), 140)
+      : needsTextFiltering
+        ? 500
+        : Math.min(Math.max(displayLimit, 140), 300);
 
-  for (const [queryIndex, candidateQuery] of filteredServerQueries.entries()) {
+  const hitMap = new Map<string, { hit: EdgarSearchHit; queryPriority: number; score: number }>();
+  let lastSearchError: Error | null = null;
+
+  // For non-text-filtered searches, collect all candidates up front (original behaviour).
+  // For text-filtered searches, we collect per-query-variant and validate in waves.
+  if (!shouldHydrateSignals) {
+    // ── Simple collection (fast pass or no text filtering needed) ──
+    const collectionTarget =
+      fastCandidateCollection
+        ? Math.min(Math.max(displayLimit + 20, 80), 180)
+        : Math.min(Math.max(displayLimit + 40, 200), 500);
+
+    for (const [queryIndex, candidateQuery] of filteredServerQueries.entries()) {
+      try {
+        const batch = await searchEdgarFilings(
+          candidateQuery,
+          formTypes,
+          filters.dateFrom || undefined,
+          filters.dateTo || undefined,
+          filters.entityName || undefined,
+          fastCandidateCollection ? Math.min(perQueryResultLimit, 140) : perQueryResultLimit
+        );
+
+        const queryPriority = filteredServerQueries.length - queryIndex;
+        for (const hit of batch) {
+          const previous = hitMap.get(hit._id);
+          if (!previous || queryPriority > previous.queryPriority || (queryPriority === previous.queryPriority && hit._score > previous.score)) {
+            hitMap.set(hit._id, { hit, queryPriority, score: hit._score });
+          }
+        }
+
+        if (hitMap.size >= collectionTarget) break;
+        if (mode === 'boolean') await delay(fastCandidateCollection ? 60 : 180);
+      } catch (error) {
+        lastSearchError = error instanceof Error ? error : new Error('EDGAR search failed');
+        if (mode !== 'boolean') throw lastSearchError;
+      }
+    }
+
+    if (hitMap.size === 0 && lastSearchError) throw lastSearchError;
+
+    const hits = Array.from(hitMap.values())
+      .sort((a, b) => b.queryPriority !== a.queryPriority ? b.queryPriority - a.queryPriority : b.score - a.score)
+      .map(entry => entry.hit)
+      .slice(0, collectionTarget);
+    let results = uniqueById(hits.map(mapSearchHit));
+
+    if (needsCompanyMetadata) results = await hydrateCompanyMetadataBatch(results);
+    results = results.filter(result => matchesBaseFilters(result, filters, formScope));
+    results = sortResearchResults(results, preferRelevance);
+
+    const fastResults = applyMetadataMatchFallback(results.slice(0, displayLimit));
+    if (needsCompanyMetadata) return fastResults;
+    return hydrateLightweightMetadata(fastResults);
+  }
+
+  // ── Wave-based collect + validate (text-filtered deep refinement) ──
+  const signalMap = new Map<string, FilingSignal>();
+  const filteredResults: FilingResearchResult[] = [];
+  const batchSize = 6;
+  const parsedBooleanQuery = mode === 'boolean' ? parseBooleanQuery(query) : { expression: null };
+  const progressCallback = onProgress;
+  let lastProgressCount = 0;
+  const progressInterval = 15;
+  const waveStartTime = Date.now();
+  const maxWaveTimeMs = 45_000; // Stop after 45 seconds to avoid endless validation
+
+  const wavePerQueryLimit = fastCandidateCollection ? Math.min(perQueryResultLimit, 140) : perQueryResultLimit;
+  const waveQueryVariants = fastCandidateCollection ? filteredServerQueries.slice(0, 2) : filteredServerQueries;
+
+  for (const [queryIndex, candidateQuery] of waveQueryVariants.entries()) {
+    if (filteredResults.length >= displayLimit) break;
+    if (Date.now() - waveStartTime > maxWaveTimeMs) break;
+
+    let queryBatchHits: EdgarSearchHit[];
     try {
-      const batch = await searchEdgarFilings(
+      queryBatchHits = await searchEdgarFilings(
         candidateQuery,
         formTypes,
         filters.dateFrom || undefined,
         filters.dateTo || undefined,
         filters.entityName || undefined,
-        perQueryResultLimit
+        wavePerQueryLimit
       );
-
-      const queryPriority = filteredServerQueries.length - queryIndex;
-
-      for (const hit of batch) {
-        const previous = hitMap.get(hit._id);
-        if (
-          !previous ||
-          queryPriority > previous.queryPriority ||
-          (queryPriority === previous.queryPriority && hit._score > previous.score)
-        ) {
-          hitMap.set(hit._id, {
-            hit,
-            queryPriority,
-            score: hit._score,
-          });
-        }
-      }
-
-      if (hitMap.size >= collectionTarget) {
-        break;
-      }
-
-      if (mode === 'boolean') {
-        await delay(fastCandidateCollection ? 60 : 180);
-      }
     } catch (error) {
       lastSearchError = error instanceof Error ? error : new Error('EDGAR search failed');
-      if (mode !== 'boolean') {
-        throw lastSearchError;
+      if (mode !== 'boolean') throw lastSearchError;
+      continue;
+    }
+
+    // Deduplicate against previously seen hits
+    const newHits: EdgarSearchHit[] = [];
+    for (const hit of queryBatchHits) {
+      if (!hitMap.has(hit._id)) {
+        hitMap.set(hit._id, { hit, queryPriority: filteredServerQueries.length - queryIndex, score: hit._score });
+        newHits.push(hit);
       }
     }
-  }
 
-  if (hitMap.size === 0 && lastSearchError) {
-    throw lastSearchError;
-  }
-
-  const hits = Array.from(hitMap.values())
-    .sort((a, b) => {
-      if (b.queryPriority !== a.queryPriority) {
-        return b.queryPriority - a.queryPriority;
-      }
-      return b.score - a.score;
-    })
-    .map(entry => entry.hit)
-    .slice(0, collectionTarget);
-  let results = uniqueById(hits.map(mapSearchHit)).slice(0, candidateLimit);
-
-  if (needsCompanyMetadata) {
-    results = await hydrateCompanyMetadataBatch(results);
-  }
-  results = results.filter(result => matchesBaseFilters(result, filters, formScope));
-  results = sortResearchResults(results, preferRelevance);
-
-  if (!shouldHydrateSignals) {
-    const fastResults = applyMetadataMatchFallback(results.slice(0, displayLimit));
-    if (needsCompanyMetadata) {
-      return fastResults;
+    if (newHits.length === 0) {
+      if (mode === 'boolean') await delay(120);
+      continue;
     }
-    return hydrateLightweightMetadata(fastResults);
-  }
 
-  const signalMap = new Map<string, FilingSignal>();
-  const filteredResults: FilingResearchResult[] = [];
-  const batchSize = mode === 'boolean' ? 4 : 6;
-  const bufferedTarget =
-    mode === 'boolean'
-      ? Math.min(displayLimit, 120)
-      : semanticAuditorSearch
-        ? displayLimit
-        : Math.min(displayLimit, 200);
-  const maxValidationCandidates =
-    mode === 'boolean'
-      ? Math.min(results.length, Math.max(bufferedTarget + 40, 120))
-      : semanticAuditorSearch
-        ? Math.min(results.length, Math.max(bufferedTarget + 120, 320))
-        : Math.min(results.length, Math.max(bufferedTarget + 60, 180));
-  const parsedBooleanQuery = mode === 'boolean' ? parseBooleanQuery(query) : { expression: null };
+    // Map, hydrate metadata, and filter this wave of candidates
+    let waveCandidates = uniqueById(newHits.map(mapSearchHit));
+    if (needsCompanyMetadata) waveCandidates = await hydrateCompanyMetadataBatch(waveCandidates);
+    waveCandidates = waveCandidates.filter(result => matchesBaseFilters(result, filters, formScope));
 
-  for (let index = 0; index < maxValidationCandidates; index += batchSize) {
-    const chunk = results.slice(index, Math.min(index + batchSize, maxValidationCandidates));
+    // Validate each candidate in this wave (fetch text, check auditor/boolean/section)
+    for (let index = 0; index < waveCandidates.length && filteredResults.length < displayLimit && Date.now() - waveStartTime < maxWaveTimeMs; index += batchSize) {
+      const chunk = waveCandidates.slice(index, Math.min(index + batchSize, waveCandidates.length));
 
-    await Promise.all(
-      chunk.map(async result => {
-        const signal = await hydrateResultSignals(result);
-        signalMap.set(getSignalCacheKey(result), signal);
-      })
-    );
+      await Promise.all(
+        chunk.map(async result => {
+          const signal = await hydrateResultSignals(result);
+          signalMap.set(getSignalCacheKey(result), signal);
+        })
+      );
 
-    for (const result of chunk) {
-      const filingText = signalMap.get(getSignalCacheKey(result))?.text || '';
+      for (const result of chunk) {
+        const filingText = signalMap.get(getSignalCacheKey(result))?.text || '';
 
-      if (needsTextFiltering && mode === 'boolean' && parsedBooleanQuery.expression) {
-        if (!filingText || !booleanQueryMatches(query, filingText)) {
-          continue;
+        if (needsTextFiltering && mode === 'boolean' && parsedBooleanQuery.expression) {
+          if (!filingText || !booleanQueryMatches(query, filingText)) continue;
         }
+
+        if (needsTextFiltering && !matchesSignalFilters(result, filters, filingText)) continue;
+
+        filteredResults.push(annotateResultMatchContext(result, query, filters, mode, filingText));
       }
 
-      if (needsTextFiltering && !matchesSignalFilters(result, filters, filingText)) {
-        continue;
+      if (progressCallback && filteredResults.length >= lastProgressCount + progressInterval) {
+        lastProgressCount = filteredResults.length;
+        progressCallback(sortResearchResults([...filteredResults], preferRelevance).slice(0, displayLimit));
       }
 
-      filteredResults.push(annotateResultMatchContext(result, query, filters, mode, filingText));
+      if (index + batchSize < waveCandidates.length && filteredResults.length < displayLimit) {
+        await delay(150);
+      }
     }
 
-    if (filteredResults.length >= bufferedTarget) {
-      break;
-    }
-
-    if (index + batchSize < maxValidationCandidates) {
-      await delay(120);
-    }
+    if (mode === 'boolean' && queryIndex + 1 < filteredServerQueries.length) await delay(120);
   }
 
-  results = filteredResults;
-  const finalResults = sortResearchResults(results, preferRelevance).slice(0, displayLimit);
+  if (filteredResults.length === 0 && lastSearchError) throw lastSearchError;
+
+  const finalResults = sortResearchResults(filteredResults, preferRelevance).slice(0, displayLimit);
 
   if (needsCompanyMetadata) {
     return finalResults;

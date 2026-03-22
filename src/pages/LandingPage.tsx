@@ -1,418 +1,554 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { type FormEvent, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Shield, Zap, TrendingUp, Building2, Monitor, MonitorOff } from 'lucide-react';
-import * as THREE from 'three';
+import {
+  ArrowRight,
+  BarChart2,
+  Bot,
+  Briefcase,
+  Building2,
+  ChevronRight,
+  Code,
+  Globe,
+  LayoutDashboard,
+  Search,
+  Shield,
+  Sparkles,
+  TrendingUp,
+} from 'lucide-react';
 import './LandingPage.css';
 
-/* ------------------------------------------------------------------ */
-/*  Three.js Glass V Component                                         */
-/* ------------------------------------------------------------------ */
-function GlassVScene({ enabled }: { enabled: boolean }) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const sceneRef = useRef<{
-    renderer: THREE.WebGLRenderer;
-    animId: number;
-    dispose: () => void;
-  } | null>(null);
+const audienceLabels = [
+  'Legal teams',
+  'Finance leaders',
+  'Compliance officers',
+  'Accounting teams',
+  'Corp dev',
+  'Investor relations',
+] as const;
 
-  useEffect(() => {
-    const container = containerRef.current;
-    if (!container || !enabled) return;
+const proofPoints = [
+  {
+    icon: Search,
+    title: 'Live filing discovery',
+    copy: 'Natural-language and Boolean research with form, date, SIC, and section-level context.',
+  },
+  {
+    icon: Bot,
+    title: 'AI in the workflow',
+    copy: 'Summaries, filing Q&A, S-1 analysis, and clause extraction stay tied to the source material.',
+  },
+  {
+    icon: Building2,
+    title: 'Specialty workspaces',
+    copy: 'Benchmarking, governance, regulation, IPO, M&A, exhibits, offerings, and API delivery in one product.',
+  },
+] as const;
 
-    // Scene — darker background for contrast
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color('#020202');
+const capabilityGroups = [
+  {
+    icon: Search,
+    tone: 'cobalt',
+    eyebrow: 'Research & Filing Analysis',
+    title: 'Search, parse, and interrogate filings',
+    description:
+      'Run natural-language or Boolean research, keep work in tabbed sessions, and move through parsed sections instead of losing context.',
+    modules: [
+      'Research Workbench',
+      'Filing detail viewer and annotations',
+      'Section parsing and highlights',
+      'Year-over-year redlines',
+    ],
+    route: '/search',
+    cta: 'Open Research',
+  },
+  {
+    icon: BarChart2,
+    tone: 'amber',
+    eyebrow: 'Benchmarking & Monitoring',
+    title: 'Compare peers and keep themes on watch',
+    description:
+      'Jump from search into benchmarking, filing-volume trends, watchlists, and saved alerts without rebuilding your analysis from scratch.',
+    modules: [
+      'Disclosure Benchmarking Matrix',
+      'Overview dashboard',
+      'Watchlists and saved alerts',
+      'Accounting analytics and earnings',
+    ],
+    route: '/compare',
+    cta: 'See Benchmarking',
+  },
+  {
+    icon: Globe,
+    tone: 'mint',
+    eyebrow: 'Governance & Standards',
+    title: 'Cover ESG, boards, insiders, and accounting',
+    description:
+      'Stay inside one environment while moving from technical accounting research to governance intelligence and sustainability frameworks.',
+    modules: [
+      'ESG Research Center',
+      'Accounting Research Hub',
+      'Board profiles and compensation',
+      'Insider trading',
+    ],
+    route: '/esg',
+    cta: 'Explore Governance',
+  },
+  {
+    icon: Shield,
+    tone: 'coral',
+    eyebrow: 'Regulation & Transactions',
+    title: 'Handle letters, rules, deals, and IPO work',
+    description:
+      'Specialized workspaces cover SEC correspondence, enforcement, S-1 analysis, M&A research, exhibits, exempt offerings, and ADV registrations.',
+    modules: [
+      'Regulation, comment letters, and no-action letters',
+      'SEC enforcement tracking',
+      'IPO Center and S-1 analyzer',
+      'M&A, exhibits, offerings, and ADV',
+    ],
+    route: '/regulation',
+    cta: 'Review Specialty Tools',
+  },
+  {
+    icon: Code,
+    tone: 'slate',
+    eyebrow: 'Platform & Enablement',
+    title: 'Operationalize research across the team',
+    description:
+      'Use the integrated copilot, API portal, and support center to turn one-off research into a repeatable operating workflow.',
+    modules: [
+      'Vara Copilot',
+      'API Data Integration Portal',
+      'Support Center workflow guides',
+      'Unified navigation across workspaces',
+    ],
+    route: '/api-portal',
+    cta: 'Visit The API Portal',
+  },
+] as const;
 
-    const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
-    // Pull camera back and offset slightly right so V sits in left 2/3
-    camera.position.set(2.5, 0, 18);
-    camera.lookAt(0, 0, 0);
+const workflowSteps = [
+  {
+    icon: Search,
+    title: 'Find the signal',
+    copy: 'Start with natural-language or Boolean search and refine by form, date, SIC, and topic.',
+  },
+  {
+    icon: BarChart2,
+    title: 'Compare the language',
+    copy: 'Move into disclosure benchmarking, dashboard trends, or redlines to see what changed.',
+  },
+  {
+    icon: Bot,
+    title: 'Extract with AI',
+    copy: 'Generate summaries, analyze S-1s, compare clauses, and ask filing questions without leaving the source.',
+  },
+  {
+    icon: TrendingUp,
+    title: 'Keep the question alive',
+    copy: 'Expand into monitoring, governance, regulation, IPO, M&A, or API workflows with context intact.',
+  },
+] as const;
 
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-    renderer.setSize(container.clientWidth, container.clientHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 0.7;
-    container.appendChild(renderer.domElement);
+const marqueeModules = [
+  'Research Workbench',
+  'Benchmarking Matrix',
+  'Overview Dashboard',
+  'Accounting Hub',
+  'ESG Research',
+  'Board Profiles',
+  'Insider Trading',
+  'Securities Regulation',
+  'Comment Letters',
+  'SEC Enforcement',
+  'IPO Center',
+  'M&A Research',
+  'Exhibits & Agreements',
+  'API Portal',
+] as const;
 
-    // Environment map for realistic reflections (procedural)
-    const pmremGenerator = new THREE.PMREMGenerator(renderer);
-    const envScene = new THREE.Scene();
-    // Create a gradient environment
-    const envColors = [0x000a1a, 0x001833, 0x002244, 0x111833, 0x1a2244, 0x0a0a1e];
-    envColors.forEach((color, i) => {
-      const light = new THREE.PointLight(color, 4, 50);
-      const angle = (i / envColors.length) * Math.PI * 2;
-      light.position.set(Math.cos(angle) * 10, Math.sin(angle * 0.7) * 8, Math.sin(angle) * 10);
-      envScene.add(light);
-    });
-    envScene.add(new THREE.AmbientLight(0x111122, 1));
-    const envMap = pmremGenerator.fromScene(envScene, 0.04).texture;
-    scene.environment = envMap;
+// This visual follows the imagegen art direction for an editorial "SEC research control room"
+// until a generated hero asset can be dropped in.
+function LandingSignalCanvas() {
+  const resultRows = [
+    {
+      form: 'S-1',
+      company: 'Arm Holdings',
+      detail: 'Risk Factors mapped to AI regulation, export controls, and IP concentration.',
+    },
+    {
+      form: '10-K',
+      company: 'NVIDIA',
+      detail: 'Item 1A and MD&A lined up for redline review and peer benchmarking.',
+    },
+    {
+      form: '8-K / Ex. 2.1',
+      company: 'Cisco',
+      detail: 'Deal documents ready for AI clause extraction and transactional screening.',
+    },
+  ] as const;
 
-    // V Shape — sized to match reference
-    const vShape = new THREE.Shape();
-    vShape.moveTo(-2.8, 3.6);
-    vShape.lineTo(-1.1, 3.6);
-    vShape.lineTo(0.0, -0.9);
-    vShape.lineTo(1.1, 3.6);
-    vShape.lineTo(2.8, 3.6);
-    vShape.lineTo(0.55, -3.6);
-    vShape.lineTo(-0.55, -3.6);
-    vShape.lineTo(-2.8, 3.6);
+  const benchmarkRows = [
+    {
+      topic: 'AI governance',
+      peers: [
+        { label: 'Expanded', tone: 'strong' },
+        { label: 'Standard', tone: 'medium' },
+        { label: 'Emerging', tone: 'light' },
+      ],
+    },
+    {
+      topic: 'Cybersecurity',
+      peers: [
+        { label: 'Expanded', tone: 'strong' },
+        { label: 'Expanded', tone: 'strong' },
+        { label: 'Standard', tone: 'medium' },
+      ],
+    },
+    {
+      topic: 'Supply chain',
+      peers: [
+        { label: 'Standard', tone: 'medium' },
+        { label: 'Emerging', tone: 'light' },
+        { label: 'Expanded', tone: 'strong' },
+      ],
+    },
+  ] as const;
 
-    const geometry = new THREE.ExtrudeGeometry(vShape, {
-      depth: 1.2,
-      bevelEnabled: true,
-      bevelThickness: 0.5,
-      bevelSize: 0.35,
-      bevelSegments: 5,
-    });
-    geometry.center();
+  const pulseBars = [32, 44, 38, 58, 49, 62, 74, 69, 82] as const;
+  const coverageTags = ['10-K & 10-Q', 'S-1 & IPO', 'Comment letters', 'M&A clauses'] as const;
+  const repeatedModules = [...marqueeModules, ...marqueeModules];
 
-    // Physical glass material — darker, more contrast
-    const glassMaterial = new THREE.MeshPhysicalMaterial({
-      color: 0xffffff,
-      metalness: 0.05,
-      roughness: 0.05,
-      transmission: 0.99,
-      ior: 2.0,
-      thickness: 2.5,
-      clearcoat: 1.0,
-      clearcoatRoughness: 0.1,
-      envMapIntensity: 1.0,
-      specularIntensity: 1.0,
-      specularColor: new THREE.Color(0x6688cc),
-      attenuationColor: new THREE.Color(0x8899bb),
-      attenuationDistance: 5.0,
-      side: THREE.DoubleSide,
-    });
-
-    const vMesh = new THREE.Mesh(geometry, glassMaterial);
-    vMesh.position.x = -2.0; // offset left for 2/3 split
-    scene.add(vMesh);
-
-    // Lighting — subtle, matching reference darkness
-    const ambient = new THREE.AmbientLight(0xffffff, 0.3);
-    scene.add(ambient);
-
-    const keyLight = new THREE.DirectionalLight(0xffffff, 2.5);
-    keyLight.position.set(5, 5, 8);
-    scene.add(keyLight);
-
-    const fillLight = new THREE.DirectionalLight(0x4466aa, 1.5);
-    fillLight.position.set(-6, -3, 6);
-    scene.add(fillLight);
-
-    const rimLight = new THREE.PointLight(0xff44aa, 2.0, 25);
-    rimLight.position.set(3, -4, 3);
-    scene.add(rimLight);
-
-    const topLight = new THREE.PointLight(0x33cc88, 1.5, 25);
-    topLight.position.set(-3, 5, 4);
-    scene.add(topLight);
-
-    // Background orbs — moderate size, positioned around the V
-    const orbData = [
-      { color: 0xeeeeee, size: 1.6, pos: [-5, 1.5, -6] },
-      { color: 0x00ddbb, size: 1.4, pos: [1, 3, -7] },
-      { color: 0x8844dd, size: 1.2, pos: [-1, -3.5, -6] },
-      { color: 0xee5599, size: 1.5, pos: [4, -1, -5] },
-      { color: 0xddaa33, size: 1.0, pos: [-4, -2, -8] },
-    ];
-    const orbs: THREE.Mesh[] = [];
-    orbData.forEach(d => {
-      const geo = new THREE.SphereGeometry(d.size, 32, 32);
-      const mat = new THREE.MeshBasicMaterial({ color: d.color });
-      const mesh = new THREE.Mesh(geo, mat);
-      mesh.position.set(d.pos[0], d.pos[1], d.pos[2]);
-      scene.add(mesh);
-      orbs.push(mesh);
-    });
-
-    // Animation
-    const clock = new THREE.Clock();
-    let animId = 0;
-    function animate() {
-      animId = requestAnimationFrame(animate);
-      const t = clock.getElapsedTime();
-
-      // Slow, dramatic rotation
-      vMesh.rotation.y = Math.sin(t * 0.4) * 0.35;
-      vMesh.rotation.x = Math.sin(t * 0.25) * 0.12;
-      vMesh.rotation.z = Math.sin(t * 0.15) * 0.05;
-      vMesh.position.y = Math.sin(t * 1.2) * 0.25;
-
-      // Animate orbs for dynamic refraction
-      orbs.forEach((orb, i) => {
-        const speed = 0.3 + i * 0.12;
-        const phase = i * 1.2;
-        orb.position.x = orbData[i].pos[0] + Math.sin(t * speed + phase) * 2.5;
-        orb.position.y = orbData[i].pos[1] + Math.cos(t * speed * 0.8 + phase) * 1.5;
-      });
-
-      // Animate rim light for prismatic edge flashes
-      rimLight.position.x = Math.sin(t * 0.6) * 5;
-      topLight.position.y = 3 + Math.sin(t * 0.8) * 3;
-
-      renderer.render(scene, camera);
-    }
-    animate();
-
-    const handleResize = () => {
-      if (!container) return;
-      camera.aspect = container.clientWidth / container.clientHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(container.clientWidth, container.clientHeight);
-    };
-    window.addEventListener('resize', handleResize);
-
-    sceneRef.current = {
-      renderer,
-      animId,
-      dispose: () => {
-        cancelAnimationFrame(animId);
-        window.removeEventListener('resize', handleResize);
-        pmremGenerator.dispose();
-        envMap.dispose();
-        renderer.dispose();
-        if (container.contains(renderer.domElement)) container.removeChild(renderer.domElement);
-      },
-    };
-
-    return () => {
-      sceneRef.current?.dispose();
-      sceneRef.current = null;
-    };
-  }, [enabled]);
-
-  // Cleanup when disabled
-  useEffect(() => {
-    if (!enabled && sceneRef.current) {
-      sceneRef.current.dispose();
-      sceneRef.current = null;
-    }
-  }, [enabled]);
-
-  return <div ref={containerRef} style={{ position: 'absolute', inset: 0, zIndex: 0 }} />;
-}
-
-/* ------------------------------------------------------------------ */
-/*  Static fallback for when 3D is disabled                            */
-/* ------------------------------------------------------------------ */
-function StaticVFallback() {
   return (
-    <div style={{
-      position: 'absolute', inset: 0, zIndex: 0,
-      display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: '#080e1a',
-    }}>
-      {/* Large gradient V as static background */}
-      <svg width="420" height="420" viewBox="0 0 24 24" fill="none" style={{ opacity: 0.08 }}>
-        <defs>
-          <linearGradient id="static-v" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#60A5FA" />
-            <stop offset="100%" stopColor="#A78BFA" />
-          </linearGradient>
-        </defs>
-        <path d="M3 4h4.5L12 18 16.5 4H21l-7.5 18h-3L3 4z" fill="url(#static-v)" />
-      </svg>
-      {/* Glow orbs */}
-      <div style={{ position: 'absolute', top: '15%', left: '20%', width: '200px', height: '200px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(59,130,246,0.15) 0%, transparent 70%)' }} />
-      <div style={{ position: 'absolute', bottom: '20%', right: '25%', width: '250px', height: '250px', borderRadius: '50%', background: 'radial-gradient(circle, rgba(139,92,246,0.12) 0%, transparent 70%)' }} />
+    <div className="landing-signal" aria-hidden="true">
+      <div className="landing-signal__mesh" />
+      <div className="landing-signal__orb landing-signal__orb--one" />
+      <div className="landing-signal__orb landing-signal__orb--two" />
+
+      <div className="landing-signal-card landing-signal-card--workspace">
+        <div className="landing-window-controls">
+          <span />
+          <span />
+          <span />
+        </div>
+        <p className="landing-signal-card__eyebrow">Research Workbench</p>
+        <h3>Search, compare, and route the next step without losing context.</h3>
+
+        <div className="landing-signal-query">
+          <Search size={16} />
+          <span>AI regulation risk factors in recent tech S-1s</span>
+        </div>
+
+        <div className="landing-signal-results">
+          {resultRows.map(row => (
+            <div key={`${row.company}-${row.form}`} className="landing-signal-result">
+              <span className="landing-signal-result__form">{row.form}</span>
+              <div className="landing-signal-result__body">
+                <strong>{row.company}</strong>
+                <p>{row.detail}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="landing-chip-row">
+          {coverageTags.map(tag => (
+            <span key={tag} className="landing-chip">
+              {tag}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <div className="landing-signal-card landing-signal-card--brief">
+        <p className="landing-signal-card__eyebrow">AI Brief</p>
+        <h4>What the assistant can surface quickly</h4>
+        <ul className="landing-brief-list">
+          <li>Peer language is converging around AI governance and vendor concentration.</li>
+          <li>Redline mode exposes new cyber and model-risk disclosure blocks immediately.</li>
+          <li>Best next stops: Benchmarking, IPO Center, and Enforcement.</li>
+        </ul>
+      </div>
+
+      <div className="landing-signal-card landing-signal-card--matrix">
+        <p className="landing-signal-card__eyebrow">Benchmark Matrix</p>
+        <div className="landing-matrix-head">
+          <span>AAPL</span>
+          <span>MSFT</span>
+          <span>NVDA</span>
+        </div>
+
+        <div className="landing-matrix-grid">
+          {benchmarkRows.map(row => (
+            <div key={row.topic} className="landing-matrix-row">
+              <span className="landing-matrix-topic">{row.topic}</span>
+              <div className="landing-matrix-peer-grid">
+                {row.peers.map(peer => (
+                  <span
+                    key={`${row.topic}-${peer.label}-${peer.tone}`}
+                    className={`landing-matrix-cell landing-matrix-cell--${peer.tone}`}
+                  >
+                    {peer.label}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="landing-signal-card landing-signal-card--pulse">
+        <p className="landing-signal-card__eyebrow">Live Signal</p>
+        <div className="landing-pulse-chart">
+          {pulseBars.map((height, index) => (
+            <span key={`${height}-${index}`} style={{ height: `${height}%` }} />
+          ))}
+        </div>
+        <p className="landing-pulse-caption">
+          Filing volume, watchlists, and trending themes stay one click away.
+        </p>
+      </div>
+
+      <div className="landing-marquee">
+        <div className="landing-marquee__track">
+          {repeatedModules.map((module, index) => (
+            <span key={`${module}-${index}`} className="landing-marquee__pill">
+              {module}
+            </span>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
 
-/* ------------------------------------------------------------------ */
-/*  Main Landing Page                                                  */
-/* ------------------------------------------------------------------ */
 export default function LandingPage() {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
-  const [enable3D, setEnable3D] = useState(true);
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    navigate(query.trim() ? `/search?q=${encodeURIComponent(query)}` : '/dashboard');
+  const handleSearch = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    navigate(query.trim() ? `/search?q=${encodeURIComponent(query)}` : '/search');
+  };
+
+  const scrollToCapabilities = () => {
+    document.getElementById('landing-capabilities')?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
   };
 
   return (
     <div className="landing-container">
-      {/* Hero Section — split layout */}
-      <section className="hero-section" style={{ position: 'relative', overflow: 'hidden', minHeight: '85vh' }}>
-        {enable3D ? <GlassVScene enabled={enable3D} /> : <StaticVFallback />}
-
-        {/* 3D Toggle */}
-        <button
-          onClick={() => setEnable3D(!enable3D)}
-          title={enable3D ? 'Disable 3D animation' : 'Enable 3D animation'}
-          style={{
-            position: 'absolute', top: '16px', right: '16px', zIndex: 10,
-            display: 'flex', alignItems: 'center', gap: '6px',
-            padding: '6px 12px', borderRadius: '8px',
-            background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.1)',
-            color: '#94A3B8', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 500,
-            backdropFilter: 'blur(8px)', transition: 'all 0.2s',
-          }}
-          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.1)')}
-          onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
-        >
-          {enable3D ? <Monitor size={14} /> : <MonitorOff size={14} />}
-          {enable3D ? '3D On' : '3D Off'}
-        </button>
-
-        {/* Hero content — positioned right side */}
-        <div className="hero-content" style={{
-          position: 'relative', zIndex: 2,
-          display: 'flex', flexDirection: 'column',
-          alignItems: 'flex-end', textAlign: 'right',
-          maxWidth: '1200px', margin: '0 auto', width: '100%',
-          padding: '0 48px',
-          justifyContent: 'center', minHeight: '85vh',
-        }}>
-          <div style={{ maxWidth: '520px' }}>
-            <div className="badge glass-card" style={{ alignSelf: 'flex-end' }}>
-              <SparklesIcon /> <span>Next-Gen SEC Intelligence</span>
-            </div>
-
-            <h1 style={{ margin: '0 0 16px 0' }}>
-              <span style={{
-                fontSize: '5rem', fontWeight: 800, letterSpacing: '0.12em',
-                background: 'linear-gradient(135deg, #ffffff 0%, #72a0d8 50%, #A78BFA 100%)',
-                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-                display: 'block', lineHeight: 1,
-              }}>
-                VARA
-              </span>
-              <span style={{
-                fontSize: '1.1rem', fontWeight: 500, color: '#94A3B8',
-                letterSpacing: '0.25em', textTransform: 'uppercase',
-                display: 'block', marginTop: '8px',
-              }}>
-                AI Data Prism
-              </span>
-            </h1>
-
-            <p style={{
-              fontSize: '1.05rem', color: '#CBD5E1', lineHeight: 1.7,
-              marginBottom: '32px',
-            }}>
-              Research SEC filings, benchmark disclosures across peers, and extract
-              insights with AI — built for legal, financial, and compliance professionals.
-            </p>
-
-            <form className="hero-search glass-card" onSubmit={handleSearch} style={{ textAlign: 'left' }}>
-              <Search className="search-icon" size={20} />
-              <input
-                type="text"
-                placeholder="Search companies, filings, or topics..."
-                value={query}
-                onChange={e => setQuery(e.target.value)}
-              />
-              <button type="submit" className="primary-btn">Research</button>
-            </form>
+      <section className="landing-hero">
+        <div className="landing-hero__copy">
+          <div className="landing-kicker">
+            <Sparkles size={16} />
+            <span>SEC intelligence for legal, finance, and compliance teams</span>
           </div>
-        </div>
-      </section>
 
-      {/* Trusted By — dark minimal strip */}
-      <section style={{
-        padding: '36px 24px',
-        borderTop: '1px solid rgba(255,255,255,0.04)',
-        borderBottom: '1px solid rgba(255,255,255,0.04)',
-        background: 'rgba(255,255,255,0.01)',
-        textAlign: 'center',
-      }}>
-        <p style={{ fontSize: '0.7rem', fontWeight: 600, letterSpacing: '0.15em', color: '#475569', marginBottom: '20px' }}>
-          ANALYZE FILINGS FROM COMPANIES LIKE
-        </p>
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '48px', flexWrap: 'wrap' }}>
-          {['Apple Inc.', 'Microsoft', 'JPMorgan Chase', 'Alphabet', 'Tesla'].map(name => (
-            <span key={name} style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#64748B', fontWeight: 600, fontSize: '0.95rem', transition: 'color 0.2s' }}>
-              <Building2 size={18} /> {name}
-            </span>
-          ))}
-        </div>
-      </section>
+          <h1 className="landing-title">
+            Make SEC research feel like
+            <span> momentum, not friction.</span>
+          </h1>
 
-      {/* Features — dark cards with subtle borders */}
-      <section style={{ padding: '80px 24px', maxWidth: '1200px', margin: '0 auto', width: '100%' }}>
-        <h2 style={{
-          textAlign: 'center', fontSize: '2.2rem', fontWeight: 700, marginBottom: '12px', color: 'white',
-        }}>
-          Everything you need to master SEC disclosures
-        </h2>
-        <p style={{ textAlign: 'center', color: '#64748B', fontSize: '1rem', marginBottom: '56px', maxWidth: '600px', margin: '0 auto 56px' }}>
-          From full-text search to AI-powered analysis, Vara gives you an edge over traditional research tools.
-        </p>
+          <p className="landing-subtitle">
+            Vara combines live EDGAR discovery, peer benchmarking, AI extraction, governance
+            research, and transaction workspaces in one high-context product.
+          </p>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
-          {[
-            { icon: Search, title: 'Advanced Discovery', desc: 'Full-text search across millions of SEC filings with intelligent filtering by type, date, and SIC code.', to: '/search', accent: '#3B82F6' },
-            { icon: Zap, title: 'AI-Powered Q&A', desc: 'Chat directly with filings. Our AI extracts entities, summarizes risks, and cites exact document sections.', to: '/search', accent: '#A78BFA' },
-            { icon: Shield, title: 'Disclosures Benchmarking', desc: 'Compare how peers disclose risks or ESG metrics side-by-side with visual diffing highlights.', to: '/compare', accent: '#10B981' },
-            { icon: TrendingUp, title: 'Market Trends', desc: 'Track emerging topics across industries, monitor competitor activity, and visualize filing volumes.', to: '/dashboard', accent: '#F59E0B' },
-          ].map(f => (
-            <div
-              key={f.title}
-              onClick={() => navigate(f.to)}
-              style={{
-                cursor: 'pointer',
-                padding: '28px',
-                borderRadius: '14px',
-                border: '1px solid rgba(255,255,255,0.06)',
-                background: 'rgba(255,255,255,0.02)',
-                transition: 'all 0.2s',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '14px',
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.borderColor = `${f.accent}44`;
-                e.currentTarget.style.background = `${f.accent}08`;
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.06)';
-                e.currentTarget.style.background = 'rgba(255,255,255,0.02)';
-              }}
+          <form className="landing-search" onSubmit={handleSearch}>
+            <Search className="landing-search__icon" size={18} />
+            <input
+              type="text"
+              placeholder="Search filings, risk factors, clauses, rule topics, or S-1 names..."
+              value={query}
+              onChange={event => setQuery(event.target.value)}
+            />
+            <button type="submit" className="landing-search__button">
+              Start Research
+              <ArrowRight size={16} />
+            </button>
+          </form>
+
+          <div className="landing-actions">
+            <button
+              type="button"
+              className="landing-secondary-button"
+              onClick={() => navigate('/dashboard')}
             >
-              <div style={{
-                width: '44px', height: '44px', borderRadius: '10px',
-                background: `${f.accent}15`, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <f.icon size={22} style={{ color: f.accent }} />
-              </div>
-              <h3 style={{ fontSize: '1.15rem', fontWeight: 600, color: 'white', margin: 0 }}>{f.title}</h3>
-              <p style={{ color: '#94A3B8', fontSize: '0.9rem', lineHeight: 1.6, margin: 0 }}>{f.desc}</p>
-            </div>
-          ))}
+              <LayoutDashboard size={16} />
+              Open Dashboard
+            </button>
+            <button type="button" className="landing-link-button" onClick={scrollToCapabilities}>
+              Explore Platform Coverage
+              <ChevronRight size={16} />
+            </button>
+          </div>
+
+          <div className="landing-proof-grid">
+            {proofPoints.map(point => {
+              const Icon = point.icon;
+              return (
+                <article key={point.title} className="landing-proof-card">
+                  <div className="landing-proof-card__icon">
+                    <Icon size={18} />
+                  </div>
+                  <div>
+                    <h3>{point.title}</h3>
+                    <p>{point.copy}</p>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </div>
+
+        <LandingSignalCanvas />
+      </section>
+
+      <section className="landing-audience-strip">
+        <div className="landing-audience-strip__content">
+          <span className="landing-audience-strip__label">Built for</span>
+          <div className="landing-audience-strip__items">
+            {audienceLabels.map(label => (
+              <span key={label} className="landing-audience-strip__pill">
+                {label}
+              </span>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* Footer — minimal dark */}
-      <footer style={{ borderTop: '1px solid rgba(255,255,255,0.04)', padding: '32px 24px' }}>
-        <div style={{ maxWidth: '1200px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#475569', fontWeight: 600, fontSize: '0.9rem' }}>
-            <VaraLogo size={18} /> Vara AI
+      <section className="landing-section landing-section--capabilities" id="landing-capabilities">
+        <div className="landing-section__header">
+          <p className="landing-section__eyebrow">Platform Coverage</p>
+          <h2>A platform that covers the whole SEC workflow.</h2>
+          <p>
+            From the first filing search to the last disclosure comparison, every major
+            research lane already has a dedicated workspace.
+          </p>
+        </div>
+
+        <div className="landing-capability-grid">
+          {capabilityGroups.map(group => {
+            const Icon = group.icon;
+            return (
+              <article
+                key={group.title}
+                className={`landing-capability-card landing-capability-card--${group.tone}`}
+              >
+                <div className="landing-capability-card__icon">
+                  <Icon size={20} />
+                </div>
+                <p className="landing-capability-card__eyebrow">{group.eyebrow}</p>
+                <h3>{group.title}</h3>
+                <p className="landing-capability-card__description">{group.description}</p>
+
+                <ul className="landing-module-list">
+                  {group.modules.map(module => (
+                    <li key={module}>{module}</li>
+                  ))}
+                </ul>
+
+                <button
+                  type="button"
+                  className="landing-card-link"
+                  onClick={() => navigate(group.route)}
+                >
+                  {group.cta}
+                  <ArrowRight size={16} />
+                </button>
+              </article>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="landing-section landing-section--workflow">
+        <div className="landing-section__header">
+          <p className="landing-section__eyebrow">How Vara Works</p>
+          <h2>Research loops that keep teams in flow.</h2>
+          <p>
+            Start with search, move to benchmarking, pull AI help in context, and expand into
+            monitoring, governance, or transactions without resetting your work.
+          </p>
+        </div>
+
+        <div className="landing-step-grid">
+          {workflowSteps.map((step, index) => {
+            const Icon = step.icon;
+            return (
+              <article key={step.title} className="landing-step-card">
+                <div className="landing-step-card__topline">
+                  <span className="landing-step-card__index">0{index + 1}</span>
+                  <div className="landing-step-card__icon">
+                    <Icon size={18} />
+                  </div>
+                </div>
+                <h3>{step.title}</h3>
+                <p>{step.copy}</p>
+              </article>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="landing-section landing-section--cta">
+        <div className="landing-cta-card">
+          <div className="landing-cta-card__copy">
+            <p className="landing-section__eyebrow">Jump In</p>
+            <h2>Start where the question is hottest.</h2>
+            <p>
+              Open research for a filing question, head to the dashboard for monitoring, or
+              jump straight into IPO analysis.
+            </p>
           </div>
-          <div style={{ display: 'flex', gap: '24px', color: '#334155', fontSize: '0.82rem' }}>
+
+          <div className="landing-cta-actions">
+            <button
+              type="button"
+              className="landing-search__button landing-search__button--compact"
+              onClick={() => navigate('/search')}
+            >
+              <Search size={16} />
+              Start in Research
+            </button>
+            <button
+              type="button"
+              className="landing-secondary-button"
+              onClick={() => navigate('/dashboard')}
+            >
+              <LayoutDashboard size={16} />
+              View Dashboard
+            </button>
+            <button
+              type="button"
+              className="landing-tertiary-button"
+              onClick={() => navigate('/ipo')}
+            >
+              <Briefcase size={16} />
+              Open IPO Center
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <footer className="landing-footer">
+        <div className="landing-footer__content">
+          <div className="landing-footer__brand">
+            <VaraLogo size={18} />
+            Vara AI
+          </div>
+          <div className="landing-footer__links">
             <span>&copy; 2026 Vara AI Inc.</span>
-            <a href="/support" style={{ color: '#475569', textDecoration: 'none' }}>Privacy</a>
-            <a href="/support" style={{ color: '#475569', textDecoration: 'none' }}>Terms</a>
+            <a href="/support">Support</a>
+            <a href="/support">Privacy</a>
+            <a href="/support">Terms</a>
           </div>
         </div>
       </footer>
     </div>
-  );
-}
-
-function SparklesIcon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="ai-icon">
-      <path d="M12 3v18" /><path d="M3 12h18" /><path d="m18 6-6 6" /><path d="m6 6 6 6" />
-    </svg>
   );
 }
 

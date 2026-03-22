@@ -576,6 +576,7 @@ export default function SearchPage() {
             }
           }
 
+          let lastProgressUpdate = 0;
           const refinedMatches = await executeFilingResearchSearch({
             query: resolvedSearch.query,
             filters: resolvedSearch.filters,
@@ -584,6 +585,34 @@ export default function SearchPage() {
             limit: RESEARCH_RESULT_LIMIT,
             hydrateTextSignals: fullHydrateSignals,
             deferTextValidation: false,
+            onProgress: (progressResults) => {
+              const now = Date.now();
+              if (now - lastProgressUpdate < 800) return;
+              lastProgressUpdate = now;
+
+              if (pendingRefinementKeysRef.current.get(targetSessionId) !== refinementKey) return;
+
+              const currentSession = sessionsRef.current.find(s => s.id === targetSessionId);
+              const progressSession = buildResearchSession(
+                targetSessionId,
+                trimmed,
+                effectiveMode,
+                nextFilters,
+                progressResults,
+                interpreted.appliedHints,
+                resolvedSearch,
+                createdAt,
+                {
+                  isRefining: true,
+                  selectedResultId: currentSession?.selectedResultId || baselineSession.selectedResultId,
+                }
+              );
+
+              upsertSession(progressSession, { syncRoute: false });
+              if (activeSessionIdRef.current === targetSessionId) {
+                syncActiveSearchContext(progressSession);
+              }
+            },
           });
 
           if (pendingRefinementKeysRef.current.get(targetSessionId) !== refinementKey) {
@@ -1104,7 +1133,7 @@ export default function SearchPage() {
         {displayResults.length > 0 && (
           <div className="research-metric-grid">
             {[
-              { label: 'Matched Filings', value: displayResults.length.toString(), icon: <FileText size={18} /> },
+              { label: 'Matched Filings', value: displayResults.length >= RESEARCH_RESULT_LIMIT ? `${RESEARCH_RESULT_LIMIT}+` : displayResults.length.toString(), icon: <FileText size={18} /> },
               { label: 'Issuers', value: metrics.companies.toString(), icon: <Building2 size={18} /> },
               { label: 'Top Form', value: metrics.topForm, icon: <Hash size={18} /> },
               { label: 'Top Auditor', value: metrics.topAuditor, icon: <BellRing size={18} /> },
@@ -1131,7 +1160,7 @@ export default function SearchPage() {
             <div className="pane-header">
               <div>
                 <div className="eyebrow">Search hits</div>
-                <h2>{displayResults.length > 0 ? `${displayResults.length} filings` : 'No results yet'}</h2>
+                <h2>{displayResults.length > 0 ? `${displayResults.length >= RESEARCH_RESULT_LIMIT ? `${RESEARCH_RESULT_LIMIT}+` : displayResults.length} filings` : 'No results yet'}</h2>
               </div>
               <div className="pane-hint">Select a filing to preview it here, then open the full workspace only when you need the full toolset.</div>
             </div>
