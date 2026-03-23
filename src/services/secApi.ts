@@ -3,8 +3,26 @@
 
 const USER_AGENT = import.meta.env.VITE_EDGAR_USER_AGENT || 'Vara AI Research App contact@vara.ai';
 const USE_DIRECT_VERCEL_API = !import.meta.env.DEV;
-const USE_ELASTICSEARCH = Boolean(import.meta.env.VITE_USE_ELASTICSEARCH);
 const edgarSearchCache = new Map<string, Promise<EdgarSearchHit[]>>();
+
+function isEnabledEnvFlag(value: unknown): boolean {
+  if (typeof value === 'boolean') return value;
+  if (typeof value !== 'string') return false;
+
+  switch (value.trim().toLowerCase()) {
+    case '1':
+    case 'true':
+    case 'yes':
+    case 'on':
+      return true;
+    default:
+      return false;
+  }
+}
+
+function shouldUseElasticsearch(): boolean {
+  return isEnabledEnvFlag(import.meta.env.VITE_USE_ELASTICSEARCH);
+}
 
 // Cache for CIKs to avoid redundant lookups if doing bulk mappings 
 // (In a real app, you'd likely hit an internal DB, but here we'll map top tickers)
@@ -616,7 +634,7 @@ export async function searchEdgarFilings(
   maxResults = 100,
   extended: ElasticSearchExtendedParams = {}
 ): Promise<EdgarSearchHit[]> {
-  if (USE_ELASTICSEARCH) {
+  if (shouldUseElasticsearch()) {
     return searchViaElasticsearch(
       query,
       forms,

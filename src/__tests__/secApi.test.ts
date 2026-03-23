@@ -1,54 +1,61 @@
-import { describe, it, expect } from 'vitest';
-import { CIK_MAP, buildSecProxyUrl, buildSecDataUrl, buildSecEftsUrl } from '../services/secApi';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { CIK_MAP, buildSecDataUrl, buildSecEftsUrl, buildSecProxyUrl } from '../services/secApi';
+
+const mockFetch = vi.fn();
+vi.stubGlobal('fetch', mockFetch);
 
 describe('secApi', () => {
-  // ── CIK_MAP ──
+  beforeEach(() => {
+    mockFetch.mockReset();
+    vi.resetModules();
+    delete (import.meta.env as Record<string, unknown>).VITE_USE_ELASTICSEARCH;
+  });
+
   describe('CIK_MAP', () => {
     it('contains AAPL', () => {
-      expect(CIK_MAP['AAPL']).toBe('0000320193');
+      expect(CIK_MAP.AAPL).toBe('0000320193');
     });
 
     it('contains MSFT', () => {
-      expect(CIK_MAP['MSFT']).toBe('0000789019');
+      expect(CIK_MAP.MSFT).toBe('0000789019');
     });
 
     it('contains GOOGL', () => {
-      expect(CIK_MAP['GOOGL']).toBe('0001652044');
+      expect(CIK_MAP.GOOGL).toBe('0001652044');
     });
 
     it('contains TSLA', () => {
-      expect(CIK_MAP['TSLA']).toBe('0001318605');
+      expect(CIK_MAP.TSLA).toBe('0001318605');
     });
 
     it('contains JPM', () => {
-      expect(CIK_MAP['JPM']).toBe('0000019617');
+      expect(CIK_MAP.JPM).toBe('0000019617');
     });
 
     it('contains AMZN', () => {
-      expect(CIK_MAP['AMZN']).toBe('0001018724');
+      expect(CIK_MAP.AMZN).toBe('0001018724');
     });
 
     it('contains META', () => {
-      expect(CIK_MAP['META']).toBe('0001326801');
+      expect(CIK_MAP.META).toBe('0001326801');
     });
 
     it('contains NVDA', () => {
-      expect(CIK_MAP['NVDA']).toBe('0001045810');
+      expect(CIK_MAP.NVDA).toBe('0001045810');
     });
 
     it('has exactly 8 entries', () => {
-      expect(Object.keys(CIK_MAP).length).toBe(8);
+      expect(Object.keys(CIK_MAP)).toHaveLength(8);
     });
 
     it('all CIKs are 10-digit padded', () => {
       for (const cik of Object.values(CIK_MAP)) {
-        expect(cik.length).toBe(10);
+        expect(cik).toHaveLength(10);
         expect(/^\d+$/.test(cik)).toBe(true);
       }
     });
   });
 
-  // ── URL builders ──
   describe('buildSecProxyUrl', () => {
     it('returns a string', () => {
       expect(typeof buildSecProxyUrl('test/path')).toBe('string');
@@ -84,7 +91,6 @@ describe('secApi', () => {
 
     it('returns path without query when no params', () => {
       const url = buildSecProxyUrl('simple/path');
-      // In dev mode, should not have extraneous params (except maybe upstream)
       expect(url).toContain('simple/path');
     });
   });
@@ -107,7 +113,6 @@ describe('secApi', () => {
 
     it('includes the path in params', () => {
       const url = buildSecEftsUrl('LATEST/search-index');
-      // Path gets URL-encoded in dev mode as a query parameter
       expect(url).toContain('LATEST');
       expect(url).toContain('search-index');
     });
@@ -115,6 +120,37 @@ describe('secApi', () => {
     it('includes additional params', () => {
       const url = buildSecEftsUrl('search', { q: 'revenue', forms: '10-K' });
       expect(url).toContain('q=revenue');
+    });
+  });
+
+  describe('searchEdgarFilings backend selection', () => {
+    it('uses the legacy EFTS endpoint when VITE_USE_ELASTICSEARCH is the string "false"', async () => {
+      (import.meta.env as Record<string, unknown>).VITE_USE_ELASTICSEARCH = 'false';
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({ hits: { hits: [], total: { value: 0 } } }),
+      });
+
+      const { searchEdgarFilings } = await import('../services/secApi');
+      await searchEdgarFilings('temporary equity', '10-K,10-Q', '2023-01-01', '2026-03-22', '', 5);
+
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      expect(String(mockFetch.mock.calls[0][0])).toContain('/api/sec-efts?');
+      expect(String(mockFetch.mock.calls[0][0])).not.toContain('/api/es-search?');
+    });
+
+    it('uses the Elasticsearch endpoint when VITE_USE_ELASTICSEARCH is the string "true"', async () => {
+      (import.meta.env as Record<string, unknown>).VITE_USE_ELASTICSEARCH = 'true';
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({ hits: { hits: [], total: { value: 0 } } }),
+      });
+
+      const { searchEdgarFilings } = await import('../services/secApi');
+      await searchEdgarFilings('temporary equity', '10-K,10-Q', '2023-01-01', '2026-03-22', '', 5);
+
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      expect(String(mockFetch.mock.calls[0][0])).toContain('/api/es-search?');
     });
   });
 });

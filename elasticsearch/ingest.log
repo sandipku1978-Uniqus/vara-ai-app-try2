@@ -1,0 +1,397 @@
+
+SEC EDGAR Filing Ingestion Pipeline
+===================================
+Date range: 2021-03-22 to 2026-03-22
+Index: sec-filings
+Batch size: 200
+Dry run: false
+Progress file: C:\Users\thech\OneDrive\Desktop\Claude Code With VSCode\comparableAI\elasticsearch\.ingest-progress.json
+
+Quarters to process: 2021/Q1, 2021/Q2, 2021/Q3, 2021/Q4, 2022/Q1, 2022/Q2, 2022/Q3, 2022/Q4, 2023/Q1, 2023/Q2, 2023/Q3, 2023/Q4, 2024/Q1, 2024/Q2, 2024/Q3, 2024/Q4, 2025/Q1, 2025/Q2, 2025/Q3, 2025/Q4, 2026/Q1
+
+  Fetching index: 2021/QTR1...
+  2021/Q1: 35081 filings in date range
+  [2021/Q1] 200/35081 | Indexed: 200 | Skipped: 0 | Errors: 0 | 251s (0.8/sec, ~729min left)
+  [2021/Q1] 462/35081 | Indexed: 400 | Skipped: 62 | Errors: 0 | 510s (0.9/sec, ~637min left)
+  [2021/Q1] 668/35081 | Indexed: 600 | Skipped: 68 | Errors: 0 | 713s (0.9/sec, ~612min left)
+  [2021/Q1] 876/35081 | Indexed: 800 | Skipped: 76 | Errors: 0 | 858s (1.0/sec, ~558min left)
+  [2021/Q1] 1078/35081 | Indexed: 1000 | Skipped: 78 | Errors: 0 | 1066s (1.0/sec, ~560min left)
+  [2021/Q1] 1278/35081 | Indexed: 1200 | Skipped: 78 | Errors: 0 | 1264s (1.0/sec, ~557min left)
+  [2021/Q1] 1481/35081 | Indexed: 1400 | Skipped: 81 | Errors: 0 | 1462s (1.0/sec, ~553min left)
+  [2021/Q1] 1708/35081 | Indexed: 1600 | Skipped: 108 | Errors: 0 | 1684s (1.0/sec, ~548min left)
+  [2021/Q1] 1914/35081 | Indexed: 1800 | Skipped: 114 | Errors: 0 | 1871s (1.0/sec, ~540min left)
+  [2021/Q1] 2121/35081 | Indexed: 2000 | Skipped: 121 | Errors: 0 | 2050s (1.0/sec, ~531min left)
+  [2021/Q1] 2332/35081 | Indexed: 2200 | Skipped: 132 | Errors: 0 | 2247s (1.0/sec, ~526min left)
+  [2021/Q1] 2536/35081 | Indexed: 2400 | Skipped: 136 | Errors: 0 | 2462s (1.0/sec, ~527min left)
+  [2021/Q1] 2736/35081 | Indexed: 2600 | Skipped: 136 | Errors: 0 | 2677s (1.0/sec, ~527min left)
+  [2021/Q1] 3231/35081 | Indexed: 2800 | Skipped: 431 | Errors: 0 | 2911s (1.1/sec, ~478min left)
+  [2021/Q1] 3431/35081 | Indexed: 3000 | Skipped: 431 | Errors: 0 | 3118s (1.1/sec, ~479min left)
+  [2021/Q1] 3651/35081 | Indexed: 3200 | Skipped: 451 | Errors: 0 | 3380s (1.1/sec, ~485min left)
+  [2021/Q1] 3870/35081 | Indexed: 3400 | Skipped: 470 | Errors: 0 | 3574s (1.1/sec, ~480min left)
+  [2021/Q1] 4071/35081 | Indexed: 3600 | Skipped: 471 | Errors: 0 | 3781s (1.1/sec, ~480min left)
+    Timeout fetching https://www.sec.gov/Archives/edgar/data/1460584/000146058421000001/xslFTA2X01/pr..., attempt 1/3
+    Timeout fetching https://www.sec.gov/Archives/edgar/data/702513/000143774921006807/xslF345X02/rdg..., attempt 1/3
+  [2021/Q1] 4271/35081 | Indexed: 3800 | Skipped: 471 | Errors: 0 | 4143s (1.0/sec, ~498min left)
+  [2021/Q1] 4471/35081 | Indexed: 4000 | Skipped: 471 | Errors: 0 | 4338s (1.0/sec, ~495min left)
+    Timeout fetching https://www.sec.gov/Archives/edgar/data/1849673/000156761921006868/xslF345X03/do..., attempt 1/3
+    Rate limited (503), waiting 1000ms...
+    Rate limited (503), waiting 1000ms...
+    Rate limited (503), waiting 1000ms...
+    Rate limited (503), waiting 1000ms...
+  [2021/Q1] 4692/35081 | Indexed: 4200 | Skipped: 492 | Errors: 0 | 4660s (1.0/sec, ~503min left)
+  [2021/Q1] 4950/35081 | Indexed: 4400 | Skipped: 550 | Errors: 0 | 4886s (1.0/sec, ~496min left)
+  [2021/Q1] 5150/35081 | Indexed: 4600 | Skipped: 550 | Errors: 0 | 5064s (1.0/sec, ~491min left)
+  [2021/Q1] 5389/35081 | Indexed: 4800 | Skipped: 589 | Errors: 0 | 5278s (1.0/sec, ~485min left)
+  [2021/Q1] 5609/35081 | Indexed: 5000 | Skipped: 609 | Errors: 0 | 5459s (1.0/sec, ~478min left)
+  [2021/Q1] 5810/35081 | Indexed: 5200 | Skipped: 610 | Errors: 0 | 5610s (1.0/sec, ~471min left)
+  [2021/Q1] 6356/35081 | Indexed: 5400 | Skipped: 956 | Errors: 0 | 5832s (1.1/sec, ~439min left)
+  [2021/Q1] 6577/35081 | Indexed: 5600 | Skipped: 977 | Errors: 0 | 6009s (1.1/sec, ~434min left)
+  [2021/Q1] 6869/35081 | Indexed: 5800 | Skipped: 1069 | Errors: 0 | 6206s (1.1/sec, ~425min left)
+  [2021/Q1] 7069/35081 | Indexed: 6000 | Skipped: 1069 | Errors: 0 | 6419s (1.1/sec, ~424min left)
+  [2021/Q1] 7269/35081 | Indexed: 6200 | Skipped: 1069 | Errors: 0 | 6662s (1.1/sec, ~425min left)
+  [2021/Q1] 7469/35081 | Indexed: 6400 | Skipped: 1069 | Errors: 0 | 6921s (1.1/sec, ~426min left)
+  [2021/Q1] 8004/35081 | Indexed: 6600 | Skipped: 1404 | Errors: 0 | 7151s (1.1/sec, ~403min left)
+  [2021/Q1] 8242/35081 | Indexed: 6800 | Skipped: 1442 | Errors: 0 | 7374s (1.1/sec, ~400min left)
+  [2021/Q1] 8442/35081 | Indexed: 7000 | Skipped: 1442 | Errors: 0 | 7595s (1.1/sec, ~399min left)
+  [2021/Q1] 8642/35081 | Indexed: 7200 | Skipped: 1442 | Errors: 0 | 7806s (1.1/sec, ~398min left)
+  [2021/Q1] 8953/35081 | Indexed: 7400 | Skipped: 1553 | Errors: 0 | 8049s (1.1/sec, ~392min left)
+  [2021/Q1] 9154/35081 | Indexed: 7600 | Skipped: 1554 | Errors: 0 | 8265s (1.1/sec, ~390min left)
+  [2021/Q1] 9355/35081 | Indexed: 7800 | Skipped: 1555 | Errors: 0 | 8507s (1.1/sec, ~390min left)
+  [2021/Q1] 9635/35081 | Indexed: 8000 | Skipped: 1635 | Errors: 0 | 8736s (1.1/sec, ~385min left)
+  [2021/Q1] 9836/35081 | Indexed: 8200 | Skipped: 1636 | Errors: 0 | 8968s (1.1/sec, ~384min left)
+  [2021/Q1] 10067/35081 | Indexed: 8400 | Skipped: 1667 | Errors: 0 | 9182s (1.1/sec, ~380min left)
+  [2021/Q1] 10292/35081 | Indexed: 8600 | Skipped: 1692 | Errors: 0 | 9354s (1.1/sec, ~376min left)
+  [2021/Q1] 10492/35081 | Indexed: 8800 | Skipped: 1692 | Errors: 0 | 9551s (1.1/sec, ~373min left)
+  [2021/Q1] 10692/35081 | Indexed: 9000 | Skipped: 1692 | Errors: 0 | 9736s (1.1/sec, ~370min left)
+  [2021/Q1] 10892/35081 | Indexed: 9200 | Skipped: 1692 | Errors: 0 | 9913s (1.1/sec, ~367min left)
+  [2021/Q1] 11107/35081 | Indexed: 9400 | Skipped: 1707 | Errors: 0 | 10152s (1.1/sec, ~365min left)
+    Cache evicted 2500 entries (was 5001)
+  [2021/Q1] 11335/35081 | Indexed: 9600 | Skipped: 1735 | Errors: 0 | 10353s (1.1/sec, ~361min left)
+  [2021/Q1] 11535/35081 | Indexed: 9800 | Skipped: 1735 | Errors: 0 | 10531s (1.1/sec, ~358min left)
+  [2021/Q1] 11754/35081 | Indexed: 10000 | Skipped: 1754 | Errors: 0 | 10704s (1.1/sec, ~354min left)
+  [2021/Q1] 11955/35081 | Indexed: 10200 | Skipped: 1755 | Errors: 0 | 10890s (1.1/sec, ~351min left)
+  [2021/Q1] 12155/35081 | Indexed: 10400 | Skipped: 1755 | Errors: 0 | 11143s (1.1/sec, ~350min left)
+  [2021/Q1] 12355/35081 | Indexed: 10600 | Skipped: 1755 | Errors: 0 | 11339s (1.1/sec, ~348min left)
+  [2021/Q1] 12560/35081 | Indexed: 10800 | Skipped: 1760 | Errors: 0 | 11536s (1.1/sec, ~345min left)
+  [2021/Q1] 12760/35081 | Indexed: 11000 | Skipped: 1760 | Errors: 0 | 11750s (1.1/sec, ~343min left)
+  [2021/Q1] 13377/35081 | Indexed: 11200 | Skipped: 2177 | Errors: 0 | 11981s (1.1/sec, ~324min left)
+  [2021/Q1] 13851/35081 | Indexed: 11400 | Skipped: 2451 | Errors: 0 | 12174s (1.1/sec, ~311min left)
+  [2021/Q1] 14051/35081 | Indexed: 11600 | Skipped: 2451 | Errors: 0 | 12354s (1.1/sec, ~308min left)
+  [2021/Q1] 14334/35081 | Indexed: 11800 | Skipped: 2534 | Errors: 0 | 12552s (1.1/sec, ~303min left)
+  [2021/Q1] 14535/35081 | Indexed: 12000 | Skipped: 2535 | Errors: 0 | 12774s (1.1/sec, ~301min left)
+  [2021/Q1] 14735/35081 | Indexed: 12200 | Skipped: 2535 | Errors: 0 | 12957s (1.1/sec, ~298min left)
+  [2021/Q1] 14971/35081 | Indexed: 12400 | Skipped: 2571 | Errors: 0 | 13178s (1.1/sec, ~295min left)
+  [2021/Q1] 15179/35081 | Indexed: 12600 | Skipped: 2579 | Errors: 0 | 13380s (1.1/sec, ~292min left)
+  [2021/Q1] 15497/35081 | Indexed: 12800 | Skipped: 2697 | Errors: 0 | 13600s (1.1/sec, ~286min left)
+  [2021/Q1] 15697/35081 | Indexed: 13000 | Skipped: 2697 | Errors: 0 | 13837s (1.1/sec, ~285min left)
+  [2021/Q1] 15915/35081 | Indexed: 13200 | Skipped: 2715 | Errors: 0 | 14021s (1.1/sec, ~281min left)
+  [2021/Q1] 16115/35081 | Indexed: 13400 | Skipped: 2715 | Errors: 0 | 14188s (1.1/sec, ~278min left)
+  [2021/Q1] 16371/35081 | Indexed: 13600 | Skipped: 2771 | Errors: 0 | 14357s (1.1/sec, ~273min left)
+  [2021/Q1] 16571/35081 | Indexed: 13800 | Skipped: 2771 | Errors: 0 | 14529s (1.1/sec, ~270min left)
+  [2021/Q1] 16867/35081 | Indexed: 14000 | Skipped: 2867 | Errors: 0 | 14711s (1.1/sec, ~265min left)
+    Cache evicted 2500 entries (was 5001)
+  [2021/Q1] 17185/35081 | Indexed: 14200 | Skipped: 2985 | Errors: 0 | 14886s (1.2/sec, ~258min left)
+  [2021/Q1] 17408/35081 | Indexed: 14400 | Skipped: 3008 | Errors: 0 | 15033s (1.2/sec, ~254min left)
+  [2021/Q1] 18444/35081 | Indexed: 14600 | Skipped: 3844 | Errors: 0 | 15364s (1.2/sec, ~231min left)
+  [2021/Q1] 18644/35081 | Indexed: 14800 | Skipped: 3844 | Errors: 0 | 15538s (1.2/sec, ~228min left)
+    Rate limited (503), waiting 1000ms...
+    Timeout fetching https://www.sec.gov/Archives/edgar/data/1159120/000117184321002009/xslF345X03/ow..., attempt 1/3
+    Rate limited (503), waiting 1000ms...
+    Rate limited (503), waiting 2000ms...
+    Rate limited (503), waiting 1000ms...
+    Rate limited (503), waiting 2000ms...
+    Rate limited (503), waiting 4000ms...
+    Rate limited (503), waiting 1000ms...
+    Rate limited (503), waiting 2000ms...
+    Rate limited (503), waiting 4000ms...
+    Rate limited (503), waiting 1000ms...
+    Rate limited (503), waiting 1000ms...
+    Rate limited (503), waiting 1000ms...
+    Timeout fetching https://www.sec.gov/Archives/edgar/data/1365739/000143774921007512/xslF345X03/rd..., attempt 1/3
+  [2021/Q1] 18846/35081 | Indexed: 15000 | Skipped: 3846 | Errors: 0 | 15981s (1.2/sec, ~229min left)
+    Timeout fetching https://www.sec.gov/Archives/edgar/data/1373630/000110465921043341/xslF345X03/tm..., attempt 1/3
+    Rate limited (503), waiting 1000ms...
+    Rate limited (503), waiting 1000ms...
+    Rate limited (503), waiting 1000ms...
+    Rate limited (503), waiting 1000ms...
+    Rate limited (503), waiting 1000ms...
+    Rate limited (503), waiting 1000ms...
+    Rate limited (503), waiting 1000ms...
+    Rate limited (503), waiting 2000ms...
+  [2021/Q1] 19046/35081 | Indexed: 15200 | Skipped: 3846 | Errors: 0 | 16370s (1.2/sec, ~230min left)
+  [2021/Q1] 19251/35081 | Indexed: 15400 | Skipped: 3851 | Errors: 0 | 16566s (1.2/sec, ~227min left)
+  [2021/Q1] 19486/35081 | Indexed: 15600 | Skipped: 3886 | Errors: 0 | 16746s (1.2/sec, ~223min left)
+  [2021/Q1] 19692/35081 | Indexed: 15800 | Skipped: 3892 | Errors: 0 | 16914s (1.2/sec, ~220min left)
+  [2021/Q1] 19892/35081 | Indexed: 16000 | Skipped: 3892 | Errors: 0 | 17105s (1.2/sec, ~218min left)
+  [2021/Q1] 20101/35081 | Indexed: 16200 | Skipped: 3901 | Errors: 0 | 17271s (1.2/sec, ~215min left)
+  [2021/Q1] 20341/35081 | Indexed: 16400 | Skipped: 3941 | Errors: 0 | 17465s (1.2/sec, ~211min left)
+  [2021/Q1] 20545/35081 | Indexed: 16600 | Skipped: 3945 | Errors: 0 | 17619s (1.2/sec, ~208min left)
+  [2021/Q1] 20745/35081 | Indexed: 16800 | Skipped: 3945 | Errors: 0 | 17809s (1.2/sec, ~205min left)
+  [2021/Q1] 21289/35081 | Indexed: 17000 | Skipped: 4289 | Errors: 0 | 18063s (1.2/sec, ~195min left)
+  [2021/Q1] 21528/35081 | Indexed: 17200 | Skipped: 4328 | Errors: 0 | 18250s (1.2/sec, ~191min left)
+  [2021/Q1] 21728/35081 | Indexed: 17400 | Skipped: 4328 | Errors: 0 | 18464s (1.2/sec, ~189min left)
+  [2021/Q1] 21928/35081 | Indexed: 17600 | Skipped: 4328 | Errors: 0 | 18632s (1.2/sec, ~186min left)
+  [2021/Q1] 22128/35081 | Indexed: 17800 | Skipped: 4328 | Errors: 0 | 18828s (1.2/sec, ~184min left)
+  [2021/Q1] 22667/35081 | Indexed: 18000 | Skipped: 4667 | Errors: 0 | 19024s (1.2/sec, ~174min left)
+  [2021/Q1] 22916/35081 | Indexed: 18200 | Skipped: 4716 | Errors: 0 | 19212s (1.2/sec, ~170min left)
+    Cache evicted 2500 entries (was 5001)
+  [2021/Q1] 23165/35081 | Indexed: 18400 | Skipped: 4765 | Errors: 0 | 19364s (1.2/sec, ~166min left)
+  [2021/Q1] 23396/35081 | Indexed: 18600 | Skipped: 4796 | Errors: 0 | 19543s (1.2/sec, ~163min left)
+  [2021/Q1] 23634/35081 | Indexed: 18800 | Skipped: 4834 | Errors: 0 | 19730s (1.2/sec, ~159min left)
+  [2021/Q1] 23834/35081 | Indexed: 19000 | Skipped: 4834 | Errors: 0 | 19882s (1.2/sec, ~156min left)
+  [2021/Q1] 24081/35081 | Indexed: 19200 | Skipped: 4881 | Errors: 0 | 20067s (1.2/sec, ~153min left)
+  [2021/Q1] 24283/35081 | Indexed: 19400 | Skipped: 4883 | Errors: 0 | 20248s (1.2/sec, ~150min left)
+  [2021/Q1] 24483/35081 | Indexed: 19600 | Skipped: 4883 | Errors: 0 | 20433s (1.2/sec, ~147min left)
+  [2021/Q1] 24683/35081 | Indexed: 19800 | Skipped: 4883 | Errors: 0 | 20629s (1.2/sec, ~145min left)
+  [2021/Q1] 24886/35081 | Indexed: 20000 | Skipped: 4886 | Errors: 0 | 20838s (1.2/sec, ~142min left)
+  [2021/Q1] 25098/35081 | Indexed: 20200 | Skipped: 4898 | Errors: 0 | 21024s (1.2/sec, ~139min left)
+  [2021/Q1] 25301/35081 | Indexed: 20400 | Skipped: 4901 | Errors: 0 | 21206s (1.2/sec, ~137min left)
+  [2021/Q1] 25689/35081 | Indexed: 20600 | Skipped: 5089 | Errors: 0 | 21435s (1.2/sec, ~131min left)
+  [2021/Q1] 25924/35081 | Indexed: 20800 | Skipped: 5124 | Errors: 0 | 21636s (1.2/sec, ~127min left)
+  [2021/Q1] 26124/35081 | Indexed: 21000 | Skipped: 5124 | Errors: 0 | 21842s (1.2/sec, ~125min left)
+  [2021/Q1] 26325/35081 | Indexed: 21200 | Skipped: 5125 | Errors: 0 | 22037s (1.2/sec, ~122min left)
+  [2021/Q1] 26546/35081 | Indexed: 21400 | Skipped: 5146 | Errors: 0 | 22203s (1.2/sec, ~119min left)
+  [2021/Q1] 26756/35081 | Indexed: 21600 | Skipped: 5156 | Errors: 0 | 22374s (1.2/sec, ~116min left)
+  [2021/Q1] 27061/35081 | Indexed: 21800 | Skipped: 5261 | Errors: 0 | 22586s (1.2/sec, ~112min left)
+  [2021/Q1] 27265/35081 | Indexed: 22000 | Skipped: 5265 | Errors: 0 | 22789s (1.2/sec, ~109min left)
+  [2021/Q1] 27469/35081 | Indexed: 22200 | Skipped: 5269 | Errors: 0 | 23006s (1.2/sec, ~106min left)
+  [2021/Q1] 27764/35081 | Indexed: 22400 | Skipped: 5364 | Errors: 0 | 23229s (1.2/sec, ~102min left)
+  [2021/Q1] 27964/35081 | Indexed: 22600 | Skipped: 5364 | Errors: 0 | 23356s (1.2/sec, ~99min left)
+  [2021/Q1] 28164/35081 | Indexed: 22800 | Skipped: 5364 | Errors: 0 | 23524s (1.2/sec, ~96min left)
+    Cache evicted 2500 entries (was 5001)
+    Timeout fetching https://www.sec.gov/Archives/edgar/data/1366561/000177565921000008/xslF345X03/wf..., attempt 1/3
+  [2021/Q1] 28366/35081 | Indexed: 23000 | Skipped: 5366 | Errors: 0 | 23716s (1.2/sec, ~94min left)
+  [2021/Q1] 28590/35081 | Indexed: 23200 | Skipped: 5390 | Errors: 0 | 23891s (1.2/sec, ~90min left)
+  [2021/Q1] 28848/35081 | Indexed: 23400 | Skipped: 5448 | Errors: 0 | 24080s (1.2/sec, ~87min left)
+  [2021/Q1] 29048/35081 | Indexed: 23600 | Skipped: 5448 | Errors: 0 | 24273s (1.2/sec, ~84min left)
+  [2021/Q1] 29248/35081 | Indexed: 23800 | Skipped: 5448 | Errors: 0 | 24443s (1.2/sec, ~81min left)
+  [2021/Q1] 29448/35081 | Indexed: 24000 | Skipped: 5448 | Errors: 0 | 24635s (1.2/sec, ~79min left)
+  [2021/Q1] 29648/35081 | Indexed: 24200 | Skipped: 5448 | Errors: 0 | 24832s (1.2/sec, ~76min left)
+  [2021/Q1] 29848/35081 | Indexed: 24400 | Skipped: 5448 | Errors: 0 | 25006s (1.2/sec, ~73min left)
+  [2021/Q1] 30048/35081 | Indexed: 24600 | Skipped: 5448 | Errors: 0 | 25204s (1.2/sec, ~70min left)
+  [2021/Q1] 30268/35081 | Indexed: 24800 | Skipped: 5468 | Errors: 0 | 25364s (1.2/sec, ~67min left)
+  [2021/Q1] 30469/35081 | Indexed: 25000 | Skipped: 5469 | Errors: 0 | 25519s (1.2/sec, ~64min left)
+  [2021/Q1] 30771/35081 | Indexed: 25200 | Skipped: 5571 | Errors: 0 | 25734s (1.2/sec, ~60min left)
+  [2021/Q1] 31054/35081 | Indexed: 25400 | Skipped: 5654 | Errors: 0 | 25911s (1.2/sec, ~56min left)
+  [2021/Q1] 31262/35081 | Indexed: 25600 | Skipped: 5662 | Errors: 0 | 26095s (1.2/sec, ~53min left)
+  [2021/Q1] 31473/35081 | Indexed: 25800 | Skipped: 5673 | Errors: 0 | 26262s (1.2/sec, ~50min left)
+  [2021/Q1] 32124/35081 | Indexed: 26000 | Skipped: 6124 | Errors: 0 | 26504s (1.2/sec, ~41min left)
+  [2021/Q1] 32346/35081 | Indexed: 26200 | Skipped: 6146 | Errors: 0 | 26676s (1.2/sec, ~38min left)
+  [2021/Q1] 32548/35081 | Indexed: 26400 | Skipped: 6148 | Errors: 0 | 26845s (1.2/sec, ~35min left)
+  [2021/Q1] 32771/35081 | Indexed: 26600 | Skipped: 6171 | Errors: 0 | 26996s (1.2/sec, ~32min left)
+    Rate limited (503), waiting 1000ms...
+  [2021/Q1] 33001/35081 | Indexed: 26800 | Skipped: 6201 | Errors: 0 | 27176s (1.2/sec, ~29min left)
+    Rate limited (503), waiting 1000ms...
+    Rate limited (503), waiting 1000ms...
+    Rate limited (503), waiting 1000ms...
+  [2021/Q1] 33201/35081 | Indexed: 27000 | Skipped: 6201 | Errors: 0 | 27391s (1.2/sec, ~26min left)
+    Rate limited (503), waiting 1000ms...
+    Rate limited (503), waiting 1000ms...
+    Rate limited (503), waiting 1000ms...
+    Rate limited (503), waiting 1000ms...
+  [2021/Q1] 33402/35081 | Indexed: 27200 | Skipped: 6202 | Errors: 0 | 27634s (1.2/sec, ~23min left)
+    Cache evicted 2500 entries (was 5001)
+    Rate limited (503), waiting 1000ms...
+  [2021/Q1] 33625/35081 | Indexed: 27400 | Skipped: 6225 | Errors: 0 | 27851s (1.2/sec, ~20min left)
+  [2021/Q1] 33842/35081 | Indexed: 27600 | Skipped: 6242 | Errors: 0 | 28043s (1.2/sec, ~17min left)
+  [2021/Q1] 34046/35081 | Indexed: 27800 | Skipped: 6246 | Errors: 0 | 28237s (1.2/sec, ~14min left)
+  [2021/Q1] 34246/35081 | Indexed: 28000 | Skipped: 6246 | Errors: 0 | 28418s (1.2/sec, ~12min left)
+  [2021/Q1] 34467/35081 | Indexed: 28200 | Skipped: 6267 | Errors: 0 | 28580s (1.2/sec, ~8min left)
+  [2021/Q1] 34667/35081 | Indexed: 28400 | Skipped: 6267 | Errors: 0 | 28776s (1.2/sec, ~6min left)
+  [2021/Q1] 34999/35081 | Indexed: 28600 | Skipped: 6399 | Errors: 0 | 28978s (1.2/sec, ~1min left)
+  [2021/Q1] 35081/35081 | Indexed: 28682 | Skipped: 6399 | Errors: 0 | 29049s (1.2/sec, ~0min left)
+  Fetching index: 2021/QTR2...
+  2021/Q2: 287460 filings in date range
+  [2021/Q2] 35281/287460 | Indexed: 28882 | Skipped: 6399 | Errors: 0 | 29237s (1.2/sec, ~3483min left)
+    Rate limited (503), waiting 1000ms...
+    Rate limited (503), waiting 1000ms...
+  [2021/Q2] 35481/287460 | Indexed: 29082 | Skipped: 6399 | Errors: 0 | 29410s (1.2/sec, ~3481min left)
+  [2021/Q2] 35681/287460 | Indexed: 29282 | Skipped: 6399 | Errors: 0 | 29585s (1.2/sec, ~3479min left)
+  [2021/Q2] 35881/287460 | Indexed: 29482 | Skipped: 6399 | Errors: 0 | 29781s (1.2/sec, ~3480min left)
+    Rate limited (503), waiting 1000ms...
+  [2021/Q2] 36081/287460 | Indexed: 29682 | Skipped: 6399 | Errors: 0 | 29988s (1.2/sec, ~3482min left)
+  [2021/Q2] 36281/287460 | Indexed: 29882 | Skipped: 6399 | Errors: 0 | 30181s (1.2/sec, ~3482min left)
+  [2021/Q2] 36481/287460 | Indexed: 30082 | Skipped: 6399 | Errors: 0 | 30399s (1.2/sec, ~3486min left)
+  [2021/Q2] 36681/287460 | Indexed: 30282 | Skipped: 6399 | Errors: 0 | 30593s (1.2/sec, ~3486min left)
+  [2021/Q2] 36881/287460 | Indexed: 30482 | Skipped: 6399 | Errors: 0 | 30788s (1.2/sec, ~3486min left)
+  [2021/Q2] 37081/287460 | Indexed: 30682 | Skipped: 6399 | Errors: 0 | 30975s (1.2/sec, ~3486min left)
+  [2021/Q2] 37281/287460 | Indexed: 30882 | Skipped: 6399 | Errors: 0 | 31177s (1.2/sec, ~3487min left)
+  [2021/Q2] 37481/287460 | Indexed: 31082 | Skipped: 6399 | Errors: 0 | 31368s (1.2/sec, ~3487min left)
+  [2021/Q2] 37681/287460 | Indexed: 31282 | Skipped: 6399 | Errors: 0 | 31511s (1.2/sec, ~3481min left)
+  [2021/Q2] 38063/287460 | Indexed: 31482 | Skipped: 6581 | Errors: 0 | 31702s (1.2/sec, ~3462min left)
+  [2021/Q2] 38430/287460 | Indexed: 31682 | Skipped: 6748 | Errors: 0 | 31904s (1.2/sec, ~3446min left)
+  [2021/Q2] 38698/287460 | Indexed: 31882 | Skipped: 6816 | Errors: 0 | 32101s (1.2/sec, ~3439min left)
+    Rate limited (503), waiting 1000ms...
+    Rate limited (503), waiting 2000ms...
+    Timeout fetching https://www.sec.gov/Archives/edgar/data/1568644/000156864421000001/xslFormDX01/p..., attempt 1/3
+    Timeout fetching https://www.sec.gov/Archives/edgar/data/1666384/000166638421000004/xslFormDX01/p..., attempt 1/3
+  [2021/Q2] 38898/287460 | Indexed: 32082 | Skipped: 6816 | Errors: 0 | 32422s (1.2/sec, ~3453min left)
+    Rate limited (503), waiting 1000ms...
+    Rate limited (503), waiting 1000ms...
+    Rate limited (503), waiting 1000ms...
+  [2021/Q2] 39098/287460 | Indexed: 32282 | Skipped: 6816 | Errors: 0 | 32630s (1.2/sec, ~3455min left)
+    Rate limited (503), waiting 1000ms...
+  [2021/Q2] 39298/287460 | Indexed: 32482 | Skipped: 6816 | Errors: 0 | 32861s (1.2/sec, ~3459min left)
+  [2021/Q2] 39498/287460 | Indexed: 32682 | Skipped: 6816 | Errors: 0 | 33117s (1.2/sec, ~3465min left)
+  [2021/Q2] 39775/287460 | Indexed: 32882 | Skipped: 6893 | Errors: 0 | 33345s (1.2/sec, ~3461min left)
+  [2021/Q2] 39975/287460 | Indexed: 33082 | Skipped: 6893 | Errors: 0 | 33505s (1.2/sec, ~3457min left)
+  [2021/Q2] 40175/287460 | Indexed: 33282 | Skipped: 6893 | Errors: 0 | 33658s (1.2/sec, ~3453min left)
+    Rate limited (503), waiting 1000ms...
+    Rate limited (503), waiting 1000ms...
+    Rate limited (503), waiting 1000ms...
+    Rate limited (503), waiting 1000ms...
+  [2021/Q2] 40375/287460 | Indexed: 33482 | Skipped: 6893 | Errors: 0 | 33894s (1.2/sec, ~3457min left)
+  [2021/Q2] 40575/287460 | Indexed: 33682 | Skipped: 6893 | Errors: 0 | 34053s (1.2/sec, ~3453min left)
+  [2021/Q2] 40775/287460 | Indexed: 33882 | Skipped: 6893 | Errors: 0 | 34174s (1.2/sec, ~3446min left)
+  [2021/Q2] 40975/287460 | Indexed: 34082 | Skipped: 6893 | Errors: 0 | 34361s (1.2/sec, ~3445min left)
+  [2021/Q2] 41175/287460 | Indexed: 34282 | Skipped: 6893 | Errors: 0 | 34497s (1.2/sec, ~3439min left)
+  [2021/Q2] 41375/287460 | Indexed: 34482 | Skipped: 6893 | Errors: 0 | 34643s (1.2/sec, ~3434min left)
+  [2021/Q2] 41575/287460 | Indexed: 34682 | Skipped: 6893 | Errors: 0 | 34759s (1.2/sec, ~3426min left)
+  [2021/Q2] 41775/287460 | Indexed: 34882 | Skipped: 6893 | Errors: 0 | 34898s (1.2/sec, ~3421min left)
+  [2021/Q2] 42068/287460 | Indexed: 35082 | Skipped: 6986 | Errors: 0 | 35132s (1.2/sec, ~3416min left)
+  [2021/Q2] 42268/287460 | Indexed: 35282 | Skipped: 6986 | Errors: 0 | 35319s (1.2/sec, ~3415min left)
+  [2021/Q2] 42539/287460 | Indexed: 35482 | Skipped: 7057 | Errors: 0 | 35492s (1.2/sec, ~3406min left)
+  [2021/Q2] 42739/287460 | Indexed: 35682 | Skipped: 7057 | Errors: 0 | 35651s (1.2/sec, ~3402min left)
+    Rate limited (503), waiting 1000ms...
+    Rate limited (503), waiting 1000ms...
+  [2021/Q2] 42939/287460 | Indexed: 35882 | Skipped: 7057 | Errors: 0 | 35830s (1.2/sec, ~3401min left)
+  [2021/Q2] 43139/287460 | Indexed: 36082 | Skipped: 7057 | Errors: 0 | 35986s (1.2/sec, ~3397min left)
+  [2021/Q2] 43339/287460 | Indexed: 36282 | Skipped: 7057 | Errors: 0 | 36129s (1.2/sec, ~3392min left)
+    Rate limited (503), waiting 1000ms...
+    Rate limited (503), waiting 1000ms...
+    Rate limited (503), waiting 1000ms...
+  [2021/Q2] 43539/287460 | Indexed: 36482 | Skipped: 7057 | Errors: 0 | 36366s (1.2/sec, ~3396min left)
+    Cache evicted 2500 entries (was 5001)
+  [2021/Q2] 43739/287460 | Indexed: 36682 | Skipped: 7057 | Errors: 0 | 36557s (1.2/sec, ~3395min left)
+  [2021/Q2] 43939/287460 | Indexed: 36882 | Skipped: 7057 | Errors: 0 | 36724s (1.2/sec, ~3392min left)
+  [2021/Q2] 44139/287460 | Indexed: 37082 | Skipped: 7057 | Errors: 0 | 36877s (1.2/sec, ~3388min left)
+    Timeout fetching https://www.sec.gov/Archives/edgar/data/1524221/000140508621000112/xslFormDX01/p..., attempt 1/3
+    Rate limited (503), waiting 2000ms...
+    Rate limited (503), waiting 4000ms...
+    Timeout fetching https://www.sec.gov/Archives/edgar/data/1777272/000140508621000161/xslFormDX01/p..., attempt 1/3
+    Rate limited (503), waiting 2000ms...
+    Rate limited (503), waiting 4000ms...
+    Rate limited (503), waiting 1000ms...
+    Rate limited (503), waiting 2000ms...
+    Rate limited (503), waiting 4000ms...
+    Rate limited (503), waiting 1000ms...
+    Rate limited (503), waiting 1000ms...
+    Rate limited (503), waiting 1000ms...
+    Rate limited (503), waiting 2000ms...
+    Rate limited (503), waiting 1000ms...
+    Rate limited (503), waiting 1000ms...
+    Rate limited (503), waiting 1000ms...
+    Rate limited (503), waiting 2000ms...
+    Rate limited (503), waiting 4000ms...
+    Rate limited (503), waiting 1000ms...
+    Rate limited (503), waiting 2000ms...
+    Rate limited (503), waiting 4000ms...
+    Rate limited (503), waiting 1000ms...
+    Rate limited (503), waiting 2000ms...
+    Rate limited (503), waiting 4000ms...
+    Rate limited (503), waiting 1000ms...
+    Rate limited (503), waiting 2000ms...
+    Rate limited (503), waiting 4000ms...
+    Rate limited (503), waiting 1000ms...
+    Rate limited (503), waiting 2000ms...
+    Rate limited (503), waiting 4000ms...
+    Rate limited (503), waiting 1000ms...
+    Rate limited (503), waiting 2000ms...
+    Rate limited (503), waiting 4000ms...
+  [2021/Q2] 44349/287460 | Indexed: 37282 | Skipped: 7067 | Errors: 0 | 37607s (1.2/sec, ~3436min left)
+  [2021/Q2] 44549/287460 | Indexed: 37482 | Skipped: 7067 | Errors: 0 | 37793s (1.2/sec, ~3435min left)
+  [2021/Q2] 44749/287460 | Indexed: 37682 | Skipped: 7067 | Errors: 0 | 37968s (1.2/sec, ~3432min left)
+  [2021/Q2] 44949/287460 | Indexed: 37882 | Skipped: 7067 | Errors: 0 | 38139s (1.2/sec, ~3429min left)
+  [2021/Q2] 45149/287460 | Indexed: 38082 | Skipped: 7067 | Errors: 0 | 38282s (1.2/sec, ~3424min left)
+  [2021/Q2] 45349/287460 | Indexed: 38282 | Skipped: 7067 | Errors: 0 | 38444s (1.2/sec, ~3421min left)
+  [2021/Q2] 45603/287460 | Indexed: 38482 | Skipped: 7121 | Errors: 0 | 38592s (1.2/sec, ~3411min left)
+  [2021/Q2] 45871/287460 | Indexed: 38682 | Skipped: 7189 | Errors: 0 | 38728s (1.2/sec, ~3399min left)
+  [2021/Q2] 46071/287460 | Indexed: 38882 | Skipped: 7189 | Errors: 0 | 38886s (1.2/sec, ~3396min left)
+  [2021/Q2] 46271/287460 | Indexed: 39082 | Skipped: 7189 | Errors: 0 | 39011s (1.2/sec, ~3389min left)
+  [2021/Q2] 46471/287460 | Indexed: 39282 | Skipped: 7189 | Errors: 0 | 39193s (1.2/sec, ~3387min left)
+  [2021/Q2] 46671/287460 | Indexed: 39482 | Skipped: 7189 | Errors: 0 | 39357s (1.2/sec, ~3384min left)
+  [2021/Q2] 46871/287460 | Indexed: 39682 | Skipped: 7189 | Errors: 0 | 39501s (1.2/sec, ~3379min left)
+  [2021/Q2] 47071/287460 | Indexed: 39882 | Skipped: 7189 | Errors: 0 | 39660s (1.2/sec, ~3376min left)
+  [2021/Q2] 47271/287460 | Indexed: 40082 | Skipped: 7189 | Errors: 0 | 39856s (1.2/sec, ~3375min left)
+  [2021/Q2] 47471/287460 | Indexed: 40282 | Skipped: 7189 | Errors: 0 | 40052s (1.2/sec, ~3375min left)
+  [2021/Q2] 47720/287460 | Indexed: 40482 | Skipped: 7238 | Errors: 0 | 40258s (1.2/sec, ~3371min left)
+  [2021/Q2] 47920/287460 | Indexed: 40682 | Skipped: 7238 | Errors: 0 | 40424s (1.2/sec, ~3368min left)
+  [2021/Q2] 48120/287460 | Indexed: 40882 | Skipped: 7238 | Errors: 0 | 40588s (1.2/sec, ~3365min left)
+  [2021/Q2] 48320/287460 | Indexed: 41082 | Skipped: 7238 | Errors: 0 | 40783s (1.2/sec, ~3364min left)
+  [2021/Q2] 48520/287460 | Indexed: 41282 | Skipped: 7238 | Errors: 0 | 40953s (1.2/sec, ~3361min left)
+  [2021/Q2] 48720/287460 | Indexed: 41482 | Skipped: 7238 | Errors: 0 | 41153s (1.2/sec, ~3361min left)
+  [2021/Q2] 48920/287460 | Indexed: 41682 | Skipped: 7238 | Errors: 0 | 41315s (1.2/sec, ~3358min left)
+  [2021/Q2] 49205/287460 | Indexed: 41882 | Skipped: 7323 | Errors: 0 | 41507s (1.2/sec, ~3350min left)
+  [2021/Q2] 49405/287460 | Indexed: 42082 | Skipped: 7323 | Errors: 0 | 41655s (1.2/sec, ~3345min left)
+  [2021/Q2] 49605/287460 | Indexed: 42282 | Skipped: 7323 | Errors: 0 | 41868s (1.2/sec, ~3346min left)
+  [2021/Q2] 49847/287460 | Indexed: 42482 | Skipped: 7365 | Errors: 0 | 42089s (1.2/sec, ~3344min left)
+    Timeout fetching https://www.sec.gov/Archives/edgar/data/1579184/000079050021000003/xslF345X02/pr..., attempt 1/3
+    Rate limited (503), waiting 2000ms...
+    Rate limited (503), waiting 1000ms...
+    Rate limited (503), waiting 2000ms...
+    Rate limited (503), waiting 4000ms...
+    Rate limited (503), waiting 1000ms...
+    Rate limited (503), waiting 2000ms...
+    Timeout fetching https://www.sec.gov/Archives/edgar/data/1517022/000156218021004027/xslF345X03/pr..., attempt 3/3
+    Rate limited (503), waiting 1000ms...
+    Timeout fetching https://www.sec.gov/Archives/edgar/data/1517022/000156218021004031/xslF345X03/pr..., attempt 2/3
+    Rate limited (503), waiting 4000ms...
+    Rate limited (503), waiting 1000ms...
+    Rate limited (503), waiting 2000ms...
+    Rate limited (503), waiting 4000ms...
+    Rate limited (503), waiting 1000ms...
+    Rate limited (503), waiting 2000ms...
+    Rate limited (503), waiting 4000ms...
+    Rate limited (503), waiting 1000ms...
+    Timeout fetching https://www.sec.gov/Archives/edgar/data/1777460/000143774921013337/xslF345X03/rd..., attempt 2/3
+    Rate limited (503), waiting 4000ms...
+    Rate limited (503), waiting 1000ms...
+    Timeout fetching https://www.sec.gov/Archives/edgar/data/1762611/000120919121033296/xslF345X03/do..., attempt 2/3
+    Rate limited (503), waiting 4000ms...
+    Rate limited (503), waiting 1000ms...
+    Rate limited (503), waiting 2000ms...
+    Rate limited (503), waiting 4000ms...
+    Rate limited (503), waiting 1000ms...
+    Rate limited (503), waiting 2000ms...
+    Rate limited (503), waiting 4000ms...
+    Rate limited (503), waiting 1000ms...
+    Rate limited (503), waiting 2000ms...
+    Rate limited (503), waiting 4000ms...
+    Rate limited (503), waiting 1000ms...
+    Rate limited (503), waiting 2000ms...
+    Rate limited (503), waiting 4000ms...
+    Rate limited (503), waiting 1000ms...
+    Rate limited (503), waiting 2000ms...
+    Rate limited (503), waiting 4000ms...
+  [2021/Q2] 50059/287460 | Indexed: 42682 | Skipped: 7377 | Errors: 0 | 42795s (1.2/sec, ~3383min left)
+  [2021/Q2] 50259/287460 | Indexed: 42882 | Skipped: 7377 | Errors: 0 | 43002s (1.2/sec, ~3382min left)
+  [2021/Q2] 50459/287460 | Indexed: 43082 | Skipped: 7377 | Errors: 0 | 43205s (1.2/sec, ~3382min left)
+  [2021/Q2] 50659/287460 | Indexed: 43282 | Skipped: 7377 | Errors: 0 | 43394s (1.2/sec, ~3381min left)
+  [2021/Q2] 50859/287460 | Indexed: 43482 | Skipped: 7377 | Errors: 0 | 43609s (1.2/sec, ~3381min left)
+  [2021/Q2] 51059/287460 | Indexed: 43682 | Skipped: 7377 | Errors: 0 | 43760s (1.2/sec, ~3377min left)
+  [2021/Q2] 51303/287460 | Indexed: 43882 | Skipped: 7421 | Errors: 0 | 43908s (1.2/sec, ~3369min left)
+  [2021/Q2] 51570/287460 | Indexed: 44082 | Skipped: 7488 | Errors: 0 | 44087s (1.2/sec, ~3361min left)
+  [2021/Q2] 51770/287460 | Indexed: 44282 | Skipped: 7488 | Errors: 0 | 44275s (1.2/sec, ~3359min left)
+  [2021/Q2] 51970/287460 | Indexed: 44482 | Skipped: 7488 | Errors: 0 | 44468s (1.2/sec, ~3358min left)
+  [2021/Q2] 52170/287460 | Indexed: 44682 | Skipped: 7488 | Errors: 0 | 44707s (1.2/sec, ~3361min left)
+  [2021/Q2] 52370/287460 | Indexed: 44882 | Skipped: 7488 | Errors: 0 | 44850s (1.2/sec, ~3356min left)
+  [2021/Q2] 52570/287460 | Indexed: 45082 | Skipped: 7488 | Errors: 0 | 45023s (1.2/sec, ~3353min left)
+  [2021/Q2] 52770/287460 | Indexed: 45282 | Skipped: 7488 | Errors: 0 | 45162s (1.2/sec, ~3348min left)
+  [2021/Q2] 52995/287460 | Indexed: 45482 | Skipped: 7513 | Errors: 0 | 45333s (1.2/sec, ~3343min left)
+  [2021/Q2] 53195/287460 | Indexed: 45682 | Skipped: 7513 | Errors: 0 | 45556s (1.2/sec, ~3344min left)
+  [2021/Q2] 53395/287460 | Indexed: 45882 | Skipped: 7513 | Errors: 0 | 45774s (1.2/sec, ~3344min left)
+  [2021/Q2] 53595/287460 | Indexed: 46082 | Skipped: 7513 | Errors: 0 | 45966s (1.2/sec, ~3343min left)
+  [2021/Q2] 53795/287460 | Indexed: 46282 | Skipped: 7513 | Errors: 0 | 46169s (1.2/sec, ~3342min left)
+  [2021/Q2] 53995/287460 | Indexed: 46482 | Skipped: 7513 | Errors: 0 | 46335s (1.2/sec, ~3339min left)
+  [2021/Q2] 54195/287460 | Indexed: 46682 | Skipped: 7513 | Errors: 0 | 46527s (1.2/sec, ~3338min left)
+    Cache evicted 2500 entries (was 5001)
+  [2021/Q2] 54395/287460 | Indexed: 46882 | Skipped: 7513 | Errors: 0 | 46689s (1.2/sec, ~3334min left)
+  [2021/Q2] 54595/287460 | Indexed: 47082 | Skipped: 7513 | Errors: 0 | 46852s (1.2/sec, ~3331min left)
+  [2021/Q2] 54795/287460 | Indexed: 47282 | Skipped: 7513 | Errors: 0 | 47012s (1.2/sec, ~3327min left)
+  [2021/Q2] 54995/287460 | Indexed: 47482 | Skipped: 7513 | Errors: 0 | 47171s (1.2/sec, ~3323min left)
+  [2021/Q2] 55195/287460 | Indexed: 47682 | Skipped: 7513 | Errors: 0 | 47343s (1.2/sec, ~3320min left)
+  [2021/Q2] 55395/287460 | Indexed: 47882 | Skipped: 7513 | Errors: 0 | 47554s (1.2/sec, ~3320min left)
+  [2021/Q2] 55645/287460 | Indexed: 48082 | Skipped: 7563 | Errors: 0 | 47760s (1.2/sec, ~3316min left)
+  [2021/Q2] 55845/287460 | Indexed: 48282 | Skipped: 7563 | Errors: 0 | 47959s (1.2/sec, ~3315min left)
+  [2021/Q2] 56045/287460 | Indexed: 48482 | Skipped: 7563 | Errors: 0 | 48127s (1.2/sec, ~3312min left)
+    Timeout fetching https://www.sec.gov/Archives/edgar/data/1857134/000185713421000002/xslFormDX01/p..., attempt 1/3

@@ -21,7 +21,7 @@ export function createElasticClient(): Client {
   return new Client({
     node: url,
     auth: { apiKey },
-    requestTimeout: 30_000,
+    requestTimeout: 60_000,
   });
 }
 
