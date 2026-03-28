@@ -39,6 +39,7 @@ import {
 } from '../services/researchSessions';
 import { buildHighlightTerms, interpretSearchPrompt } from '../services/searchAssist';
 import { looksLikeBooleanQuery } from '../utils/booleanSearch';
+import { canUseInstantElasticsearchSearch } from '../services/filingResearch';
 import './SearchPage.css';
 
 const DEFAULT_FORM_SCOPE = '10-K,10-Q,8-K,8-K/A,DEF 14A,20-F,6-K,S-1';
@@ -464,14 +465,27 @@ export default function SearchPage() {
         mode: effectiveMode,
         filters: effectiveFilters,
       };
+      const canUseInstantElasticResponse = canUseInstantElasticsearchSearch(
+        resolvedSearch.query,
+        resolvedSearch.filters,
+        resolvedSearch.mode
+      );
       const fullHydrateSignals = shouldHydrateSearchSignals(effectiveMode, effectiveFilters);
-      const initialLimit = effectiveMode === 'boolean' ? INITIAL_BOOLEAN_RESULT_LIMIT : INITIAL_RESEARCH_RESULT_LIMIT;
+      const initialLimit = canUseInstantElasticResponse
+        ? RESEARCH_RESULT_LIMIT
+        : effectiveMode === 'boolean'
+          ? INITIAL_BOOLEAN_RESULT_LIMIT
+          : INITIAL_RESEARCH_RESULT_LIMIT;
       const shouldRunVisibleAuditorRefinement =
+        !canUseInstantElasticResponse &&
         effectiveMode === 'semantic' &&
         Boolean(effectiveFilters.accountant.trim());
       const shouldRunDeepRefinement =
-        RESEARCH_RESULT_LIMIT > initialLimit ||
-        (effectiveMode === 'semantic' && fullHydrateSignals && !shouldRunVisibleAuditorRefinement);
+        !canUseInstantElasticResponse &&
+        (
+          RESEARCH_RESULT_LIMIT > initialLimit ||
+          (effectiveMode === 'semantic' && fullHydrateSignals && !shouldRunVisibleAuditorRefinement)
+        );
       const shouldRunBackgroundRefinement =
         shouldRunVisibleAuditorRefinement ||
         shouldRunDeepRefinement;

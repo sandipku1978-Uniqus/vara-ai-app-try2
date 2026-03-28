@@ -20,7 +20,7 @@ function isEnabledEnvFlag(value: unknown): boolean {
   }
 }
 
-function shouldUseElasticsearch(): boolean {
+export function isElasticsearchEnabled(): boolean {
   return isEnabledEnvFlag(import.meta.env.VITE_USE_ELASTICSEARCH);
 }
 
@@ -636,7 +636,7 @@ export async function searchEdgarFilings(
   maxResults = 100,
   extended: ElasticSearchExtendedParams = {}
 ): Promise<EdgarSearchHit[]> {
-  if (shouldUseElasticsearch()) {
+  if (isElasticsearchEnabled()) {
     return searchViaElasticsearch(
       query,
       forms,

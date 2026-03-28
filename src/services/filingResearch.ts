@@ -2,6 +2,7 @@ import type { SearchFilters } from '../components/filters/SearchFilterBar';
 import {
   fetchCompanySubmissions,
   fetchFilingText,
+  isElasticsearchEnabled,
   searchEdgarFilings,
   type EdgarSearchHit,
   type ElasticSearchExtendedParams,
@@ -812,10 +813,27 @@ function buildExtendedSearchParams(filters: SearchFilters): ElasticSearchExtende
   };
 }
 
+export function canUseInstantElasticsearchSearch(_query: string, filters: SearchFilters, mode: ResearchSearchMode): boolean {
+  if (!isElasticsearchEnabled()) {
+    return false;
+  }
+
+  if (mode !== 'semantic') {
+    return false;
+  }
+
+  return !filters.sectionKeywords.trim();
+}
+
 function requiresTextFiltering(filters: SearchFilters, rawQuery: string, mode: ResearchSearchMode): boolean {
-  if (filters.accountant.trim() || filters.acceleratedStatus.length > 0 || filters.sectionKeywords.trim()) {
+  if (filters.sectionKeywords.trim()) {
     return true;
   }
+
+  if (filters.accountant.trim() || filters.acceleratedStatus.length > 0) {
+    return !isElasticsearchEnabled();
+  }
+
   if (mode === 'boolean') {
     const parsed = parseBooleanQuery(rawQuery);
     return Boolean(parsed.expression);
