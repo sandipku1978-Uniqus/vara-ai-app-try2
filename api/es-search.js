@@ -407,13 +407,26 @@ function buildBooleanClause(node) {
 }
 
 function buildSemanticClause(query) {
+  const tokenCount = normalizeWhitespace(query)
+    .replace(/"/g, ' ')
+    .split(/[^A-Za-z0-9]+/)
+    .map(token => token.trim())
+    .filter(Boolean).length;
+
+  const minimumShouldMatch =
+    tokenCount <= 3
+      ? '100%'
+      : tokenCount <= 6
+        ? '80%'
+        : '75%';
+
   return {
     multi_match: {
       query,
       fields: SEARCH_FIELDS,
       type: 'best_fields',
       fuzziness: 'AUTO',
-      minimum_should_match: '75%',
+      minimum_should_match: minimumShouldMatch,
     },
   };
 }

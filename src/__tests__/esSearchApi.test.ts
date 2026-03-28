@@ -15,6 +15,7 @@ describe('api/es-search', () => {
 
     expect(query.query.bool.must[0]).toHaveProperty('multi_match');
     expect(query.query.bool.must[0].multi_match.query).toBe('"Temporary equity"');
+    expect(query.query.bool.must[0].multi_match.minimum_should_match).toBe('100%');
   });
 
   it('builds highlight-enabled semantic queries for plain text searches', () => {
@@ -30,6 +31,21 @@ describe('api/es-search', () => {
     expect(query.query.bool.must[0]).toHaveProperty('multi_match');
     expect(query.query.bool.filter).toContainEqual({ term: { auditor: 'Deloitte' } });
     expect(query.highlight?.fields.content).toBeTruthy();
+    expect(query.query.bool.must[0].multi_match.minimum_should_match).toBe('100%');
+  });
+
+  it('keeps broader semantic matching for longer natural-language queries', () => {
+    const query = buildEsQuery({
+      q: '"bifurcated derivatives" "accelerated share repurchase" agreements',
+      forms: '10-K,10-Q',
+      startdt: '2021-01-01',
+      enddt: '2026-03-27',
+      mode: 'semantic',
+      size: 25,
+    });
+
+    expect(query.query.bool.must[0]).toHaveProperty('multi_match');
+    expect(query.query.bool.must[0].multi_match.minimum_should_match).toBe('80%');
   });
 
   it('translates Boolean AND queries into Elasticsearch bool clauses', () => {
