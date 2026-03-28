@@ -152,5 +152,27 @@ describe('secApi', () => {
       expect(mockFetch).toHaveBeenCalledTimes(1);
       expect(String(mockFetch.mock.calls[0][0])).toContain('/api/es-search?');
     });
+
+    it('forwards the search mode to Elasticsearch when provided', async () => {
+      (import.meta.env as Record<string, unknown>).VITE_USE_ELASTICSEARCH = 'true';
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({ hits: { hits: [], total: { value: 0 } } }),
+      });
+
+      const { searchEdgarFilings } = await import('../services/secApi');
+      await searchEdgarFilings(
+        '"Temporary equity"',
+        '10-K,10-Q',
+        '2023-01-01',
+        '2026-03-22',
+        '',
+        5,
+        { mode: 'semantic' }
+      );
+
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      expect(String(mockFetch.mock.calls[0][0])).toContain('mode=semantic');
+    });
   });
 });

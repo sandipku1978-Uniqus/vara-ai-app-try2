@@ -228,18 +228,22 @@ const AUDITOR_PATTERNS: Array<{ label: string; re: RegExp }> = [
   { label: 'Marcum', re: /\bcbiz\s+marcum\b/i },
 ];
 
-function detectAuditor(text: string): string {
-  const sample = text.slice(0, 60000);
+function matchAuditorChunk(text: string): string {
   for (const { label, re } of AUDITOR_PATTERNS) {
-    if (re.test(sample)) return label;
-  }
-  if (text.length > 80000) {
-    const tail = text.slice(-40000);
-    for (const { label, re } of AUDITOR_PATTERNS) {
-      if (re.test(tail)) return label;
-    }
+    if (re.test(text)) return label;
   }
   return '';
+}
+
+function detectAuditor(text: string): string {
+  const sample = text.slice(0, 60000);
+  const tail = text.length > 80000 ? text.slice(-40000) : '';
+
+  return (
+    matchAuditorChunk(sample) ||
+    matchAuditorChunk(tail) ||
+    matchAuditorChunk(text)
+  );
 }
 
 // ── Accelerated filer detection ──

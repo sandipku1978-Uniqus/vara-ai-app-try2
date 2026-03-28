@@ -571,6 +571,7 @@ export interface ElasticSearchExtendedParams {
   auditor?: string;
   acceleratedStatus?: string;
   sicCode?: string;
+  mode?: 'semantic' | 'boolean';
 }
 
 /**
@@ -597,6 +598,7 @@ async function searchViaElasticsearch(
   if (extended.auditor) params.set('auditor', extended.auditor);
   if (extended.acceleratedStatus) params.set('acceleratedStatus', extended.acceleratedStatus);
   if (extended.sicCode) params.set('sicCode', extended.sicCode);
+  if (extended.mode) params.set('mode', extended.mode);
 
   const results: EdgarSearchHit[] = [];
   const seenIds = new Set<string>();

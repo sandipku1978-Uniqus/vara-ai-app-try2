@@ -418,13 +418,17 @@ function buildSemanticClause(query) {
   };
 }
 
-export function buildSearchClause(query) {
+export function buildSearchClause(query, mode = 'auto') {
   const trimmed = normalizeWhitespace(query || '');
   if (!trimmed) {
     return null;
   }
 
-  if (!BOOLEAN_SYNTAX_RE.test(trimmed)) {
+  if (mode === 'semantic') {
+    return buildSemanticClause(trimmed);
+  }
+
+  if (mode !== 'boolean' && !BOOLEAN_SYNTAX_RE.test(trimmed)) {
     return buildSemanticClause(trimmed);
   }
 
@@ -471,11 +475,12 @@ export function buildEsQuery({
   auditor = '',
   acceleratedStatus = '',
   sicCode = '',
+  mode = 'auto',
 } = {}) {
   const must = [];
   const filter = [];
 
-  const searchClause = buildSearchClause(q);
+  const searchClause = buildSearchClause(q, mode);
   if (searchClause) {
     must.push(searchClause);
   }
@@ -581,6 +586,7 @@ export default async function handler(request) {
   const auditor = params.get('auditor') || '';
   const acceleratedStatus = params.get('acceleratedStatus') || '';
   const sicCode = params.get('sicCode') || '';
+  const mode = params.get('mode') || 'auto';
 
   const esQuery = buildEsQuery({
     q,
@@ -593,6 +599,7 @@ export default async function handler(request) {
     auditor,
     acceleratedStatus,
     sicCode,
+    mode,
   });
 
   try {

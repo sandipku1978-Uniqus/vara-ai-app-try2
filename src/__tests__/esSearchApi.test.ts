@@ -2,6 +2,21 @@ import { describe, expect, it } from 'vitest';
 import { buildEsQuery } from '../../api/es-search.js';
 
 describe('api/es-search', () => {
+  it('keeps quoted semantic queries on the semantic multi-match path', () => {
+    const query = buildEsQuery({
+      q: '"Temporary equity"',
+      forms: '10-K,10-Q',
+      startdt: '2023-01-01',
+      enddt: '2026-03-27',
+      auditor: 'Deloitte',
+      mode: 'semantic',
+      size: 25,
+    });
+
+    expect(query.query.bool.must[0]).toHaveProperty('multi_match');
+    expect(query.query.bool.must[0].multi_match.query).toBe('"Temporary equity"');
+  });
+
   it('builds highlight-enabled semantic queries for plain text searches', () => {
     const query = buildEsQuery({
       q: 'temporary equity',
@@ -23,6 +38,7 @@ describe('api/es-search', () => {
       forms: '10-K',
       startdt: '2021-01-01',
       enddt: '2026-03-27',
+      mode: 'boolean',
       size: 25,
     });
 
@@ -37,6 +53,7 @@ describe('api/es-search', () => {
       forms: '10-K,10-Q',
       startdt: '2021-01-01',
       enddt: '2026-03-27',
+      mode: 'boolean',
       size: 25,
     });
 

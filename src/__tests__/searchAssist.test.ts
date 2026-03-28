@@ -115,6 +115,18 @@ describe('searchAssist', () => {
       expect(result.filters.formTypes).toContain('10-K');
     });
 
+    it('rewrites the temporary equity prompt into a quoted semantic query with Deloitte and form filters extracted', () => {
+      const result = interpretSearchPrompt(
+        'Temporary equity in last 3 years in 10-Q / 10-K audited by Deloitte',
+        emptyFilters
+      );
+      expect(result.query).toContain('"Temporary equity"');
+      expect(result.filters.accountant).toBe('Deloitte');
+      expect(result.filters.formTypes).toEqual(expect.arrayContaining(['10-K', '10-Q']));
+      expect(result.filters.dateFrom).toBeTruthy();
+      expect(result.filters.dateTo).toBeTruthy();
+    });
+
     it('generates applied hints for complex queries', () => {
       const result = interpretSearchPrompt('EY audited 10-K filings in the last 2 years about ESG', emptyFilters);
       expect(result.appliedHints.length).toBeGreaterThanOrEqual(2);
