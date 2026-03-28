@@ -139,7 +139,7 @@ describe('secApi', () => {
       expect(String(mockFetch.mock.calls[0][0])).not.toContain('/api/es-search?');
     });
 
-    it('uses the Elasticsearch endpoint when VITE_USE_ELASTICSEARCH is the string "true"', async () => {
+    it('keeps the legacy EFTS endpoint by default even when VITE_USE_ELASTICSEARCH is the string "true"', async () => {
       (import.meta.env as Record<string, unknown>).VITE_USE_ELASTICSEARCH = 'true';
       mockFetch.mockResolvedValue({
         ok: true,
@@ -148,6 +148,29 @@ describe('secApi', () => {
 
       const { searchEdgarFilings } = await import('../services/secApi');
       await searchEdgarFilings('temporary equity', '10-K,10-Q', '2023-01-01', '2026-03-22', '', 5);
+
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      expect(String(mockFetch.mock.calls[0][0])).toContain('/api/sec-efts?');
+      expect(String(mockFetch.mock.calls[0][0])).not.toContain('/api/es-search?');
+    });
+
+    it('uses the Elasticsearch endpoint when the caller explicitly opts in', async () => {
+      (import.meta.env as Record<string, unknown>).VITE_USE_ELASTICSEARCH = 'true';
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({ hits: { hits: [], total: { value: 0 } } }),
+      });
+
+      const { searchEdgarFilings } = await import('../services/secApi');
+      await searchEdgarFilings(
+        'temporary equity',
+        '10-K,10-Q',
+        '2023-01-01',
+        '2026-03-22',
+        '',
+        5,
+        { useElasticsearch: true }
+      );
 
       expect(mockFetch).toHaveBeenCalledTimes(1);
       expect(String(mockFetch.mock.calls[0][0])).toContain('/api/es-search?');
@@ -168,7 +191,7 @@ describe('secApi', () => {
         '2026-03-22',
         '',
         5,
-        { mode: 'semantic' }
+        { mode: 'semantic', useElasticsearch: true }
       );
 
       expect(mockFetch).toHaveBeenCalledTimes(1);

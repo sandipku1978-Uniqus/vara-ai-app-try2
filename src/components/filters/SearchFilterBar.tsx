@@ -91,18 +91,18 @@ interface Props {
 }
 
 const inputStyle: React.CSSProperties = {
-  padding: '9px 12px',
+  padding: '8px 11px',
   background: 'var(--input-bg)',
   border: '1px solid var(--input-border)',
   borderRadius: '12px',
   color: 'var(--text-primary)',
-  fontSize: '0.82rem',
+  fontSize: '0.78rem',
   outline: 'none',
 };
 
 const labelStyle: React.CSSProperties = {
   color: 'var(--text-muted)',
-  fontSize: '0.72rem',
+  fontSize: '0.68rem',
   fontWeight: 600,
   textTransform: 'uppercase' as const,
   letterSpacing: '0.03em',
@@ -119,7 +119,7 @@ const chipStyle: React.CSSProperties = {
   background: 'var(--surface-subtle)',
   border: '1px solid rgba(179,31,126,0.2)',
   color: 'var(--accent-primary)',
-  fontSize: '0.73rem',
+  fontSize: '0.71rem',
   fontWeight: 500,
 };
 
@@ -134,13 +134,13 @@ const selectStyle: React.CSSProperties = {
 };
 
 const pillBtnStyle = (active: boolean): React.CSSProperties => ({
-  padding: '3px 10px',
+  padding: '3px 9px',
   borderRadius: '999px',
   border: `1px solid ${active ? 'rgba(179,31,126,0.36)' : 'var(--border-color)'}`,
   background: active ? 'rgba(179,31,126,0.1)' : 'var(--surface-panel)',
   color: active ? 'var(--accent-primary)' : 'var(--text-secondary)',
   cursor: 'pointer',
-  fontSize: '0.76rem',
+  fontSize: '0.73rem',
   fontWeight: active ? 600 : 400,
   transition: 'all 0.12s',
 });
@@ -152,7 +152,7 @@ function CollapsibleSection({ title, defaultOpen = false, children }: { title: s
       <button onClick={() => setOpen(!open)} style={{
         display: 'flex', alignItems: 'center', gap: '6px', width: '100%',
         background: 'none', border: 'none', cursor: 'pointer', padding: '8px 0',
-        color: 'var(--text-primary)', fontSize: '0.8rem', fontWeight: 600, textAlign: 'left',
+        color: 'var(--text-primary)', fontSize: '0.78rem', fontWeight: 600, textAlign: 'left',
       }}>
         {open ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
         {title}
@@ -220,19 +220,19 @@ export default function SearchFilterBar({ config, filters, onChange, onSearch, l
   if (filters.fiscalYearEnd) chips.push({ label: `FYE: ${FY_LABELS[filters.fiscalYearEnd] || filters.fiscalYearEnd}`, clear: () => onChange({ ...filters, fiscalYearEnd: '' }) });
 
   return (
-    <div style={{ marginBottom: '20px' }}>
+    <div style={{ marginBottom: '16px' }}>
       {/* Toggle bar */}
       <button
         onClick={() => setExpanded(!expanded)}
         style={{
           display: 'flex', alignItems: 'center', gap: '6px',
-          padding: '6px 14px', borderRadius: '8px',
+          padding: '6px 12px', borderRadius: '8px',
           border: '1px solid var(--border-color)',
           background: expanded ? 'var(--surface-subtle)' : 'var(--surface-panel)',
           color: expanded ? 'var(--accent-primary)' : 'var(--text-secondary)',
-          cursor: 'pointer', fontSize: '0.82rem', fontWeight: 500,
+          cursor: 'pointer', fontSize: '0.78rem', fontWeight: 500,
           transition: 'all 0.15s',
-          marginBottom: expanded ? '12px' : '0',
+          marginBottom: expanded ? '10px' : '0',
         }}
       >
         <Filter size={14} />
@@ -276,13 +276,13 @@ export default function SearchFilterBar({ config, filters, onChange, onSearch, l
           background: 'var(--surface-panel)',
           border: '1px solid var(--border-color)',
           borderRadius: '12px',
-          padding: '16px 20px',
+          padding: '14px 16px',
           display: 'flex',
           flexDirection: 'column',
           gap: '4px',
         }}>
           {/* Row 1: Core filters — always visible */}
-          <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', alignItems: 'flex-end', paddingBottom: '12px', borderBottom: '1px solid var(--border-color)' }}>
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'flex-end', paddingBottom: '12px', borderBottom: '1px solid var(--border-color)' }}>
             {config.showEntityName !== false && (
               <div style={{ minWidth: '180px', flex: '1 1 180px' }}>
                 <label style={labelStyle}>Company / Entity</label>
@@ -431,7 +431,7 @@ export default function SearchFilterBar({ config, filters, onChange, onSearch, l
           {/* Expert filters */}
           {(config.showAccessionNumber || config.showFileNumber) && (
             <CollapsibleSection title="Expert Filters">
-              <div style={{ color: 'var(--text-muted)', fontSize: '0.74rem', marginBottom: '10px' }}>
+              <div style={{ color: 'var(--text-muted)', fontSize: '0.72rem', marginBottom: '10px' }}>
                 Use accession or file number only when you already know the exact filing you want.
               </div>
               <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
@@ -471,7 +471,7 @@ export default function SearchFilterBar({ config, filters, onChange, onSearch, l
             </div>
             <button onClick={onSearch} disabled={loading} style={{
               padding: '8px 18px', background: 'linear-gradient(135deg, #B31F7E, #482A7A)', color: 'white', border: 'none', borderRadius: '999px',
-              cursor: 'pointer', fontSize: '0.82rem', fontWeight: 600, whiteSpace: 'nowrap', marginLeft: '12px',
+              cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600, whiteSpace: 'nowrap', marginLeft: '12px',
             }}>
               Apply & Search
             </button>

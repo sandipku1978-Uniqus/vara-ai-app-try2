@@ -9,16 +9,22 @@ describe('filingResearch', () => {
   });
 
   describe('canUseInstantElasticsearchSearch', () => {
-    it('uses Elasticsearch immediately for semantic searches when section filters are absent', () => {
+    it('uses Elasticsearch immediately for semantic searches when the Research flow opts in', () => {
       expect(
-        canUseInstantElasticsearchSearch('temporary equity', { ...defaultSearchFilters }, 'semantic')
+        canUseInstantElasticsearchSearch('temporary equity', { ...defaultSearchFilters }, 'semantic', true)
       ).toBe(true);
     });
 
-    it('uses Elasticsearch immediately for boolean searches when section filters are absent', () => {
+    it('uses Elasticsearch immediately for boolean searches when the Research flow opts in', () => {
       expect(
-        canUseInstantElasticsearchSearch('ASC 842 adoption W/10 lease', { ...defaultSearchFilters }, 'boolean')
+        canUseInstantElasticsearchSearch('ASC 842 adoption W/10 lease', { ...defaultSearchFilters }, 'boolean', true)
       ).toBe(true);
+    });
+
+    it('keeps shared search helpers on the legacy path until a caller opts in', () => {
+      expect(
+        canUseInstantElasticsearchSearch('temporary equity', { ...defaultSearchFilters }, 'semantic')
+      ).toBe(false);
     });
 
     it('keeps section-keyword searches on the filing-text validation path', () => {
@@ -26,7 +32,8 @@ describe('filingResearch', () => {
         canUseInstantElasticsearchSearch(
           'temporary equity',
           { ...defaultSearchFilters, sectionKeywords: 'balance sheet' },
-          'semantic'
+          'semantic',
+          true
         )
       ).toBe(false);
     });

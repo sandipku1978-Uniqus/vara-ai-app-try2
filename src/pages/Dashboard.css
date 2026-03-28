@@ -75,6 +75,101 @@
   gap: 16px;
 }
 
+@media (max-width: 1440px), (max-height: 920px) {
+  .dashboard-container {
+    gap: 18px;
+  }
+
+  .page-header h1 {
+    font-size: 1.55rem;
+  }
+
+  .page-header p {
+    font-size: 0.92rem;
+  }
+
+  .dashboard-grid {
+    gap: 16px;
+  }
+
+  .chart-card,
+  .trending-card,
+  .watchlist-card,
+  .activity-card,
+  .rss-card {
+    padding: 18px;
+  }
+
+  .card-header {
+    margin-bottom: 16px;
+    padding-bottom: 10px;
+  }
+
+  .card-header h3 {
+    font-size: 1rem;
+  }
+
+  .chart-container {
+    height: 240px;
+  }
+
+  .rss-grid {
+    gap: 12px;
+  }
+
+  .rss-news-card {
+    padding: 16px;
+  }
+
+  .rss-headline {
+    font-size: 0.9rem;
+  }
+
+  .rss-summary {
+    font-size: 0.78rem;
+  }
+
+  .trending-list,
+  .watchlist-list,
+  .activity-list {
+    gap: 10px;
+  }
+
+  .trending-item {
+    gap: 10px;
+    padding: 8px 10px;
+  }
+
+  .watchlist-item {
+    padding: 10px 12px;
+  }
+
+  .company-logo-stub {
+    width: 32px;
+    height: 32px;
+    font-size: 0.82rem;
+  }
+
+  .company-name {
+    font-size: 0.9rem;
+  }
+
+  .company-ticker,
+  .f-date,
+  .activity-details span {
+    font-size: 0.76rem;
+  }
+
+  .activity-details p {
+    font-size: 0.88rem;
+  }
+
+  .watchlist-add-btn {
+    padding: 7px 12px;
+    font-size: 0.8rem;
+  }
+}
+
 @media (max-width: 1024px) {
   .rss-grid {
     grid-template-columns: 1fr;

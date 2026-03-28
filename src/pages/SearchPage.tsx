@@ -48,6 +48,7 @@ const LEGACY_DEFAULT_FORM_SCOPE = ['10-K', '10-Q'];
 const RESEARCH_RESULT_LIMIT = 500;
 const INITIAL_RESEARCH_RESULT_LIMIT = 80;
 const INITIAL_BOOLEAN_RESULT_LIMIT = 40;
+const RESEARCH_SEARCH_USES_ELASTICSEARCH = true;
 const SAMPLE_SEARCHES = [
   'ASC 842 adoption w/10 lease',
   'ASR w/5 derivative',
@@ -469,7 +470,8 @@ export default function SearchPage() {
       const canUseInstantElasticResponse = canUseInstantElasticsearchSearch(
         resolvedSearch.query,
         resolvedSearch.filters,
-        resolvedSearch.mode
+        resolvedSearch.mode,
+        RESEARCH_SEARCH_USES_ELASTICSEARCH
       );
       const fullHydrateSignals = shouldHydrateSearchSignals(effectiveMode, effectiveFilters);
       const initialLimit = canUseInstantElasticResponse
@@ -499,6 +501,7 @@ export default function SearchPage() {
         mode: resolvedSearch.mode,
         defaultForms: DEFAULT_FORM_SCOPE,
         limit: initialLimit,
+        useElasticsearch: RESEARCH_SEARCH_USES_ELASTICSEARCH,
         hydrateTextSignals: false,
         deferTextValidation: shouldRunBackgroundRefinement,
       });
@@ -550,6 +553,7 @@ export default function SearchPage() {
               mode: resolvedSearch.mode,
               defaultForms: DEFAULT_FORM_SCOPE,
               limit: initialLimit,
+              useElasticsearch: RESEARCH_SEARCH_USES_ELASTICSEARCH,
               hydrateTextSignals: true,
               deferTextValidation: false,
               preferFastCandidateCollection: true,
@@ -598,6 +602,7 @@ export default function SearchPage() {
             mode: resolvedSearch.mode,
             defaultForms: DEFAULT_FORM_SCOPE,
             limit: RESEARCH_RESULT_LIMIT,
+            useElasticsearch: RESEARCH_SEARCH_USES_ELASTICSEARCH,
             hydrateTextSignals: fullHydrateSignals,
             deferTextValidation: false,
             onProgress: (progressResults) => {

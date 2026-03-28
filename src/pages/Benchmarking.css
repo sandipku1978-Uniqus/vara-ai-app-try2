@@ -435,6 +435,98 @@
   background: rgba(179, 31, 126, 0.04);
 }
 
+@media (max-width: 1440px), (max-height: 920px) {
+  .benchmarking-container {
+    gap: 18px;
+    min-height: calc(100vh - 102px);
+  }
+
+  .benchmark-title h1 {
+    font-size: 1.55rem;
+  }
+
+  .benchmark-title p {
+    font-size: 0.92rem;
+  }
+
+  .benchmark-controls {
+    padding: 14px 18px;
+    gap: 20px;
+  }
+
+  .control-group {
+    gap: 6px;
+  }
+
+  .control-group label,
+  .legend-group label {
+    font-size: 0.78rem;
+  }
+
+  .select-input {
+    min-width: 190px;
+    padding: 9px 14px;
+    font-size: 0.88rem;
+  }
+
+  .selected-company-badge {
+    font-size: 0.84rem;
+  }
+
+  .comparison-grid {
+    gap: 16px;
+  }
+
+  .column-header {
+    padding: 14px 18px;
+  }
+
+  .col-ticker {
+    font-size: 1.08rem;
+  }
+
+  .col-name {
+    font-size: 0.88rem;
+  }
+
+  .col-doc {
+    font-size: 0.78rem;
+  }
+
+  .column-body {
+    padding: 18px;
+    line-height: 1.7;
+  }
+
+  .kpi-cards-row,
+  .charts-grid-3col,
+  .charts-grid-2col {
+    gap: 12px;
+  }
+
+  .kpi-card {
+    min-width: 190px;
+    padding: 16px !important;
+  }
+
+  .kpi-card-header {
+    margin-bottom: 10px;
+  }
+
+  .kpi-card-ticker {
+    font-size: 1rem;
+  }
+
+  .kpi-card-value {
+    font-size: 0.88rem;
+  }
+
+  .chart-title {
+    margin-bottom: 12px;
+    font-size: 0.8rem;
+  }
+}
+
 /* ===== Responsive ===== */
 @media (max-width: 1200px) {
   .charts-grid-3col {

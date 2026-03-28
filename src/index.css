@@ -658,4 +658,32 @@ th, td {
   color: var(--accent-secondary);
 }
 
+@media (max-width: 1440px), (max-height: 920px) {
+  :root {
+    --copilot-sidebar-width: clamp(320px, 28vw, 420px);
+  }
+
+  .primary-btn,
+  .secondary-btn {
+    padding: 9px 16px;
+    font-size: 0.84rem;
+  }
+
+  .badge {
+    font-size: 0.66rem;
+    padding: 3px 8px;
+  }
+
+  input[type="text"],
+  input[type="search"],
+  input[type="email"] {
+    padding: 9px 12px;
+    font-size: 0.86rem;
+  }
+
+  .md-content {
+    font-size: 0.84rem;
+  }
+}
+
 

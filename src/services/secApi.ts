@@ -572,6 +572,7 @@ export interface ElasticSearchExtendedParams {
   acceleratedStatus?: string;
   sicCode?: string;
   mode?: 'semantic' | 'boolean';
+  useElasticsearch?: boolean;
 }
 
 /**
@@ -634,7 +635,7 @@ async function searchViaElasticsearch(
 
 /**
  * Search EDGAR full-text search for specific form types.
- * Routes through Elasticsearch when VITE_USE_ELASTICSEARCH is set.
+ * Routes through Elasticsearch only when the caller opts in and VITE_USE_ELASTICSEARCH is enabled.
  */
 export async function searchEdgarFilings(
   query: string,
@@ -645,7 +646,9 @@ export async function searchEdgarFilings(
   maxResults = 100,
   extended: ElasticSearchExtendedParams = {}
 ): Promise<EdgarSearchHit[]> {
-  if (isElasticsearchEnabled()) {
+  const shouldUseElasticsearch = extended.useElasticsearch === true && isElasticsearchEnabled();
+
+  if (shouldUseElasticsearch) {
     return searchViaElasticsearch(
       query,
       forms,

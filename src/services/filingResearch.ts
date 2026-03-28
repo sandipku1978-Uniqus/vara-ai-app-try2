@@ -80,6 +80,7 @@ interface ExecuteSearchOptions {
   mode?: ResearchSearchMode;
   defaultForms?: string;
   limit?: number;
+  useElasticsearch?: boolean;
   hydrateTextSignals?: boolean;
   deferTextValidation?: boolean;
   preferFastCandidateCollection?: boolean;
@@ -857,17 +858,31 @@ async function hydrateResultSignals(result: FilingResearchResult): Promise<Filin
   return signal;
 }
 
-function buildExtendedSearchParams(filters: SearchFilters, mode: ResearchSearchMode): ElasticSearchExtendedParams {
+function shouldUseElasticsearch(useElasticsearch: boolean): boolean {
+  return useElasticsearch && isElasticsearchEnabled();
+}
+
+function buildExtendedSearchParams(
+  filters: SearchFilters,
+  mode: ResearchSearchMode,
+  useElasticsearch: boolean
+): ElasticSearchExtendedParams {
   return {
     auditor: canonicalizeAuditorInput(filters.accountant.trim()) || undefined,
     acceleratedStatus: filters.acceleratedStatus.length > 0 ? filters.acceleratedStatus.join(',') : undefined,
     sicCode: filters.sicCode.trim() ? filters.sicCode.trim().match(/\d{3,4}/)?.[0] : undefined,
     mode,
+    useElasticsearch: shouldUseElasticsearch(useElasticsearch),
   };
 }
 
-export function canUseInstantElasticsearchSearch(_query: string, filters: SearchFilters, mode: ResearchSearchMode): boolean {
-  if (!isElasticsearchEnabled()) {
+export function canUseInstantElasticsearchSearch(
+  _query: string,
+  filters: SearchFilters,
+  mode: ResearchSearchMode,
+  useElasticsearch = false
+): boolean {
+  if (!shouldUseElasticsearch(useElasticsearch)) {
     return false;
   }
 
@@ -878,17 +893,22 @@ export function canUseInstantElasticsearchSearch(_query: string, filters: Search
   return mode === 'semantic' || mode === 'boolean';
 }
 
-function requiresTextFiltering(filters: SearchFilters, rawQuery: string, mode: ResearchSearchMode): boolean {
+function requiresTextFiltering(
+  filters: SearchFilters,
+  rawQuery: string,
+  mode: ResearchSearchMode,
+  useElasticsearch: boolean
+): boolean {
   if (filters.sectionKeywords.trim()) {
     return true;
   }
 
-  if (canUseInstantElasticsearchSearch(rawQuery, filters, mode)) {
+  if (canUseInstantElasticsearchSearch(rawQuery, filters, mode, useElasticsearch)) {
     return false;
   }
 
   if (filters.accountant.trim() || filters.acceleratedStatus.length > 0) {
-    return !isElasticsearchEnabled();
+    return !shouldUseElasticsearch(useElasticsearch);
   }
 
   if (mode === 'boolean') {
@@ -904,6 +924,7 @@ export async function executeFilingResearchSearch({
   mode = 'semantic',
   defaultForms = '',
   limit = 50,
+  useElasticsearch = false,
   hydrateTextSignals = false,
   deferTextValidation = false,
   preferFastCandidateCollection = false,
@@ -919,7 +940,7 @@ export async function executeFilingResearchSearch({
   const fastPass = deferTextValidation;
   const fastCandidateCollection = deferTextValidation || preferFastCandidateCollection;
   const displayLimit = Math.min(requestedLimit, 500);
-  const needsTextFiltering = requiresTextFiltering(filters, query, mode);
+  const needsTextFiltering = requiresTextFiltering(filters, query, mode, useElasticsearch);
   const shouldHydrateSignals = !fastPass && (hydrateTextSignals || needsTextFiltering);
 
   const booleanServerQueries = mode === 'boolean' ? buildBooleanCandidateQueries(query || filters.keyword).slice(0, 5) : [];
@@ -972,7 +993,7 @@ export async function executeFilingResearchSearch({
           filters.dateTo || undefined,
           filters.entityName || undefined,
           fastCandidateCollection ? Math.min(perQueryResultLimit, 140) : perQueryResultLimit,
-          buildExtendedSearchParams(filters, mode)
+          buildExtendedSearchParams(filters, mode, useElasticsearch)
         );
 
         const queryPriority = filteredServerQueries.length - queryIndex;
@@ -1035,7 +1056,7 @@ export async function executeFilingResearchSearch({
         filters.dateTo || undefined,
         filters.entityName || undefined,
         wavePerQueryLimit,
-        buildExtendedSearchParams(filters, mode)
+        buildExtendedSearchParams(filters, mode, useElasticsearch)
       );
     } catch (error) {
       lastSearchError = error instanceof Error ? error : new Error('EDGAR search failed');
