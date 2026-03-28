@@ -550,7 +550,14 @@ export interface EdgarSearchHit {
     entity_name?: string;
     primary_document?: string;
     tickers?: string[];
+    sic_description?: string;
+    exchange?: string;
+    state_of_incorporation?: string;
+    fiscal_year_end?: string;
+    auditor?: string;
+    accelerated_status?: string[] | string;
   };
+  highlight?: Record<string, string[]>;
 }
 
 export interface EdgarSearchResult {

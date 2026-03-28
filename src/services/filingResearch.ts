@@ -667,7 +667,7 @@ function matchesBaseFilters(result: FilingResearchResult, filters: SearchFilters
 }
 
 function requiresCompanyMetadata(filters: SearchFilters): boolean {
-  return Boolean(
+  const needsCompanyFields = Boolean(
     filters.entityName.trim() ||
     filters.fileNumber.trim() ||
     filters.sicCode.trim() ||
@@ -676,6 +676,12 @@ function requiresCompanyMetadata(filters: SearchFilters): boolean {
     filters.exchange.length > 0 ||
     filters.fiscalYearEnd.trim()
   );
+
+  if (!needsCompanyFields) {
+    return false;
+  }
+
+  return !isElasticsearchEnabled();
 }
 
 function matchesSignalFilters(result: FilingResearchResult, filters: SearchFilters, filingText: string): boolean {
@@ -709,9 +715,55 @@ function firstString(value: string | string[] | undefined): string {
   return value || '';
 }
 
-function mapSearchHit(hit: EdgarSearchHit): FilingResearchResult {
+function joinStrings(value: string | string[] | undefined): string {
+  if (Array.isArray(value)) {
+    return Array.from(new Set(value.map(item => item.trim()).filter(Boolean))).join(', ');
+  }
+  return value?.trim() || '';
+}
+
+function cleanSnippet(value: string): string {
+  return value
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function pickHighlightSnippet(hit: EdgarSearchHit): { snippet: string; reason: string } {
+  const highlight = hit.highlight || {};
+
+  const contentSnippet = cleanSnippet(highlight.content?.find(Boolean) || '');
+  if (contentSnippet) {
+    return {
+      snippet: contentSnippet,
+      reason: 'Matched filing text',
+    };
+  }
+
+  const metadataSnippet = cleanSnippet(
+    highlight.file_description?.find(Boolean) ||
+      highlight.entity_name?.find(Boolean) ||
+      highlight.display_names?.find(Boolean) ||
+      ''
+  );
+
+  if (metadataSnippet) {
+    return {
+      snippet: metadataSnippet,
+      reason: 'Matched filing metadata',
+    };
+  }
+
+  return {
+    snippet: '',
+    reason: '',
+  };
+}
+
+export function mapSearchHit(hit: EdgarSearchHit): FilingResearchResult {
   const base = parseSearchHit(hit);
   const source = hit._source;
+  const highlightMatch = pickHighlightSnippet(hit);
   return {
     id: hit._id,
     entityName: base.entityName,
@@ -723,22 +775,22 @@ function mapSearchHit(hit: EdgarSearchHit): FilingResearchResult {
     primaryDocument: base.primaryDocument,
     filingPrimaryDocument: base.primaryDocument,
     description: base.description,
-    matchSnippet: '',
-    matchReason: '',
+    matchSnippet: highlightMatch.snippet,
+    matchReason: highlightMatch.reason,
     score: hit._score,
     relevanceScore: hit._score,
     filingUrl: buildFilingUrl(base.cik, base.accessionNumber, base.primaryDocument),
     companyName: source?.entity_name || base.entityName,
     tickers: source?.tickers || [],
     sic: firstString(source?.sics),
-    sicDescription: '',
-    exchange: '',
-    stateOfIncorporation: firstString(source?.inc_states),
-    fiscalYearEnd: '',
+    sicDescription: source?.sic_description || '',
+    exchange: source?.exchange || '',
+    stateOfIncorporation: source?.state_of_incorporation || firstString(source?.inc_states),
+    fiscalYearEnd: source?.fiscal_year_end || '',
     headquarters: firstString(source?.biz_locations),
     fileNumber: firstString(source?.file_num),
-    auditor: '',
-    acceleratedStatus: '',
+    auditor: canonicalizeAuditorInput(source?.auditor || ''),
+    acceleratedStatus: joinStrings(source?.accelerated_status),
   };
 }
 
@@ -818,16 +870,20 @@ export function canUseInstantElasticsearchSearch(_query: string, filters: Search
     return false;
   }
 
-  if (mode !== 'semantic') {
+  if (filters.sectionKeywords.trim()) {
     return false;
   }
 
-  return !filters.sectionKeywords.trim();
+  return mode === 'semantic' || mode === 'boolean';
 }
 
 function requiresTextFiltering(filters: SearchFilters, rawQuery: string, mode: ResearchSearchMode): boolean {
   if (filters.sectionKeywords.trim()) {
     return true;
+  }
+
+  if (canUseInstantElasticsearchSearch(rawQuery, filters, mode)) {
+    return false;
   }
 
   if (filters.accountant.trim() || filters.acceleratedStatus.length > 0) {
