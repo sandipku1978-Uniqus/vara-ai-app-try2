@@ -1185,179 +1185,196 @@ export default function SearchPage() {
 
       <section className="research-main">
         {isQueryPanelCollapsed ? (
-          <div className="research-query-collapsed glass-card">
-            <div className="research-query-collapsed-copy">
-              <div className="eyebrow">Current search</div>
-              <div className="research-query-collapsed-main">
-                <Search size={16} />
-                <span className="research-query-collapsed-text">{query.trim() || 'Ready for a new filing search'}</span>
-              </div>
-              <div className="research-query-collapsed-meta">
-                <span className="research-query-summary-chip">{searchModeLabel}</span>
-                <span className="research-query-summary-chip">
-                  {activeFilterCount} filter{activeFilterCount === 1 ? '' : 's'}
-                </span>
-                {displayResults.length > 0 && (
-                  <span className="research-query-summary-chip">
-                    {resultCountLabel} result{displayResults.length === 1 ? '' : 's'}
-                  </span>
-                )}
-              </div>
+          <div className="research-query-collapsed glass-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', gap: '16px' }}>
+            <div className="research-tab-strip" style={{ flex: 1, paddingBottom: 0, margin: 0, overflowY: 'hidden' }}>
+              {sessions.length === 0 ? (
+                <div className="research-empty-tab">Searches open here.</div>
+              ) : (
+                sessions.map(session => (
+                  <button
+                    key={session.id}
+                    className={`research-tab ${activeSession?.id === session.id ? 'active' : ''}`}
+                    onClick={() => setRouteForSession(session.id, session.query)}
+                  >
+                    <span>{session.title}</span>
+                    <span className="count">{session.results.length}</span>
+                    <span
+                      className="close"
+                      onClick={event => {
+                        event.stopPropagation();
+                        closeSession(session.id);
+                      }}
+                    >
+                      <X size={12} />
+                    </span>
+                  </button>
+                ))
+              )}
             </div>
-            <div className="research-query-collapsed-actions">
+            <div className="research-query-collapsed-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+              <span className="research-context-chip research-context-chip--accent">
+                <strong>{resultCountLabel}</strong> filings
+              </span>
+              {metrics.companies > 0 && (
+                <span className="research-context-chip">
+                  <strong>{metrics.companies}</strong> issuers
+                </span>
+              )}
               {isRailCollapsed && (
                 <button type="button" className="secondary-btn" onClick={() => setIsRailCollapsed(false)}>
                   <Filter size={14} /> Filters
                 </button>
               )}
               <button type="button" className="secondary-btn" onClick={() => setIsQueryPanelCollapsed(false)}>
-                <ChevronDown size={14} /> Edit Search
+                <ChevronDown size={14} /> Expand
               </button>
             </div>
           </div>
         ) : (
-          <div className="research-query-panel glass-card">
-            <div className="research-query-panel-header">
-              <div className="eyebrow">Search query</div>
-              <button
-                type="button"
-                className="research-collapse-btn"
-                onClick={() => setIsQueryPanelCollapsed(true)}
-                aria-label="Collapse search bar"
-              >
-                <ChevronUp size={16} />
-                <span>Hide</span>
-              </button>
-            </div>
-            <form
-              className="research-query-form"
-              onSubmit={event => {
-                event.preventDefault();
-                void handleSearch(query);
-              }}
-            >
-              <Search className="search-icon" size={20} />
-              <input
-                type="text"
-                placeholder={
-                  searchMode === 'semantic'
-                    ? 'Describe the issue you want to research...'
-                    : 'Example: "car parking" w/10 installation'
-                }
-                value={query}
-                onChange={event => setQuery(event.target.value)}
-              />
-              <button type="submit" className="primary-btn" disabled={loading}>
-                {loading ? <Loader2 size={16} className="spinner" /> : 'Search'}
-              </button>
-            </form>
-
-            {searchInterpretation.length > 0 && (
-              <div className="research-chip-row">
-                {searchInterpretation.map(item => (
-                  <span key={item} className="research-chip">{item}</span>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        <div className="research-toolbar glass-card">
-          <div className="research-tab-strip">
-            {sessions.length === 0 ? (
-              <div className="research-empty-tab">Searches open here as tabs so you can move between result sets without losing context.</div>
-            ) : (
-              sessions.map(session => (
-                <button
-                  key={session.id}
-                  className={`research-tab ${activeSession?.id === session.id ? 'active' : ''}`}
-                  onClick={() => setRouteForSession(session.id, session.query)}
-                >
-                  <span>{session.title}</span>
-                  <span className="count">{session.results.length}</span>
-                  <span
-                    className="close"
-                    onClick={event => {
-                      event.stopPropagation();
-                      closeSession(session.id);
-                    }}
-                  >
-                    <X size={12} />
-                  </span>
-                </button>
-              ))
-            )}
-          </div>
-
-          <div className="research-toolbar-actions">
-            <button className="secondary-btn" onClick={handleCreateAlert} disabled={!query.trim() && !filters.entityName.trim()}>
-              <BellRing size={16} /> Save Alert
-            </button>
-          </div>
-        </div>
-
-        {displayResults.length > 0 && (
-          <div className="research-context-stack">
-            <div className="research-context-bar glass-card">
-              <div className="research-context-copy">
-                <div className="eyebrow">Search context</div>
-                <div className="research-context-chip-row">
-                  <span className="research-context-chip research-context-chip--accent">
-                    <strong>{resultCountLabel}</strong>
-                    <span>filing{displayResults.length === 1 ? '' : 's'}</span>
-                  </span>
-                  <span className="research-context-chip">
-                    <span className="label">Issuers</span>
-                    <strong>{metrics.companies}</strong>
-                  </span>
-                  <span className="research-context-chip">
-                    <span className="label">Top form</span>
-                    <strong>{metrics.topForm}</strong>
-                  </span>
-                  <span className="research-context-chip">
-                    <span className="label">Top auditor</span>
-                    <strong>{metrics.topAuditor}</strong>
-                  </span>
-                  {lastUpdatedLabel && (
-                    <span className="research-context-chip">
-                      <span className="label">Updated</span>
-                      <strong>{lastUpdatedLabel}</strong>
-                    </span>
-                  )}
-                </div>
-              </div>
-              <div className="research-context-actions">
+          <>
+            <div className="research-query-panel glass-card">
+              <div className="research-query-panel-header">
+                <div className="eyebrow">Search query</div>
                 <button
                   type="button"
-                  className="secondary-btn"
-                  onClick={handleTrendReport}
-                  disabled={displayResults.length === 0 || trendLoading}
+                  className="research-collapse-btn"
+                  onClick={() => setIsQueryPanelCollapsed(true)}
+                  aria-label="Collapse search bar"
                 >
-                  {trendLoading ? <Loader2 size={16} className="spinner" /> : <Sparkles size={16} />}
-                  {trendReport ? 'Refresh Insight' : 'Generate Insight'}
+                  <ChevronUp size={16} />
+                  <span>Hide</span>
                 </button>
-                {trendReport && (
-                  <button
-                    type="button"
-                    className="secondary-btn"
-                    onClick={() => setIsInsightsExpanded(current => !current)}
-                  >
-                    {isInsightsExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-                    {isInsightsExpanded ? 'Hide Insight' : 'Show Insight'}
-                  </button>
+              </div>
+              <form
+                className="research-query-form"
+                onSubmit={event => {
+                  event.preventDefault();
+                  void handleSearch(query);
+                }}
+              >
+                <Search className="search-icon" size={20} />
+                <input
+                  type="text"
+                  placeholder={
+                    searchMode === 'semantic'
+                      ? 'Describe the issue you want to research...'
+                      : 'Example: "car parking" w/10 installation'
+                  }
+                  value={query}
+                  onChange={event => setQuery(event.target.value)}
+                />
+                <button type="submit" className="primary-btn" disabled={loading}>
+                  {loading ? <Loader2 size={16} className="spinner" /> : 'Search'}
+                </button>
+              </form>
+
+              {searchInterpretation.length > 0 && (
+                <div className="research-chip-row">
+                  {searchInterpretation.map(item => (
+                    <span key={item} className="research-chip">{item}</span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="research-toolbar glass-card">
+              <div className="research-tab-strip">
+                {sessions.length === 0 ? (
+                  <div className="research-empty-tab">Searches open here as tabs so you can move between result sets without losing context.</div>
+                ) : (
+                  sessions.map(session => (
+                    <button
+                      key={session.id}
+                      className={`research-tab ${activeSession?.id === session.id ? 'active' : ''}`}
+                      onClick={() => setRouteForSession(session.id, session.query)}
+                    >
+                      <span>{session.title}</span>
+                      <span className="count">{session.results.length}</span>
+                      <span
+                        className="close"
+                        onClick={event => {
+                          event.stopPropagation();
+                          closeSession(session.id);
+                        }}
+                      >
+                        <X size={12} />
+                      </span>
+                    </button>
+                  ))
                 )}
+              </div>
+
+              <div className="research-toolbar-actions">
+                <button className="secondary-btn" onClick={handleCreateAlert} disabled={!query.trim() && !filters.entityName.trim()}>
+                  <BellRing size={16} /> Save Alert
+                </button>
               </div>
             </div>
 
-            {trendReport && isInsightsExpanded && (
-              <div className="glass-card research-insight-panel">
-                <div className="trend-title"><Sparkles size={18} /> Trend report</div>
-                <div className="md-content research-insight-copy">
-                  {trendReport.split('\n').map((line, index) => <p key={index}>{line}</p>)}
+            {displayResults.length > 0 && (
+              <div className="research-context-stack">
+                <div className="research-context-bar glass-card">
+                  <div className="research-context-copy">
+                    <div className="eyebrow">Search context</div>
+                    <div className="research-context-chip-row">
+                      <span className="research-context-chip research-context-chip--accent">
+                        <strong>{resultCountLabel}</strong>
+                        <span>filing{displayResults.length === 1 ? '' : 's'}</span>
+                      </span>
+                      <span className="research-context-chip">
+                        <span className="label">Issuers</span>
+                        <strong>{metrics.companies}</strong>
+                      </span>
+                      <span className="research-context-chip">
+                        <span className="label">Top form</span>
+                        <strong>{metrics.topForm}</strong>
+                      </span>
+                      <span className="research-context-chip">
+                        <span className="label">Top auditor</span>
+                        <strong>{metrics.topAuditor}</strong>
+                      </span>
+                      {lastUpdatedLabel && (
+                        <span className="research-context-chip">
+                          <span className="label">Updated</span>
+                          <strong>{lastUpdatedLabel}</strong>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="research-context-actions">
+                    <button
+                      type="button"
+                      className="secondary-btn"
+                      onClick={handleTrendReport}
+                      disabled={displayResults.length === 0 || trendLoading}
+                    >
+                      {trendLoading ? <Loader2 size={16} className="spinner" /> : <Sparkles size={16} />}
+                      {trendReport ? 'Refresh Insight' : 'Generate Insight'}
+                    </button>
+                    {trendReport && (
+                      <button
+                        type="button"
+                        className="secondary-btn"
+                        onClick={() => setIsInsightsExpanded(current => !current)}
+                      >
+                        {isInsightsExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                        {isInsightsExpanded ? 'Hide Insight' : 'Show Insight'}
+                      </button>
+                    )}
+                  </div>
                 </div>
+
+                {trendReport && isInsightsExpanded && (
+                  <div className="glass-card research-insight-panel">
+                    <div className="trend-title"><Sparkles size={18} /> Trend report</div>
+                    <div className="md-content research-insight-copy">
+                      {trendReport.split('\n').map((line, index) => <p key={index}>{line}</p>)}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
-          </div>
+          </>
         )}
 
         <div className="research-workspace">
