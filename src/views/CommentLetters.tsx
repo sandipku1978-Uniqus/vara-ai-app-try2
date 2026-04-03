@@ -5,6 +5,9 @@ import { useRouter } from 'next/navigation';
 
 import { Mail, Search, Loader2, ExternalLink, TrendingUp } from 'lucide-react';
 import DataTable, { type ColumnDef } from '../components/tables/DataTable';
+import ResultsToolbar from '../components/tables/ResultsToolbar';
+import AskCopilotButton from '../components/tables/AskCopilotButton';
+import AIResultsSummary from '../components/tables/AIResultsSummary';
 import SearchFilterBar, { type SearchFilters, defaultSearchFilters } from '../components/filters/SearchFilterBar';
 import { executeFilingResearchSearch } from '../services/filingResearch';
 import { useApp } from '../context/AppState';
@@ -152,16 +155,19 @@ export default function CommentLetters() {
     {
       key: 'accessionNumber', header: 'Filing', render: (row) => {
         return (
-          <button
-            type="button"
-            onClick={event => {
-              event.stopPropagation();
-              viewFiling(row, filters.keyword.trim() || 'comment');
-            }}
-            style={{ color: '#D66CAE', display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'none', border: 'none', cursor: 'pointer' }}
-          >
-            View <ExternalLink size={12} />
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <button
+              type="button"
+              onClick={event => {
+                event.stopPropagation();
+                viewFiling(row, filters.keyword.trim() || 'comment');
+              }}
+              style={{ color: '#D66CAE', display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'none', border: 'none', cursor: 'pointer' }}
+            >
+              View <ExternalLink size={12} />
+            </button>
+            <AskCopilotButton compact prompt={`Analyze the ${row.formType} filing from ${row.entityName} filed ${row.fileDate}`} />
+          </div>
         );
       }
     },
@@ -212,12 +218,22 @@ export default function CommentLetters() {
           <div>Searching comment letters...</div>
         </div>
       ) : results.length > 0 ? (
-        <DataTable
-          columns={columns}
-          data={results}
-          pageSize={25}
-          onRowClick={row => viewFiling(row, filters.keyword.trim() || 'comment')}
-        />
+        <>
+          <AIResultsSummary
+            query={filters.keyword}
+            resultsSummary={results.slice(0, 10).map(r => `${r.entityName} - ${r.formType} (${r.fileDate})`).join('\n')}
+            resultCount={results.length}
+            moduleLabel="comment letters"
+            cacheKey={`comment letters:${filters.keyword}:${results.length}`}
+          />
+          <ResultsToolbar data={results} columns={columns} label="comment letters" />
+          <DataTable
+            columns={columns}
+            data={results}
+            pageSize={25}
+            onRowClick={row => viewFiling(row, filters.keyword.trim() || 'comment')}
+          />
+        </>
       ) : searched ? (
         <div style={{ textAlign: 'center', padding: '48px', color: '#64748B' }}>No comment letters found.</div>
       ) : (

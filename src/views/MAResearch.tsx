@@ -4,6 +4,9 @@ import { useState, useEffect, useCallback } from 'react';
 import { FileSearch, Scale, Link2, Search, Briefcase, Loader2 } from 'lucide-react';
 import { searchEdgarFilings, fetchFilingText } from '../services/secApi';
 import { aiExtractDealDetails, aiExtractClauses, type DealDetailsResult } from '../services/aiApi';
+import ResultsToolbar from '../components/tables/ResultsToolbar';
+import AskCopilotButton from '../components/tables/AskCopilotButton';
+import AIResultsSummary from '../components/tables/AIResultsSummary';
 import './MAResearch.css';
 
 interface DealFiling {
@@ -272,6 +275,27 @@ export default function MAResearch() {
                   <Loader2 size={16} className="spinner" /> Loading M&A filings from EDGAR...
                 </div>
               ) : (
+              <>
+              {filteredDeals.length > 0 && (
+                <>
+                  <AIResultsSummary
+                    query={searchQuery || 'merger agreement OR acquisition'}
+                    resultsSummary={filteredDeals.slice(0, 8).map(d => `${d.entityName} (${d.formType}, ${d.fileDate})${d.extractedDetails ? ` — ${d.extractedDetails.target}/${d.extractedDetails.acquirer}, ${d.extractedDetails.value}` : ''}`).join('\n')}
+                    resultCount={filteredDeals.length}
+                    moduleLabel="M&A filings"
+                    cacheKey={`ma-${searchQuery}-${filteredDeals.length}`}
+                  />
+                  <ResultsToolbar
+                    data={filteredDeals}
+                    columns={[
+                      { key: 'entityName', header: 'Entity' },
+                      { key: 'formType', header: 'Form' },
+                      { key: 'fileDate', header: 'Filed' },
+                    ]}
+                    label="M&A filings"
+                  />
+                </>
+              )}
               <div style={{ border: '1px solid rgba(51,65,85,0.5)', borderRadius: '12px', overflow: 'hidden', marginBottom: '32px' }}>
                 <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
                   <thead>
@@ -315,20 +339,24 @@ export default function MAResearch() {
                           )}
                         </td>
                         <td style={{ padding: '16px', textAlign: 'right' }}>
-                          <a
-                            href={`https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&accession=${deal.accessionNumber}&type=${deal.formType}&dateb=&owner=include&count=1`}
-                            target="_blank"
-                            rel="noreferrer"
-                            style={{ color: '#D66CAE', fontSize: '0.75rem', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'flex-end', textDecoration: 'none' }}
-                          >
-                            <FileSearch size={14} /> SEC.gov
-                          </a>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', justifyContent: 'flex-end' }}>
+                            <a
+                              href={`https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&accession=${deal.accessionNumber}&type=${deal.formType}&dateb=&owner=include&count=1`}
+                              target="_blank"
+                              rel="noreferrer"
+                              style={{ color: '#D66CAE', fontSize: '0.75rem', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '4px', textDecoration: 'none' }}
+                            >
+                              <FileSearch size={14} /> SEC.gov
+                            </a>
+                            <AskCopilotButton compact prompt={`Analyze the ${deal.extractedDetails?.dealType || deal.formType || 'M&A'} deal: ${deal.extractedDetails?.target || deal.entityName}`} />
+                          </span>
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
+              </>
               )}
             </div>
           )}

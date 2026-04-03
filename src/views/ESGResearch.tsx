@@ -1,10 +1,11 @@
 'use client';
 
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Globe, LayoutGrid, FileAudio, Search, Target, Activity, ChevronRight, BarChart3, Loader2 } from 'lucide-react';
 import { lookupCIK, fetchCompanySubmissions, findLatestFiling, fetchFilingText, searchEdgarFilings } from '../services/secApi';
 import { aiRateESGDisclosure, aiSummarize } from '../services/aiApi';
+import CompanySearchInput from '../components/filters/CompanySearchInput';
 import './ESGResearch.css';
 
 const frameworks = [
@@ -14,7 +15,7 @@ const frameworks = [
   { id: 'tcfd', name: 'TCFD', desc: 'Climate-related financial disclosures.', url: 'https://www.fsb-tcfd.org/' },
 ];
 
-const ESG_TICKERS = ['AAPL', 'MSFT', 'GOOGL', 'META'];
+const DEFAULT_ESG_TICKERS = ['AAPL', 'MSFT', 'GOOGL', 'META'];
 const ESG_TOPICS = [
   'GHG Emissions (Scope 1 & 2)',
   'Scope 3 Emissions',
@@ -44,31 +45,49 @@ export default function ESGResearch() {
   const [selectedMetric, setSelectedMetric] = useState<string | null>(null);
   const [selectedMapping, setSelectedMapping] = useState<string | null>(null);
 
+  // User-managed ticker list for heatmap
+  const [esgTickers, setEsgTickers] = useState<string[]>(DEFAULT_ESG_TICKERS);
+
   // Heatmap state
   const [heatmapData, setHeatmapData] = useState<HeatmapRow[]>([]);
   const [heatmapLoading, setHeatmapLoading] = useState(false);
   const [heatmapError, setHeatmapError] = useState('');
+  const [heatmapTickerSnapshot, setHeatmapTickerSnapshot] = useState<string[]>([]);
 
   // Earnings releases state
   const [earningsReleases, setEarningsReleases] = useState<EarningsRelease[]>([]);
   const [earningsLoading, setEarningsLoading] = useState(false);
 
+  const addEsgTicker = useCallback((ticker: string, _cik: string) => {
+    setEsgTickers(prev => prev.includes(ticker.toUpperCase()) ? prev : [...prev, ticker.toUpperCase()]);
+  }, []);
+
+  const removeEsgTicker = useCallback((ticker: string) => {
+    setEsgTickers(prev => prev.filter(t => t !== ticker));
+  }, []);
+
+  // Regenerate heatmap when tickers change or tab is activated
+  const tickerKey = esgTickers.slice().sort().join(',');
+
   // Load heatmap data via AI analysis of 10-K filings
   useEffect(() => {
-    if (activeTab !== 'heatmap' || heatmapData.length > 0 || heatmapLoading) return;
+    if (activeTab !== 'heatmap' || esgTickers.length === 0 || heatmapLoading) return;
+    // Skip if data already loaded for the same ticker set
+    if (heatmapData.length > 0 && heatmapTickerSnapshot.join(',') === tickerKey) return;
 
     async function loadHeatmap() {
       setHeatmapLoading(true);
       setHeatmapError('');
+      const currentTickers = [...esgTickers];
       try {
         // Initialize rows
         const rows: HeatmapRow[] = ESG_TOPICS.map(topic => {
           const row: HeatmapRow = { topic };
-          ESG_TICKERS.forEach(t => { row[t.toLowerCase()] = 'low'; });
+          currentTickers.forEach(t => { row[t.toLowerCase()] = 'low'; });
           return row;
         });
 
-        for (const ticker of ESG_TICKERS) {
+        for (const ticker of currentTickers) {
           const cik = await lookupCIK(ticker);
           if (!cik) continue;
           const subs = await fetchCompanySubmissions(cik);
@@ -91,6 +110,7 @@ export default function ESGResearch() {
         }
 
         setHeatmapData(rows);
+        setHeatmapTickerSnapshot(currentTickers);
       } catch (error) {
         console.error('ESG heatmap error:', error);
         setHeatmapError('Failed to load ESG heatmap data. Please try again.');
@@ -99,7 +119,7 @@ export default function ESGResearch() {
       }
     }
     loadHeatmap();
-  }, [activeTab, heatmapData.length, heatmapLoading]);
+  }, [activeTab, tickerKey, heatmapLoading]);
 
   // Load real 8-K earnings releases
   useEffect(() => {
@@ -288,12 +308,37 @@ export default function ESGResearch() {
 
           {activeTab === 'heatmap' && (
             <div className="tab-pane fade-in" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-              <div className="pane-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <div className="pane-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                 <div>
                   <h2>AI-Rated ESG Disclosure Heatmap</h2>
                   <p className="text-sm text-slate-400" style={{ marginTop: '4px' }}>Claude AI rates disclosure depth from each company's latest 10-K filing.</p>
                 </div>
                 <span className="badge" style={{ fontSize: '0.7rem' }}>SEC EDGAR + AI</span>
+              </div>
+
+              {/* Ticker management */}
+              <div style={{ marginBottom: '20px' }}>
+                <div style={{ maxWidth: '320px', marginBottom: '10px' }}>
+                  <CompanySearchInput onSelect={addEsgTicker} placeholder="Add company to heatmap..." />
+                </div>
+                {esgTickers.length > 0 && (
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    {esgTickers.map(t => (
+                      <span key={t} style={{
+                        background: 'rgba(214,108,174,0.15)', color: '#D66CAE', padding: '4px 12px',
+                        borderRadius: '16px', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '6px'
+                      }}>
+                        {t}
+                        <button
+                          onClick={() => removeEsgTicker(t)}
+                          style={{ background: 'none', border: 'none', color: '#D66CAE', cursor: 'pointer', padding: 0, fontSize: '1rem' }}
+                        >
+                          &times;
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {heatmapLoading ? (
@@ -306,7 +351,7 @@ export default function ESGResearch() {
                 <div style={{ textAlign: 'center', padding: '40px', color: '#F59E0B' }}>
                   {heatmapError}
                   <br />
-                  <button className="primary-btn sm" style={{ marginTop: '12px' }} onClick={() => { setHeatmapData([]); }}>Retry</button>
+                  <button className="primary-btn sm" style={{ marginTop: '12px' }} onClick={() => { setHeatmapData([]); setHeatmapTickerSnapshot([]); }}>Retry</button>
                 </div>
               ) : heatmapData.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '40px', color: '#64748B' }}>
@@ -319,7 +364,7 @@ export default function ESGResearch() {
                   <thead>
                     <tr style={{ background: '#0F172A', borderBottom: '1px solid #334155', fontSize: '0.875rem' }}>
                       <th style={{ padding: '16px', fontWeight: 600, color: '#CBD5E1' }}>ESG Topic Category</th>
-                      {ESG_TICKERS.map(t => (
+                      {esgTickers.map(t => (
                         <th key={t} style={{ padding: '16px', fontWeight: 600, color: 'white', textAlign: 'center', borderLeft: '1px solid rgba(51,65,85,0.5)' }}>{t}</th>
                       ))}
                     </tr>
@@ -332,9 +377,9 @@ export default function ESGResearch() {
                         style={{ borderBottom: '1px solid rgba(51,65,85,0.5)', cursor: 'pointer', background: selectedMetric === row.topic ? 'rgba(179,31,126,0.05)' : 'transparent' }}
                       >
                         <td style={{ padding: '16px', color: '#CBD5E1', fontSize: '0.875rem', fontWeight: 500 }}>{row.topic}</td>
-                        {ESG_TICKERS.map(t => (
+                        {esgTickers.map(t => (
                           <td key={t} style={{ padding: '8px', borderLeft: '1px solid rgba(51,65,85,0.5)' }}>
-                            <div className={`heatmap-cell ${row[t.toLowerCase()]}`}></div>
+                            <div className={`heatmap-cell ${row[t.toLowerCase()] || 'low'}`}></div>
                           </td>
                         ))}
                       </tr>

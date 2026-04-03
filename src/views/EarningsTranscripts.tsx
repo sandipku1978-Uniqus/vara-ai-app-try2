@@ -3,6 +3,9 @@
 import { useState, useEffect } from 'react';
 import { Mic, Search, Loader2, ExternalLink, TrendingUp } from 'lucide-react';
 import DataTable, { type ColumnDef } from '../components/tables/DataTable';
+import ResultsToolbar from '../components/tables/ResultsToolbar';
+import AskCopilotButton from '../components/tables/AskCopilotButton';
+import AIResultsSummary from '../components/tables/AIResultsSummary';
 import SearchFilterBar, { type SearchFilters, defaultSearchFilters } from '../components/filters/SearchFilterBar';
 import { executeFilingResearchSearch } from '../services/filingResearch';
 
@@ -78,7 +81,12 @@ export default function EarningsTranscripts() {
     { key: 'accessionNumber', header: 'Filing', render: (row) => {
       const accNum = row.accessionNumber.replace(/-/g, '');
       const url = `https://www.sec.gov/Archives/edgar/data/${row.cik}/${accNum}/${row.primaryDocument}`;
-      return <a href={url} target="_blank" rel="noopener noreferrer" style={{ color: '#D66CAE', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>View <ExternalLink size={12} /></a>;
+      return (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <a href={url} target="_blank" rel="noopener noreferrer" style={{ color: '#D66CAE', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>View <ExternalLink size={12} /></a>
+          <AskCopilotButton compact prompt={`Analyze the ${row.formType} filing from ${row.entityName} filed ${row.fileDate}`} />
+        </div>
+      );
     }},
   ];
 
@@ -86,9 +94,9 @@ export default function EarningsTranscripts() {
     <div style={{ padding: '32px', maxWidth: '1200px', margin: '0 auto' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
         <Mic size={28} style={{ color: '#D66CAE' }} />
-        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'white' }}>Earnings Releases</h1>
+        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'white' }}>8-K Event Filings</h1>
       </div>
-      <p style={{ color: '#94A3B8', marginBottom: '24px', fontSize: '0.9rem' }}>Search 8-K earnings releases and press releases from EDGAR full-text search.</p>
+      <p style={{ color: '#94A3B8', marginBottom: '24px', fontSize: '0.9rem' }}>Track material events, earnings releases, and corporate announcements via SEC 8-K filings.</p>
 
       <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', alignItems: 'flex-end' }}>
         <div style={{ flex: 1, maxWidth: '500px' }}>
@@ -113,7 +121,17 @@ export default function EarningsTranscripts() {
       {loading ? (
         <div style={{ textAlign: 'center', padding: '48px', color: '#64748B' }}><Loader2 size={24} className="spinner" style={{ marginBottom: '8px' }} /><div>Searching earnings releases...</div></div>
       ) : results.length > 0 ? (
-        <DataTable columns={columns} data={results} pageSize={25} />
+        <>
+          <AIResultsSummary
+            query={filters.keyword}
+            resultsSummary={results.slice(0, 10).map(r => `${r.entityName} - ${r.formType} (${r.fileDate})`).join('\n')}
+            resultCount={results.length}
+            moduleLabel="earnings releases"
+            cacheKey={`earnings releases:${filters.keyword}:${results.length}`}
+          />
+          <ResultsToolbar data={results} columns={columns} label="earnings releases" />
+          <DataTable columns={columns} data={results} pageSize={25} />
+        </>
       ) : searched ? (
         <div style={{ textAlign: 'center', padding: '48px', color: '#64748B' }}>No earnings releases found.</div>
       ) : (

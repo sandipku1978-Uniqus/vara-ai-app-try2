@@ -3,6 +3,9 @@
 import { useState, useEffect } from 'react';
 import { ShieldCheck, Search, Loader2, ExternalLink, TrendingUp } from 'lucide-react';
 import DataTable, { type ColumnDef } from '../components/tables/DataTable';
+import ResultsToolbar from '../components/tables/ResultsToolbar';
+import AskCopilotButton from '../components/tables/AskCopilotButton';
+import AIResultsSummary from '../components/tables/AIResultsSummary';
 import SearchFilterBar, { type SearchFilters, defaultSearchFilters } from '../components/filters/SearchFilterBar';
 import { executeFilingResearchSearch } from '../services/filingResearch';
 
@@ -77,7 +80,12 @@ export default function NoActionLetters() {
     { key: 'accessionNumber', header: 'Filing', render: (row) => {
       const accNum = row.accessionNumber.replace(/-/g, '');
       const url = `https://www.sec.gov/Archives/edgar/data/${row.cik}/${accNum}/${row.primaryDocument}`;
-      return <a href={url} target="_blank" rel="noopener noreferrer" style={{ color: '#D66CAE', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>View <ExternalLink size={12} /></a>;
+      return (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <a href={url} target="_blank" rel="noopener noreferrer" style={{ color: '#D66CAE', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>View <ExternalLink size={12} /></a>
+          <AskCopilotButton compact prompt={`Analyze the ${row.formType} filing from ${row.entityName} filed ${row.fileDate}`} />
+        </div>
+      );
     }},
   ];
 
@@ -110,7 +118,17 @@ export default function NoActionLetters() {
       {loading ? (
         <div style={{ textAlign: 'center', padding: '48px', color: '#64748B' }}><Loader2 size={24} className="spinner" style={{ marginBottom: '8px' }} /><div>Searching...</div></div>
       ) : results.length > 0 ? (
-        <DataTable columns={columns} data={results} pageSize={25} />
+        <>
+          <AIResultsSummary
+            query={filters.keyword}
+            resultsSummary={results.slice(0, 10).map(r => `${r.entityName} - ${r.formType} (${r.fileDate})`).join('\n')}
+            resultCount={results.length}
+            moduleLabel="no-action letters"
+            cacheKey={`no-action letters:${filters.keyword}:${results.length}`}
+          />
+          <ResultsToolbar data={results} columns={columns} label="no-action letters" />
+          <DataTable columns={columns} data={results} pageSize={25} />
+        </>
       ) : searched ? (
         <div style={{ textAlign: 'center', padding: '48px', color: '#64748B' }}>No results found.</div>
       ) : (

@@ -1,13 +1,23 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Users, PieChart, DollarSign, Search, CheckCircle2, Loader2 } from 'lucide-react';
+import { Users, PieChart, DollarSign, Search, CheckCircle2, Loader2, BarChart3 } from 'lucide-react';
 import { fetchCompanySubmissions, lookupCIK, findLatestFiling, fetchFilingText, SecSubmission } from '../services/secApi';
 import { aiExtractBoardData, BoardDataResult } from '../services/aiApi';
+import CompanySearchInput from '../components/filters/CompanySearchInput';
 import './BoardProfiles.css';
 
 // Module-level cache for board data
 const boardDataCache = new Map<string, BoardDataResult>();
+
+// Multi-company cache and state
+interface CompanyEntry {
+  ticker: string;
+  companyData: SecSubmission | null;
+  boardData: BoardDataResult | null;
+  loading: boolean;
+  error: string;
+}
 
 export default function BoardProfiles() {
   const [activeTab, setActiveTab] = useState<'directors' | 'diversity' | 'compensation'>('directors');
@@ -18,6 +28,10 @@ export default function BoardProfiles() {
   const [boardData, setBoardData] = useState<BoardDataResult | null>(null);
   const [boardLoading, setBoardLoading] = useState(false);
   const [boardError, setBoardError] = useState('');
+
+  // Multi-company comparison state
+  const [compareTickers, setCompareTickers] = useState<string[]>(['AAPL']);
+  const [compareEntries, setCompareEntries] = useState<Map<string, CompanyEntry>>(new Map());
 
   const fetchData = useCallback(async (ticker: string) => {
     setIsLoading(true);
@@ -72,13 +86,127 @@ export default function BoardProfiles() {
     }
   }, []);
 
+  // Fetch data for a compare ticker and store in compareEntries
+  const fetchCompareData = useCallback(async (ticker: string) => {
+    const upper = ticker.toUpperCase();
+    // If already cached in boardDataCache, use it
+    if (compareEntries.has(upper) && compareEntries.get(upper)!.boardData) return;
+
+    setCompareEntries(prev => {
+      const next = new Map(prev);
+      next.set(upper, { ticker: upper, companyData: null, boardData: null, loading: true, error: '' });
+      return next;
+    });
+
+    try {
+      // Check boardDataCache first
+      if (boardDataCache.has(upper)) {
+        const cik = await lookupCIK(upper);
+        const data = cik ? await fetchCompanySubmissions(cik) : null;
+        setCompareEntries(prev => {
+          const next = new Map(prev);
+          next.set(upper, { ticker: upper, companyData: data, boardData: boardDataCache.get(upper)!, loading: false, error: '' });
+          return next;
+        });
+        return;
+      }
+
+      const cik = await lookupCIK(upper);
+      if (!cik) {
+        setCompareEntries(prev => {
+          const next = new Map(prev);
+          next.set(upper, { ticker: upper, companyData: null, boardData: null, loading: false, error: 'Ticker not found.' });
+          return next;
+        });
+        return;
+      }
+      const data = await fetchCompanySubmissions(cik);
+      if (!data) {
+        setCompareEntries(prev => {
+          const next = new Map(prev);
+          next.set(upper, { ticker: upper, companyData: null, boardData: null, loading: false, error: 'No submissions found.' });
+          return next;
+        });
+        return;
+      }
+      const proxyFiling = findLatestFiling(data, 'DEF 14A');
+      if (!proxyFiling) {
+        setCompareEntries(prev => {
+          const next = new Map(prev);
+          next.set(upper, { ticker: upper, companyData: data, boardData: null, loading: false, error: 'No DEF 14A found.' });
+          return next;
+        });
+        return;
+      }
+      const text = await fetchFilingText(cik, proxyFiling.accessionNumber, proxyFiling.primaryDocument);
+      if (!text || text.length < 500) {
+        setCompareEntries(prev => {
+          const next = new Map(prev);
+          next.set(upper, { ticker: upper, companyData: data, boardData: null, loading: false, error: 'Could not retrieve proxy text.' });
+          return next;
+        });
+        return;
+      }
+      const extracted = await aiExtractBoardData(text);
+      if (extracted) {
+        boardDataCache.set(upper, extracted);
+      }
+      setCompareEntries(prev => {
+        const next = new Map(prev);
+        next.set(upper, { ticker: upper, companyData: data, boardData: extracted, loading: false, error: extracted ? '' : 'AI extraction returned no data.' });
+        return next;
+      });
+    } catch (err) {
+      console.error('Compare fetch error:', err);
+      setCompareEntries(prev => {
+        const next = new Map(prev);
+        next.set(upper, { ticker: upper, companyData: null, boardData: null, loading: false, error: 'Failed to extract board data.' });
+        return next;
+      });
+    }
+  }, [compareEntries]);
+
   useEffect(() => {
     fetchData(currentTicker);
   }, [currentTicker, fetchData]);
 
+  // Fetch compare data whenever compareTickers changes
+  useEffect(() => {
+    for (const ticker of compareTickers) {
+      if (!compareEntries.has(ticker)) {
+        fetchCompareData(ticker);
+      }
+    }
+  }, [compareTickers]);
+
+  const addCompareTicker = useCallback((ticker: string, _cik: string) => {
+    const upper = ticker.toUpperCase();
+    if (compareTickers.includes(upper) || compareTickers.length >= 3) return;
+    setCompareTickers(prev => [...prev, upper]);
+    // Also set as current ticker for single-company view
+    setCurrentTicker(upper);
+    setTickerInput(upper);
+  }, [compareTickers]);
+
+  const removeCompareTicker = useCallback((ticker: string) => {
+    setCompareTickers(prev => {
+      const next = prev.filter(t => t !== ticker);
+      // If we removed the current ticker, switch to the first remaining one
+      if (ticker === currentTicker && next.length > 0) {
+        setCurrentTicker(next[0]);
+        setTickerInput(next[0]);
+      }
+      return next;
+    });
+  }, [currentTicker]);
+
   const handleTickerSearch = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && tickerInput.trim()) {
-      setCurrentTicker(tickerInput.trim().toUpperCase());
+      const upper = tickerInput.trim().toUpperCase();
+      setCurrentTicker(upper);
+      if (!compareTickers.includes(upper) && compareTickers.length < 3) {
+        setCompareTickers(prev => [...prev, upper]);
+      }
     }
   };
 
@@ -94,20 +222,46 @@ export default function BoardProfiles() {
           <p>AI-extracted governance structures, board diversity metrics, and compensation analytics from DEF 14A proxy statements.</p>
         </div>
 
-        <div className="ticker-selector glass-card" style={{ padding: '4px 16px', display: 'flex', alignItems: 'center', borderRadius: '12px', border: '1px solid #334155' }}>
-          <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#94A3B8', marginRight: '12px' }}>Target Company:</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#0F172A', padding: '6px 12px', borderRadius: '4px', border: '1px solid #334155' }}>
-            <Search size={14} className="text-blue-400" />
-            <input
-              type="text"
-              value={tickerInput}
-              onChange={e => setTickerInput(e.target.value.toUpperCase())}
-              onKeyDown={handleTickerSearch}
-              placeholder="Enter ticker..."
-              style={{ background: 'transparent', border: 'none', outline: 'none', width: '80px', color: 'white', fontWeight: 700, fontFamily: 'var(--font-mono)' }}
-            />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-end' }}>
+          <div className="ticker-selector glass-card" style={{ padding: '4px 16px', display: 'flex', alignItems: 'center', borderRadius: '12px', border: '1px solid #334155' }}>
+            <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#94A3B8', marginRight: '12px' }}>Target Company:</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#0F172A', padding: '6px 12px', borderRadius: '4px', border: '1px solid #334155' }}>
+              <Search size={14} className="text-blue-400" />
+              <input
+                type="text"
+                value={tickerInput}
+                onChange={e => setTickerInput(e.target.value.toUpperCase())}
+                onKeyDown={handleTickerSearch}
+                placeholder="Enter ticker..."
+                style={{ background: 'transparent', border: 'none', outline: 'none', width: '80px', color: 'white', fontWeight: 700, fontFamily: 'var(--font-mono)' }}
+              />
+            </div>
+            {(isLoading || boardLoading) && <Loader2 size={16} className="spinner" style={{ marginLeft: '8px' }} />}
           </div>
-          {(isLoading || boardLoading) && <Loader2 size={16} className="spinner" style={{ marginLeft: '8px' }} />}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '0.75rem', color: '#64748B' }}>Compare (up to 3):</span>
+            {compareTickers.map(t => (
+              <span key={t} style={{
+                background: currentTicker === t ? 'rgba(214,108,174,0.25)' : 'rgba(214,108,174,0.1)',
+                color: '#D66CAE', padding: '3px 10px', borderRadius: '16px', fontSize: '0.75rem',
+                display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer',
+                border: currentTicker === t ? '1px solid rgba(214,108,174,0.4)' : '1px solid transparent',
+              }} onClick={() => { setCurrentTicker(t); setTickerInput(t); }}>
+                {t}
+                {compareTickers.length > 1 && (
+                  <button onClick={(e) => { e.stopPropagation(); removeCompareTicker(t); }}
+                    style={{ background: 'none', border: 'none', color: '#D66CAE', cursor: 'pointer', padding: 0, fontSize: '0.85rem', lineHeight: 1 }}>
+                    &times;
+                  </button>
+                )}
+              </span>
+            ))}
+            {compareTickers.length < 3 && (
+              <div style={{ width: '180px' }}>
+                <CompanySearchInput onSelect={addCompareTicker} placeholder="Add ticker..." />
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -331,6 +485,56 @@ export default function BoardProfiles() {
                   <div style={{ fontSize: '1.875rem', fontFamily: 'var(--font-mono)', color: '#4ADE80', marginBottom: '4px' }}>{boardData.sayOnPayApproval}</div>
                   <p style={{ fontSize: '0.75rem', color: '#64748B' }}>From latest annual shareholder meeting</p>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Multi-company comparison table (shown when 2+ tickers selected) */}
+          {compareTickers.length >= 2 && (
+            <div style={{ marginTop: '24px', padding: '24px', background: 'rgba(15,23,42,0.5)', border: '1px solid #334155', borderRadius: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                <BarChart3 size={20} style={{ color: '#D66CAE' }} />
+                <h2 style={{ fontSize: '1.1rem', margin: 0 }}>Side-by-Side Comparison</h2>
+              </div>
+              {compareTickers.some(t => compareEntries.get(t)?.loading) && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#94A3B8', marginBottom: '16px', fontSize: '0.85rem' }}>
+                  <Loader2 size={14} className="spinner" /> Loading comparison data...
+                </div>
+              )}
+              <div style={{ border: '1px solid rgba(51,65,85,0.5)', borderRadius: '10px', overflow: 'hidden' }}>
+                <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ background: '#0F172A', borderBottom: '1px solid rgba(51,65,85,0.5)', fontSize: '0.85rem' }}>
+                      <th style={{ padding: '14px 16px', fontWeight: 600, color: '#CBD5E1' }}>Metric</th>
+                      {compareTickers.map(t => (
+                        <th key={t} style={{ padding: '14px 16px', fontWeight: 600, color: 'white', textAlign: 'center', borderLeft: '1px solid rgba(51,65,85,0.5)' }}>
+                          {compareEntries.get(t)?.companyData?.name || t}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { label: 'Board Size', getValue: (bd: BoardDataResult | null) => bd ? String(bd.boardSize) : '—' },
+                      { label: 'Independence %', getValue: (bd: BoardDataResult | null) => bd ? `${bd.independencePercent}%` : '—' },
+                      { label: 'Female %', getValue: (bd: BoardDataResult | null) => bd ? `${bd.diversity.femalePercent}%` : '—' },
+                      { label: 'CEO Pay Ratio', getValue: (bd: BoardDataResult | null) => bd?.ceoPayRatio || '—' },
+                      { label: 'Say-on-Pay Approval', getValue: (bd: BoardDataResult | null) => bd?.sayOnPayApproval || '—' },
+                    ].map((metric, i) => (
+                      <tr key={i} style={{ borderBottom: '1px solid rgba(51,65,85,0.3)', fontSize: '0.85rem' }}>
+                        <td style={{ padding: '12px 16px', fontWeight: 500, color: '#CBD5E1' }}>{metric.label}</td>
+                        {compareTickers.map(t => {
+                          const entry = compareEntries.get(t);
+                          return (
+                            <td key={t} style={{ padding: '12px 16px', textAlign: 'center', borderLeft: '1px solid rgba(51,65,85,0.5)', color: 'white', fontFamily: 'var(--font-mono)', fontSize: '0.85rem' }}>
+                              {entry?.loading ? <Loader2 size={12} className="spinner" /> : entry?.error ? <span style={{ color: '#F59E0B', fontSize: '0.75rem' }}>{entry.error}</span> : metric.getValue(entry?.boardData || null)}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           )}

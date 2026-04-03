@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import { UserCheck, Loader2, ExternalLink } from 'lucide-react';
 import CompanySearchInput from '../components/filters/CompanySearchInput';
 import DataTable, { type ColumnDef } from '../components/tables/DataTable';
+import ResultsToolbar from '../components/tables/ResultsToolbar';
+import AskCopilotButton from '../components/tables/AskCopilotButton';
 import { lookupCIK, fetchCompanySubmissions, getInsiderFilings } from '../services/secApi';
 
 interface InsiderFiling {
@@ -72,9 +74,12 @@ export default function InsiderTrading() {
         const accNum = row.accessionNumber.replace(/-/g, '');
         const url = `https://www.sec.gov/Archives/edgar/data/${row.cik}/${accNum}/${row.primaryDocument}`;
         return (
-          <a href={url} target="_blank" rel="noopener noreferrer" style={{ color: '#D66CAE', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-            View <ExternalLink size={12} />
-          </a>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+            <a href={url} target="_blank" rel="noopener noreferrer" style={{ color: '#D66CAE', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              View <ExternalLink size={12} />
+            </a>
+            <AskCopilotButton compact prompt={`Analyze Form ${row.form} insider filing for ${row.entityName} from ${row.filingDate}`} />
+          </span>
         );
       }
     },
@@ -119,7 +124,10 @@ export default function InsiderTrading() {
           <div>Loading insider filings...</div>
         </div>
       ) : filings.length > 0 ? (
-        <DataTable columns={columns} data={filings} pageSize={25} />
+        <>
+          <ResultsToolbar data={filings} columns={columns} label="insider filings" />
+          <DataTable columns={columns} data={filings} pageSize={25} />
+        </>
       ) : companies.length > 0 ? (
         <div style={{ textAlign: 'center', padding: '48px', color: '#64748B' }}>No insider filings found.</div>
       ) : (

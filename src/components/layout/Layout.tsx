@@ -95,7 +95,7 @@ export function Sidebar() {
         <div className="nav-group-header">Business Intelligence</div>
         <SidebarNavItem to="/accounting" label="Accounting Standards" icon={<BookOpen size={18} />} isSidebarCollapsed={isSidebarCollapsed} />
         <SidebarNavItem to="/accounting-analytics" label="Accounting Analytics" icon={<TrendingUp size={18} />} isSidebarCollapsed={isSidebarCollapsed} />
-        <SidebarNavItem to="/earnings" label="Earnings Releases" icon={<Mic size={18} />} isSidebarCollapsed={isSidebarCollapsed} />
+        <SidebarNavItem to="/earnings" label="8-K Event Filings" icon={<Mic size={18} />} isSidebarCollapsed={isSidebarCollapsed} />
 
         <div className="nav-group-header">Regulation & Compliance</div>
         <SidebarNavItem to="/regulation" label="Securities Regulation" icon={<Scale size={18} />} isSidebarCollapsed={isSidebarCollapsed} />

@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import { Gavel, Loader2, ExternalLink, Search } from 'lucide-react';
 import DataTable, { type ColumnDef } from '../components/tables/DataTable';
+import ResultsToolbar from '../components/tables/ResultsToolbar';
+import AskCopilotButton from '../components/tables/AskCopilotButton';
 import { fetchLitigationReleases } from '../services/secApi';
 
 interface LitRelease {
@@ -48,9 +50,12 @@ export default function SECEnforcement() {
     { key: 'title', header: 'Title', sortable: true },
     {
       key: 'url', header: 'Link', render: (row) => (
-        <a href={row.url} target="_blank" rel="noopener noreferrer" style={{ color: '#D66CAE', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-          View <ExternalLink size={12} />
-        </a>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          <a href={row.url} target="_blank" rel="noopener noreferrer" style={{ color: '#D66CAE', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+            View <ExternalLink size={12} />
+          </a>
+          <AskCopilotButton compact prompt={`Analyze SEC enforcement action: ${row.title} (Release ${row.releaseNumber}, dated ${row.date})`} />
+        </span>
       )
     },
   ];
@@ -77,7 +82,10 @@ export default function SECEnforcement() {
           <div>Loading enforcement actions...</div>
         </div>
       ) : filtered.length > 0 ? (
-        <DataTable columns={columns} data={filtered} pageSize={25} />
+        <>
+          <ResultsToolbar data={filtered} columns={columns} label="enforcement actions" />
+          <DataTable columns={columns} data={filtered} pageSize={25} />
+        </>
       ) : (
         <div style={{ textAlign: 'center', padding: '48px', color: '#64748B' }}>No enforcement actions found.</div>
       )}

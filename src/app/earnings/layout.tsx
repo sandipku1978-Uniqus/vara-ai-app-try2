@@ -1,8 +1,8 @@
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Earnings Transcripts - Uniqus Research Center',
-  description: 'Earnings call transcripts with AI-powered key takeaway extraction.',
+  title: '8-K Event Filings - Uniqus Research Center',
+  description: 'Track material events, earnings releases, and corporate announcements via SEC 8-K filings.',
 };
 
 export default function Layout({ children }: { children: React.ReactNode }) {
