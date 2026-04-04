@@ -122,7 +122,7 @@
 .guide-sidebar-section + .guide-sidebar-section {
   margin-top: 18px;
   padding-top: 18px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid var(--glass-border);
 }
 
 .guide-sidebar h3 {
@@ -280,6 +280,7 @@
   }
 }
 
+/* Theme-aware overrides — use CSS variables so dark/light mode both work */
 .support-kicker {
   background: rgba(179, 31, 126, 0.1);
   border-color: rgba(179, 31, 126, 0.2);
@@ -295,8 +296,8 @@
 }
 
 .support-search-wrapper input {
-  background: rgba(255, 255, 255, 0.92);
-  border-color: rgba(72, 42, 122, 0.12);
+  background: var(--input-bg);
+  border-color: var(--input-border);
   color: var(--text-primary);
 }
 
@@ -309,20 +310,89 @@
   color: var(--accent-primary);
 }
 
+.support-summary-card h3 {
+  color: var(--text-primary);
+}
+
+.support-summary-card p {
+  color: var(--text-secondary);
+}
+
 .guide-sidebar,
 .guide-section,
 .support-summary-card {
-  background: rgba(255, 255, 255, 0.84);
-  border-color: rgba(72, 42, 122, 0.12);
+  background: var(--glass-bg);
+  border-color: var(--glass-border);
 }
 
 .guide-nav a:hover {
-  background: rgba(247, 231, 241, 0.9);
+  background: var(--interactive-hover-strong);
   color: var(--accent-primary);
 }
 
 .faq-item {
-  border-color: rgba(72, 42, 122, 0.1);
-  background: rgba(247, 231, 241, 0.48);
+  border-color: var(--glass-border);
+  background: var(--interactive-hover);
+}
+
+/* Platform quick-links in sidebar */
+.guide-nav a.platform-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  font-size: 0.85rem;
+}
+
+.guide-nav a.platform-link svg {
+  flex-shrink: 0;
+  color: var(--accent-soft);
+}
+
+/* Guide section navigation link buttons */
+.guide-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--glass-border);
+}
+
+.guide-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: rgba(179, 31, 126, 0.1);
+  border: 1px solid rgba(179, 31, 126, 0.25);
+  border-radius: 8px;
+  color: var(--accent-primary);
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.guide-link-btn:hover {
+  background: rgba(179, 31, 126, 0.2);
+  border-color: rgba(179, 31, 126, 0.4);
+  color: var(--accent-primary-hover);
+}
+
+/* Clickable summary cards */
+.support-summary-card[style*="cursor"] {
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.support-summary-card[style*="cursor"]:hover {
+  transform: translateY(-2px);
+}
+
+/* Sticky sidebar with max-height scroll */
+.guide-sidebar {
+  max-height: calc(100vh - 48px);
+  overflow-y: auto;
 }
 
