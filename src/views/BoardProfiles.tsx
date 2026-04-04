@@ -330,7 +330,7 @@ export default function BoardProfiles() {
           )}
 
           {activeTab === 'directors' && companyData && boardData && !boardLoading && (
-            <div className="tab-pane fade-in" style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+            <div className="tab-pane fade-in">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
                 <div>
                   <h2>Board of Directors — {companyName}</h2>
@@ -439,7 +439,7 @@ export default function BoardProfiles() {
           )}
 
           {activeTab === 'compensation' && companyData && boardData && !boardLoading && (
-            <div className="tab-pane fade-in" style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+            <div className="tab-pane fade-in">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
                 <div>
                   <h2>Executive Compensation — {companyName}</h2>
