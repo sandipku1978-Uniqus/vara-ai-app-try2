@@ -671,6 +671,7 @@ export async function searchEdgarFilings(
     dateRange: 'custom',
     startdt: startDate || '2020-01-01',
     enddt: endDate || new Date().toISOString().split('T')[0],
+    dateOrder: 'desc',
   });
   if (entityName) baseParams.set('entityName', entityName);
 

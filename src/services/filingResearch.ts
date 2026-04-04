@@ -566,17 +566,11 @@ function matchesSectionKeywords(filingText: string, sectionKeywords: string): bo
   return options.some(option => normalizedText.includes(option));
 }
 
-function sortResearchResults(results: FilingResearchResult[], preferRelevance: boolean): FilingResearchResult[] {
+function sortResearchResults(results: FilingResearchResult[], _preferRelevance: boolean): FilingResearchResult[] {
   return results.sort((a, b) => {
-    if (preferRelevance) {
-      const byRelevance = (b.relevanceScore ?? b.score) - (a.relevanceScore ?? a.score);
-      if (Math.abs(byRelevance) > 0.01) {
-        return byRelevance;
-      }
-    }
     const byDate = b.fileDate.localeCompare(a.fileDate);
     if (byDate !== 0) return byDate;
-    return b.score - a.score;
+    return (b.relevanceScore ?? b.score) - (a.relevanceScore ?? a.score);
   });
 }
 
