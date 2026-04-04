@@ -15,6 +15,8 @@
   overflow: hidden;
   box-shadow: -24px 0 48px rgba(2, 6, 23, 0.45), var(--glow-shadow);
   animation: slideInSidebar 0.24s ease;
+  /* Allow resize handle to be positioned absolutely */
+  isolation: isolate;
 }
 
 @keyframes slideInSidebar {
@@ -25,6 +27,30 @@
   to {
     opacity: 1;
     transform: translateX(0);
+  }
+}
+
+/* Resize drag handle on the left edge of the copilot panel */
+.ai-panel-resize-handle {
+  position: absolute;
+  top: 0;
+  left: -3px;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 101;
+  transition: background 0.15s;
+}
+
+.ai-panel-resize-handle:hover,
+.ai-panel-resize-handle:active {
+  background: rgba(214, 108, 174, 0.35);
+}
+
+/* Hide resize handle on mobile (panel is full-width) */
+@media (max-width: 768px) {
+  .ai-panel-resize-handle {
+    display: none;
   }
 }
 

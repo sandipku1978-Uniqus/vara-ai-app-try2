@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 
 import {
@@ -290,7 +290,37 @@ export function AIQnAPanel() {
   const [running, setRunning] = useState(false);
   const [streamingText, setStreamingText] = useState('');
   const [loadingStage, setLoadingStage] = useState('');
+  const [panelWidth, setPanelWidth] = useState<number | null>(null);
+  const isResizing = useRef(false);
   const panelBodyRef = useRef<HTMLDivElement>(null);
+
+  // Resize handler — drag the left edge to resize the copilot panel
+  const handleResizeStart = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    isResizing.current = true;
+    const startX = e.clientX;
+    const startWidth = panelWidth || Math.min(window.innerWidth, 520);
+
+    function onMouseMove(ev: MouseEvent) {
+      if (!isResizing.current) return;
+      const delta = startX - ev.clientX;
+      const newWidth = Math.max(320, Math.min(window.innerWidth * 0.8, startWidth + delta));
+      setPanelWidth(newWidth);
+    }
+
+    function onMouseUp() {
+      isResizing.current = false;
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+    }
+
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  }, [panelWidth]);
 
   const activeRun = useMemo(
     () => agentRuns.find(run => run.id === activeAgentRunId) || agentRuns[0] || null,
@@ -772,7 +802,13 @@ export function AIQnAPanel() {
   }
 
   return (
-    <div className="ai-panel glass-card">
+    <div className="ai-panel glass-card" style={panelWidth ? { width: `${panelWidth}px` } : undefined}>
+      {/* Resize drag handle on the left edge */}
+      <div
+        className="ai-panel-resize-handle"
+        onMouseDown={handleResizeStart}
+        title="Drag to resize"
+      />
       <div className="ai-panel-header">
         <div className="ai-title">
           <Sparkles size={18} className="ai-icon" />
