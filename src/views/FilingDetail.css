@@ -3,7 +3,7 @@
   flex-direction: column;
   height: calc(100vh - 70px);
   overflow: hidden;
-  margin: -24px; /* offset the layout padding */
+  margin: -24px -24px -24px 0; /* offset layout padding but keep left edge flush */
   padding: 0;
   background: var(--bg-primary);
 }

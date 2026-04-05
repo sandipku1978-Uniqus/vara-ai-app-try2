@@ -493,17 +493,13 @@ export default function FilingDetail() {
       }
       // Parse TOC from the loaded document
       if (frame.contentDocument) {
-        // Ensure the SEC document body scrolls properly
-        const iframeBody = frame.contentDocument.body;
-        if (iframeBody) {
-          iframeBody.style.overflow = 'auto';
-          iframeBody.style.maxWidth = '100%';
-          iframeBody.style.overflowX = 'auto';
-        }
-        const iframeHtml = frame.contentDocument.documentElement;
-        if (iframeHtml) {
-          iframeHtml.style.overflow = 'auto';
-        }
+        // Inject scroll styles so the SEC document has horizontal + vertical scrollbars
+        const styleEl = frame.contentDocument.createElement('style');
+        styleEl.textContent = `
+          html { overflow: auto !important; }
+          body { overflow: auto !important; overflow-x: auto !important; margin: 0; padding: 16px; }
+        `;
+        frame.contentDocument.head.appendChild(styleEl);
         setTocLoading(true);
         const entries = parseToc(frame.contentDocument);
         setTocEntries(entries);
