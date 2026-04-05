@@ -671,7 +671,6 @@ export async function searchEdgarFilings(
     dateRange: 'custom',
     startdt: startDate || '2020-01-01',
     enddt: endDate || new Date().toISOString().split('T')[0],
-    dateOrder: 'desc',
   });
   if (entityName) baseParams.set('entityName', entityName);
 
@@ -738,6 +737,12 @@ export async function searchEdgarFilings(
           }
         }
 
+        // Sort results newest-first by file date
+        results.sort((a, b) => {
+          const dateA = a._source?.file_date || '';
+          const dateB = b._source?.file_date || '';
+          return dateB.localeCompare(dateA);
+        });
         return results;
       } catch (error) {
         edgarSearchCache.delete(cacheKey);

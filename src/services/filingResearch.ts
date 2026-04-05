@@ -532,6 +532,18 @@ function matchesFormScope(result: FilingResearchResult, formScope: string[]): bo
 
   const normalizedResultForm = normalizeFormValue(result.formType);
   const normalizedResultBaseForm = normalizeBaseForm(result.formType);
+  const docType = normalizeFormValue(result.documentType || '');
+
+  // If the user searches for a parent form type (e.g. 10-K), exclude exhibit
+  // sub-documents (EX-4.1, EX-31.2, etc.) — only show the main filing document.
+  const isExhibit = docType.startsWith('EX-') || docType.startsWith('EX ');
+  const scopeHasParentForms = formScope.some(form => {
+    const nf = normalizeFormValue(form);
+    return !nf.startsWith('EX-') && !nf.startsWith('EX ');
+  });
+  if (isExhibit && scopeHasParentForms) {
+    return false;
+  }
 
   return formScope.some(form => {
     const normalizedForm = normalizeFormValue(form);

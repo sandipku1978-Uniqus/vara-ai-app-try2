@@ -1011,10 +1011,8 @@ export default function SearchPage() {
   }), [activeResolvedSearch, activeSession?.id]);
 
   const openFiling = useCallback((row: FilingResearchResult) => {
-    navigate(`/filing/${row.cik}_${row.accessionNumber}_${row.primaryDocument}`, {
-      state: buildFilingRouteState(row),
-    });
-  }, [buildFilingRouteState, navigate]);
+    navigate.push(`/filing/${row.cik}_${row.accessionNumber}_${row.primaryDocument}`);
+  }, [navigate]);
 
   async function handleTrendReport() {
     if (displayResults.length === 0) return;
@@ -1184,7 +1182,7 @@ export default function SearchPage() {
             <div className="research-guide-card">
               <div className="guide-header">
                 <div className="guide-title">Boolean / Proximity Guide</div>
-                <button type="button" onClick={() => navigate('/support')}>Open full help</button>
+                <button type="button" onClick={() => navigate.push('/support')}>Open full help</button>
               </div>
               <div className="guide-grid">
                 {[
