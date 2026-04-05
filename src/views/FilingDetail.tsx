@@ -404,40 +404,29 @@ export default function FilingDetail() {
   /**
    * Dynamic TOC parser — works for any SEC form type (10-K, 20-F, S-1, DEF 14A, etc.)
    *
-   * Strategy 1: Extract TOC links (<a href="#...">) that look like section headers.
-   *   SEC filings typically have a Table of Contents with internal anchor links.
-   *   We detect "Item N", "Part N", and common prospectus/proxy headings dynamically
-   *   using the document's own text, so no per-form-type pattern lists are needed.
+   * Strategy 1: Detect the document's own Table of Contents by finding clusters of
+   *   <a href="#..."> links. SEC filings place many internal links together on a TOC
+   *   page. We find the densest cluster and extract all its links as TOC entries.
    *
-   * Strategy 2 (fallback): Scan headings/bold elements for section-like text.
+   * Strategy 2: Pattern-match individual links for "Item N", "Part N", or known titles.
+   *
+   * Strategy 3 (fallback): Scan headings/bold elements for section-like text.
    */
 
-  // Regex to detect section-like text or anchors: "Item 1", "Item 1A", "Part I", etc.
+  // Regex to detect section-like text: "Item 1", "Item 1A", "Part I", etc.
   const SECTION_HEADER_RE = /^(item\s+\d+[a-z]?\b|part\s+[iv]+\b)/i;
-  // Detect item references inside anchor href values: "#item_1_...", "#item_16a_...", "#item_4_a_..."
+  // Detect item references inside anchor href values
   const ANCHOR_ITEM_RE = /^#?item_(\d+)_?([a-z])?(?:_|$)/i;
-
-  // Common S-1 / proxy / prospectus section titles (no item number prefix)
-  const COMMON_SECTION_TITLES = [
-    'Prospectus Summary', 'Risk Factors', 'Use of Proceeds', 'Dividend Policy',
-    'Capitalization', 'Dilution', 'Management', 'Underwriting', 'Signatures',
-    'Financial Statements', 'Selected Financial Data', 'Business',
-    'Executive Compensation', 'Security Ownership', 'Corporate Governance',
-  ];
-  const COMMON_SECTION_RE = new RegExp(
-    `^(${COMMON_SECTION_TITLES.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})$`, 'i'
-  );
+  // Skip non-section links (page numbers, "Table of Contents", "Back to top", etc.)
+  const SKIP_RE = /^(table of contents|back to top|page|toc|\d+|f-\d+|[\divx]+)$/i;
 
   /** Clean up link text into a concise TOC label (max ~60 chars) */
   function cleanTocLabel(text: string, itemPrefix?: string): string {
     let label = text.replace(/\s+/g, ' ').trim();
-    // Capitalise "Item" / "Part" consistently
     label = label.replace(/^(item|part)\s/i, m => m.charAt(0).toUpperCase() + m.slice(1).toLowerCase());
-    // If text doesn't start with "Item" but we detected an item from the anchor, prepend it
     if (itemPrefix && !SECTION_HEADER_RE.test(label)) {
       label = `Item ${itemPrefix.toUpperCase()}. ${label}`;
     }
-    // Truncate long labels
     if (label.length > 60) label = label.slice(0, 57) + '...';
     return label;
   }
@@ -446,48 +435,85 @@ export default function FilingDetail() {
     const entries: TocEntry[] = [];
     const seen = new Set<string>();
 
-    // Strategy 1: Find internal TOC hyperlinks — these point to actual section anchors.
-    // Detects sections by: text starting with "Item/Part", common section titles,
-    // or anchor hrefs containing item references (e.g., #item_16a_...).
-    const tocLinks = Array.from(doc.querySelectorAll('a[href^="#"]'));
-    for (const link of tocLinks) {
+    // Gather all internal anchor links with valid text
+    const allLinks = Array.from(doc.querySelectorAll('a[href^="#"]'));
+    const validLinks: { el: HTMLAnchorElement; anchor: string; text: string; rect: DOMRect }[] = [];
+    for (const link of allLinks) {
       const href = link.getAttribute('href') || '';
-      const anchorTarget = href.replace(/^#/, '');
-      if (!anchorTarget) continue;
-      const text = (link.textContent || '').trim();
+      const anchor = href.replace(/^#/, '');
+      if (!anchor || anchor === 'toc') continue;
+      const text = (link.textContent || '').replace(/\s+/g, ' ').trim();
       if (text.length < 3 || text.length > 120) continue;
-
-      // Check if the anchor href references an item (e.g., #item_3_key_information)
-      let isSection = false;
-      let itemPrefix: string | undefined;
-      const anchorMatch = ANCHOR_ITEM_RE.exec(anchorTarget);
-      if (anchorMatch) {
-        isSection = true;
-        itemPrefix = anchorMatch[1] + (anchorMatch[2] || ''); // e.g., "3", "4a", "16a"
-      }
-
-      // Also check text for section patterns ("Item N", "Part N", common titles)
-      if (!isSection) {
-        isSection = SECTION_HEADER_RE.test(text) || COMMON_SECTION_RE.test(text);
-      }
-
-      if (!isSection) continue;
-
-      const label = cleanTocLabel(text, itemPrefix);
-      if (seen.has(label)) continue;
-      seen.add(label);
-      entries.push({ label, elementId: null, anchorName: anchorTarget });
+      if (SKIP_RE.test(text)) continue;
+      const rect = link.getBoundingClientRect();
+      validLinks.push({ el: link, anchor, text, rect });
     }
 
-    // Strategy 2: Scan headings and bold elements (fallback for filings without TOC links)
-    if (entries.length === 0) {
-      const candidates = Array.from(doc.querySelectorAll('h1, h2, h3, h4, b, strong, p, div'));
-      for (const el of candidates) {
-        const text = (el.textContent || '').trim();
-        if (text.length < 3 || text.length > 120) continue;
+    // Strategy 1: Find a TOC cluster — a group of 5+ anchor links near each other
+    // (within 800px vertical range). SEC TOC pages group links tightly.
+    if (validLinks.length >= 5) {
+      let bestCluster: typeof validLinks = [];
+      for (let i = 0; i < validLinks.length; i++) {
+        const cluster: typeof validLinks = [];
+        const startY = validLinks[i].rect.top;
+        for (let j = i; j < validLinks.length; j++) {
+          if (validLinks[j].rect.top - startY > 2000) break;
+          cluster.push(validLinks[j]);
+        }
+        if (cluster.length > bestCluster.length) bestCluster = cluster;
+      }
 
-        const isSection = SECTION_HEADER_RE.test(text) || COMMON_SECTION_RE.test(text);
+      if (bestCluster.length >= 5) {
+        // Deduplicate by anchor and extract unique entries
+        const seenAnchors = new Set<string>();
+        for (const link of bestCluster) {
+          if (seenAnchors.has(link.anchor)) continue;
+          seenAnchors.add(link.anchor);
+
+          // Detect item prefix from anchor href
+          let itemPrefix: string | undefined;
+          const anchorMatch = ANCHOR_ITEM_RE.exec(link.anchor);
+          if (anchorMatch) {
+            itemPrefix = anchorMatch[1] + (anchorMatch[2] || '');
+          }
+
+          const label = cleanTocLabel(link.text, itemPrefix);
+          if (seen.has(label)) continue;
+          seen.add(label);
+          entries.push({ label, elementId: null, anchorName: link.anchor });
+        }
+      }
+    }
+
+    // Strategy 2: Pattern-match individual links (for filings without a TOC cluster)
+    if (entries.length === 0) {
+      for (const link of validLinks) {
+        let isSection = false;
+        let itemPrefix: string | undefined;
+        const anchorMatch = ANCHOR_ITEM_RE.exec(link.anchor);
+        if (anchorMatch) {
+          isSection = true;
+          itemPrefix = anchorMatch[1] + (anchorMatch[2] || '');
+        }
+        if (!isSection) {
+          isSection = SECTION_HEADER_RE.test(link.text);
+        }
         if (!isSection) continue;
+
+        const label = cleanTocLabel(link.text, itemPrefix);
+        if (seen.has(label)) continue;
+        seen.add(label);
+        entries.push({ label, elementId: null, anchorName: link.anchor });
+      }
+    }
+
+    // Strategy 3: Scan headings and bold elements (fallback for filings without TOC links)
+    if (entries.length === 0) {
+      const candidates = Array.from(doc.querySelectorAll('h1, h2, h3, h4, b, strong'));
+      for (const el of candidates) {
+        const text = (el.textContent || '').replace(/\s+/g, ' ').trim();
+        if (text.length < 3 || text.length > 120) continue;
+        if (!SECTION_HEADER_RE.test(text)) continue;
 
         const label = cleanTocLabel(text);
         if (seen.has(label)) continue;
