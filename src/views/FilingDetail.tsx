@@ -401,51 +401,54 @@ export default function FilingDetail() {
     };
   }, [accession, cik, routeState]);
 
-  // Patterns that identify section headers in SEC filings
-  const SECTION_PATTERNS = [
-    // 10-K / 10-Q Items
-    { re: /^item\s+1[^a-z0-9]/i, label: 'Item 1. Business' },
-    { re: /^item\s+1a/i, label: 'Item 1A. Risk Factors' },
-    { re: /^item\s+1b/i, label: 'Item 1B. Unresolved Staff Comments' },
-    { re: /^item\s+1c/i, label: 'Item 1C. Cybersecurity' },
-    { re: /^item\s+2[^0-9]/i, label: 'Item 2. Properties' },
-    { re: /^item\s+3[^0-9]/i, label: 'Item 3. Legal Proceedings' },
-    { re: /^item\s+4[^0-9]/i, label: 'Item 4. Mine Safety' },
-    { re: /^item\s+5[^0-9]/i, label: 'Item 5. Market for Registrant' },
-    { re: /^item\s+6[^0-9]/i, label: 'Item 6. Reserved' },
-    { re: /^item\s+7[^a-z0-9]/i, label: 'Item 7. MD&A' },
-    { re: /^item\s+7a/i, label: 'Item 7A. Quantitative Disclosures' },
-    { re: /^item\s+8[^0-9]/i, label: 'Item 8. Financial Statements' },
-    { re: /^item\s+9[^a-z0-9]/i, label: 'Item 9. Changes in Accountants' },
-    { re: /^item\s+9a/i, label: 'Item 9A. Controls & Procedures' },
-    { re: /^item\s+9b/i, label: 'Item 9B. Other Information' },
-    { re: /^item\s+10[^0-9]/i, label: 'Item 10. Directors & Governance' },
-    { re: /^item\s+11[^0-9]/i, label: 'Item 11. Executive Compensation' },
-    { re: /^item\s+12[^0-9]/i, label: 'Item 12. Security Ownership' },
-    { re: /^item\s+13[^0-9]/i, label: 'Item 13. Related Transactions' },
-    { re: /^item\s+14[^0-9]/i, label: 'Item 14. Principal Accountant Fees' },
-    { re: /^item\s+15[^0-9]/i, label: 'Item 15. Exhibits' },
-    { re: /signatures?/i, label: 'Signatures' },
-    // S-1 sections
-    { re: /^prospectus summary/i, label: 'Prospectus Summary' },
-    { re: /^risk factors/i, label: 'Risk Factors' },
-    { re: /^use of proceeds/i, label: 'Use of Proceeds' },
-    { re: /^dividend policy/i, label: 'Dividend Policy' },
-    { re: /^capitalization/i, label: 'Capitalization' },
-    { re: /^dilution/i, label: 'Dilution' },
-    { re: /^business$/i, label: 'Business' },
-    { re: /^management/i, label: 'Management' },
-    { re: /^underwriting/i, label: 'Underwriting' },
-    { re: /^financial statements/i, label: 'Financial Statements' },
+  /**
+   * Dynamic TOC parser — works for any SEC form type (10-K, 20-F, S-1, DEF 14A, etc.)
+   *
+   * Strategy 1: Extract TOC links (<a href="#...">) that look like section headers.
+   *   SEC filings typically have a Table of Contents with internal anchor links.
+   *   We detect "Item N", "Part N", and common prospectus/proxy headings dynamically
+   *   using the document's own text, so no per-form-type pattern lists are needed.
+   *
+   * Strategy 2 (fallback): Scan headings/bold elements for section-like text.
+   */
+
+  // Regex to detect section-like text or anchors: "Item 1", "Item 1A", "Part I", etc.
+  const SECTION_HEADER_RE = /^(item\s+\d+[a-z]?\b|part\s+[iv]+\b)/i;
+  // Detect item references inside anchor href values: "#item_1_...", "#item_16a_...", "#item_4_a_..."
+  const ANCHOR_ITEM_RE = /^#?item_(\d+)_?([a-z])?(?:_|$)/i;
+
+  // Common S-1 / proxy / prospectus section titles (no item number prefix)
+  const COMMON_SECTION_TITLES = [
+    'Prospectus Summary', 'Risk Factors', 'Use of Proceeds', 'Dividend Policy',
+    'Capitalization', 'Dilution', 'Management', 'Underwriting', 'Signatures',
+    'Financial Statements', 'Selected Financial Data', 'Business',
+    'Executive Compensation', 'Security Ownership', 'Corporate Governance',
   ];
+  const COMMON_SECTION_RE = new RegExp(
+    `^(${COMMON_SECTION_TITLES.map(t => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')})$`, 'i'
+  );
+
+  /** Clean up link text into a concise TOC label (max ~60 chars) */
+  function cleanTocLabel(text: string, itemPrefix?: string): string {
+    let label = text.replace(/\s+/g, ' ').trim();
+    // Capitalise "Item" / "Part" consistently
+    label = label.replace(/^(item|part)\s/i, m => m.charAt(0).toUpperCase() + m.slice(1).toLowerCase());
+    // If text doesn't start with "Item" but we detected an item from the anchor, prepend it
+    if (itemPrefix && !SECTION_HEADER_RE.test(label)) {
+      label = `Item ${itemPrefix.toUpperCase()}. ${label}`;
+    }
+    // Truncate long labels
+    if (label.length > 60) label = label.slice(0, 57) + '...';
+    return label;
+  }
 
   const parseToc = useCallback((doc: Document) => {
     const entries: TocEntry[] = [];
     const seen = new Set<string>();
 
-    // Strategy 1: Find internal TOC hyperlinks (<a href="#..."> whose text matches section patterns).
-    // SEC filings have a Table of Contents where each row is a link pointing to the actual section anchor.
-    // Recording the href target ensures we scroll to the real section, not a TOC row.
+    // Strategy 1: Find internal TOC hyperlinks — these point to actual section anchors.
+    // Detects sections by: text starting with "Item/Part", common section titles,
+    // or anchor hrefs containing item references (e.g., #item_16a_...).
     const tocLinks = Array.from(doc.querySelectorAll('a[href^="#"]'));
     for (const link of tocLinks) {
       const href = link.getAttribute('href') || '';
@@ -454,30 +457,43 @@ export default function FilingDetail() {
       const text = (link.textContent || '').trim();
       if (text.length < 3 || text.length > 120) continue;
 
-      for (const pattern of SECTION_PATTERNS) {
-        if (pattern.re.test(text) && !seen.has(pattern.label)) {
-          seen.add(pattern.label);
-          entries.push({ label: pattern.label, elementId: null, anchorName: anchorTarget });
-          break;
-        }
+      // Check if the anchor href references an item (e.g., #item_3_key_information)
+      let isSection = false;
+      let itemPrefix: string | undefined;
+      const anchorMatch = ANCHOR_ITEM_RE.exec(anchorTarget);
+      if (anchorMatch) {
+        isSection = true;
+        itemPrefix = anchorMatch[1] + (anchorMatch[2] || ''); // e.g., "3", "4a", "16a"
       }
+
+      // Also check text for section patterns ("Item N", "Part N", common titles)
+      if (!isSection) {
+        isSection = SECTION_HEADER_RE.test(text) || COMMON_SECTION_RE.test(text);
+      }
+
+      if (!isSection) continue;
+
+      const label = cleanTocLabel(text, itemPrefix);
+      if (seen.has(label)) continue;
+      seen.add(label);
+      entries.push({ label, elementId: null, anchorName: anchorTarget });
     }
 
-    // Strategy 2: Scan headings and bold elements for section titles (fallback for filings without TOC links)
+    // Strategy 2: Scan headings and bold elements (fallback for filings without TOC links)
     if (entries.length === 0) {
       const candidates = Array.from(doc.querySelectorAll('h1, h2, h3, h4, b, strong, p, div'));
       for (const el of candidates) {
         const text = (el.textContent || '').trim();
         if (text.length < 3 || text.length > 120) continue;
 
-        for (const pattern of SECTION_PATTERNS) {
-          if (pattern.re.test(text) && !seen.has(pattern.label)) {
-            seen.add(pattern.label);
-            if (!el.id) el.id = `toc-sec-${entries.length}`;
-            entries.push({ label: pattern.label, elementId: el.id, anchorName: null });
-            break;
-          }
-        }
+        const isSection = SECTION_HEADER_RE.test(text) || COMMON_SECTION_RE.test(text);
+        if (!isSection) continue;
+
+        const label = cleanTocLabel(text);
+        if (seen.has(label)) continue;
+        seen.add(label);
+        if (!el.id) el.id = `toc-sec-${entries.length}`;
+        entries.push({ label, elementId: el.id, anchorName: null });
       }
     }
 
@@ -626,12 +642,15 @@ export default function FilingDetail() {
       setRedlineLoading(true);
       setRedlineError('');
       setToolMessage('');
+      setActiveTab('tools');
 
       try {
         let previousFiling = redlineCandidate;
         if (!previousFiling) {
           const submissions = await fetchCompanySubmissions(cik);
-          if (!submissions || cancelled) {
+          if (cancelled) return;
+          if (!submissions) {
+            setRedlineError('Unable to load company submissions for redline comparison.');
             return;
           }
 
@@ -731,7 +750,8 @@ export default function FilingDetail() {
     return () => {
       cancelled = true;
     };
-  }, [accession, cik, fetchCurrentFilingText, filingMeta.filingDate, filingMeta.formType, redlineCandidate, redlineError, redlineLoading, redlineMode, redlineSummary]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- guard clause prevents re-execution; loading/error/summary are read but not triggers
+  }, [accession, cik, fetchCurrentFilingText, filingMeta.filingDate, filingMeta.formType, redlineCandidate, redlineMode]);
 
   const handleCleanPdfExport = useCallback(async () => {
     setExportingPdf(true);
