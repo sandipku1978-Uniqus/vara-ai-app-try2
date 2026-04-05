@@ -102,15 +102,7 @@ export default function AccountingHub() {
           style={{ padding: '6px 10px', fontSize: '0.78rem' }}
           onClick={event => {
             event.stopPropagation();
-            navigate(`/filing/${row.cik}_${row.accessionNumber}_${row.primaryDocument}`, {
-              state: {
-                companyName: row.entityName,
-                filingDate: row.fileDate,
-                formType: row.formType,
-                fileNumber: row.fileNumber,
-                auditor: row.auditor,
-              },
-            });
+            navigate.push(`/filing/${row.cik}_${row.accessionNumber}_${row.primaryDocument}`);
           }}
         >
           View
@@ -436,15 +428,7 @@ Write a concise memo with:
                   pageSize={12}
                   emptyMessage="Run an accounting research search to surface filings."
                   onRowClick={row => {
-                    navigate(`/filing/${row.cik}_${row.accessionNumber}_${row.primaryDocument}`, {
-                      state: {
-                        companyName: row.entityName,
-                        filingDate: row.fileDate,
-                        formType: row.formType,
-                        fileNumber: row.fileNumber,
-                        auditor: row.auditor,
-                      },
-                    });
+                    navigate.push(`/filing/${row.cik}_${row.accessionNumber}_${row.primaryDocument}`);
                   }}
                   rowKey={row => row.id}
                 />

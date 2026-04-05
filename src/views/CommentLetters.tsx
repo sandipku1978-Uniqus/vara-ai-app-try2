@@ -135,17 +135,8 @@ export default function CommentLetters() {
     setPendingSearchIntent(null);
   }, [pendingSearchIntent, setActiveSearchContext, setPendingSearchIntent]);
 
-  function viewFiling(row: LetterRow, highlightQuery: string) {
-    navigate(`/filing/${row.cik}_${row.accessionNumber}_${row.primaryDocument}`, {
-      state: {
-        companyName: row.entityName,
-        filingDate: row.fileDate,
-        formType: row.formType,
-        highlightQuery,
-        highlightMode: 'semantic',
-        highlightSectionKeywords: filters.sectionKeywords,
-      },
-    });
+  function viewFiling(row: LetterRow) {
+    navigate.push(`/filing/${row.cik}_${row.accessionNumber}_${row.primaryDocument}`);
   }
 
   const columns: ColumnDef<LetterRow>[] = [
@@ -160,7 +151,7 @@ export default function CommentLetters() {
               type="button"
               onClick={event => {
                 event.stopPropagation();
-                viewFiling(row, filters.keyword.trim() || 'comment');
+                viewFiling(row);
               }}
               style={{ color: '#D66CAE', display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'none', border: 'none', cursor: 'pointer' }}
             >
@@ -231,7 +222,7 @@ export default function CommentLetters() {
             columns={columns}
             data={results}
             pageSize={25}
-            onRowClick={row => viewFiling(row, filters.keyword.trim() || 'comment')}
+            onRowClick={row => viewFiling(row)}
           />
         </>
       ) : searched ? (
@@ -249,7 +240,7 @@ export default function CommentLetters() {
           ) : recentItems.length > 0 ? (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px' }}>
               {recentItems.map((item, i) => (
-                <div key={i} style={cardStyle} onClick={() => viewFiling(item, 'revenue recognition')}
+                <div key={i} style={cardStyle} onClick={() => viewFiling(item)}
                   onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(214,108,174,0.4)')}
                   onMouseLeave={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')}>
                   <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'white', marginBottom: '6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.entityName}</div>

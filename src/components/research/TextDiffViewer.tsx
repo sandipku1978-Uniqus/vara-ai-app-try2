@@ -1,5 +1,5 @@
 'use client';
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { diff_match_patch } from 'diff-match-patch';
 
 interface TextDiffViewerProps {

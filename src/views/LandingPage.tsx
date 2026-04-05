@@ -333,7 +333,7 @@ export default function LandingPage() {
 
   const handleSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    navigate(query.trim() ? `/search?q=${encodeURIComponent(query)}` : '/search');
+    navigate.push(query.trim() ? `/search?q=${encodeURIComponent(query)}` : '/search');
   };
 
   const scrollToCapabilities = () => {
@@ -380,7 +380,7 @@ export default function LandingPage() {
             <button
               type="button"
               className="landing-secondary-button"
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate.push('/dashboard')}
             >
               <LayoutDashboard size={16} />
               Open Dashboard
@@ -459,7 +459,7 @@ export default function LandingPage() {
                 <button
                   type="button"
                   className="landing-card-link"
-                  onClick={() => navigate(group.route)}
+                  onClick={() => navigate.push(group.route)}
                 >
                   {group.cta}
                   <ArrowRight size={16} />
@@ -514,7 +514,7 @@ export default function LandingPage() {
             <button
               type="button"
               className="landing-search__button landing-search__button--compact"
-              onClick={() => navigate('/search')}
+              onClick={() => navigate.push('/search')}
             >
               <Search size={16} />
               Start in Research
@@ -522,7 +522,7 @@ export default function LandingPage() {
             <button
               type="button"
               className="landing-secondary-button"
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate.push('/dashboard')}
             >
               <LayoutDashboard size={16} />
               View Dashboard
@@ -530,7 +530,7 @@ export default function LandingPage() {
             <button
               type="button"
               className="landing-tertiary-button"
-              onClick={() => navigate('/ipo')}
+              onClick={() => navigate.push('/ipo')}
             >
               <Briefcase size={16} />
               Open IPO Center

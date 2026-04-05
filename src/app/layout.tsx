@@ -3,6 +3,7 @@ import { ClerkProvider } from '@clerk/nextjs';
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://uniqus-research.vercel.app'),
   title: 'Uniqus Research Center - SEC Intelligence Platform',
   description: 'A comprehensive, production-grade SEC compliance and research platform for legal, financial, and compliance professionals.',
   openGraph: {

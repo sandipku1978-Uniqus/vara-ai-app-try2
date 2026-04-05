@@ -213,7 +213,7 @@ export default function Dashboard() {
               <div
                 key={idx}
                 className="trending-item"
-                onClick={() => navigate(`/search?q=${encodeURIComponent(item.topic)}`)}
+                onClick={() => navigate.push(`/search?q=${encodeURIComponent(item.topic)}`)}
                 style={{ cursor: 'pointer' }}
               >
                 <span className="rank">#{idx + 1}</span>
@@ -240,7 +240,7 @@ export default function Dashboard() {
 
               return (
                 <div key={ticker} className="watchlist-item">
-                  <div className="company-info" onClick={() => navigate(`/search?q=${ticker}`)} style={{ cursor: 'pointer', flex: 1 }}>
+                  <div className="company-info" onClick={() => navigate.push(`/search?q=${ticker}`)} style={{ cursor: 'pointer', flex: 1 }}>
                     <div className="company-logo-stub">{ticker[0]}</div>
                     <div>
                       <div className="company-name">{companyName}</div>
@@ -320,7 +320,7 @@ export default function Dashboard() {
               }
 
               return display.map((filing, idx) => (
-                <div key={idx} className="activity-item" onClick={() => navigate(`/search?q=${filing.ticker}`)} style={{ cursor: 'pointer' }}>
+                <div key={idx} className="activity-item" onClick={() => navigate.push(`/search?q=${filing.ticker}`)} style={{ cursor: 'pointer' }}>
                   <FileText size={16} className={filing.form === '8-K' ? 'text-orange' : 'text-blue'} />
                   <div className="activity-details">
                     <p><strong>{filing.ticker}</strong> filed <strong>{filing.form}</strong></p>
@@ -343,7 +343,7 @@ export default function Dashboard() {
                 <div className="rss-timestamp">No alerts saved</div>
                 <h4 className="rss-headline">Create a recurring filing search from the Research Workbench</h4>
                 <p className="rss-summary">Alerts persist locally, can be checked for new filings, and make recurring accounting or disclosure research much easier to monitor.</p>
-                <button className="secondary-btn" onClick={() => navigate('/search')}>
+                <button className="secondary-btn" onClick={() => navigate.push('/search')}>
                   <BellRing size={14} /> Open Research
                 </button>
               </div>
@@ -364,7 +364,7 @@ export default function Dashboard() {
                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '10px' }}>
                       <button
                         className="secondary-btn"
-                        onClick={() => navigate(`/search?q=${encodeURIComponent(alert.query)}`, { state: { alertId: alert.id } })}
+                        onClick={() => navigate.push(`/search?q=${encodeURIComponent(alert.query)}`)}
                       >
                         <SearchIcon size={14} /> Open
                       </button>

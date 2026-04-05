@@ -39,7 +39,7 @@ function buildCsv(data: Record<string, any>[], columns: Array<{ key: string; lab
  * Universal toolbar for search result tables.
  * Provides: Export CSV, Copy to Clipboard, Analyze in Copilot.
  */
-export default function ResultsToolbar({ data, columns, label = 'results', copilotPrompt }: ResultsToolbarProps) {
+export default function ResultsToolbar({ data, columns, label = 'results' }: ResultsToolbarProps) {
   const { setChatOpen } = useApp();
   const [copied, setCopied] = useState(false);
 

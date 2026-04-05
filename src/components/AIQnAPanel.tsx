@@ -40,7 +40,7 @@ import {
   resolveCompanyHint,
 } from '../services/agentEvidence';
 import { buildSearchTrendSummary, executeFilingResearchSearch, type FilingResearchResult, type ResearchSearchMode } from '../services/filingResearch';
-import { generateAgentAnswer, generateAgentAnswerStreaming, generateFilingSummary, planAgentRun, summarizeConversation } from '../services/aiApi';
+import { generateAgentAnswerStreaming, generateFilingSummary, planAgentRun, summarizeConversation } from '../services/aiApi';
 import { openCleanPrintView } from '../services/filingExport';
 import { BRAND } from '../config/brand';
 import { SAMPLE_PROMPTS, SAMPLE_PROMPT_CATEGORIES } from '../data/samplePrompts';
@@ -180,45 +180,6 @@ async function buildContextSnapshotAsync(app: ReturnType<typeof useApp>, pathnam
   };
 }
 
-// Synchronous version for non-async contexts
-function buildContextSnapshot(app: ReturnType<typeof useApp>, pathname: string): AgentContextSnapshot {
-  const completedRuns = app.agentRuns
-    .filter(run => run.prompt.trim().length > 0);
-
-  return {
-    pagePath: app.currentPageContext.path || pathname,
-    pageLabel: app.currentPageContext.label || 'Workspace',
-    filing: app.currentFilingContext
-      ? {
-          ...app.currentFilingContext,
-          sections: app.currentFilingSections,
-        }
-      : null,
-    search: app.activeSearchContext
-      ? {
-          surface: app.activeSearchContext.surface,
-          query: app.activeSearchContext.query,
-          mode: app.activeSearchContext.mode,
-          filters: app.activeSearchContext.filters,
-          resultCount: app.activeSearchContext.results.length,
-          topResults: app.activeSearchContext.results.slice(0, 8),
-        }
-      : null,
-    compare: app.activeCompareContext
-      ? {
-          tickers: app.activeCompareContext.tickers,
-          sicCode: app.activeCompareContext.sicCode,
-          viewMode: app.activeCompareContext.viewMode,
-          selectedSection: app.activeCompareContext.selectedSection,
-        }
-      : null,
-    conversation: completedRuns
-      .slice(0, 6)
-      .reverse()
-      .map(run => ({ prompt: run.prompt, answer: run.answer, startedAt: run.startedAt })),
-  };
-}
-
 function deriveCompanyHintFromTitle(title: string): string {
   const trimmed = title.trim();
   if (!trimmed) return '';
@@ -353,7 +314,7 @@ export function AIQnAPanel() {
     });
 
     try {
-      const context = await buildContextSnapshotAsync(app, location.pathname);
+      const context = await buildContextSnapshotAsync(app, location);
       setLoadingStage('Planning actions...');
       const plan = await planAgentRun(prompt, context);
       updateAgentRun(runId, { plan });
@@ -420,14 +381,7 @@ export function AIQnAPanel() {
               continue;
             }
 
-            navigate(`/filing/${locator.cik}_${locator.accessionNumber}_${locator.primaryDocument}`, {
-              state: {
-                companyName: locator.companyName,
-                filingDate: locator.filingDate,
-                formType: locator.formType,
-                auditor: locator.auditor || '',
-              },
-            });
+            navigate.push(`/filing/${locator.cik}_${locator.accessionNumber}_${locator.primaryDocument}`);
             appendAgentLog(runId, { actionId: action.id, type: action.type, title: action.title, detail: `Opened ${locator.companyName} ${locator.formType}.`, status: 'completed' });
             continue;
           }
@@ -459,7 +413,7 @@ export function AIQnAPanel() {
               filters,
               defaultForms,
             });
-            navigate(routeForSurface(targetPage));
+            navigate.push(routeForSurface(targetPage));
             appendAgentLog(runId, { actionId: action.id, type: action.type, title: action.title, detail: `Prepared filters on ${targetPage === 'search' ? 'Research' : targetPage}.`, status: 'completed' });
             continue;
           }
@@ -523,7 +477,7 @@ export function AIQnAPanel() {
               defaultForms,
               prefetchedResults: results,
             });
-            navigate(routeForSurface(targetPage));
+            navigate.push(routeForSurface(targetPage));
             appendAgentLog(runId, { actionId: action.id, type: action.type, title: action.title, detail: `Found ${results.length} result${results.length === 1 ? '' : 's'}.`, status: 'completed' });
             continue;
           }
@@ -595,7 +549,7 @@ export function AIQnAPanel() {
               selectedSection,
               message: `Prepared compare cohort: ${runtime.compareTickers.join(', ')}`,
             });
-            navigate('/compare');
+            navigate.push('/compare');
             runtime.findings.push(`Prepared compare cohort with ${runtime.compareTickers.join(', ')}.`);
             runtime.citations.push({
               id: `compare-${Math.random().toString(36).slice(2, 8)}`,
@@ -729,7 +683,7 @@ export function AIQnAPanel() {
         // Use streaming for answer generation — tokens appear incrementally
         setLoadingStage('Generating analysis...');
         setTab('answer');
-        const streamContext = await buildContextSnapshotAsync(app, location.pathname);
+        const streamContext = await buildContextSnapshotAsync(app, location);
         finalAnswer = await generateAgentAnswerStreaming(
           evidencePacket,
           streamContext,
@@ -787,12 +741,12 @@ export function AIQnAPanel() {
       if (citation.sectionLabel) {
         setPendingFilingSectionLabel(citation.sectionLabel);
       }
-      navigate(citation.filingRoute);
+      navigate.push(citation.filingRoute);
       return;
     }
 
     if (citation.route?.startsWith('/')) {
-      navigate(citation.route);
+      navigate.push(citation.route);
       return;
     }
 

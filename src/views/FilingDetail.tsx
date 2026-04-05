@@ -454,7 +454,7 @@ export default function FilingDetail() {
     const seen = new Set<string>();
 
     // Gather all internal anchor links with valid text
-    const allLinks = Array.from(doc.querySelectorAll('a[href^="#"]'));
+    const allLinks = Array.from(doc.querySelectorAll<HTMLAnchorElement>('a[href^="#"]'));
     const validLinks: { el: HTMLAnchorElement; anchor: string; text: string; rect: DOMRect }[] = [];
     for (const link of allLinks) {
       const href = link.getAttribute('href') || '';

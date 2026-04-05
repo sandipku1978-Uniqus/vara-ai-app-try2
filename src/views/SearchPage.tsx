@@ -302,7 +302,7 @@ export default function SearchPage() {
 
   const {
     addSavedAlert,
-    savedAlerts,
+
     pendingSearchIntent,
     setPendingSearchIntent,
     setActiveSearchContext,
@@ -342,7 +342,7 @@ export default function SearchPage() {
 
   const previewFrameRef = useRef<HTMLIFrameElement>(null);
   const bootstrappedInitialSearch = useRef(false);
-  const handledAlertIdsRef = useRef<Set<string>>(new Set());
+
   const activeSessionIdRef = useRef<string | null>(null);
   const pendingRefinementKeysRef = useRef<Map<string, string>>(new Map());
   const sessionsRef = useRef<ResearchSearchSession[]>(sessions);
@@ -866,18 +866,6 @@ export default function SearchPage() {
     }, 'semantic', { replaceUrl: true });
   }, [activeSession, initialQuery]);
 
-  useEffect(() => {
-    const alertId = (location.state as { alertId?: string } | null)?.alertId;
-    if (!alertId || handledAlertIdsRef.current.has(alertId)) return;
-    const alert = savedAlerts.find(item => item.id === alertId);
-    if (!alert) return;
-
-    handledAlertIdsRef.current.add(alertId);
-    setQuery(alert.query);
-    setSearchMode(alert.mode);
-    setFilters(cloneSearchFilters(alert.filters));
-    void handleSearch(alert.query, alert.filters, alert.mode);
-  }, [handleSearch, location.state, savedAlerts]);
 
   useEffect(() => {
     if (!pendingSearchIntent || pendingSearchIntent.surface !== 'research') return;
@@ -998,17 +986,6 @@ export default function SearchPage() {
     });
   }, [activeTabId, setActiveSearchContext, setRouteForSession]);
 
-  const buildFilingRouteState = useCallback((row: FilingResearchResult) => ({
-    companyName: row.entityName,
-    filingDate: row.fileDate,
-    formType: row.formType,
-    fileNumber: row.fileNumber,
-    auditor: row.auditor,
-    highlightQuery: activeResolvedSearch.query,
-    highlightMode: activeResolvedSearch.mode,
-    highlightSectionKeywords: activeResolvedSearch.filters.sectionKeywords,
-    originatingSearchSessionId: activeSession?.id || null,
-  }), [activeResolvedSearch, activeSession?.id]);
 
   const openFiling = useCallback((row: FilingResearchResult) => {
     navigate.push(`/filing/${row.cik}_${row.accessionNumber}_${row.primaryDocument}`);

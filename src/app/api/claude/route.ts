@@ -17,6 +17,13 @@ export async function POST(req: Request) {
       return new Response(JSON.stringify({ error: 'Missing prompt or messages' }), { status: 400 });
     }
 
+    // Input validation
+    const clampedMaxTokens = Math.min(Math.max(Number(maxTokens) || 4096, 1), 16384);
+    const clampedTemp = Math.min(Math.max(Number(temperature) || 0.2, 0), 1);
+    if (messages.length > 100) {
+      return new Response(JSON.stringify({ error: 'Too many messages (max 100)' }), { status: 400 });
+    }
+
     if (!process.env.ANTHROPIC_API_KEY) {
       return new Response(JSON.stringify({
         text: 'API Key not configured. This is a fallback response from the local development server simulating the Copilot.'
@@ -51,13 +58,12 @@ export async function POST(req: Request) {
     }
 
     const isComplex = frameworks.length > 0;
-    const modelTemperature = isComplex ? 1 : temperature;
 
     const msg = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: isComplex ? 8192 : maxTokens,
+      max_tokens: isComplex ? 8192 : clampedMaxTokens,
       ...(isComplex ? { thinking: { type: 'enabled', budget_tokens: 4000 } } : {}),
-      temperature: modelTemperature,
+      temperature: isComplex ? 1 : clampedTemp,
       // Prompt caching: system prompt cached at Anthropic for 90% input token discount
       system: [{
         type: 'text',
@@ -81,8 +87,8 @@ export async function POST(req: Request) {
       headers: { 'Content-Type': 'application/json' }
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Claude API Route Error:', error);
-    return new Response(JSON.stringify({ error: error.message || 'Internal Server Error' }), { status: 500 });
+    return new Response(JSON.stringify({ error: 'An error occurred processing your request' }), { status: 500 });
   }
 }

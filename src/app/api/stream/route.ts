@@ -16,6 +16,13 @@ export async function POST(req: Request) {
       return new Response(JSON.stringify({ error: 'Missing prompt or messages' }), { status: 400 });
     }
 
+    // Input validation
+    const clampedMaxTokens = Math.min(Math.max(Number(maxTokens) || 4096, 1), 16384);
+    const clampedTemp = Math.min(Math.max(Number(temperature) || 0.2, 0), 1);
+    if (messages.length > 100) {
+      return new Response(JSON.stringify({ error: 'Too many messages (max 100)' }), { status: 400 });
+    }
+
     if (!process.env.ANTHROPIC_API_KEY) {
       return new Response(
         JSON.stringify({ text: 'API Key not configured. This is a fallback response from the local development server simulating the Copilot.' }),
@@ -90,8 +97,8 @@ export async function POST(req: Request) {
     // 4. SSE streaming for standard queries
     const stream = anthropic.messages.stream({
       model: 'claude-sonnet-4-6',
-      max_tokens: maxTokens,
-      temperature,
+      max_tokens: clampedMaxTokens,
+      temperature: clampedTemp,
       system: [{
         type: 'text',
         text: SEC_RESEARCH_SYSTEM_PROMPT,
@@ -130,6 +137,7 @@ export async function POST(req: Request) {
           controller.enqueue(
             encoder.encode(`data: ${JSON.stringify({ error: 'Stream error' })}\n\n`)
           );
+          controller.enqueue(encoder.encode('data: [DONE]\n\n'));
           controller.close();
         }
       },
@@ -142,8 +150,8 @@ export async function POST(req: Request) {
         'Connection': 'keep-alive',
       },
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Claude Stream API Error:', error);
-    return new Response(JSON.stringify({ error: error.message || 'Internal Server Error' }), { status: 500 });
+    return new Response(JSON.stringify({ error: 'An error occurred processing your request' }), { status: 500 });
   }
 }

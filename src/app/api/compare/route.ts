@@ -15,6 +15,9 @@ export async function POST(req: Request) {
     if (!tickers || !Array.isArray(tickers) || tickers.length < 2) {
       return new Response(JSON.stringify({ error: 'At least 2 tickers are required.' }), { status: 400 });
     }
+    if (tickers.length > 10) {
+      return new Response(JSON.stringify({ error: 'Maximum 10 tickers allowed.' }), { status: 400 });
+    }
 
     if (!process.env.ANTHROPIC_API_KEY) {
       return new Response(JSON.stringify({ 
@@ -79,8 +82,8 @@ export async function POST(req: Request) {
       headers: { 'Content-Type': 'application/json' }
     });
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Claude API Route Error (Compare):', error);
-    return new Response(JSON.stringify({ error: error.message || 'Internal Server Error' }), { status: 500 });
+    return new Response(JSON.stringify({ error: 'An error occurred processing your request' }), { status: 500 });
   }
 }

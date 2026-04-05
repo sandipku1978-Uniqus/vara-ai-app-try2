@@ -2,7 +2,6 @@
 // SEC EDGAR requires a descriptive User-Agent string
 
 const USER_AGENT = process.env.NEXT_PUBLIC_EDGAR_USER_AGENT || 'Uniqus Research Center contact@uniqus.com';
-const USE_DIRECT_VERCEL_API = process.env.NODE_ENV === 'production';
 const edgarSearchCache = new Map<string, Promise<EdgarSearchHit[]>>();
 
 function isEnabledEnvFlag(value: unknown): boolean {
