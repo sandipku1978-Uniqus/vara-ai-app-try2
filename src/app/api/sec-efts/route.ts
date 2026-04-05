@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-const USER_AGENT = process.env.NEXT_PUBLIC_EDGAR_USER_AGENT || 'Intellicomply info@intellicomply.com';
+const USER_AGENT = process.env.NEXT_PUBLIC_EDGAR_USER_AGENT || 'Uniqus Research Center contact@uniqus.com';
 
 export async function GET(request: Request) {
   const url = new URL(request.url);

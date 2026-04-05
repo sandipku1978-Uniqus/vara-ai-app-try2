@@ -420,10 +420,28 @@ export default function FilingDetail() {
   // Skip non-section links (page numbers, "Table of Contents", "Back to top", etc.)
   const SKIP_RE = /^(table of contents|back to top|page|toc|\d+|f-\d+|[\divx]+)$/i;
 
+  /** Walk up from a link to its containing TD, then grab the next sibling TD's text as a description.
+   *  Apple 10-K TOC uses: <td>Item 1.</td><td>Business</td><td>1</td> */
+  function getSiblingTdText(link: HTMLElement): string {
+    let el: HTMLElement | null = link;
+    while (el && el.tagName !== 'TD') el = el.parentElement;
+    if (!el) return '';
+    const nextTd = el.nextElementSibling as HTMLElement | null;
+    if (!nextTd || nextTd.tagName !== 'TD') return '';
+    const text = (nextTd.textContent || '').replace(/\s+/g, ' ').trim();
+    // Skip if it's just a page number
+    if (/^\d+$/.test(text)) return '';
+    return text;
+  }
+
   /** Clean up link text into a concise TOC label (max ~60 chars) */
-  function cleanTocLabel(text: string, itemPrefix?: string): string {
+  function cleanTocLabel(text: string, itemPrefix?: string, siblingDesc?: string): string {
     let label = text.replace(/\s+/g, ' ').trim();
     label = label.replace(/^(item|part)\s/i, m => m.charAt(0).toUpperCase() + m.slice(1).toLowerCase());
+    // Append sibling TD description if the label is just "Item N." without a title
+    if (siblingDesc && /^(Item\s+\d+[A-Za-z]?\.?|Part\s+[IV]+\.?)$/i.test(label)) {
+      label = `${label} ${siblingDesc}`;
+    }
     if (itemPrefix && !SECTION_HEADER_RE.test(label)) {
       label = `Item ${itemPrefix.toUpperCase()}. ${label}`;
     }
@@ -477,7 +495,8 @@ export default function FilingDetail() {
             itemPrefix = anchorMatch[1] + (anchorMatch[2] || '');
           }
 
-          const label = cleanTocLabel(link.text, itemPrefix);
+          const siblingDesc = getSiblingTdText(link.el);
+          const label = cleanTocLabel(link.text, itemPrefix, siblingDesc);
           if (seen.has(label)) continue;
           seen.add(label);
           entries.push({ label, elementId: null, anchorName: link.anchor });
@@ -500,7 +519,8 @@ export default function FilingDetail() {
         }
         if (!isSection) continue;
 
-        const label = cleanTocLabel(link.text, itemPrefix);
+        const siblingDesc = getSiblingTdText(link.el);
+        const label = cleanTocLabel(link.text, itemPrefix, siblingDesc);
         if (seen.has(label)) continue;
         seen.add(label);
         entries.push({ label, elementId: null, anchorName: link.anchor });

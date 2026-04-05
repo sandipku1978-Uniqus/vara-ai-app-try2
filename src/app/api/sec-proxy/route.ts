@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-const USER_AGENT = process.env.NEXT_PUBLIC_EDGAR_USER_AGENT || 'Intellicomply info@intellicomply.com';
+const USER_AGENT = process.env.NEXT_PUBLIC_EDGAR_USER_AGENT || 'Uniqus Research Center contact@uniqus.com';
 
 const UPSTREAM_URLS: Record<string, string> = {
   proxy: 'https://www.sec.gov',

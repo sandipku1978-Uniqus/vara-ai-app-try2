@@ -5,7 +5,7 @@ import '@testing-library/jest-dom';
 Object.defineProperty(import.meta, 'env', {
   value: {
     DEV: true,
-    VITE_EDGAR_USER_AGENT: 'Test App test@test.com',
+    NEXT_PUBLIC_EDGAR_USER_AGENT: 'Test App test@test.com',
     VITE_CLERK_PUBLISHABLE_KEY: '',
   },
   writable: true,

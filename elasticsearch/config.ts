@@ -32,9 +32,9 @@ export function delay(ms: number): Promise<void> {
 
 /** SEC requires a descriptive User-Agent. */
 export const SEC_USER_AGENT =
-  process.env.VITE_EDGAR_USER_AGENT ||
+  process.env.NEXT_PUBLIC_EDGAR_USER_AGENT ||
   process.env.EDGAR_USER_AGENT ||
-  'Vara AI Research App contact@vara.ai';
+  'Uniqus Research Center contact@uniqus.com';
 
 /** Base URL for SEC EDGAR archives. */
 export const EDGAR_BASE = 'https://www.sec.gov';
