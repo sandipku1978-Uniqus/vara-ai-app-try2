@@ -317,7 +317,7 @@ const FINANCIAL_CONCEPTS = {
   'CurrentLiabilities': ['LiabilitiesCurrent'],
 
   // Cash Flow
-  'OperatingCashFlow': ['NetCashProvidedByOperatingActivities'],
+  'OperatingCashFlow': ['NetCashProvidedByUsedInOperatingActivities', 'NetCashProvidedByOperatingActivities', 'NetCashProvidedByUsedInOperatingActivitiesContinuingOperations'],
   'CapitalExpenditures': ['PaymentsToAcquirePropertyPlantAndEquipment'],
   'DividendsPaid': ['PaymentsOfDividends', 'PaymentsOfDividendsCommonStock'],
   'ShareRepurchases': ['PaymentsForRepurchaseOfCommonStock'],
@@ -514,6 +514,25 @@ export function extractComparableFinancials(facts: CompanyFacts, year?: number):
       period: result.Revenues.period,
       unit: result.Revenues.unit,
     };
+  }
+
+  // Derive SG&A from G&A + S&M when combined concept is unavailable (e.g. MSFT)
+  if (!result.SellingGeneralAdmin) {
+    const ga = lookupAnnualMetric(facts, ['GeneralAndAdministrativeExpense'], year);
+    const sm = lookupAnnualMetric(facts, ['SellingAndMarketingExpense'], year);
+    if (ga?.value != null && sm?.value != null) {
+      result.SellingGeneralAdmin = {
+        label: 'SG&A (derived: G&A + S&M)',
+        value: ga.value + sm.value,
+        year: ga.year,
+        period: ga.period,
+        unit: ga.unit,
+      };
+    } else if (ga?.value != null) {
+      result.SellingGeneralAdmin = ga;
+    } else if (sm?.value != null) {
+      result.SellingGeneralAdmin = sm;
+    }
   }
 
   if (!result.IntangibleAssets && result.Goodwill?.value != null) {
