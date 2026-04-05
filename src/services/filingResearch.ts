@@ -525,7 +525,7 @@ function matchesDateRange(result: FilingResearchResult, dateFrom: string, dateTo
   return true;
 }
 
-function matchesFormScope(result: FilingResearchResult, formScope: string[]): boolean {
+function matchesFormScope(result: FilingResearchResult, formScope: string[], excludeExhibits: boolean): boolean {
   if (formScope.length === 0) {
     return true;
   }
@@ -534,15 +534,14 @@ function matchesFormScope(result: FilingResearchResult, formScope: string[]): bo
   const normalizedResultBaseForm = normalizeBaseForm(result.formType);
   const docType = normalizeFormValue(result.documentType || '');
 
-  // If the user searches for a parent form type (e.g. 10-K), exclude exhibit
-  // sub-documents (EX-4.1, EX-31.2, etc.) — only show the main filing document.
-  const isExhibit = docType.startsWith('EX-') || docType.startsWith('EX ');
-  const scopeHasParentForms = formScope.some(form => {
-    const nf = normalizeFormValue(form);
-    return !nf.startsWith('EX-') && !nf.startsWith('EX ');
-  });
-  if (isExhibit && scopeHasParentForms) {
-    return false;
+  // When the user explicitly searches for a parent form type (e.g. 10-K, 10-Q, S-1),
+  // exclude exhibit sub-documents (EX-4.1, EX-31.2, etc.) — only show the main filing.
+  // This does NOT apply when using defaultForms (e.g. Exhibit Search page).
+  if (excludeExhibits) {
+    const isExhibit = docType.startsWith('EX-') || docType.startsWith('EX ');
+    if (isExhibit) {
+      return false;
+    }
   }
 
   return formScope.some(form => {
@@ -621,7 +620,7 @@ function matchesFilerKeys(selected: string[], result: FilingResearchResult): boo
   });
 }
 
-function matchesBaseFilters(result: FilingResearchResult, filters: SearchFilters, formScope: string[]): boolean {
+function matchesBaseFilters(result: FilingResearchResult, filters: SearchFilters, formScope: string[], excludeExhibits: boolean): boolean {
   if (!matchesEntityFilter(result, filters.entityName)) {
     return false;
   }
@@ -630,7 +629,7 @@ function matchesBaseFilters(result: FilingResearchResult, filters: SearchFilters
     return false;
   }
 
-  if (!matchesFormScope(result, formScope)) {
+  if (!matchesFormScope(result, formScope, excludeExhibits)) {
     return false;
   }
 
@@ -939,6 +938,10 @@ export async function executeFilingResearchSearch({
   const serverQuery = buildServerQuery(query || filters.keyword, filters, mode);
   const formTypes = normalizeFormTypes(filters, defaultForms);
   const formScope = parseFormScope(formTypes);
+  // Only exclude exhibit sub-documents when the user explicitly selected form types
+  // (e.g. searchAssist detected "10-K" from the query). Don't exclude when using
+  // defaultForms (e.g. Exhibit Search page needs to show exhibits).
+  const excludeExhibits = filters.formTypes.length > 0;
   const preferRelevance = Boolean((query || filters.keyword).trim() || filters.sectionKeywords.trim());
   const semanticAuditorSearch = mode === 'semantic' && Boolean(filters.accountant.trim());
   const needsCompanyMetadata = requiresCompanyMetadata(filters);
@@ -1027,7 +1030,7 @@ export async function executeFilingResearchSearch({
     let results = uniqueById(hits.map(mapSearchHit));
 
     if (needsCompanyMetadata) results = await hydrateCompanyMetadataBatch(results);
-    results = results.filter(result => matchesBaseFilters(result, filters, formScope));
+    results = results.filter(result => matchesBaseFilters(result, filters, formScope, excludeExhibits));
     results = sortResearchResults(results, preferRelevance);
 
     const fastResults = applyMetadataMatchFallback(results.slice(0, displayLimit));
@@ -1087,7 +1090,7 @@ export async function executeFilingResearchSearch({
     // Map, hydrate metadata, and filter this wave of candidates
     let waveCandidates = uniqueById(newHits.map(mapSearchHit));
     if (needsCompanyMetadata) waveCandidates = await hydrateCompanyMetadataBatch(waveCandidates);
-    waveCandidates = waveCandidates.filter(result => matchesBaseFilters(result, filters, formScope));
+    waveCandidates = waveCandidates.filter(result => matchesBaseFilters(result, filters, formScope, excludeExhibits));
 
     // Validate each candidate in this wave (fetch text, check auditor/boolean/section)
     for (let index = 0; index < waveCandidates.length && filteredResults.length < displayLimit && Date.now() - waveStartTime < maxWaveTimeMs; index += batchSize) {

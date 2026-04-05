@@ -493,6 +493,17 @@ export default function FilingDetail() {
       }
       // Parse TOC from the loaded document
       if (frame.contentDocument) {
+        // Ensure the SEC document body scrolls properly
+        const iframeBody = frame.contentDocument.body;
+        if (iframeBody) {
+          iframeBody.style.overflow = 'auto';
+          iframeBody.style.maxWidth = '100%';
+          iframeBody.style.overflowX = 'auto';
+        }
+        const iframeHtml = frame.contentDocument.documentElement;
+        if (iframeHtml) {
+          iframeHtml.style.overflow = 'auto';
+        }
         setTocLoading(true);
         const entries = parseToc(frame.contentDocument);
         setTocEntries(entries);
@@ -894,6 +905,7 @@ export default function FilingDetail() {
               src={buildSecProxyUrl(`Archives/edgar/data/${cik}/${formattedAccession}/${primaryDoc}`)}
               title="SEC Document View"
               className="sec-iframe"
+              scrolling="yes"
               onError={() => setIframeError(true)}
               onLoad={handleIframeLoad}
             />
