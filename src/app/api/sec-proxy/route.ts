@@ -13,8 +13,8 @@ export async function GET(request: Request) {
   const upstream = url.searchParams.get('upstream') || 'proxy';
   const path = url.searchParams.get('path');
 
-  if (!path) {
-    return new NextResponse('Missing path parameter', { status: 400 });
+  if (!path || path.includes('..')) {
+    return new NextResponse('Invalid path parameter', { status: 400 });
   }
 
   const baseUrl = UPSTREAM_URLS[upstream];
@@ -53,14 +53,12 @@ export async function GET(request: Request) {
     const contentType = upstreamRes.headers.get('content-type');
     if (contentType) headers.set('Content-Type', contentType);
     
-    // Add cors headers
-    headers.set('Access-Control-Allow-Origin', '*');
 
     return new NextResponse(buffer, {
       status: 200,
       headers
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('SEC Proxy API Error:', error);
     return new NextResponse('Proxy Fetch Error', { status: 500 });
   }

@@ -6,8 +6,8 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const path = url.searchParams.get('path');
 
-  if (!path) {
-    return new NextResponse('Missing path parameter', { status: 400 });
+  if (!path || path.includes('..')) {
+    return new NextResponse('Invalid path parameter', { status: 400 });
   }
 
   const baseUrl = 'https://efts.sec.gov';
@@ -35,13 +35,12 @@ export async function GET(request: Request) {
     const headers = new Headers();
     const contentType = upstreamRes.headers.get('content-type');
     if (contentType) headers.set('Content-Type', contentType);
-    headers.set('Access-Control-Allow-Origin', '*');
 
     return new NextResponse(buffer, {
       status: 200,
       headers
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('SEC EFTS Proxy Error:', error);
     return new NextResponse('Proxy Fetch Error', { status: 500 });
   }
