@@ -290,16 +290,16 @@ const FINANCIAL_CONCEPTS = {
   'Revenues': ['Revenues', 'RevenueFromContractWithCustomerExcludingAssessedTax', 'SalesRevenueNet', 'RevenueFromContractWithCustomerIncludingAssessedTax'],
   'CostOfRevenue': ['CostOfRevenue', 'CostOfGoodsAndServicesSold', 'CostOfGoodsSold'],
   'GrossProfit': ['GrossProfit', 'GrossProfitLoss'],
-  'OperatingIncome': ['OperatingIncomeLoss'],
+  'OperatingIncome': ['OperatingIncomeLoss', 'IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest', 'IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments'],
   'NetIncome': ['NetIncomeLoss'],
   'EarningsPerShare': ['EarningsPerShareBasic'],
   'EarningsPerShareDiluted': ['EarningsPerShareDiluted'],
-  'ResearchAndDevelopment': ['ResearchAndDevelopmentExpense'],
+  'ResearchAndDevelopment': ['ResearchAndDevelopmentExpense', 'ResearchAndDevelopmentExpenseExcludingAcquiredInProcessCost', 'TechnologyAndContentExpense'],
   'SellingGeneralAdmin': ['SellingGeneralAndAdministrativeExpense'],
 
   // Balance Sheet
   'TotalAssets': ['Assets'],
-  'TotalLiabilities': ['Liabilities'],
+  'TotalLiabilities': ['Liabilities', 'LiabilitiesNoncurrentAndFinanceLeaseObligationsNoncurrent'],
   'StockholdersEquity': ['StockholdersEquity', 'StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest'],
   'CashAndEquivalents': ['CashAndCashEquivalentsAtCarryingValue', 'CashCashEquivalentsAndShortTermInvestments'],
   'TotalDebt': ['LongTermDebt', 'LongTermDebtNoncurrent', 'LongTermDebtAndCapitalLeaseObligations', 'LongTermDebtAndCapitalLeaseObligationsNoncurrent', 'LongTermDebtCurrent', 'ShortTermBorrowings', 'ShortTermDebt', 'CurrentPortionOfLongTermDebt'],
@@ -318,7 +318,7 @@ const FINANCIAL_CONCEPTS = {
 
   // Cash Flow
   'OperatingCashFlow': ['NetCashProvidedByUsedInOperatingActivities', 'NetCashProvidedByOperatingActivities', 'NetCashProvidedByUsedInOperatingActivitiesContinuingOperations'],
-  'CapitalExpenditures': ['PaymentsToAcquirePropertyPlantAndEquipment'],
+  'CapitalExpenditures': ['PaymentsToAcquirePropertyPlantAndEquipment', 'PaymentsToAcquireProductiveAssets', 'PaymentsToAcquireOilAndGasPropertyAndEquipment', 'CapitalExpendituresIncurredButNotYetPaid'],
   'DividendsPaid': ['PaymentsOfDividends', 'PaymentsOfDividendsCommonStock'],
   'ShareRepurchases': ['PaymentsForRepurchaseOfCommonStock'],
 
@@ -416,9 +416,9 @@ export function extractFinancials(facts: CompanyFacts, year?: number): Record<st
       const units = concept.units['USD'] || concept.units['USD/shares'] || concept.units['shares'];
       if (!units || units.length === 0) continue;
 
-      // Filter to annual 10-K filings
+      // Filter to annual filings (10-K, 20-F, 40-F)
       const annualFacts = units
-        .filter(f => f.form === '10-K' && (f.fp === 'FY' || !f.fp))
+        .filter(isLikelyAnnualFact)
         .sort((a, b) => b.fy - a.fy);
 
       // Pick the specific year if requested, otherwise take the most recent
@@ -519,7 +519,7 @@ export function extractComparableFinancials(facts: CompanyFacts, year?: number):
   // Derive SG&A from G&A + S&M when combined concept is unavailable (e.g. MSFT)
   if (!result.SellingGeneralAdmin) {
     const ga = lookupAnnualMetric(facts, ['GeneralAndAdministrativeExpense'], year);
-    const sm = lookupAnnualMetric(facts, ['SellingAndMarketingExpense'], year);
+    const sm = lookupAnnualMetric(facts, ['SellingAndMarketingExpense', 'MarketingExpense', 'MarketingAndAdvertisingExpense'], year);
     if (ga?.value != null && sm?.value != null) {
       result.SellingGeneralAdmin = {
         label: 'SG&A (derived: G&A + S&M)',
@@ -533,6 +533,17 @@ export function extractComparableFinancials(facts: CompanyFacts, year?: number):
     } else if (sm?.value != null) {
       result.SellingGeneralAdmin = sm;
     }
+  }
+
+  // Derive Total Liabilities from Assets - Equity when not directly available
+  if (!result.TotalLiabilities && result.TotalAssets?.value != null && result.StockholdersEquity?.value != null) {
+    result.TotalLiabilities = {
+      label: 'Total Liabilities (derived: Assets - Equity)',
+      value: result.TotalAssets.value - result.StockholdersEquity.value,
+      year: result.TotalAssets.year,
+      period: result.TotalAssets.period,
+      unit: result.TotalAssets.unit,
+    };
   }
 
   if (!result.IntangibleAssets && result.Goodwill?.value != null) {
