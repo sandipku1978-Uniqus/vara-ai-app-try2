@@ -433,7 +433,7 @@ export default function Benchmarking() {
             metric.label,
             ...columns.map(col => {
               const m = companiesFacts[col]?.[metric.key];
-              return m ? formatFinancialValue(m.value, m.unit) : '—';
+              return m ? formatFinancialValue(m.value, m.unit, m.currency) : '—';
             })
           ]);
         }
@@ -525,7 +525,7 @@ export default function Benchmarking() {
         const parts = columns.map(col => {
           const metrics = companiesFacts[col];
           if (!metrics) return `${colTicker(col)} FY${colYear(col)}: (no data)`;
-          const lines = Object.entries(metrics).map(([, v]) => `${v.label}: ${formatFinancialValue(v.value, v.unit)}`).join(', ');
+          const lines = Object.entries(metrics).map(([, v]) => `${v.label}: ${formatFinancialValue(v.value, v.unit, v.currency)}`).join(', ');
           return `${colTicker(col)} FY${colYear(col)}: ${lines}`;
         }).join('\n\n');
         prompt = `Act as a senior accounting research analyst. Compare the following financial data across companies and fiscal years. Highlight key trends, year-over-year changes, and cross-company differences in margins, leverage, and cash flow quality:\n\n${parts}\n\nProvide a concise 3-paragraph analysis.`;
@@ -661,7 +661,7 @@ export default function Benchmarking() {
         return [
           `${ticker}${latestYear ? ` FY${latestYear}` : ''}`,
           companyMeta?.name || ticker,
-          facts?.Revenues ? `Revenue ${formatFinancialValue(facts.Revenues.value, facts.Revenues.unit)}` : 'Revenue unavailable',
+          facts?.Revenues ? `Revenue ${formatFinancialValue(facts.Revenues.value, facts.Revenues.unit, facts.Revenues.currency)}` : 'Revenue unavailable',
           `Net Margin ${col ? getNetMargin(col).display : '-'}`,
           `ROE ${col ? getROE(col).display : '-'}`,
           `Debt/Equity ${col ? getDebtToEquity(col).display : '-'}`,
@@ -1024,7 +1024,7 @@ Keep it crisp and practical.`;
                       <div className="kpi-card-metrics">
                         <div className="kpi-metric">
                           <span className="kpi-card-label">Revenue</span>
-                          <span className="kpi-card-value">{rev ? formatFinancialValue(rev.value, rev.unit) : '—'}</span>
+                          <span className="kpi-card-value">{rev ? formatFinancialValue(rev.value, rev.unit, rev.currency) : '—'}</span>
                         </div>
                         <div className="kpi-metric">
                           <span className="kpi-card-label">Net Margin</span>
@@ -1299,7 +1299,7 @@ Keep it crisp and practical.`;
                                   color: m?.value != null ? (m.value < 0 ? '#F87171' : 'var(--text-primary)') : 'var(--text-muted)',
                                   ...colBorderStyle(col, idx),
                                 }}>
-                                  {m ? formatFinancialValue(m.value, m.unit) : '—'}
+                                  {m ? formatFinancialValue(m.value, m.unit, m.currency) : '—'}
                                 </td>
                               );
                             })}
@@ -1453,12 +1453,12 @@ Keep it crisp and practical.`;
               </thead>
               <tbody style={{ fontSize: '0.85rem' }}>
                 {[
-                  { metric: 'Revenue Recognition (ASC 606)', getValue: (col: string) => companiesFacts[col]?.Revenues ? formatFinancialValue(companiesFacts[col].Revenues.value, 'USD') : '—' },
-                  { metric: 'Operating Lease ROU (ASC 842)', getValue: (col: string) => companiesFacts[col]?.OperatingLeaseROU ? formatFinancialValue(companiesFacts[col].OperatingLeaseROU.value, 'USD') : 'Not Reported' },
-                  { metric: 'Stock-Based Compensation', getValue: (col: string) => companiesFacts[col]?.StockCompensation ? formatFinancialValue(companiesFacts[col].StockCompensation.value, 'USD') : '—' },
-                  { metric: 'Deferred Revenue', getValue: (col: string) => companiesFacts[col]?.DeferredRevenue ? formatFinancialValue(companiesFacts[col].DeferredRevenue.value, 'USD') : '—' },
-                  { metric: 'Income Tax (ASC 740)', getValue: (col: string) => companiesFacts[col]?.IncomeTaxExpense ? formatFinancialValue(companiesFacts[col].IncomeTaxExpense.value, 'USD') : '—' },
-                  { metric: 'Goodwill (ASC 350)', getValue: (col: string) => companiesFacts[col]?.Goodwill ? formatFinancialValue(companiesFacts[col].Goodwill.value, 'USD') : 'N/A' },
+                  { metric: 'Revenue Recognition (ASC 606)', getValue: (col: string) => companiesFacts[col]?.Revenues ? formatFinancialValue(companiesFacts[col].Revenues.value, companiesFacts[col].Revenues.unit, companiesFacts[col].Revenues.currency) : '—' },
+                  { metric: 'Operating Lease ROU (ASC 842)', getValue: (col: string) => companiesFacts[col]?.OperatingLeaseROU ? formatFinancialValue(companiesFacts[col].OperatingLeaseROU.value, companiesFacts[col].OperatingLeaseROU.unit, companiesFacts[col].OperatingLeaseROU.currency) : 'Not Reported' },
+                  { metric: 'Stock-Based Compensation', getValue: (col: string) => companiesFacts[col]?.StockCompensation ? formatFinancialValue(companiesFacts[col].StockCompensation.value, companiesFacts[col].StockCompensation.unit, companiesFacts[col].StockCompensation.currency) : '—' },
+                  { metric: 'Deferred Revenue', getValue: (col: string) => companiesFacts[col]?.DeferredRevenue ? formatFinancialValue(companiesFacts[col].DeferredRevenue.value, companiesFacts[col].DeferredRevenue.unit, companiesFacts[col].DeferredRevenue.currency) : '—' },
+                  { metric: 'Income Tax (ASC 740)', getValue: (col: string) => companiesFacts[col]?.IncomeTaxExpense ? formatFinancialValue(companiesFacts[col].IncomeTaxExpense.value, companiesFacts[col].IncomeTaxExpense.unit, companiesFacts[col].IncomeTaxExpense.currency) : '—' },
+                  { metric: 'Goodwill (ASC 350)', getValue: (col: string) => companiesFacts[col]?.Goodwill ? formatFinancialValue(companiesFacts[col].Goodwill.value, companiesFacts[col].Goodwill.unit, companiesFacts[col].Goodwill.currency) : 'N/A' },
                   { metric: 'Gross Margin', getValue: (col: string) => getGrossMargin(col).display },
                   { metric: 'Net Margin', getValue: (col: string) => getNetMargin(col).display },
                   { metric: 'Debt/Equity Ratio', getValue: (col: string) => getDebtToEquity(col).display },

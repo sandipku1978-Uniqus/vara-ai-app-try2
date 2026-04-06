@@ -339,6 +339,54 @@ export interface FinancialMetric {
   year: number;
   period: string;
   unit: string;
+  /** ISO 4217 currency code (e.g. 'USD', 'EUR', 'GBP'). Defaults to 'USD'. */
+  currency?: string;
+}
+
+/** Currency symbols for display */
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  USD: '$', EUR: '€', GBP: '£', JPY: '¥', CNY: '¥',
+  CAD: 'CA$', AUD: 'A$', CHF: 'CHF ', SEK: 'kr', NOK: 'kr',
+  DKK: 'kr', INR: '₹', KRW: '₩', BRL: 'R$', ZAR: 'R',
+  SGD: 'S$', HKD: 'HK$', TWD: 'NT$', MXN: 'MX$', ILS: '₪',
+};
+
+/**
+ * Detect the primary reporting currency from company facts.
+ * Returns 'USD' if the company reports in USD, otherwise the
+ * dominant non-USD monetary unit (e.g. 'DKK', 'EUR', 'GBP').
+ */
+export function getPrimaryCurrency(facts: CompanyFacts): string {
+  // If us-gaap namespace exists with USD data, it's a USD filer
+  const usGaap = facts.facts['us-gaap'];
+  if (usGaap) {
+    const rev = usGaap['Revenues'] || usGaap['RevenueFromContractWithCustomerExcludingAssessedTax'];
+    if (rev?.units['USD']?.length) return 'USD';
+  }
+
+  // For IFRS filers, find the most common monetary unit
+  const ifrs = facts.facts['ifrs-full'];
+  if (ifrs) {
+    const unitCounts: Record<string, number> = {};
+    // Sample a few key concepts
+    const probes = ['Revenue', 'Assets', 'ProfitLoss', 'CostOfSales', 'Equity'];
+    for (const name of probes) {
+      const concept = ifrs[name] as { units: Record<string, XbrlFact[]> } | undefined;
+      if (!concept) continue;
+      for (const [unit, unitFacts] of Object.entries(concept.units)) {
+        // Skip non-monetary units
+        if (['shares', 'pure', 'employee', 'Employee', 'Y', 'Years',
+             'numberOfEmployees', 'segment', 'security', 'state',
+             'branch', 'hedge_fund', 'Options'].includes(unit)) continue;
+        if (unit.includes('/shares')) continue;
+        unitCounts[unit] = (unitCounts[unit] || 0) + (unitFacts as XbrlFact[]).length;
+      }
+    }
+    const sorted = Object.entries(unitCounts).sort((a, b) => b[1] - a[1]);
+    if (sorted.length > 0) return sorted[0][0];
+  }
+
+  return 'USD';
 }
 
 function normalizeAnnualForm(form: string): string {
@@ -403,8 +451,14 @@ function deduplicateAnnualFacts(facts: XbrlFact[]): XbrlFact[] {
   );
 }
 
-function getPreferredUnits(concept: { units: Record<string, XbrlFact[]> }): { unitKey: string; facts: XbrlFact[] } | null {
-  const preferred = ['USD', 'USD/shares', 'shares'];
+function getPreferredUnits(concept: { units: Record<string, XbrlFact[]> }, currency?: string): { unitKey: string; facts: XbrlFact[] } | null {
+  // Build preference list: requested currency first, then USD, then per-share, then any monetary
+  const preferred: string[] = [];
+  if (currency && currency !== 'USD') {
+    preferred.push(currency, `${currency}/shares`);
+  }
+  preferred.push('USD', 'USD/shares', 'shares');
+
   for (const unitKey of preferred) {
     const facts = concept.units[unitKey];
     if (facts && facts.length > 0) {
@@ -412,7 +466,12 @@ function getPreferredUnits(concept: { units: Record<string, XbrlFact[]> }): { un
     }
   }
 
-  const fallback = Object.entries(concept.units).find(([, facts]) => Array.isArray(facts) && facts.length > 0);
+  // Fallback: any unit with data (but skip non-monetary like 'pure', 'employee', etc.)
+  const fallback = Object.entries(concept.units).find(([key, facts]) =>
+    Array.isArray(facts) && facts.length > 0 &&
+    !['pure', 'employee', 'Employee', 'Y', 'Years', 'numberOfEmployees',
+      'segment', 'security', 'state', 'branch', 'hedge_fund', 'Options'].includes(key)
+  );
   return fallback ? { unitKey: fallback[0], facts: fallback[1] } : null;
 }
 
@@ -428,15 +487,16 @@ export function getAvailableYears(facts: CompanyFacts): number[] {
     [facts.facts['us-gaap'], gaapProbes],
     [facts.facts['ifrs-full'], ifrsProbes],
   ];
+  const currency = getPrimaryCurrency(facts);
   for (const [ns, probes] of namespaces) {
     if (!ns) continue;
     for (const conceptName of probes) {
       const concept = ns[conceptName] as { units: Record<string, XbrlFact[]> } | undefined;
       if (!concept) continue;
-      const usdFacts = concept.units['USD'];
-      if (!usdFacts) continue;
+      const preferred = getPreferredUnits(concept, currency);
+      if (!preferred) continue;
       // Use end-date-based fiscal year for reliable year discovery
-      usdFacts
+      preferred.facts
         .filter(isLikelyAnnualFact)
         .forEach(f => years.add(getFiscalYearFromFact(f)));
     }
@@ -450,32 +510,32 @@ export function getAvailableYears(facts: CompanyFacts): number[] {
  */
 // IFRS concept mapping — maps our metric keys to ifrs-full concept names
 const IFRS_CONCEPTS: Record<string, string[]> = {
-  'Revenues': ['Revenue', 'RevenueFromContractsWithCustomers'],
-  'CostOfRevenue': ['CostOfSales'],
+  'Revenues': ['Revenue', 'RevenueFromContractsWithCustomers', 'RevenueFromSaleOfGoods', 'RevenueFromRenderingOfServices'],
+  'CostOfRevenue': ['CostOfSales', 'CostOfMerchandiseSold'],
   'GrossProfit': ['GrossProfit'],
   'OperatingIncome': ['ProfitLossFromOperatingActivities', 'ProfitLossBeforeTax'],
-  'NetIncome': ['ProfitLoss', 'ProfitLossAttributableToOwnersOfParent'],
-  'EarningsPerShare': ['BasicEarningsLossPerShare'],
-  'EarningsPerShareDiluted': ['DilutedEarningsLossPerShare'],
+  'NetIncome': ['ProfitLoss', 'ProfitLossAttributableToOwnersOfParent', 'ProfitLossAttributableToOrdinaryEquityHoldersOfParentEntity'],
+  'EarningsPerShare': ['BasicEarningsLossPerShare', 'BasicEarningsLossPerShareFromContinuingOperations'],
+  'EarningsPerShareDiluted': ['DilutedEarningsLossPerShare', 'DilutedEarningsLossPerShareFromContinuingOperations'],
   'ResearchAndDevelopment': ['ResearchAndDevelopmentExpense'],
-  'SellingGeneralAdmin': ['SellingGeneralAndAdministrativeExpense', 'AdministrativeExpense'],
+  'SellingGeneralAdmin': ['SellingGeneralAndAdministrativeExpense', 'AdministrativeExpense', 'DistributionCosts', 'SellingExpense'],
   'TotalAssets': ['Assets'],
-  'TotalLiabilities': ['Liabilities'],
+  'TotalLiabilities': ['Liabilities', 'NoncurrentLiabilities'],
   'StockholdersEquity': ['Equity', 'EquityAttributableToOwnersOfParent'],
-  'CashAndEquivalents': ['CashAndCashEquivalents'],
-  'TotalDebt': ['NoncurrentBorrowings', 'Borrowings'],
+  'CashAndEquivalents': ['CashAndCashEquivalents', 'Cash'],
+  'TotalDebt': ['NoncurrentBorrowings', 'Borrowings', 'BondsIssued'],
   'Goodwill': ['Goodwill'],
-  'IntangibleAssets': ['IntangibleAssetsOtherThanGoodwill'],
-  'AccountsReceivable': ['TradeAndOtherCurrentReceivables', 'TradeReceivables'],
+  'IntangibleAssets': ['IntangibleAssetsOtherThanGoodwill', 'OtherIntangibleAssets'],
+  'AccountsReceivable': ['TradeAndOtherCurrentReceivables', 'TradeReceivables', 'CurrentTradeReceivables'],
   'Inventory': ['Inventories', 'CurrentInventories'],
   'CurrentAssets': ['CurrentAssets'],
   'CurrentLiabilities': ['CurrentLiabilities'],
-  'OperatingCashFlow': ['CashFlowsFromUsedInOperatingActivities'],
-  'CapitalExpenditures': ['PurchaseOfPropertyPlantAndEquipment'],
-  'DividendsPaid': ['DividendsPaid', 'DividendsPaidClassifiedAsFinancingActivities'],
+  'OperatingCashFlow': ['CashFlowsFromUsedInOperatingActivities', 'CashFlowsFromUsedInOperations'],
+  'CapitalExpenditures': ['PurchaseOfPropertyPlantAndEquipment', 'AdditionsOtherThanThroughBusinessCombinationsPropertyPlantAndEquipment'],
+  'DividendsPaid': ['DividendsPaid', 'DividendsPaidClassifiedAsFinancingActivities', 'DividendsPaidToEquityHoldersOfParentClassifiedAsFinancingActivities'],
   'ShareRepurchases': ['PaymentsToAcquireOrRedeemEntitysShares'],
   'StockCompensation': ['SharebasedPaymentExpense'],
-  'IncomeTaxExpense': ['IncomeTaxExpenseContinuingOperations'],
+  'IncomeTaxExpense': ['IncomeTaxExpenseContinuingOperations', 'CurrentTaxExpenseIncome'],
 };
 
 export function extractFinancials(facts: CompanyFacts, year?: number): Record<string, FinancialMetric> {
@@ -484,6 +544,8 @@ export function extractFinancials(facts: CompanyFacts, year?: number): Record<st
   const usGaap = facts.facts['us-gaap'];
   const ifrs = facts.facts['ifrs-full'];
   if (!usGaap && !ifrs) return result;
+
+  const currency = getPrimaryCurrency(facts);
 
   for (const [metricKey, conceptAliases] of Object.entries(FINANCIAL_CONCEPTS)) {
     // Build combined alias list: us-gaap aliases + IFRS aliases
@@ -499,12 +561,12 @@ export function extractFinancials(facts: CompanyFacts, year?: number): Record<st
       const concept = ns[conceptName] as { label: string; units: Record<string, XbrlFact[]> } | undefined;
       if (!concept) continue;
 
-      // Get USD values (or shares for EPS)
-      const units = concept.units['USD'] || concept.units['USD/shares'] || concept.units['shares'];
-      if (!units || units.length === 0) continue;
+      // Find available facts using currency-aware unit selection
+      const preferred = getPreferredUnits(concept, currency);
+      if (!preferred) continue;
 
       // Filter to annual filings and deduplicate by fiscal year (end-date based)
-      const annualFacts = deduplicateAnnualFacts(units.filter(isLikelyAnnualFact));
+      const annualFacts = deduplicateAnnualFacts(preferred.facts.filter(isLikelyAnnualFact));
 
       // Match by end-date fiscal year for reliability
       const match = year != null
@@ -512,13 +574,18 @@ export function extractFinancials(facts: CompanyFacts, year?: number): Record<st
         : annualFacts[0];
 
       if (match) {
-        const unitType = concept.units['USD'] ? 'USD' : (concept.units['USD/shares'] ? 'USD/shares' : 'shares');
+        // Determine the actual currency from the unit key
+        const unitKey = preferred.unitKey;
+        const isPerShare = unitKey.includes('/shares');
+        const detectedCurrency = isPerShare ? unitKey.replace('/shares', '') : unitKey;
+
         result[metricKey] = {
           label: concept.label,
           value: match.val,
           year: getFiscalYearFromFact(match),
           period: match.fp || 'FY',
-          unit: unitType,
+          unit: unitKey,
+          currency: detectedCurrency === 'shares' ? 'USD' : detectedCurrency,
         };
         break; // Found a value — stop trying aliases
       }
@@ -537,12 +604,14 @@ function lookupAnnualMetric(
   const namespaces = [facts.facts['us-gaap'], facts.facts['ifrs-full']].filter(Boolean);
   if (namespaces.length === 0) return null;
 
+  const currency = getPrimaryCurrency(facts);
+
   for (const ns of namespaces) {
     for (const alias of aliases) {
       const concept = ns![alias] as { label: string; units: Record<string, XbrlFact[]> } | undefined;
       if (!concept) continue;
 
-      const preferredUnits = getPreferredUnits(concept);
+      const preferredUnits = getPreferredUnits(concept, currency);
       if (!preferredUnits) continue;
 
       const annualFacts = deduplicateAnnualFacts(
@@ -555,12 +624,17 @@ function lookupAnnualMetric(
 
       if (!match) continue;
 
+      const unitKey = preferredUnits.unitKey;
+      const isPerShare = unitKey.includes('/shares');
+      const detectedCurrency = isPerShare ? unitKey.replace('/shares', '') : unitKey;
+
       return {
         label: concept.label,
         value: match.val,
         year: getFiscalYearFromFact(match),
         period: match.fp || 'FY',
         unit: preferredUnits.unitKey,
+        currency: detectedCurrency === 'shares' ? 'USD' : detectedCurrency,
       };
     }
   }
@@ -1006,16 +1080,17 @@ export function countFilingsByMonth(
 /**
  * Format a number as a compact financial display value.
  */
-export function formatFinancialValue(value: number | null | undefined, unit: string): string {
+export function formatFinancialValue(value: number | null | undefined, unit: string, currency?: string): string {
   if (value == null) return '—';
-  if (unit === 'USD/shares') return `$${value.toFixed(2)}`;
+  const sym = CURRENCY_SYMBOLS[currency || 'USD'] || (currency ? `${currency} ` : '$');
+  if (unit.includes('/shares')) return `${sym}${value.toFixed(2)}`;
   const abs = Math.abs(value);
   const sign = value < 0 ? '-' : '';
-  if (abs >= 1e12) return `${sign}$${(abs / 1e12).toFixed(1)}T`;
-  if (abs >= 1e9) return `${sign}$${(abs / 1e9).toFixed(1)}B`;
-  if (abs >= 1e6) return `${sign}$${(abs / 1e6).toFixed(0)}M`;
-  if (abs >= 1e3) return `${sign}$${(abs / 1e3).toFixed(0)}K`;
-  return `${sign}$${abs.toFixed(0)}`;
+  if (abs >= 1e12) return `${sign}${sym}${(abs / 1e12).toFixed(1)}T`;
+  if (abs >= 1e9) return `${sign}${sym}${(abs / 1e9).toFixed(1)}B`;
+  if (abs >= 1e6) return `${sign}${sym}${(abs / 1e6).toFixed(0)}M`;
+  if (abs >= 1e3) return `${sign}${sym}${(abs / 1e3).toFixed(0)}K`;
+  return `${sign}${sym}${abs.toFixed(0)}`;
 }
 
 /**
