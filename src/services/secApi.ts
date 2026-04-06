@@ -350,11 +350,7 @@ function isLikelyAnnualFact(fact: XbrlFact): boolean {
   const isAnnualForm = ['10-K', '10-KT', '20-F', '40-F'].includes(form);
   if (!isAnnualForm) return false;
 
-  const fp = (fact.fp || '').toUpperCase();
-  if (!fp || fp === 'FY' || fp === 'CY') {
-    return true;
-  }
-
+  // For facts with date ranges, verify it spans a full year (~300+ days)
   if (fact.start && fact.end) {
     const start = Date.parse(fact.start);
     const end = Date.parse(fact.end);
@@ -364,7 +360,47 @@ function isLikelyAnnualFact(fact: XbrlFact): boolean {
     }
   }
 
+  // Balance sheet items (instant facts) have no start date — accept if FY/CY
+  const fp = (fact.fp || '').toUpperCase();
+  if (!fp || fp === 'FY' || fp === 'CY') {
+    return true;
+  }
+
   return false;
+}
+
+/**
+ * Determine the fiscal year a fact belongs to based on its end date.
+ * This is more reliable than the `fy` field, which represents the filing year
+ * and can differ from the actual fiscal year for companies with non-calendar FYs.
+ */
+function getFiscalYearFromFact(fact: XbrlFact): number {
+  // Use end date if available (most reliable)
+  if (fact.end) {
+    return new Date(fact.end).getFullYear();
+  }
+  // Fall back to fy field
+  return fact.fy;
+}
+
+/**
+ * Deduplicate annual facts by fiscal year (end-date based).
+ * When the same fiscal year data appears under multiple `fy` values
+ * (e.g., current year vs comparative), keep the most recently filed version.
+ */
+function deduplicateAnnualFacts(facts: XbrlFact[]): XbrlFact[] {
+  const byFiscalYear = new Map<number, XbrlFact>();
+  for (const fact of facts) {
+    const fiscalYear = getFiscalYearFromFact(fact);
+    const existing = byFiscalYear.get(fiscalYear);
+    // Prefer the most recent filing (highest fy = most recent 10-K)
+    if (!existing || fact.fy > existing.fy) {
+      byFiscalYear.set(fiscalYear, fact);
+    }
+  }
+  return Array.from(byFiscalYear.values()).sort(
+    (a, b) => getFiscalYearFromFact(b) - getFiscalYearFromFact(a)
+  );
 }
 
 function getPreferredUnits(concept: { units: Record<string, XbrlFact[]> }): { unitKey: string; facts: XbrlFact[] } | null {
@@ -399,9 +435,10 @@ export function getAvailableYears(facts: CompanyFacts): number[] {
       if (!concept) continue;
       const usdFacts = concept.units['USD'];
       if (!usdFacts) continue;
+      // Use end-date-based fiscal year for reliable year discovery
       usdFacts
         .filter(isLikelyAnnualFact)
-        .forEach(f => years.add(f.fy));
+        .forEach(f => years.add(getFiscalYearFromFact(f)));
     }
   }
   return Array.from(years).sort((a, b) => b - a);
@@ -466,14 +503,12 @@ export function extractFinancials(facts: CompanyFacts, year?: number): Record<st
       const units = concept.units['USD'] || concept.units['USD/shares'] || concept.units['shares'];
       if (!units || units.length === 0) continue;
 
-      // Filter to annual filings (10-K, 20-F, 40-F)
-      const annualFacts = units
-        .filter(isLikelyAnnualFact)
-        .sort((a, b) => b.fy - a.fy);
+      // Filter to annual filings and deduplicate by fiscal year (end-date based)
+      const annualFacts = deduplicateAnnualFacts(units.filter(isLikelyAnnualFact));
 
-      // Pick the specific year if requested, otherwise take the most recent
+      // Match by end-date fiscal year for reliability
       const match = year != null
-        ? annualFacts.find(f => f.fy === year)
+        ? annualFacts.find(f => getFiscalYearFromFact(f) === year)
         : annualFacts[0];
 
       if (match) {
@@ -481,7 +516,7 @@ export function extractFinancials(facts: CompanyFacts, year?: number): Record<st
         result[metricKey] = {
           label: concept.label,
           value: match.val,
-          year: match.fy,
+          year: getFiscalYearFromFact(match),
           period: match.fp || 'FY',
           unit: unitType,
         };
@@ -510,12 +545,12 @@ function lookupAnnualMetric(
       const preferredUnits = getPreferredUnits(concept);
       if (!preferredUnits) continue;
 
-      const annualFacts = preferredUnits.facts
-        .filter(isLikelyAnnualFact)
-        .sort((a, b) => b.fy - a.fy);
+      const annualFacts = deduplicateAnnualFacts(
+        preferredUnits.facts.filter(isLikelyAnnualFact)
+      );
 
       const match = year != null
-        ? annualFacts.find(item => item.fy === year)
+        ? annualFacts.find(item => getFiscalYearFromFact(item) === year)
         : annualFacts[0];
 
       if (!match) continue;
@@ -523,7 +558,7 @@ function lookupAnnualMetric(
       return {
         label: concept.label,
         value: match.val,
-        year: match.fy,
+        year: getFiscalYearFromFact(match),
         period: match.fp || 'FY',
         unit: preferredUnits.unitKey,
       };
