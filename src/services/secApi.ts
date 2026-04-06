@@ -260,8 +260,11 @@ export interface XbrlFact {
 export interface CompanyFacts {
   cik: number;
   entityName: string;
+  sic?: number;
+  sicDescription?: string;
   facts: {
     'us-gaap'?: Record<string, { label: string; description: string; units: Record<string, XbrlFact[]> }>;
+    'ifrs-full'?: Record<string, { label: string; description: string; units: Record<string, XbrlFact[]> }>;
     'dei'?: Record<string, { label: string; description: string; units: Record<string, XbrlFact[]> }>;
   };
 }
@@ -287,11 +290,11 @@ export async function fetchCompanyFacts(cik: string): Promise<CompanyFacts | nul
 /** Key financial concepts to extract (us-gaap taxonomy names) */
 const FINANCIAL_CONCEPTS = {
   // Income Statement
-  'Revenues': ['Revenues', 'RevenueFromContractWithCustomerExcludingAssessedTax', 'SalesRevenueNet', 'RevenueFromContractWithCustomerIncludingAssessedTax'],
-  'CostOfRevenue': ['CostOfRevenue', 'CostOfGoodsAndServicesSold', 'CostOfGoodsSold'],
+  'Revenues': ['Revenues', 'RevenueFromContractWithCustomerExcludingAssessedTax', 'SalesRevenueNet', 'RevenueFromContractWithCustomerIncludingAssessedTax', 'RevenuesNetOfInterestExpense', 'InterestAndDividendIncomeOperating', 'InterestIncomeExpenseNet'],
+  'CostOfRevenue': ['CostOfRevenue', 'CostOfGoodsAndServicesSold', 'CostOfGoodsSold', 'CostOfRealEstateRevenue'],
   'GrossProfit': ['GrossProfit', 'GrossProfitLoss'],
   'OperatingIncome': ['OperatingIncomeLoss', 'IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest', 'IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments'],
-  'NetIncome': ['NetIncomeLoss'],
+  'NetIncome': ['NetIncomeLoss', 'NetIncomeLossAvailableToCommonStockholdersBasic', 'NetIncomeLossAvailableToCommonStockholdersDiluted', 'ProfitLoss'],
   'EarningsPerShare': ['EarningsPerShareBasic'],
   'EarningsPerShareDiluted': ['EarningsPerShareDiluted'],
   'ResearchAndDevelopment': ['ResearchAndDevelopmentExpense', 'ResearchAndDevelopmentExpenseExcludingAcquiredInProcessCost', 'TechnologyAndContentExpense'],
@@ -301,7 +304,7 @@ const FINANCIAL_CONCEPTS = {
   'TotalAssets': ['Assets'],
   'TotalLiabilities': ['Liabilities', 'LiabilitiesNoncurrentAndFinanceLeaseObligationsNoncurrent'],
   'StockholdersEquity': ['StockholdersEquity', 'StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest'],
-  'CashAndEquivalents': ['CashAndCashEquivalentsAtCarryingValue', 'CashCashEquivalentsAndShortTermInvestments'],
+  'CashAndEquivalents': ['CashAndCashEquivalentsAtCarryingValue', 'CashCashEquivalentsAndShortTermInvestments', 'CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents'],
   'TotalDebt': ['LongTermDebt', 'LongTermDebtNoncurrent', 'LongTermDebtAndCapitalLeaseObligations', 'LongTermDebtAndCapitalLeaseObligationsNoncurrent', 'LongTermDebtCurrent', 'ShortTermBorrowings', 'ShortTermDebt', 'CurrentPortionOfLongTermDebt'],
   'Goodwill': ['Goodwill', 'GoodwillNet'],
   'IntangibleAssets': [
@@ -311,14 +314,14 @@ const FINANCIAL_CONCEPTS = {
     'OtherIntangibleAssetsNet',
     'AmortizableIntangibleAssetsNet',
   ],
-  'AccountsReceivable': ['AccountsReceivableNetCurrent', 'AccountsReceivableNet', 'ReceivablesNetCurrent', 'AccountsNotesAndLoansReceivableNetCurrent'],
-  'Inventory': ['InventoryNet', 'Inventories', 'InventoriesNetOfReserves', 'InventoryAndServicePartsNet', 'InventoryFinishedGoods', 'InventoryGross', 'InventoryNetOfAllowancesCustomerAdvancesAndProgressBillings'],
+  'AccountsReceivable': ['AccountsReceivableNetCurrent', 'AccountsReceivableNet', 'ReceivablesNetCurrent', 'AccountsNotesAndLoansReceivableNetCurrent', 'AccruedInvestmentIncomeReceivable', 'PremiumsReceivableAtCarryingValue'],
+  'Inventory': ['InventoryNet', 'Inventories', 'InventoriesNetOfReserves', 'InventoryAndServicePartsNet', 'InventoryFinishedGoods', 'InventoryGross', 'InventoryNetOfAllowancesCustomerAdvancesAndProgressBillings', 'RealEstateInventory'],
   'CurrentAssets': ['AssetsCurrent'],
   'CurrentLiabilities': ['LiabilitiesCurrent'],
 
   // Cash Flow
   'OperatingCashFlow': ['NetCashProvidedByUsedInOperatingActivities', 'NetCashProvidedByOperatingActivities', 'NetCashProvidedByUsedInOperatingActivitiesContinuingOperations'],
-  'CapitalExpenditures': ['PaymentsToAcquirePropertyPlantAndEquipment', 'PaymentsToAcquireProductiveAssets', 'PaymentsToAcquireOilAndGasPropertyAndEquipment', 'CapitalExpendituresIncurredButNotYetPaid'],
+  'CapitalExpenditures': ['PaymentsToAcquirePropertyPlantAndEquipment', 'PaymentsToAcquireProductiveAssets', 'PaymentsToAcquireOilAndGasPropertyAndEquipment', 'PaymentsForCapitalImprovements', 'PaymentsToAcquireOtherPropertyPlantAndEquipment', 'PaymentsToAcquireMachineryAndEquipment'],
   'DividendsPaid': ['PaymentsOfDividends', 'PaymentsOfDividendsCommonStock'],
   'ShareRepurchases': ['PaymentsForRepurchaseOfCommonStock'],
 
@@ -381,19 +384,25 @@ function getPreferredUnits(concept: { units: Record<string, XbrlFact[]> }): { un
  * Returns a sorted list (newest first) of fiscal years that have annual 10-K data.
  */
 export function getAvailableYears(facts: CompanyFacts): number[] {
-  const usGaap = facts.facts['us-gaap'];
-  if (!usGaap) return [];
   const years = new Set<number>();
-  // Sample a few common concepts to discover available years
-  const probes = ['Revenues', 'RevenueFromContractWithCustomerExcludingAssessedTax', 'Assets', 'NetIncomeLoss'];
-  for (const conceptName of probes) {
-    const concept = usGaap[conceptName];
-    if (!concept) continue;
-    const usdFacts = concept.units['USD'];
-    if (!usdFacts) continue;
-    usdFacts
-      .filter(isLikelyAnnualFact)
-      .forEach(f => years.add(f.fy));
+  // Probe across us-gaap and ifrs-full namespaces
+  const gaapProbes = ['Revenues', 'RevenueFromContractWithCustomerExcludingAssessedTax', 'Assets', 'NetIncomeLoss'];
+  const ifrsProbes = ['Revenue', 'Assets', 'ProfitLoss'];
+  const namespaces: [Record<string, unknown> | undefined, string[]][] = [
+    [facts.facts['us-gaap'], gaapProbes],
+    [facts.facts['ifrs-full'], ifrsProbes],
+  ];
+  for (const [ns, probes] of namespaces) {
+    if (!ns) continue;
+    for (const conceptName of probes) {
+      const concept = ns[conceptName] as { units: Record<string, XbrlFact[]> } | undefined;
+      if (!concept) continue;
+      const usdFacts = concept.units['USD'];
+      if (!usdFacts) continue;
+      usdFacts
+        .filter(isLikelyAnnualFact)
+        .forEach(f => years.add(f.fy));
+    }
   }
   return Array.from(years).sort((a, b) => b - a);
 }
@@ -402,14 +411,55 @@ export function getAvailableYears(facts: CompanyFacts): number[] {
  * Extract the most recent annual (10-K / FY) value for each key financial concept.
  * Pass a specific `year` to extract data for that fiscal year instead of the latest.
  */
+// IFRS concept mapping — maps our metric keys to ifrs-full concept names
+const IFRS_CONCEPTS: Record<string, string[]> = {
+  'Revenues': ['Revenue', 'RevenueFromContractsWithCustomers'],
+  'CostOfRevenue': ['CostOfSales'],
+  'GrossProfit': ['GrossProfit'],
+  'OperatingIncome': ['ProfitLossFromOperatingActivities', 'ProfitLossBeforeTax'],
+  'NetIncome': ['ProfitLoss', 'ProfitLossAttributableToOwnersOfParent'],
+  'EarningsPerShare': ['BasicEarningsLossPerShare'],
+  'EarningsPerShareDiluted': ['DilutedEarningsLossPerShare'],
+  'ResearchAndDevelopment': ['ResearchAndDevelopmentExpense'],
+  'SellingGeneralAdmin': ['SellingGeneralAndAdministrativeExpense', 'AdministrativeExpense'],
+  'TotalAssets': ['Assets'],
+  'TotalLiabilities': ['Liabilities'],
+  'StockholdersEquity': ['Equity', 'EquityAttributableToOwnersOfParent'],
+  'CashAndEquivalents': ['CashAndCashEquivalents'],
+  'TotalDebt': ['NoncurrentBorrowings', 'Borrowings'],
+  'Goodwill': ['Goodwill'],
+  'IntangibleAssets': ['IntangibleAssetsOtherThanGoodwill'],
+  'AccountsReceivable': ['TradeAndOtherCurrentReceivables', 'TradeReceivables'],
+  'Inventory': ['Inventories', 'CurrentInventories'],
+  'CurrentAssets': ['CurrentAssets'],
+  'CurrentLiabilities': ['CurrentLiabilities'],
+  'OperatingCashFlow': ['CashFlowsFromUsedInOperatingActivities'],
+  'CapitalExpenditures': ['PurchaseOfPropertyPlantAndEquipment'],
+  'DividendsPaid': ['DividendsPaid', 'DividendsPaidClassifiedAsFinancingActivities'],
+  'ShareRepurchases': ['PaymentsToAcquireOrRedeemEntitysShares'],
+  'StockCompensation': ['SharebasedPaymentExpense'],
+  'IncomeTaxExpense': ['IncomeTaxExpenseContinuingOperations'],
+};
+
 export function extractFinancials(facts: CompanyFacts, year?: number): Record<string, FinancialMetric> {
   const result: Record<string, FinancialMetric> = {};
+  // Try us-gaap first, then ifrs-full
   const usGaap = facts.facts['us-gaap'];
-  if (!usGaap) return result;
+  const ifrs = facts.facts['ifrs-full'];
+  if (!usGaap && !ifrs) return result;
 
   for (const [metricKey, conceptAliases] of Object.entries(FINANCIAL_CONCEPTS)) {
-    for (const conceptName of conceptAliases) {
-      const concept = usGaap[conceptName];
+    // Build combined alias list: us-gaap aliases + IFRS aliases
+    const allAliases: { ns: Record<string, unknown>; name: string }[] = [];
+    if (usGaap) {
+      for (const name of conceptAliases) allAliases.push({ ns: usGaap, name });
+    }
+    if (ifrs && IFRS_CONCEPTS[metricKey]) {
+      for (const name of IFRS_CONCEPTS[metricKey]) allAliases.push({ ns: ifrs as Record<string, unknown>, name });
+    }
+
+    for (const { ns, name: conceptName } of allAliases) {
+      const concept = ns[conceptName] as { label: string; units: Record<string, XbrlFact[]> } | undefined;
       if (!concept) continue;
 
       // Get USD values (or shares for EPS)
@@ -448,33 +498,36 @@ function lookupAnnualMetric(
   aliases: string[],
   year?: number
 ): FinancialMetric | null {
-  const usGaap = facts.facts['us-gaap'];
-  if (!usGaap) return null;
+  // Search across us-gaap and ifrs-full namespaces
+  const namespaces = [facts.facts['us-gaap'], facts.facts['ifrs-full']].filter(Boolean);
+  if (namespaces.length === 0) return null;
 
-  for (const alias of aliases) {
-    const concept = usGaap[alias];
-    if (!concept) continue;
+  for (const ns of namespaces) {
+    for (const alias of aliases) {
+      const concept = ns![alias] as { label: string; units: Record<string, XbrlFact[]> } | undefined;
+      if (!concept) continue;
 
-    const preferredUnits = getPreferredUnits(concept);
-    if (!preferredUnits) continue;
+      const preferredUnits = getPreferredUnits(concept);
+      if (!preferredUnits) continue;
 
-    const annualFacts = preferredUnits.facts
-      .filter(isLikelyAnnualFact)
-      .sort((a, b) => b.fy - a.fy);
+      const annualFacts = preferredUnits.facts
+        .filter(isLikelyAnnualFact)
+        .sort((a, b) => b.fy - a.fy);
 
-    const match = year != null
-      ? annualFacts.find(item => item.fy === year)
-      : annualFacts[0];
+      const match = year != null
+        ? annualFacts.find(item => item.fy === year)
+        : annualFacts[0];
 
-    if (!match) continue;
+      if (!match) continue;
 
-    return {
-      label: concept.label,
-      value: match.val,
-      year: match.fy,
-      period: match.fp || 'FY',
-      unit: preferredUnits.unitKey,
-    };
+      return {
+        label: concept.label,
+        value: match.val,
+        year: match.fy,
+        period: match.fp || 'FY',
+        unit: preferredUnits.unitKey,
+      };
+    }
   }
 
   return null;
@@ -516,13 +569,16 @@ export function extractComparableFinancials(facts: CompanyFacts, year?: number):
     };
   }
 
-  // Derive SG&A from G&A + S&M when combined concept is unavailable (e.g. MSFT)
+  // Derive SG&A from G&A + Selling/Marketing when combined concept is unavailable
   if (!result.SellingGeneralAdmin) {
     const ga = lookupAnnualMetric(facts, ['GeneralAndAdministrativeExpense'], year);
-    const sm = lookupAnnualMetric(facts, ['SellingAndMarketingExpense', 'MarketingExpense', 'MarketingAndAdvertisingExpense'], year);
+    const sm = lookupAnnualMetric(facts, [
+      'SellingAndMarketingExpense', 'SellingExpense', 'MarketingExpense',
+      'MarketingAndAdvertisingExpense',
+    ], year);
     if (ga?.value != null && sm?.value != null) {
       result.SellingGeneralAdmin = {
-        label: 'SG&A (derived: G&A + S&M)',
+        label: 'SG&A (derived: G&A + Selling)',
         value: ga.value + sm.value,
         year: ga.year,
         period: ga.period,
@@ -532,6 +588,13 @@ export function extractComparableFinancials(facts: CompanyFacts, year?: number):
       result.SellingGeneralAdmin = ga;
     } else if (sm?.value != null) {
       result.SellingGeneralAdmin = sm;
+    }
+    // Fallback: NoninterestExpense for banks/financials
+    if (!result.SellingGeneralAdmin) {
+      const nie = lookupAnnualMetric(facts, ['NoninterestExpense'], year);
+      if (nie?.value != null) {
+        result.SellingGeneralAdmin = { ...nie, label: 'Noninterest Expense (bank proxy for SG&A)' };
+      }
     }
   }
 
