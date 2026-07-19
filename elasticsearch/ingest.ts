@@ -32,7 +32,7 @@
 
 import { createElasticClient, ES_INDEX, delay, SEC_USER_AGENT, EDGAR_BASE, EDGAR_DATA_BASE } from './config.js';
 import type { Client } from '@elastic/elasticsearch';
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { appendFileSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 
 // ── CLI argument parsing ──
@@ -52,6 +52,7 @@ const MAX_CONTENT_LENGTH = 500_000;
 const MAX_RETRIES = 3;
 const MAX_CACHE_SIZE = 1500; // Reduced from 5000 — each entry was ~500KB, causing OOM on large quarters
 const PROGRESS_FILE = resolve(import.meta.dirname || '.', '.ingest-progress.json');
+const DEAD_LETTER_FILE = resolve(import.meta.dirname || '.', 'dead-letter.jsonl');
 
 // Core forms that matter for research searches (~20% of total volume, 95% of search value)
 const CORE_FORMS = new Set([
@@ -62,7 +63,10 @@ const CORE_FORMS = new Set([
   'S-1', 'S-1/A', 'S-3', 'S-3/A', 'S-4', 'S-4/A',
   '20-F', '20-F/A', '6-K', '6-K/A',
   'CORRESP', 'UPLOAD',
+  // EDGAR renamed SC 13D/G to SCHEDULE 13D/G in 2024-25 — keep both spellings
+  // so the filter matches filings on either side of the rename
   'SC 13D', 'SC 13D/A', 'SC 13G', 'SC 13G/A',
+  'SCHEDULE 13D', 'SCHEDULE 13D/A', 'SCHEDULE 13G', 'SCHEDULE 13G/A',
   'SC TO-T', 'SC TO-T/A', 'SC 14D9', 'SC 14D9/A',
   // 'D', 'D/A', // Exempt offerings — high volume, rarely full-text searched
   '424B4',
@@ -84,6 +88,16 @@ function computeDateRange(): { startDate: string; endDate: string } {
   const start = new Date();
   start.setFullYear(start.getFullYear() - 5);
   return { startDate: start.toISOString().split('T')[0], endDate };
+}
+
+// ── Skip accounting — every dropped filing gets a countable reason ──
+// (previously all skips collapsed into one opaque number: impossible to tell
+//  submissions misses from doc-fetch failures from parse errors)
+
+const skipReasons: Record<string, number> = {};
+
+function recordSkip(reason: string): void {
+  skipReasons[reason] = (skipReasons[reason] || 0) + 1;
 }
 
 // ── Progress persistence (resume after crash) ──
@@ -201,8 +215,9 @@ function stripHtmlToText(html: string): string {
     .replace(/<\/?(p|div|br|hr|h[1-6]|tr|li|table|section|article|header|footer|blockquote|pre)[^>]*>/gi, '\n')
     .replace(/<[^>]+>/g, ' ')
     .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&nbsp;/g, ' ')
-    .replace(/&#\d+;/g, ' ').replace(/&\w+;/g, ' ')
+    .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&#x27;/gi, "'").replace(/&nbsp;/g, ' ')
+    // Hex entities (&#x2019; etc.) previously survived as literal garbage tokens
+    .replace(/&#x[0-9a-f]+;/gi, ' ').replace(/&#\d+;/g, ' ').replace(/&\w+;/g, ' ')
     .replace(/\r/g, '\n')
     .replace(/[ \t]+\n/g, '\n').replace(/\n[ \t]+/g, '\n')
     .replace(/[ \t]{2,}/g, ' ').replace(/\n{3,}/g, '\n\n')
@@ -273,7 +288,11 @@ interface EdgarIndexEntry {
 }
 
 async function fetchFullIndex(year: number, quarter: number): Promise<EdgarIndexEntry[]> {
-  const url = `${EDGAR_BASE}/Archives/edgar/full-index/${year}/QTR${quarter}/company.idx`;
+  // master.idx is pipe-delimited (CIK|Company Name|Form Type|Date Filed|Filename).
+  // The previous company.idx regex captured the form column as a single token
+  // (\S+), which silently dropped EVERY multi-word form — DEF 14A, SC 13D,
+  // SC 13G, SC TO-T, SC 14D9 — from the index. Delimited parsing can't lose them.
+  const url = `${EDGAR_BASE}/Archives/edgar/full-index/${year}/QTR${quarter}/master.idx`;
   console.log(`  Fetching index: ${year}/QTR${quarter}...`);
 
   let text: string;
@@ -288,7 +307,6 @@ async function fetchFullIndex(year: number, quarter: number): Promise<EdgarIndex
 
   const lines = text.split('\n');
   const entries: EdgarIndexEntry[] = [];
-  const dataLineRe = /^(.+?)\s{2,}(\S+)\s+(\d+)\s+(\d{4}-\d{2}-\d{2})\s+(edgar\/data\/\S+)\s*$/;
 
   let headerDone = false;
   for (const line of lines) {
@@ -297,18 +315,22 @@ async function fetchFullIndex(year: number, quarter: number): Promise<EdgarIndex
       continue;
     }
 
-    const match = dataLineRe.exec(line);
-    if (!match) continue;
+    const parts = line.split('|');
+    if (parts.length !== 5) continue;
+    const [cikRaw, companyName, formType, dateFiled, filename] = parts.map(part => part.trim());
+    if (!/^\d+$/.test(cikRaw)) continue;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateFiled)) continue;
+    if (!filename.startsWith('edgar/data/')) continue;
 
-    const accMatch = match[5].match(/(\d{10}-\d{2}-\d{6})/);
+    const accMatch = filename.match(/(\d{10}-\d{2}-\d{6})/);
     if (!accMatch) continue;
 
     entries.push({
-      cik: match[3].trim().replace(/^0+/, ''),
-      companyName: match[1].trim(),
-      formType: match[2].trim(),
-      dateFiled: match[4].trim(),
-      filename: match[5].trim(),
+      cik: cikRaw.replace(/^0+/, '') || '0',
+      companyName,
+      formType,
+      dateFiled,
+      filename,
       accessionNumber: accMatch[1],
     });
   }
@@ -419,13 +441,25 @@ async function fetchCompanySubmissions(cik: string): Promise<CompanySubmissions 
   evictCacheIfNeeded();
 
   try {
-    const raw = await fetchJson(`${EDGAR_DATA_BASE}/submissions/CIK${paddedCik}.json`) as RawCompanySubmissions;
+    const response = await fetchWithRetry(`${EDGAR_DATA_BASE}/submissions/CIK${paddedCik}.json`);
+    if (response.status === 404) {
+      // Genuinely absent — safe to remember
+      submissionsCache.set(paddedCik, null);
+      return null;
+    }
+    if (!response.ok) {
+      // Transient (throttling/5xx after retries): do NOT cache null, or one
+      // bad moment silently drops EVERY later filing from this company.
+      recordSkip('submissions_transient_error');
+      return null;
+    }
+    const raw = await response.json() as RawCompanySubmissions;
     const slim = slimSubmissions(raw);
     submissionsCache.set(paddedCik, slim);
     return slim;
   } catch {
-    submissionsCache.set(paddedCik, null);
-    return null;
+    recordSkip('submissions_network_error');
+    return null; // network failure — uncached so a later filing retries
   }
 }
 
@@ -452,6 +486,9 @@ interface FilingDocument {
   tickers: string[];
   form: string;
   root_forms: string[];
+  /** True for /A amendments — lets the reader prefer restated filings over
+   *  the superseded originals indexed alongside them. */
+  is_amendment: boolean;
   file_type: string;
   file_date: string;
   file_description: string;
@@ -471,25 +508,67 @@ interface FilingDocument {
   indexed_at: string;
 }
 
+/**
+ * Fallback for filings outside the submissions API's recent-1000 window:
+ * the accession's own index.json lists every document in the filing.
+ * Without this, prolific filers (banks, funds, frequent 8-K issuers) silently
+ * lost their older-but-in-range filings.
+ */
+async function resolvePrimaryDocumentFromArchive(cik: string, accessionNumber: string): Promise<string> {
+  const cleanAccession = accessionNumber.replace(/-/g, '');
+  try {
+    const data = await fetchJson(
+      `${EDGAR_BASE}/Archives/edgar/data/${cik}/${cleanAccession}/index.json`
+    ) as { directory?: { item?: Array<{ name?: string; size?: string | number }> } };
+    const items = data.directory?.item ?? [];
+    const htmlDocs = items.filter(item => {
+      const name = (item.name || '').toLowerCase();
+      return /\.(htm|html)$/.test(name) && !name.endsWith('-index.htm') && !name.endsWith('-index.html');
+    });
+    if (htmlDocs.length === 0) return '';
+    // The primary document is virtually always the largest top-level HTML file
+    htmlDocs.sort((a, b) => Number(b.size ?? 0) - Number(a.size ?? 0));
+    return htmlDocs[0].name || '';
+  } catch {
+    return '';
+  }
+}
+
 async function buildFilingDocument(entry: EdgarIndexEntry): Promise<FilingDocument | null> {
   const submissions = await fetchCompanySubmissions(entry.cik);
-  if (!submissions) return null;
+  if (!submissions) {
+    recordSkip('no_submissions');
+    return null;
+  }
 
   const filingInfo = submissions.filingIndex.get(entry.accessionNumber);
-  const primaryDocument = filingInfo?.primaryDocument || '';
+  let primaryDocument = filingInfo?.primaryDocument || '';
   const fileNumber = filingInfo?.fileNumber || '';
   const primaryDocDescription = filingInfo?.primaryDocDescription || '';
 
-  if (!primaryDocument) return null;
+  if (!primaryDocument) {
+    primaryDocument = await resolvePrimaryDocumentFromArchive(entry.cik, entry.accessionNumber);
+    if (!primaryDocument) {
+      recordSkip('no_primary_document');
+      return null;
+    }
+  }
 
   const html = await fetchFilingDocument(entry.cik, entry.accessionNumber, primaryDocument);
-  if (!html) return null;
+  if (!html) {
+    recordSkip('empty_or_failed_document_fetch');
+    return null;
+  }
 
-  let content = stripHtmlToText(html);
+  const fullText = stripHtmlToText(html);
+  // Detect auditor/filer status on the FULL text before truncation — the
+  // auditor's report usually sits near the true end of a large 10-K, past
+  // the 500K-char cap, so detection on truncated text systematically missed it.
+  const auditor = detectAuditor(fullText);
+  const acceleratedStatus = detectAcceleratedStatus(fullText);
+
+  let content = fullText;
   if (content.length > MAX_CONTENT_LENGTH) content = content.slice(0, MAX_CONTENT_LENGTH);
-
-  const auditor = detectAuditor(content);
-  const acceleratedStatus = detectAcceleratedStatus(content);
 
   const bizLocation = [submissions.bizCity, submissions.bizState]
     .filter(Boolean).join(', ');
@@ -506,6 +585,7 @@ async function buildFilingDocument(entry: EdgarIndexEntry): Promise<FilingDocume
     tickers: submissions.tickers || [],
     form: entry.formType,
     root_forms: baseForm !== entry.formType ? [baseForm, entry.formType] : [entry.formType],
+    is_amendment: baseForm !== entry.formType,
     file_type: entry.formType,
     file_date: entry.dateFiled,
     file_description: primaryDocDescription || entry.formType,
@@ -541,13 +621,18 @@ async function bulkIndex(client: Client, documents: FilingDocument[]): Promise<{
       const result = await client.bulk({ operations, refresh: false });
 
       let errors = 0;
+      const failedIds: string[] = [];
       if (result.errors) {
         for (const item of result.items) {
           if (item.index?.error) {
             errors++;
+            if (item.index._id) failedIds.push(String(item.index._id));
             if (errors <= 3) console.error(`  Index error: ${item.index.error.reason}`);
           }
         }
+      }
+      if (failedIds.length > 0) {
+        deadLetter(documents.filter(doc => failedIds.includes(doc._id)), 'per_item_index_error');
       }
       return { indexed: documents.length - errors, errors };
     } catch (error) {
@@ -558,7 +643,31 @@ async function bulkIndex(client: Client, documents: FilingDocument[]): Promise<{
     }
   }
 
+  // These filings were fully downloaded and parsed — losing them silently was
+  // the source of the ~2,800 "errors" in past runs. Record enough to re-ingest.
+  deadLetter(documents, 'bulk_request_failed');
   return { indexed: 0, errors: documents.length };
+}
+
+/** Append failed-to-index filings to a JSONL dead-letter file for re-ingestion.
+ *  Stores identifying metadata (not the 500K content) — re-ingest refetches. */
+function deadLetter(documents: FilingDocument[], reason: string): void {
+  if (documents.length === 0) return;
+  try {
+    const lines = documents.map(doc => JSON.stringify({
+      reason,
+      _id: doc._id,
+      cik: doc.cik,
+      adsh: doc.adsh,
+      form: doc.form,
+      file_date: doc.file_date,
+      primary_document: doc.primary_document,
+    })).join('\n') + '\n';
+    appendFileSync(DEAD_LETTER_FILE, lines);
+    console.error(`  Dead-lettered ${documents.length} filings (${reason}) -> ${DEAD_LETTER_FILE}`);
+  } catch (error) {
+    console.error('  Failed to write dead-letter file:', error);
+  }
 }
 
 // ── Progress display ──
@@ -568,17 +677,22 @@ interface ProgressState {
   totalIndexed: number;
   totalErrors: number;
   totalSkipped: number;
+  /** Entries processed in the CURRENT quarter — progress/ETA math must use
+   *  this, not the cross-quarter total (which produced 837093/30010 lines
+   *  and negative ETAs in past runs, hiding real data loss). */
+  quarterProcessed: number;
   startTime: number;
 }
 
 function printProgress(state: ProgressState, currentQuarter: string, totalInQuarter: number) {
   const elapsed = ((Date.now() - state.startTime) / 1000).toFixed(0);
   const rate = state.totalProcessed > 0 ? (state.totalProcessed / (Date.now() - state.startTime) * 1000).toFixed(1) : '0';
+  const remainingInQuarter = Math.max(0, totalInQuarter - state.quarterProcessed);
   const eta = state.totalProcessed > 0
-    ? ((totalInQuarter - state.totalProcessed) / (state.totalProcessed / (Date.now() - state.startTime) * 1000) / 60).toFixed(0)
+    ? (remainingInQuarter / (state.totalProcessed / (Date.now() - state.startTime) * 1000) / 60).toFixed(0)
     : '?';
   console.log(
-    `  [${currentQuarter}] ${state.totalProcessed}/${totalInQuarter} | Indexed: ${state.totalIndexed} | Skipped: ${state.totalSkipped} | Errors: ${state.totalErrors} | ${elapsed}s (${rate}/sec, ~${eta}min left)`
+    `  [${currentQuarter}] ${state.quarterProcessed}/${totalInQuarter} | Indexed: ${state.totalIndexed} | Skipped: ${state.totalSkipped} | Errors: ${state.totalErrors} | ${elapsed}s (${rate}/sec, ~${eta}min left in quarter)`
   );
 }
 
@@ -621,6 +735,7 @@ async function main() {
     totalIndexed: savedProgress?.totalIndexed || 0,
     totalErrors: 0,
     totalSkipped: 0,
+    quarterProcessed: 0,
     startTime: Date.now(),
   };
 
@@ -662,9 +777,9 @@ async function main() {
         ? savedProgress.lastEntryIndex
         : 0;
 
+    state.quarterProcessed = startIndex;
     if (startIndex > 0) {
       console.log(`  Resuming from entry ${startIndex}/${entries.length}`);
-      state.totalProcessed += startIndex;
     }
 
     const batch: FilingDocument[] = [];
@@ -672,6 +787,7 @@ async function main() {
     for (let i = startIndex; i < entries.length; i++) {
       const entry = entries[i];
       state.totalProcessed++;
+      state.quarterProcessed++;
 
       try {
         const doc = await buildFilingDocument(entry);
@@ -682,7 +798,10 @@ async function main() {
         }
       } catch (error) {
         state.totalSkipped++;
-        // Individual filing failures are expected — don't crash
+        recordSkip('build_exception');
+        // Individual filing failures are expected — don't crash, but do record
+        // the accession so the loss is visible and re-runnable
+        console.error(`  Skipped ${entry.accessionNumber} (${entry.formType}):`, error instanceof Error ? error.message : error);
       }
 
       // SEC rate limit (~10 req/sec, but each filing = 2 requests)
@@ -765,6 +884,15 @@ async function main() {
   console.log(`  Total indexed:   ${state.totalIndexed}`);
   console.log(`  Total skipped:   ${state.totalSkipped}`);
   console.log(`  Total errors:    ${state.totalErrors}`);
+  if (Object.keys(skipReasons).length > 0) {
+    console.log(`  Skip breakdown:`);
+    for (const [reason, count] of Object.entries(skipReasons).sort((a, b) => b[1] - a[1])) {
+      console.log(`    ${reason}: ${count}`);
+    }
+  }
+  if (existsSync(DEAD_LETTER_FILE)) {
+    console.log(`  Dead-letter file: ${DEAD_LETTER_FILE} — re-run these filings after fixing ES connectivity.`);
+  }
 }
 
 main().catch(error => {
