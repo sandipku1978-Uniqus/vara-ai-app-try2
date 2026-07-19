@@ -54,6 +54,9 @@ interface AgentRuntimeState {
   latestFiling: FilingLocator | null;
   searchResults: FilingResearchResult[];
   commentLetterResults: FilingResearchResult[];
+  /** Matches found in the owned letter corpus (full-text lane) — excerpts
+   *  land directly in findings, so this only tracks the count for summaries. */
+  lettersCorpusCount: number;
   importantSummary: string;
   draftedAlert: PendingAlertDraft | null;
   findings: string[];
@@ -199,6 +202,7 @@ function createInitialRuntimeState(): AgentRuntimeState {
     latestFiling: null,
     searchResults: [],
     commentLetterResults: [],
+    lettersCorpusCount: 0,
     importantSummary: '',
     draftedAlert: null,
     findings: [],
@@ -424,6 +428,61 @@ export function AIQnAPanel() {
             const mode = (String(action.input.mode || 'semantic') === 'boolean' ? 'boolean' : 'semantic') as ResearchSearchMode;
             const filters = normalizeSearchFilters(action.input.filters);
             const defaultForms = action.type === 'search_comment_letters' ? 'CORRESP,UPLOAD' : String(action.input.defaultForms || '10-K,10-Q,8-K,DEF 14A,20-F,S-1');
+
+            // Comment-letter questions answer from the OWNED corpus first:
+            // full-text ranked excerpts of the actual Staff/company language,
+            // so the copilot quotes what was really said instead of listing
+            // filing metadata. EFTS fallback below covers corpus outages.
+            if (action.type === 'search_comment_letters') {
+              try {
+                const params = new URLSearchParams({ q: query || prompt, size: '10' });
+                const response = await fetch(`/api/letters?${params.toString()}`);
+                if (response.ok) {
+                  const payload = await response.json();
+                  const matches = (payload.matches ?? []) as Array<{
+                    company_name: string; form: string; date_filed: string;
+                    thread_id: string; filename: string; headline: string; cik: number;
+                  }>;
+                  if (matches.length > 0) {
+                    runtime.lettersCorpusCount = Number(payload.total || matches.length);
+                    runtime.searchQuery = query;
+                    runtime.notes.push(
+                      `Letter corpus: ${runtime.lettersCorpusCount} full-text matches (2005+); excerpts below are truncated fragments.`
+                    );
+                    for (const match of matches.slice(0, 8)) {
+                      const excerpt = match.headline.replace(/<\/?b>/g, '').replace(/\s+/g, ' ').trim();
+                      runtime.findings.push(
+                        `${match.form === 'UPLOAD' ? 'SEC Staff letter to' : 'Response from'} ${match.company_name} (${match.date_filed}): "${excerpt}"`
+                      );
+                      runtime.citations.push(
+                        buildCommentLetterCitation({
+                          companyName: match.company_name,
+                          formType: match.form,
+                          filingDate: match.date_filed,
+                          route: `/comment-letters?company=${encodeURIComponent(match.company_name)}`,
+                          externalUrl: `https://www.sec.gov/Archives/${match.filename}`,
+                          description: excerpt.slice(0, 160) || 'SEC correspondence',
+                        })
+                      );
+                    }
+                    setPendingSearchIntent({
+                      id: `intent-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+                      surface: 'comment-letters',
+                      query,
+                      mode,
+                      filters,
+                      defaultForms,
+                    });
+                    navigate.push(routeForSurface('comment-letters'));
+                    appendAgentLog(runId, { actionId: action.id, type: action.type, title: action.title, detail: `Found ${matches.length} letter excerpt${matches.length === 1 ? '' : 's'} in the corpus.`, status: 'completed' });
+                    continue;
+                  }
+                }
+              } catch {
+                // corpus unreachable — fall through to the EFTS path
+              }
+            }
+
             const results = await executeFilingResearchSearch({
               query,
               filters,
@@ -651,12 +710,14 @@ export function AIQnAPanel() {
           ? `${runtime.latestFiling.companyName} ${runtime.latestFiling.formType}`
           : runtime.compareTickers.length > 0
             ? 'Benchmarking cohort ready'
-            : runtime.commentLetterResults.length > 0
+            : runtime.commentLetterResults.length > 0 || runtime.lettersCorpusCount > 0
               ? 'SEC comment-letter evidence'
               : 'Filing research evidence',
         summary: runtime.searchResults.length > 0
           ? await buildSearchTrendSummary(runtime.searchResults.slice(0, 20), runtime.searchQuery, runtime.searchFilters)
-          : runtime.commentLetterResults.length > 0
+          : runtime.lettersCorpusCount > 0
+            ? `Found ${runtime.lettersCorpusCount} full-text comment-letter match${runtime.lettersCorpusCount === 1 ? '' : 'es'} for "${runtime.searchQuery || prompt}" — excerpts quoted in the findings below.`
+            : runtime.commentLetterResults.length > 0
             ? `Found ${runtime.commentLetterResults.length} SEC comment-letter match${runtime.commentLetterResults.length === 1 ? '' : 'es'} for "${runtime.searchQuery || prompt}".`
             : runtime.importantSummary
               ? `Prepared a cited filing summary for ${runtime.latestFiling?.companyName || 'the current filing'}.`
@@ -677,7 +738,7 @@ export function AIQnAPanel() {
 
       let finalAnswer: string;
 
-      if (runtime.importantSummary && runtime.searchResults.length === 0 && runtime.commentLetterResults.length === 0) {
+      if (runtime.importantSummary && runtime.searchResults.length === 0 && runtime.commentLetterResults.length === 0 && runtime.lettersCorpusCount === 0) {
         finalAnswer = runtime.importantSummary;
       } else {
         // Use streaming for answer generation — tokens appear incrementally
