@@ -1,6 +1,7 @@
 import { Anthropic } from '@anthropic-ai/sdk';
 import { cacheService } from '../../../lib/cache';
 import { COMPARISON_SYSTEM_PROMPT, DEF14A_COMPARISON_PROMPT } from '../../../lib/systemPrompts';
+import { checkAiRateLimit, rateLimitResponse } from '../../../lib/rate-limit';
 import crypto from 'crypto';
 
 
@@ -8,8 +9,12 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY || '',
 });
 
+const CLAUDE_MODEL = process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-6';
+
 export async function POST(req: Request) {
   try {
+    const rate = checkAiRateLimit(req);
+    if (!rate.allowed) return rateLimitResponse(rate.retryAfterSeconds);
     const { tickers, section, filingContexts } = await req.json();
 
     if (!tickers || !Array.isArray(tickers) || tickers.length < 2) {
@@ -59,7 +64,7 @@ export async function POST(req: Request) {
 
     // Using the latest Claude 4.6 Sonnet model with prompt caching
     const msg = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6',
+      model: CLAUDE_MODEL,
       // Thinking budget comes out of max_tokens: 8192-4000 left ~4k visible
       // tokens, which truncated 10-company comparison tables mid-row.
       max_tokens: 16384,

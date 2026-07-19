@@ -1,24 +1,43 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useCallback } from 'react';
 
-import { Mail, Search, Loader2, ExternalLink, TrendingUp } from 'lucide-react';
-import DataTable, { type ColumnDef } from '../components/tables/DataTable';
-import ResultsToolbar from '../components/tables/ResultsToolbar';
+import { Mail, Search, Loader2, ExternalLink, MessageSquare, ChevronDown, ChevronRight } from 'lucide-react';
 import AskCopilotButton from '../components/tables/AskCopilotButton';
-import AIResultsSummary from '../components/tables/AIResultsSummary';
-import SearchFilterBar, { type SearchFilters, defaultSearchFilters } from '../components/filters/SearchFilterBar';
-import { executeFilingResearchSearch } from '../services/filingResearch';
 import { useApp } from '../context/AppState';
 
-interface LetterRow {
-  entityName: string;
-  fileDate: string;
-  formType: string;
-  cik: string;
-  accessionNumber: string;
-  primaryDocument: string;
+interface ThreadSummary {
+  thread_id: string;
+  cik: number;
+  company_name: string;
+  letters: number;
+  uploads: number;
+  corresps: number;
+  first_letter: string;
+  last_letter: string;
+}
+
+interface ThreadLetter {
+  accession: string;
+  cik: number;
+  company_name: string;
+  form: string;
+  date_filed: string;
+  filename: string;
+  has_text: boolean;
+  preview: string;
+}
+
+interface SearchMatch {
+  accession: string;
+  cik: number;
+  company_name: string;
+  form: string;
+  date_filed: string;
+  thread_id: string;
+  filename: string;
+  headline: string;
+  rank: number;
 }
 
 const cardStyle: React.CSSProperties = {
@@ -26,237 +45,283 @@ const cardStyle: React.CSSProperties = {
   border: '1px solid rgba(255,255,255,0.08)',
   borderRadius: '12px',
   padding: '16px',
-  cursor: 'pointer',
   transition: 'border-color 0.2s',
 };
 
-const COMMENT_LETTERS_USE_ELASTICSEARCH = false;
+function edgarUrl(filename: string): string {
+  return `https://www.sec.gov/Archives/${filename}`;
+}
 
-export default function CommentLetters() {
-  const navigate = useRouter();
-  const { pendingSearchIntent, setPendingSearchIntent, setActiveSearchContext } = useApp();
-  const [filters, setFilters] = useState<SearchFilters>({ ...defaultSearchFilters, keyword: '' });
-  const [results, setResults] = useState<LetterRow[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [searched, setSearched] = useState(false);
-  const [recentItems, setRecentItems] = useState<LetterRow[]>([]);
-  const [recentLoading, setRecentLoading] = useState(true);
+/** ts_headline emits only <b> tags; letter text itself was tag-stripped at
+ *  ingest. Escape everything, then re-enable the highlight markers. */
+function renderHeadline(headline: string): { __html: string } {
+  const escaped = headline
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  return {
+    __html: escaped
+      .replace(/&lt;b&gt;/g, '<mark style="background:rgba(214,108,174,0.25);color:#F9A8D4;padding:0 2px;border-radius:2px;">')
+      .replace(/&lt;\/b&gt;/g, '</mark>'),
+  };
+}
 
-  useEffect(() => {
-    async function loadRecent() {
-      try {
-        const matches = await executeFilingResearchSearch({
-          query: 'revenue recognition',
-          filters: { ...defaultSearchFilters },
-          defaultForms: 'CORRESP,UPLOAD',
-          limit: 8,
-          useElasticsearch: COMMENT_LETTERS_USE_ELASTICSEARCH,
-        });
-        setRecentItems(matches.map(match => ({
-          entityName: match.entityName,
-          fileDate: match.fileDate,
-          formType: match.formType,
-          cik: match.cik,
-          accessionNumber: match.accessionNumber,
-          primaryDocument: match.primaryDocument,
-        })));
-      } catch (err) { console.error(err); }
-      finally { setRecentLoading(false); }
-    }
-    loadRecent();
-  }, []);
+function FormBadge({ form }: { form: string }) {
+  const isStaff = form === 'UPLOAD';
+  return (
+    <span style={{
+      fontSize: '0.7rem',
+      color: isStaff ? '#FBBF24' : '#6EE7B7',
+      background: isStaff ? 'rgba(245,158,11,0.12)' : 'rgba(16,185,129,0.12)',
+      padding: '2px 8px',
+      borderRadius: '4px',
+      whiteSpace: 'nowrap',
+    }}>
+      {isStaff ? 'SEC Staff' : 'Company response'}
+    </span>
+  );
+}
 
-  async function handleSearch() {
-    if (!filters.keyword.trim() && !filters.entityName.trim()) return;
-    setLoading(true);
-    setSearched(true);
-    try {
-      const matches = await executeFilingResearchSearch({
-        query: filters.keyword || 'comment',
-        filters,
-        defaultForms: 'CORRESP,UPLOAD',
-        limit: 50,
-        useElasticsearch: COMMENT_LETTERS_USE_ELASTICSEARCH,
-      });
-      setActiveSearchContext({
-        surface: 'comment-letters',
-        query: filters.keyword || 'comment',
-        mode: 'semantic',
-        filters,
-        results: matches,
-        updatedAt: new Date().toISOString(),
-      });
-      setResults(matches.map(match => ({
-        entityName: match.entityName,
-        fileDate: match.fileDate,
-        formType: match.formType,
-        cik: match.cik,
-        accessionNumber: match.accessionNumber,
-        primaryDocument: match.primaryDocument,
-      })));
-    } catch (err) {
-      console.error(err);
-      setResults([]);
-    } finally { setLoading(false); }
-  }
+function ThreadConversation({ threadId }: { threadId: string }) {
+  const [letters, setLetters] = useState<ThreadLetter[] | null>(null);
 
   useEffect(() => {
-    if (!pendingSearchIntent || pendingSearchIntent.surface !== 'comment-letters') return;
+    let cancelled = false;
+    fetch(`/api/letters?thread=${encodeURIComponent(threadId)}`)
+      .then(response => response.json())
+      .then(payload => { if (!cancelled) setLetters(payload.letters ?? []); })
+      .catch(() => { if (!cancelled) setLetters([]); });
+    return () => { cancelled = true; };
+  }, [threadId]);
 
-    setFilters(prev => ({
-      ...prev,
-      ...pendingSearchIntent.filters,
-      keyword: pendingSearchIntent.query,
-    }));
-
-    if (pendingSearchIntent.prefetchedResults) {
-      setResults(pendingSearchIntent.prefetchedResults.map(match => ({
-        entityName: match.entityName,
-        fileDate: match.fileDate,
-        formType: match.formType,
-        cik: match.cik,
-        accessionNumber: match.accessionNumber,
-        primaryDocument: match.primaryDocument,
-      })));
-      setSearched(true);
-      setLoading(false);
-      setActiveSearchContext({
-        surface: 'comment-letters',
-        query: pendingSearchIntent.query,
-        mode: pendingSearchIntent.mode,
-        filters: pendingSearchIntent.filters,
-        results: pendingSearchIntent.prefetchedResults,
-        updatedAt: new Date().toISOString(),
-      });
-      setPendingSearchIntent(null);
-      return;
-    }
-
-    setPendingSearchIntent(null);
-  }, [pendingSearchIntent, setActiveSearchContext, setPendingSearchIntent]);
-
-  function viewFiling(row: LetterRow) {
-    navigate.push(`/filing/${row.cik}_${row.accessionNumber}_${row.primaryDocument}`);
+  if (letters === null) {
+    return <div style={{ padding: '16px', color: '#64748B' }}><Loader2 size={16} className="spinner" /> Loading conversation…</div>;
   }
-
-  const columns: ColumnDef<LetterRow>[] = [
-    { key: 'fileDate', header: 'Date', sortable: true },
-    { key: 'formType', header: 'Form', sortable: true },
-    { key: 'entityName', header: 'Company', sortable: true },
-    {
-      key: 'accessionNumber', header: 'Filing', render: (row) => {
-        return (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <button
-              type="button"
-              onClick={event => {
-                event.stopPropagation();
-                viewFiling(row);
-              }}
-              style={{ color: '#D66CAE', display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'none', border: 'none', cursor: 'pointer' }}
-            >
-              View <ExternalLink size={12} />
-            </button>
-            <AskCopilotButton compact prompt={`Analyze the ${row.formType} filing from ${row.entityName} filed ${row.fileDate}`} />
-          </div>
-        );
-      }
-    },
-  ];
 
   return (
-    <div style={{ padding: '32px', maxWidth: '1200px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-        <Mail size={28} style={{ color: '#D66CAE' }} />
-        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'white' }}>Comment Letters</h1>
-      </div>
-      <p style={{ color: '#94A3B8', marginBottom: '24px', fontSize: '0.9rem' }}>
-        Search SEC staff comment letters (CORRESP, UPLOAD) from EDGAR full-text search.
-      </p>
-
-      {/* Search bar */}
-      <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', alignItems: 'flex-end' }}>
-        <div style={{ flex: 1, minWidth: '200px' }}>
-          <input value={filters.keyword} onChange={e => setFilters({ ...filters, keyword: e.target.value })} placeholder="e.g. revenue recognition"
-            onKeyDown={e => e.key === 'Enter' && handleSearch()}
-            style={{ width: '100%', padding: '8px 12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'white', fontSize: '0.85rem', outline: 'none' }} />
-        </div>
-        <button onClick={handleSearch} disabled={loading}
-          style={{ padding: '8px 20px', background: '#B31F7E', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem' }}>
-          {loading ? <Loader2 size={14} className="spinner" /> : <Search size={14} />} Search
-        </button>
-      </div>
-
-      {/* Filter bar */}
-      <SearchFilterBar
-        config={{
-          showEntityName: true, showDateRange: true,
-          showSectionKeywords: true,
-          showSIC: true, showExchange: true, showAcceleratedStatus: true,
-          showAccountant: true, showStateOfInc: true,
-          showAccessionNumber: true, showFileNumber: true,
-          showFiscalYearEnd: true,
-        }}
-        filters={filters}
-        onChange={setFilters}
-        onSearch={handleSearch}
-        loading={loading}
-      />
-
-      {loading ? (
-        <div style={{ textAlign: 'center', padding: '48px', color: '#64748B' }}>
-          <Loader2 size={24} className="spinner" style={{ marginBottom: '8px' }} />
-          <div>Searching comment letters...</div>
-        </div>
-      ) : results.length > 0 ? (
-        <>
-          <AIResultsSummary
-            query={filters.keyword}
-            resultsSummary={results.slice(0, 10).map(r => `${r.entityName} - ${r.formType} (${r.fileDate})`).join('\n')}
-            resultCount={results.length}
-            moduleLabel="comment letters"
-            cacheKey={`comment letters:${filters.keyword}:${results.length}`}
-          />
-          <ResultsToolbar data={results} columns={columns} label="comment letters" />
-          <DataTable
-            columns={columns}
-            data={results}
-            pageSize={25}
-            onRowClick={row => viewFiling(row)}
-          />
-        </>
-      ) : searched ? (
-        <div style={{ textAlign: 'center', padding: '48px', color: '#64748B' }}>No comment letters found.</div>
-      ) : (
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-            <TrendingUp size={18} style={{ color: '#F59E0B' }} />
-            <h2 style={{ fontSize: '1rem', fontWeight: 600, color: 'white' }}>Recent Comment Letters — Revenue Recognition</h2>
-          </div>
-          {recentLoading ? (
-            <div style={{ textAlign: 'center', padding: '32px', color: '#64748B' }}>
-              <Loader2 size={20} className="spinner" style={{ marginBottom: '8px' }} /><div>Loading recent filings...</div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', padding: '12px 0 4px' }}>
+      {letters.map(letter => (
+        <div key={`${letter.accession}:${letter.form}`} style={{
+          ...cardStyle,
+          padding: '12px 14px',
+          marginLeft: letter.form === 'UPLOAD' ? 0 : '28px',
+          borderLeft: letter.form === 'UPLOAD' ? '3px solid rgba(245,158,11,0.5)' : '3px solid rgba(16,185,129,0.5)',
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <FormBadge form={letter.form} />
+              <span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>{letter.date_filed}</span>
             </div>
-          ) : recentItems.length > 0 ? (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px' }}>
-              {recentItems.map((item, i) => (
-                <div key={i} style={cardStyle} onClick={() => viewFiling(item)}
-                  onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(214,108,174,0.4)')}
-                  onMouseLeave={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')}>
-                  <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'white', marginBottom: '6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.entityName}</div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>{item.fileDate}</span>
-                    <span style={{ fontSize: '0.7rem', color: '#D66CAE', background: 'rgba(179,31,126,0.1)', padding: '2px 8px', borderRadius: '4px' }}>{item.formType}</span>
-                  </div>
-                </div>
-              ))}
+            <a href={edgarUrl(letter.filename)} target="_blank" rel="noreferrer"
+              style={{ color: '#D66CAE', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              Full letter <ExternalLink size={11} />
+            </a>
+          </div>
+          {letter.has_text ? (
+            <div style={{ fontSize: '0.8rem', color: '#CBD5E1', lineHeight: 1.5, whiteSpace: 'pre-line' }}>
+              {letter.preview}{letter.preview.length >= 700 ? '…' : ''}
             </div>
           ) : (
-            <div style={{ textAlign: 'center', padding: '32px', color: '#64748B' }}>Enter a search query to find SEC comment letters.</div>
+            <div style={{ fontSize: '0.78rem', color: '#64748B', fontStyle: 'italic' }}>
+              Text not yet extracted for this letter — open the full letter on EDGAR.
+            </div>
           )}
+        </div>
+      ))}
+      {letters.length > 0 && (
+        <div style={{ paddingTop: '4px' }}>
+          <AskCopilotButton
+            prompt={`Summarize this SEC comment-letter conversation for ${letters[0].company_name}: what did the Staff challenge, how did the company respond, and how was it resolved? Thread: ${threadId}`}
+          />
         </div>
       )}
     </div>
   );
 }
 
+export default function CommentLetters() {
+  const { pendingSearchIntent, setPendingSearchIntent } = useApp();
+  const [keyword, setKeyword] = useState('');
+  const [formFilter, setFormFilter] = useState<'' | 'UPLOAD' | 'CORRESP'>('');
+  const [threads, setThreads] = useState<ThreadSummary[]>([]);
+  const [threadsTotal, setThreadsTotal] = useState(0);
+  const [matches, setMatches] = useState<SearchMatch[]>([]);
+  const [matchesTotal, setMatchesTotal] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [browseLoading, setBrowseLoading] = useState(true);
+  const [searched, setSearched] = useState(false);
+  const [expandedThread, setExpandedThread] = useState<string | null>(null);
+  const [unavailable, setUnavailable] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/letters?size=12')
+      .then(response => {
+        if (!response.ok) throw new Error(String(response.status));
+        return response.json();
+      })
+      .then(payload => {
+        if (cancelled) return;
+        setThreads(payload.threads ?? []);
+        setThreadsTotal(payload.total ?? 0);
+      })
+      .catch(() => { if (!cancelled) setUnavailable(true); })
+      .finally(() => { if (!cancelled) setBrowseLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
+
+  const runSearch = useCallback(async (query: string, form: '' | 'UPLOAD' | 'CORRESP') => {
+    if (!query.trim()) return;
+    setLoading(true);
+    setSearched(true);
+    setExpandedThread(null);
+    try {
+      const params = new URLSearchParams({ q: query.trim(), size: '50' });
+      if (form) params.set('form', form);
+      const response = await fetch(`/api/letters?${params.toString()}`);
+      const payload = await response.json();
+      setMatches(payload.matches ?? []);
+      setMatchesTotal(payload.total ?? 0);
+    } catch {
+      setMatches([]);
+      setMatchesTotal(0);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!pendingSearchIntent || pendingSearchIntent.surface !== 'comment-letters') return;
+    setKeyword(pendingSearchIntent.query);
+    runSearch(pendingSearchIntent.query, '');
+    setPendingSearchIntent(null);
+  }, [pendingSearchIntent, runSearch, setPendingSearchIntent]);
+
+  const showBrowse = !searched || (!loading && matches.length === 0 && !keyword.trim());
+
+  return (
+    <div style={{ padding: '32px', maxWidth: '1100px', margin: '0 auto' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+        <Mail size={28} style={{ color: '#D66CAE' }} />
+        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'white' }}>Comment Letters</h1>
+      </div>
+      <p style={{ color: '#94A3B8', marginBottom: '24px', fontSize: '0.9rem' }}>
+        SEC review conversations since 2005 — Staff letters (UPLOAD) threaded with company responses
+        (CORRESP), full-text searchable{threadsTotal > 0 ? ` across ${threadsTotal.toLocaleString()} review episodes` : ''}.
+      </p>
+
+      {unavailable && (
+        <div style={{ ...cardStyle, borderColor: 'rgba(245,158,11,0.4)', color: '#FBBF24', fontSize: '0.85rem', marginBottom: '16px' }}>
+          The letter corpus is not reachable right now — check the enriched-search configuration.
+        </div>
+      )}
+
+      {/* Search */}
+      <div style={{ display: 'flex', gap: '12px', marginBottom: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+        <div style={{ flex: 1, minWidth: '240px' }}>
+          <input value={keyword} onChange={e => setKeyword(e.target.value)}
+            placeholder='e.g. revenue recognition principal agent, "material weakness", segment reporting'
+            onKeyDown={e => e.key === 'Enter' && runSearch(keyword, formFilter)}
+            style={{ width: '100%', padding: '9px 12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'white', fontSize: '0.85rem', outline: 'none' }} />
+        </div>
+        <div style={{ display: 'flex', gap: '6px' }}>
+          {([['', 'All'], ['UPLOAD', 'Staff letters'], ['CORRESP', 'Responses']] as const).map(([value, label]) => (
+            <button key={value} onClick={() => { setFormFilter(value); if (searched && keyword.trim()) runSearch(keyword, value); }}
+              style={{
+                padding: '7px 12px', borderRadius: '8px', fontSize: '0.78rem', cursor: 'pointer',
+                border: '1px solid ' + (formFilter === value ? 'rgba(214,108,174,0.6)' : 'rgba(255,255,255,0.12)'),
+                background: formFilter === value ? 'rgba(179,31,126,0.25)' : 'rgba(255,255,255,0.04)',
+                color: formFilter === value ? '#F9A8D4' : '#94A3B8',
+              }}>
+              {label}
+            </button>
+          ))}
+        </div>
+        <button onClick={() => runSearch(keyword, formFilter)} disabled={loading}
+          style={{ padding: '9px 20px', background: '#B31F7E', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem' }}>
+          {loading ? <Loader2 size={14} className="spinner" /> : <Search size={14} />} Search
+        </button>
+      </div>
+
+      {loading ? (
+        <div style={{ textAlign: 'center', padding: '48px', color: '#64748B' }}>
+          <Loader2 size={24} className="spinner" style={{ marginBottom: '8px' }} />
+          <div>Searching inside letters…</div>
+        </div>
+      ) : searched && keyword.trim() ? (
+        matches.length > 0 ? (
+          <div>
+            <div style={{ color: '#94A3B8', fontSize: '0.8rem', margin: '8px 0 12px' }}>
+              {matchesTotal.toLocaleString()} matching letters — ranked by relevance
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {matches.map(match => (
+                <div key={`${match.accession}:${match.cik}`} style={cardStyle}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                      <span style={{ fontWeight: 600, color: 'white', fontSize: '0.88rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{match.company_name}</span>
+                      <FormBadge form={match.form} />
+                      <span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>{match.date_filed}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <button type="button" onClick={() => setExpandedThread(expandedThread === match.thread_id ? null : match.thread_id)}
+                        style={{ color: '#D66CAE', fontSize: '0.75rem', background: 'none', border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        <MessageSquare size={12} /> {expandedThread === match.thread_id ? 'Hide conversation' : 'View conversation'}
+                      </button>
+                      <a href={edgarUrl(match.filename)} target="_blank" rel="noreferrer"
+                        style={{ color: '#94A3B8', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        EDGAR <ExternalLink size={11} />
+                      </a>
+                    </div>
+                  </div>
+                  <div style={{ fontSize: '0.8rem', color: '#CBD5E1', lineHeight: 1.55 }}
+                    dangerouslySetInnerHTML={renderHeadline(match.headline || '')} />
+                  {expandedThread === match.thread_id && <ThreadConversation threadId={match.thread_id} />}
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div style={{ textAlign: 'center', padding: '48px', color: '#64748B' }}>
+            No letters matched. Text extraction is still backfilling older years — recent letters are covered first.
+          </div>
+        )
+      ) : null}
+
+      {showBrowse && !loading && (
+        <div style={{ marginTop: searched ? '8px' : '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
+            <MessageSquare size={18} style={{ color: '#F59E0B' }} />
+            <h2 style={{ fontSize: '1rem', fontWeight: 600, color: 'white' }}>Latest review conversations</h2>
+          </div>
+          {browseLoading ? (
+            <div style={{ textAlign: 'center', padding: '32px', color: '#64748B' }}>
+              <Loader2 size={20} className="spinner" style={{ marginBottom: '8px' }} /><div>Loading conversations…</div>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {threads.map(thread => (
+                <div key={thread.thread_id} style={cardStyle}>
+                  <div
+                    onClick={() => setExpandedThread(expandedThread === thread.thread_id ? null : thread.thread_id)}
+                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', cursor: 'pointer', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                      {expandedThread === thread.thread_id ? <ChevronDown size={16} style={{ color: '#94A3B8' }} /> : <ChevronRight size={16} style={{ color: '#94A3B8' }} />}
+                      <span style={{ fontWeight: 600, color: 'white', fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{thread.company_name}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.75rem', color: '#94A3B8' }}>
+                      <span style={{ color: '#FBBF24' }}>{thread.uploads} Staff</span>
+                      <span style={{ color: '#6EE7B7' }}>{thread.corresps} responses</span>
+                      <span>{thread.first_letter} → {thread.last_letter}</span>
+                    </div>
+                  </div>
+                  {expandedThread === thread.thread_id && <ThreadConversation threadId={thread.thread_id} />}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}

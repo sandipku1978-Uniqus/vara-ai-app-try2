@@ -45,6 +45,9 @@ jobs:
       - name: Refresh filing metadata
         run: npx tsx data-pipeline/ingest-metadata.ts --since ${{ github.event.inputs.metadata_since_days || '3' }}
 
+      - name: Enrich company SIC/state (incremental, self-completing)
+        run: npx tsx data-pipeline/enrich-companies.ts --sic --limit 2000
+
       # Weekly schedule (Sunday 11:00) or manual opt-in
       - name: Refresh auditor engagements
         if: github.event.schedule == '0 11 * * 0' || github.event.inputs.run_auditors == 'true'

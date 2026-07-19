@@ -1,6 +1,7 @@
 import { Anthropic } from '@anthropic-ai/sdk';
 import { cacheService } from '../../../lib/cache';
 import { SEC_RESEARCH_SYSTEM_PROMPT } from '../../../lib/systemPrompts';
+import { checkAiRateLimit, rateLimitResponse } from '../../../lib/rate-limit';
 import crypto from 'crypto';
 
 
@@ -8,8 +9,13 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY || '',
 });
 
+// Model is env-configurable so upgrades are a Vercel env change, not a deploy
+const CLAUDE_MODEL = process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-6';
+
 export async function POST(req: Request) {
   try {
+    const rate = checkAiRateLimit(req);
+    if (!rate.allowed) return rateLimitResponse(rate.retryAfterSeconds);
     const body = await req.json();
     const { prompt, messages = [], maxTokens = 4096, temperature = 0.2, frameworks = [] } = body;
 
@@ -66,7 +72,7 @@ export async function POST(req: Request) {
     }
 
     const msg = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6',
+      model: CLAUDE_MODEL,
       max_tokens: effectiveMaxTokens,
       ...(isComplex ? { thinking: { type: 'enabled', budget_tokens: 4000 } } : {}),
       temperature: effectiveTemp,

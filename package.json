@@ -15,7 +15,8 @@
     "ingest:metadata": "tsx data-pipeline/ingest-metadata.ts",
     "ingest:auditors": "tsx data-pipeline/load-auditors.ts",
     "ingest:letters": "tsx data-pipeline/ingest-letters.ts",
-    "ingest:letter-text": "tsx data-pipeline/fetch-letter-text.ts"
+    "ingest:letter-text": "tsx data-pipeline/fetch-letter-text.ts",
+    "enrich:companies": "tsx data-pipeline/enrich-companies.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.82.0",

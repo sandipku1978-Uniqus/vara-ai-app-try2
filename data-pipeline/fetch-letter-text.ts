@@ -176,16 +176,30 @@ async function main() {
         ? await extractLetterText(raw)
         : { text: null, error: 'fetch_failed' as string | null };
 
-      const { error: updateError } = await client
-        .from('urc_comment_letters')
-        .update(
-          text
-            ? { content: text, content_fetched_at: new Date().toISOString(), content_error: null }
-            : { content_error: extractError, content_fetched_at: new Date().toISOString() }
-        )
-        .eq('accession', row.accession)
-        .eq('cik', row.cik);
-      if (updateError) throw new Error(`update failed: ${updateError.message}`);
+      // Transient network blips on the update must not kill a multi-hour run —
+      // retry, then skip the row (it stays unfetched and is retried next run)
+      let updated = false;
+      for (let attempt = 0; attempt < 4 && !updated; attempt++) {
+        try {
+          const { error: updateError } = await client
+            .from('urc_comment_letters')
+            .update(
+              text
+                ? { content: text, content_fetched_at: new Date().toISOString(), content_error: null }
+                : { content_error: extractError, content_fetched_at: new Date().toISOString() }
+            )
+            .eq('accession', row.accession)
+            .eq('cik', row.cik);
+          if (!updateError) updated = true;
+          else if (attempt + 1 < 4) await delay(1500 * 2 ** attempt);
+        } catch {
+          if (attempt + 1 < 4) await delay(1500 * 2 ** attempt);
+        }
+      }
+      if (!updated) {
+        console.error(`  update kept failing for ${row.accession}; skipping (will retry next run)`);
+        continue;
+      }
 
       if (text) fetched++; else errored++;
       if ((fetched + errored) % 500 === 0) {
