@@ -128,7 +128,7 @@ const FINANCIAL_SECTIONS: { title: string; metrics: { key: string; label: string
       { key: 'Goodwill', label: 'Goodwill' },
       { key: 'IntangibleAssets', label: 'Intangible Assets (ex. GW)' },
       { key: 'TotalAssets', label: 'Total Assets' },
-      { key: 'TotalDebt', label: 'Long-Term Debt' },
+      { key: 'TotalDebt', label: 'Total Debt' },
       { key: 'TotalLiabilities', label: 'Total Liabilities' },
       { key: 'StockholdersEquity', label: "Stockholders' Equity" },
     ]
@@ -185,6 +185,7 @@ export default function Benchmarking() {
   const [selectedYearsPerTicker, setSelectedYearsPerTicker] = useState<Record<string, number[]>>({});
   const [selectedSection, setSelectedSection] = useState('Item 1A. Risk Factors');
   const [viewMode, setViewMode] = useState<'financials' | 'text-diff' | 'audit-matrix'>('financials');
+  const [commonSize, setCommonSize] = useState(false);
   const [matrixFormType, setMatrixFormType] = useState<string>('10-K');
   const [matrixData, setMatrixData] = useState<Record<string, Record<string, MatrixCell>>>({});
   const [matrixLoading, setMatrixLoading] = useState(false);
@@ -595,6 +596,56 @@ export default function Benchmarking() {
   const getCashFlowQuality = (col: string) => getRatio(col, 'OperatingCashFlow', 'NetIncome', 1, 'x', 2);
   const getSBCPct = (col: string) => getRatio(col, 'StockCompensation', 'Revenues');
   const getCapExPct = (col: string) => getRatio(col, 'CapitalExpenditures', 'Revenues');
+
+  const getColPeriodEnd = (col: string): string | null => {
+    const facts = companiesFacts[col];
+    if (!facts) return null;
+    return facts.Revenues?.periodEnd || facts.TotalAssets?.periodEnd || facts.NetIncome?.periodEnd || null;
+  };
+
+  // Common-size: income-statement & cash-flow lines as % of revenue,
+  // balance-sheet lines as % of total assets — the normalization accountants
+  // apply instinctively when peers differ in scale.
+  const formatCommonSize = (
+    col: string,
+    sectionTitle: string,
+    metricKey: string,
+    metric: FinancialMetric | undefined
+  ): string => {
+    if (!metric || metric.value == null) return '—';
+    if (metric.unit.includes('/shares')) return formatFinancialValue(metric.value, metric.unit, metric.currency);
+    const baseMetric = sectionTitle === 'Balance Sheet'
+      ? companiesFacts[col]?.TotalAssets
+      : companiesFacts[col]?.Revenues;
+    if (metricKey === 'Revenues' || metricKey === 'TotalAssets') {
+      return '100.0%';
+    }
+    if (baseMetric?.value == null || baseMetric.value === 0) return '—';
+    return `${((metric.value / baseMetric.value) * 100).toFixed(1)}%`;
+  };
+
+  const exportMatrixToXlsx = async () => {
+    const XLSX = await import('xlsx');
+    const header = ['Metric', ...columns.map(col => {
+      const end = getColPeriodEnd(col);
+      return `${colTicker(col)} FY${colYear(col)}${end ? ` (ended ${end})` : ''}`;
+    })];
+    const rows: (string | number | null)[][] = [header];
+    for (const section of FINANCIAL_SECTIONS) {
+      rows.push([section.title, ...columns.map(() => '')]);
+      for (const metric of section.metrics) {
+        rows.push([
+          metric.label,
+          ...columns.map(col => companiesFacts[col]?.[metric.key]?.value ?? null),
+        ]);
+      }
+    }
+    const sheet = XLSX.utils.aoa_to_sheet(rows);
+    sheet['!cols'] = [{ wch: 28 }, ...columns.map(() => ({ wch: 18 }))];
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, sheet, 'Benchmarking');
+    XLSX.writeFile(workbook, `URC_benchmarking_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  };
 
   const getEffectiveTaxRate = (col: string): RatioResult => {
     const tax = companiesFacts[col]?.IncomeTaxExpense?.value;
@@ -1287,6 +1338,24 @@ Keep it crisp and practical.`;
               })()}
 
               {/* MAIN DATA TABLE */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginBottom: '8px' }}>
+                <button type="button" onClick={() => setCommonSize(prev => !prev)}
+                  style={{
+                    padding: '6px 12px', borderRadius: '8px', fontSize: '0.75rem', cursor: 'pointer',
+                    border: '1px solid ' + (commonSize ? 'rgba(214,108,174,0.6)' : 'rgba(255,255,255,0.12)'),
+                    background: commonSize ? 'rgba(179,31,126,0.25)' : 'rgba(255,255,255,0.04)',
+                    color: commonSize ? '#F9A8D4' : '#94A3B8',
+                  }}>
+                  % Common-size
+                </button>
+                <button type="button" onClick={exportMatrixToXlsx}
+                  style={{
+                    padding: '6px 12px', borderRadius: '8px', fontSize: '0.75rem', cursor: 'pointer',
+                    border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.04)', color: '#94A3B8',
+                  }}>
+                  Export XLSX
+                </button>
+              </div>
               <div className="glass-card" style={{ overflow: 'auto' }}>
                 <table className="financial-table" style={{ width: '100%', borderCollapse: 'collapse', minWidth: `${300 + columns.length * 150}px` }}>
                   <thead>
@@ -1309,6 +1378,13 @@ Keep it crisp and practical.`;
                           }}>
                             <span style={{ color }}>{colTicker(col)}</span>
                             <div style={{ fontSize: '0.72rem', fontWeight: 500, color: tableMutedText, marginTop: '2px' }}>FY{colYear(col)}</div>
+                            {/* Actual period end — 'FY2024' can hide ~11 months of
+                                economic offset between Jan-FYE and Dec-FYE filers */}
+                            {getColPeriodEnd(col) && (
+                              <div style={{ fontSize: '0.65rem', fontWeight: 400, color: tableMutedText }}>
+                                ended {getColPeriodEnd(col)}
+                              </div>
+                            )}
                           </th>
                         );
                       })}
@@ -1341,7 +1417,9 @@ Keep it crisp and practical.`;
                                   color: m?.value != null ? (m.value < 0 ? '#F87171' : 'var(--text-primary)') : 'var(--text-muted)',
                                   ...colBorderStyle(col, idx),
                                 }}>
-                                  {m ? formatFinancialValue(m.value, m.unit, m.currency) : '—'}
+                                  {commonSize
+                                    ? formatCommonSize(col, section.title, metric.key, m)
+                                    : m ? formatFinancialValue(m.value, m.unit, m.currency) : '—'}
                                 </td>
                               );
                             })}

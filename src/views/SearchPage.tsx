@@ -1488,6 +1488,11 @@ export default function SearchPage() {
                     <button className="secondary-btn" onClick={() => openFiling(selectedResult)}>
                       Open Filing
                     </button>
+                    {selectedResult.cik && (
+                      <a href={`/company/${Number(selectedResult.cik)}`} className="secondary-btn" title="Issuer dossier: filings, comment letters, auditor, financials">
+                        Issuer dossier
+                      </a>
+                    )}
                     <a href={selectedDocumentUrl} target="_blank" rel="noreferrer" className="secondary-btn">
                       <ExternalLink size={14} /> SEC.gov
                     </a>

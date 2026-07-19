@@ -409,6 +409,9 @@ export interface FinancialMetric {
   unit: string;
   /** ISO 4217 currency code (e.g. 'USD', 'EUR', 'GBP'). Defaults to 'USD'. */
   currency?: string;
+  /** Actual fiscal period end (YYYY-MM-DD) — surfaces FYE misalignment when
+   *  benchmarking companies with different fiscal calendars. */
+  periodEnd?: string;
 }
 
 /** Currency symbols for display */
@@ -676,6 +679,7 @@ export function extractFinancials(facts: CompanyFacts, year?: number): Record<st
           period: match.fp || 'FY',
           unit: unitKey,
           currency: detectedCurrency === 'shares' ? 'USD' : detectedCurrency,
+          periodEnd: match.end || undefined,
         };
         break; // Found a value — stop trying aliases
       }
@@ -725,6 +729,7 @@ function lookupAnnualMetric(
         period: match.fp || 'FY',
         unit: preferredUnits.unitKey,
         currency: detectedCurrency === 'shares' ? 'USD' : detectedCurrency,
+        periodEnd: match.end || undefined,
       };
     }
   }

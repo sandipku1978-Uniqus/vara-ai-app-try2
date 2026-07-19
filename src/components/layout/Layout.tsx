@@ -15,6 +15,7 @@ import { useApp } from '../../context/AppState';
 import { URCBrandLockup, URCBrandMark } from '../brand/URCBrand';
 import { BRAND } from '../../config/brand';
 import { clerkEnabled } from '../../services/auth';
+import CommandPalette from './CommandPalette';
 import './Layout.css';
 
 function SidebarNavItem({
@@ -292,6 +293,7 @@ export function Layout({ children }: { children: ReactNode }) {
   return (
     <div className={`app-wrapper ${isLanding ? 'is-landing' : 'has-sidebar'} ${!isLanding && isChatOpen ? 'has-copilot' : ''}`}>
       <Sidebar />
+      <CommandPalette />
       <div className="main-content">
         <Navbar />
         {!isLanding && <Breadcrumbs />}
