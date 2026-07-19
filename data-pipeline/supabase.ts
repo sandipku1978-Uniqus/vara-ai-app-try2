@@ -29,7 +29,8 @@ export function createServiceClient(): SupabaseClient {
   return createClient(url, key, { auth: { persistSession: false } });
 }
 
-/** Upsert rows in chunks; throws on the first failed chunk with context. */
+/** Upsert rows in chunks with retry — long backfills hit transient network
+ *  blips, and upserts are idempotent so retrying a chunk is always safe. */
 export async function chunkedUpsert(
   client: SupabaseClient,
   table: string,
@@ -38,11 +39,28 @@ export async function chunkedUpsert(
   chunkSize = 1000,
   onProgress?: (done: number, total: number) => void
 ): Promise<void> {
+  const MAX_ATTEMPTS = 4;
   for (let i = 0; i < rows.length; i += chunkSize) {
     const chunk = rows.slice(i, i + chunkSize);
-    const { error } = await client.from(table).upsert(chunk, { onConflict });
-    if (error) {
-      throw new Error(`Upsert into ${table} failed at rows ${i}-${i + chunk.length}: ${error.message}`);
+    let lastMessage = '';
+    let succeeded = false;
+    for (let attempt = 0; attempt < MAX_ATTEMPTS && !succeeded; attempt++) {
+      try {
+        const { error } = await client.from(table).upsert(chunk, { onConflict });
+        if (!error) {
+          succeeded = true;
+          break;
+        }
+        lastMessage = error.message;
+      } catch (error) {
+        lastMessage = error instanceof Error ? error.message : String(error);
+      }
+      if (attempt + 1 < MAX_ATTEMPTS) {
+        await new Promise(resolve => setTimeout(resolve, 1500 * 2 ** attempt));
+      }
+    }
+    if (!succeeded) {
+      throw new Error(`Upsert into ${table} failed at rows ${i}-${i + chunk.length} after ${MAX_ATTEMPTS} attempts: ${lastMessage}`);
     }
     onProgress?.(Math.min(i + chunkSize, rows.length), rows.length);
   }
