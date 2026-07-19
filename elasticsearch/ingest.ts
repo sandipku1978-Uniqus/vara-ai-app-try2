@@ -1,6 +1,12 @@
 /**
  * SEC EDGAR Filing Ingestion Pipeline (resilient, unattended)
  *
+ * ⚠️ RETIRED (2026-07): the Elastic Cloud account this indexed into was
+ * deleted for cost. The replacement is data-pipeline/ (metadata-only ingest
+ * into Supabase Postgres + PCAOB Form AP auditor data; full text stays on
+ * EDGAR EFTS). Kept for reference in case a self-hosted full-text cluster is
+ * ever revisited.
+ *
  * Downloads filings from SEC EDGAR, extracts text and metadata, and indexes
  * them into Elasticsearch. Designed to run unattended for hours.
  *

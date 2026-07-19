@@ -19,8 +19,14 @@ function isEnabledEnvFlag(value: unknown): boolean {
   }
 }
 
+/** Enables the enriched /api/es-search lane (EDGAR EFTS + Supabase facets —
+ *  the Elastic cluster it originally fronted was retired). The legacy
+ *  NEXT_PUBLIC_USE_ELASTICSEARCH name still works. */
 export function isElasticsearchEnabled(): boolean {
-  return isEnabledEnvFlag(process.env.NEXT_PUBLIC_USE_ELASTICSEARCH);
+  return (
+    isEnabledEnvFlag(process.env.NEXT_PUBLIC_USE_ENRICHED_SEARCH) ||
+    isEnabledEnvFlag(process.env.NEXT_PUBLIC_USE_ELASTICSEARCH)
+  );
 }
 
 // Cache for CIKs to avoid redundant lookups if doing bulk mappings 
