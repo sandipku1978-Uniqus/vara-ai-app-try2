@@ -577,11 +577,14 @@ function matchesSectionKeywords(filingText: string, sectionKeywords: string): bo
   return options.some(option => normalizedText.includes(option));
 }
 
-function sortResearchResults(results: FilingResearchResult[], _preferRelevance: boolean): FilingResearchResult[] {
+function sortResearchResults(results: FilingResearchResult[], preferRelevance: boolean): FilingResearchResult[] {
   return results.sort((a, b) => {
+    const byRelevance = (b.relevanceScore ?? b.score) - (a.relevanceScore ?? a.score);
     const byDate = b.fileDate.localeCompare(a.fileDate);
-    if (byDate !== 0) return byDate;
-    return (b.relevanceScore ?? b.score) - (a.relevanceScore ?? a.score);
+    if (preferRelevance) {
+      return byRelevance !== 0 ? byRelevance : byDate;
+    }
+    return byDate !== 0 ? byDate : byRelevance;
   });
 }
 

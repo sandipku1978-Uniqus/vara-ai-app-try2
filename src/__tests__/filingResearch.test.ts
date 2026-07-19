@@ -5,7 +5,7 @@ import type { EdgarSearchHit } from '../services/secApi';
 
 describe('filingResearch', () => {
   beforeEach(() => {
-    (import.meta.env as Record<string, unknown>).VITE_USE_ELASTICSEARCH = 'true';
+    process.env.NEXT_PUBLIC_USE_ELASTICSEARCH = 'true';
   });
 
   describe('canUseInstantElasticsearchSearch', () => {

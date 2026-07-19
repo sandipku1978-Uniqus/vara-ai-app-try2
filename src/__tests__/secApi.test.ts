@@ -8,7 +8,7 @@ describe('secApi', () => {
   beforeEach(() => {
     mockFetch.mockReset();
     vi.resetModules();
-    delete (import.meta.env as Record<string, unknown>).VITE_USE_ELASTICSEARCH;
+    delete process.env.NEXT_PUBLIC_USE_ELASTICSEARCH;
   });
 
   describe('CIK_MAP', () => {
@@ -124,8 +124,8 @@ describe('secApi', () => {
   });
 
   describe('searchEdgarFilings backend selection', () => {
-    it('uses the legacy EFTS endpoint when VITE_USE_ELASTICSEARCH is the string "false"', async () => {
-      (import.meta.env as Record<string, unknown>).VITE_USE_ELASTICSEARCH = 'false';
+    it('uses the legacy EFTS endpoint when NEXT_PUBLIC_USE_ELASTICSEARCH is the string "false"', async () => {
+      process.env.NEXT_PUBLIC_USE_ELASTICSEARCH = 'false';
       mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({ hits: { hits: [], total: { value: 0 } } }),
@@ -139,8 +139,8 @@ describe('secApi', () => {
       expect(String(mockFetch.mock.calls[0][0])).not.toContain('/api/es-search?');
     });
 
-    it('keeps the legacy EFTS endpoint by default even when VITE_USE_ELASTICSEARCH is the string "true"', async () => {
-      (import.meta.env as Record<string, unknown>).VITE_USE_ELASTICSEARCH = 'true';
+    it('keeps the legacy EFTS endpoint by default even when NEXT_PUBLIC_USE_ELASTICSEARCH is the string "true"', async () => {
+      process.env.NEXT_PUBLIC_USE_ELASTICSEARCH = 'true';
       mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({ hits: { hits: [], total: { value: 0 } } }),
@@ -153,12 +153,17 @@ describe('secApi', () => {
       expect(String(mockFetch.mock.calls[0][0])).toContain('/api/sec-efts?');
       expect(String(mockFetch.mock.calls[0][0])).not.toContain('/api/es-search?');
     });
+
+    const esHit = {
+      _id: '0000320193-26-000001:aapl-10k.htm',
+      _source: { file_date: '2026-01-15', form: '10-K' },
+    };
 
     it('uses the Elasticsearch endpoint when the caller explicitly opts in', async () => {
-      (import.meta.env as Record<string, unknown>).VITE_USE_ELASTICSEARCH = 'true';
+      process.env.NEXT_PUBLIC_USE_ELASTICSEARCH = 'true';
       mockFetch.mockResolvedValue({
         ok: true,
-        json: async () => ({ hits: { hits: [], total: { value: 0 } } }),
+        json: async () => ({ hits: { hits: [esHit], total: { value: 1 } } }),
       });
 
       const { searchEdgarFilings } = await import('../services/secApi');
@@ -177,10 +182,10 @@ describe('secApi', () => {
     });
 
     it('forwards the search mode to Elasticsearch when provided', async () => {
-      (import.meta.env as Record<string, unknown>).VITE_USE_ELASTICSEARCH = 'true';
+      process.env.NEXT_PUBLIC_USE_ELASTICSEARCH = 'true';
       mockFetch.mockResolvedValue({
         ok: true,
-        json: async () => ({ hits: { hits: [], total: { value: 0 } } }),
+        json: async () => ({ hits: { hits: [esHit], total: { value: 1 } } }),
       });
 
       const { searchEdgarFilings } = await import('../services/secApi');
@@ -196,6 +201,57 @@ describe('secApi', () => {
 
       expect(mockFetch).toHaveBeenCalledTimes(1);
       expect(String(mockFetch.mock.calls[0][0])).toContain('mode=semantic');
+    });
+
+    it('falls back to EDGAR EFTS when Elasticsearch fails', async () => {
+      process.env.NEXT_PUBLIC_USE_ELASTICSEARCH = 'true';
+      mockFetch.mockImplementation(async (url: string) => {
+        if (String(url).includes('/api/es-search?')) {
+          return { ok: false, status: 503, statusText: 'Service Unavailable' };
+        }
+        return {
+          ok: true,
+          json: async () => ({ hits: { hits: [], total: { value: 0 } } }),
+        };
+      });
+
+      const { searchEdgarFilings } = await import('../services/secApi');
+      await searchEdgarFilings(
+        'temporary equity',
+        '10-K,10-Q',
+        '2023-01-01',
+        '2026-03-22',
+        '',
+        5,
+        { useElasticsearch: true }
+      );
+
+      const urls = mockFetch.mock.calls.map(call => String(call[0]));
+      expect(urls[0]).toContain('/api/es-search?');
+      expect(urls.some(url => url.includes('/api/sec-efts?'))).toBe(true);
+    });
+
+    it('falls back to EDGAR EFTS when Elasticsearch returns zero hits', async () => {
+      process.env.NEXT_PUBLIC_USE_ELASTICSEARCH = 'true';
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({ hits: { hits: [], total: { value: 0 } } }),
+      });
+
+      const { searchEdgarFilings } = await import('../services/secApi');
+      await searchEdgarFilings(
+        'temporary equity',
+        '10-K,10-Q',
+        '2023-01-01',
+        '2026-03-22',
+        '',
+        5,
+        { useElasticsearch: true }
+      );
+
+      const urls = mockFetch.mock.calls.map(call => String(call[0]));
+      expect(urls[0]).toContain('/api/es-search?');
+      expect(urls.some(url => url.includes('/api/sec-efts?'))).toBe(true);
     });
   });
 });

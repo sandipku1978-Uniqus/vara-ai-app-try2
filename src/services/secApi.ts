@@ -59,7 +59,7 @@ function buildProxyUrl(
 
   if (type === 'efts') {
     searchParams.set('path', cleanPath);
-    return `/api/sec-efts?${searchParams.toString()}`;
+    return `/api/sec-efts?${toReadableQuery(searchParams)}`;
   }
 
   const functionName = 'sec-proxy';
@@ -69,7 +69,13 @@ function buildProxyUrl(
     searchParams.set('upstream', 'proxy');
   }
   searchParams.set('path', cleanPath);
-  return `/api/${functionName}?${searchParams.toString()}`;
+  return `/api/${functionName}?${toReadableQuery(searchParams)}`;
+}
+
+// '/' is a legal unencoded character in a query string; keeping it readable
+// makes proxied EDGAR paths debuggable in logs and network panels.
+function toReadableQuery(params: URLSearchParams): string {
+  return params.toString().replace(/%2F/gi, '/');
 }
 
 function delay(ms: number): Promise<void> {
@@ -782,6 +788,13 @@ export interface ElasticSearchExtendedParams {
   useElasticsearch?: boolean;
 }
 
+/** EDGAR full-text search coverage starts 2001; don't silently narrow undated queries. */
+const EDGAR_FTS_FLOOR = '2001-01-01';
+/** EDGAR EFTS serves a fixed ~10 hits per page regardless of any requested size. */
+const EFTS_PAGE_SIZE = 10;
+/** EFTS refuses from+size beyond the 10,000-result window. */
+const EFTS_MAX_WINDOW = 10_000;
+
 /**
  * Search filings via Elasticsearch when available, otherwise fall back to EDGAR EFTS.
  */
@@ -842,7 +855,7 @@ async function searchViaElasticsearch(
 
 /**
  * Search EDGAR full-text search for specific form types.
- * Routes through Elasticsearch only when the caller opts in and VITE_USE_ELASTICSEARCH is enabled.
+ * Routes through Elasticsearch only when the caller opts in and NEXT_PUBLIC_USE_ELASTICSEARCH is enabled.
  */
 export async function searchEdgarFilings(
   query: string,
@@ -856,26 +869,33 @@ export async function searchEdgarFilings(
   const shouldUseElasticsearch = extended.useElasticsearch === true && isElasticsearchEnabled();
 
   if (shouldUseElasticsearch) {
-    return searchViaElasticsearch(
-      query,
-      forms,
-      startDate || '2020-01-01',
-      endDate || new Date().toISOString().split('T')[0],
-      entityName || '',
-      maxResults,
-      extended
-    );
+    // ES is an optimization, never a hard dependency: on failure or an empty
+    // index, fall through to live EDGAR EFTS so the user still gets results.
+    try {
+      const esResults = await searchViaElasticsearch(
+        query,
+        forms,
+        startDate || EDGAR_FTS_FLOOR,
+        endDate || new Date().toISOString().split('T')[0],
+        entityName || '',
+        maxResults,
+        extended
+      );
+      if (esResults.length > 0) return esResults;
+      console.warn('[search] Elasticsearch returned 0 hits; falling back to EDGAR EFTS');
+    } catch (error) {
+      console.error('[search] Elasticsearch search failed; falling back to EDGAR EFTS:', error);
+    }
   }
   const baseParams = new URLSearchParams({
     q: query,
     forms: forms,
     dateRange: 'custom',
-    startdt: startDate || '2020-01-01',
+    startdt: startDate || EDGAR_FTS_FLOOR,
     enddt: endDate || new Date().toISOString().split('T')[0],
   });
   if (entityName) baseParams.set('entityName', entityName);
 
-  const pageSize = Math.min(Math.max(maxResults, 1), 100);
   const cacheKey = `${baseParams.toString()}|max=${maxResults}`;
   if (!edgarSearchCache.has(cacheKey)) {
     edgarSearchCache.set(cacheKey, (async () => {
@@ -884,10 +904,14 @@ export async function searchEdgarFilings(
         const seenIds = new Set<string>();
         let totalHits = Number.POSITIVE_INFINITY;
 
-        for (let offset = 0; offset < maxResults && results.length < maxResults && offset < totalHits; offset += pageSize) {
+        // EFTS ignores large size requests and always returns ~10 hits/page, so
+        // page with from += actual-hits-received; anything else truncates recall
+        // to a single page (results 10..N were previously never fetched).
+        let offset = 0;
+        while (results.length < maxResults && offset < totalHits && offset < EFTS_MAX_WINDOW) {
           const params = new URLSearchParams(baseParams);
           params.set('from', String(offset));
-          params.set('size', String(Math.min(pageSize, maxResults - results.length)));
+          params.set('size', String(EFTS_PAGE_SIZE));
 
           let lastResponse: Response | null = null;
           let pageHits: EdgarSearchHit[] = [];
@@ -918,22 +942,21 @@ export async function searchEdgarFilings(
           }
 
           totalHits = Math.min(totalHits, totalForPage);
-          let addedThisPage = 0;
           for (const hit of pageHits) {
             if (seenIds.has(hit._id)) continue;
             seenIds.add(hit._id);
             results.push(hit);
-            addedThisPage += 1;
             if (results.length >= maxResults) {
               break;
             }
           }
 
-          if (pageHits.length < pageSize || addedThisPage === 0) {
+          if (pageHits.length === 0) {
             break;
           }
+          offset += pageHits.length;
 
-          if (offset + pageSize < maxResults) {
+          if (results.length < maxResults && offset < totalHits) {
             await delay(180);
           }
         }

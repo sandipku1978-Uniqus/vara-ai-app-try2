@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildEsQuery } from '../../api/es-search.js';
+import { buildEsQuery } from '../lib/es-search';
 
 describe('api/es-search', () => {
   it('keeps quoted semantic queries on the semantic multi-match path', () => {

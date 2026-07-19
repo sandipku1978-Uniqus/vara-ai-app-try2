@@ -50,7 +50,9 @@ import { canUseInstantElasticsearchSearch } from '../services/filingResearch';
 import { BRAND } from '../config/brand';
 import './SearchPage.css';
 
-const DEFAULT_FORM_SCOPE = '10-K,10-Q,8-K,8-K/A,DEF 14A,20-F,6-K,S-1';
+// Amendments included for every core form: EFTS matches form types exactly, so
+// omitting 10-K/A etc. hides restatements — often the most material filings.
+const DEFAULT_FORM_SCOPE = '10-K,10-K/A,10-Q,10-Q/A,8-K,8-K/A,DEF 14A,20-F,20-F/A,6-K,S-1,S-1/A';
 const LEGACY_DEFAULT_FORM_SCOPE = ['10-K', '10-Q'];
 const RESEARCH_RESULT_LIMIT = 500;
 const INITIAL_RESEARCH_RESULT_LIMIT = 80;

@@ -5,6 +5,7 @@ import type { ResearchSearchMode } from './filingResearch';
 
 const FORM_TYPES = ['10-K', '10-Q', '8-K', 'DEF 14A', '20-F', '6-K', 'S-1', 'UPLOAD', 'CORRESP'] as const;
 const LATEST_FILING_PATTERN = '(?:latest|most\\s+recent|newest|current)';
+const FORM_TOKEN_PATTERN = '10-k|10 k|10-q|10 q|8-k|8 k|def 14a|def-14a|20-f|20 f|6-k|6 k|s-1|s 1';
 
 function makeAction(type: AgentToolName, title: string, input: Record<string, unknown>, reason?: string): AgentAction {
   return {
@@ -117,6 +118,18 @@ function extractCompanyHint(prompt: string, context: AgentContextSnapshot): stri
   const possessiveMatch = prompt.match(new RegExp(`([A-Za-z][A-Za-z0-9.&\\- ]+?)(?:'s|\\u2019s)\\s+${LATEST_FILING_PATTERN}`, 'i'));
   if (possessiveMatch) return cleanCompanyHint(possessiveMatch[1]);
 
+  // "Microsoft's 10-K" — possessive directly before a form, no "latest" qualifier
+  const possessiveFormMatch = prompt.match(
+    new RegExp(`([A-Za-z][A-Za-z0-9.&\\- ]+?)(?:'s|\\u2019s)\\s+(?:${LATEST_FILING_PATTERN}\\s+)?(?:${FORM_TOKEN_PATTERN})`, 'i')
+  );
+  if (possessiveFormMatch) return cleanCompanyHint(possessiveFormMatch[1]);
+
+  // "the S-1 for Stripe's IPO" / "10-K of Apple" — form followed by the issuer
+  const formForMatch = prompt.match(
+    new RegExp(`(?:${FORM_TOKEN_PATTERN})\\s+(?:filing\\s+)?(?:for|of|from)\\s+([A-Za-z][A-Za-z0-9.&\\- ]*?)(?:'s|\\u2019s|[,.!?]|$)`, 'i')
+  );
+  if (formForMatch) return cleanCompanyHint(formForMatch[1]);
+
   const openMatch = prompt.match(
     new RegExp(`open\\s+([A-Za-z][A-Za-z0-9.&\\- ]+?)\\s+(?:(?:${LATEST_FILING_PATTERN})\\s+)?(?:10-k|10 q|10-q|8-k|8 k|def 14a|def-14a|20-f|20 f|6-k|6 k|s-1|s 1)`, 'i')
   );
@@ -191,10 +204,65 @@ export function buildHeuristicAgentPlan(prompt: string, context: AgentContextSna
   const isCompareRequest = /\bcompare\b|\bbenchmark\b|\bpeer\b/i.test(prompt);
   const isSummaryRequest = /\bsummarize\b|\bimportant parts\b|\bkey points?\b/i.test(prompt);
   const isOpenRequest = /\bopen\b|\bshow\b/i.test(prompt);
+  const isAnalyzeRequest = /\banaly[sz]e\b|\breview\b|\bwalk (?:me )?through\b|\bdeep dive\b/i.test(prompt);
+  const isExportRequest = /\bexport\b|\bclean pdf\b|\bdownload\b/i.test(prompt);
+  const isPeerRequest = /\bpeers?\b/i.test(prompt) && !isCommentLetterRequest;
   const hasDirectFilingIntent =
     !isCommentLetterRequest &&
     !isCompareRequest &&
-    (Boolean(context.filing) || ((isOpenRequest || isSummaryRequest) && Boolean(formType) && Boolean(companyHint)));
+    !isExportRequest &&
+    (Boolean(context.filing) ||
+      ((isOpenRequest || isSummaryRequest || isAnalyzeRequest) && Boolean(formType) && Boolean(companyHint)));
+
+  if (isExportRequest) {
+    const exportActions: AgentAction[] = [];
+    if (!context.filing && companyHint) {
+      exportActions.push(
+        makeAction('resolve_company', `Resolve ${companyHint}`, { companyHint }, 'Identify the requested issuer.'),
+        makeAction('find_latest_filing', `Find latest ${formType || '10-K'}`, { companyHint, formType: formType || '10-K' }, 'Locate the filing to export.'),
+        makeAction('open_filing', 'Open filing', { useLatestResolvedFiling: true }, 'Open the filing inside URC.')
+      );
+    }
+    exportActions.push(
+      makeAction(
+        'export_clean_pdf',
+        'Export clean PDF',
+        { useActiveFiling: true },
+        'Produce a clean, print-ready copy of the filing.'
+      )
+    );
+    return {
+      goal: 'Export a clean copy of the requested filing.',
+      rationale: 'The prompt asks for a document export rather than research.',
+      confidence: context.filing || companyHint ? 'high' : 'medium',
+      actions: exportActions,
+      followUps,
+    };
+  }
+
+  if (isPeerRequest && compareCompanies.length === 0 && (context.filing || /same[-\s]?auditor|same big 4|same big four/i.test(prompt))) {
+    const peerFilters = buildSearchFilters(prompt, formType, context);
+    return {
+      goal: 'Find comparable companies for the active filing.',
+      rationale: 'The prompt asks for a peer set rather than a named-company comparison.',
+      confidence: context.filing ? 'high' : 'medium',
+      actions: [
+        makeAction(
+          'find_peers',
+          'Find peers',
+          {
+            fromFiling: Boolean(context.filing),
+            auditor: extractAuditor(prompt, context) || undefined,
+            sicCode: extractSic(prompt, context) || undefined,
+            filters: peerFilters,
+          },
+          'Build a peer cohort using auditor and industry signals from the active filing.'
+        ),
+        makeAction('summarize_result_set', 'Summarize peer set', { mode: 'compare' }, 'Return the peer set with the shared traits explained.'),
+      ],
+      followUps,
+    };
+  }
 
   if (hasDirectFilingIntent) {
     const targetCompany = companyHint || context.filing?.companyName || '';

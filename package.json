@@ -37,8 +37,10 @@
     "@types/diff-match-patch": "^1.0.36",
     "@types/react": "^18.2.64",
     "@types/react-dom": "^18.2.21",
+    "@vitejs/plugin-react": "^6.0.3",
     "jsdom": "^29.0.1",
     "tsx": "^4.21.0",
-    "typescript": "^5.2.2"
+    "typescript": "^5.2.2",
+    "vitest": "^4.1.10"
   }
 }
