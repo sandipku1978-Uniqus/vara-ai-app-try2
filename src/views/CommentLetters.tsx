@@ -142,6 +142,7 @@ function ThreadConversation({ threadId }: { threadId: string }) {
 export default function CommentLetters() {
   const { pendingSearchIntent, setPendingSearchIntent } = useApp();
   const [keyword, setKeyword] = useState('');
+  const [companyFilter, setCompanyFilter] = useState('');
   const [formFilter, setFormFilter] = useState<'' | 'UPLOAD' | 'CORRESP'>('');
   const [threads, setThreads] = useState<ThreadSummary[]>([]);
   const [threadsTotal, setThreadsTotal] = useState(0);
@@ -155,7 +156,10 @@ export default function CommentLetters() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch('/api/letters?size=12')
+    setBrowseLoading(true);
+    const params = new URLSearchParams({ size: '12' });
+    if (companyFilter.trim()) params.set('company', companyFilter.trim());
+    fetch(`/api/letters?${params.toString()}`)
       .then(response => {
         if (!response.ok) throw new Error(String(response.status));
         return response.json();
@@ -168,16 +172,18 @@ export default function CommentLetters() {
       .catch(() => { if (!cancelled) setUnavailable(true); })
       .finally(() => { if (!cancelled) setBrowseLoading(false); });
     return () => { cancelled = true; };
-  }, []);
+  }, [companyFilter]);
 
-  const runSearch = useCallback(async (query: string, form: '' | 'UPLOAD' | 'CORRESP') => {
-    if (!query.trim()) return;
+  const runSearch = useCallback(async (query: string, form: '' | 'UPLOAD' | 'CORRESP', company: string) => {
+    if (!query.trim() && !company.trim()) return;
     setLoading(true);
-    setSearched(true);
+    setSearched(Boolean(query.trim()));
     setExpandedThread(null);
+    if (!query.trim()) { setLoading(false); return; } // company-only filters the browse list via effect
     try {
       const params = new URLSearchParams({ q: query.trim(), size: '50' });
       if (form) params.set('form', form);
+      if (company.trim()) params.set('company', company.trim());
       const response = await fetch(`/api/letters?${params.toString()}`);
       const payload = await response.json();
       setMatches(payload.matches ?? []);
@@ -193,7 +199,7 @@ export default function CommentLetters() {
   useEffect(() => {
     if (!pendingSearchIntent || pendingSearchIntent.surface !== 'comment-letters') return;
     setKeyword(pendingSearchIntent.query);
-    runSearch(pendingSearchIntent.query, '');
+    runSearch(pendingSearchIntent.query, '', '');
     setPendingSearchIntent(null);
   }, [pendingSearchIntent, runSearch, setPendingSearchIntent]);
 
@@ -221,12 +227,19 @@ export default function CommentLetters() {
         <div style={{ flex: 1, minWidth: '240px' }}>
           <input value={keyword} onChange={e => setKeyword(e.target.value)}
             placeholder='e.g. revenue recognition principal agent, "material weakness", segment reporting'
-            onKeyDown={e => e.key === 'Enter' && runSearch(keyword, formFilter)}
+            onKeyDown={e => e.key === 'Enter' && runSearch(keyword, formFilter, companyFilter)}
+            style={{ width: '100%', padding: '9px 12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'white', fontSize: '0.85rem', outline: 'none' }} />
+        </div>
+        <div style={{ minWidth: '170px' }}>
+          <input value={companyFilter} onChange={e => setCompanyFilter(e.target.value)}
+            placeholder="Company name…"
+            aria-label="Filter by company name"
+            onKeyDown={e => e.key === 'Enter' && runSearch(keyword, formFilter, companyFilter)}
             style={{ width: '100%', padding: '9px 12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'white', fontSize: '0.85rem', outline: 'none' }} />
         </div>
         <div style={{ display: 'flex', gap: '6px' }}>
           {([['', 'All'], ['UPLOAD', 'Staff letters'], ['CORRESP', 'Responses']] as const).map(([value, label]) => (
-            <button key={value} onClick={() => { setFormFilter(value); if (searched && keyword.trim()) runSearch(keyword, value); }}
+            <button key={value} onClick={() => { setFormFilter(value); if (searched && keyword.trim()) runSearch(keyword, value, companyFilter); }}
               style={{
                 padding: '7px 12px', borderRadius: '8px', fontSize: '0.78rem', cursor: 'pointer',
                 border: '1px solid ' + (formFilter === value ? 'rgba(214,108,174,0.6)' : 'rgba(255,255,255,0.12)'),
@@ -237,7 +250,7 @@ export default function CommentLetters() {
             </button>
           ))}
         </div>
-        <button onClick={() => runSearch(keyword, formFilter)} disabled={loading}
+        <button onClick={() => runSearch(keyword, formFilter, companyFilter)} disabled={loading}
           style={{ padding: '9px 20px', background: '#B31F7E', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem' }}>
           {loading ? <Loader2 size={14} className="spinner" /> : <Search size={14} />} Search
         </button>
@@ -300,24 +313,41 @@ export default function CommentLetters() {
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              {threads.map(thread => (
-                <div key={thread.thread_id} style={cardStyle}>
-                  <div
-                    onClick={() => setExpandedThread(expandedThread === thread.thread_id ? null : thread.thread_id)}
-                    style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', cursor: 'pointer', flexWrap: 'wrap' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-                      {expandedThread === thread.thread_id ? <ChevronDown size={16} style={{ color: '#94A3B8' }} /> : <ChevronRight size={16} style={{ color: '#94A3B8' }} />}
-                      <span style={{ fontWeight: 600, color: 'white', fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{thread.company_name}</span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.75rem', color: '#94A3B8' }}>
-                      <span style={{ color: '#FBBF24' }}>{thread.uploads} Staff</span>
-                      <span style={{ color: '#6EE7B7' }}>{thread.corresps} responses</span>
-                      <span>{thread.first_letter} → {thread.last_letter}</span>
-                    </div>
+              {threads.map(thread => {
+                const days = Math.max(1, Math.round(
+                  (Date.parse(thread.last_letter) - Date.parse(thread.first_letter)) / 86_400_000
+                ));
+                const isLongReview = thread.uploads >= 3;
+                return (
+                  <div key={thread.thread_id} style={cardStyle}>
+                    <button
+                      type="button"
+                      onClick={() => setExpandedThread(expandedThread === thread.thread_id ? null : thread.thread_id)}
+                      aria-expanded={expandedThread === thread.thread_id}
+                      style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', cursor: 'pointer', flexWrap: 'wrap', width: '100%', background: 'none', border: 'none', padding: 0, textAlign: 'left' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                        {expandedThread === thread.thread_id ? <ChevronDown size={16} style={{ color: '#94A3B8' }} /> : <ChevronRight size={16} style={{ color: '#94A3B8' }} />}
+                        <span style={{ fontWeight: 600, color: 'white', fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{thread.company_name}</span>
+                        {/* Round count is the accountant's severity signal — long
+                            contested reviews are the richest precedents */}
+                        <span style={{
+                          fontSize: '0.7rem', padding: '2px 8px', borderRadius: '4px', whiteSpace: 'nowrap',
+                          color: isLongReview ? '#F9A8D4' : '#94A3B8',
+                          background: isLongReview ? 'rgba(179,31,126,0.18)' : 'rgba(255,255,255,0.06)',
+                        }}>
+                          {thread.uploads} round{thread.uploads === 1 ? '' : 's'} · {days}d
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.75rem', color: '#94A3B8' }}>
+                        <span style={{ color: '#FBBF24' }}>{thread.uploads} Staff</span>
+                        <span style={{ color: '#6EE7B7' }}>{thread.corresps} responses</span>
+                        <span>{thread.first_letter} → {thread.last_letter}</span>
+                      </div>
+                    </button>
+                    {expandedThread === thread.thread_id && <ThreadConversation threadId={thread.thread_id} />}
                   </div>
-                  {expandedThread === thread.thread_id && <ThreadConversation threadId={thread.thread_id} />}
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

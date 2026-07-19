@@ -27,6 +27,20 @@ export default function Dashboard() {
     removeSavedAlert,
   } = useApp();
   const navigate = useRouter();
+  const [dataStats, setDataStats] = useState<{
+    filings: { count: number; through: string | null; source: string };
+    auditors: { count: number; source: string };
+    letters: { count: number; withText: number; source: string };
+  } | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/stats')
+      .then(response => (response.ok ? response.json() : null))
+      .then(payload => { if (!cancelled && payload && !payload.error) setDataStats(payload); })
+      .catch(() => { /* chips are optional trust signals, never blockers */ });
+    return () => { cancelled = true; };
+  }, []);
 
   const [watchlistData, setWatchlistData] = useState<Record<string, SecSubmission>>({});
   const [loadingWatchlist, setLoadingWatchlist] = useState(false);
@@ -170,6 +184,22 @@ export default function Dashboard() {
       <header className="page-header">
         <h1>Overview Dashboard</h1>
         <p>{BRAND.productName} monitoring and benchmarking workspace.</p>
+        {dataStats && (
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '10px' }}>
+            {[
+              `Filings: ${dataStats.filings.count.toLocaleString()} through ${dataStats.filings.through ?? '—'} · ${dataStats.filings.source}`,
+              `Auditors: ${dataStats.auditors.count.toLocaleString()} engagements · ${dataStats.auditors.source}`,
+              `Comment letters: ${dataStats.letters.count.toLocaleString()} (${dataStats.letters.withText.toLocaleString()} full-text) · ${dataStats.letters.source}`,
+            ].map(chip => (
+              <span key={chip} style={{
+                fontSize: '0.7rem', color: '#94A3B8', background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.1)', borderRadius: '999px', padding: '3px 10px',
+              }}>
+                {chip}
+              </span>
+            ))}
+          </div>
+        )}
       </header>
 
       <div className="dashboard-grid">

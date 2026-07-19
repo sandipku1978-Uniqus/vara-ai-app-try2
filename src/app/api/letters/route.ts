@@ -43,6 +43,8 @@ export async function GET(request: Request) {
       return NextResponse.json({ thread: threadId, letters: data ?? [] });
     }
 
+    const company = (params.get('company') || '').trim() || null;
+
     if (q) {
       const { data, error } = await db.rpc('urc_search_letters', {
         p_query: q,
@@ -51,6 +53,7 @@ export async function GET(request: Request) {
         p_end: params.get('enddt') || null,
         p_limit: size,
         p_offset: from,
+        p_company: company,
       });
       if (error) throw new Error(error.message);
       const rows = (data ?? []) as Array<Record<string, unknown>>;
@@ -60,7 +63,7 @@ export async function GET(request: Request) {
       });
     }
 
-    const { data, error } = await db.rpc('urc_recent_threads', { p_limit: size, p_offset: from });
+    const { data, error } = await db.rpc('urc_recent_threads', { p_limit: size, p_offset: from, p_company: company });
     if (error) throw new Error(error.message);
     const rows = (data ?? []) as Array<Record<string, unknown>>;
     return NextResponse.json({

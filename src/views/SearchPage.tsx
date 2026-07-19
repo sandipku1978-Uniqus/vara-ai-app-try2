@@ -253,7 +253,9 @@ function buildAuditorDisplayLabel(
     return 'Validating auditor...';
   }
 
-  return 'Auditor unavailable';
+  // Unknown auditor renders nothing — a repeated "unavailable" line on every
+  // card reads as product breakage; the one-time coverage notice explains it.
+  return '';
 }
 
 function countAppliedFilters(filters: SearchFilters): number {
@@ -365,6 +367,14 @@ export default function SearchPage() {
   }, [activeTabId, sessions]);
 
   const displayResults = activeSession?.results || results;
+  const [resultSort, setResultSort] = useState<'relevance' | 'newest'>('relevance');
+  const [auditorNoticeDismissed, setAuditorNoticeDismissed] = useState(false);
+  const sortedDisplayResults = useMemo(() => {
+    if (resultSort === 'newest') {
+      return [...displayResults].sort((a, b) => b.fileDate.localeCompare(a.fileDate));
+    }
+    return displayResults;
+  }, [displayResults, resultSort]);
   const activeResolvedSearch = activeSession?.resolvedSearch || lastResolvedSearch;
   const isRefiningResults = Boolean(activeSession?.isRefining);
   const previewHighlightTerms = useMemo(
@@ -1386,6 +1396,21 @@ export default function SearchPage() {
                 <div className="eyebrow">Search hits</div>
                 <h2>{displayResults.length > 0 ? `${displayResults.length >= RESEARCH_RESULT_LIMIT ? `${RESEARCH_RESULT_LIMIT}+` : displayResults.length} filings` : 'No results yet'}</h2>
               </div>
+              {displayResults.length > 1 && (
+                <div style={{ display: 'flex', gap: '6px' }}>
+                  {([['relevance', 'Relevance'], ['newest', 'Newest']] as const).map(([value, label]) => (
+                    <button key={value} type="button" onClick={() => setResultSort(value)}
+                      style={{
+                        padding: '4px 10px', borderRadius: '6px', fontSize: '0.72rem', cursor: 'pointer',
+                        border: '1px solid ' + (resultSort === value ? 'rgba(214,108,174,0.6)' : 'rgba(255,255,255,0.12)'),
+                        background: resultSort === value ? 'rgba(179,31,126,0.25)' : 'rgba(255,255,255,0.04)',
+                        color: resultSort === value ? '#F9A8D4' : '#94A3B8',
+                      }}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              )}
               <div className="pane-hint">Select a filing to preview it here, then open the full workspace only when you need the full toolset.</div>
             </div>
 
@@ -1402,8 +1427,15 @@ export default function SearchPage() {
                 <span>Showing initial hits while {BRAND.shortName} validates filing text and loads more results in the background.</span>
                   </div>
                 )}
+                {displayResults.some(result => !result.auditor?.trim()) && !auditorNoticeDismissed && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', padding: '8px 12px', margin: '0 0 8px', borderRadius: '8px', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', fontSize: '0.75rem', color: '#FBBF24' }}>
+                    <span>Auditor identification covers fiscal 2017+ (PCAOB Form AP); older or non-issuer filings may not show one.</span>
+                    <button type="button" onClick={() => setAuditorNoticeDismissed(true)}
+                      style={{ background: 'none', border: 'none', color: '#FBBF24', cursor: 'pointer', fontSize: '0.85rem', lineHeight: 1 }}>×</button>
+                  </div>
+                )}
                 <div className="research-hit-scroll">
-                  {displayResults.map(result => (
+                  {sortedDisplayResults.map(result => (
                     <button
                       key={result.id}
                       className={`research-hit-card ${selectedResult?.id === result.id ? 'active' : ''}`}
@@ -1415,10 +1447,12 @@ export default function SearchPage() {
                       </div>
                       <div className="company">{result.entityName}</div>
                       <div className="meta">
-                        <span>{buildAuditorDisplayLabel(result.auditor, activeResolvedSearch.filters, isRefiningResults)}</span>
+                        {buildAuditorDisplayLabel(result.auditor, activeResolvedSearch.filters, isRefiningResults) && (
+                          <span>{buildAuditorDisplayLabel(result.auditor, activeResolvedSearch.filters, isRefiningResults)}</span>
+                        )}
                         <span>{result.sicDescription || result.sic || 'Industry unavailable'}</span>
                       </div>
-                      <div className="match-reason">{result.matchReason || 'Matched filing metadata'}</div>
+                      <div className="match-reason">{result.matchReason || 'Preliminary match — open the filing to confirm context'}</div>
                       <div className="snippet">
                         {renderHighlightedText(result.matchSnippet || result.description || 'Matched on filing metadata.', previewHighlightTerms)}
                       </div>

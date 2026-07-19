@@ -806,6 +806,44 @@ export function mapSearchHit(hit: EdgarSearchHit): FilingResearchResult {
   };
 }
 
+/**
+ * One-call batch enrichment from the Supabase facet store: current auditor
+ * (PCAOB Form AP), SIC, tickers. Replaces per-filing text-scraping for these
+ * display fields — exact data, no extra EDGAR round-trips. Failure is a no-op
+ * so search never depends on the facet store being reachable.
+ */
+export async function enrichResultsFromFacetStore(
+  results: FilingResearchResult[]
+): Promise<FilingResearchResult[]> {
+  const ciks = Array.from(new Set(
+    results.map(result => Number(result.cik)).filter(value => Number.isFinite(value) && value > 0)
+  ));
+  if (ciks.length === 0) return results;
+
+  try {
+    const response = await fetch(`/api/enrich?ciks=${ciks.slice(0, 200).join(',')}`);
+    if (!response.ok) return results;
+    const payload = await response.json() as { companies?: Record<string, {
+      auditor?: string; sic?: string | null; sic_description?: string | null;
+      tickers?: string[]; exchanges?: string[]; state_of_incorporation?: string | null;
+    }> };
+    const companies = payload.companies ?? {};
+    for (const result of results) {
+      const info = companies[String(Number(result.cik))];
+      if (!info) continue;
+      if (info.auditor) result.auditor = info.auditor;
+      if (info.sic && !result.sic) result.sic = info.sic;
+      if (info.sic_description) result.sicDescription = info.sic_description;
+      if (info.tickers?.length && (!result.tickers || result.tickers.length === 0)) result.tickers = info.tickers;
+      if (info.exchanges?.length && !result.exchange) result.exchange = info.exchanges.join(', ');
+      if (info.state_of_incorporation && !result.stateOfIncorporation) result.stateOfIncorporation = info.state_of_incorporation;
+    }
+  } catch {
+    // facet store unreachable — display falls back to whatever EFTS provided
+  }
+  return results;
+}
+
 async function hydrateCompanyMetadata(result: FilingResearchResult): Promise<FilingResearchResult> {
   const metadata = await getCompanyMetadata(result.cik);
   if (metadata) {
@@ -1042,6 +1080,7 @@ export async function executeFilingResearchSearch({
     results = sortResearchResults(results, preferRelevance);
 
     const fastResults = applyMetadataMatchFallback(results.slice(0, displayLimit));
+    await enrichResultsFromFacetStore(fastResults);
     if (needsCompanyMetadata) return fastResults;
     return hydrateLightweightMetadata(fastResults);
   }
@@ -1139,6 +1178,7 @@ export async function executeFilingResearchSearch({
   if (filteredResults.length === 0 && lastSearchError) throw lastSearchError;
 
   const finalResults = sortResearchResults(filteredResults, preferRelevance).slice(0, displayLimit);
+  await enrichResultsFromFacetStore(finalResults);
 
   if (needsCompanyMetadata) {
     return finalResults;
