@@ -74,8 +74,9 @@ export async function POST(req: Request) {
     const msg = await anthropic.messages.create({
       model: CLAUDE_MODEL,
       max_tokens: effectiveMaxTokens,
-      ...(isComplex ? { thinking: { type: 'enabled', budget_tokens: 4000 } } : {}),
-      temperature: effectiveTemp,
+      // Sonnet 5 rejects budget_tokens and non-default temperature (400):
+      // adaptive thinking replaces the fixed budget; simple queries stay thinking-off
+      thinking: isComplex ? { type: 'adaptive' } : { type: 'disabled' },
       // Prompt caching: system prompt cached at Anthropic for 90% input token discount
       system: [{
         type: 'text',

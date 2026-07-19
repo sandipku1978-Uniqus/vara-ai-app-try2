@@ -23,7 +23,6 @@ export async function POST(req: Request) {
 
     // Input validation
     const clampedMaxTokens = Math.min(Math.max(Number(maxTokens) || 4096, 1), 16384);
-    const clampedTemp = Math.min(Math.max(Number(temperature) || 0.2, 0), 1);
     if (messages.length > 100) {
       return new Response(JSON.stringify({ error: 'Too many messages (max 100)' }), { status: 400 });
     }
@@ -80,8 +79,8 @@ export async function POST(req: Request) {
       const msg = await anthropic.messages.create({
         model: CLAUDE_MODEL,
         max_tokens: 8192,
-        thinking: { type: 'enabled', budget_tokens: 4000 },
-        temperature: 1,
+        // Sonnet 5: adaptive thinking only; temperature must be omitted
+        thinking: { type: 'adaptive' },
         system: [{
           type: 'text',
           text: SEC_RESEARCH_SYSTEM_PROMPT,
@@ -110,7 +109,9 @@ export async function POST(req: Request) {
     const stream = anthropic.messages.stream({
       model: CLAUDE_MODEL,
       max_tokens: clampedMaxTokens,
-      temperature: clampedTemp,
+      // Sonnet 5 runs adaptive thinking when the field is omitted and rejects
+      // non-default temperature — keep the fast SSE path explicitly thinking-off
+      thinking: { type: 'disabled' },
       system: [{
         type: 'text',
         text: SEC_RESEARCH_SYSTEM_PROMPT,

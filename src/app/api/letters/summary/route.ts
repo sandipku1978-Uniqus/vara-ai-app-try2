@@ -104,7 +104,10 @@ export async function GET(request: Request) {
     const message = await anthropic.messages.create({
       model: CLAUDE_MODEL,
       max_tokens: 1500,
-      temperature: 0.2,
+      // Sonnet 5: non-default temperature is rejected; keep summaries
+      // thinking-off (omitting the field would run adaptive thinking
+      // inside the 1500-token budget and risk truncation)
+      thinking: { type: 'disabled' },
       system: [{ type: 'text', text: SUMMARY_PROMPT, cache_control: { type: 'ephemeral' } }],
       messages: [{
         role: 'user',

@@ -64,14 +64,14 @@ export async function POST(req: Request) {
       section.toLowerCase().includes('board');
     const basePrompt = isProxyComparison ? DEF14A_COMPARISON_PROMPT : COMPARISON_SYSTEM_PROMPT;
 
-    // Using the latest Claude 4.6 Sonnet model with prompt caching
     const msg = await anthropic.messages.create({
       model: CLAUDE_MODEL,
-      // Thinking budget comes out of max_tokens: 8192-4000 left ~4k visible
-      // tokens, which truncated 10-company comparison tables mid-row.
+      // Thinking spend still comes out of max_tokens — keep 16384 headroom
+      // so 10-company comparison tables don't truncate mid-row.
       max_tokens: 16384,
-      thinking: { type: 'enabled', budget_tokens: 4000 },
-      temperature: 1, // Must be 1 when using thinking
+      // Sonnet 5: adaptive thinking only (budget_tokens is rejected), and
+      // non-default temperature is rejected — omit it entirely.
+      thinking: { type: 'adaptive' },
       system: [
         {
           type: 'text',
