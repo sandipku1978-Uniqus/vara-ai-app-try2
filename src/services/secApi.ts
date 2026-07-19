@@ -296,10 +296,15 @@ export async function fetchCompanyFacts(cik: string): Promise<CompanyFacts | nul
 /** Key financial concepts to extract (us-gaap taxonomy names) */
 const FINANCIAL_CONCEPTS = {
   // Income Statement
-  'Revenues': ['Revenues', 'RevenueFromContractWithCustomerExcludingAssessedTax', 'SalesRevenueNet', 'RevenueFromContractWithCustomerIncludingAssessedTax', 'RevenuesNetOfInterestExpense', 'InterestAndDividendIncomeOperating', 'InterestIncomeExpenseNet'],
+  // InterestIncomeExpenseNet deliberately excluded: it is NET interest income,
+  // not total bank revenue — using it grossly overstates margins for banks.
+  'Revenues': ['Revenues', 'RevenueFromContractWithCustomerExcludingAssessedTax', 'SalesRevenueNet', 'RevenueFromContractWithCustomerIncludingAssessedTax', 'RevenuesNetOfInterestExpense', 'InterestAndDividendIncomeOperating'],
   'CostOfRevenue': ['CostOfRevenue', 'CostOfGoodsAndServicesSold', 'CostOfGoodsSold', 'CostOfRealEstateRevenue'],
   'GrossProfit': ['GrossProfit', 'GrossProfitLoss'],
-  'OperatingIncome': ['OperatingIncomeLoss', 'IncomeLossFromContinuingOperationsBeforeIncomeTaxesExtraordinaryItemsNoncontrollingInterest', 'IncomeLossFromContinuingOperationsBeforeIncomeTaxesMinorityInterestAndIncomeLossFromEquityMethodInvestments'],
+  // Pre-tax-income concepts deliberately excluded as fallbacks: pre-tax income
+  // (after interest/other items) relabeled "operating income" silently inflates
+  // operating margin for filers that don't tag OperatingIncomeLoss. Blank is honest.
+  'OperatingIncome': ['OperatingIncomeLoss'],
   'NetIncome': ['NetIncomeLoss', 'NetIncomeLossAvailableToCommonStockholdersBasic', 'NetIncomeLossAvailableToCommonStockholdersDiluted', 'ProfitLoss'],
   'EarningsPerShare': ['EarningsPerShareBasic'],
   'EarningsPerShareDiluted': ['EarningsPerShareDiluted'],
@@ -311,7 +316,11 @@ const FINANCIAL_CONCEPTS = {
   'TotalLiabilities': ['Liabilities', 'LiabilitiesNoncurrentAndFinanceLeaseObligationsNoncurrent'],
   'StockholdersEquity': ['StockholdersEquity', 'StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest'],
   'CashAndEquivalents': ['CashAndCashEquivalentsAtCarryingValue', 'CashCashEquivalentsAndShortTermInvestments', 'CashCashEquivalentsRestrictedCashAndRestrictedCashEquivalents'],
-  'TotalDebt': ['LongTermDebt', 'LongTermDebtNoncurrent', 'LongTermDebtAndCapitalLeaseObligations', 'LongTermDebtAndCapitalLeaseObligationsNoncurrent', 'LongTermDebtCurrent', 'ShortTermBorrowings', 'ShortTermDebt', 'CurrentPortionOfLongTermDebt'],
+  // Only concepts that already represent TOTAL debt. Long-term-only and
+  // short-term-only components must never pass as "total debt" — they are
+  // summed in extractComparableFinancials instead (first-match here used to
+  // return bare LongTermDebt and silently understate leverage).
+  'TotalDebt': ['DebtLongtermAndShorttermCombinedAmount'],
   'Goodwill': ['Goodwill', 'GoodwillNet'],
   'IntangibleAssets': [
     'IntangibleAssetsNetExcludingGoodwill',
@@ -429,9 +438,13 @@ function isLikelyAnnualFact(fact: XbrlFact): boolean {
  * and can differ from the actual fiscal year for companies with non-calendar FYs.
  */
 function getFiscalYearFromFact(fact: XbrlFact): number {
-  // Use end date if available (most reliable)
+  // Use end date if available (most reliable). Read the year straight from the
+  // ISO string — new Date('yyyy-mm-dd').getFullYear() mixes UTC parsing with
+  // local-time reading, shifting Jan-1/Dec-31 period ends by a year for
+  // UTC-negative users.
   if (fact.end) {
-    return new Date(fact.end).getFullYear();
+    const year = Number(fact.end.slice(0, 4));
+    if (Number.isFinite(year) && year > 1900) return year;
   }
   // Fall back to fy field
   return fact.fy;
@@ -439,22 +452,37 @@ function getFiscalYearFromFact(fact: XbrlFact): number {
 
 /**
  * Deduplicate annual facts by fiscal year (end-date based).
- * When the same fiscal year data appears under multiple `fy` values
- * (e.g., current year vs comparative), keep the most recently filed version.
+ * When the same period appears in multiple filings (comparative years,
+ * amendments, restatements), keep the most recently FILED version — a
+ * restated 10-K/A value must beat the original 10-K's.
  */
 function deduplicateAnnualFacts(facts: XbrlFact[]): XbrlFact[] {
   const byFiscalYear = new Map<number, XbrlFact>();
   for (const fact of facts) {
     const fiscalYear = getFiscalYearFromFact(fact);
     const existing = byFiscalYear.get(fiscalYear);
-    // Prefer the most recent filing (highest fy = most recent 10-K)
-    if (!existing || fact.fy > existing.fy) {
+    if (!existing || isMoreAuthoritativeFact(fact, existing)) {
       byFiscalYear.set(fiscalYear, fact);
     }
   }
   return Array.from(byFiscalYear.values()).sort(
     (a, b) => getFiscalYearFromFact(b) - getFiscalYearFromFact(a)
   );
+}
+
+/** Latest filed date wins; on the same filed date an amendment (/A) beats the
+ *  original. The `fy` field alone cannot distinguish a 10-K from its 10-K/A. */
+function isMoreAuthoritativeFact(candidate: XbrlFact, incumbent: XbrlFact): boolean {
+  const candidateFiled = candidate.filed || '';
+  const incumbentFiled = incumbent.filed || '';
+  if (candidateFiled !== incumbentFiled) {
+    if (candidateFiled && incumbentFiled) return candidateFiled > incumbentFiled;
+    // Only one side has a filed date — fall back to fy comparison below
+  }
+  const candidateIsAmendment = /\/A$/i.test((candidate.form || '').trim());
+  const incumbentIsAmendment = /\/A$/i.test((incumbent.form || '').trim());
+  if (candidateIsAmendment !== incumbentIsAmendment) return candidateIsAmendment;
+  return candidate.fy > incumbent.fy;
 }
 
 function getPreferredUnits(concept: { units: Record<string, XbrlFact[]> }, currency?: string): { unitKey: string; facts: XbrlFact[] } | null {
@@ -519,7 +547,8 @@ const IFRS_CONCEPTS: Record<string, string[]> = {
   'Revenues': ['Revenue', 'RevenueFromContractsWithCustomers', 'RevenueFromSaleOfGoods', 'RevenueFromRenderingOfServices'],
   'CostOfRevenue': ['CostOfSales', 'CostOfMerchandiseSold'],
   'GrossProfit': ['GrossProfit'],
-  'OperatingIncome': ['ProfitLossFromOperatingActivities', 'ProfitLossBeforeTax'],
+  // ProfitLossBeforeTax excluded: pre-tax income is not operating income
+  'OperatingIncome': ['ProfitLossFromOperatingActivities'],
   'NetIncome': ['ProfitLoss', 'ProfitLossAttributableToOwnersOfParent', 'ProfitLossAttributableToOrdinaryEquityHoldersOfParentEntity'],
   'EarningsPerShare': ['BasicEarningsLossPerShare', 'BasicEarningsLossPerShareFromContinuingOperations'],
   'EarningsPerShareDiluted': ['DilutedEarningsLossPerShare', 'DilutedEarningsLossPerShareFromContinuingOperations'],
@@ -529,7 +558,9 @@ const IFRS_CONCEPTS: Record<string, string[]> = {
   'TotalLiabilities': ['Liabilities', 'NoncurrentLiabilities'],
   'StockholdersEquity': ['Equity', 'EquityAttributableToOwnersOfParent'],
   'CashAndEquivalents': ['CashAndCashEquivalents', 'Cash'],
-  'TotalDebt': ['NoncurrentBorrowings', 'Borrowings', 'BondsIssued'],
+  // Borrowings is the IFRS total; noncurrent-only components are summed in
+  // extractComparableFinancials, not passed off as totals
+  'TotalDebt': ['Borrowings'],
   'Goodwill': ['Goodwill'],
   'IntangibleAssets': ['IntangibleAssetsOtherThanGoodwill', 'OtherIntangibleAssets'],
   'AccountsReceivable': ['TradeAndOtherCurrentReceivables', 'TradeReceivables', 'CurrentTradeReceivables'],
@@ -663,7 +694,41 @@ export function extractComparableFinancials(facts: CompanyFacts, year?: number):
     fillIfMissing(metricKey, aliases);
   }
 
-  fillIfMissing('TotalDebt', ['LongTermDebtAndCapitalLeaseObligations', 'LongTermDebtAndCapitalLeaseObligationsNoncurrent']);
+  // Derive Total Debt by summing components for the SAME fiscal year.
+  // LongTermDebt (us-gaap) includes current maturities; LongTermDebtNoncurrent
+  // does not — pick one base to avoid double counting, then add short-term
+  // borrowings. Never present a single component as the total.
+  if (!result.TotalDebt) {
+    const noncurrent = lookupAnnualMetric(facts, [
+      'LongTermDebtNoncurrent', 'LongTermDebtAndCapitalLeaseObligationsNoncurrent', 'NoncurrentBorrowings',
+    ], year);
+    const totalLongTerm = lookupAnnualMetric(facts, [
+      'LongTermDebt', 'LongTermDebtAndCapitalLeaseObligations',
+    ], year);
+    const base = noncurrent ?? totalLongTerm;
+    if (base?.value != null) {
+      const baseYear = base.year;
+      const currentPortion = noncurrent
+        ? lookupAnnualMetric(facts, [
+            'LongTermDebtCurrent', 'LongTermDebtAndCapitalLeaseObligationsCurrent', 'CurrentBorrowings',
+          ], baseYear)
+        : null;
+      const shortTerm = lookupAnnualMetric(facts, [
+        'ShortTermBorrowings', 'ShortTermDebt', 'CommercialPaper',
+      ], baseYear);
+      const components = ['long-term'];
+      if (currentPortion?.value != null) components.push('current portion');
+      if (shortTerm?.value != null) components.push('short-term');
+      result.TotalDebt = {
+        label: `Total Debt (derived: ${components.join(' + ')})`,
+        value: base.value + (currentPortion?.value ?? 0) + (shortTerm?.value ?? 0),
+        year: baseYear,
+        period: base.period,
+        unit: base.unit,
+        currency: base.currency,
+      };
+    }
+  }
   fillIfMissing('AccountsReceivable', ['ReceivablesNetCurrent', 'AccountsNotesAndLoansReceivableNetCurrent']);
   fillIfMissing('Inventory', ['InventoriesNetOfReserves', 'InventoryFinishedGoods', 'InventoryNetOfAllowancesCustomerAdvancesAndProgressBillings']);
   fillIfMissing('IntangibleAssets', [
@@ -674,13 +739,15 @@ export function extractComparableFinancials(facts: CompanyFacts, year?: number):
     'AmortizableIntangibleAssetsNet',
   ]);
 
-  if (!result.GrossProfit && result.Revenues?.value != null && result.CostOfRevenue?.value != null) {
+  if (!result.GrossProfit && result.Revenues?.value != null && result.CostOfRevenue?.value != null
+      && result.Revenues.year === result.CostOfRevenue.year) {
     result.GrossProfit = {
       label: 'Gross Profit (derived)',
       value: result.Revenues.value - result.CostOfRevenue.value,
       year: result.Revenues.year,
       period: result.Revenues.period,
       unit: result.Revenues.unit,
+      currency: result.Revenues.currency,
     };
   }
 
@@ -691,13 +758,14 @@ export function extractComparableFinancials(facts: CompanyFacts, year?: number):
       'SellingAndMarketingExpense', 'SellingExpense', 'MarketingExpense',
       'MarketingAndAdvertisingExpense',
     ], year);
-    if (ga?.value != null && sm?.value != null) {
+    if (ga?.value != null && sm?.value != null && ga.year === sm.year) {
       result.SellingGeneralAdmin = {
         label: 'SG&A (derived: G&A + Selling)',
         value: ga.value + sm.value,
         year: ga.year,
         period: ga.period,
         unit: ga.unit,
+        currency: ga.currency,
       };
     } else if (ga?.value != null) {
       result.SellingGeneralAdmin = ga;
@@ -713,26 +781,35 @@ export function extractComparableFinancials(facts: CompanyFacts, year?: number):
     }
   }
 
-  // Derive Total Liabilities from Assets - Equity when not directly available
-  if (!result.TotalLiabilities && result.TotalAssets?.value != null && result.StockholdersEquity?.value != null) {
-    result.TotalLiabilities = {
-      label: 'Total Liabilities (derived: Assets - Equity)',
-      value: result.TotalAssets.value - result.StockholdersEquity.value,
-      year: result.TotalAssets.year,
-      period: result.TotalAssets.period,
-      unit: result.TotalAssets.unit,
-    };
+  // Derive Total Liabilities from Assets - Equity when not directly available.
+  // Assets includes noncontrolling interests, so the equity side must too —
+  // subtracting parent-only equity overstates liabilities by the NCI amount.
+  if (!result.TotalLiabilities && result.TotalAssets?.value != null) {
+    const equityInclNci = lookupAnnualMetric(facts, [
+      'StockholdersEquityIncludingPortionAttributableToNoncontrollingInterest', 'Equity',
+    ], result.TotalAssets.year) ?? result.StockholdersEquity;
+    if (equityInclNci?.value != null && equityInclNci.year === result.TotalAssets.year) {
+      result.TotalLiabilities = {
+        label: 'Total Liabilities (derived: Assets - Equity)',
+        value: result.TotalAssets.value - equityInclNci.value,
+        year: result.TotalAssets.year,
+        period: result.TotalAssets.period,
+        unit: result.TotalAssets.unit,
+        currency: result.TotalAssets.currency,
+      };
+    }
   }
 
   if (!result.IntangibleAssets && result.Goodwill?.value != null) {
     const grossIntangibles = lookupAnnualMetric(facts, ['IntangibleAssetsNetIncludingGoodwill'], year);
-    if (grossIntangibles?.value != null) {
+    if (grossIntangibles?.value != null && grossIntangibles.year === result.Goodwill.year) {
       result.IntangibleAssets = {
         label: 'Intangible Assets (derived ex. goodwill)',
         value: grossIntangibles.value - result.Goodwill.value,
         year: grossIntangibles.year,
         period: grossIntangibles.period,
         unit: grossIntangibles.unit,
+        currency: grossIntangibles.currency,
       };
     }
   }

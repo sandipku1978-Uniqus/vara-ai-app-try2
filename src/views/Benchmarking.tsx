@@ -471,8 +471,22 @@ export default function Benchmarking() {
       for (const ticker of selectedTickers) {
         const data = companiesData[ticker];
         if (!data) continue;
-        const recentIdx = data.filings.recent.form.findIndex(f => f === '10-K');
-        if (recentIdx === -1) { texts[ticker] = 'No 10-K filing found.'; continue; }
+        // Match the filing to the SELECTED fiscal year for this ticker — always
+        // taking the newest 10-K silently diffs a different year's text than
+        // the financial columns being compared. 10-K/A is accepted so an
+        // amendment (the authoritative text) wins when it exists.
+        const annualIndices: number[] = [];
+        data.filings.recent.form.forEach((f, i) => {
+          if (f === '10-K' || f === '10-K/A') annualIndices.push(i);
+        });
+        if (annualIndices.length === 0) { texts[ticker] = 'No 10-K filing found.'; continue; }
+        const tickerYears = selectedYearsPerTicker[ticker] || [];
+        const selectedYear = tickerYears.length > 0 ? Math.max(...tickerYears) : null;
+        const reportDates = data.filings.recent.reportDate;
+        const matchingIdx = selectedYear != null && Array.isArray(reportDates)
+          ? annualIndices.find(i => (reportDates[i] || '').startsWith(String(selectedYear)))
+          : undefined;
+        const recentIdx = matchingIdx ?? annualIndices[0];
         const accession = data.filings.recent.accessionNumber[recentIdx];
         const primaryDoc = data.filings.recent.primaryDocument[recentIdx];
         const cleanAccession = accession.replace(/-/g, '');
@@ -567,11 +581,13 @@ export default function Benchmarking() {
   const getAssetTurnover = (col: string) => getRatio(col, 'Revenues', 'TotalAssets', 1, 'x', 2);
 
   const getFCF = (col: string): RatioResult => {
-    const ocf = companiesFacts[col]?.OperatingCashFlow?.value;
+    const ocfMetric = companiesFacts[col]?.OperatingCashFlow;
+    const ocf = ocfMetric?.value;
     const capex = companiesFacts[col]?.CapitalExpenditures?.value;
     if (ocf != null && capex != null) {
       const val = ocf - capex;
-      return { display: formatFinancialValue(val, 'USD'), value: val };
+      // Use the filer's actual reporting currency, not a hardcoded '$'
+      return { display: formatFinancialValue(val, ocfMetric?.currency || 'USD'), value: val };
     }
     return { display: '—', value: null };
   };
@@ -583,7 +599,9 @@ export default function Benchmarking() {
   const getEffectiveTaxRate = (col: string): RatioResult => {
     const tax = companiesFacts[col]?.IncomeTaxExpense?.value;
     const ni = companiesFacts[col]?.NetIncome?.value;
-    if (tax != null && ni != null && (ni + tax) !== 0) {
+    // Pretax proxy (NI + tax) is only meaningful when positive — for a pretax
+    // loss with a tax benefit the ratio produces nonsense percentages.
+    if (tax != null && ni != null && (ni + tax) > 0) {
       const val = (tax / (ni + tax)) * 100;
       return { display: `${val.toFixed(1)}%`, value: val };
     }
@@ -1056,21 +1074,30 @@ Keep it crisp and practical.`;
                 ].map(chart => {
                   const chartData = columns
                     .filter(col => companiesFacts[col]?.[chart.key]?.value != null)
-                    .map(col => ({
-                      name: colLabel(col),
-                      value: (companiesFacts[col]?.[chart.key]?.value || 0) / 1e9,
-                      fill: getColColor(col),
-                    }));
+                    .map(col => {
+                      const currency = companiesFacts[col]?.[chart.key]?.currency || 'USD';
+                      return {
+                        // Non-USD filers are labeled with their reporting currency —
+                        // these bars share an axis without FX conversion, and an
+                        // unlabeled DKK bar next to USD peers reads as dollars.
+                        name: currency !== 'USD' ? `${colLabel(col)} (${currency})` : colLabel(col),
+                        value: (companiesFacts[col]?.[chart.key]?.value || 0) / 1e9,
+                        fill: getColColor(col),
+                        currency,
+                      };
+                    });
                   if (chartData.length === 0) return null;
+                  const mixedCurrency = chartData.some(entry => entry.currency !== 'USD');
+                  const axisPrefix = mixedCurrency ? '' : '$';
                   return (
                     <div key={chart.key} className="glass-card" style={{ padding: '20px' }}>
-                      <h4 className="chart-title">{chart.title} <span className="chart-subtitle">($ Billions)</span></h4>
+                      <h4 className="chart-title">{chart.title} <span className="chart-subtitle">{mixedCurrency ? '(Billions, reporting currency — no FX conversion)' : '($ Billions)'}</span></h4>
                       <ResponsiveContainer width="100%" height={180}>
                         <BarChart data={chartData} barSize={Math.max(16, Math.min(36, 200 / chartData.length))}>
                           <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
                           <XAxis dataKey="name" tick={{ fill: axisTickColor, fontSize: 10 }} axisLine={{ stroke: axisLineColor }} />
-                          <YAxis tick={axisStyle} axisLine={{ stroke: axisLineColor }} tickFormatter={(v: number) => `$${v.toFixed(0)}B`} />
-                          <Tooltip contentStyle={tooltipStyle} formatter={(value: number) => [`$${value.toFixed(1)}B`, chart.title]} />
+                          <YAxis tick={axisStyle} axisLine={{ stroke: axisLineColor }} tickFormatter={(v: number) => `${axisPrefix}${v.toFixed(0)}B`} />
+                          <Tooltip contentStyle={tooltipStyle} formatter={(value: number) => [`${axisPrefix}${value.toFixed(1)}B`, chart.title]} />
                           <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                             {chartData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}
                           </Bar>
@@ -1090,11 +1117,13 @@ Keep it crisp and practical.`;
                     const gp = companiesFacts[col]?.GrossProfit?.value;
                     const oi = companiesFacts[col]?.OperatingIncome?.value;
                     const ni = companiesFacts[col]?.NetIncome?.value;
+                    // null (not 0) for untagged metrics — Recharts skips null
+                    // bars; a fake 0% margin is indistinguishable from a real one
                     return {
                       name: colLabel(col),
-                      'Gross Margin': gp != null ? +((gp / rev) * 100).toFixed(1) : 0,
-                      'Operating Margin': oi != null ? +((oi / rev) * 100).toFixed(1) : 0,
-                      'Net Margin': ni != null ? +((ni / rev) * 100).toFixed(1) : 0,
+                      'Gross Margin': gp != null ? +((gp / rev) * 100).toFixed(1) : null,
+                      'Operating Margin': oi != null ? +((oi / rev) * 100).toFixed(1) : null,
+                      'Net Margin': ni != null ? +((ni / rev) * 100).toFixed(1) : null,
                     };
                   });
                 if (marginData.length === 0) return null;
@@ -1124,16 +1153,24 @@ Keep it crisp and practical.`;
                     .filter(col => companiesFacts[col]?.TotalAssets?.value != null)
                     .map(col => {
                       const ta = companiesFacts[col]?.TotalAssets?.value || 0;
-                      const cash = companiesFacts[col]?.CashAndEquivalents?.value || 0;
-                      const gw = (companiesFacts[col]?.Goodwill?.value || 0) + (companiesFacts[col]?.IntangibleAssets?.value || 0);
-                      const arInv = (companiesFacts[col]?.AccountsReceivable?.value || 0) + (companiesFacts[col]?.Inventory?.value || 0);
-                      const other = Math.max(0, ta - cash - gw - arInv);
+                      const cashVal = companiesFacts[col]?.CashAndEquivalents?.value;
+                      const gwVal = companiesFacts[col]?.Goodwill?.value;
+                      const intVal = companiesFacts[col]?.IntangibleAssets?.value;
+                      const arVal = companiesFacts[col]?.AccountsReceivable?.value;
+                      const invVal = companiesFacts[col]?.Inventory?.value;
+                      const cash = cashVal ?? 0;
+                      const gw = (gwVal ?? 0) + (intVal ?? 0);
+                      const arInv = (arVal ?? 0) + (invVal ?? 0);
+                      const remainder = Math.max(0, ta - cash - gw - arInv);
+                      // Missing components render as gaps (null), not fake zeros —
+                      // a company that didn't tag cash must not show "zero cash".
+                      // The remainder absorbs untagged lines, hence "incl. untagged".
                       return {
                         name: colLabel(col),
-                        Cash: +(cash / 1e9).toFixed(1),
-                        'Goodwill & Intangibles': +(gw / 1e9).toFixed(1),
-                        'AR + Inventory': +(arInv / 1e9).toFixed(1),
-                        'Other Assets': +(other / 1e9).toFixed(1),
+                        Cash: cashVal != null ? +(cash / 1e9).toFixed(1) : null,
+                        'Goodwill & Intangibles': gwVal != null || intVal != null ? +(gw / 1e9).toFixed(1) : null,
+                        'AR + Inventory': arVal != null || invVal != null ? +(arInv / 1e9).toFixed(1) : null,
+                        'Other Assets': +(remainder / 1e9).toFixed(1),
                       };
                     });
                   if (bsData.length === 0) return null;
@@ -1200,20 +1237,25 @@ Keep it crisp and practical.`;
                   { key: 'Cash Quality', fn: getCashFlowQuality },
                 ];
 
-                const rawValues: Record<string, Record<string, number>> = {};
+                // Missing dims stay null: coercing to 0 pinned the company to
+                // the axis minimum AND squashed the normalized scale for peers.
+                const rawValues: Record<string, Record<string, number | null>> = {};
                 for (const col of columns) {
                   rawValues[col] = {};
-                  for (const dim of dimensions) rawValues[col][dim.key] = dim.fn(col).value ?? 0;
+                  for (const dim of dimensions) rawValues[col][dim.key] = dim.fn(col).value;
                 }
 
                 const radarData = dimensions.map(dim => {
-                  const vals = columns.map(col => rawValues[col][dim.key]);
-                  const min = Math.min(...vals);
-                  const max = Math.max(...vals);
+                  const vals = columns
+                    .map(col => rawValues[col][dim.key])
+                    .filter((v): v is number => v != null);
+                  const min = vals.length > 0 ? Math.min(...vals) : 0;
+                  const max = vals.length > 0 ? Math.max(...vals) : 0;
                   const range = max - min || 1;
-                  const entry: Record<string, string | number> = { dimension: dim.key };
+                  const entry: Record<string, string | number | null> = { dimension: dim.key };
                   for (const col of columns) {
-                    entry[col] = +((((rawValues[col][dim.key] - min) / range) * 80 + 10)).toFixed(0);
+                    const raw = rawValues[col][dim.key];
+                    entry[col] = raw != null ? +((((raw - min) / range) * 80 + 10)).toFixed(0) : null;
                   }
                   return entry;
                 });

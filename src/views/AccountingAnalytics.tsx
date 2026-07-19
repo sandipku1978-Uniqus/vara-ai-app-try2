@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { TrendingUp, Loader2 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import CompanySearchInput from '../components/filters/CompanySearchInput';
-import { lookupCIK, fetchCompanyFacts, computeFinancialRatios, extractComparableFinancials } from '../services/secApi';
+import { lookupCIK, fetchCompanyFacts, computeFinancialRatios, extractComparableFinancials, getAvailableYears } from '../services/secApi';
 
 interface CompanyRatios {
   ticker: string;
@@ -62,7 +62,13 @@ export default function AccountingAnalytics() {
             const facts = await fetchCompanyFacts(cik);
             if (!facts) continue;
 
-            const normalizedMetrics = extractComparableFinancials(facts);
+            // Pin every metric to one fiscal year — without a pinned year each
+            // metric independently takes its own latest fact, so ratios like
+            // ROE could mix a FY2025 numerator with a FY2024 denominator.
+            const latestYear = getAvailableYears(facts)[0];
+            const normalizedMetrics = latestYear != null
+              ? extractComparableFinancials(facts, latestYear)
+              : extractComparableFinancials(facts);
             const metrics: Record<string, { value: number; unit: string }> = {};
 
             for (const [key, metric] of Object.entries(normalizedMetrics)) {
