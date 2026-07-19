@@ -94,8 +94,15 @@ function FormBadge({ form }: { form: string }) {
   );
 }
 
+interface ThreadSummaryPayload {
+  summary: string;
+  model: string | null;
+  generatedAt: string | null;
+}
+
 function ThreadConversation({ threadId }: { threadId: string }) {
   const [letters, setLetters] = useState<ThreadLetter[] | null>(null);
+  const [aiSummary, setAiSummary] = useState<ThreadSummaryPayload | 'loading' | 'unavailable' | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -106,12 +113,48 @@ function ThreadConversation({ threadId }: { threadId: string }) {
     return () => { cancelled = true; };
   }, [threadId]);
 
+  useEffect(() => {
+    let cancelled = false;
+    setAiSummary('loading');
+    fetch(`/api/letters/summary?thread=${encodeURIComponent(threadId)}`)
+      .then(response => (response.ok ? response.json() : null))
+      .then(payload => {
+        if (cancelled) return;
+        if (payload?.summary) {
+          setAiSummary({ summary: payload.summary, model: payload.model ?? null, generatedAt: payload.generatedAt ?? null });
+        } else {
+          setAiSummary('unavailable');
+        }
+      })
+      .catch(() => { if (!cancelled) setAiSummary('unavailable'); });
+    return () => { cancelled = true; };
+  }, [threadId]);
+
   if (letters === null) {
     return <div style={{ padding: '16px', color: '#64748B' }}><Loader2 size={16} className="spinner" /> Loading conversation…</div>;
   }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', padding: '12px 0 4px' }}>
+      {aiSummary === 'loading' ? (
+        <div style={{ ...cardStyle, padding: '12px 14px', color: '#94A3B8', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Loader2 size={14} className="spinner" /> Summarizing the review episode…
+        </div>
+      ) : aiSummary && aiSummary !== 'unavailable' ? (
+        <div style={{ ...cardStyle, padding: '14px 16px', borderLeft: '3px solid rgba(179,31,126,0.6)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
+            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#F9A8D4', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Review summary
+            </span>
+            <span style={{ fontSize: '0.68rem', color: '#64748B' }}>
+              AI-generated{aiSummary.model ? ` · ${aiSummary.model}` : ''}{aiSummary.generatedAt ? ` · ${aiSummary.generatedAt.slice(0, 10)}` : ''} · verify against the letters below
+            </span>
+          </div>
+          <div style={{ fontSize: '0.8rem', color: '#CBD5E1', lineHeight: 1.55, whiteSpace: 'pre-line' }}>
+            {aiSummary.summary.replace(/\*\*/g, '')}
+          </div>
+        </div>
+      ) : null}
       {letters.map(letter => (
         <div key={`${letter.accession}:${letter.form}`} style={{
           ...cardStyle,
