@@ -41,6 +41,7 @@ export default function ExhibitSearch() {
           filters: { ...defaultSearchFilters },
           defaultForms: '10-K,10-K/A,8-K,S-1',
           limit: 8,
+          includeExhibits: true,
         });
         setRecentItems(matches.map(match => ({
           entityName: match.entityName,
@@ -69,6 +70,7 @@ export default function ExhibitSearch() {
         filters,
         defaultForms: '10-K,10-K/A,8-K,S-1,S-1/A,DEF 14A',
         limit: 50,
+        includeExhibits: true,
       });
       setResults(matches.map(match => ({
         entityName: match.entityName,

@@ -84,6 +84,9 @@ interface ExecuteSearchOptions {
   hydrateTextSignals?: boolean;
   deferTextValidation?: boolean;
   preferFastCandidateCollection?: boolean;
+  /** Include exhibit sub-documents (EX-99.x etc.) as separate results.
+   *  Off by default — only the Exhibit Search surface wants them. */
+  includeExhibits?: boolean;
   onProgress?: (results: FilingResearchResult[]) => void;
 }
 
@@ -936,15 +939,17 @@ export async function executeFilingResearchSearch({
   hydrateTextSignals = false,
   deferTextValidation = false,
   preferFastCandidateCollection = false,
+  includeExhibits = false,
   onProgress,
 }: ExecuteSearchOptions): Promise<FilingResearchResult[]> {
   const serverQuery = buildServerQuery(query || filters.keyword, filters, mode);
   const formTypes = normalizeFormTypes(filters, defaultForms);
   const formScope = parseFormScope(formTypes);
-  // Only exclude exhibit sub-documents when the user explicitly selected form types
-  // (e.g. searchAssist detected "10-K" from the query). Don't exclude when using
-  // defaultForms (e.g. Exhibit Search page needs to show exhibits).
-  const excludeExhibits = filters.formTypes.length > 0;
+  // Exhibit sub-documents are excluded unless the caller opts in (Exhibit
+  // Search does): EFTS returns each matching document of a filing as its own
+  // hit, so one 8-K/A could surface five EX-99.x rows that read as duplicates
+  // and crowd out distinct filings in the main research results.
+  const excludeExhibits = !includeExhibits;
   const preferRelevance = Boolean((query || filters.keyword).trim() || filters.sectionKeywords.trim());
   const semanticAuditorSearch = mode === 'semantic' && Boolean(filters.accountant.trim());
   const needsCompanyMetadata = requiresCompanyMetadata(filters);
