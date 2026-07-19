@@ -1,0 +1,39 @@
+# Grinds through unfetched comment-letter text nightly until the corpus is
+# complete (~450-500K letters since 2005), then becomes a cheap no-op that
+# only picks up newly disseminated letters. Newest-first, ~4 req/s.
+
+name: URC comment-letter text backfill
+
+on:
+  schedule:
+    - cron: '0 6 * * *'   # nightly 06:00 UTC (~2am ET) — EDGAR's quiet hours
+  workflow_dispatch:
+    inputs:
+      max_minutes:
+        description: 'Fetch budget in minutes'
+        default: '300'
+
+concurrency:
+  group: urc-letters-backfill
+  cancel-in-progress: false
+
+jobs:
+  fetch-text:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    env:
+      URC_SUPABASE_URL: ${{ secrets.URC_SUPABASE_URL }}
+      URC_SUPABASE_SERVICE_KEY: ${{ secrets.URC_SUPABASE_SERVICE_KEY }}
+      EDGAR_USER_AGENT: 'Uniqus Research Center contact@uniqus.com'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Ingest newly disseminated letters
+        run: npx tsx data-pipeline/ingest-letters.ts --since 5
+      - name: Fetch letter text
+        run: npx tsx data-pipeline/fetch-letter-text.ts --max-minutes ${{ github.event.inputs.max_minutes || '300' }}

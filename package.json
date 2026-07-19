@@ -13,7 +13,9 @@
     "es:ingest:daily": "npx tsx elasticsearch/daily-ingest.ts",
     "es:ingest:dry": "npx tsx elasticsearch/ingest.ts --dry-run",
     "ingest:metadata": "tsx data-pipeline/ingest-metadata.ts",
-    "ingest:auditors": "tsx data-pipeline/load-auditors.ts"
+    "ingest:auditors": "tsx data-pipeline/load-auditors.ts",
+    "ingest:letters": "tsx data-pipeline/ingest-letters.ts",
+    "ingest:letter-text": "tsx data-pipeline/fetch-letter-text.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.82.0",
