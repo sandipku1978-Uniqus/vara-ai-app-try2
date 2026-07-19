@@ -8,7 +8,7 @@ const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY || '',
 });
 
-const CLAUDE_MODEL = process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-6';
+const CLAUDE_MODEL = process.env.ANTHROPIC_MODEL || 'claude-sonnet-5';
 
 export async function POST(req: Request) {
   try {

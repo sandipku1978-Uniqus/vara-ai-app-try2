@@ -10,7 +10,7 @@ const anthropic = new Anthropic({
 });
 
 // Model is env-configurable so upgrades are a Vercel env change, not a deploy
-const CLAUDE_MODEL = process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-6';
+const CLAUDE_MODEL = process.env.ANTHROPIC_MODEL || 'claude-sonnet-5';
 
 export async function POST(req: Request) {
   try {

@@ -11,7 +11,7 @@ import { Anthropic } from '@anthropic-ai/sdk';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { checkAiRateLimit, rateLimitResponse } from '../../../../lib/rate-limit';
 
-const CLAUDE_MODEL = process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-6';
+const CLAUDE_MODEL = process.env.ANTHROPIC_MODEL || 'claude-sonnet-5';
 const MAX_LETTER_CHARS = 6000;
 const MAX_LETTERS = 24;
 
