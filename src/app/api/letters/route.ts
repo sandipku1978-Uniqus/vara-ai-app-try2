@@ -63,7 +63,10 @@ export async function GET(request: Request) {
       });
     }
 
-    const { data, error } = await db.rpc('urc_recent_threads', { p_limit: size, p_offset: from, p_company: company });
+    const cikParam = Number(params.get('cik') || 0) || null;
+    const { data, error } = await db.rpc('urc_recent_threads', {
+      p_limit: size, p_offset: from, p_company: company, p_cik: cikParam,
+    });
     if (error) throw new Error(error.message);
     const rows = (data ?? []) as Array<Record<string, unknown>>;
     return NextResponse.json({

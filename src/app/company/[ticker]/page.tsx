@@ -1,25 +1,28 @@
+/**
+ * Issuer Dossier — the company-centric hub the UX audit called the single
+ * biggest lever: header identity (name, tickers, exchange, SIC, state,
+ * CURRENT AUDITOR from PCAOB Form AP) + tabs for Filings, Comment-Letter
+ * threads, and Financials.
+ *
+ * Accepts ANY ticker (resolved via SEC's full company_tickers.json, server-
+ * side, cached daily) or a raw CIK number — the old page 404'd everything
+ * outside eight hardcoded tickers.
+ */
+
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import Link from 'next/link';
+import { createClient } from '@supabase/supabase-js';
+import DossierTabs from './DossierTabs';
 
 export const revalidate = 86400; // 24h ISR
-
-const CIK_MAP: Record<string, string> = {
-  'AAPL': '0000320193',
-  'MSFT': '0000789019',
-  'GOOGL': '0001652044',
-  'TSLA': '0001318605',
-  'JPM': '0000019617',
-  'AMZN': '0001018724',
-  'META': '0001326801',
-  'NVDA': '0001045810',
-};
+export const dynamicParams = true;
 
 const SEC_USER_AGENT = 'Uniqus Research Center contact@uniqus.com';
 
 interface SECSubmission {
   name: string;
   tickers: string[];
+  exchanges: string[];
   sicDescription: string;
   sic: string;
   stateOfIncorporation: string;
@@ -32,6 +35,27 @@ interface SECSubmission {
       primaryDocDescription: string[];
     };
   };
+}
+
+async function resolveCik(raw: string): Promise<string | null> {
+  const trimmed = decodeURIComponent(raw).trim();
+  // Raw CIK: digits, optionally prefixed CIK
+  const cikMatch = trimmed.match(/^(?:cik)?0*(\d{1,10})$/i);
+  if (cikMatch) return cikMatch[1].padStart(10, '0');
+
+  try {
+    const response = await fetch('https://www.sec.gov/files/company_tickers.json', {
+      headers: { 'User-Agent': SEC_USER_AGENT },
+      next: { revalidate: 86400 },
+    });
+    if (!response.ok) return null;
+    const data = await response.json() as Record<string, { cik_str: number; ticker: string }>;
+    const upper = trimmed.toUpperCase();
+    for (const entry of Object.values(data)) {
+      if (entry.ticker === upper) return String(entry.cik_str).padStart(10, '0');
+    }
+  } catch { /* resolution failure → 404 below */ }
+  return null;
 }
 
 async function fetchCompanyData(cik: string): Promise<SECSubmission | null> {
@@ -47,7 +71,26 @@ async function fetchCompanyData(cik: string): Promise<SECSubmission | null> {
   }
 }
 
+async function fetchAuditor(cik: string): Promise<{ auditor: string; periodEnd: string | null } | null> {
+  const url = process.env.URC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.URC_SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url || !key) return null;
+  try {
+    const db = createClient(url, key, { auth: { persistSession: false } });
+    const { data } = await db
+      .from('urc_current_auditors')
+      .select('firm_canonical, fiscal_period_end')
+      .eq('issuer_cik', Number(cik))
+      .maybeSingle();
+    if (!data) return null;
+    return { auditor: String(data.firm_canonical), periodEnd: data.fiscal_period_end ?? null };
+  } catch {
+    return null;
+  }
+}
+
 export async function generateStaticParams() {
+  // Prebuild the majors; everything else renders on demand via ISR
   return ['AAPL', 'MSFT', 'GOOGL', 'TSLA', 'JPM', 'AMZN', 'META', 'NVDA'].map(
     (ticker) => ({ ticker })
   );
@@ -59,21 +102,20 @@ export async function generateMetadata({
   params: Promise<{ ticker: string }>;
 }): Promise<Metadata> {
   const { ticker } = await params;
-  const upper = ticker.toUpperCase();
-  const cik = CIK_MAP[upper];
-
-  if (!cik) {
-    return { title: 'Company Not Found | Uniqus Research Center' };
-  }
-
+  const cik = await resolveCik(ticker);
+  if (!cik) return { title: 'Company Not Found | Uniqus Research Center' };
   const data = await fetchCompanyData(cik);
-  const companyName = data?.name ?? upper;
-
+  const companyName = data?.name ?? ticker.toUpperCase();
   return {
-    title: `${companyName} (${upper}) - SEC Filings | Uniqus Research Center`,
-    description: `View SEC filings, SIC sector data, and financial benchmarks for ${companyName} (${upper}). Powered by Uniqus Research Center.`,
+    title: `${companyName} — Issuer Dossier | Uniqus Research Center`,
+    description: `SEC filings, comment-letter history, auditor, and financial benchmarks for ${companyName}. Powered by Uniqus Research Center.`,
   };
 }
+
+const labelStyle: React.CSSProperties = {
+  fontSize: 12, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 4px',
+};
+const valueStyle: React.CSSProperties = { fontSize: 17, fontWeight: 600, margin: 0, color: '#f1f5f9' };
 
 export default async function CompanyPage({
   params,
@@ -81,182 +123,76 @@ export default async function CompanyPage({
   params: Promise<{ ticker: string }>;
 }) {
   const { ticker } = await params;
-  const upper = ticker.toUpperCase();
-  const cik = CIK_MAP[upper];
+  const cik = await resolveCik(ticker);
+  if (!cik) notFound();
 
-  if (!cik) {
-    notFound();
-  }
+  const [data, auditorInfo] = await Promise.all([
+    fetchCompanyData(cik!),
+    fetchAuditor(cik!),
+  ]);
+  if (!data) notFound();
 
-  const data = await fetchCompanyData(cik);
-
-  if (!data) {
-    notFound();
-  }
-
-  const recent = data.filings.recent;
-  const filingCount = Math.min(10, recent.accessionNumber.length);
+  const primaryTicker = data!.tickers?.[0] || null;
 
   return (
-    <main style={{ maxWidth: 960, margin: '0 auto', padding: '48px 24px', fontFamily: 'system-ui, sans-serif', color: '#e2e8f0' }}>
-      {/* Header */}
-      <div style={{ marginBottom: 40 }}>
+    <main style={{ maxWidth: 1000, margin: '0 auto', padding: '40px 24px', fontFamily: 'system-ui, sans-serif', color: '#e2e8f0' }}>
+      <p style={{ fontSize: 13, color: '#64748b', margin: '0 0 16px' }}>
+        <a href="/dashboard" style={{ color: '#94a3b8' }}>Home</a>
+        <span> / </span>
+        <a href="/search" style={{ color: '#94a3b8' }}>Research</a>
+        <span> / </span>
+        <span style={{ color: '#e2e8f0', fontWeight: 600 }}>{data!.name}</span>
+      </p>
+
+      <div style={{ marginBottom: 28 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, flexWrap: 'wrap' }}>
-          <h1 style={{ fontSize: 36, fontWeight: 800, margin: 0, color: '#ffffff' }}>
-            {data.name}
-          </h1>
-          <span style={{ fontSize: 20, fontWeight: 600, color: '#4ade80', letterSpacing: '0.05em' }}>
-            {upper}
-          </span>
+          <h1 style={{ fontSize: 34, fontWeight: 800, margin: 0, color: '#ffffff' }}>{data!.name}</h1>
+          {primaryTicker && (
+            <span style={{ fontSize: 20, fontWeight: 600, color: '#4ade80', letterSpacing: '0.05em' }}>
+              {data!.tickers.join(' · ')}
+            </span>
+          )}
         </div>
         <p style={{ marginTop: 8, color: '#94a3b8', fontSize: 14 }}>
-          CIK: {cik}
+          CIK {Number(cik)}{data!.exchanges?.length ? ` · ${data!.exchanges.filter(Boolean).join(', ')}` : ''}
         </p>
       </div>
 
-      {/* Company Details */}
-      <section
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: 24,
-          marginBottom: 48,
-          padding: 24,
-          backgroundColor: '#0f172a',
-          borderRadius: 12,
-          border: '1px solid #1e293b',
-        }}
-      >
+      <section style={{
+        display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 20,
+        marginBottom: 36, padding: 22, backgroundColor: '#0f172a', borderRadius: 12, border: '1px solid #1e293b',
+      }}>
         <div>
-          <p style={{ fontSize: 12, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 4px' }}>
-            SIC Code
+          <p style={labelStyle}>Current auditor</p>
+          <p style={{ ...valueStyle, color: auditorInfo ? '#f9a8d4' : '#64748b' }}>
+            {auditorInfo ? auditorInfo.auditor : 'Not on record'}
           </p>
-          <p style={{ fontSize: 18, fontWeight: 600, margin: 0, color: '#f1f5f9' }}>
-            {data.sic}
-          </p>
+          {auditorInfo?.periodEnd && (
+            <p style={{ fontSize: 11, color: '#64748b', margin: '2px 0 0' }}>
+              per Form AP · FY ended {auditorInfo.periodEnd}
+            </p>
+          )}
         </div>
         <div>
-          <p style={{ fontSize: 12, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 4px' }}>
-            Sector
-          </p>
-          <p style={{ fontSize: 18, fontWeight: 600, margin: 0, color: '#f1f5f9' }}>
-            {data.sicDescription || 'N/A'}
-          </p>
+          <p style={labelStyle}>Industry (SIC)</p>
+          <p style={valueStyle}>{data!.sicDescription || 'N/A'}</p>
+          <p style={{ fontSize: 11, color: '#64748b', margin: '2px 0 0' }}>{data!.sic || ''}</p>
         </div>
         <div>
-          <p style={{ fontSize: 12, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 4px' }}>
-            State of Incorporation
-          </p>
-          <p style={{ fontSize: 18, fontWeight: 600, margin: 0, color: '#f1f5f9' }}>
-            {data.stateOfIncorporation || 'N/A'}
-          </p>
-        </div>
-        <div>
-          <p style={{ fontSize: 12, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 4px' }}>
-            Tickers
-          </p>
-          <p style={{ fontSize: 18, fontWeight: 600, margin: 0, color: '#f1f5f9' }}>
-            {data.tickers?.join(', ') || upper}
-          </p>
+          <p style={labelStyle}>State of incorporation</p>
+          <p style={valueStyle}>{data!.stateOfIncorporation || 'N/A'}</p>
         </div>
       </section>
 
-      {/* Latest Filings */}
-      <section>
-        <h2 style={{ fontSize: 24, fontWeight: 700, marginBottom: 16, color: '#ffffff' }}>
-          Latest Filings
-        </h2>
-        <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid #1e293b' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
-            <thead>
-              <tr style={{ backgroundColor: '#0f172a' }}>
-                <th style={{ padding: '12px 16px', textAlign: 'left', color: '#64748b', fontWeight: 600, borderBottom: '1px solid #1e293b' }}>
-                  Date
-                </th>
-                <th style={{ padding: '12px 16px', textAlign: 'left', color: '#64748b', fontWeight: 600, borderBottom: '1px solid #1e293b' }}>
-                  Form
-                </th>
-                <th style={{ padding: '12px 16px', textAlign: 'left', color: '#64748b', fontWeight: 600, borderBottom: '1px solid #1e293b' }}>
-                  Description
-                </th>
-                <th style={{ padding: '12px 16px', textAlign: 'left', color: '#64748b', fontWeight: 600, borderBottom: '1px solid #1e293b' }}>
-                  Document
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {Array.from({ length: filingCount }).map((_, i) => {
-                const accession = recent.accessionNumber[i]?.replace(/-/g, '');
-                const accessionDash = recent.accessionNumber[i];
-                const doc = recent.primaryDocument[i];
-                const edgarUrl = `https://www.sec.gov/Archives/edgar/data/${parseInt(cik, 10)}/${accession}/${doc}`;
+      <DossierTabs
+        cik={Number(cik)}
+        companyName={data!.name}
+        recentFilings={data!.filings.recent}
+      />
 
-                return (
-                  <tr
-                    key={accessionDash}
-                    style={{ backgroundColor: i % 2 === 0 ? 'transparent' : '#0f172a' }}
-                  >
-                    <td style={{ padding: '10px 16px', borderBottom: '1px solid #1e293b', color: '#cbd5e1' }}>
-                      {recent.filingDate[i]}
-                    </td>
-                    <td style={{ padding: '10px 16px', borderBottom: '1px solid #1e293b' }}>
-                      <span
-                        style={{
-                          display: 'inline-block',
-                          padding: '2px 8px',
-                          borderRadius: 4,
-                          backgroundColor: '#1e293b',
-                          color: '#4ade80',
-                          fontWeight: 600,
-                          fontSize: 13,
-                        }}
-                      >
-                        {recent.form[i]}
-                      </span>
-                    </td>
-                    <td style={{ padding: '10px 16px', borderBottom: '1px solid #1e293b', color: '#cbd5e1' }}>
-                      {recent.primaryDocDescription[i] || '-'}
-                    </td>
-                    <td style={{ padding: '10px 16px', borderBottom: '1px solid #1e293b' }}>
-                      <a
-                        href={edgarUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        style={{ color: '#38bdf8', textDecoration: 'none' }}
-                      >
-                        View
-                      </a>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-
-        <div style={{ marginTop: 24, textAlign: 'center' }}>
-          <Link
-            href={`/search?company=${encodeURIComponent(data.name)}`}
-            style={{
-              display: 'inline-block',
-              padding: '10px 24px',
-              borderRadius: 8,
-              backgroundColor: '#4ade80',
-              color: '#050A1F',
-              fontWeight: 700,
-              fontSize: 14,
-              textDecoration: 'none',
-            }}
-          >
-            Search all filings for {data.name}
-          </Link>
-        </div>
-      </section>
-
-      {/* Footer attribution */}
-      <footer style={{ marginTop: 64, paddingTop: 24, borderTop: '1px solid #1e293b', textAlign: 'center' }}>
+      <footer style={{ marginTop: 56, paddingTop: 24, borderTop: '1px solid #1e293b', textAlign: 'center' }}>
         <p style={{ fontSize: 12, color: '#475569' }}>
-          Data sourced from SEC EDGAR. Powered by Uniqus Research Center.
+          Filings: SEC EDGAR · Auditor: PCAOB Form AP · Financials: XBRL company facts. Powered by Uniqus Research Center.
         </p>
       </footer>
     </main>

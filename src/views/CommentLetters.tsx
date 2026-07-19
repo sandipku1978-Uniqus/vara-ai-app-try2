@@ -1,10 +1,22 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'next/navigation';
 
 import { Mail, Search, Loader2, ExternalLink, MessageSquare, ChevronDown, ChevronRight } from 'lucide-react';
 import AskCopilotButton from '../components/tables/AskCopilotButton';
 import { useApp } from '../context/AppState';
+
+/** Topic-first entry points — accountants start from an issue, not a query.
+ *  Each chip fires a tuned full-text query over the letter corpus. */
+const TOPIC_CHIPS: Array<{ label: string; query: string }> = [
+  { label: 'Revenue (ASC 606)', query: 'revenue recognition performance obligation principal agent' },
+  { label: 'Segments (ASC 280)', query: 'segment reporting CODM operating segments' },
+  { label: 'ICFR / Material weakness', query: 'material weakness internal control remediation' },
+  { label: 'Non-GAAP', query: 'non-GAAP measure prominence reconciliation' },
+  { label: 'Goodwill impairment', query: 'goodwill impairment reporting unit fair value' },
+  { label: 'Climate', query: 'climate related risks disclosure' },
+];
 
 interface ThreadSummary {
   thread_id: string;
@@ -131,7 +143,9 @@ function ThreadConversation({ threadId }: { threadId: string }) {
       {letters.length > 0 && (
         <div style={{ paddingTop: '4px' }}>
           <AskCopilotButton
-            prompt={`Summarize this SEC comment-letter conversation for ${letters[0].company_name}: what did the Staff challenge, how did the company respond, and how was it resolved? Thread: ${threadId}`}
+            prompt={`Summarize this SEC comment-letter conversation for ${letters[0].company_name}: what did the Staff challenge, how did the company respond, and how was it resolved?\n\nThe letters, in order:\n\n${letters
+              .map(letter => `--- ${letter.form === 'UPLOAD' ? 'SEC STAFF LETTER' : 'COMPANY RESPONSE'} (${letter.date_filed}) ---\n${letter.has_text ? letter.preview : '[text not yet extracted]'}`)
+              .join('\n\n')}\n\nGround the summary strictly in the letter excerpts above; note that excerpts are truncated.`}
           />
         </div>
       )}
@@ -141,8 +155,9 @@ function ThreadConversation({ threadId }: { threadId: string }) {
 
 export default function CommentLetters() {
   const { pendingSearchIntent, setPendingSearchIntent } = useApp();
+  const searchParams = useSearchParams();
   const [keyword, setKeyword] = useState('');
-  const [companyFilter, setCompanyFilter] = useState('');
+  const [companyFilter, setCompanyFilter] = useState(() => searchParams?.get('company') || '');
   const [formFilter, setFormFilter] = useState<'' | 'UPLOAD' | 'CORRESP'>('');
   const [threads, setThreads] = useState<ThreadSummary[]>([]);
   const [threadsTotal, setThreadsTotal] = useState(0);
@@ -256,6 +271,20 @@ export default function CommentLetters() {
         </button>
       </div>
 
+      {/* Topic-first entry — fires a tuned corpus query per issue */}
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
+        {TOPIC_CHIPS.map(chip => (
+          <button key={chip.label} type="button"
+            onClick={() => { setKeyword(chip.query); runSearch(chip.query, formFilter, companyFilter); }}
+            style={{
+              padding: '6px 12px', borderRadius: '999px', fontSize: '0.75rem', cursor: 'pointer',
+              border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.04)', color: '#CBD5E1',
+            }}>
+            {chip.label}
+          </button>
+        ))}
+      </div>
+
       {loading ? (
         <div style={{ textAlign: 'center', padding: '48px', color: '#64748B' }}>
           <Loader2 size={24} className="spinner" style={{ marginBottom: '8px' }} />
@@ -272,7 +301,10 @@ export default function CommentLetters() {
                 <div key={`${match.accession}:${match.cik}`} style={cardStyle}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-                      <span style={{ fontWeight: 600, color: 'white', fontSize: '0.88rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{match.company_name}</span>
+                      <a href={`/company/${match.cik}`} title="Open issuer dossier"
+                        style={{ fontWeight: 600, color: 'white', fontSize: '0.88rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: 'none' }}>
+                        {match.company_name}
+                      </a>
                       <FormBadge form={match.form} />
                       <span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>{match.date_filed}</span>
                     </div>
@@ -327,7 +359,11 @@ export default function CommentLetters() {
                       style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', cursor: 'pointer', flexWrap: 'wrap', width: '100%', background: 'none', border: 'none', padding: 0, textAlign: 'left' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
                         {expandedThread === thread.thread_id ? <ChevronDown size={16} style={{ color: '#94A3B8' }} /> : <ChevronRight size={16} style={{ color: '#94A3B8' }} />}
-                        <span style={{ fontWeight: 600, color: 'white', fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{thread.company_name}</span>
+                        <a href={`/company/${thread.cik}`} title="Open issuer dossier"
+                          onClick={event => event.stopPropagation()}
+                          style={{ fontWeight: 600, color: 'white', fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: 'none' }}>
+                          {thread.company_name}
+                        </a>
                         {/* Round count is the accountant's severity signal — long
                             contested reviews are the richest precedents */}
                         <span style={{
