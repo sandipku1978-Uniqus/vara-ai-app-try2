@@ -232,7 +232,7 @@ export default function Benchmarking() {
   useEffect(() => {
     if (!pendingCompareIntent) return;
 
-    setSelectedTickers(pendingCompareIntent.tickers.slice(0, 10));
+    setSelectedTickers(pendingCompareIntent.tickers.slice(0, 20));
     if (pendingCompareIntent.sicCode) {
       setPeerSicCode(pendingCompareIntent.sicCode);
     }
@@ -410,7 +410,7 @@ export default function Benchmarking() {
         }
       }
       if (peers.length > 0) {
-        setSelectedTickers(prev => [...new Set([...prev, ...peers])].slice(0, 10));
+        setSelectedTickers(prev => [...new Set([...prev, ...peers])].slice(0, 20));
         setPeerDiscoveryMessage(`Added ${peers.length} peers for SIC ${targetSic}${meta.sicDescription ? ` (${meta.sicDescription})` : ''}.`);
       } else {
         setPeerDiscoveryMessage(`No peers found yet for SIC ${targetSic}. Try a broader seed company or add peers manually.`);
@@ -462,6 +462,75 @@ export default function Benchmarking() {
     }
   };
 
+  /**
+   * Section-aware extraction: locate the selected Item via TOC anchors or
+   * heading scan and read until the next Item heading. The previous
+   * approach — indexOf on the whole document + a 20K substring — routinely
+   * grabbed a TOC cross-reference or sliced mid-table, so the AI compared
+   * artifacts of bad extraction rather than real disclosure differences.
+   */
+  const extractNamedSectionText = useCallback((html: string, sectionLabel: string): string | null => {
+    const itemMatch = sectionLabel.match(/^item\s+(\d+[a-z]?)/i);
+    const itemToken = itemMatch ? itemMatch[1].toLowerCase() : null;
+    if (!itemToken) return null;
+    const sectionRe = new RegExp(`^item\\s*${itemToken}\\b[.:\\s]`, 'i');
+    const anyItemRe = /^item\s*\d+[a-z]?\b[.:\s]/i;
+
+    try {
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+
+      // Prefer TOC anchor targets — most EDGAR filings link their contents
+      let target: Element | null = null;
+      for (const link of Array.from(doc.querySelectorAll('a[href^="#"]'))) {
+        const text = (link.textContent || '').replace(/\s+/g, ' ').trim();
+        if (text.length > 140 || !sectionRe.test(text)) continue;
+        const anchor = (link.getAttribute('href') || '').replace(/^#/, '');
+        if (!anchor) continue;
+        target = doc.querySelector(`a[name="${anchor}"], [id="${anchor}"]`);
+        if (target) break;
+      }
+      // Fallback: heading scan past the TOC region
+      if (!target) {
+        const candidates = Array.from(doc.querySelectorAll('h1, h2, h3, h4, b, strong, p, div, td'));
+        for (const el of candidates) {
+          const text = (el.textContent || '').replace(/\s+/g, ' ').trim();
+          if (text.length > 140 || !sectionRe.test(text)) continue;
+          // Skip TOC rows: their nearest link ancestor points at an anchor
+          if (el.closest('a[href^="#"]')) continue;
+          target = el;
+          // Prefer the LAST match — the section body follows the final
+          // occurrence (earlier ones are TOC/cross-references)
+        }
+      }
+      if (!target) return null;
+
+      const parts: string[] = [];
+      let node: Element | null = target;
+      let guard = 0;
+      while (node && parts.join(' ').length < 60_000 && guard < 4000) {
+        guard++;
+        const text = (node.textContent || '').replace(/\s+/g, ' ').trim();
+        const isNextItemHeading =
+          parts.length > 0 && text.length > 0 && text.length < 140 &&
+          anyItemRe.test(text) && !sectionRe.test(text);
+        if (isNextItemHeading) break;
+        if (text) parts.push(text);
+        if (node.nextElementSibling) {
+          node = node.nextElementSibling;
+        } else {
+          // climb out of wrappers until a sibling exists
+          let parent: Element | null = node.parentElement;
+          while (parent && !parent.nextElementSibling) parent = parent.parentElement;
+          node = parent?.nextElementSibling ?? null;
+        }
+      }
+      const combined = parts.join('\n').trim();
+      return combined.length > 400 ? combined.slice(0, 60_000) : null;
+    } catch {
+      return null;
+    }
+  }, []);
+
   // Text diff
   useEffect(() => {
     if (viewMode !== 'text-diff') return;
@@ -494,27 +563,33 @@ export default function Benchmarking() {
         try {
           const resp = await fetch(buildSecProxyUrl(`Archives/edgar/data/${data.cik}/${cleanAccession}/${primaryDoc}`));
           const html = await resp.text();
-          const bodyText = extractDocumentTextFromHtml(html);
-          const lowerText = bodyText.toLowerCase();
-          const target = selectedSection.toLowerCase();
-          
-          let currentIdx = lowerText.indexOf(target);
-          const indices: number[] = [];
-          while (currentIdx !== -1) {
-            indices.push(currentIdx);
-            currentIdx = lowerText.indexOf(target, currentIdx + Math.max(10, target.length));
-          }
-          
-          if (indices.length > 0) {
-            // Usually the TOC is near the beginning (e.g. index < 10000).
-            // A preamble note might also be early. The actual section is usually later.
-            const validIndices = indices.filter(i => i > 8000);
-            
-            // If there's a match past 8000 chars, pick the first one of those. otherwise pick the last one found.
-            const sectionIdx = validIndices.length > 0 ? validIndices[0] : indices[indices.length - 1];
-            texts[ticker] = bodyText.substring(sectionIdx, sectionIdx + 20000).trim();
+
+          // Structured extraction first: anchors/headings bound the section
+          // precisely. Fall back to positional search only when the document
+          // has no parseable structure.
+          const structured = extractNamedSectionText(html, selectedSection);
+          if (structured) {
+            texts[ticker] = structured;
           } else {
-            texts[ticker] = `Section "${selectedSection}" not found in extracted text.`;
+            const bodyText = extractDocumentTextFromHtml(html);
+            const lowerText = bodyText.toLowerCase();
+            const target = selectedSection.toLowerCase();
+
+            let currentIdx = lowerText.indexOf(target);
+            const indices: number[] = [];
+            while (currentIdx !== -1) {
+              indices.push(currentIdx);
+              currentIdx = lowerText.indexOf(target, currentIdx + Math.max(10, target.length));
+            }
+
+            if (indices.length > 0) {
+              // TOC hits cluster near the start; the real section is later
+              const validIndices = indices.filter(i => i > 8000);
+              const sectionIdx = validIndices.length > 0 ? validIndices[0] : indices[indices.length - 1];
+              texts[ticker] = bodyText.substring(sectionIdx, sectionIdx + 20000).trim();
+            } else {
+              texts[ticker] = `Section "${selectedSection}" not found in extracted text.`;
+            }
           }
         } catch {
           texts[ticker] = 'Failed to fetch filing content.';

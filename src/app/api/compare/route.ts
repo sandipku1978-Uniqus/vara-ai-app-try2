@@ -20,8 +20,10 @@ export async function POST(req: Request) {
     if (!tickers || !Array.isArray(tickers) || tickers.length < 2) {
       return new Response(JSON.stringify({ error: 'At least 2 tickers are required.' }), { status: 400 });
     }
-    if (tickers.length > 10) {
-      return new Response(JSON.stringify({ error: 'Maximum 10 tickers allowed.' }), { status: 400 });
+    // 20-company cohorts: ~20 × 20K-char section contexts ≈ 100K tokens,
+    // comfortably inside the model's context with prompt caching on the system
+    if (tickers.length > 20) {
+      return new Response(JSON.stringify({ error: 'Maximum 20 tickers allowed.' }), { status: 400 });
     }
 
     if (!process.env.ANTHROPIC_API_KEY) {
