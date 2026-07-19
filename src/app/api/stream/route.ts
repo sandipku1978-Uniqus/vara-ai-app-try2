@@ -30,9 +30,14 @@ export async function POST(req: Request) {
       );
     }
 
-    // 1. Check cache — if hit, return JSON immediately (no streaming needed)
-    const payloadSignature = JSON.stringify({ prompt, messages });
-    const hash = crypto.createHash('sha256').update(`${payloadSignature}-${maxTokens}-${temperature}`).digest('hex');
+    // 1. Check cache — if hit, return JSON immediately (no streaming needed).
+    //    Key includes frameworks (they change the injected KB and model config)
+    //    and the EFFECTIVE params, so different configs can't collide.
+    const isComplexForKey = frameworks.length > 0;
+    const payloadSignature = JSON.stringify({ prompt, messages, frameworks: [...frameworks].sort() });
+    const keyMaxTokens = isComplexForKey ? 8192 : maxTokens;
+    const keyTemp = isComplexForKey ? 1 : temperature;
+    const hash = crypto.createHash('sha256').update(`${payloadSignature}-${keyMaxTokens}-${keyTemp}`).digest('hex');
     const cacheKey = `ai-cache:${hash}`;
 
     const cachedResponse = await cacheService.get<string>(cacheKey);
@@ -58,7 +63,7 @@ export async function POST(req: Request) {
 
     const apiMessages = messages.length > 0 ? messages : [{ role: 'user' as const, content: prompt }];
     if (kbContext && apiMessages.length > 0) {
-      apiMessages[apiMessages.length - 1].content += `\n\nCross-Framework Considerations:${kbContext}`;
+      apiMessages[apiMessages.length - 1].content += `\n\n[Reference material — internal cross-framework knowledge base, NOT from any filing]:${kbContext}`;
     }
 
     const isComplex = frameworks.length > 0;
@@ -85,7 +90,9 @@ export async function POST(req: Request) {
         .map((block) => block.text)
         .join('');
 
-      const ttlSeconds = 604800;
+      // Temp-1 extended-thinking output is the highest-variance path — cache
+      // briefly, not for a week (one bad generation was served for 7 days).
+      const ttlSeconds = 3600;
       await cacheService.set(cacheKey, textPayload, { ex: ttlSeconds });
 
       return new Response(JSON.stringify({ text: textPayload, cached: false }), {

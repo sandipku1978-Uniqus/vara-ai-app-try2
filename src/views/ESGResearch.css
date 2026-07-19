@@ -183,6 +183,9 @@
 .heatmap-cell.high { background: rgba(16, 185, 129, 0.8); }
 .heatmap-cell.medium { background: rgba(245, 158, 11, 0.8); }
 .heatmap-cell.low { background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255, 255, 255, 0.1); }
+/* 'absent' = AI confirmed the topic is not addressed; 'unrated' = no analysis ran */
+.heatmap-cell.absent { background: rgba(148, 27, 60, 0.35); border: 1px solid rgba(255, 255, 255, 0.08); }
+.heatmap-cell.unrated { background: transparent; border: 1px dashed rgba(255, 255, 255, 0.2); }
 
 /* Heatmap Legend */
 .heatmap-legend {

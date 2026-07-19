@@ -25,8 +25,15 @@ export async function POST(req: Request) {
       }), { status: 200, headers: { 'Content-Type': 'application/json' }});
     }
 
-    // Build comparison configuration string for cache
-    const payloadSignature = JSON.stringify({ tickers, section, length: filingContexts.length });
+    // Cache key hashes the FULL filing text, not just tickers+section+count —
+    // the old length-only signature served a stale analysis whenever the same
+    // tickers were compared with different excerpts (new fiscal year, 10-K/A,
+    // corrected extraction).
+    const payloadSignature = JSON.stringify({
+      tickers,
+      section,
+      texts: filingContexts.map((f: any) => `${f.ticker}:${f.companyName}:${f.text}`),
+    });
     const hash = crypto.createHash('sha256').update(payloadSignature).digest('hex');
     const cacheKey = `ai-compare:${hash}`;
 
@@ -53,7 +60,9 @@ export async function POST(req: Request) {
     // Using the latest Claude 4.6 Sonnet model with prompt caching
     const msg = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: 8192,
+      // Thinking budget comes out of max_tokens: 8192-4000 left ~4k visible
+      // tokens, which truncated 10-company comparison tables mid-row.
+      max_tokens: 16384,
       thinking: { type: 'enabled', budget_tokens: 4000 },
       temperature: 1, // Must be 1 when using thinking
       system: [
@@ -75,7 +84,9 @@ export async function POST(req: Request) {
       .map((block) => block.text)
       .join('');
 
-    await cacheService.set(cacheKey, textPayload, { ex: 604800 });
+    // Content-hashed key makes longer caching safe (same inputs → same key),
+    // but temp-1 thinking output is non-deterministic — keep TTL moderate.
+    await cacheService.set(cacheKey, textPayload, { ex: 86400 });
 
     return new Response(JSON.stringify({ analysis: textPayload, cached: false }), {
       status: 200,

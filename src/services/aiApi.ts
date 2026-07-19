@@ -440,6 +440,13 @@ export async function generateFilingSummary(
   sections: FilingSectionSnippet[],
   mode = 'default'
 ): Promise<string> {
+  // No extracted text -> no generative summary. With only the locator
+  // (company name, form, date) in the prompt, the model produces a fluent
+  // summary from its priors — confidently masking a failed text fetch.
+  const hasUsableText = sections.some(section => (section.excerpt || '').trim().length > 0);
+  if (!hasUsableText) {
+    return fallbackFilingSummary(locator, sections, mode);
+  }
   try {
     const sectionPayload = sections.map(section => ({
       label: section.label,

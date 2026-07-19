@@ -20,10 +20,16 @@ Controllers, technical accounting managers, SEC reporting professionals, audit c
 
 ## Citation Protocol (CRITICAL)
 - ALWAYS cite specific ASC topics: "ASC 606-10-25-1 through 25-5"
-- ALWAYS cite filing references: "Apple Inc. 10-K, FY2025, Item 1A Risk Factors"
-- ALWAYS include EDGAR links when referencing specific filings
+- Cite filing references ONLY for filings whose text or metadata appears in the
+  conversation: "Apple Inc. 10-K, FY2025, Item 1A Risk Factors"
+- NEVER invent EDGAR URLs, accession numbers, filing dates, or financial figures.
+  Reference a specific filing or number ONLY if it was provided to you in this
+  conversation. If asked for a link you were not given, say the user should open
+  the filing via the platform's search.
 - NEVER make unsupported claims about disclosure practices
-- When information is NOT found in the provided filing context, explicitly say so
+- Distinguish clearly between (a) facts grounded in provided filing material and
+  (b) general accounting knowledge. Prefix general knowledge with "As a general
+  matter" or similar so readers can tell them apart.
 
 ## Output Format Rules
 - For comparison queries: produce markdown tables with company columns
@@ -32,13 +38,9 @@ Controllers, technical accounting managers, SEC reporting professionals, audit c
 - For quick lookups: concise, direct answers
 
 ## Filing Context
-The following filing excerpts are provided as context for your analysis. Ground ALL answers in this context.
-
-<filing_context>
-{DYNAMIC_FILING_CONTEXT}
-</filing_context>
-
-If the user asks about information not present in the filing context above, say:
+When filing excerpts are provided in the conversation, ground ALL filing-specific
+claims in those excerpts. When the user asks about filing-specific information
+that was NOT provided, say:
 "This information is not available in the filing sections currently loaded. You may want to search for [specific filing type/section] to find this data."`;
 
 // ============================================================================
@@ -288,14 +290,17 @@ Return ONLY valid JSON (no markdown, no explanation) with this exact schema:
 {
   "directors": [{"name": "Full Name", "role": "e.g. Chairman, Independent Director", "independent": true/false, "committees": ["Audit", "Compensation"]}],
   "compensation": [{"name": "Full Name", "title": "CEO/CFO/etc", "salary": "$X,XXX,XXX", "stockAwards": "$XXM", "total": "$XXM"}],
-  "boardSize": <number>,
-  "independencePercent": <number 0-100>,
-  "diversity": {"malePercent": <number>, "femalePercent": <number>},
-  "ceoPayRatio": "e.g. 256:1",
-  "sayOnPayApproval": "e.g. 94.2%"
+  "boardSize": <number or null>,
+  "independencePercent": <number 0-100, or null>,
+  "diversity": {"malePercent": <number or null>, "femalePercent": <number or null>},
+  "ceoPayRatio": "e.g. 256:1, or null",
+  "sayOnPayApproval": "e.g. 94.2%, or null"
 }
 
-If data for a field is not found, use reasonable defaults: empty arrays, 0, or "N/A".
+CRITICAL: extract ONLY values that actually appear in the text below. If a field
+is not disclosed in the text, use null (or an empty array for lists). NEVER guess,
+estimate, or substitute a default number — a fabricated 0 is indistinguishable
+from real data downstream.
 
 DEF 14A TEXT:
 ${proxyText}`;
@@ -309,10 +314,14 @@ Topics to rate: ${JSON.stringify(topics)}
 For each topic, rate as:
 - "high" = detailed, quantitative disclosure with specific metrics/targets
 - "medium" = mentioned with some detail but lacking specifics
-- "low" = barely mentioned or absent
+- "low" = barely mentioned
+- "absent" = not addressed in the provided text at all
+
+Rate ONLY from the text below. If the provided text is truncated or does not
+cover a topic, rate it "absent" — do not infer from general knowledge of the company.
 
 Return ONLY valid JSON (no markdown, no explanation) mapping each topic to its rating:
-{"Topic Name": "high"|"medium"|"low", ...}
+{"Topic Name": "high"|"medium"|"low"|"absent", ...}
 
 10-K TEXT:
 ${filingText}`;
@@ -322,9 +331,10 @@ export function buildDealExtractionPrompt(filingText: string): string {
   return `You are an M&A analyst. Extract deal details from this SEC filing (8-K, SC 13D, or SC TO-T).
 
 Return ONLY valid JSON (no markdown, no explanation):
-{"target": "Company Name", "acquirer": "Company Name", "value": "$X.XB or N/A", "dealType": "Merger Agreement/Asset Purchase/Stock Purchase/Tender Offer", "sector": "e.g. Technology, Healthcare"}
+{"target": "Company Name", "acquirer": "Company Name", "value": "$X.XB or null", "dealType": "Merger Agreement/Asset Purchase/Stock Purchase/Tender Offer", "sector": "e.g. Technology, Healthcare"}
 
-If a field cannot be determined, use "N/A".
+Extract ONLY what the text below states. If a field cannot be determined from the
+text, use null — never infer a deal value or party from outside knowledge.
 
 FILING TEXT:
 ${filingText}`;

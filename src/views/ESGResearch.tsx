@@ -80,10 +80,11 @@ export default function ESGResearch() {
       setHeatmapError('');
       const currentTickers = [...esgTickers];
       try {
-        // Initialize rows
+        // Initialize rows as 'unrated' — seeding 'low' rendered a real-looking
+        // "low disclosure" rating for companies whose fetch/AI analysis failed
         const rows: HeatmapRow[] = ESG_TOPICS.map(topic => {
           const row: HeatmapRow = { topic };
-          currentTickers.forEach(t => { row[t.toLowerCase()] = 'low'; });
+          currentTickers.forEach(t => { row[t.toLowerCase()] = 'unrated'; });
           return row;
         });
 
@@ -379,7 +380,7 @@ export default function ESGResearch() {
                         <td style={{ padding: '16px', color: '#CBD5E1', fontSize: '0.875rem', fontWeight: 500 }}>{row.topic}</td>
                         {esgTickers.map(t => (
                           <td key={t} style={{ padding: '8px', borderLeft: '1px solid rgba(51,65,85,0.5)' }}>
-                            <div className={`heatmap-cell ${row[t.toLowerCase()] || 'low'}`}></div>
+                            <div className={`heatmap-cell ${row[t.toLowerCase()] || 'unrated'}`}></div>
                           </td>
                         ))}
                       </tr>

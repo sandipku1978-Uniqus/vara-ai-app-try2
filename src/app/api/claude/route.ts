@@ -30,9 +30,15 @@ export async function POST(req: Request) {
       }), { status: 200, headers: { 'Content-Type': 'application/json' }});
     }
 
-    // 1. Generate Cache Key based on the exact payload and configuration
-    const payloadSignature = JSON.stringify({ prompt, messages });
-    const hash = crypto.createHash('sha256').update(`${payloadSignature}-${maxTokens}-${temperature}`).digest('hex');
+    // 1. Cache key must cover everything that changes the answer: frameworks
+    //    alter both the injected KB context and the model config (isComplex),
+    //    so omitting them served one framework's cached answer to another.
+    //    Hash the EFFECTIVE config, not the raw request values.
+    const isComplex = frameworks.length > 0;
+    const effectiveTemp = isComplex ? 1 : clampedTemp;
+    const effectiveMaxTokens = isComplex ? 8192 : clampedMaxTokens;
+    const payloadSignature = JSON.stringify({ prompt, messages, frameworks: [...frameworks].sort() });
+    const hash = crypto.createHash('sha256').update(`${payloadSignature}-${effectiveMaxTokens}-${effectiveTemp}`).digest('hex');
     const cacheKey = `ai-cache:${hash}`;
 
     // 2. Check Vercel KV Cache
@@ -54,16 +60,16 @@ export async function POST(req: Request) {
 
     const apiMessages = messages.length > 0 ? messages : [{ role: 'user', content: prompt }];
     if (kbContext && apiMessages.length > 0) {
-      apiMessages[apiMessages.length - 1].content += `\n\nCross-Framework Considerations:${kbContext}`;
+      // Labeled as reference material so the model can't cite the static KB
+      // as if it came from a filing.
+      apiMessages[apiMessages.length - 1].content += `\n\n[Reference material — internal cross-framework knowledge base, NOT from any filing]:${kbContext}`;
     }
-
-    const isComplex = frameworks.length > 0;
 
     const msg = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: isComplex ? 8192 : clampedMaxTokens,
+      max_tokens: effectiveMaxTokens,
       ...(isComplex ? { thinking: { type: 'enabled', budget_tokens: 4000 } } : {}),
-      temperature: isComplex ? 1 : clampedTemp,
+      temperature: effectiveTemp,
       // Prompt caching: system prompt cached at Anthropic for 90% input token discount
       system: [{
         type: 'text',
@@ -78,8 +84,10 @@ export async function POST(req: Request) {
       .map((block) => block.text)
       .join('');
 
-    // 4. Save to Cache (store text for 7 days if deterministic enough)
-    const ttlSeconds = temperature < 0.3 ? 604800 : 3600; // 7 days for temp < 0.3, else 1 hour
+    // 4. Save to Cache. TTL keyed to the EFFECTIVE temperature — the complex
+    //    path runs at temp 1 with extended thinking (highest variance), which
+    //    the old body-temperature check froze for 7 days.
+    const ttlSeconds = effectiveTemp < 0.3 ? 604800 : 3600; // 7 days only for near-deterministic runs
     await cacheService.set(cacheKey, textPayload, { ex: ttlSeconds });
 
     return new Response(JSON.stringify({ text: textPayload, cached: false }), {

@@ -211,8 +211,9 @@ export default function BoardProfiles() {
   };
 
   const companyName = companyData?.name || currentTicker;
-  const boardSize = boardData?.boardSize || 0;
-  const independence = boardData?.independencePercent || 0;
+  // null = not disclosed in the proxy (extractor no longer fabricates 0 defaults)
+  const boardSize = boardData?.boardSize ?? null;
+  const independence = boardData?.independencePercent ?? null;
 
   return (
     <div className="board-container">
@@ -288,13 +289,13 @@ export default function BoardProfiles() {
             <div className="gov-metric" style={{ marginTop: '12px' }}>
               <span className="text-sm text-slate-400">Board Size</span>
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: '1.1rem', color: 'white' }}>
-                {boardLoading ? '...' : boardData ? boardSize : '—'}
+                {boardLoading ? '...' : boardSize ?? '—'}
               </span>
             </div>
             <div className="gov-metric" style={{ marginTop: '12px' }}>
               <span className="text-sm text-slate-400">Independence</span>
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: '1.1rem', color: '#4ADE80' }}>
-                {boardLoading ? '...' : boardData ? `${independence}%` : '—'}
+                {boardLoading ? '...' : independence != null ? `${independence}%` : '—'}
               </span>
             </div>
             <div className="gov-metric" style={{ marginTop: '12px' }}>
@@ -381,19 +382,19 @@ export default function BoardProfiles() {
                 <div style={{ background: 'rgba(15,23,42,0.5)', border: '1px solid #334155', padding: '24px', borderRadius: '12px' }}>
                   <h3 style={{ fontSize: '0.875rem', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.025em', marginBottom: '16px', display: 'flex', justifyContent: 'space-between' }}>
                     Gender Identity
-                    <span style={{ color: '#D66CAE', fontWeight: 700 }}>Total: {boardSize}</span>
+                    <span style={{ color: '#D66CAE', fontWeight: 700 }}>Total: {boardSize ?? '—'}</span>
                   </h3>
                   <div style={{ display: 'flex', gap: '24px', height: '160px', alignItems: 'flex-end', marginBottom: '8px' }}>
                     {[{ label: 'Male', pct: boardData.diversity.malePercent, color: '#B31F7E' },
                       { label: 'Female', pct: boardData.diversity.femalePercent, color: '#A855F7' }].map(bar => {
-                      const count = Math.round(boardSize * bar.pct / 100);
+                      const count = boardSize != null && bar.pct != null ? Math.round(boardSize * bar.pct / 100) : null;
                       return (
                         <div key={bar.label} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                          <span style={{ fontSize: '0.875rem', fontWeight: 700 }}>{count}</span>
+                          <span style={{ fontSize: '0.875rem', fontWeight: 700 }}>{count ?? '—'}</span>
                           <div style={{ width: '100%', background: '#1E293B', borderRadius: '6px 6px 0 0', position: 'relative', height: '100%' }}>
-                            <div style={{ position: 'absolute', bottom: 0, width: '100%', background: bar.color, borderRadius: '6px 6px 0 0', height: `${bar.pct}%`, transition: 'height 0.3s' }}></div>
+                            <div style={{ position: 'absolute', bottom: 0, width: '100%', background: bar.color, borderRadius: '6px 6px 0 0', height: `${bar.pct ?? 0}%`, transition: 'height 0.3s' }}></div>
                           </div>
-                          <span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>{bar.label} ({bar.pct}%)</span>
+                          <span style={{ fontSize: '0.75rem', color: '#94A3B8' }}>{bar.label} ({bar.pct != null ? `${bar.pct}%` : 'not disclosed'})</span>
                         </div>
                       );
                     })}
