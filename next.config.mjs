@@ -1,5 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Local `npm run build` writes to .next-build so it never clobbers the
+  // dev server's .next (which killed the dev server on every build).
+  // Vercel keeps the default .next.
+  distDir: process.env.NEXT_LOCAL_BUILD && !process.env.VERCEL ? '.next-build' : '.next',
   typescript: {
     ignoreBuildErrors: false,
   },

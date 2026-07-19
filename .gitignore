@@ -17,3 +17,4 @@ Thumbs.db
 # clerk configuration (can include secrets)
 /.clerk/
 data-pipeline/*.jsonl
+.next-build
