@@ -22,10 +22,11 @@ function resolveLogoSource(tone: Tone) {
   return tone === 'light' ? uniqLogoMark.src : uniqLogoColor.src;
 }
 
-export function URCBrandMark({ size = 24, className }: BrandMarkProps) {
+export function URCBrandMark({ size = 24, className, tone = 'light' }: BrandMarkProps) {
   return (
     <img
-      src={uniqLogoMark.src}
+      // Tone-aware: the white mark disappears on light backgrounds
+      src={resolveLogoSource(tone)}
       alt={BRAND.parentName}
       className={className}
       style={{
@@ -71,12 +72,14 @@ export function URCBrandLockup({
         suppressHydrationWarning
         style={{
           display: 'block',
-          height: compact ? 'auto' : `${logoHeight}px`,
-          width: compact ? '100%' : 'auto',
-          maxWidth: compact ? '100%' : '148px',
+          // Fixed height always: 'width: 100%' inside an inline-flex parent
+          // with min-width: 0 collapsed the image to 0×0 (invisible logo)
+          height: `${logoHeight}px`,
+          width: 'auto',
+          maxWidth: '148px',
           objectFit: 'contain',
           flexShrink: 0,
-          padding: compact ? '8px 0' : undefined,
+          padding: compact ? '4px 0' : undefined,
           boxSizing: 'border-box',
         }}
       />

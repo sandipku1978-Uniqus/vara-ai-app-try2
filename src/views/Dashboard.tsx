@@ -192,8 +192,8 @@ export default function Dashboard() {
               `Comment letters: ${dataStats.letters.count.toLocaleString()} (${dataStats.letters.withText.toLocaleString()} full-text) · ${dataStats.letters.source}`,
             ].map(chip => (
               <span key={chip} style={{
-                fontSize: '0.7rem', color: '#94A3B8', background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.1)', borderRadius: '999px', padding: '3px 10px',
+                fontSize: '0.7rem', color: 'var(--text-secondary)', background: 'var(--input-bg)',
+                border: '1px solid var(--input-border)', borderRadius: '999px', padding: '3px 10px',
               }}>
                 {chip}
               </span>

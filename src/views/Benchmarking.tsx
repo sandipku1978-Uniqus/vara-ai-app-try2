@@ -1417,7 +1417,7 @@ Keep it crisp and practical.`;
                 <button type="button" onClick={() => setCommonSize(prev => !prev)}
                   style={{
                     padding: '6px 12px', borderRadius: '8px', fontSize: '0.75rem', cursor: 'pointer',
-                    border: '1px solid ' + (commonSize ? 'rgba(214,108,174,0.6)' : 'rgba(255,255,255,0.12)'),
+                    border: '1px solid ' + (commonSize ? 'rgba(214,108,174,0.6)' : 'var(--input-border)'),
                     background: commonSize ? 'rgba(179,31,126,0.25)' : 'rgba(255,255,255,0.04)',
                     color: commonSize ? '#F9A8D4' : '#94A3B8',
                   }}>
@@ -1426,7 +1426,7 @@ Keep it crisp and practical.`;
                 <button type="button" onClick={exportMatrixToXlsx}
                   style={{
                     padding: '6px 12px', borderRadius: '8px', fontSize: '0.75rem', cursor: 'pointer',
-                    border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.04)', color: '#94A3B8',
+                    border: '1px solid var(--input-border)', background: 'var(--input-bg)', color: 'var(--text-secondary)',
                   }}>
                   Export XLSX
                 </button>
