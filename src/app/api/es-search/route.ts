@@ -125,6 +125,23 @@ export async function GET(request: Request) {
   const from = Math.max(0, Number(params.get('from') || 0) || 0);
   const size = Math.min(Math.max(Number(params.get('size') || 10) || 10, 1), 100);
 
+  // Facet entity matching is a trigram-assisted ILIKE. Corporate suffixes
+  // (", Inc.", "Corp") are made of ultra-common trigrams that blow the GIN
+  // index up into multi-second scans ("BlackRock, Inc." 36s vs "BlackRock"
+  // 0.3s at 4M rows), and stray backslashes in EDGAR names ("CORP \DE\")
+  // are LIKE escape chars that silently break the pattern. Strip both.
+  const facetEntity = (() => {
+    if (!entityName) return null;
+    let e = entityName.trim();
+    const suffix = /[,.]?\s+(incorporated|inc|corp|corporation|company|co|ltd|llc|llp|lp|plc|nv|sa|se|ag)\.?$/i;
+    for (let i = 0; i < 2; i++) {
+      const stripped = e.replace(suffix, '');
+      if (stripped === e || stripped.length < 4) break;
+      e = stripped;
+    }
+    return e.replace(/[\\%_]/g, (m) => `\\${m}`) || null;
+  })();
+
   try {
     // ── Facet browse: no text query — serve straight from Postgres ─────────
     if (!q) {
@@ -133,7 +150,7 @@ export async function GET(request: Request) {
         p_start: startdt ?? null,
         p_end: enddt ?? null,
         p_auditor: auditor || null,
-        p_entity: entityName ?? null,
+        p_entity: facetEntity,
         p_sic: sicCode || null,
         p_limit: size,
         p_offset: from,

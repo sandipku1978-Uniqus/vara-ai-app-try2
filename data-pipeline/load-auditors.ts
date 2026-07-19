@@ -150,6 +150,15 @@ async function main() {
   await chunkedUpsert(client, 'urc_sec_auditors', rows as unknown as Record<string, unknown>[], 'form_filing_id', 1000,
     (done, total) => { if (done % 20_000 === 0 || done === total) console.log(`  upserted ${done}/${total}`); });
   console.log(`Done. ${rows.length} rows upserted to urc_sec_auditors.`);
+
+  // Facet search reads the materialized current-auditor lookup (008) —
+  // refresh it so new engagements are visible without waiting on DDL access.
+  const { error: refreshError } = await client.rpc('urc_refresh_current_auditors');
+  if (refreshError) {
+    console.error(`WARNING: urc_current_auditors_mat refresh failed: ${refreshError.message}`);
+  } else {
+    console.log('Refreshed urc_current_auditors_mat.');
+  }
 }
 
 // Run only when executed directly — this module is also imported by tests
