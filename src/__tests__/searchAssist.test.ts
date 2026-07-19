@@ -184,3 +184,30 @@ describe('searchAssist', () => {
     });
   });
 });
+
+describe('standalone year extraction', () => {
+  it('converts a bare year into a fiscal-year window and strips the token', () => {
+    const result = interpretSearchPrompt('Apple 10K 2025', { ...emptyFilters });
+    expect(result.query).toBe('Apple');
+    expect(result.filters.formTypes).toContain('10-K');
+    expect(result.filters.dateFrom).toBe('2025-01-01');
+    // Widened tail: FY filings often file months into the next calendar year
+    expect(result.filters.dateTo).toBe('2026-12-31');
+  });
+
+  it('leaves standards citations like ASU 2023-09 alone', () => {
+    const result = interpretSearchPrompt('"ASU 2023-09" adoption disclosures', { ...emptyFilters });
+    expect(result.filters.dateFrom).toBe('');
+    expect(result.query).toContain('2023-09');
+  });
+
+  it('handles fiscal-year phrasing and multi-year ranges', () => {
+    const single = interpretSearchPrompt('fiscal 2024 goodwill impairment', { ...emptyFilters });
+    expect(single.query).toBe('goodwill impairment');
+    expect(single.filters.dateFrom).toBe('2024-01-01');
+
+    const range = interpretSearchPrompt('material weakness 2023 2024', { ...emptyFilters });
+    expect(range.filters.dateFrom).toBe('2023-01-01');
+    expect(range.filters.dateTo).toBe('2025-12-31');
+  });
+});

@@ -97,6 +97,29 @@ export function interpretSearchPrompt(rawPrompt: string, filters: SearchFilters)
     working = working.replace(yearsMatch[0], ' ');
   }
 
+  // Standalone years ("Apple 10K 2025", "fiscal 2024 goodwill") become a date
+  // window instead of full-text tokens — the token "2025" scores terribly as
+  // text and used to block issuer resolution entirely. Guarded against
+  // standard citations like "ASU 2023-09" / "2023-08" (hyphen-adjacent).
+  if (!nextFilters.dateFrom && !nextFilters.dateTo) {
+    const standaloneYears = Array.from(working.matchAll(/(?<![\d-])\b(19[89]\d|20[0-3]\d)\b(?![\d]*-)/g))
+      .map(match => Number(match[1]))
+      .filter(year => year >= 1994 && year <= new Date().getFullYear() + 1);
+    if (standaloneYears.length > 0 && standaloneYears.length <= 2) {
+      const minYear = Math.min(...standaloneYears);
+      const maxYear = Math.max(...standaloneYears);
+      nextFilters.dateFrom = `${minYear}-01-01`;
+      // Fiscal-year filings often FILE months into the next calendar year
+      // (a Dec-FYE 2025 10-K files in early 2026) — widen the tail by a year
+      nextFilters.dateTo = `${maxYear + 1}-12-31`;
+      appliedHints.push(minYear === maxYear ? `Fiscal year: ${minYear}` : `Fiscal years: ${minYear}–${maxYear}`);
+      for (const year of standaloneYears) {
+        working = working.replace(new RegExp(`(?<![\\d-])\\b${year}\\b(?![\\d]*-)`, 'g'), ' ');
+      }
+      working = working.replace(/\b(?:fiscal(?:\s+year)?|fy)\b/gi, ' ');
+    }
+  }
+
   const detectedForms = FORM_PATTERNS
     .filter(item => item.re.test(working))
     .map(item => item.form);
