@@ -115,12 +115,16 @@ describe('searchAssist', () => {
       expect(result.filters.formTypes).toContain('10-K');
     });
 
-    it('rewrites the temporary equity prompt into a quoted semantic query with Deloitte and form filters extracted', () => {
+    it('rewrites the temporary equity prompt into a semantic query with Deloitte and form filters extracted', () => {
       const result = interpretSearchPrompt(
         'Temporary equity in last 3 years in 10-Q / 10-K audited by Deloitte',
         emptyFilters
       );
-      expect(result.query).toContain('"Temporary equity"');
+      // Unquoted prompts stay unquoted: auto-quoting inferred spans forced
+      // EDGAR to match them as contiguous exact phrases and zeroed results
+      expect(result.query).toContain('Temporary');
+      expect(result.query).toContain('equity');
+      expect(result.query).not.toContain('"');
       expect(result.filters.accountant).toBe('Deloitte');
       expect(result.filters.formTypes).toEqual(expect.arrayContaining(['10-K', '10-Q']));
       expect(result.filters.dateFrom).toBeTruthy();
