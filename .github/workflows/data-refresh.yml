@@ -1,0 +1,51 @@
+# Keeps the URC facet layer fresh:
+#   - filing metadata (EDGAR master.idx) daily — facets never drift >24h
+#   - auditor engagements (PCAOB Form AP) weekly — engagements churn slowly
+# Full-text search needs no refresh (live EDGAR EFTS).
+# Manual runs: Actions tab → "URC data refresh" → Run workflow.
+
+name: URC data refresh
+
+on:
+  schedule:
+    - cron: '30 10 * * *'   # daily 10:30 UTC (~6:30am ET) — after EDGAR's overnight index update
+    - cron: '0 11 * * 0'    # Sundays 11:00 UTC — weekly auditor refresh
+  workflow_dispatch:
+    inputs:
+      metadata_since_days:
+        description: 'Metadata lookback window in days'
+        default: '3'
+      run_auditors:
+        description: 'Also refresh auditors (true/false)'
+        default: 'false'
+
+concurrency:
+  group: urc-data-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      URC_SUPABASE_URL: ${{ secrets.URC_SUPABASE_URL }}
+      URC_SUPABASE_SERVICE_KEY: ${{ secrets.URC_SUPABASE_SERVICE_KEY }}
+      EDGAR_USER_AGENT: 'Uniqus Research Center contact@uniqus.com'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Refresh filing metadata
+        run: npx tsx data-pipeline/ingest-metadata.ts --since ${{ github.event.inputs.metadata_since_days || '3' }}
+
+      # Weekly schedule (Sunday 11:00) or manual opt-in
+      - name: Refresh auditor engagements
+        if: github.event.schedule == '0 11 * * 0' || github.event.inputs.run_auditors == 'true'
+        run: npx tsx data-pipeline/load-auditors.ts
