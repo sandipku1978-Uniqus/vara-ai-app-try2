@@ -83,30 +83,34 @@ export function Sidebar() {
         </button>
       </div>
 
+      {/* Grouped by the accountant's job, not the data's domain:
+          Monitor → Research → Benchmark → Reference → Transactions */}
       <nav className="sidebar-nav">
-        <div className="nav-group-header">Reporting & Benchmarking</div>
+        <div className="nav-group-header">Monitor</div>
         <SidebarNavItem to="/dashboard" label="Dashboard" icon={<LayoutDashboard size={18} />} isSidebarCollapsed={isSidebarCollapsed} />
-        <SidebarNavItem to="/search" label="Research" icon={<Search size={18} />} isSidebarCollapsed={isSidebarCollapsed} />
+        <SidebarNavItem to="/earnings" label="8-K Event Filings" icon={<Mic size={18} />} isSidebarCollapsed={isSidebarCollapsed} />
+
+        <div className="nav-group-header">Research</div>
+        <SidebarNavItem to="/search" label="Research Workbench" icon={<Search size={18} />} isSidebarCollapsed={isSidebarCollapsed} />
+        <SidebarNavItem to="/comment-letters" label="Comment Letters" icon={<Mail size={18} />} isSidebarCollapsed={isSidebarCollapsed} />
+        <SidebarNavItem to="/exhibits" label="Exhibits & Agreements" icon={<FileSearch size={18} />} isSidebarCollapsed={isSidebarCollapsed} />
+        <SidebarNavItem to="/no-action-letters" label="No-Action Letters" icon={<ShieldCheck size={18} />} isSidebarCollapsed={isSidebarCollapsed} />
+
+        <div className="nav-group-header">Benchmark</div>
         <SidebarNavItem to="/compare" label="Benchmarking" icon={<BarChart2 size={18} />} isSidebarCollapsed={isSidebarCollapsed} />
+        <SidebarNavItem to="/accounting-analytics" label="Accounting Analytics" icon={<TrendingUp size={18} />} isSidebarCollapsed={isSidebarCollapsed} />
         <SidebarNavItem to="/esg" label="ESG Research" icon={<Globe size={18} />} isSidebarCollapsed={isSidebarCollapsed} />
         <SidebarNavItem to="/boards" label="Board Profiles" icon={<Users size={18} />} isSidebarCollapsed={isSidebarCollapsed} />
         <SidebarNavItem to="/insiders" label="Insider Trading" icon={<UserCheck size={18} />} isSidebarCollapsed={isSidebarCollapsed} />
 
-        <div className="nav-group-header">Business Intelligence</div>
+        <div className="nav-group-header">Reference</div>
         <SidebarNavItem to="/accounting" label="Accounting Standards" icon={<BookOpen size={18} />} isSidebarCollapsed={isSidebarCollapsed} />
-        <SidebarNavItem to="/accounting-analytics" label="Accounting Analytics" icon={<TrendingUp size={18} />} isSidebarCollapsed={isSidebarCollapsed} />
-        <SidebarNavItem to="/earnings" label="8-K Event Filings" icon={<Mic size={18} />} isSidebarCollapsed={isSidebarCollapsed} />
-
-        <div className="nav-group-header">Regulation & Compliance</div>
         <SidebarNavItem to="/regulation" label="Securities Regulation" icon={<Scale size={18} />} isSidebarCollapsed={isSidebarCollapsed} />
-        <SidebarNavItem to="/comment-letters" label="Comment Letters" icon={<Mail size={18} />} isSidebarCollapsed={isSidebarCollapsed} />
-        <SidebarNavItem to="/no-action-letters" label="No-Action Letters" icon={<ShieldCheck size={18} />} isSidebarCollapsed={isSidebarCollapsed} />
         <SidebarNavItem to="/enforcement" label="SEC Enforcement" icon={<Gavel size={18} />} isSidebarCollapsed={isSidebarCollapsed} />
 
         <div className="nav-group-header">Transactions</div>
         <SidebarNavItem to="/ipo" label="IPO Center" icon={<Briefcase size={18} />} isSidebarCollapsed={isSidebarCollapsed} />
         <SidebarNavItem to="/mna" label="M&A Research" icon={<Handshake size={18} />} isSidebarCollapsed={isSidebarCollapsed} />
-        <SidebarNavItem to="/exhibits" label="Exhibits & Agreements" icon={<FileSearch size={18} />} isSidebarCollapsed={isSidebarCollapsed} />
         <SidebarNavItem to="/exempt-offerings" label="Exempt Offerings" icon={<DollarSign size={18} />} isSidebarCollapsed={isSidebarCollapsed} />
         <SidebarNavItem to="/adv-registrations" label="ADV Registrations" icon={<ClipboardList size={18} />} isSidebarCollapsed={isSidebarCollapsed} />
       </nav>
@@ -221,6 +225,65 @@ export function Navbar() {
   );
 }
 
+/** Route → (group, page) map driving the global breadcrumb trail. */
+const BREADCRUMB_MAP: Record<string, [string, string]> = {
+  '/dashboard': ['Monitor', 'Dashboard'],
+  '/earnings': ['Monitor', '8-K Event Filings'],
+  '/search': ['Research', 'Research Workbench'],
+  '/comment-letters': ['Research', 'Comment Letters'],
+  '/exhibits': ['Research', 'Exhibits & Agreements'],
+  '/no-action-letters': ['Research', 'No-Action Letters'],
+  '/compare': ['Benchmark', 'Benchmarking'],
+  '/accounting-analytics': ['Benchmark', 'Accounting Analytics'],
+  '/esg': ['Benchmark', 'ESG Research'],
+  '/boards': ['Benchmark', 'Board Profiles'],
+  '/insiders': ['Benchmark', 'Insider Trading'],
+  '/accounting': ['Reference', 'Accounting Standards'],
+  '/regulation': ['Reference', 'Securities Regulation'],
+  '/enforcement': ['Reference', 'SEC Enforcement'],
+  '/ipo': ['Transactions', 'IPO Center'],
+  '/mna': ['Transactions', 'M&A Research'],
+  '/exempt-offerings': ['Transactions', 'Exempt Offerings'],
+  '/adv-registrations': ['Transactions', 'ADV Registrations'],
+  '/api-portal': ['More', 'API Portal'],
+  '/support': ['More', 'Support Center'],
+};
+
+function Breadcrumbs() {
+  const location = usePathname();
+  if (!location || location === '/') return null;
+
+  let trail: Array<{ label: string; href?: string }>;
+  if (location.startsWith('/filing/')) {
+    trail = [{ label: 'Research', href: '/search' }, { label: 'Filing viewer' }];
+  } else if (location.startsWith('/company/')) {
+    // The dossier renders its own breadcrumb with the company name
+    return null;
+  } else {
+    const entry = BREADCRUMB_MAP[location];
+    if (!entry) return null;
+    trail = [{ label: entry[0] }, { label: entry[1] }];
+  }
+
+  return (
+    <nav aria-label="Breadcrumb" style={{ padding: '10px 24px 0', fontSize: '0.75rem', color: '#64748B' }}>
+      <a href="/dashboard" style={{ color: '#94A3B8', textDecoration: 'none' }}>Home</a>
+      {trail.map((crumb, index) => (
+        <span key={crumb.label}>
+          <span style={{ margin: '0 6px' }}>/</span>
+          {crumb.href ? (
+            <a href={crumb.href} style={{ color: '#94A3B8', textDecoration: 'none' }}>{crumb.label}</a>
+          ) : (
+            <span style={{ color: index === trail.length - 1 ? '#CBD5E1' : undefined, fontWeight: index === trail.length - 1 ? 600 : 400 }}>
+              {crumb.label}
+            </span>
+          )}
+        </span>
+      ))}
+    </nav>
+  );
+}
+
 export function Layout({ children }: { children: ReactNode }) {
   const location = usePathname();
   const isLanding = location === '/';
@@ -231,6 +294,7 @@ export function Layout({ children }: { children: ReactNode }) {
       <Sidebar />
       <div className="main-content">
         <Navbar />
+        {!isLanding && <Breadcrumbs />}
         <main className="page-content">
           {children}
         </main>

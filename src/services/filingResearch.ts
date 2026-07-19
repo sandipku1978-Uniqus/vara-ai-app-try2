@@ -3,6 +3,7 @@ import {
   fetchCompanySubmissions,
   fetchFilingText,
   isElasticsearchEnabled,
+  resolveCompanyEntity,
   searchEdgarFilings,
   type EdgarSearchHit,
   type ElasticSearchExtendedParams,
@@ -968,8 +969,8 @@ function requiresTextFiltering(
 }
 
 export async function executeFilingResearchSearch({
-  query,
-  filters,
+  query: rawQuery,
+  filters: rawFilters,
   mode = 'semantic',
   defaultForms = '',
   limit = 50,
@@ -980,6 +981,25 @@ export async function executeFilingResearchSearch({
   includeExhibits = false,
   onProgress,
 }: ExecuteSearchOptions): Promise<FilingResearchResult[]> {
+  let query = rawQuery;
+  let filters = rawFilters;
+
+  // Entity-only queries ("apple 10-K", "COIN 8-K") are browses, not text
+  // searches: full-text ranking the word "apple" surfaced a 2009 filing
+  // first. Scope to the issuer and sort newest-first instead.
+  if (
+    mode === 'semantic' &&
+    !filters.entityName.trim() &&
+    !filters.sectionKeywords.trim() &&
+    (query || filters.keyword).trim()
+  ) {
+    const entity = await resolveCompanyEntity(query || filters.keyword);
+    if (entity) {
+      query = '';
+      filters = { ...filters, keyword: '', entityName: entity.title };
+    }
+  }
+
   const serverQuery = buildServerQuery(query || filters.keyword, filters, mode);
   const formTypes = normalizeFormTypes(filters, defaultForms);
   const formScope = parseFormScope(formTypes);

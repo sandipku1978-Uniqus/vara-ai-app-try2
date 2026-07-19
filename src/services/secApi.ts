@@ -143,6 +143,14 @@ const filingTextCache = new Map<string, Promise<string>>();
  * Load the full SEC ticker-to-CIK mapping (company_tickers.json).
  * Cached after first load.
  */
+export interface CompanyDirectoryEntry {
+  cik: string;
+  ticker: string;
+  title: string;
+}
+
+let _companyDirectory: CompanyDirectoryEntry[] | null = null;
+
 export async function loadTickerMap(): Promise<Record<string, string>> {
   if (_tickerCache) return _tickerCache;
   if (_tickerCachePromise) return _tickerCachePromise;
@@ -155,11 +163,19 @@ export async function loadTickerMap(): Promise<Record<string, string>> {
       if (!response.ok) throw new Error('Failed to load ticker map');
       const data = await response.json();
       // Format: { "0": { "cik_str": 320193, "ticker": "AAPL", "title": "Apple Inc." }, ... }
+      // File order is roughly market-cap descending — kept for entity resolution.
       const map: Record<string, string> = {};
+      const directory: CompanyDirectoryEntry[] = [];
       for (const entry of Object.values(data) as any[]) {
         map[entry.ticker.toUpperCase()] = String(entry.cik_str);
+        directory.push({
+          cik: String(entry.cik_str),
+          ticker: String(entry.ticker).toUpperCase(),
+          title: String(entry.title || ''),
+        });
       }
       _tickerCache = map;
+      _companyDirectory = directory;
       return map;
     } catch (error) {
       console.error('Failed to load SEC ticker map:', error);
@@ -167,6 +183,37 @@ export async function loadTickerMap(): Promise<Record<string, string>> {
     }
   })();
   return _tickerCachePromise;
+}
+
+/**
+ * Resolve free text to a listed company when the ENTIRE text is a ticker or
+ * a company-name prefix ("apple" → Apple Inc., "COIN" → Coinbase Global).
+ * Returns null when the text doesn't read as a company — topic queries like
+ * "apple revenue recognition" stay full-text searches.
+ */
+export async function resolveCompanyEntity(
+  text: string
+): Promise<CompanyDirectoryEntry | null> {
+  const trimmed = text.trim();
+  if (!trimmed || trimmed.split(/\s+/).length > 4) return null;
+
+  await loadTickerMap();
+  if (!_companyDirectory) return null;
+
+  const upper = trimmed.toUpperCase();
+  const tickerHit = _companyDirectory.find(entry => entry.ticker === upper);
+  if (tickerHit) return tickerHit;
+
+  const normalized = trimmed.toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
+  if (normalized.length < 4) return null;
+  // First match in file order wins — the file is ~market-cap ordered, so
+  // "apple" resolves to Apple Inc., not Apple Hospitality REIT.
+  for (const entry of _companyDirectory) {
+    const title = entry.title.toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
+    if (title === normalized) return entry;
+    if (title.startsWith(normalized + ' ')) return entry;
+  }
+  return null;
 }
 
 /**
