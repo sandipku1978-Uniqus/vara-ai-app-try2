@@ -364,3 +364,40 @@
   border-left: 2px solid var(--el-rule-strong);
   padding-left: var(--el-space-2);
 }
+
+/* Slice 2: query panel, toolbar, and context bar as flat ledger surfaces */
+.el-scope { --el-font-ui: var(--font-sans); }
+.el-gallery {
+  --el-font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+}
+.el-scope.research-query-panel,
+.el-scope.research-toolbar,
+.el-scope.research-context-bar {
+  background: var(--el-surface);
+  border: 1px solid var(--el-rule);
+  border-radius: var(--el-radius-panel);
+  box-shadow: none;
+  backdrop-filter: none;
+}
+.el-scope .research-chip,
+.el-scope .research-context-chip {
+  background: var(--el-surface-sunken);
+  border: 1px solid var(--el-rule);
+  border-radius: var(--el-radius-control);
+  color: var(--el-ink-secondary);
+}
+.el-scope .research-context-chip--accent {
+  background: var(--el-plum-wash);
+  border-color: var(--el-plum);
+  color: var(--el-plum);
+}
+:root[data-theme='dark'] .el-scope .research-context-chip--accent {
+  color: var(--accent-soft);
+}
+.el-scope .research-empty-state {
+  border: 1px dashed var(--el-rule-strong);
+  border-radius: var(--el-radius-panel);
+  margin: var(--el-space-3);
+  color: var(--el-ink-secondary);
+}

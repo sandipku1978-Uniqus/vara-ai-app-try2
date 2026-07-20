@@ -1410,7 +1410,7 @@ export default function SearchPage() {
           </div>
         ) : (
           <>
-            <div className="research-query-panel glass-card">
+            <div className="research-query-panel glass-card el-scope">
               <div className="research-query-panel-header">
                 <div className="eyebrow">Search query</div>
                 <button
@@ -1494,7 +1494,7 @@ export default function SearchPage() {
               )}
             </div>
 
-            <div className="research-toolbar glass-card">
+            <div className="research-toolbar glass-card el-scope">
               <ResearchSessionTabs
                 sessions={sessions}
                 activeSessionId={activeSession?.id}
@@ -1512,7 +1512,7 @@ export default function SearchPage() {
 
             {displayResults.length > 0 && (
               <div className="research-context-stack">
-                <div className="research-context-bar glass-card">
+                <div className="research-context-bar glass-card el-scope">
                   <div className="research-context-copy">
                     <div className="eyebrow">Search context</div>
                     <div className="research-context-chip-row">
@@ -1709,6 +1709,9 @@ export default function SearchPage() {
             ) : searched ? (
               <div className="research-empty-state">
                 <div>{buildResearchEmptyResultMessage(errorMsg, degradedNotice, candidateCoverage)}</div>
+                <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '6px' }}>
+                  Try a company name or ticker on its own, remove form-type or date filters, or switch the sort to Newest.
+                </div>
               </div>
             ) : (
               <div className="research-empty-state">

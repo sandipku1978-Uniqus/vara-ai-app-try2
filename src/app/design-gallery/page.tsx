@@ -55,7 +55,7 @@ function Section({ title, note, children }: { title: string; note?: string; chil
 
 export default function DesignGalleryPage() {
   return (
-    <div className="el-scope" style={{ minHeight: '100vh', padding: 'var(--el-space-8)' }}>
+    <div className="el-scope el-gallery" style={{ minHeight: '100vh', padding: 'var(--el-space-8)' }}>
       <div style={{ maxWidth: '1180px', margin: '0 auto' }}>
         <header style={{ marginBottom: 'var(--el-space-8)', borderBottom: '1px solid var(--el-rule-strong)', paddingBottom: 'var(--el-space-4)' }}>
           <div style={{ fontSize: 'var(--el-text-xl)', fontWeight: 700, letterSpacing: '-0.01em' }}>
