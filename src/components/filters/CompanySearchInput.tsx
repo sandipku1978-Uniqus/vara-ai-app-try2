@@ -92,7 +92,7 @@ export default function CompanySearchInput({ onSelect, placeholder = 'Search tic
 
   return (
     <div className={`company-search-input ${className}`} style={{ position: 'relative' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--text-secondary)', border: '1px solid rgba(72,42,122,0.12)', borderRadius: '12px', padding: '8px 12px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--input-bg)', border: '1px solid var(--input-border)', borderRadius: '12px', padding: '8px 12px' }}>
         {loading ? <Loader2 size={14} className="spinner" /> : <Search size={14} style={{ color: '#7A6C7B' }} />}
         <input
           ref={inputRef}
@@ -101,7 +101,7 @@ export default function CompanySearchInput({ onSelect, placeholder = 'Search tic
           onChange={e => handleSearch(e.target.value)}
           onFocus={() => results.length > 0 && setShowDropdown(true)}
           placeholder={placeholder}
-          style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: '#413F42', fontSize: '0.85rem' }}
+          style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: 'var(--text-primary)', fontSize: '0.85rem' }}
         />
         {query && (
           <button onClick={() => { setQuery(''); setResults([]); setShowDropdown(false); }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
