@@ -32,8 +32,7 @@ import {
 import {
   buildSecDocumentUrl,
   buildSecProxyUrl,
-  fetchCompanySubmissions,
-  lookupCIK,
+  resolveCompanyEntity,
 } from '../services/secApi';
 import {
   buildSearchSignature,
@@ -66,16 +65,6 @@ const SAMPLE_SEARCHES = [
   'I am trying to search for companies that had bifurcated derivatives in accelerated share repurchase agreements in last 5 years',
 ];
 
-const NAME_TO_TICKER: Record<string, string> = {
-  APPLE: 'AAPL', AAPL: 'AAPL',
-  MICROSOFT: 'MSFT', MSFT: 'MSFT',
-  GOOGLE: 'GOOGL', ALPHABET: 'GOOGL', GOOGL: 'GOOGL',
-  TESLA: 'TSLA', TSLA: 'TSLA',
-  AMAZON: 'AMZN', AMZN: 'AMZN',
-  NVIDIA: 'NVDA', NVDA: 'NVDA',
-  META: 'META', FACEBOOK: 'META',
-  JPMORGAN: 'JPM', JPM: 'JPM', 'JP MORGAN': 'JPM',
-};
 
 function escapeRegex(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -116,40 +105,37 @@ function formatResultFormLabel(result: FilingResearchResult): string {
   return `${filingForm} · ${documentType}`;
 }
 
+/**
+ * Scope a query to an issuer using the full SEC ticker directory (10K+
+ * companies) — this used to be a hardcoded ~10-name map, so "OGN" or
+ * "Organon" never resolved and fell into full-text search. Returns an empty
+ * query when the whole text is the company: keeping the company name as a
+ * text query made relevance ranking surface a 2009 filing first.
+ */
 async function resolveEntityHint(rawQuery: string): Promise<{ entityName: string; query: string }> {
-  const upper = rawQuery.toUpperCase().trim();
-  const words = upper.split(/\s+/);
+  const trimmed = rawQuery.trim();
+  if (!trimmed) return { entityName: '', query: trimmed };
 
-  let ticker: string | null = null;
-  let remaining = rawQuery.trim();
+  // The whole text reads as one company ("organon", "OGN", "Organon & Co")
+  const whole = await resolveCompanyEntity(trimmed);
+  if (whole) return { entityName: whole.title, query: '' };
 
-  if (NAME_TO_TICKER[words[0]]) {
-    ticker = NAME_TO_TICKER[words[0]];
-    remaining = rawQuery.trim().split(/\s+/).slice(1).join(' ');
-  } else {
-    for (const [name, mappedTicker] of Object.entries(NAME_TO_TICKER)) {
-      if (upper.includes(name)) {
-        ticker = mappedTicker;
-        remaining = rawQuery.replace(new RegExp(name, 'i'), '').trim();
-        break;
+  // Leading token is the company, the rest is the topic ("OGN climate risk").
+  // A ticker-style match only counts when the user typed it in caps —
+  // otherwise ordinary words ("all", "it", "cash") mis-resolve to tickers.
+  const words = trimmed.split(/\s+/);
+  if (words.length > 1) {
+    const lead = await resolveCompanyEntity(words[0]);
+    if (lead) {
+      const isTickerMatch = lead.ticker === words[0].toUpperCase();
+      const typedAsTicker = words[0] === words[0].toUpperCase();
+      if (!isTickerMatch || typedAsTicker) {
+        return { entityName: lead.title, query: words.slice(1).join(' ') };
       }
     }
   }
 
-  if (!ticker) {
-    return { entityName: '', query: rawQuery.trim() };
-  }
-
-  const cik = await lookupCIK(ticker);
-  if (!cik) {
-    return { entityName: ticker, query: remaining || rawQuery.trim() };
-  }
-
-  const company = await fetchCompanySubmissions(cik);
-  return {
-    entityName: company?.name || ticker,
-    query: remaining || rawQuery.trim(),
-  };
+  return { entityName: '', query: trimmed };
 }
 
 function buildAlertName(query: string, filters: SearchFilters): string {
@@ -554,7 +540,10 @@ export default function SearchPage() {
       }
 
       const resolvedSearch = {
-        query: effectiveQuery || trimmed,
+        // An entity-resolved search intentionally clears the text query —
+        // falling back to the raw prompt here would re-add the company name
+        // as a relevance term and surface the oldest strong match first.
+        query: effectiveFilters.entityName.trim() ? effectiveQuery : (effectiveQuery || trimmed),
         mode: effectiveMode,
         filters: effectiveFilters,
       };

@@ -4,15 +4,15 @@
 const USER_AGENT = process.env.NEXT_PUBLIC_EDGAR_USER_AGENT || 'Uniqus Research Center contact@uniqus.com';
 const edgarSearchCache = new Map<string, Promise<EdgarSearchHit[]>>();
 
-function isEnabledEnvFlag(value: unknown): boolean {
-  if (typeof value === 'boolean') return value;
+function isDisabledEnvFlag(value: unknown): boolean {
+  if (typeof value === 'boolean') return !value;
   if (typeof value !== 'string') return false;
 
   switch (value.trim().toLowerCase()) {
-    case '1':
-    case 'true':
-    case 'yes':
-    case 'on':
+    case '0':
+    case 'false':
+    case 'no':
+    case 'off':
       return true;
     default:
       return false;
@@ -20,12 +20,18 @@ function isEnabledEnvFlag(value: unknown): boolean {
 }
 
 /** Enables the enriched /api/es-search lane (EDGAR EFTS + Supabase facets —
- *  the Elastic cluster it originally fronted was retired). The legacy
- *  NEXT_PUBLIC_USE_ELASTICSEARCH name still works. */
+ *  the Elastic cluster it originally fronted was retired).
+ *
+ *  Default ON: this used to be opt-in, and production was deployed without
+ *  the flag — the client silently ran the legacy EFTS-only lane, where
+ *  entity-resolved browses (empty text query) return nothing. The server
+ *  route 503s gracefully when Supabase env is absent and the client falls
+ *  back, so defaulting on is safe. Set either env var to "false" to opt out.
+ *  The legacy NEXT_PUBLIC_USE_ELASTICSEARCH name still works. */
 export function isElasticsearchEnabled(): boolean {
-  return (
-    isEnabledEnvFlag(process.env.NEXT_PUBLIC_USE_ENRICHED_SEARCH) ||
-    isEnabledEnvFlag(process.env.NEXT_PUBLIC_USE_ELASTICSEARCH)
+  return !(
+    isDisabledEnvFlag(process.env.NEXT_PUBLIC_USE_ENRICHED_SEARCH) ||
+    isDisabledEnvFlag(process.env.NEXT_PUBLIC_USE_ELASTICSEARCH)
   );
 }
 
@@ -1022,8 +1028,12 @@ export async function searchEdgarFilings(
       console.error('[search] Elasticsearch search failed; falling back to EDGAR EFTS:', error);
     }
   }
+  // EFTS rejects an empty q: an entity-resolved browse ("OGN 10-K" → issuer
+  // + cleared text) reached here as q='' and silently returned zero results.
+  // Quote the issuer name as the text query so the legacy lane still works.
+  const effectiveQuery = query.trim() || (entityName ? `"${entityName.trim()}"` : query);
   const baseParams = new URLSearchParams({
-    q: query,
+    q: effectiveQuery,
     forms: forms,
     dateRange: 'custom',
     startdt: startDate || EDGAR_FTS_FLOOR,
