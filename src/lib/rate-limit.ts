@@ -80,7 +80,7 @@ let warnedLocalControlsInProduction = false;
  * failing closed. Configuring KV_REST_API_URL/KV_REST_API_TOKEN activates
  * distributed limits, and a configured-but-broken store still fails closed.
  */
-function useLocalControlsFallback(): void {
+function noteLocalControlsFallback(): void {
   if (!warnedLocalControlsInProduction && isProductionDeployment()) {
     warnedLocalControlsInProduction = true;
     console.warn('[rate-limit] KV_REST_API_URL/KV_REST_API_TOKEN not set — using per-instance in-memory request controls. Provision Upstash/Vercel KV to activate distributed limits.');
@@ -132,7 +132,7 @@ async function incrementDistributed(key: string, increment: number, ttlSeconds: 
 async function incrementCounter(key: string, increment: number, ttlSeconds: number): Promise<number> {
   if (isLocalE2eBypass()) return 0;
   if (hasDistributedStore()) return incrementDistributed(key, increment, ttlSeconds);
-  useLocalControlsFallback();
+  noteLocalControlsFallback();
   return incrementLocal(key, increment, ttlSeconds);
 }
 
@@ -297,7 +297,7 @@ export async function acquireAiConcurrency(
   const token = crypto.randomUUID();
   const leaseSeconds = normalizedLeaseSeconds(requestedLeaseSeconds);
   const local = !hasDistributedStore();
-  if (local) useLocalControlsFallback();
+  if (local) noteLocalControlsFallback();
 
   const scopes: Array<{ key: string; limit: number }> = [
     {
@@ -344,7 +344,7 @@ export async function acquireResourceConcurrency(
   if (isLocalE2eBypass()) return { allowed: true, retryAfterSeconds: 0 };
   const token = crypto.randomUUID();
   const local = !hasDistributedStore();
-  if (local) useLocalControlsFallback();
+  if (local) noteLocalControlsFallback();
 
   const operation = options.operation.replace(/[^a-z0-9_-]/gi, '').slice(0, 40) || 'unknown';
   const leaseSeconds = normalizedLeaseSeconds(options.leaseSeconds ?? 60);

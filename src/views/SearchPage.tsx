@@ -618,8 +618,8 @@ export default function SearchPage() {
         : createResearchSessionId());
 
     try {
-      let effectiveQuery = interpreted.query || trimmed;
-      let effectiveFilters = interpreted.filters;
+      const effectiveQuery = interpreted.query || trimmed;
+      const effectiveFilters = interpreted.filters;
 
       // Issuer scoping happens inside executeFilingResearchSearch — the
       // single shared resolver (with CIK threading) for every surface. A
