@@ -116,8 +116,21 @@ export const CORE_FORMS = new Set([
   'SC 13D', 'SC 13D/A', 'SC 13G', 'SC 13G/A',
   'SCHEDULE 13D', 'SCHEDULE 13D/A', 'SCHEDULE 13G', 'SCHEDULE 13G/A',
   'SC TO-T', 'SC TO-T/A', 'SC 14D9', 'SC 14D9/A',
-  '424B4',
+  '424B1', '424B2', '424B3', '424B4', '424B5',
   'N-CSR', 'N-CSRS',
   '11-K',
   'SD',
+  // Foreign private issuers + ADR programs — 993 listed ADRs had real EDGAR
+  // filings but zero facet rows because none of their form types were here
+  // (found by scripts/ticker-coverage-test.ts full-directory run 2026-07-20)
+  '40-F', '40-F/A', '18-K', '18-K/A', 'SUPPL',
+  'F-1', 'F-1/A', 'F-3', 'F-3/A', 'F-4', 'F-4/A', 'F-10', 'F-10/A',
+  'F-X', '40FR12B', '20FR12B',
+  'F-6', 'F-6/A', 'F-6EF', 'F-6 POS',
+  // Deal communications and cross-border tenders
+  '425', 'CB', 'CB/A', 'DEFM14A', 'DEFR14A',
+  // Reg D private placements (Exempt Offerings page searches these)
+  'D', 'D/A',
+  // Draft registration statements
+  'DRS', 'DRS/A',
 ]);
