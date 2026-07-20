@@ -10,8 +10,8 @@ import {
   Briefcase,
   Building2,
   ChevronRight,
-  Code,
   Globe,
+  LifeBuoy,
   LayoutDashboard,
   Search,
   Shield,
@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { URCBrandLockup } from '../components/brand/URCBrand';
 import { BRAND } from '../config/brand';
+import { ENFORCEMENT_LANDING_CAPABILITY } from '../config/enforcement';
 import './LandingPage.css';
 
 const audienceLabels = [
@@ -39,13 +40,13 @@ const proofPoints = [
   },
   {
     icon: Bot,
-    title: 'Cited AI acceleration',
-    copy: 'Summaries, filing Q&A, S-1 analysis, and clause extraction stay grounded in source evidence.',
+    title: 'Source-grounded AI assistance',
+    copy: 'Summaries, filing Q&A, S-1 analysis, and clause extraction use selected source evidence and require source review.',
   },
   {
     icon: Building2,
     title: 'Specialist workspaces',
-    copy: 'Benchmarking, governance, regulation, IPO, M&A, exhibits, offerings, and API delivery in one product.',
+    copy: 'Benchmarking, governance, regulation, IPO, M&A, exhibits, and offerings in one product.',
   },
 ] as const;
 
@@ -72,7 +73,7 @@ const capabilityGroups = [
     eyebrow: 'Benchmarking & Monitoring',
     title: 'Compare peers and keep themes on watch',
     description:
-      'Jump from search into benchmarking, filing-volume trends, watchlists, and saved alerts without rebuilding your analysis from scratch.',
+      'Use dedicated workspaces for peer benchmarking, watchlist filing-volume charts, and browser-local saved searches.',
     modules: [
       'Disclosure Benchmarking Matrix',
       'Overview dashboard',
@@ -104,10 +105,10 @@ const capabilityGroups = [
     eyebrow: 'Regulation & Transactions',
     title: 'Handle letters, rules, deals, and IPO work',
     description:
-      'Specialized workspaces cover SEC correspondence, enforcement, S-1 analysis, M&A research, exhibits, exempt offerings, and ADV registrations.',
+      'Specialized workspaces cover SEC correspondence, litigation releases and civil actions, S-1 analysis, M&A research, exhibits, exempt offerings, and ADV registrations.',
     modules: [
       'Regulation, comment letters, and no-action letters',
-      'SEC enforcement tracking',
+      ENFORCEMENT_LANDING_CAPABILITY,
       'IPO Center and S-1 analyzer',
       'M&A, exhibits, offerings, and ADV',
     ],
@@ -115,20 +116,20 @@ const capabilityGroups = [
     cta: 'Review Specialty Tools',
   },
   {
-    icon: Code,
+    icon: LifeBuoy,
     tone: 'slate',
     eyebrow: 'Platform & Enablement',
-    title: 'Operationalize research across the team',
+    title: 'Make individual research easier to repeat',
     description:
-      'Use the integrated copilot, API portal, and support center to turn one-off research into a repeatable operating workflow.',
+      'Use the integrated copilot and support center within an individual, browser-local research workflow.',
     modules: [
       'URC Copilot',
-      'API Data Integration Portal',
+      'Source-grounded Copilot prompts',
       'Support Center workflow guides',
       'Unified navigation across workspaces',
     ],
-    route: '/api-portal',
-    cta: 'Visit The API Portal',
+    route: '/support',
+    cta: 'Open Support Center',
   },
 ] as const;
 
@@ -141,17 +142,17 @@ const workflowSteps = [
   {
     icon: BarChart2,
     title: 'Compare the language',
-    copy: 'Move into disclosure benchmarking, dashboard trends, or redlines to see what changed.',
+    copy: 'Move into disclosure benchmarking, watchlist filing charts, or redlines to see what changed.',
   },
   {
     icon: Bot,
     title: 'Extract with AI',
-    copy: 'Generate summaries, analyze S-1s, compare clauses, and ask filing questions without leaving the source.',
+    copy: 'Generate summaries, analyze S-1s, compare clauses, and ask filing questions using selected source evidence.',
   },
   {
     icon: TrendingUp,
     title: 'Keep the question alive',
-    copy: 'Expand into monitoring, governance, regulation, IPO, M&A, or API workflows with context intact.',
+    copy: 'Move next into the dedicated monitoring, governance, regulation, IPO, or M&A workspace.',
   },
 ] as const;
 
@@ -165,15 +166,15 @@ const marqueeModules = [
   'Insider Trading',
   'Securities Regulation',
   'Comment Letters',
-  'SEC Enforcement',
+  'SEC Litigation Releases',
   'IPO Center',
   'M&A Research',
   'Exhibits & Agreements',
-  'API Portal',
+  'Support Center',
 ] as const;
 
-// This visual follows the imagegen art direction for an editorial "SEC research control room"
-// until a generated hero asset can be dropped in.
+// Static illustrative product preview; none of the rows, ratings, or bars below
+// are live data.
 function LandingSignalCanvas() {
   const resultRows = [
     {
@@ -236,8 +237,8 @@ function LandingSignalCanvas() {
           <span />
           <span />
         </div>
-        <p className="landing-signal-card__eyebrow">Research Workbench</p>
-        <h3>Search, compare, and route the next step without losing context.</h3>
+        <p className="landing-signal-card__eyebrow">Illustrative Research Workbench</p>
+        <h3>Preview search, comparison, and the next research step.</h3>
 
         <div className="landing-signal-query">
           <Search size={16} />
@@ -266,17 +267,17 @@ function LandingSignalCanvas() {
       </div>
 
       <div className="landing-signal-card landing-signal-card--brief">
-        <p className="landing-signal-card__eyebrow">AI Brief</p>
+        <p className="landing-signal-card__eyebrow">Illustrative AI Brief</p>
         <h4>What the assistant can surface quickly</h4>
         <ul className="landing-brief-list">
           <li>Peer language is converging around AI governance and vendor concentration.</li>
           <li>Redline mode exposes new cyber and model-risk disclosure blocks immediately.</li>
-          <li>Best next stops: Benchmarking, IPO Center, and Enforcement.</li>
+          <li>Best next stops: Benchmarking, IPO Center, and SEC Litigation Releases.</li>
         </ul>
       </div>
 
       <div className="landing-signal-card landing-signal-card--matrix">
-        <p className="landing-signal-card__eyebrow">Benchmark Matrix</p>
+        <p className="landing-signal-card__eyebrow">Illustrative Benchmark Matrix</p>
         <div className="landing-matrix-head">
           <span>AAPL</span>
           <span>MSFT</span>
@@ -288,9 +289,9 @@ function LandingSignalCanvas() {
             <div key={row.topic} className="landing-matrix-row">
               <span className="landing-matrix-topic">{row.topic}</span>
               <div className="landing-matrix-peer-grid">
-                {row.peers.map(peer => (
+                {row.peers.map((peer, peerIndex) => (
                   <span
-                    key={`${row.topic}-${peer.label}-${peer.tone}`}
+                    key={`${row.topic}-${peerIndex}`}
                     className={`landing-matrix-cell landing-matrix-cell--${peer.tone}`}
                   >
                     {peer.label}
@@ -303,14 +304,14 @@ function LandingSignalCanvas() {
       </div>
 
       <div className="landing-signal-card landing-signal-card--pulse">
-        <p className="landing-signal-card__eyebrow">Live Signal</p>
+        <p className="landing-signal-card__eyebrow">Illustrative Workflow Preview</p>
         <div className="landing-pulse-chart">
           {pulseBars.map((height, index) => (
             <span key={`${height}-${index}`} style={{ height: `${height}%` }} />
           ))}
         </div>
         <p className="landing-pulse-caption">
-          Filing volume, watchlists, and trending themes stay one click away.
+          Sample bars preview where watchlist filing volume and saved searches appear.
         </p>
       </div>
 
@@ -359,7 +360,7 @@ export default function LandingPage() {
 
           <p className="landing-subtitle">
             {BRAND.productName} combines live EDGAR discovery, peer benchmarking, AI extraction,
-            governance research, and transaction workspaces in one enterprise research environment.
+            governance research, and transaction workspaces in one browser-based research interface.
           </p>
 
           <form className="landing-search" onSubmit={handleSearch}>
@@ -428,10 +429,10 @@ export default function LandingPage() {
       <section className="landing-section landing-section--capabilities" id="landing-capabilities">
         <div className="landing-section__header">
           <p className="landing-section__eyebrow">Platform Coverage</p>
-          <h2>A platform that covers the whole SEC workflow.</h2>
+          <h2>Dedicated workspaces for common SEC research workflows.</h2>
           <p>
-            From the first filing search to the last disclosure comparison, every major
-            research lane already has a dedicated workspace.
+            Move among filing search, disclosure comparison, governance, accounting,
+            regulation, and transaction-focused tools.
           </p>
         </div>
 
@@ -473,10 +474,10 @@ export default function LandingPage() {
       <section className="landing-section landing-section--workflow">
         <div className="landing-section__header">
           <p className="landing-section__eyebrow">How URC Works</p>
-          <h2>Research loops that keep teams in flow.</h2>
+          <h2>A repeatable path through individual research.</h2>
           <p>
-            Start with search, move to benchmarking, pull AI help in context, and expand into
-            monitoring, governance, or transactions without resetting your work.
+            Start with search, move to benchmarking, use AI against selected evidence, and
+            continue in a specialist workspace. Saved research state remains browser-local.
           </p>
         </div>
 
@@ -547,8 +548,8 @@ export default function LandingPage() {
           <div className="landing-footer__links">
             <span>&copy; 2026 {BRAND.productName}</span>
             <a href="/support">Support</a>
-            <a href="/support">Privacy</a>
-            <a href="/support">Terms</a>
+            <a href="/privacy">Privacy</a>
+            <a href="/terms">Terms</a>
           </div>
         </div>
       </footer>

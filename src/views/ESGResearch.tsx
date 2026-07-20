@@ -1,10 +1,12 @@
 'use client';
 
 
-import { useState, useEffect, useCallback } from 'react';
-import { Globe, LayoutGrid, FileAudio, Search, Target, Activity, ChevronRight, BarChart3, Loader2 } from 'lucide-react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import Link from 'next/link';
+import { Globe, LayoutGrid, FileAudio, Search, Target, Activity, ChevronRight, BarChart3, Loader2, ExternalLink } from 'lucide-react';
 import { lookupCIK, fetchCompanySubmissions, findLatestFiling, fetchFilingText, searchEdgarFilings } from '../services/secApi';
 import { aiRateESGDisclosure, aiSummarize } from '../services/aiApi';
+import { selectFilingText } from '../utils/filingTextSelection';
 import CompanySearchInput from '../components/filters/CompanySearchInput';
 import './ESGResearch.css';
 
@@ -14,6 +16,24 @@ const frameworks = [
   { id: 'esrs', name: 'ESRS (CSRD)', desc: 'European Sustainability Reporting Standards.', url: 'https://www.efrag.org/lab6' },
   { id: 'tcfd', name: 'TCFD', desc: 'Climate-related financial disclosures.', url: 'https://www.fsb-tcfd.org/' },
 ];
+
+const POLICY_SOURCES = [
+  {
+    name: 'SEC climate rulemaking',
+    authority: 'U.S. Securities and Exchange Commission',
+    url: 'https://www.sec.gov/rules-regulations/rulemaking-activity',
+  },
+  {
+    name: 'Corporate Sustainability Reporting Directive',
+    authority: 'European Commission',
+    url: 'https://finance.ec.europa.eu/capital-markets-union-and-financial-markets/company-reporting-and-auditing/company-reporting/corporate-sustainability-reporting_en',
+  },
+  {
+    name: 'California climate disclosure program',
+    authority: 'California Air Resources Board',
+    url: 'https://ww2.arb.ca.gov/our-work/programs/california-corporate-climate-data-accountability-act',
+  },
+] as const;
 
 const DEFAULT_ESG_TICKERS = ['AAPL', 'MSFT', 'GOOGL', 'META'];
 const ESG_TOPICS = [
@@ -31,10 +51,19 @@ interface HeatmapRow {
 }
 
 interface EarningsRelease {
+  id: string;
   date: string;
   company: string;
   title: string;
   summary: string;
+  cik: string;
+  accessionNumber: string;
+  primaryDocument: string;
+  summaryStatus: 'idle' | 'loading' | 'ready' | 'error';
+  summaryError: string;
+  sourceLength?: number;
+  selectedLength?: number;
+  selectionComplete?: boolean;
 }
 
 // Module-level cache (used by the component)
@@ -53,12 +82,19 @@ export default function ESGResearch() {
   const [heatmapLoading, setHeatmapLoading] = useState(false);
   const [heatmapError, setHeatmapError] = useState('');
   const [heatmapTickerSnapshot, setHeatmapTickerSnapshot] = useState<string[]>([]);
+  const [heatmapCoverage, setHeatmapCoverage] = useState({ analyzed: 0, total: 0 });
+  const [heatmapRetryToken, setHeatmapRetryToken] = useState(0);
+  const heatmapAttemptKeyRef = useRef('');
+  const activeHeatmapRequestRef = useRef('');
 
   // Earnings releases state
   const [earningsReleases, setEarningsReleases] = useState<EarningsRelease[]>([]);
   const [earningsLoading, setEarningsLoading] = useState(false);
+  const [earningsError, setEarningsError] = useState('');
+  const [earningsRetryToken, setEarningsRetryToken] = useState(0);
+  const earningsAttemptedRef = useRef(false);
 
-  const addEsgTicker = useCallback((ticker: string, _cik: string) => {
+  const addEsgTicker = useCallback((ticker: string) => {
     setEsgTickers(prev => prev.includes(ticker.toUpperCase()) ? prev : [...prev, ticker.toUpperCase()]);
   }, []);
 
@@ -67,18 +103,24 @@ export default function ESGResearch() {
   }, []);
 
   // Regenerate heatmap when tickers change or tab is activated
-  const tickerKey = esgTickers.slice().sort().join(',');
+  const canonicalTickers = useMemo(() => [...new Set(esgTickers.map(ticker => ticker.toUpperCase()))].sort(), [esgTickers]);
+  const tickerKey = canonicalTickers.join(',');
 
   // Load heatmap data via AI analysis of 10-K filings
   useEffect(() => {
-    if (activeTab !== 'heatmap' || esgTickers.length === 0 || heatmapLoading) return;
-    // Skip if data already loaded for the same ticker set
-    if (heatmapData.length > 0 && heatmapTickerSnapshot.join(',') === tickerKey) return;
+    if (activeTab !== 'heatmap' || canonicalTickers.length === 0) return;
+    if (heatmapTickerSnapshot.join(',') === tickerKey && heatmapData.length > 0) return;
+    if (heatmapAttemptKeyRef.current === tickerKey) return;
+
+    heatmapAttemptKeyRef.current = tickerKey;
+    activeHeatmapRequestRef.current = tickerKey;
+    let cancelled = false;
 
     async function loadHeatmap() {
       setHeatmapLoading(true);
       setHeatmapError('');
-      const currentTickers = [...esgTickers];
+      setHeatmapCoverage({ analyzed: 0, total: canonicalTickers.length });
+      const currentTickers = [...canonicalTickers];
       try {
         // Initialize rows as 'unrated' — seeding 'low' rendered a real-looking
         // "low disclosure" rating for companies whose fetch/AI analysis failed
@@ -88,7 +130,9 @@ export default function ESGResearch() {
           return row;
         });
 
+        let analyzed = 0;
         for (const ticker of currentTickers) {
+          if (cancelled) return;
           const cik = await lookupCIK(ticker);
           if (!cik) continue;
           const subs = await fetchCompanySubmissions(cik);
@@ -101,6 +145,7 @@ export default function ESGResearch() {
 
           const ratings = await aiRateESGDisclosure(text, ESG_TOPICS);
           if (ratings) {
+            analyzed += 1;
             for (const row of rows) {
               const rating = ratings[row.topic];
               if (rating) {
@@ -110,24 +155,47 @@ export default function ESGResearch() {
           }
         }
 
+        if (analyzed === 0) {
+          throw new Error('No selected company could be analyzed from its latest 10-K.');
+        }
+        if (cancelled) return;
         setHeatmapData(rows);
         setHeatmapTickerSnapshot(currentTickers);
+        setHeatmapCoverage({ analyzed, total: currentTickers.length });
       } catch (error) {
         console.error('ESG heatmap error:', error);
-        setHeatmapError('Failed to load ESG heatmap data. Please try again.');
+        if (!cancelled) {
+          setHeatmapData([]);
+          setHeatmapError(error instanceof Error ? error.message : 'Failed to load ESG heatmap data. Please try again.');
+        }
       } finally {
-        setHeatmapLoading(false);
+        if (!cancelled && activeHeatmapRequestRef.current === tickerKey) {
+          setHeatmapLoading(false);
+          activeHeatmapRequestRef.current = '';
+        }
       }
     }
-    loadHeatmap();
-  }, [activeTab, tickerKey, heatmapLoading]);
+    void loadHeatmap();
+    return () => {
+      cancelled = true;
+      if (activeHeatmapRequestRef.current === tickerKey) {
+        activeHeatmapRequestRef.current = '';
+        heatmapAttemptKeyRef.current = '';
+        setHeatmapLoading(false);
+      }
+    };
+  }, [activeTab, canonicalTickers, heatmapData.length, heatmapRetryToken, heatmapTickerSnapshot, tickerKey]);
 
   // Load real 8-K earnings releases
   useEffect(() => {
-    if (activeTab !== 'transcripts' || earningsReleases.length > 0 || earningsLoading) return;
+    if (activeTab !== 'transcripts' || earningsAttemptedRef.current) return;
+    earningsAttemptedRef.current = true;
+    let cancelled = false;
+    let completed = false;
 
     async function loadEarnings() {
       setEarningsLoading(true);
+      setEarningsError('');
       try {
         const threeMonthsAgo = new Date();
         threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
@@ -148,40 +216,110 @@ export default function ESGResearch() {
 
           const cleanName = entityName.replace(/\s*\(CIK\s+\d+\)/, '').trim();
           const fileDate = src?.file_date || '';
+          const cik = String(src?.ciks?.[0] || '').replace(/^0+/, '');
+          const accessionNumber = String(src?.adsh || hit._id || '');
+          if (!cik || !accessionNumber) continue;
 
           releases.push({
+            id: `${cik}-${accessionNumber}`,
             date: fileDate,
             company: cleanName,
             title: `8-K Filing — ${cleanName}`,
-            summary: 'Loading AI summary...',
+            summary: '',
+            cik,
+            accessionNumber,
+            primaryDocument: String(src?.primary_document || src?.file_name || ''),
+            summaryStatus: 'idle',
+            summaryError: '',
           });
         }
 
-        setEarningsReleases(releases);
-
-        // Generate AI summaries in background
-        for (let i = 0; i < releases.length; i++) {
-          try {
-            const summary = await aiSummarize(
-              `Summarize in one sentence what this 8-K filing is about: ${releases[i].company} filed an 8-K on ${releases[i].date}. This is likely an earnings release or material event disclosure.`
-            );
-            setEarningsReleases(prev => {
-              const updated = [...prev];
-              if (updated[i]) updated[i] = { ...updated[i], summary };
-              return updated;
-            });
-          } catch {
-            // Keep default summary
-          }
-        }
+        if (!cancelled) setEarningsReleases(releases);
       } catch (error) {
         console.error('Earnings releases error:', error);
+        if (!cancelled) setEarningsError('Unable to load recent 8-K filing metadata from SEC EDGAR.');
       } finally {
-        setEarningsLoading(false);
+        completed = true;
+        if (!cancelled) setEarningsLoading(false);
       }
     }
-    loadEarnings();
-  }, [activeTab, earningsReleases.length, earningsLoading]);
+    void loadEarnings();
+    return () => {
+      cancelled = true;
+      if (!completed) {
+        earningsAttemptedRef.current = false;
+        setEarningsLoading(false);
+      }
+    };
+  }, [activeTab, earningsRetryToken]);
+
+  const summarizeRelease = useCallback(async (releaseId: string) => {
+    const release = earningsReleases.find(item => item.id === releaseId);
+    if (!release || release.summaryStatus === 'loading') return;
+
+    setEarningsReleases(prev => prev.map(item => item.id === releaseId ? {
+      ...item,
+      summaryStatus: 'loading',
+      summary: '',
+      summaryError: '',
+    } : item));
+    try {
+      let primaryDocument = release.primaryDocument;
+      if (!primaryDocument) {
+        const submissions = await fetchCompanySubmissions(release.cik);
+        const recent = submissions?.filings.recent;
+        const index = recent?.accessionNumber.findIndex(accession => accession.replace(/-/g, '') === release.accessionNumber.replace(/-/g, '')) ?? -1;
+        primaryDocument = index >= 0 ? recent?.primaryDocument[index] || '' : '';
+      }
+      if (!primaryDocument) throw new Error('The primary filing document could not be resolved.');
+
+      const filingText = await fetchFilingText(release.cik, release.accessionNumber, primaryDocument);
+      if (filingText.trim().length < 200) throw new Error('The filing text was unavailable.');
+      const evidence = selectFilingText(filingText, [
+        'item 2.02',
+        'results of operations',
+        'financial condition',
+        'earnings',
+        'revenue',
+        'net income',
+        'guidance',
+        'outlook',
+        'material definitive agreement',
+        'regulation fd',
+        'exhibit 99',
+        'quarter ended',
+        'year ended',
+      ], 50_000);
+      const coverageInstruction = evidence.complete
+        ? `The complete ${evidence.sourceLength.toLocaleString()}-character filing is included.`
+        : `${evidence.selectedLength.toLocaleString()} characters were selected from across a ${evidence.sourceLength.toLocaleString()}-character filing. Intervening text is omitted, so do not claim this summary is exhaustive.`;
+      const summary = await aiSummarize(`Summarize this SEC 8-K in 2-3 sentences. Use only the filing evidence below; do not infer that it is an earnings release unless the text supports that. Mention the primary disclosed event and any material quantitative detail present. End with "Review the source filing for full context."
+
+Source: ${release.company}, Form 8-K, filed ${release.date}, accession ${release.accessionNumber}
+Coverage: ${coverageInstruction}
+
+Filing evidence:
+${evidence.text}`, { throwOnError: true });
+      setEarningsReleases(prev => prev.map(item => item.id === releaseId ? {
+        ...item,
+        primaryDocument,
+        summary,
+        summaryStatus: 'ready',
+        summaryError: '',
+        sourceLength: evidence.sourceLength,
+        selectedLength: evidence.selectedLength,
+        selectionComplete: evidence.complete,
+      } : item));
+    } catch (error) {
+      console.error('ESG release summary error:', error);
+      setEarningsReleases(prev => prev.map(item => item.id === releaseId ? {
+        ...item,
+        summaryStatus: 'error',
+        summary: '',
+        summaryError: 'The source summary could not be generated. Retry when the AI service is available.',
+      } : item));
+    }
+  }, [earningsReleases]);
 
   const filteredReleases = transcriptSearch.trim()
     ? earningsReleases.filter(ts => {
@@ -217,20 +355,26 @@ export default function ESGResearch() {
 
       <div className="esg-layout">
         <aside className="esg-sidebar glass-card">
-          <nav className="esg-nav">
+          <nav className="esg-nav" aria-label="ESG Research sections">
             <button
+              type="button"
+              aria-pressed={activeTab === 'frameworks'}
               className={`nav-btn ${activeTab === 'frameworks' ? 'active' : ''}`}
               onClick={() => setActiveTab('frameworks')}
             >
               <Globe size={18} /> Framework Navigator
             </button>
             <button
+              type="button"
+              aria-pressed={activeTab === 'heatmap'}
               className={`nav-btn ${activeTab === 'heatmap' ? 'active' : ''}`}
               onClick={() => setActiveTab('heatmap')}
             >
               <LayoutGrid size={18} /> Disclosure Heatmap
             </button>
             <button
+              type="button"
+              aria-pressed={activeTab === 'transcripts'}
               className={`nav-btn ${activeTab === 'transcripts' ? 'active' : ''}`}
               onClick={() => setActiveTab('transcripts')}
             >
@@ -239,19 +383,17 @@ export default function ESGResearch() {
           </nav>
 
           <div className="sidebar-widget" style={{ marginTop: '32px' }}>
-            <h4>Global Policy Tracker</h4>
-            <div className="policy-item">
-              <span className="text-sm font-medium">SEC Climate Rule</span>
-              <span className="status-badge delayed">Stayed</span>
-            </div>
-            <div className="policy-item">
-              <span className="text-sm font-medium">EU CSRD Phasing</span>
-              <span className="status-badge active">Active 2024</span>
-            </div>
-            <div className="policy-item">
-              <span className="text-sm font-medium">CA SB 253 / 261</span>
-              <span className="status-badge pending">Awaiting 2026</span>
-            </div>
+            <h4>Official Policy Sources</h4>
+            <p className="policy-source-note">Requirements change frequently. Verify current legal status and effective dates with the issuing authority.</p>
+            {POLICY_SOURCES.map(source => (
+              <a key={source.url} className="policy-item" href={source.url} target="_blank" rel="noreferrer">
+                <span>
+                  <strong>{source.name}</strong>
+                  <small>{source.authority}</small>
+                </span>
+                <ExternalLink size={13} aria-hidden="true" />
+              </a>
+            ))}
           </div>
         </aside>
 
@@ -276,7 +418,7 @@ export default function ESGResearch() {
                 ))}
               </div>
 
-              <div style={{ marginTop: '32px', padding: '24px', background: 'rgba(30,41,59,0.5)', borderRadius: '12px', border: '1px solid var(--input-border)' }}>
+              <div style={{ marginTop: '32px', padding: '24px', background: 'var(--surface-subtle)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
                   <Activity className="text-green-400" size={24} />
                   <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Cross-Framework Mapping</h3>
@@ -284,13 +426,16 @@ export default function ESGResearch() {
                 <p className="text-sm text-slate-400" style={{ marginBottom: '16px' }}>Click a metric to see how it maps across standards.</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   {Object.entries(mappingsData).map(([metric, codes]) => (
-                    <div
+                    <button
+                      type="button"
                       key={metric}
                       onClick={() => setSelectedMapping(selectedMapping === metric ? null : metric)}
+                      aria-pressed={selectedMapping === metric}
                       style={{
-                        padding: '12px 16px', background: selectedMapping === metric ? 'rgba(179,31,126,0.08)' : 'var(--input-bg)',
+                        width: '100%',
+                        padding: '12px 16px', background: selectedMapping === metric ? 'rgba(179,31,126,0.08)' : 'var(--surface-panel-strong)',
                         borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                        border: `1px solid ${selectedMapping === metric ? 'rgba(179,31,126,0.3)' : 'rgba(51,65,85,0.5)'}`,
+                        border: `1px solid ${selectedMapping === metric ? 'color-mix(in srgb, var(--accent-primary) 30%, transparent)' : 'var(--border-color)'}`,
                         cursor: 'pointer', transition: 'all 0.15s'
                       }}
                     >
@@ -300,7 +445,7 @@ export default function ESGResearch() {
                         <span className="badge gri">GRI: {codes.gri}</span>
                         <span className="badge esrs">ESRS: {codes.esrs}</span>
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
               </div>
@@ -326,13 +471,15 @@ export default function ESGResearch() {
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                     {esgTickers.map(t => (
                       <span key={t} style={{
-                        background: 'rgba(214,108,174,0.15)', color: '#D66CAE', padding: '4px 12px',
+                        background: 'var(--interactive-hover-strong)', color: 'var(--accent-primary)', padding: '4px 12px',
                         borderRadius: '16px', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '6px'
                       }}>
                         {t}
                         <button
+                          type="button"
+                          aria-label={`Remove ${t} from ESG heatmap`}
                           onClick={() => removeEsgTicker(t)}
-                          style={{ background: 'none', border: 'none', color: '#D66CAE', cursor: 'pointer', padding: 0, fontSize: '1rem' }}
+                          style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', padding: 0, fontSize: '1rem' }}
                         >
                           &times;
                         </button>
@@ -346,13 +493,17 @@ export default function ESGResearch() {
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px', gap: '12px' }}>
                   <Loader2 size={32} className="spinner" />
                   <p style={{ color: 'var(--text-secondary)' }}>AI is analyzing 10-K filings for ESG disclosure quality...</p>
-                  <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>This may take 30-60 seconds (fetching & analyzing 4 filings)</p>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Fetching and analyzing {canonicalTickers.length} filing{canonicalTickers.length === 1 ? '' : 's'}; this may take 30–60 seconds.</p>
                 </div>
               ) : heatmapError ? (
-                <div style={{ textAlign: 'center', padding: '40px', color: '#F59E0B' }}>
+                <div role="alert" style={{ textAlign: 'center', padding: '40px', color: 'var(--status-warning)' }}>
                   {heatmapError}
                   <br />
-                  <button className="primary-btn sm" style={{ marginTop: '12px' }} onClick={() => { setHeatmapData([]); setHeatmapTickerSnapshot([]); }}>Retry</button>
+                  <button type="button" className="primary-btn sm" style={{ marginTop: '12px' }} onClick={() => {
+                    heatmapAttemptKeyRef.current = '';
+                    activeHeatmapRequestRef.current = '';
+                    setHeatmapRetryToken(token => token + 1);
+                  }}>Retry</button>
                 </div>
               ) : heatmapData.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
@@ -360,13 +511,13 @@ export default function ESGResearch() {
                 </div>
               ) : (
                 <>
-              <div className="heatmap-container" style={{ overflow: 'auto', border: '1px solid var(--input-border)', borderRadius: '12px' }}>
+              <div className="heatmap-container" style={{ overflow: 'auto', border: '1px solid var(--border-color)', borderRadius: '12px' }}>
                 <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
                   <thead>
-                    <tr style={{ background: 'var(--input-bg)', borderBottom: '1px solid var(--input-border)', fontSize: '0.875rem' }}>
-                      <th style={{ padding: '16px', fontWeight: 600, color: 'var(--text-secondary)' }}>ESG Topic Category</th>
+                    <tr style={{ background: 'var(--table-header-bg)', borderBottom: '1px solid var(--table-header-border)', fontSize: '0.875rem' }}>
+                      <th scope="col" style={{ padding: '16px', fontWeight: 600, color: 'var(--text-primary)' }}>ESG Topic Category</th>
                       {esgTickers.map(t => (
-                        <th key={t} style={{ padding: '16px', fontWeight: 600, color: 'var(--text-primary)', textAlign: 'center', borderLeft: '1px solid rgba(51,65,85,0.5)' }}>{t}</th>
+                        <th scope="col" key={t} style={{ padding: '16px', fontWeight: 600, color: 'var(--text-primary)', textAlign: 'center', borderLeft: '1px solid var(--border-color)' }}>{t}</th>
                       ))}
                     </tr>
                   </thead>
@@ -374,13 +525,14 @@ export default function ESGResearch() {
                     {heatmapData.map((row, idx) => (
                       <tr
                         key={idx}
-                        onClick={() => handleMetricClick(row.topic)}
-                        style={{ borderBottom: '1px solid rgba(51,65,85,0.5)', cursor: 'pointer', background: selectedMetric === row.topic ? 'rgba(179,31,126,0.05)' : 'transparent' }}
+                        style={{ borderBottom: '1px solid var(--border-color)', background: selectedMetric === row.topic ? 'rgba(179,31,126,0.05)' : 'transparent' }}
                       >
-                        <td style={{ padding: '16px', color: 'var(--text-secondary)', fontSize: '0.875rem', fontWeight: 500 }}>{row.topic}</td>
+                        <th scope="row" style={{ padding: 0, color: 'var(--text-primary)', fontSize: '0.875rem', fontWeight: 500 }}>
+                          <button type="button" className="esg-topic-button" aria-expanded={selectedMetric === row.topic} onClick={() => handleMetricClick(row.topic)}>{row.topic}</button>
+                        </th>
                         {esgTickers.map(t => (
-                          <td key={t} style={{ padding: '8px', borderLeft: '1px solid rgba(51,65,85,0.5)' }}>
-                            <div className={`heatmap-cell ${row[t.toLowerCase()] || 'unrated'}`}></div>
+                          <td key={t} aria-label={`${t}: ${row[t.toLowerCase()] || 'unrated'} disclosure for ${row.topic}`} style={{ padding: '8px', borderLeft: '1px solid var(--border-color)' }}>
+                            <div aria-hidden="true" className={`heatmap-cell ${row[t.toLowerCase()] || 'unrated'}`}></div>
                           </td>
                         ))}
                       </tr>
@@ -397,6 +549,9 @@ export default function ESGResearch() {
                   </p>
                 </div>
               )}
+              {heatmapData.length > 0 && (
+                <p className="heatmap-coverage">Analyzed {heatmapCoverage.analyzed} of {heatmapCoverage.total} selected companies. Dashed cells were not rated.</p>
+              )}
                 </>
               )}
 
@@ -412,6 +567,9 @@ export default function ESGResearch() {
                 <span className="legend-swatch">
                   <div className="swatch low"></div> Low / None
                 </span>
+                <span className="legend-swatch">
+                  <div className="swatch unrated"></div> Not rated
+                </span>
               </div>
             </div>
           )}
@@ -420,14 +578,15 @@ export default function ESGResearch() {
             <div className="tab-pane fade-in">
               <div className="pane-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
                 <div>
-                  <h2>Recent Earnings Releases (8-K)</h2>
-                  <p className="text-sm text-slate-400" style={{ marginTop: '4px' }}>Recent 8-K filings related to earnings from SEC EDGAR with AI summaries.</p>
+                  <h2>Recent 8-K earnings candidates</h2>
+                  <p className="text-sm text-slate-400" style={{ marginTop: '4px' }}>Recent SEC 8-K candidates. Generate a source-grounded summary only when you need one.</p>
                 </div>
                 <div className="search-bar-inline">
                   <Search size={16} className="search-bar-icon" />
                   <input
                     type="text"
                     placeholder="Filter by company name..."
+                    aria-label="Filter recent 8-K candidates by company"
                     value={transcriptSearch}
                     onChange={e => setTranscriptSearch(e.target.value)}
                   />
@@ -436,21 +595,30 @@ export default function ESGResearch() {
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {earningsLoading ? (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px', gap: '8px', color: 'var(--text-secondary)' }}>
+                  <div role="status" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px', gap: '8px', color: 'var(--text-secondary)' }}>
                     <Loader2 size={16} className="spinner" /> Loading recent 8-K filings from EDGAR...
+                  </div>
+                ) : earningsError ? (
+                  <div role="alert" style={{ padding: '40px', textAlign: 'center', color: 'var(--status-error)' }}>
+                    {earningsError}
+                    <br />
+                    <button type="button" className="primary-btn sm" style={{ marginTop: '12px' }} onClick={() => {
+                      earningsAttemptedRef.current = false;
+                      setEarningsRetryToken(token => token + 1);
+                    }}>Retry SEC request</button>
                   </div>
                 ) : filteredReleases.length === 0 ? (
                   <div style={{ padding: '48px', textAlign: 'center', color: 'var(--text-muted)' }}>
-                    {transcriptSearch ? `No releases match "${transcriptSearch}".` : 'No recent earnings releases found.'}
+                    {transcriptSearch ? `No 8-K candidates match "${transcriptSearch}".` : 'No recent 8-K earnings candidates found.'}
                   </div>
-                ) : filteredReleases.map((ts, idx) => (
-                  <div key={idx} className="transcript-card" style={{
-                    background: 'var(--input-bg)', border: '1px solid var(--input-border)', padding: '20px', borderRadius: '12px',
+                ) : filteredReleases.map(ts => (
+                  <article key={ts.id} className="transcript-card" style={{
+                    background: 'var(--surface-panel-strong)', border: '1px solid var(--border-color)', padding: '20px', borderRadius: '12px',
                     transition: 'all 0.2s'
                   }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div style={{ background: 'rgba(37,99,235,0.2)', color: '#D66CAE', fontWeight: 700, padding: '4px 8px', borderRadius: '4px', fontSize: '0.875rem' }}>8-K</div>
+                        <div style={{ background: 'var(--interactive-hover-strong)', color: 'var(--accent-primary)', fontWeight: 700, padding: '4px 8px', borderRadius: '4px', fontSize: '0.875rem' }}>8-K</div>
                         <h4 style={{ color: 'var(--text-primary)', fontWeight: 500, margin: 0 }}>{ts.company}</h4>
                       </div>
                       <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -458,10 +626,36 @@ export default function ESGResearch() {
                       </div>
                     </div>
 
-                    <div style={{ paddingLeft: '16px', borderLeft: '2px solid var(--input-border)' }}>
-                      <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', margin: '4px 0' }}>{ts.summary}</p>
+                    <div style={{ paddingLeft: '16px', borderLeft: '2px solid var(--border-color)' }}>
+                      {ts.summaryStatus === 'loading' ? (
+                        <p role="status" style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', margin: '4px 0', display: 'flex', gap: '8px', alignItems: 'center' }}><Loader2 size={14} className="spinner" /> Reading the source filing…</p>
+                      ) : ts.summaryStatus === 'error' ? (
+                        <p role="alert" style={{ fontSize: '0.875rem', color: 'var(--status-error)', margin: '4px 0' }}>{ts.summaryError}</p>
+                      ) : ts.summary ? (
+                        <>
+                          <p style={{ fontSize: '0.875rem', color: 'var(--text-primary)', margin: '4px 0' }}>{ts.summary}</p>
+                          {typeof ts.sourceLength === 'number' && typeof ts.selectedLength === 'number' && (
+                            <p className="release-coverage">
+                              {ts.selectionComplete
+                                ? `Coverage: complete ${ts.sourceLength.toLocaleString()}-character filing.`
+                                : `Coverage: ${ts.selectedLength.toLocaleString()} characters selected across a ${ts.sourceLength.toLocaleString()}-character filing; intervening text was omitted.`}
+                              {' '}Verify the summary against the source filing.
+                            </p>
+                          )}
+                        </>
+                      ) : (
+                        <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', margin: '4px 0' }}>No AI summary has been generated.</p>
+                      )}
+                      <div className="release-actions">
+                        <button type="button" className="secondary-btn" disabled={ts.summaryStatus === 'loading'} onClick={() => void summarizeRelease(ts.id)}>
+                          {ts.summaryStatus === 'error' ? 'Retry summary' : ts.summaryStatus === 'ready' ? 'Regenerate summary' : 'Generate source summary'}
+                        </button>
+                        {ts.primaryDocument && (
+                          <Link href={`/filing/${ts.cik}_${ts.accessionNumber}_${ts.primaryDocument}`}>Open source filing</Link>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  </article>
                 ))}
               </div>
             </div>
@@ -471,4 +665,3 @@ export default function ESGResearch() {
     </div>
   );
 }
-

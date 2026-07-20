@@ -22,6 +22,8 @@ describe('aiApi', () => {
       expect(mockFetch).toHaveBeenCalledWith('/api/claude', expect.objectContaining({
         method: 'POST',
       }));
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(body).not.toHaveProperty('temperature');
     });
 
     it('returns response text on success', async () => {
@@ -72,6 +74,21 @@ describe('aiApi', () => {
       expect(result).toBeTruthy();
     });
 
+    it('propagates empty or upstream failures for strict insight callers', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ text: '' }),
+      });
+      const { askAi } = await import('../services/aiApi');
+      await expect(askAi('test', undefined, { throwOnError: true })).rejects.toThrow('empty');
+
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        json: () => Promise.resolve({ error: 'AI service is not configured.' }),
+      });
+      await expect(askAi('test', undefined, { throwOnError: true })).rejects.toThrow('not configured');
+    });
+
     it('handles malformed JSON response', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -100,6 +117,55 @@ describe('aiApi', () => {
       const { aiSummarize } = await import('../services/aiApi');
       const result = await aiSummarize('text');
       expect(result).toBeTruthy();
+    });
+
+    it('throws on failure when the caller requests an explicit error state', async () => {
+      mockFetch.mockRejectedValueOnce(new Error('Failed'));
+      const { aiSummarize } = await import('../services/aiApi');
+      await expect(aiSummarize('text', { throwOnError: true })).rejects.toThrow('Failed');
+    });
+  });
+
+  describe('aiSummarizeRedline', () => {
+    it('keeps only claims whose exact evidence is present in the diff', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ text: JSON.stringify([{
+          claim: 'The filing added an explicit cybersecurity oversight statement.',
+          significance: 'Review the new governance disclosure.',
+          evidence: ['the board oversees cybersecurity risk'],
+        }]) }),
+      });
+      const { aiSummarizeRedline } = await import('../services/aiApi');
+      const result = await aiSummarizeRedline('[+the board oversees cybersecurity risk+]');
+      expect(result).toContain('cybersecurity oversight');
+      expect(result).toContain('Evidence:');
+    });
+
+    it('withholds unsupported redline claims', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ text: JSON.stringify([{
+          claim: 'The company completed a reverse merger.',
+          significance: 'Transaction completed.',
+          evidence: ['evidence not present in the diff'],
+        }]) }),
+      });
+      const { aiSummarizeRedline } = await import('../services/aiApi');
+      const result = await aiSummarizeRedline('[+standard cover-page checkbox text+]');
+      expect(result).not.toContain('reverse merger');
+      expect(result).toContain('No material-change claim passed evidence validation');
+    });
+
+    it('throws instead of returning provider error copy for strict redline callers', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        json: () => Promise.resolve({ error: 'AI service is not configured.' }),
+      });
+      const { aiSummarizeRedline } = await import('../services/aiApi');
+
+      await expect(aiSummarizeRedline('[+changed disclosure+]', { throwOnError: true }))
+        .rejects.toThrow('AI service is not configured.');
     });
   });
 
@@ -167,11 +233,18 @@ describe('aiApi', () => {
       expect(result).toBe('Default analysis');
     });
 
-    it('handles errors gracefully', async () => {
+    it('rejects when analysis cannot be generated instead of returning pseudo-analysis', async () => {
       mockFetch.mockRejectedValueOnce(new Error('API down'));
       const { aiAnalyzeS1 } = await import('../services/aiApi');
-      const result = await aiAnalyzeS1('text', 'overview');
-      expect(result).toBeTruthy();
+      await expect(aiAnalyzeS1('text', 'overview')).rejects.toThrow('API down');
+    });
+  });
+
+  describe('aiAscLookup', () => {
+    it('rejects when guidance cannot be generated instead of returning a fallback answer', async () => {
+      mockFetch.mockRejectedValueOnce(new Error('API down'));
+      const { aiAscLookup } = await import('../services/aiApi');
+      await expect(aiAscLookup('ASC 606')).rejects.toThrow('API down');
     });
   });
 
@@ -202,6 +275,29 @@ describe('aiApi', () => {
       const { aiExtractBoardData } = await import('../services/aiApi');
       const result = await aiExtractBoardData('text');
       expect(result).toBeNull();
+    });
+
+    it('maps missing, absent, and malformed model ratings to unrated', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({
+          text: JSON.stringify({
+            Climate: 'high',
+            Water: 'absent',
+            Privacy: 'excellent',
+            'Unrequested Topic': 'high',
+          }),
+        }),
+      });
+      const { aiRateESGDisclosure } = await import('../services/aiApi');
+      const result = await aiRateESGDisclosure('10-K text', ['Climate', 'Water', 'Privacy', 'Labor']);
+
+      expect(result).toEqual({
+        Climate: 'high',
+        Water: 'unrated',
+        Privacy: 'unrated',
+        Labor: 'unrated',
+      });
     });
   });
 
@@ -241,11 +337,27 @@ describe('aiApi', () => {
       expect(result!.target).toBe('TargetCo');
     });
 
-    it('returns null on error', async () => {
+    it('rejects on error instead of returning an empty deal result', async () => {
       mockFetch.mockRejectedValueOnce(new Error('Failed'));
       const { aiExtractDealDetails } = await import('../services/aiApi');
-      const result = await aiExtractDealDetails('text');
-      expect(result).toBeNull();
+      await expect(aiExtractDealDetails('text')).rejects.toThrow('Failed');
+    });
+
+    it('rejects malformed deal details instead of treating them as no result', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ text: 'not valid JSON' }),
+      });
+      const { aiExtractDealDetails } = await import('../services/aiApi');
+      await expect(aiExtractDealDetails('text')).rejects.toThrow('valid deal details');
+    });
+  });
+
+  describe('aiExtractClauses', () => {
+    it('rejects on provider failure instead of returning an empty clause result', async () => {
+      mockFetch.mockRejectedValueOnce(new Error('Failed'));
+      const { aiExtractClauses } = await import('../services/aiApi');
+      await expect(aiExtractClauses('agreement text', ['No-shop'])).rejects.toThrow('Failed');
     });
   });
 });

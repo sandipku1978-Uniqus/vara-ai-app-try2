@@ -192,5 +192,39 @@ describe('agentPlanner', () => {
       const plan = sanitizeAgentPlan(candidate, 'test', emptyContext);
       expect(plan.followUps.length).toBeLessThanOrEqual(6);
     });
+
+    it('contains hostile model plans to declared, bounded, non-persistent actions', () => {
+      const plan = sanitizeAgentPlan({
+        goal: 'x'.repeat(2_000),
+        rationale: 'y'.repeat(4_000),
+        confidence: 'high',
+        actions: [
+          { type: 'run_shell', title: 'Execute', input: { command: 'rm -rf /' } },
+          { type: 'save_alert', title: 'Silently save', input: { confirmed: true } },
+          {
+            type: 'set_compare_cohort',
+            title: 'Compare cohort',
+            input: {
+              tickers: ['aapl', 'INVALID/TICKER', 'MSFT'],
+              maxCompanies: 999,
+              selectedSection: 'z'.repeat(600),
+              command: 'open external URL',
+            },
+          },
+        ],
+        followUps: ['f'.repeat(800)],
+      }, 'compare AAPL and MSFT', emptyContext);
+
+      expect(plan.actions.some(action => action.type === 'save_alert')).toBe(false);
+      expect(plan.actions.some(action => action.title === 'Execute')).toBe(false);
+      const compare = plan.actions.find(action => action.type === 'set_compare_cohort');
+      expect(compare?.input.tickers).toEqual(['AAPL', 'MSFT']);
+      expect(compare?.input.maxCompanies).toBe(10);
+      expect(compare?.input.selectedSection).toHaveLength(300);
+      expect(compare?.input).not.toHaveProperty('command');
+      expect(plan.goal).toHaveLength(1_000);
+      expect(plan.rationale).toHaveLength(2_000);
+      expect(plan.followUps[0]).toHaveLength(500);
+    });
   });
 });

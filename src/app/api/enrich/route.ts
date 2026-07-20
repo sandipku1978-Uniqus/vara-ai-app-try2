@@ -7,32 +7,35 @@
  */
 
 import { NextResponse } from 'next/server';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-
-let supabase: SupabaseClient | null = null;
-
-function getSupabase(): SupabaseClient | null {
-  if (supabase) return supabase;
-  const url = process.env.URC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.URC_SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) return null;
-  supabase = createClient(url, key, { auth: { persistSession: false } });
-  return supabase;
-}
+import { requireApiAccess } from '../../../lib/api-auth';
+import { parseCik } from '../../../lib/api-query';
+import { checkResourceRateLimit, rateLimitResponse } from '../../../lib/rate-limit';
+import { getWebSupabase } from '../../../lib/supabase-web';
 
 const MAX_CIKS = 200;
 
 export async function GET(request: Request) {
-  const db = getSupabase();
-  if (!db) return NextResponse.json({ error: 'Enrichment store not configured' }, { status: 503 });
+  const access = await requireApiAccess();
+  if (access.response) return access.response;
 
   const raw = new URL(request.url).searchParams.get('ciks') || '';
-  const ciks = Array.from(new Set(
-    raw.split(',').map(value => Number(value.trim())).filter(value => Number.isFinite(value) && value > 0)
-  )).slice(0, MAX_CIKS);
+  if (raw.length > 2400) return NextResponse.json({ error: 'CIK list is too large.' }, { status: 413 });
+  const parsedCiks = raw.split(',').map(parseCik);
+  if (parsedCiks.some(cik => cik === null)) {
+    return NextResponse.json({ error: 'Every CIK must contain 1 to 10 digits.' }, { status: 400 });
+  }
+  const ciks = Array.from(new Set(parsedCiks as number[]));
   if (ciks.length === 0) {
     return NextResponse.json({ error: "Provide 'ciks' as a comma-separated list" }, { status: 400 });
   }
+  if (ciks.length > MAX_CIKS) {
+    return NextResponse.json({ error: `Maximum ${MAX_CIKS} CIKs per request.` }, { status: 400 });
+  }
+
+  const db = getWebSupabase();
+  if (!db) return NextResponse.json({ error: 'Enrichment store not configured with a restricted database role.' }, { status: 503 });
+  const rate = await checkResourceRateLimit(request, access.identity, { operation: 'enrich' });
+  if (!rate.allowed) return rateLimitResponse(rate);
 
   try {
     const [auditorsResult, companiesResult] = await Promise.all([

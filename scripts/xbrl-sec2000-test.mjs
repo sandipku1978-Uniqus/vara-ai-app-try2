@@ -218,7 +218,7 @@ function runAccuracyChecks(metrics) {
     if (metrics[key]?.year) coreYears.add(metrics[key].year);
   }
   const years = new Set();
-  for (const [key, m] of Object.entries(metrics)) {
+  for (const m of Object.values(metrics)) {
     if (m && m.year) years.add(m.year);
   }
   if (coreYears.size > 1) {
@@ -278,13 +278,7 @@ function runAccuracyChecks(metrics) {
   // 5. Net Income should be ≤ Operating Income for most companies (not always true due to other income)
   // Skipping — too many valid exceptions
 
-  // 6. FCF = OCF - CapEx (verify if both present)
-  if (metrics.OperatingCashFlow?.value && metrics.CapitalExpenditures?.value) {
-    const fcf = metrics.OperatingCashFlow.value - metrics.CapitalExpenditures.value;
-    // Just track the FCF for reporting, no error check needed
-  }
-
-  // 7. EPS sanity: if net income is positive, EPS should be positive
+  // 6. EPS sanity: if net income is positive, EPS should be positive
   if (metrics.NetIncome?.value > 0 && metrics.EarningsPerShareDiluted?.value != null) {
     if (metrics.EarningsPerShareDiluted.value < 0) {
       issues.push({

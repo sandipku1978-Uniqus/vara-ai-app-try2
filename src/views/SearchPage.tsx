@@ -21,7 +21,6 @@ import {
 } from 'lucide-react';
 import SearchFilterBar, { defaultSearchFilters, type SearchFilters } from '../components/filters/SearchFilterBar';
 import { useApp } from '../context/AppState';
-import { aiSummarize } from '../services/aiApi';
 import { clearDocumentHighlights, highlightDocumentSearchTerms } from '../services/filingHighlights';
 import {
   buildSearchTrendSummary,
@@ -32,19 +31,27 @@ import {
 import {
   buildSecDocumentUrl,
   buildSecProxyUrl,
+  type SearchCandidateCoverage,
+
 } from '../services/secApi';
 import {
   buildSearchSignature,
+  buildResearchRouteParams,
   buildResearchSessionTitle,
   cloneSearchFilters,
   createResearchSessionId,
+  hasResearchSearchCriteria,
   loadResearchSessions,
+  parseResearchRouteParams,
+  shouldHandleExternalResearchRoute,
   saveResearchSessions,
   type ResearchSearchSession,
 } from '../services/researchSessions';
 import { buildHighlightTerms, interpretSearchPrompt } from '../services/searchAssist';
+import { buildResearchEmptyResultMessage } from '../services/searchCoverage';
+import { generateSearchTrendReport, SEARCH_TREND_AI_FALLBACK } from '../services/searchTrendReport';
 import { looksLikeBooleanQuery } from '../utils/booleanSearch';
-import { canUseInstantElasticsearchSearch } from '../services/filingResearch';
+import { canUseInstantEnrichedSearch } from '../services/filingResearch';
 import { BRAND } from '../config/brand';
 import './SearchPage.css';
 
@@ -55,7 +62,8 @@ const LEGACY_DEFAULT_FORM_SCOPE = ['10-K', '10-Q'];
 const RESEARCH_RESULT_LIMIT = 500;
 const INITIAL_RESEARCH_RESULT_LIMIT = 80;
 const INITIAL_BOOLEAN_RESULT_LIMIT = 40;
-const RESEARCH_SEARCH_USES_ELASTICSEARCH = true;
+const RESEARCH_RESULTS_PAGE_SIZE = 50;
+const RESEARCH_SEARCH_USES_ENRICHED_RESULTS = true;
 const SAMPLE_SEARCHES = [
   'ASC 842 adoption w/10 lease',
   'ASR w/5 derivative',
@@ -111,13 +119,6 @@ function buildAlertName(query: string, filters: SearchFilters): string {
   return 'Custom research alert';
 }
 
-function buildRouteParams(sessionId: string | null, query: string): URLSearchParams {
-  const params = new URLSearchParams();
-  if (sessionId) params.set('tab', sessionId);
-  if (query.trim()) params.set('q', query.trim());
-  return params;
-}
-
 function queryMentionsFormScope(value: string): boolean {
   return /\b(?:10[\s-]?k|10[\s-]?q|8[\s-]?k(?:\/a)?|6[\s-]?k|20[\s-]?f|def[\s-]?14a|s[\s-]?1)\b/i.test(value);
 }
@@ -145,6 +146,7 @@ function hasOnlyLegacyDefaultFormScope(filters: SearchFilters): boolean {
     filters.accessionNumber.trim() ||
     filters.fileNumber.trim() ||
     filters.fiscalYearEnd.trim() ||
+    filters.accountingFramework.trim() ||
     filters.exchange.length > 0 ||
     filters.acceleratedStatus.length > 0
   );
@@ -225,7 +227,97 @@ function countAppliedFilters(filters: SearchFilters): number {
     (filters.accountant ? 1 : 0) +
     (filters.accessionNumber ? 1 : 0) +
     (filters.fileNumber ? 1 : 0) +
-    (filters.fiscalYearEnd ? 1 : 0)
+    (filters.fiscalYearEnd ? 1 : 0) +
+    (filters.accountingFramework ? 1 : 0)
+  );
+}
+
+function researchTabId(sessionId: string): string {
+  return `research-tab-${sessionId.replace(/[^a-zA-Z0-9_-]/g, '-')}`;
+}
+
+function ResearchSessionTabs({
+  sessions,
+  activeSessionId,
+  emptyMessage,
+  onSelect,
+  onClose,
+}: {
+  sessions: ResearchSearchSession[];
+  activeSessionId?: string;
+  emptyMessage: string;
+  onSelect: (session: ResearchSearchSession) => void;
+  onClose: (sessionId: string) => void;
+}) {
+  const tabListRef = useRef<HTMLDivElement>(null);
+
+  const moveFocus = (currentIndex: number, direction: 'previous' | 'next' | 'first' | 'last') => {
+    if (sessions.length === 0) return;
+    const nextIndex = direction === 'first'
+      ? 0
+      : direction === 'last'
+        ? sessions.length - 1
+        : direction === 'previous'
+          ? (currentIndex - 1 + sessions.length) % sessions.length
+          : (currentIndex + 1) % sessions.length;
+
+    onSelect(sessions[nextIndex]);
+    window.requestAnimationFrame(() => {
+      tabListRef.current?.querySelectorAll<HTMLButtonElement>('[role="tab"]')[nextIndex]?.focus();
+    });
+  };
+
+  if (sessions.length === 0) {
+    return <div className="research-empty-tab">{emptyMessage}</div>;
+  }
+
+  return (
+    <div ref={tabListRef} className="research-tab-strip" role="tablist" aria-label="Open research searches">
+      {sessions.map((session, index) => {
+        const isActive = activeSessionId === session.id;
+        const tabId = researchTabId(session.id);
+        return (
+          <div key={session.id} className={`research-tab ${isActive ? 'active' : ''}`} role="presentation">
+            <button
+              type="button"
+              id={tabId}
+              className="research-tab-select"
+              role="tab"
+              aria-selected={isActive}
+              aria-controls={`research-panel-${session.id}`}
+              tabIndex={isActive || (!activeSessionId && index === 0) ? 0 : -1}
+              onClick={() => onSelect(session)}
+              onKeyDown={event => {
+                if (event.key === 'ArrowLeft') {
+                  event.preventDefault();
+                  moveFocus(index, 'previous');
+                } else if (event.key === 'ArrowRight') {
+                  event.preventDefault();
+                  moveFocus(index, 'next');
+                } else if (event.key === 'Home') {
+                  event.preventDefault();
+                  moveFocus(index, 'first');
+                } else if (event.key === 'End') {
+                  event.preventDefault();
+                  moveFocus(index, 'last');
+                }
+              }}
+            >
+              <span className="research-tab-title">{session.title}</span>
+              <span className="count" aria-label={`${session.results.length} results`}>{session.results.length}</span>
+            </button>
+            <button
+              type="button"
+              className="close"
+              aria-label={`Close ${session.title} search`}
+              onClick={() => onClose(session.id)}
+            >
+              <X size={12} aria-hidden="true" />
+            </button>
+          </div>
+        );
+      })}
+    </div>
   );
 }
 
@@ -233,7 +325,12 @@ export default function SearchPage() {
   const location = usePathname();
   const navigate = useRouter();
   const searchParams = useSearchParams();
-  const initialQuery = searchParams?.get('q') || '';
+  const routeParamString = searchParams?.toString() || '';
+  const initialRouteSearch = useMemo(
+    () => parseResearchRouteParams(new URLSearchParams(routeParamString)),
+    [routeParamString]
+  );
+  const initialQuery = initialRouteSearch?.query || '';
   const activeTabId = searchParams?.get('tab');
 
   const setSearchParams = useCallback((params: Record<string, string> | URLSearchParams, options?: { replace?: boolean }) => {
@@ -267,16 +364,17 @@ export default function SearchPage() {
 
   const [sessions, setSessions] = useState<ResearchSearchSession[]>(() => loadResearchSessions());
   const [query, setQuery] = useState(initialQuery);
-  const [searchMode, setSearchMode] = useState<ResearchSearchMode>('semantic');
-  const [filters, setFilters] = useState<SearchFilters>({
-    ...defaultSearchFilters,
-  });
+  const [searchMode, setSearchMode] = useState<ResearchSearchMode>(initialRouteSearch?.mode || 'semantic');
+  const [filters, setFilters] = useState<SearchFilters>(() =>
+    cloneSearchFilters(initialRouteSearch?.filters || defaultSearchFilters)
+  );
   const [results, setResults] = useState<FilingResearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [trendReport, setTrendReport] = useState('');
   const [trendLoading, setTrendLoading] = useState(false);
+  const [trendAiError, setTrendAiError] = useState('');
   const [alertMessage, setAlertMessage] = useState('');
   const [searchInterpretation, setSearchInterpretation] = useState<string[]>([]);
   const [lastResolvedSearch, setLastResolvedSearch] = useState<{
@@ -295,9 +393,21 @@ export default function SearchPage() {
   const [isRailCollapsed, setIsRailCollapsed] = useState(false);
   const [isQueryPanelCollapsed, setIsQueryPanelCollapsed] = useState(false);
   const [isInsightsExpanded, setIsInsightsExpanded] = useState(false);
+  const [degradedNotice, setDegradedNotice] = useState('');
+  const [candidateCoverage, setCandidateCoverage] = useState<SearchCandidateCoverage | null>(null);
+
+  const captureCandidateCoverage = useCallback((coverage: SearchCandidateCoverage) => {
+    setCandidateCoverage(current => current
+      ? {
+          examined: Math.max(current.examined, coverage.examined),
+          upstreamTotal: Math.max(current.upstreamTotal, coverage.upstreamTotal),
+          complete: current.complete && coverage.complete,
+        }
+      : coverage);
+  }, []);
 
   const previewFrameRef = useRef<HTMLIFrameElement>(null);
-  const bootstrappedInitialSearch = useRef(false);
+  const handledExternalRouteRef = useRef('');
 
   const activeSessionIdRef = useRef<string | null>(null);
   const pendingRefinementKeysRef = useRef<Map<string, string>>(new Map());
@@ -320,6 +430,7 @@ export default function SearchPage() {
 
   const displayResults = activeSession?.results || results;
   const [resultSort, setResultSort] = useState<'relevance' | 'newest'>('relevance');
+  const [resultPage, setResultPage] = useState(1);
   const [auditorNoticeDismissed, setAuditorNoticeDismissed] = useState(false);
   const sortedDisplayResults = useMemo(() => {
     if (resultSort === 'newest') {
@@ -327,6 +438,19 @@ export default function SearchPage() {
     }
     return displayResults;
   }, [displayResults, resultSort]);
+  const resultPageCount = Math.max(1, Math.ceil(sortedDisplayResults.length / RESEARCH_RESULTS_PAGE_SIZE));
+  const pagedDisplayResults = useMemo(() => {
+    const start = (resultPage - 1) * RESEARCH_RESULTS_PAGE_SIZE;
+    return sortedDisplayResults.slice(start, start + RESEARCH_RESULTS_PAGE_SIZE);
+  }, [resultPage, sortedDisplayResults]);
+
+  useEffect(() => {
+    setResultPage(1);
+  }, [activeSession?.id, resultSort]);
+
+  useEffect(() => {
+    setResultPage(current => Math.min(current, resultPageCount));
+  }, [resultPageCount]);
   const activeResolvedSearch = activeSession?.resolvedSearch || lastResolvedSearch;
   const isRefiningResults = Boolean(activeSession?.isRefining);
   const previewHighlightTerms = useMemo(
@@ -388,8 +512,11 @@ export default function SearchPage() {
     setIsInsightsExpanded(false);
   }, []);
 
-  const setRouteForSession = useCallback((sessionId: string | null, nextQuery: string, replace = false) => {
-    setSearchParams(buildRouteParams(sessionId, nextQuery), { replace });
+  const setRouteForSession = useCallback((session: ResearchSearchSession | null, replace = false) => {
+    const params = session
+      ? buildResearchRouteParams(session.query, session.mode, session.filters, session.id)
+      : new URLSearchParams();
+    setSearchParams(params, { replace });
   }, [setSearchParams]);
 
   const upsertSession = useCallback((
@@ -407,7 +534,7 @@ export default function SearchPage() {
       return next;
     });
     if (options.syncRoute !== false) {
-      setRouteForSession(session.id, session.query, Boolean(options.replaceUrl));
+      setRouteForSession(session, Boolean(options.replaceUrl));
     }
   }, [setRouteForSession]);
 
@@ -465,21 +592,18 @@ export default function SearchPage() {
       interpreted.appliedHints = [...autoScopeHints, ...interpreted.appliedHints];
     }
 
-    if (
-      !trimmed &&
-      !interpreted.filters.entityName.trim() &&
-      !interpreted.filters.sectionKeywords.trim() &&
-      !interpreted.filters.accessionNumber.trim() &&
-      !interpreted.filters.fileNumber.trim()
-    ) {
+    if (!hasResearchSearchCriteria(trimmed, interpreted.filters)) {
       return;
     }
 
     setLoading(true);
     setSearched(true);
     setErrorMsg('');
+    setDegradedNotice('');
+    setCandidateCoverage(null);
     setAlertMessage('');
     setTrendReport('');
+    setTrendAiError('');
     setIsInsightsExpanded(false);
     setSearchInterpretation(interpreted.appliedHints);
 
@@ -509,24 +633,24 @@ export default function SearchPage() {
         mode: effectiveMode,
         filters: effectiveFilters,
       };
-      const canUseInstantElasticResponse = canUseInstantElasticsearchSearch(
+      const canUseInstantEnrichedResponse = canUseInstantEnrichedSearch(
         resolvedSearch.query,
         resolvedSearch.filters,
         resolvedSearch.mode,
-        RESEARCH_SEARCH_USES_ELASTICSEARCH
+        RESEARCH_SEARCH_USES_ENRICHED_RESULTS
       );
       const fullHydrateSignals = shouldHydrateSearchSignals(effectiveMode, effectiveFilters);
-      const initialLimit = canUseInstantElasticResponse
+      const initialLimit = canUseInstantEnrichedResponse
         ? RESEARCH_RESULT_LIMIT
         : effectiveMode === 'boolean'
           ? INITIAL_BOOLEAN_RESULT_LIMIT
           : INITIAL_RESEARCH_RESULT_LIMIT;
       const shouldRunVisibleAuditorRefinement =
-        !canUseInstantElasticResponse &&
+        !canUseInstantEnrichedResponse &&
         effectiveMode === 'semantic' &&
         Boolean(effectiveFilters.accountant.trim());
       const shouldRunDeepRefinement =
-        !canUseInstantElasticResponse &&
+        !canUseInstantEnrichedResponse &&
         (
           RESEARCH_RESULT_LIMIT > initialLimit ||
           (effectiveMode === 'semantic' && fullHydrateSignals && !shouldRunVisibleAuditorRefinement)
@@ -543,9 +667,13 @@ export default function SearchPage() {
         mode: resolvedSearch.mode,
         defaultForms: DEFAULT_FORM_SCOPE,
         limit: initialLimit,
-        useElasticsearch: RESEARCH_SEARCH_USES_ELASTICSEARCH,
+        useEnrichedSearch: RESEARCH_SEARCH_USES_ENRICHED_RESULTS,
         hydrateTextSignals: false,
-        deferTextValidation: shouldRunBackgroundRefinement,
+        // Boolean/proximity results are never displayed before the expression
+        // has been checked against the actual filing text.
+        deferTextValidation: shouldRunBackgroundRefinement && resolvedSearch.mode !== 'boolean',
+        onDegraded: setDegradedNotice,
+        onCoverage: captureCandidateCoverage,
       });
 
       setResults(initialMatches);
@@ -599,10 +727,12 @@ export default function SearchPage() {
               mode: resolvedSearch.mode,
               defaultForms: DEFAULT_FORM_SCOPE,
               limit: initialLimit,
-              useElasticsearch: RESEARCH_SEARCH_USES_ELASTICSEARCH,
+              useEnrichedSearch: RESEARCH_SEARCH_USES_ENRICHED_RESULTS,
               hydrateTextSignals: true,
               deferTextValidation: false,
               preferFastCandidateCollection: true,
+              onDegraded: setDegradedNotice,
+              onCoverage: captureCandidateCoverage,
             });
 
             if (pendingRefinementKeysRef.current.get(targetSessionId) !== refinementKey) {
@@ -648,9 +778,11 @@ export default function SearchPage() {
             mode: resolvedSearch.mode,
             defaultForms: DEFAULT_FORM_SCOPE,
             limit: RESEARCH_RESULT_LIMIT,
-            useElasticsearch: RESEARCH_SEARCH_USES_ELASTICSEARCH,
+            useEnrichedSearch: RESEARCH_SEARCH_USES_ENRICHED_RESULTS,
             hydrateTextSignals: fullHydrateSignals,
             deferTextValidation: false,
+            onDegraded: setDegradedNotice,
+            onCoverage: captureCandidateCoverage,
             onProgress: (progressResults) => {
               const now = Date.now();
               if (now - lastProgressUpdate < 800) return;
@@ -780,6 +912,7 @@ export default function SearchPage() {
     filters,
     query,
     searchMode,
+    captureCandidateCoverage,
     collapseResearchControls,
     syncActiveSearchContext,
     upsertSession,
@@ -808,6 +941,7 @@ export default function SearchPage() {
       filters: cloneSearchFilters(activeSession.resolvedSearch.filters),
     });
     setTrendReport('');
+    setTrendAiError('');
     setIsInsightsExpanded(false);
     setAlertMessage('');
     syncActiveSearchContext(activeSession);
@@ -818,16 +952,29 @@ export default function SearchPage() {
   }, [activeSession?.id]);
 
   useEffect(() => {
-    if (activeSession || bootstrappedInitialSearch.current || !initialQuery) {
+    // A URL without a tab is an external search intent (dashboard alert,
+    // Accounting Hub, copied URL). It takes precedence over restored sessions.
+    if (!initialRouteSearch || !shouldHandleExternalResearchRoute(
+      activeTabId,
+      initialRouteSearch,
+      routeParamString,
+      handledExternalRouteRef.current
+    )) {
       return;
     }
 
-    bootstrappedInitialSearch.current = true;
-    setQuery(initialQuery);
-    void handleSearchRef.current?.(initialQuery, {
-      ...defaultSearchFilters,
-    }, 'semantic', { replaceUrl: true });
-  }, [activeSession, initialQuery]);
+    handledExternalRouteRef.current = routeParamString;
+    const sessionId = createResearchSessionId();
+    setQuery(initialRouteSearch.query);
+    setSearchMode(initialRouteSearch.mode);
+    setFilters(cloneSearchFilters(initialRouteSearch.filters));
+    void handleSearchRef.current?.(
+      initialRouteSearch.query,
+      initialRouteSearch.filters,
+      initialRouteSearch.mode,
+      { preferredSessionId: sessionId, replaceUrl: true }
+    );
+  }, [activeTabId, initialRouteSearch, routeParamString]);
 
 
   useEffect(() => {
@@ -926,7 +1073,7 @@ export default function SearchPage() {
         (activeTabId === sessionId ? next[0] : next.find(item => item.id === activeTabId)) ||
         next[0] ||
         null;
-      setRouteForSession(nextActive?.id || null, nextActive?.query || '');
+      setRouteForSession(nextActive);
       if (!nextActive) {
         setResults([]);
         setSearched(false);
@@ -951,42 +1098,51 @@ export default function SearchPage() {
 
 
   const openFiling = useCallback((row: FilingResearchResult) => {
-    navigate.push(`/filing/${row.cik}_${row.accessionNumber}_${row.primaryDocument}`);
-  }, [navigate]);
+    const params = new URLSearchParams();
+    params.set('company', row.companyName || row.entityName);
+    params.set('date', row.fileDate);
+    params.set('form', row.formType);
+    if (row.fileNumber) params.set('file', row.fileNumber);
+    if (row.auditor) params.set('auditor', row.auditor);
+    if (activeResolvedSearch.query) params.set('highlight', activeResolvedSearch.query);
+    params.set('highlightMode', activeResolvedSearch.mode);
+    if (activeResolvedSearch.filters.sectionKeywords) {
+      params.set('highlightSection', activeResolvedSearch.filters.sectionKeywords);
+    }
+    if (activeSession?.id) params.set('session', activeSession.id);
+    const returnParams = activeSession
+      ? buildResearchRouteParams(activeSession.query, activeSession.mode, activeSession.filters, activeSession.id)
+      : new URLSearchParams();
+    params.set('returnTo', `/search${returnParams.size ? `?${returnParams.toString()}` : ''}`);
+    navigate.push(`/filing/${row.cik}_${row.accessionNumber}_${row.primaryDocument}?${params.toString()}`);
+  }, [activeResolvedSearch, activeSession, navigate]);
 
   async function handleTrendReport() {
     if (displayResults.length === 0) return;
 
     setTrendLoading(true);
+    setTrendAiError('');
     setIsInsightsExpanded(false);
     try {
       const statsSummary = await buildSearchTrendSummary(displayResults.slice(0, 20), query, filters);
-      const aiResponse = await aiSummarize(
-        `You are an SEC accounting research analyst. Create a concise market trend report from this filing search dataset.\n\n${statsSummary}\n\nTop results:\n${displayResults
+      const prompt = `You are an SEC accounting research analyst. Create a concise market trend report from this filing search dataset.\n\n${statsSummary}\n\nTop results:\n${displayResults
           .slice(0, 12)
           .map(result => `- ${result.fileDate} | ${result.entityName} | ${result.formType} | ${result.matchSnippet || result.description || 'No description'} | Auditor: ${result.auditor || 'Unknown'} | SIC: ${result.sicDescription || result.sic || 'Unknown'}`)
-          .join('\n')}\n\nProvide a short report with: overall trend, what peers appear to be doing, and what to investigate next.`
-      );
-
-      if (
-        !aiResponse ||
-        aiResponse.toLowerCase().includes('api key missing') ||
-        aiResponse.toLowerCase().includes('summary unavailable')
-      ) {
-        setTrendReport(statsSummary);
-      } else {
-        setTrendReport(aiResponse);
-      }
+          .join('\n')}\n\nProvide a short report with: overall trend, what peers appear to be doing, and what to investigate next.`;
+      const generated = await generateSearchTrendReport(prompt, statsSummary);
+      setTrendReport(generated.report);
+      setTrendAiError(generated.aiError);
     } catch (error) {
       console.error('Trend report error:', error);
       setTrendReport(await buildSearchTrendSummary(displayResults.slice(0, 20), query, filters));
+      setTrendAiError(SEARCH_TREND_AI_FALLBACK);
     } finally {
       setTrendLoading(false);
     }
   }
 
   function handleCreateAlert() {
-    if (!query.trim() && !filters.entityName.trim()) return;
+    if (!hasResearchSearchCriteria(query, filters)) return;
 
     addSavedAlert({
       name: buildAlertName(query, filters),
@@ -998,7 +1154,7 @@ export default function SearchPage() {
       latestNewAccessions: [],
       latestResultCount: displayResults.length,
     });
-    setAlertMessage('Alert saved locally. It will show up in the dashboard alert center and can be checked for new filings.');
+    setAlertMessage('Saved locally in this browser. Rerun it manually from the Dashboard; it does not send scheduled background notifications.');
   }
 
   const selectedDocumentUrl = selectedResult
@@ -1064,16 +1220,20 @@ export default function SearchPage() {
             </button>
           </div>
 
-          <div className="research-mode-switch">
+          <div className="research-mode-switch" role="group" aria-label="Search mode">
             <button
+              type="button"
               className={`toggle-btn ${searchMode === 'semantic' ? 'active' : ''}`}
               onClick={() => setSearchMode('semantic')}
+              aria-pressed={searchMode === 'semantic'}
             >
               <Sparkles size={16} /> Filing Research
             </button>
             <button
+              type="button"
               className={`toggle-btn ${searchMode === 'boolean' ? 'active' : ''}`}
               onClick={() => setSearchMode('boolean')}
+              aria-pressed={searchMode === 'boolean'}
             >
               <Hash size={16} /> Boolean / Proximity
             </button>
@@ -1107,6 +1267,7 @@ export default function SearchPage() {
             {SAMPLE_SEARCHES.map(sample => (
               <button
                 key={sample}
+                type="button"
                 className="sample-pill"
                 onClick={() => {
                   setQuery(sample);
@@ -1149,30 +1310,14 @@ export default function SearchPage() {
       <section className="research-main">
         {isQueryPanelCollapsed ? (
           <div className="research-query-collapsed glass-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', gap: '16px' }}>
-            <div className="research-tab-strip" style={{ flex: 1, paddingBottom: 0, margin: 0, overflowY: 'hidden' }}>
-              {sessions.length === 0 ? (
-                <div className="research-empty-tab">Searches open here.</div>
-              ) : (
-                sessions.map(session => (
-                  <button
-                    key={session.id}
-                    className={`research-tab ${activeSession?.id === session.id ? 'active' : ''}`}
-                    onClick={() => setRouteForSession(session.id, session.query)}
-                  >
-                    <span>{session.title}</span>
-                    <span className="count">{session.results.length}</span>
-                    <span
-                      className="close"
-                      onClick={event => {
-                        event.stopPropagation();
-                        closeSession(session.id);
-                      }}
-                    >
-                      <X size={12} />
-                    </span>
-                  </button>
-                ))
-              )}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <ResearchSessionTabs
+                sessions={sessions}
+                activeSessionId={activeSession?.id}
+                emptyMessage="Searches open here."
+                onSelect={setRouteForSession}
+                onClose={closeSession}
+              />
             </div>
             <div className="research-query-collapsed-actions" style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
               <span className="research-context-chip research-context-chip--accent">
@@ -1241,34 +1386,16 @@ export default function SearchPage() {
             </div>
 
             <div className="research-toolbar glass-card">
-              <div className="research-tab-strip">
-                {sessions.length === 0 ? (
-                  <div className="research-empty-tab">Searches open here as tabs so you can move between result sets without losing context.</div>
-                ) : (
-                  sessions.map(session => (
-                    <button
-                      key={session.id}
-                      className={`research-tab ${activeSession?.id === session.id ? 'active' : ''}`}
-                      onClick={() => setRouteForSession(session.id, session.query)}
-                    >
-                      <span>{session.title}</span>
-                      <span className="count">{session.results.length}</span>
-                      <span
-                        className="close"
-                        onClick={event => {
-                          event.stopPropagation();
-                          closeSession(session.id);
-                        }}
-                      >
-                        <X size={12} />
-                      </span>
-                    </button>
-                  ))
-                )}
-              </div>
+              <ResearchSessionTabs
+                sessions={sessions}
+                activeSessionId={activeSession?.id}
+                emptyMessage="Searches open here as tabs so you can move between result sets without losing context."
+                onSelect={setRouteForSession}
+                onClose={closeSession}
+              />
 
               <div className="research-toolbar-actions">
-                <button className="secondary-btn" onClick={handleCreateAlert} disabled={!query.trim() && !filters.entityName.trim()}>
+                <button className="secondary-btn" onClick={handleCreateAlert} disabled={!hasResearchSearchCriteria(query, filters)}>
                   <BellRing size={16} /> Save Alert
                 </button>
               </div>
@@ -1330,6 +1457,7 @@ export default function SearchPage() {
                 {trendReport && isInsightsExpanded && (
                   <div className="glass-card research-insight-panel">
                     <div className="trend-title"><Sparkles size={18} /> Trend report</div>
+                    {trendAiError && <p role="status" className="research-refining-banner">{trendAiError}</p>}
                     <div className="md-content research-insight-copy">
                       {trendReport.split('\n').map((line, index) => <p key={index}>{line}</p>)}
                     </div>
@@ -1340,7 +1468,12 @@ export default function SearchPage() {
           </>
         )}
 
-        <div className="research-workspace">
+        <div
+          className="research-workspace"
+          role={activeSession ? 'tabpanel' : undefined}
+          id={activeSession ? `research-panel-${activeSession.id}` : undefined}
+          aria-labelledby={activeSession ? researchTabId(activeSession.id) : undefined}
+        >
           <div className="research-hit-list glass-card">
             <div className="pane-header">
               <div>
@@ -1350,12 +1483,13 @@ export default function SearchPage() {
               {displayResults.length > 1 && (
                 <div style={{ display: 'flex', gap: '6px' }}>
                   {([['relevance', 'Relevance'], ['newest', 'Newest']] as const).map(([value, label]) => (
-                    <button key={value} type="button" onClick={() => setResultSort(value)}
+                    <button key={value} type="button" onClick={() => setResultSort(value)} aria-pressed={resultSort === value}
                       style={{
                         padding: '4px 10px', borderRadius: '6px', fontSize: '0.72rem', cursor: 'pointer',
                         border: '1px solid ' + (resultSort === value ? 'rgba(214,108,174,0.6)' : 'var(--input-border)'),
                         background: resultSort === value ? 'rgba(179,31,126,0.25)' : 'var(--surface-panel)',
                         color: resultSort === value ? 'var(--accent-soft)' : 'var(--text-secondary)',
+
                       }}>
                       {label}
                     </button>
@@ -1364,6 +1498,23 @@ export default function SearchPage() {
               )}
               <div className="pane-hint">Select a filing to preview it here, then open the full workspace only when you need the full toolset.</div>
             </div>
+
+            {!loading && degradedNotice && (
+              <div role="status" className="research-refining-banner" style={{ justifyContent: 'space-between' }}>
+                <span>{degradedNotice} Filing-text validation and Boolean semantics remain enforced.</span>
+                <button type="button" onClick={() => setDegradedNotice('')} aria-label="Dismiss EDGAR fallback status" style={{ background: 'none', border: 0, color: 'inherit', cursor: 'pointer' }}>×</button>
+              </div>
+            )}
+            {!loading && (candidateCoverage || pagedDisplayResults.length > 0) && (
+              <div role="status" style={{ padding: '7px 12px', color: 'var(--text-muted)', fontSize: '0.7rem', borderBottom: '1px solid var(--input-border)' }}>
+                {candidateCoverage
+                  ? `Candidate coverage: examined ${candidateCoverage.examined.toLocaleString()} of ${candidateCoverage.upstreamTotal.toLocaleString()} upstream candidates (${candidateCoverage.complete ? 'complete' : 'partial candidate window'}). `
+                  : ''}
+                {pagedDisplayResults.length > 0
+                  ? `SIC metadata is available for ${pagedDisplayResults.filter(result => Boolean(result.sic.trim())).length}/${pagedDisplayResults.length} results on this page; official EDGAR submissions supply missing candidate metadata where available.`
+                  : ''}
+              </div>
+            )}
 
             {loading ? (
               <div className="research-empty-state">
@@ -1386,7 +1537,7 @@ export default function SearchPage() {
                   </div>
                 )}
                 <div className="research-hit-scroll">
-                  {sortedDisplayResults.map(result => (
+                  {pagedDisplayResults.map(result => (
                     <button
                       key={result.id}
                       className={`research-hit-card ${selectedResult?.id === result.id ? 'active' : ''}`}
@@ -1410,10 +1561,36 @@ export default function SearchPage() {
                     </button>
                   ))}
                 </div>
+                {resultPageCount > 1 && (
+                  <nav
+                    aria-label="Search result pages"
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', padding: '10px 12px 4px' }}
+                  >
+                    <button
+                      type="button"
+                      className="secondary-btn"
+                      onClick={() => setResultPage(page => Math.max(1, page - 1))}
+                      disabled={resultPage === 1}
+                    >
+                      <ChevronLeft size={14} /> Previous
+                    </button>
+                    <span aria-live="polite" style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>
+                      {`${(resultPage - 1) * RESEARCH_RESULTS_PAGE_SIZE + 1}–${Math.min(resultPage * RESEARCH_RESULTS_PAGE_SIZE, sortedDisplayResults.length)} of ${sortedDisplayResults.length}`}
+                    </span>
+                    <button
+                      type="button"
+                      className="secondary-btn"
+                      onClick={() => setResultPage(page => Math.min(resultPageCount, page + 1))}
+                      disabled={resultPage === resultPageCount}
+                    >
+                      Next <ChevronRight size={14} />
+                    </button>
+                  </nav>
+                )}
               </>
             ) : searched ? (
               <div className="research-empty-state">
-                <div>{errorMsg || 'No filings matched your search.'}</div>
+                <div>{buildResearchEmptyResultMessage(errorMsg, degradedNotice, candidateCoverage)}</div>
               </div>
             ) : (
               <div className="research-empty-state">
@@ -1478,6 +1655,8 @@ export default function SearchPage() {
                       src={selectedProxyUrl}
                       title={`${selectedResult.entityName} filing preview`}
                       className="research-preview-frame"
+                      sandbox="allow-same-origin"
+                      referrerPolicy="no-referrer"
                       onLoad={handlePreviewLoad}
                       onError={() => setPreviewError(true)}
                     />

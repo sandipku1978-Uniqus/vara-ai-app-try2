@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Building2, Loader2, X } from 'lucide-react';
 import { loadSicDirectory, type SicDirectoryEntry } from '../../services/referenceData';
 
 interface SicLookupFieldProps {
+  id?: string;
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
@@ -60,6 +61,7 @@ function scoreOption(option: SicDirectoryEntry, query: string): number {
 }
 
 export default function SicLookupField({
+  id,
   value,
   onChange,
   placeholder = 'Search SIC code or industry...',
@@ -67,7 +69,10 @@ export default function SicLookupField({
   const [options, setOptions] = useState<SicDirectoryEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
   const rootRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const listboxId = useId();
 
   useEffect(() => {
     let cancelled = false;
@@ -108,26 +113,56 @@ export default function SicLookupField({
       .map(item => item.option);
   }, [options, value]);
 
+  function chooseOption(option: SicDirectoryEntry) {
+    onChange(`${option.code} - ${option.title}`);
+    setOpen(false);
+    setActiveIndex(-1);
+    inputRef.current?.focus();
+  }
+
   return (
     <div ref={rootRef} style={{ position: 'relative' }}>
       <div style={shellStyle}>
         {loading ? <Loader2 size={14} className="spinner" /> : <Building2 size={14} style={{ color: 'var(--text-muted)' }} />}
         <input
+          id={id}
+          ref={inputRef}
           value={value}
           onChange={event => {
             onChange(event.target.value);
             setOpen(true);
+            setActiveIndex(0);
           }}
-          onFocus={() => setOpen(true)}
+          onFocus={() => { setOpen(true); setActiveIndex(matches.length > 0 ? 0 : -1); }}
+          onKeyDown={event => {
+            if (event.key === 'ArrowDown' && matches.length > 0) {
+              event.preventDefault(); setOpen(true); setActiveIndex(index => Math.min(index + 1, matches.length - 1));
+            } else if (event.key === 'ArrowUp' && matches.length > 0) {
+              event.preventDefault(); setOpen(true); setActiveIndex(index => Math.max(index - 1, 0));
+            } else if (event.key === 'Enter' && open && activeIndex >= 0) {
+              event.preventDefault(); chooseOption(matches[activeIndex]);
+            } else if (event.key === 'Escape') {
+              setOpen(false); setActiveIndex(-1);
+            }
+          }}
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded={open}
+          aria-controls={listboxId}
+          aria-activedescendant={open && activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined}
+          aria-label="Industry or SIC code"
           placeholder={placeholder}
           style={inputStyle}
         />
         {value && (
           <button
             type="button"
+            aria-label="Clear industry or SIC code"
             onClick={() => {
               onChange('');
               setOpen(false);
+              setActiveIndex(-1);
+              inputRef.current?.focus();
             }}
             style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'var(--text-muted)' }}
           >
@@ -138,6 +173,9 @@ export default function SicLookupField({
 
       {open && (
         <div
+          id={listboxId}
+          role="listbox"
+          aria-label="SIC code matches"
           style={{
             position: 'absolute',
             top: 'calc(100% + 6px)',
@@ -153,18 +191,20 @@ export default function SicLookupField({
           }}
         >
           {matches.length > 0 ? (
-            matches.map(option => (
+            matches.map((option, index) => (
               <button
                 key={option.code}
+                id={`${listboxId}-option-${index}`}
                 type="button"
-                onClick={() => {
-                  onChange(`${option.code} - ${option.title}`);
-                  setOpen(false);
-                }}
+                role="option"
+                aria-selected={index === activeIndex}
+                tabIndex={-1}
+                onMouseMove={() => setActiveIndex(index)}
+                onClick={() => chooseOption(option)}
                 style={{
                   width: '100%',
                   padding: '10px 12px',
-                  background: 'transparent',
+                  background: index === activeIndex ? 'var(--interactive-hover)' : 'transparent',
                   border: 'none',
                   borderBottom: '1px solid var(--border-color)',
                   cursor: 'pointer',

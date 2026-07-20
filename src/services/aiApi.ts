@@ -21,13 +21,13 @@ import {
   REDLINE_SUMMARY_PROMPT,
   CONVERSATION_SUMMARY_PROMPT,
 } from '../lib/systemPrompts';
+import { selectFilingText } from '../utils/filingTextSelection';
 
 const CLAUDE_API_ENDPOINT = '/api/claude';
 const CLAUDE_STREAM_ENDPOINT = '/api/stream';
 
 interface ClaudeRequestOptions {
   maxTokens?: number;
-  temperature?: number;
   messages?: Array<{ role: 'user' | 'assistant'; content: string }>;
   frameworks?: string[];
 }
@@ -47,7 +47,6 @@ async function callClaude(prompt: string, options: ClaudeRequestOptions = {}): P
       prompt,
       messages: options.messages,
       maxTokens: options.maxTokens,
-      temperature: options.temperature,
       frameworks: options.frameworks,
     }),
   });
@@ -81,7 +80,6 @@ export async function callClaudeStreaming(
       prompt,
       messages: options.messages,
       maxTokens: options.maxTokens,
-      temperature: options.temperature,
       frameworks: options.frameworks,
     }),
   });
@@ -144,24 +142,29 @@ function getUserFacingError(error: unknown, fallback: string): string {
   return fallback;
 }
 
-export async function askAi(question: string, context?: string): Promise<string> {
+export async function askAi(
+  question: string,
+  context?: string,
+  options: { throwOnError?: boolean } = {}
+): Promise<string> {
   try {
     const prompt = buildAskAiPrompt(question, context);
-    return await callClaude(prompt, { maxTokens: 2400, temperature: 0.3 });
+    return await callClaude(prompt, { maxTokens: 2400 });
   } catch (error) {
     console.error('Claude API Error:', error);
+    if (options.throwOnError) throw error;
     return getUserFacingError(error, 'I encountered an error while trying to process your request with Claude.');
   }
 }
 
-export async function aiSummarize(text: string): Promise<string> {
+export async function aiSummarize(text: string, options: { throwOnError?: boolean } = {}): Promise<string> {
   try {
     return await callClaude(`You are an SEC compliance expert for ${BRAND.productName}. ${text}`, {
       maxTokens: 2400,
-      temperature: 0.2,
     });
   } catch (error) {
     console.error('Claude Summarize Error:', error);
+    if (options.throwOnError) throw error;
     return getUserFacingError(error, 'Summary unavailable due to an error.');
   }
 }
@@ -169,26 +172,60 @@ export async function aiSummarize(text: string): Promise<string> {
 // Re-export for any existing imports
 export { REDLINE_SUMMARY_PROMPT } from '../lib/systemPrompts';
 
-export async function aiSummarizeRedline(diffSummaryText: string): Promise<string> {
+interface RedlineClaim {
+  claim: string;
+  significance: string;
+  evidence: string[];
+}
+
+function normalizeRedlineEvidence(value: string): string {
+  return value
+    .replace(/\[\+|\+\]|\[-|-\]/g, '')
+    .replace(/[“”"']/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
+}
+
+export async function aiSummarizeRedline(
+  diffSummaryText: string,
+  options: { throwOnError?: boolean } = {}
+): Promise<string> {
   try {
-    return await callClaude(
+    const response = await callClaude(
       `${REDLINE_SUMMARY_PROMPT}\n\nDIFF SUMMARY:\n${diffSummaryText}`,
-      { maxTokens: 2000, temperature: 0.1 }
+      { maxTokens: 2000 }
     );
+    const claims = parseJsonResponse<RedlineClaim[]>(response);
+    const normalizedDiff = normalizeRedlineEvidence(diffSummaryText);
+    const verified = Array.isArray(claims)
+      ? claims.filter(item => {
+          if (!item?.claim?.trim() || !Array.isArray(item.evidence) || item.evidence.length === 0) return false;
+          return item.evidence.every(value => {
+            const evidence = normalizeRedlineEvidence(value);
+            return evidence.length >= 8 && normalizedDiff.includes(evidence);
+          });
+        }).slice(0, 8)
+      : [];
+
+    if (verified.length === 0) {
+      return 'No material-change claim passed evidence validation. Review the deterministic added, removed, and changed blocks below.';
+    }
+
+    return verified.map(item => [
+      `- ${item.claim.trim()}${item.significance?.trim() ? ` — ${item.significance.trim()}` : ''}`,
+      `  Evidence: ${item.evidence.map(value => `“${value.trim()}”`).join('; ')}`,
+    ].join('\n')).join('\n');
   } catch (error) {
     console.error('Claude Redline Summarize Error:', error);
+    if (options.throwOnError) throw error;
     return getUserFacingError(error, 'Redline summary unavailable due to an error.');
   }
 }
 
 export async function aiAnalyzeS1(filingText: string, section: string): Promise<string> {
-  try {
-    const prompt = buildS1AnalysisPrompt(filingText, section);
-    return await callClaude(prompt, { maxTokens: 2200, temperature: 0.2 });
-  } catch (error) {
-    console.error('Claude S-1 Analysis Error:', error);
-    return getUserFacingError(error, 'S-1 analysis encountered an error. Please try again.');
-  }
+  const prompt = buildS1AnalysisPrompt(filingText, section);
+  return callClaude(prompt, { maxTokens: 2200 });
 }
 
 // ===========================
@@ -198,11 +235,11 @@ export async function aiAnalyzeS1(filingText: string, section: string): Promise<
 export interface BoardDataResult {
   directors: Array<{ name: string; role: string; independent: boolean; committees: string[] }>;
   compensation: Array<{ name: string; title: string; salary: string; stockAwards: string; total: string }>;
-  boardSize: number;
-  independencePercent: number;
-  diversity: { malePercent: number; femalePercent: number };
-  ceoPayRatio: string;
-  sayOnPayApproval: string;
+  boardSize: number | null;
+  independencePercent: number | null;
+  diversity: { malePercent: number | null; femalePercent: number | null };
+  ceoPayRatio: string | null;
+  sayOnPayApproval: string | null;
 }
 
 export interface DealDetailsResult {
@@ -211,10 +248,6 @@ export interface DealDetailsResult {
   value: string;
   dealType: string;
   sector: string;
-}
-
-function truncateText(text: string, max = 55000): string {
-  return text.length > max ? text.substring(0, max) + '\n\n[... Document truncated ...]' : text;
 }
 
 function parseJsonResponse<T>(text: string): T | null {
@@ -270,7 +303,7 @@ export async function planAgentRun(prompt: string, context: AgentContextSnapshot
 
   try {
     const planningPrompt = buildAgentPlannerPrompt(context as unknown as Record<string, unknown>, prompt);
-    const text = await callClaude(planningPrompt, { maxTokens: 2400, temperature: 0 });
+    const text = await callClaude(planningPrompt, { maxTokens: 2400 });
     return sanitizeAgentPlan(parseJsonResponse<AgentPlan>(text), prompt, context);
   } catch (error) {
     console.error('Claude planner error:', error);
@@ -334,7 +367,7 @@ export async function generateAgentAnswer(
     // Finally append the current generated system augmented prompt as the final user message
     builtMessages.push({ role: 'user', content: prompt });
 
-    const text = await callClaude(prompt, { maxTokens: 4096, temperature: 0.2, messages: builtMessages });
+    const text = await callClaude(prompt, { maxTokens: 4096, messages: builtMessages });
     return text || fallbackEvidenceAnswer(evidence);
   } catch (error) {
     console.error('Claude agent answer error:', error);
@@ -398,7 +431,6 @@ export async function generateAgentAnswerStreaming(
 
     const text = await callClaudeStreaming(prompt, {
       maxTokens: 4096,
-      temperature: 0.2,
       messages: builtMessages,
       onChunk,
     });
@@ -425,7 +457,7 @@ export async function summarizeConversation(
 
     return await callClaude(
       `${CONVERSATION_SUMMARY_PROMPT}\n\nCONVERSATION:\n${conversationText}`,
-      { maxTokens: 500, temperature: 0 }
+      { maxTokens: 500 }
     );
   } catch (error) {
     console.error('Claude conversation summary error:', error);
@@ -459,7 +491,7 @@ export async function generateFilingSummary(
       mode
     );
 
-    const text = await callClaude(prompt, { maxTokens: 4096, temperature: 0.2 });
+    const text = await callClaude(prompt, { maxTokens: 4096 });
     return text || fallbackFilingSummary(locator, sections, mode);
   } catch (error) {
     console.error('Claude filing summary error:', error);
@@ -472,8 +504,12 @@ export async function generateFilingSummary(
  */
 export async function aiExtractBoardData(proxyText: string): Promise<BoardDataResult | null> {
   try {
-    const prompt = buildBoardExtractionPrompt(truncateText(proxyText));
-    const text = await callClaude(prompt, { maxTokens: 2400, temperature: 0 });
+    const evidence = selectFilingText(proxyText, [
+      'director', 'board of directors', 'independent', 'committee', 'compensation',
+      'pay ratio', 'diversity', 'say-on-pay', 'say on pay',
+    ]);
+    const prompt = buildBoardExtractionPrompt(evidence.text);
+    const text = await callClaude(prompt, { maxTokens: 2400 });
     return parseJsonResponse<BoardDataResult>(text);
   } catch (error) {
     console.error('Claude Board Data Extraction Error:', error);
@@ -487,11 +523,28 @@ export async function aiExtractBoardData(proxyText: string): Promise<BoardDataRe
 export async function aiRateESGDisclosure(
   filingText: string,
   topics: string[]
-): Promise<Record<string, 'high' | 'medium' | 'low'> | null> {
+): Promise<Record<string, 'high' | 'medium' | 'low' | 'unrated'> | null> {
   try {
-    const prompt = buildESGRatingPrompt(truncateText(filingText), topics);
-    const text = await callClaude(prompt, { maxTokens: 1200, temperature: 0 });
-    return parseJsonResponse<Record<string, 'high' | 'medium' | 'low'>>(text);
+    const evidence = selectFilingText(filingText, [
+      ...topics,
+      'environment', 'climate', 'emission', 'energy', 'privacy', 'security',
+      'diversity', 'inclusion', 'human capital', 'labor', 'supply chain',
+    ]);
+    const prompt = buildESGRatingPrompt(evidence.text, topics);
+    const text = await callClaude(prompt, { maxTokens: 1200 });
+    const parsed = parseJsonResponse<Record<string, unknown>>(text);
+    if (!parsed) return null;
+    const allowedRatings = new Set(['high', 'medium', 'low']);
+    return Object.fromEntries(
+      topics.map(topic => {
+        const rating = parsed[topic];
+        const normalized: 'high' | 'medium' | 'low' | 'unrated' =
+          typeof rating === 'string' && allowedRatings.has(rating)
+            ? rating as 'high' | 'medium' | 'low'
+            : 'unrated';
+        return [topic, normalized] as const;
+      }),
+    );
   } catch (error) {
     console.error('Claude ESG Rating Error:', error);
     return null;
@@ -501,15 +554,16 @@ export async function aiRateESGDisclosure(
 /**
  * Extract M&A deal details from an 8-K or SC 13D filing.
  */
-export async function aiExtractDealDetails(filingText: string): Promise<DealDetailsResult | null> {
-  try {
-    const prompt = buildDealExtractionPrompt(truncateText(filingText));
-    const text = await callClaude(prompt, { maxTokens: 1200, temperature: 0 });
-    return parseJsonResponse<DealDetailsResult>(text);
-  } catch (error) {
-    console.error('Claude Deal Extraction Error:', error);
-    return null;
-  }
+export async function aiExtractDealDetails(filingText: string): Promise<DealDetailsResult> {
+  const evidence = selectFilingText(filingText, [
+    'merger agreement', 'purchase agreement', 'transaction', 'consideration',
+    'acquirer', 'target', 'tender offer', 'effective time',
+  ]);
+  const prompt = buildDealExtractionPrompt(evidence.text);
+  const text = await callClaude(prompt, { maxTokens: 1200 });
+  const parsed = parseJsonResponse<DealDetailsResult>(text);
+  if (!parsed) throw new Error('The AI response did not contain valid deal details.');
+  return parsed;
 }
 
 /**
@@ -518,23 +572,19 @@ export async function aiExtractDealDetails(filingText: string): Promise<DealDeta
 export async function aiExtractClauses(
   agreementText: string,
   clauseTypes: string[]
-): Promise<Record<string, { text: string; section: string }> | null> {
-  try {
-    const prompt = buildClauseExtractionPrompt(truncateText(agreementText), clauseTypes);
-    const text = await callClaude(prompt, { maxTokens: 1800, temperature: 0 });
-    return parseJsonResponse<Record<string, { text: string; section: string }>>(text);
-  } catch (error) {
-    console.error('Claude Clause Extraction Error:', error);
-    return null;
-  }
+): Promise<Record<string, { text: string; section: string }>> {
+  const evidence = selectFilingText(agreementText, [
+    ...clauseTypes, 'termination', 'material adverse', 'representations',
+    'covenant', 'conditions', 'indemnification',
+  ]);
+  const prompt = buildClauseExtractionPrompt(evidence.text, clauseTypes);
+  const text = await callClaude(prompt, { maxTokens: 1800 });
+  const parsed = parseJsonResponse<Record<string, { text: string; section: string }>>(text);
+  if (!parsed) throw new Error('The AI response did not contain valid clause details.');
+  return parsed;
 }
 
 export async function aiAscLookup(query: string): Promise<string> {
-  try {
-    const prompt = buildAscLookupPrompt(query);
-    return await callClaude(prompt, { maxTokens: 2400, temperature: 0.2 });
-  } catch (error) {
-    console.error('Claude ASC Error:', error);
-    return getUserFacingError(error, 'Detailed ASC lookup unavailable due to an error.');
-  }
+  const prompt = buildAscLookupPrompt(query);
+  return callClaude(prompt, { maxTokens: 2400 });
 }

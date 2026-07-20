@@ -6,37 +6,89 @@ function escapeHtml(value: string): string {
     .replace(/"/g, '&quot;');
 }
 
-function absolutizeResourceUrls(doc: Document, sourceUrl: string): void {
-  doc.querySelectorAll('[src]').forEach(node => {
-    const current = node.getAttribute('src');
-    if (!current || current.startsWith('data:') || current.startsWith('javascript:')) return;
-    try {
-      node.setAttribute('src', new URL(current, sourceUrl).toString());
-    } catch {
-      // Ignore malformed resource paths.
-    }
-  });
+const SAFE_TAGS = new Set([
+  'a', 'abbr', 'address', 'article', 'b', 'blockquote', 'br', 'caption', 'code',
+  'col', 'colgroup', 'dd', 'div', 'dl', 'dt', 'em', 'figcaption', 'figure',
+  'footer', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'header', 'hr', 'i', 'img',
+  'li', 'main', 'mark', 'ol', 'p', 'pre', 's', 'section', 'small', 'span',
+  'strong', 'sub', 'sup', 'table', 'tbody', 'td', 'tfoot', 'th', 'thead', 'time',
+  'tr', 'u', 'ul',
+]);
+const REMOVE_WITH_CONTENT = new Set([
+  'applet', 'audio', 'base', 'button', 'canvas', 'embed', 'form', 'frame',
+  'frameset', 'iframe', 'input', 'link', 'math', 'meta', 'noscript', 'object',
+  'option', 'script', 'select', 'source', 'style', 'svg', 'template', 'textarea',
+  'track', 'video',
+]);
+const COMMON_ATTRIBUTES = new Set(['dir', 'lang', 'title']);
+const TAG_ATTRIBUTES: Record<string, Set<string>> = {
+  a: new Set(['href']),
+  img: new Set(['alt', 'height', 'src', 'title', 'width']),
+  col: new Set(['span', 'width']),
+  td: new Set(['colspan', 'headers', 'height', 'rowspan', 'width']),
+  th: new Set(['colspan', 'headers', 'height', 'rowspan', 'scope', 'width']),
+  time: new Set(['datetime']),
+};
 
-  doc.querySelectorAll('[href]').forEach(node => {
-    const current = node.getAttribute('href');
-    if (!current || current.startsWith('javascript:')) return;
-    try {
-      node.setAttribute('href', new URL(current, sourceUrl).toString());
-    } catch {
-      // Ignore malformed link paths.
-    }
-  });
+function isSecHost(hostname: string): boolean {
+  return hostname === 'sec.gov' || hostname.endsWith('.sec.gov');
 }
 
-function sanitizeFilingHtml(html: string, sourceUrl: string): string {
+function safeFilingUrl(value: string, sourceUrl: string, image: boolean): string | null {
+  if (image && /^data:image\/(?:png|jpe?g|gif|webp);base64,[a-z0-9+/=\s]+$/i.test(value)) {
+    return value;
+  }
+  try {
+    const url = new URL(value, sourceUrl);
+    if (url.protocol !== 'https:' || !isSecHost(url.hostname)) return null;
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
+export function sanitizeFilingHtml(html: string, sourceUrl: string): string {
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, 'text/html');
 
-  doc.querySelectorAll('script, style, noscript, iframe, form, button').forEach(node => node.remove());
-  absolutizeResourceUrls(doc, sourceUrl);
-  doc.querySelectorAll('[style]').forEach(node => node.removeAttribute('style'));
-  doc.querySelectorAll('[class]').forEach(node => node.removeAttribute('class'));
-  doc.querySelectorAll('[id]').forEach(node => node.removeAttribute('id'));
+  const elements = Array.from(doc.body?.querySelectorAll('*') || []).reverse();
+  for (const element of elements) {
+    const tag = element.tagName.toLowerCase();
+    if (REMOVE_WITH_CONTENT.has(tag)) {
+      element.remove();
+      continue;
+    }
+    if (!SAFE_TAGS.has(tag)) {
+      element.replaceWith(...Array.from(element.childNodes));
+      continue;
+    }
+
+    const tagAttributes = TAG_ATTRIBUTES[tag] || new Set<string>();
+    for (const attribute of Array.from(element.attributes)) {
+      const name = attribute.name.toLowerCase();
+      if (!COMMON_ATTRIBUTES.has(name) && !tagAttributes.has(name)) {
+        element.removeAttribute(attribute.name);
+      }
+    }
+
+    if (tag === 'a') {
+      const current = element.getAttribute('href');
+      const href = current ? safeFilingUrl(current, sourceUrl, false) : null;
+      if (href) {
+        element.setAttribute('href', href);
+        element.setAttribute('target', '_blank');
+        element.setAttribute('rel', 'noopener noreferrer');
+      } else {
+        element.removeAttribute('href');
+      }
+    }
+    if (tag === 'img') {
+      const current = element.getAttribute('src');
+      const src = current ? safeFilingUrl(current, sourceUrl, true) : null;
+      if (src) element.setAttribute('src', src);
+      else element.removeAttribute('src');
+    }
+  }
 
   const bodyHtml = doc.body?.innerHTML?.trim();
   if (bodyHtml) {
@@ -52,6 +104,7 @@ function writeLoadingShell(printWindow: Window, title: string): void {
     <html>
       <head>
         <meta charset="utf-8" />
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data: https://sec.gov https://*.sec.gov; script-src 'none'; object-src 'none'; form-action 'none'; base-uri 'none'" />
         <title>${escapeHtml(title)}</title>
         <style>
           body {
@@ -91,8 +144,22 @@ function writeLoadingShell(printWindow: Window, title: string): void {
 }
 
 export function createPrintWindow(title: string): Window | null {
+  // Opening a same-origin empty document gives us a usable WindowProxy. Passing
+  // `noopener` as a feature commonly returns null even when the browser opens a
+  // tab, so isolate the inert window synchronously before writing any content.
   const printWindow = window.open('', '_blank');
   if (!printWindow) {
+    return null;
+  }
+
+  try {
+    printWindow.opener = null;
+  } catch {
+    printWindow.close();
+    return null;
+  }
+  if (printWindow.opener !== null) {
+    printWindow.close();
     return null;
   }
 
@@ -102,12 +169,14 @@ export function createPrintWindow(title: string): Window | null {
 
 export function renderCleanPrintView(printWindow: Window, title: string, html: string, sourceUrl: string): void {
   const sanitized = sanitizeFilingHtml(html, sourceUrl);
+  const safeSourceUrl = safeFilingUrl(sourceUrl, 'https://www.sec.gov/', false);
   printWindow.document.open();
   printWindow.document.write(`
     <!doctype html>
     <html>
       <head>
         <meta charset="utf-8" />
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data: https://sec.gov https://*.sec.gov; script-src 'none'; object-src 'none'; form-action 'none'; base-uri 'none'" />
         <title>${escapeHtml(title)}</title>
         <style>
           body {
@@ -170,7 +239,7 @@ export function renderCleanPrintView(printWindow: Window, title: string, html: s
         <header>
           <h1>${escapeHtml(title)}</h1>
           <p class="meta">Clean print view for PDF export</p>
-          <p class="meta">Source: <a href="${escapeHtml(sourceUrl)}">${escapeHtml(sourceUrl)}</a></p>
+          <p class="meta">Source: ${safeSourceUrl ? `<a href="${escapeHtml(safeSourceUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(safeSourceUrl)}</a>` : 'SEC source URL unavailable'}</p>
         </header>
         <main>${sanitized}</main>
       </body>

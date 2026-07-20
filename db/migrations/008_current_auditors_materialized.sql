@@ -18,12 +18,16 @@ create unique index if not exists urc_current_auditors_mat_pk
   on urc_current_auditors_mat (issuer_cik);
 
 -- Refresh hook for the auditor loader (service role calls this after upserts)
-create or replace function urc_refresh_current_auditors()
+create or replace function public.urc_refresh_current_auditors()
 returns void language plpgsql security definer
+set search_path = pg_catalog
 set statement_timeout = '300s' as $$
 begin
-  refresh materialized view concurrently urc_current_auditors_mat;
+  refresh materialized view concurrently public.urc_current_auditors_mat;
 end $$;
+
+revoke all on function public.urc_refresh_current_auditors() from public, anon, authenticated;
+grant execute on function public.urc_refresh_current_auditors() to service_role;
 
 -- Point facet search at the materialized lookup (same signature — replace)
 create or replace function urc_search_filings(

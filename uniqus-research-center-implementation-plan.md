@@ -452,9 +452,13 @@ export async function setCachedResult(hash: string, result: any, ttlSeconds = 86
 }
 ```
 
-### 5.3 Pre-Computed "Starter" Results (L4)
+### 5.3 Pre-Computed "Starter" Results (L4) — Retired Proposal
 
-Pre-cache results for the top 200 query patterns via Vercel Cron Job. These cover 60–70% of first-time queries.
+This April proposal was never implemented beyond a placeholder. The Vercel schedule has
+been removed, and `/api/cron/precompute` is now an authenticated, fail-closed tombstone.
+Do not reinstate a background job that can spend model tokens without per-user controls;
+the supported design is request-time, identity-scoped caching after authorization and
+rate/cost enforcement. The patterns below remain historical product-research ideas only.
 
 **Top 20 query patterns to pre-compute first:**
 1. Revenue recognition disclosures by industry (SaaS, manufacturing, retail, financial services)
@@ -478,23 +482,8 @@ Pre-cache results for the top 200 query patterns via Vercel Cron Job. These cove
 19. Critical audit matters (CAMs) in audit reports
 20. Climate / ESG disclosure trends in 10-K risk factors
 
-```typescript
-// app/api/cron/precompute/route.ts (Vercel Cron)
-// vercel.json: { "crons": [{ "path": "/api/cron/precompute", "schedule": "0 9 * * *" }] }
-
-export async function GET() {
-  const queries = await getTopQueryPatterns(); // From analytics or hardcoded list
-  for (const query of queries) {
-    const hash = queryHash(query.text, query.filters);
-    const existing = await getCachedResult(hash);
-    if (!existing) {
-      const result = await executeFullQuery(query); // Calls Claude
-      await setCachedResult(hash, result, 604800); // 7-day TTL
-    }
-  }
-  return Response.json({ precomputed: queries.length });
-}
-```
+The old placeholder code and `vercel.json` cron example were removed because they did
+not represent a working or cost-safe production feature.
 
 ### 5.4 Perceived Performance (UI)
 
@@ -647,7 +636,7 @@ export function diffSummaryForClaude(diffs: Array<{ type: string; text: string }
 3. Check Vercel KV for L2 cache hit (intent hash) → skip Claude intent call if found
 4. On cache miss: call Claude with `SEARCH_INTENT_SYSTEM_PROMPT` to extract structured intent
 5. Cache intent in Vercel KV (L2, 24h TTL)
-6. Execute structured query against filing index (Elasticsearch or custom search)
+6. Execute structured query against SEC EFTS and the enriched filing metadata store
 7. Return filing results + optional AI summary
 8. Cache full result in Vercel KV (L1, 24h TTL)
 

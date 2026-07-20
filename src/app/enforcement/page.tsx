@@ -1,9 +1,10 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import RouteLoading from '../../components/layout/RouteLoading';
 
 const SECEnforcement = dynamic(() => import('../../views/SECEnforcement'), {
-  ssr: false
+  loading: () => <RouteLoading label="Loading SEC litigation releases" />,
 });
 
 export default function Page() {

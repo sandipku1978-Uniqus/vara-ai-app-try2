@@ -392,24 +392,6 @@ async function runScenarioTests() {
     );
   }
 
-  async function textContent(selector) {
-    return evaluate(
-      desktop,
-      `(() => {
-        const el = document.querySelector(${JSON.stringify(selector)});
-        return el ? (el.textContent || '').trim() : '';
-      })()`
-    );
-  }
-
-  async function exists(selector) {
-    return evaluate(sessionForExists(), `Boolean(document.querySelector(${JSON.stringify(selector)}))`);
-  }
-
-  function sessionForExists() {
-    return desktop;
-  }
-
   async function fillInput(selector, value) {
     return evaluate(
       desktop,

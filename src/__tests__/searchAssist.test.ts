@@ -17,6 +17,7 @@ const emptyFilters = {
   accessionNumber: '',
   fileNumber: '',
   fiscalYearEnd: '',
+  accountingFramework: '',
 };
 
 describe('searchAssist', () => {

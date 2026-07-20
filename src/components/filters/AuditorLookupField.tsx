@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { BellRing, ChevronDown, X } from 'lucide-react';
 import { AUDITOR_OPTIONS, canonicalizeAuditorInput } from '../../services/auditors';
 
 interface AuditorLookupFieldProps {
+  id?: string;
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
@@ -40,12 +41,16 @@ function normalize(value: string): string {
 }
 
 export default function AuditorLookupField({
+  id,
   value,
   onChange,
   placeholder = 'Select auditor',
 }: AuditorLookupFieldProps) {
   const [open, setOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
   const rootRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const listboxId = useId();
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -88,6 +93,8 @@ export default function AuditorLookupField({
   const handleSelect = (nextValue: string) => {
     onChange(canonicalizeAuditorInput(nextValue));
     setOpen(false);
+    setActiveIndex(-1);
+    inputRef.current?.focus();
   };
 
   return (
@@ -95,12 +102,32 @@ export default function AuditorLookupField({
       <div style={shellStyle}>
         <BellRing size={14} style={{ color: 'var(--text-muted)' }} />
         <input
+          id={id}
+          ref={inputRef}
           value={value}
           onChange={event => {
             onChange(event.target.value);
             setOpen(true);
+            setActiveIndex(0);
           }}
-          onFocus={() => setOpen(true)}
+          onFocus={() => { setOpen(true); setActiveIndex(matches.length > 0 ? 0 : -1); }}
+          onKeyDown={event => {
+            if (event.key === 'ArrowDown' && matches.length > 0) {
+              event.preventDefault(); setOpen(true); setActiveIndex(index => Math.min(index + 1, matches.length - 1));
+            } else if (event.key === 'ArrowUp' && matches.length > 0) {
+              event.preventDefault(); setOpen(true); setActiveIndex(index => Math.max(index - 1, 0));
+            } else if (event.key === 'Enter' && open && activeIndex >= 0) {
+              event.preventDefault(); handleSelect(matches[activeIndex].label);
+            } else if (event.key === 'Escape') {
+              setOpen(false); setActiveIndex(-1);
+            }
+          }}
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded={open}
+          aria-controls={listboxId}
+          aria-activedescendant={open && activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined}
+          aria-label="Accountant or auditor"
           onBlur={() => {
             if (!open) {
               onChange(canonicalizeAuditorInput(value));
@@ -112,9 +139,12 @@ export default function AuditorLookupField({
         {value ? (
           <button
             type="button"
+            aria-label="Clear accountant or auditor"
             onClick={() => {
               onChange('');
               setOpen(false);
+              setActiveIndex(-1);
+              inputRef.current?.focus();
             }}
             style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'var(--text-muted)' }}
           >
@@ -127,6 +157,9 @@ export default function AuditorLookupField({
 
       {open && (
         <div
+          id={listboxId}
+          role="listbox"
+          aria-label="Auditor matches"
           style={{
             position: 'absolute',
             top: 'calc(100% + 6px)',
@@ -142,16 +175,21 @@ export default function AuditorLookupField({
           }}
         >
           {matches.length > 0 ? (
-            matches.map(option => (
+            matches.map((option, index) => (
               <button
                 key={option.label}
+                id={`${listboxId}-option-${index}`}
                 type="button"
+                role="option"
+                aria-selected={index === activeIndex}
+                tabIndex={-1}
                 onMouseDown={event => event.preventDefault()}
+                onMouseMove={() => setActiveIndex(index)}
                 onClick={() => handleSelect(option.label)}
                 style={{
                   width: '100%',
                   padding: '10px 12px',
-                  background: 'transparent',
+                  background: index === activeIndex ? 'var(--interactive-hover)' : 'transparent',
                   border: 'none',
                   borderBottom: '1px solid var(--border-color)',
                   cursor: 'pointer',
@@ -175,4 +213,3 @@ export default function AuditorLookupField({
     </div>
   );
 }
-

@@ -1,12 +1,15 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { useAuth } from '@clerk/nextjs';
+import { createContext, Fragment, useContext, useEffect, useState, type ReactNode } from 'react';
 import { ChatMessage } from '../types';
 import type { SearchFilters } from '../components/filters/SearchFilterBar';
 import type { FilingResearchResult, ResearchSearchMode } from '../services/filingResearch';
 import { BRAND } from '../config/brand';
+import { buildStorageScope, scopedStorageKey, setActiveBrowserStorageScope } from '../services/storageNamespace';
 import type {
   AgentActionLogEntry,
+  AgentPromptRequest,
   AgentRun,
   FilingSectionReference,
   PendingAlertDraft,
@@ -102,8 +105,11 @@ interface AppContextType {
   removeSavedAlert: (id: string) => void;
 
   agentRuns: AgentRun[];
+  agentPromptQueue: AgentPromptRequest[];
   activeAgentRunId: string | null;
   setActiveAgentRunId: (id: string | null) => void;
+  enqueueAgentPrompt: (prompt: string) => string;
+  removeAgentPromptRequest: (id: string) => void;
   startAgentRun: (prompt: string) => string;
   updateAgentRun: (id: string, updates: Partial<AgentRun>) => void;
   appendAgentLog: (id: string, entry: Omit<AgentActionLogEntry, 'id' | 'timestamp'>) => void;
@@ -130,8 +136,8 @@ const ALERTS_STORAGE_KEY = 'vara.alerts.v1';
 const THEME_STORAGE_KEY = 'urc.theme.v1';
 const SIDEBAR_COLLAPSED_STORAGE_KEY = 'urc.sidebar-collapsed.v1';
 
-function loadStoredJson<T>(key: string, fallback: T): T {
-  if (typeof window === 'undefined') return fallback;
+function loadStoredJson<T>(key: string | null, fallback: T): T {
+  if (typeof window === 'undefined' || !key) return fallback;
   try {
     const raw = window.localStorage.getItem(key);
     return raw ? (JSON.parse(raw) as T) : fallback;
@@ -158,7 +164,14 @@ function loadSidebarCollapsed(): boolean {
 }
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [watchlist, setWatchlist] = useState<string[]>(() => loadStoredJson(WATCHLIST_STORAGE_KEY, ['AAPL', 'MSFT']));
+  const { isLoaded: identityLoaded, userId, orgId } = useAuth();
+  const storageScope = identityLoaded ? buildStorageScope(userId, orgId) : null;
+  setActiveBrowserStorageScope(storageScope);
+
+  const watchlistStorageKey = scopedStorageKey(WATCHLIST_STORAGE_KEY, storageScope);
+  const alertsStorageKey = scopedStorageKey(ALERTS_STORAGE_KEY, storageScope);
+  const [hydratedStorageScope, setHydratedStorageScope] = useState<string | null>(storageScope);
+  const [watchlist, setWatchlist] = useState<string[]>(() => loadStoredJson(watchlistStorageKey, ['AAPL', 'MSFT']));
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([{
     id: 'init-msg',
     role: 'ai',
@@ -174,8 +187,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [currentFilingSections, setCurrentFilingSections] = useState<FilingSectionReference[]>([]);
   const [activeSearchContext, setActiveSearchContext] = useState<SearchSurfaceContext | null>(null);
   const [activeCompareContext, setActiveCompareContext] = useState<CompareSurfaceContext | null>(null);
-  const [savedAlerts, setSavedAlerts] = useState<SavedAlert[]>(() => loadStoredJson(ALERTS_STORAGE_KEY, []));
+  const [savedAlerts, setSavedAlerts] = useState<SavedAlert[]>(() => loadStoredJson(alertsStorageKey, []));
   const [agentRuns, setAgentRuns] = useState<AgentRun[]>([]);
+  const [agentPromptQueue, setAgentPromptQueue] = useState<AgentPromptRequest[]>([]);
   const [activeAgentRunId, setActiveAgentRunId] = useState<string | null>(null);
   const [pendingSearchIntent, setPendingSearchIntent] = useState<PendingSearchIntent | null>(null);
   const [pendingCompareIntent, setPendingCompareIntent] = useState<PendingCompareIntent | null>(null);
@@ -183,16 +197,45 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [pendingAlertDraft, setPendingAlertDraft] = useState<PendingAlertDraft | null>(null);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(WATCHLIST_STORAGE_KEY, JSON.stringify(watchlist));
+    if (!storageScope) {
+      setHydratedStorageScope(null);
+      return;
     }
-  }, [watchlist]);
+
+    setWatchlist(loadStoredJson(scopedStorageKey(WATCHLIST_STORAGE_KEY, storageScope), ['AAPL', 'MSFT']));
+    setSavedAlerts(loadStoredJson(scopedStorageKey(ALERTS_STORAGE_KEY, storageScope), []));
+    setChatHistory([{
+      id: 'init-msg',
+      role: 'ai',
+      content: `Hi! I'm **${BRAND.productName}**, your SEC compliance assistant. Ask me anything about filings, language comparisons, or specific company disclosures.`,
+      timestamp: new Date().toISOString(),
+    }]);
+    setSearchQuery('');
+    setCurrentFilingContext(null);
+    setCurrentFilingSections([]);
+    setActiveSearchContext(null);
+    setActiveCompareContext(null);
+    setAgentRuns([]);
+    setAgentPromptQueue([]);
+    setActiveAgentRunId(null);
+    setPendingSearchIntent(null);
+    setPendingCompareIntent(null);
+    setPendingFilingSectionLabel(null);
+    setPendingAlertDraft(null);
+    setHydratedStorageScope(storageScope);
+  }, [storageScope]);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(ALERTS_STORAGE_KEY, JSON.stringify(savedAlerts));
+    if (typeof window !== 'undefined' && watchlistStorageKey && hydratedStorageScope === storageScope) {
+      window.localStorage.setItem(watchlistStorageKey, JSON.stringify(watchlist));
     }
-  }, [savedAlerts]);
+  }, [hydratedStorageScope, storageScope, watchlist, watchlistStorageKey]);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && alertsStorageKey && hydratedStorageScope === storageScope) {
+      window.localStorage.setItem(alertsStorageKey, JSON.stringify(savedAlerts));
+    }
+  }, [alertsStorageKey, hydratedStorageScope, savedAlerts, storageScope]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -244,6 +287,23 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setAgentRuns(prev => [run, ...prev].slice(0, 20));
     setActiveAgentRunId(runId);
     return runId;
+  };
+
+  const enqueueAgentPrompt = (prompt: string) => {
+    const normalizedPrompt = prompt.trim();
+    if (!normalizedPrompt) return '';
+
+    const request: AgentPromptRequest = {
+      id: `request-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      prompt: normalizedPrompt,
+      requestedAt: new Date().toISOString(),
+    };
+    setAgentPromptQueue(prev => [...prev, request].slice(-10));
+    return request.id;
+  };
+
+  const removeAgentPromptRequest = (id: string) => {
+    setAgentPromptQueue(prev => prev.filter(request => request.id !== id));
   };
 
   const updateAgentRun = (id: string, updates: Partial<AgentRun>) => {
@@ -348,13 +408,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
       activeSearchContext, setActiveSearchContext,
       activeCompareContext, setActiveCompareContext,
       savedAlerts, addSavedAlert, updateSavedAlert, removeSavedAlert,
-      agentRuns, activeAgentRunId, setActiveAgentRunId, startAgentRun, updateAgentRun, appendAgentLog, clearAgentRuns,
+      agentRuns, agentPromptQueue, activeAgentRunId, setActiveAgentRunId,
+      enqueueAgentPrompt, removeAgentPromptRequest,
+      startAgentRun, updateAgentRun, appendAgentLog, clearAgentRuns,
       pendingSearchIntent, setPendingSearchIntent,
       pendingCompareIntent, setPendingCompareIntent,
       pendingFilingSectionLabel, setPendingFilingSectionLabel,
       pendingAlertDraft, setPendingAlertDraft, confirmPendingAlertDraft,
     }}>
-      {children}
+      {(storageScope === null && hydratedStorageScope === null)
+        || (storageScope !== null && hydratedStorageScope === storageScope)
+        ? <Fragment key={storageScope || 'identity-loading'}>{children}</Fragment>
+        : null}
     </AppContext.Provider>
   );
 }

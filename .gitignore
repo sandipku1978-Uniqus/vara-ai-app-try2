@@ -18,3 +18,5 @@ Thumbs.db
 /.clerk/
 data-pipeline/*.jsonl
 .next-build
+*.tsbuildinfo
+*.log

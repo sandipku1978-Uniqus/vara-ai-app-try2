@@ -6,7 +6,8 @@ import { Download, X, ArrowRightLeft, Loader2, Sparkles, LayoutGrid, Type, Dolla
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell, RadarChart, PolarGrid, PolarAngleAxis, Radar, Legend } from 'recharts';
 import { fetchCompanySubmissions, fetchCompanySubmissionsBatch, fetchCompanyFacts, extractComparableFinancials, getAvailableYears, formatFinancialValue, CIK_MAP, SecSubmission, FinancialMetric, CompanyFacts, lookupCIK, extractCompanyMetadata, loadTickerMap, buildSecProxyUrl, extractDocumentTextFromHtml } from '../services/secApi';
 import { aiSummarize } from '../services/aiApi';
-import { generateMemoDocx } from '../services/docExport';
+import { generateMemoDocx, generateMemoPdf } from '../services/docExport';
+import { buildCsvRows } from '../utils/csv';
 import ResponsibleAIBanner from '../components/ResponsibleAIBanner';
 import { renderMarkdown } from '../utils/markdownRenderer';
 import { DisclosureMatrix } from '../components/research/DisclosureMatrix';
@@ -194,6 +195,7 @@ export default function Benchmarking() {
   const [peerDiscoveryMessage, setPeerDiscoveryMessage] = useState('');
   const [cohortReport, setCohortReport] = useState('');
   const [cohortReportLoading, setCohortReportLoading] = useState(false);
+  const [cohortReportError, setCohortReportError] = useState('');
 
   const [companiesData, setCompaniesData] = useState<Record<string, SecSubmission>>({});
   const [companiesRawFacts, setCompaniesRawFacts] = useState<Record<string, CompanyFacts>>({});
@@ -207,6 +209,7 @@ export default function Benchmarking() {
 
   const [aiAnalysis, setAiAnalysis] = useState('');
   const [aiAnalyzing, setAiAnalyzing] = useState(false);
+  const [aiAnalysisError, setAiAnalysisError] = useState('');
   const [openYearDropdown, setOpenYearDropdown] = useState<string | null>(null);
   const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number }>({ top: 0, left: 0 });
 
@@ -443,7 +446,7 @@ export default function Benchmarking() {
       for (const ratio of RATIO_DEFINITIONS) {
         rows.push([ratio.label, ...columns.map(col => ratio.fn(col).display)]);
       }
-      const csv = [headers, ...rows].map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+      const csv = buildCsvRows([headers, ...rows]);
       const blob = new Blob([csv], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -453,7 +456,7 @@ export default function Benchmarking() {
       const sections = SECTION_LISTS[matrixFormType] || ALL_SECTIONS;
       const headers = ['Section', ...selectedTickers];
       const rows = sections.map(s => [s, ...selectedTickers.map(t => matrixData[s]?.[t]?.present ? 'Yes' : 'No')]);
-      const csv = [headers, ...rows].map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+      const csv = buildCsvRows([headers, ...rows]);
       const blob = new Blob([csv], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -609,6 +612,8 @@ export default function Benchmarking() {
   const handleAiCompare = async () => {
     if (columns.length < 2) return;
     setAiAnalyzing(true);
+    setAiAnalysis('');
+    setAiAnalysisError('');
     try {
       let prompt = '';
       if (viewMode === 'financials') {
@@ -623,9 +628,12 @@ export default function Benchmarking() {
         // Text compare fallback just in case
         prompt = `Act as an SEC compliance expert. Compare the following "${selectedSection}" disclosure excerpts:\n\n${columns.map(col => `${colTicker(col)}: (text here)`).join('\n\n')}\n\nProvide 3 concise paragraphs.`;
       }
-      setAiAnalysis(await aiSummarize(prompt));
-    } catch {
-      setAiAnalysis('Failed to generate AI comparison.');
+      const response = await aiSummarize(prompt, { throwOnError: true });
+      if (!response.trim()) throw new Error('The AI service returned an empty comparison.');
+      setAiAnalysis(response);
+    } catch (error) {
+      console.error('Financial comparison error:', error);
+      setAiAnalysisError('The financial comparison could not be generated. The underlying SEC metrics remain available below.');
     }
     setAiAnalyzing(false);
   };
@@ -791,6 +799,8 @@ export default function Benchmarking() {
     if (selectedTickers.length === 0) return;
 
     setCohortReportLoading(true);
+    setCohortReport('');
+    setCohortReportError('');
     try {
       const seedMeta = selectedTickers[0] ? companiesData[selectedTickers[0]] : null;
       const meta = seedMeta ? extractCompanyMetadata(seedMeta) : null;
@@ -831,18 +841,6 @@ export default function Benchmarking() {
       const avgDebt = numericAverage(latestCols.map(col => getDebtToEquity(col).value));
       const avgCashFlowQuality = numericAverage(latestCols.map(col => getCashFlowQuality(col).value));
 
-      const fallbackReport = [
-        `Cohort size: ${selectedTickers.length} issuers.`,
-        meta?.sic || peerSicCode ? `Industry scope: SIC ${peerSicCode || meta?.sic}${meta?.sicDescription ? ` (${meta.sicDescription})` : ''}.` : '',
-        avgNetMargin != null ? `Average net margin across the latest selected fiscal years is ${avgNetMargin.toFixed(1)}%.` : '',
-        avgRoe != null ? `Average ROE is ${avgRoe.toFixed(1)}%.` : '',
-        avgDebt != null ? `Average debt-to-equity is ${avgDebt.toFixed(2)}x.` : '',
-        avgCashFlowQuality != null ? `Average cash flow quality is ${avgCashFlowQuality.toFixed(2)}x.` : '',
-        `Constituents: ${companyLines.join(' || ')}`,
-      ]
-        .filter(Boolean)
-        .join(' ');
-
       const prompt = `You are preparing a concise peer benchmarking memo for an accounting and legal research team.
 
 Industry context:
@@ -865,15 +863,12 @@ Write a short memo with:
 
 Keep it crisp and practical.`;
 
-      const aiResponse = await aiSummarize(prompt);
-      if (!aiResponse || aiResponse.toLowerCase().includes('unavailable') || aiResponse.toLowerCase().includes('api key missing')) {
-        setCohortReport(fallbackReport);
-      } else {
-        setCohortReport(aiResponse);
-      }
+      const aiResponse = await aiSummarize(prompt, { throwOnError: true });
+      if (!aiResponse.trim()) throw new Error('The AI service returned an empty cohort memo.');
+      setCohortReport(aiResponse);
     } catch (error) {
       console.error('Cohort memo error:', error);
-      setCohortReport('Cohort memo unavailable. The benchmarking data loaded, but the summary could not be generated right now.');
+      setCohortReportError('The cohort memo could not be generated. The selected peers and underlying SEC metrics remain available.');
     } finally {
       setCohortReportLoading(false);
     }
@@ -955,6 +950,13 @@ Keep it crisp and practical.`;
         {peerDiscoveryMessage && (
           <div style={{ color: 'var(--text-primary)', fontSize: '0.82rem', background: 'rgba(179,31,126,0.08)', border: '1px solid rgba(179,31,126,0.16)', borderRadius: '8px', padding: '10px 12px' }}>
             {peerDiscoveryMessage}
+          </div>
+        )}
+
+        {cohortReportError && (
+          <div role="alert" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap', color: 'var(--status-error)', background: 'var(--status-error-bg)', border: '1px solid color-mix(in srgb, var(--status-error) 30%, transparent)', borderRadius: '8px', padding: '10px 12px' }}>
+            <span>{cohortReportError}</span>
+            <button type="button" className="secondary-btn" onClick={() => void handleGenerateCohortReport()}>Retry memo</button>
           </div>
         )}
 
@@ -1116,8 +1118,9 @@ Keep it crisp and practical.`;
              text: companyTexts[t] ? companyTexts[t].substring(0, 20000) : ''
           })).filter(f => f.text.length > 0)}
           onExportDocx={generateMemoDocx}
+          onExportPdf={generateMemoPdf}
         />
-      ) : aiAnalysis || aiAnalyzing ? (
+      ) : aiAnalysis || aiAnalyzing || aiAnalysisError ? (
         <div className="ai-comparison-panel glass-card" style={{ padding: '24px', marginBottom: '8px', borderLeft: '4px solid #B31F7E' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
             <Sparkles className="text-blue-400" size={20} />
@@ -1126,6 +1129,11 @@ Keep it crisp and practical.`;
           {aiAnalyzing ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', color: 'var(--text-secondary)' }}>
               <Loader2 className="spinner" size={18} /> Generating comparative analysis...
+            </div>
+          ) : aiAnalysisError ? (
+            <div role="alert" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap', color: 'var(--status-error)' }}>
+              <span>{aiAnalysisError}</span>
+              <button type="button" className="secondary-btn" onClick={() => void handleAiCompare()}>Retry summary</button>
             </div>
           ) : (
             <div className="ai-result-text md-content" dangerouslySetInnerHTML={{ __html: renderMarkdown(aiAnalysis) }} />
@@ -1223,7 +1231,7 @@ Keep it crisp and practical.`;
                           <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
                           <XAxis dataKey="name" tick={{ fill: axisTickColor, fontSize: 10 }} axisLine={{ stroke: axisLineColor }} />
                           <YAxis tick={axisStyle} axisLine={{ stroke: axisLineColor }} tickFormatter={(v: number) => `${axisPrefix}${v.toFixed(0)}B`} />
-                          <Tooltip contentStyle={tooltipStyle} formatter={(value: number) => [`${axisPrefix}${value.toFixed(1)}B`, chart.title]} />
+                          <Tooltip contentStyle={tooltipStyle} formatter={(value: unknown) => [`${axisPrefix}${Number(value ?? 0).toFixed(1)}B`, chart.title]} />
                           <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                             {chartData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}
                           </Bar>
@@ -1261,7 +1269,7 @@ Keep it crisp and practical.`;
                         <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
                         <XAxis dataKey="name" tick={{ fill: axisTickColor, fontSize: 10 }} axisLine={{ stroke: axisLineColor }} />
                         <YAxis tick={axisStyle} axisLine={{ stroke: axisLineColor }} tickFormatter={(v: number) => `${v}%`} />
-                        <Tooltip contentStyle={tooltipStyle} formatter={(value: number) => [`${value.toFixed(1)}%`]} />
+                        <Tooltip contentStyle={tooltipStyle} formatter={(value: unknown) => [`${Number(value ?? 0).toFixed(1)}%`]} />
                         <Legend wrapperStyle={{ fontSize: '0.75rem', color: tableMutedText }} />
                         <Bar dataKey="Gross Margin" fill="#B31F7E" radius={[4, 4, 0, 0]} />
                         <Bar dataKey="Operating Margin" fill="#8B5CF6" radius={[4, 4, 0, 0]} />
@@ -1308,7 +1316,7 @@ Keep it crisp and practical.`;
                           <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
                           <XAxis dataKey="name" tick={{ fill: axisTickColor, fontSize: 10 }} axisLine={{ stroke: axisLineColor }} />
                           <YAxis tick={axisStyle} axisLine={{ stroke: axisLineColor }} tickFormatter={(v: number) => `$${v}B`} />
-                          <Tooltip contentStyle={tooltipStyle} formatter={(value: number) => [`$${value.toFixed(1)}B`]} />
+                          <Tooltip contentStyle={tooltipStyle} formatter={(value: unknown) => [`$${Number(value ?? 0).toFixed(1)}B`]} />
                           <Legend wrapperStyle={{ fontSize: '0.7rem', color: tableMutedText }} />
                           <Bar dataKey="Cash" stackId="a" fill="#B31F7E" />
                           <Bar dataKey="AR + Inventory" stackId="a" fill="#F59E0B" />
@@ -1339,7 +1347,7 @@ Keep it crisp and practical.`;
                           <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
                           <XAxis dataKey="name" tick={{ fill: axisTickColor, fontSize: 10 }} axisLine={{ stroke: axisLineColor }} />
                           <YAxis tick={axisStyle} axisLine={{ stroke: axisLineColor }} tickFormatter={(v: number) => `$${v}B`} />
-                          <Tooltip contentStyle={tooltipStyle} formatter={(value: number) => [`$${value.toFixed(1)}B`]} />
+                          <Tooltip contentStyle={tooltipStyle} formatter={(value: unknown) => [`$${Number(value ?? 0).toFixed(1)}B`]} />
                           <Legend wrapperStyle={{ fontSize: '0.7rem', color: tableMutedText }} />
                           <Bar dataKey="Operating CF" fill="#10B981" radius={[4, 4, 0, 0]} />
                           <Bar dataKey="CapEx" fill="#EF4444" radius={[0, 0, 4, 4]} />
@@ -1418,8 +1426,8 @@ Keep it crisp and practical.`;
                   style={{
                     padding: '6px 12px', borderRadius: '8px', fontSize: '0.75rem', cursor: 'pointer',
                     border: '1px solid ' + (commonSize ? 'rgba(214,108,174,0.6)' : 'var(--input-border)'),
-                    background: commonSize ? 'rgba(179,31,126,0.25)' : 'var(--surface-panel)',
-                    color: commonSize ? 'var(--accent-soft)' : 'var(--text-secondary)',
+                    background: commonSize ? 'rgba(179,31,126,0.25)' : 'rgba(255,255,255,0.04)',
+                    color: commonSize ? 'var(--accent-primary)' : 'var(--text-muted)',
                   }}>
                   % Common-size
                 </button>
@@ -1720,4 +1728,3 @@ Keep it crisp and practical.`;
     </div>
   );
 }
-

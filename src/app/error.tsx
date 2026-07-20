@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect } from 'react';
+import Link from 'next/link';
+import styles from '../components/layout/RouteState.module.css';
 
 export default function GlobalError({
   error,
@@ -14,30 +16,15 @@ export default function GlobalError({
   }, [error]);
 
   return (
-    <div style={{
-      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      minHeight: '60vh', padding: '48px', textAlign: 'center',
-    }}>
-      <div style={{
-        background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
-        borderRadius: '16px', padding: '48px', maxWidth: '480px',
-      }}>
-        <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: 'white', marginBottom: '12px' }}>
-          Something went wrong
-        </h2>
-        <p style={{ color: '#94A3B8', fontSize: '0.9rem', marginBottom: '24px', lineHeight: 1.5 }}>
-          An unexpected error occurred. Please try again or contact support if the problem persists.
-        </p>
-        <button
-          onClick={reset}
-          style={{
-            padding: '10px 24px', background: '#B31F7E', color: 'white', border: 'none',
-            borderRadius: '8px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 600,
-          }}
-        >
-          Try again
-        </button>
+    <main className={styles.shell} role="alert">
+      <h1>Something went wrong</h1>
+      <p>The workspace could not finish loading. Try the request again, or use Support if the problem persists.</p>
+      {error.digest ? <p className={styles.context}>Request reference: {error.digest}</p> : null}
+      <div className={styles.actions}>
+        <button type="button" onClick={reset} className={styles.primaryAction}>Try again</button>
+        <Link href="/dashboard" className={styles.secondaryAction}>Dashboard</Link>
+        <Link href="/support" className={styles.secondaryAction}>Support</Link>
       </div>
-    </div>
+    </main>
   );
 }

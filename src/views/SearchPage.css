@@ -41,15 +41,11 @@
 }
 
 .filter-group select {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--glass-border);
-  color: var(--text-primary);
-  padding: 10px 12px;
   width: 100%;
   padding: 0.75rem;
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid var(--glass-border);
-  color: white;
+  background-color: var(--input-bg);
+  border: 1px solid var(--input-border);
+  color: var(--text-primary);
   border-radius: 6px;
   outline: none;
   font-size: 0.9rem;
@@ -79,9 +75,9 @@
 
 .date-input {
   flex: 1;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--glass-border);
-  color: var(--text-secondary);
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  color: var(--text-primary);
   padding: 8px;
   border-radius: 6px;
   font-family: var(--font-sans);
@@ -89,8 +85,7 @@
   width: 100%;
 }
 .date-input::-webkit-calendar-picker-indicator {
-  filter: invert(1);
-  opacity: 0.6;
+  opacity: 0.7;
 }
 
 /* Main Area */
@@ -113,7 +108,7 @@
   display: flex;
   padding: 0.25rem;
   border-radius: 8px;
-  background: rgba(0,0,0,0.2);
+  background: var(--surface-subtle);
 }
 
 .toggle-btn {
@@ -132,7 +127,7 @@
 }
 
 .toggle-btn:hover {
-  color: white;
+  color: var(--text-primary);
 }
 
 .toggle-btn.active {
@@ -158,14 +153,14 @@
   flex: 1;
   background: transparent;
   border: none;
-  color: white;
+  color: var(--text-primary);
   font-size: 1.1rem;
   outline: none;
   font-family: var(--font-sans);
 }
 
 .search-bar-container input::placeholder {
-  color: rgba(255, 255, 255, 0.3);
+  color: var(--text-muted);
 }
 
 .sample-searches {
@@ -188,9 +183,9 @@
 }
 
 .sample-pill {
-  background: rgba(179, 31, 126, 0.1);
-  border: 1px solid rgba(179, 31, 126, 0.2);
-  color: #E2E8F0;
+  background: var(--interactive-hover);
+  border: 1px solid color-mix(in srgb, var(--accent-primary) 20%, transparent);
+  color: var(--text-primary);
   padding: 0.5rem 1rem;
   border-radius: 20px;
   font-size: 0.85rem;
@@ -199,7 +194,7 @@
 }
 
 .sample-pill:hover {
-  background: rgba(179, 31, 126, 0.2);
+  background: var(--interactive-hover-strong);
   border-color: var(--accent-blue);
 }
 
@@ -225,7 +220,7 @@
 }
 
 .result-card:hover {
-  border-color: rgba(179, 31, 126, 0.3);
+  border-color: color-mix(in srgb, var(--accent-primary) 30%, transparent);
   transform: translateY(-2px);
 }
 
@@ -247,7 +242,7 @@
 }
 
 .result-ticker {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--surface-subtle);
   padding: 0.25rem 0.75rem;
   border-radius: 4px;
   font-weight: 600;
@@ -273,21 +268,21 @@
   gap: 0.4rem;
   font-size: 0.8rem;
   color: var(--text-secondary);
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--surface-subtle);
   padding: 0.25rem 0.5rem;
   border-radius: 4px;
 }
 
 .badge-type {
   color: var(--accent-blue);
-  background: rgba(179, 31, 126, 0.1);
+  background: var(--interactive-hover);
 }
 
 .result-snippet {
   font-size: 0.95rem;
-  color: #D1D5DB;
+  color: var(--text-secondary);
   line-height: 1.6;
-  background: rgba(10, 15, 30, 0.5);
+  background: var(--surface-subtle);
   padding: 16px;
   border-radius: 8px;
   border-left: 3px solid var(--accent-blue);
@@ -303,12 +298,12 @@
 .ai-summary-box {
   display: flex;
   gap: 0.75rem;
-  background: rgba(179, 31, 126, 0.05);
+  background: var(--surface-accent);
   border-left: 2px solid var(--accent-blue);
   padding: 1rem;
   border-radius: 0 8px 8px 0;
   font-size: 0.9rem;
-  color: #E2E8F0;
+  color: var(--text-primary);
   line-height: 1.6;
 }
 
@@ -539,7 +534,7 @@
 .research-rail-copy h1 {
   font-size: 1.65rem;
   font-weight: 700;
-  color: white;
+  color: var(--text-primary);
   margin-bottom: 6px;
 }
 
@@ -547,7 +542,7 @@
 .research-empty-tab,
 .pane-hint,
 .research-preview-fallback p {
-  color: #94A3B8;
+  color: var(--text-secondary);
   line-height: 1.6;
 }
 
@@ -571,11 +566,11 @@
   letter-spacing: 0.08em;
   font-size: 0.72rem;
   font-weight: 700;
-  color: #F1B8D7;
+  color: var(--accent-primary);
 }
 
 .research-rail-banner .copy {
-  color: #DBEAFE;
+  color: var(--text-secondary);
   font-size: 0.84rem;
   line-height: 1.5;
   margin-top: 4px;
@@ -601,7 +596,7 @@
   border-radius: 999px;
   background: rgba(214, 108, 174, 0.12);
   border: 1px solid rgba(214, 108, 174, 0.24);
-  color: #F4D7E8;
+  color: var(--accent-primary);
   font-size: 0.76rem;
   font-weight: 600;
 }
@@ -619,14 +614,14 @@
 .guide-header button {
   background: none;
   border: none;
-  color: #F4D7E8;
+  color: var(--accent-primary);
   cursor: pointer;
   font-size: 0.78rem;
   font-weight: 600;
 }
 
 .guide-title {
-  color: white;
+  color: var(--text-primary);
   font-weight: 700;
 }
 
@@ -640,29 +635,29 @@
 .guide-card {
   border-radius: 12px;
   padding: 12px;
-  background: rgba(15, 23, 42, 0.42);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: var(--surface-panel);
+  border: 1px solid var(--border-color);
 }
 
 .guide-card .operator {
-  color: white;
+  color: var(--text-primary);
   font-weight: 700;
   margin-bottom: 4px;
 }
 
 .guide-card .meaning {
-  color: #F4D7E8;
+  color: var(--text-secondary);
   font-size: 0.78rem;
   margin-bottom: 4px;
 }
 
 .guide-card code {
-  color: #F1B8D7;
+  color: var(--accent-primary);
   font-size: 0.76rem;
 }
 
 .research-alert-msg {
-  color: #4ADE80;
+  color: var(--status-success);
   font-size: 0.85rem;
 }
 
@@ -749,14 +744,14 @@
   min-width: 0;
   background: transparent;
   border: none;
-  color: white;
+  color: var(--text-primary);
   font-size: 1.02rem;
   outline: none;
   font-family: var(--font-sans);
 }
 
 .research-query-form input::placeholder {
-  color: rgba(255, 255, 255, 0.35);
+  color: var(--text-muted);
 }
 
 .research-query-form .primary-btn {
@@ -794,18 +789,30 @@
 .research-tab {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
+  gap: 0;
+  padding: 0;
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(15, 23, 42, 0.55);
-  color: #CBD5E1;
-  cursor: pointer;
+  border: 1px solid var(--border-color);
+  background: var(--surface-panel-strong);
+  color: var(--text-secondary);
   flex: 0 0 auto;
   max-width: 260px;
 }
 
-.research-tab span:first-child {
+.research-tab-select {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 6px 8px 12px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}
+
+.research-tab-title {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -814,13 +821,13 @@
 .research-tab.active {
   border-color: rgba(214, 108, 174, 0.3);
   background: rgba(179, 31, 126, 0.12);
-  color: white;
+  color: var(--text-primary);
 }
 
 .research-tab .count {
   padding: 1px 6px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--interactive-hover);
   font-size: 0.72rem;
 }
 
@@ -828,7 +835,18 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #94A3B8;
+  align-self: stretch;
+  padding: 0 9px 0 6px;
+  border: 0;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.research-tab-select:focus-visible,
+.research-tab .close:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: -2px;
 }
 
 .research-toolbar-actions {
@@ -922,7 +940,7 @@
   align-items: center;
   gap: 8px;
   margin-bottom: 10px;
-  color: white;
+  color: var(--text-primary);
   font-weight: 600;
 }
 
@@ -954,7 +972,7 @@
 
 .research-hit-list h2,
 .research-preview h2 {
-  color: white;
+  color: var(--text-primary);
   font-size: 1.1rem;
   margin-top: 4px;
 }
@@ -982,8 +1000,8 @@
   padding: 10px 12px;
   border-radius: 12px;
   border: 1px solid rgba(214, 108, 174, 0.2);
-  background: rgba(30, 41, 59, 0.72);
-  color: #F4D7E8;
+  background: var(--surface-subtle);
+  color: var(--text-secondary);
   font-size: 0.82rem;
   line-height: 1.45;
 }
@@ -991,8 +1009,8 @@
 .research-hit-card {
   text-align: left;
   border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  background: rgba(15, 23, 42, 0.42);
+  border: 1px solid var(--border-color);
+  background: var(--surface-panel-strong);
   padding: 14px;
   cursor: pointer;
   transition: border-color 0.2s, transform 0.2s, background 0.2s;
@@ -1013,7 +1031,7 @@
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
-  color: #94A3B8;
+  color: var(--text-muted);
   font-size: 0.78rem;
 }
 
@@ -1026,14 +1044,14 @@
   padding: 2px 8px;
   border-radius: 999px;
   background: rgba(179, 31, 126, 0.14);
-  color: #F4D7E8;
+  color: var(--accent-primary);
   font-size: 0.74rem;
   font-weight: 600;
 }
 
 .research-hit-card .company {
   margin: 10px 0 6px;
-  color: white;
+  color: var(--text-primary);
   font-weight: 700;
   line-height: 1.4;
 }
@@ -1042,21 +1060,21 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  color: #94A3B8;
+  color: var(--text-muted);
   font-size: 0.8rem;
   margin-bottom: 10px;
 }
 
 .research-hit-card .snippet,
 .research-selected-snippet {
-  color: #E2E8F0;
+  color: var(--text-primary);
   line-height: 1.6;
 }
 
 .research-hit-card mark,
 .research-selected-snippet mark {
-  background: rgba(250, 204, 21, 0.32);
-  color: #FEF08A;
+  background: color-mix(in srgb, var(--status-warning) 24%, transparent);
+  color: var(--status-warning);
   padding: 0 2px;
   border-radius: 3px;
 }
@@ -1260,11 +1278,14 @@
   }
 
   .research-tab {
-    gap: 6px;
-    padding: 7px 10px;
     border-radius: 9px;
     font-size: 0.82rem;
     max-width: 220px;
+  }
+
+  .research-tab-select {
+    gap: 6px;
+    padding: 7px 5px 7px 10px;
   }
 
   .research-tab .count {
@@ -1711,7 +1732,7 @@
 .research-hit-card mark,
 .research-selected-snippet mark {
   background: rgba(232, 177, 94, 0.22);
-  color: #7b4e12;
+  color: var(--status-warning);
 }
 
 .research-preview-frame-wrap {
@@ -1726,4 +1747,3 @@
   border: 1px dashed var(--border-color);
   border-radius: 16px;
 }
-

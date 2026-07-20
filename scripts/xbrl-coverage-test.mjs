@@ -137,7 +137,6 @@ async function loadTickerCikMap() {
   const data = await resp.json();
 
   const map = {};
-  const sicMap = {};
   const nameMap = {};
   for (const entry of Object.values(data)) {
     const ticker = entry.ticker.toUpperCase();

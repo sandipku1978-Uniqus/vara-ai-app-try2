@@ -17,32 +17,31 @@ interface AskCopilotButtonProps {
  * Use in DataTable column renders for per-row AI analysis.
  */
 export default function AskCopilotButton({ prompt, compact = false, label }: AskCopilotButtonProps) {
-  const { setChatOpen, startAgentRun } = useApp();
+  const { isChatOpen, setChatOpen, enqueueAgentPrompt } = useApp();
 
   function handleClick(e: React.MouseEvent) {
     e.stopPropagation(); // Don't trigger row click
     setChatOpen(true);
-    // Small delay to ensure panel is open before starting the run
-    setTimeout(() => {
-      startAgentRun(prompt);
-    }, 100);
+    enqueueAgentPrompt(prompt);
   }
 
   if (compact) {
     return (
       <button
         onClick={handleClick}
+        type="button"
+        aria-label={`Ask Copilot: ${prompt}`}
+        aria-expanded={isChatOpen}
+        aria-controls="urc-copilot-panel"
         title={`Ask Copilot: ${prompt.slice(0, 80)}...`}
         style={{
           display: 'inline-flex', alignItems: 'center', gap: '3px',
           background: 'none', border: 'none',
-          color: '#D66CAE', cursor: 'pointer', padding: '2px 4px',
-          fontSize: '0.75rem', opacity: 0.8, transition: 'opacity 0.2s',
+          color: 'var(--accent-primary)', cursor: 'pointer', padding: '2px 4px',
+          fontSize: '0.75rem',
         }}
-        onMouseEnter={e => (e.currentTarget.style.opacity = '1')}
-        onMouseLeave={e => (e.currentTarget.style.opacity = '0.8')}
       >
-        <Bot size={12} />
+        <Bot size={12} aria-hidden="true" />
       </button>
     );
   }
@@ -50,14 +49,18 @@ export default function AskCopilotButton({ prompt, compact = false, label }: Ask
   return (
     <button
       onClick={handleClick}
+      type="button"
+      aria-label={`${label || 'Analyze'} with Copilot: ${prompt}`}
+      aria-expanded={isChatOpen}
+      aria-controls="urc-copilot-panel"
       style={{
         display: 'inline-flex', alignItems: 'center', gap: '4px',
         background: 'rgba(214,108,174,0.1)', border: '1px solid rgba(214,108,174,0.2)',
-        borderRadius: '6px', padding: '3px 8px', color: '#D66CAE', cursor: 'pointer',
+        borderRadius: '6px', padding: '3px 8px', color: 'var(--accent-primary)', cursor: 'pointer',
         fontSize: '0.75rem', transition: 'background 0.2s',
       }}
     >
-      <Bot size={12} /> {label || 'Analyze'}
+      <Bot size={12} aria-hidden="true" /> {label || 'Analyze'}
     </button>
   );
 }

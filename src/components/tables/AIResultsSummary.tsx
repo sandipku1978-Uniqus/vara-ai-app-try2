@@ -32,58 +32,45 @@ export default function AIResultsSummary({ query, resultsSummary, resultCount, m
   const [error, setError] = useState(false);
 
   useEffect(() => {
-    if (resultCount === 0 || !query.trim()) {
-      setSummary('');
-      return;
-    }
-
     const cached = summaryCache.get(cacheKey);
-    if (cached) {
-      setSummary(cached);
-      return;
-    }
+    setSummary(cached || '');
+    setCollapsed(false);
+    setError(false);
+  }, [cacheKey]);
 
-    let cancelled = false;
+  async function analyze() {
+    if (loading || resultCount === 0 || !query.trim()) return;
 
-    async function analyze() {
-      setLoading(true);
-      setError(false);
-      try {
-        const prompt = `You are analyzing SEC ${moduleLabel} search results. The user searched for "${query}" and got ${resultCount} results.
+    setLoading(true);
+    setError(false);
+    try {
+      const prompt = `You are analyzing a metadata snapshot from SEC ${moduleLabel} search results. The user searched for "${query}" and got ${resultCount} results.
 
-Here is a summary of the top results:
+Here is the available metadata for the top results:
 ${resultsSummary}
 
 Provide a concise 3-4 sentence insight summary for a practitioner:
-1. What the results collectively indicate (patterns, trends, concentrations by company/topic/time)
-2. Any notable outliers or signals worth investigating
+1. Describe only patterns directly supported by this metadata snapshot
+2. Identify records worth investigating without inferring filing contents
 3. A practical next-step suggestion
 
-Be direct and specific. No preamble.`;
+State that source filings must be reviewed before relying on the analysis. Be direct and specific. No preamble.`;
 
-        const text = await askAi(prompt);
-        if (!cancelled && text && !text.startsWith('I encountered an error')) {
-          setSummary(text);
-          summaryCache.set(cacheKey, text);
-        } else if (!cancelled) {
-          setError(true);
-        }
-      } catch {
-        // Expected when API key is not configured or network is unavailable
-        if (!cancelled) setError(true);
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+      const text = (await askAi(prompt, undefined, { throwOnError: true })).trim();
+      if (!text) throw new Error('AI insight was empty.');
+      setSummary(text);
+      summaryCache.set(cacheKey, text);
+    } catch {
+      setError(true);
+    } finally {
+      setLoading(false);
     }
+  }
 
-    analyze();
-    return () => { cancelled = true; };
-  }, [cacheKey, query, resultCount, resultsSummary, moduleLabel]);
-
-  if (resultCount === 0 || (!summary && !loading)) return null;
+  if (resultCount === 0 || !query.trim()) return null;
 
   return (
-    <div style={{
+    <section aria-label={`AI insight for ${moduleLabel}`} aria-busy={loading} style={{
       background: 'linear-gradient(135deg, rgba(72,40,121,0.08), rgba(178,30,125,0.08))',
       border: '1px solid rgba(214,108,174,0.15)',
       borderRadius: '10px',
@@ -95,33 +82,47 @@ Be direct and specific. No preamble.`;
       <div
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          cursor: 'pointer', userSelect: 'none',
+          userSelect: 'none', gap: '12px',
         }}
-        onClick={() => !loading && setSummary(s => s ? (setCollapsed(c => !c), s) : s)}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#D66CAE', fontWeight: 600, fontSize: '0.8rem' }}>
-          <Sparkles size={14} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--accent-primary)', fontWeight: 600, fontSize: '0.8rem' }}>
+          <Sparkles size={14} aria-hidden="true" />
           AI Insight
         </div>
-        {summary && !loading && (
+        {summary && !loading ? (
           <button
-            onClick={(e) => { e.stopPropagation(); setCollapsed(c => !c); }}
-            style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '2px' }}
+            type="button"
+            onClick={() => setCollapsed(c => !c)}
+            aria-expanded={!collapsed}
+            aria-label={collapsed ? 'Expand AI insight' : 'Collapse AI insight'}
+            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '2px' }}
           >
-            {collapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
+            {collapsed ? <ChevronDown size={14} aria-hidden="true" /> : <ChevronUp size={14} aria-hidden="true" />}
           </button>
-        )}
+        ) : !loading ? (
+          <button
+            type="button"
+            onClick={analyze}
+            style={{
+              border: '1px solid var(--border-color)', borderRadius: '6px', padding: '5px 10px',
+              background: 'var(--surface-panel-strong)', color: 'var(--accent-primary)', cursor: 'pointer',
+              fontSize: '0.75rem', fontWeight: 600,
+            }}
+          >
+            {error ? 'Retry insight' : 'Generate insight'}
+          </button>
+        ) : null}
       </div>
 
       {loading && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)', marginTop: '8px' }}>
-          <Loader2 size={14} className="spinner" />
+        <div role="status" aria-live="polite" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)', marginTop: '8px' }}>
+          <Loader2 size={14} className="spinner" aria-hidden="true" />
           <span>Analyzing {resultCount} {moduleLabel}...</span>
         </div>
       )}
 
       {error && (
-        <div style={{ color: 'var(--text-secondary)', marginTop: '8px', fontStyle: 'italic' }}>
+        <div role="alert" style={{ color: 'var(--text-secondary)', marginTop: '8px', fontStyle: 'italic' }}>
           AI summary unavailable. Results are displayed below.
         </div>
       )}
@@ -129,10 +130,15 @@ Be direct and specific. No preamble.`;
       {summary && !collapsed && (
         <div
           className="md-content"
-          style={{ color: 'var(--text-secondary)', marginTop: '8px' }}
+          style={{ color: 'var(--text-primary)', marginTop: '8px' }}
           dangerouslySetInnerHTML={{ __html: renderMarkdown(summary) }}
         />
       )}
-    </div>
+      {summary && !collapsed && (
+        <p style={{ color: 'var(--text-muted)', marginTop: '8px', fontSize: '0.72rem' }}>
+          Generated from the displayed result metadata. Review the source filings before relying on it.
+        </p>
+      )}
+    </section>
   );
 }

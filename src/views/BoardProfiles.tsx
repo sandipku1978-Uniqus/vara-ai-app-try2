@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Users, PieChart, DollarSign, Search, CheckCircle2, Loader2, BarChart3 } from 'lucide-react';
 import { fetchCompanySubmissions, lookupCIK, findLatestFiling, fetchFilingText, SecSubmission } from '../services/secApi';
 import { aiExtractBoardData, BoardDataResult } from '../services/aiApi';
@@ -19,6 +19,17 @@ interface CompanyEntry {
   error: string;
 }
 
+function clampPercent(value: number | null | undefined): number | null {
+  return typeof value === 'number' && Number.isFinite(value)
+    ? Math.max(0, Math.min(100, value))
+    : null;
+}
+
+function formatPercent(value: number | null | undefined): string {
+  const percent = clampPercent(value);
+  return percent == null ? '—' : `${percent}%`;
+}
+
 export default function BoardProfiles() {
   const [activeTab, setActiveTab] = useState<'directors' | 'diversity' | 'compensation'>('directors');
   const [tickerInput, setTickerInput] = useState('AAPL');
@@ -32,6 +43,7 @@ export default function BoardProfiles() {
   // Multi-company comparison state
   const [compareTickers, setCompareTickers] = useState<string[]>(['AAPL']);
   const [compareEntries, setCompareEntries] = useState<Map<string, CompanyEntry>>(new Map());
+  const compareRequestsRef = useRef(new Set<string>());
 
   const fetchData = useCallback(async (ticker: string) => {
     setIsLoading(true);
@@ -89,8 +101,8 @@ export default function BoardProfiles() {
   // Fetch data for a compare ticker and store in compareEntries
   const fetchCompareData = useCallback(async (ticker: string) => {
     const upper = ticker.toUpperCase();
-    // If already cached in boardDataCache, use it
-    if (compareEntries.has(upper) && compareEntries.get(upper)!.boardData) return;
+    if (compareRequestsRef.current.has(upper)) return;
+    compareRequestsRef.current.add(upper);
 
     setCompareEntries(prev => {
       const next = new Map(prev);
@@ -164,7 +176,7 @@ export default function BoardProfiles() {
         return next;
       });
     }
-  }, [compareEntries]);
+  }, []);
 
   useEffect(() => {
     fetchData(currentTicker);
@@ -172,14 +184,13 @@ export default function BoardProfiles() {
 
   // Fetch compare data whenever compareTickers changes
   useEffect(() => {
+    if (compareTickers.length < 2) return;
     for (const ticker of compareTickers) {
-      if (!compareEntries.has(ticker)) {
-        fetchCompareData(ticker);
-      }
+      fetchCompareData(ticker);
     }
-  }, [compareTickers]);
+  }, [compareTickers, fetchCompareData]);
 
-  const addCompareTicker = useCallback((ticker: string, _cik: string) => {
+  const addCompareTicker = useCallback((ticker: string) => {
     const upper = ticker.toUpperCase();
     if (compareTickers.includes(upper) || compareTickers.length >= 3) return;
     setCompareTickers(prev => [...prev, upper]);
@@ -189,6 +200,12 @@ export default function BoardProfiles() {
   }, [compareTickers]);
 
   const removeCompareTicker = useCallback((ticker: string) => {
+    compareRequestsRef.current.delete(ticker);
+    setCompareEntries(prev => {
+      const next = new Map(prev);
+      next.delete(ticker);
+      return next;
+    });
     setCompareTickers(prev => {
       const next = prev.filter(t => t !== ticker);
       // If we removed the current ticker, switch to the first remaining one
@@ -213,7 +230,7 @@ export default function BoardProfiles() {
   const companyName = companyData?.name || currentTicker;
   // null = not disclosed in the proxy (extractor no longer fabricates 0 defaults)
   const boardSize = boardData?.boardSize ?? null;
-  const independence = boardData?.independencePercent ?? null;
+  const independence = clampPercent(boardData?.independencePercent);
 
   return (
     <div className="board-container">
@@ -223,8 +240,8 @@ export default function BoardProfiles() {
           <p>AI-extracted governance structures, board diversity metrics, and compensation analytics from DEF 14A proxy statements.</p>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-end' }}>
-          <div className="ticker-selector glass-card" style={{ padding: '4px 16px', display: 'flex', alignItems: 'center', borderRadius: '12px', border: '1px solid var(--input-border)' }}>
+        <div className="board-company-controls">
+          <div className="ticker-selector glass-card" style={{ padding: '4px 16px', display: 'flex', alignItems: 'center', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
             <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)', marginRight: '12px' }}>Target Company:</span>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--input-bg)', padding: '6px 12px', borderRadius: '4px', border: '1px solid var(--input-border)' }}>
               <Search size={14} className="text-blue-400" />
@@ -234,24 +251,27 @@ export default function BoardProfiles() {
                 onChange={e => setTickerInput(e.target.value.toUpperCase())}
                 onKeyDown={handleTickerSearch}
                 placeholder="Enter ticker..."
+                aria-label="Target company ticker"
                 style={{ background: 'transparent', border: 'none', outline: 'none', width: '80px', color: 'var(--text-primary)', fontWeight: 700, fontFamily: 'var(--font-mono)' }}
               />
             </div>
             {(isLoading || boardLoading) && <Loader2 size={16} className="spinner" style={{ marginLeft: '8px' }} />}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div className="board-compare-controls">
             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Compare (up to 3):</span>
             {compareTickers.map(t => (
-              <span key={t} style={{
+              <span key={t} className="board-compare-chip" style={{
                 background: currentTicker === t ? 'rgba(214,108,174,0.25)' : 'rgba(214,108,174,0.1)',
-                color: '#D66CAE', padding: '3px 10px', borderRadius: '16px', fontSize: '0.75rem',
-                display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer',
+                color: 'var(--accent-primary)', padding: '3px 10px', borderRadius: '16px', fontSize: '0.75rem',
+                display: 'inline-flex', alignItems: 'center', gap: '4px',
                 border: currentTicker === t ? '1px solid rgba(214,108,174,0.4)' : '1px solid transparent',
-              }} onClick={() => { setCurrentTicker(t); setTickerInput(t); }}>
-                {t}
+              }}>
+                <button type="button" className="board-compare-select" aria-pressed={currentTicker === t} onClick={() => { setCurrentTicker(t); setTickerInput(t); }}>
+                  {t}
+                </button>
                 {compareTickers.length > 1 && (
-                  <button onClick={(e) => { e.stopPropagation(); removeCompareTicker(t); }}
-                    style={{ background: 'none', border: 'none', color: '#D66CAE', cursor: 'pointer', padding: 0, fontSize: '0.85rem', lineHeight: 1 }}>
+                  <button type="button" aria-label={`Remove ${t} from comparison`} onClick={() => removeCompareTicker(t)}
+                    style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', padding: 0, fontSize: '0.85rem', lineHeight: 1 }}>
                     &times;
                   </button>
                 )}
@@ -268,14 +288,14 @@ export default function BoardProfiles() {
 
       <div className="board-layout">
         <aside className="board-sidebar glass-card">
-          <nav className="board-nav">
-            <button className={`nav-btn ${activeTab === 'directors' ? 'active' : ''}`} onClick={() => setActiveTab('directors')}>
+          <nav className="board-nav" aria-label="Board research views">
+            <button type="button" aria-pressed={activeTab === 'directors'} className={`nav-btn ${activeTab === 'directors' ? 'active' : ''}`} onClick={() => setActiveTab('directors')}>
               <Users size={18} /> Director Profiles
             </button>
-            <button className={`nav-btn ${activeTab === 'diversity' ? 'active' : ''}`} onClick={() => setActiveTab('diversity')}>
+            <button type="button" aria-pressed={activeTab === 'diversity'} className={`nav-btn ${activeTab === 'diversity' ? 'active' : ''}`} onClick={() => setActiveTab('diversity')}>
               <PieChart size={18} /> Board Diversity
             </button>
-            <button className={`nav-btn ${activeTab === 'compensation' ? 'active' : ''}`} onClick={() => setActiveTab('compensation')}>
+            <button type="button" aria-pressed={activeTab === 'compensation'} className={`nav-btn ${activeTab === 'compensation' ? 'active' : ''}`} onClick={() => setActiveTab('compensation')}>
               <DollarSign size={18} /> Executive Comp (PvP)
             </button>
           </nav>
@@ -294,13 +314,13 @@ export default function BoardProfiles() {
             </div>
             <div className="gov-metric" style={{ marginTop: '12px' }}>
               <span className="text-sm text-slate-400">Independence</span>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '1.1rem', color: '#4ADE80' }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '1.1rem', color: 'var(--status-success)' }}>
                 {boardLoading ? '...' : independence != null ? `${independence}%` : '—'}
               </span>
             </div>
             <div className="gov-metric" style={{ marginTop: '12px' }}>
               <span className="text-sm text-slate-400">CEO Pay Ratio</span>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '1rem', color: '#D66CAE' }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '1rem', color: 'var(--accent-primary)' }}>
                 {boardLoading ? '...' : boardData?.ceoPayRatio || '—'}
               </span>
             </div>
@@ -309,13 +329,13 @@ export default function BoardProfiles() {
 
         <main className="board-main glass-card" style={{ overflow: 'auto' }}>
           {!companyData && !isLoading && (
-            <div style={{ padding: '48px', textAlign: 'center', color: 'var(--text-muted)' }}>
+            <div role="status" style={{ padding: '48px', textAlign: 'center', color: 'var(--text-muted)' }}>
               <p>Ticker "{currentTicker}" not found in SEC EDGAR. Try any public company ticker (e.g., AAPL, MSFT, GOOGL).</p>
             </div>
           )}
 
           {boardLoading && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px', gap: '12px' }}>
+            <div role="status" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px', gap: '12px' }}>
               <Loader2 size={32} className="spinner" />
               <p style={{ color: 'var(--text-secondary)' }}>AI is analyzing the DEF 14A proxy statement...</p>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>This may take 15-30 seconds</p>
@@ -323,10 +343,10 @@ export default function BoardProfiles() {
           )}
 
           {boardError && !boardLoading && (
-            <div style={{ padding: '40px', textAlign: 'center', color: '#F59E0B' }}>
+            <div role="alert" style={{ padding: '40px', textAlign: 'center', color: 'var(--status-error)' }}>
               {boardError}
               <br />
-              <button className="primary-btn sm" style={{ marginTop: '12px' }} onClick={() => fetchData(currentTicker)}>Retry</button>
+              <button type="button" className="primary-btn sm" style={{ marginTop: '12px' }} onClick={() => fetchData(currentTicker)}>Retry</button>
             </div>
           )}
 
@@ -337,29 +357,29 @@ export default function BoardProfiles() {
                   <h2>Board of Directors — {companyName}</h2>
                   <p className="text-sm text-slate-400" style={{ marginTop: '4px' }}>AI-extracted from most recent DEF 14A proxy statement.</p>
                 </div>
-                <span className="badge" style={{ fontSize: '0.7rem' }}>Claude AI Extracted</span>
+                <span className="badge" style={{ fontSize: '0.7rem' }}>AI extracted</span>
               </div>
 
-              <div style={{ border: '1px solid rgba(51,65,85,0.5)', borderRadius: '12px' }}>
+              <div className="board-table-scroll" style={{ border: '1px solid var(--border-color)', borderRadius: '12px' }}>
                 <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
                   <thead>
-                    <tr style={{ background: 'var(--input-bg)', borderBottom: '1px solid rgba(51,65,85,0.5)', fontSize: '0.875rem' }}>
-                      <th style={{ padding: '16px', fontWeight: 600, color: 'var(--text-secondary)' }}>Director Name</th>
-                      <th style={{ padding: '16px', fontWeight: 600, color: 'var(--text-secondary)' }}>Role</th>
-                      <th style={{ padding: '16px', fontWeight: 600, color: 'var(--text-secondary)' }}>Independent</th>
-                      <th style={{ padding: '16px', fontWeight: 600, color: 'var(--text-secondary)' }}>Committees</th>
+                    <tr style={{ background: 'var(--table-header-bg)', borderBottom: '1px solid var(--table-header-border)', fontSize: '0.875rem' }}>
+                      <th scope="col" style={{ padding: '16px', fontWeight: 600, color: 'var(--text-secondary)' }}>Director Name</th>
+                      <th scope="col" style={{ padding: '16px', fontWeight: 600, color: 'var(--text-secondary)' }}>Role</th>
+                      <th scope="col" style={{ padding: '16px', fontWeight: 600, color: 'var(--text-secondary)' }}>Independent</th>
+                      <th scope="col" style={{ padding: '16px', fontWeight: 600, color: 'var(--text-secondary)' }}>Committees</th>
                     </tr>
                   </thead>
                   <tbody>
                     {boardData.directors.map((dir, i) => (
-                      <tr key={i} style={{ borderBottom: '1px solid rgba(51,65,85,0.3)', fontSize: '0.875rem' }}>
+                      <tr key={`${dir.name}-${i}`} style={{ borderBottom: '1px solid var(--border-color)', fontSize: '0.875rem' }}>
                         <td style={{ padding: '16px', fontWeight: 500, color: 'var(--text-primary)' }}>{dir.name}</td>
                         <td style={{ padding: '16px', color: 'var(--text-secondary)' }}>{dir.role}</td>
                         <td style={{ padding: '16px' }}>
                           {dir.independent ? (
-                            <span style={{ background: 'rgba(22,163,74,0.15)', color: '#4ADE80', padding: '2px 8px', borderRadius: '9999px', fontSize: '0.75rem', border: '1px solid rgba(22,163,74,0.2)' }}>Yes</span>
+                            <span style={{ background: 'color-mix(in srgb, var(--status-success) 14%, transparent)', color: 'var(--status-success)', padding: '2px 8px', borderRadius: '9999px', fontSize: '0.75rem', border: '1px solid color-mix(in srgb, var(--status-success) 28%, transparent)' }}>Yes</span>
                           ) : (
-                            <span style={{ background: 'var(--surface-panel)', color: 'var(--text-secondary)', padding: '2px 8px', borderRadius: '9999px', fontSize: '0.75rem' }}>No</span>
+                            <span style={{ background: 'var(--surface-subtle)', color: 'var(--text-secondary)', padding: '2px 8px', borderRadius: '9999px', fontSize: '0.75rem' }}>No</span>
                           )}
                         </td>
                         <td style={{ padding: '16px', color: 'var(--text-secondary)' }}>{dir.committees.length > 0 ? dir.committees.join(', ') : '—'}</td>
@@ -378,51 +398,52 @@ export default function BoardProfiles() {
                 <p className="text-sm text-slate-400" style={{ marginTop: '4px' }}>AI-extracted gender breakdown from DEF 14A.</p>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '24px' }}>
-                <div style={{ background: 'rgba(15,23,42,0.5)', border: '1px solid var(--input-border)', padding: '24px', borderRadius: '12px' }}>
+              <div className="board-diversity-grid">
+                <div style={{ background: 'var(--surface-panel)', border: '1px solid var(--border-color)', padding: '24px', borderRadius: '12px' }}>
                   <h3 style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.025em', marginBottom: '16px', display: 'flex', justifyContent: 'space-between' }}>
                     Gender Identity
-                    <span style={{ color: '#D66CAE', fontWeight: 700 }}>Total: {boardSize ?? '—'}</span>
+                    <span style={{ color: 'var(--accent-primary)', fontWeight: 700 }}>Total: {boardSize ?? '—'}</span>
                   </h3>
                   <div style={{ display: 'flex', gap: '24px', height: '160px', alignItems: 'flex-end', marginBottom: '8px' }}>
-                    {[{ label: 'Male', pct: boardData.diversity.malePercent, color: '#B31F7E' },
-                      { label: 'Female', pct: boardData.diversity.femalePercent, color: '#A855F7' }].map(bar => {
-                      const count = boardSize != null && bar.pct != null ? Math.round(boardSize * bar.pct / 100) : null;
+                    {[{ label: 'Male', pct: boardData.diversity.malePercent, color: 'var(--accent-primary)' },
+                      { label: 'Female', pct: boardData.diversity.femalePercent, color: 'var(--accent-secondary)' }].map(bar => {
+                      const percent = clampPercent(bar.pct);
+                      const count = boardSize != null && percent != null ? Math.round(boardSize * percent / 100) : null;
                       return (
                         <div key={bar.label} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
                           <span style={{ fontSize: '0.875rem', fontWeight: 700 }}>{count ?? '—'}</span>
-                          <div style={{ width: '100%', background: 'var(--surface-panel)', borderRadius: '6px 6px 0 0', position: 'relative', height: '100%' }}>
-                            <div style={{ position: 'absolute', bottom: 0, width: '100%', background: bar.color, borderRadius: '6px 6px 0 0', height: `${bar.pct ?? 0}%`, transition: 'height 0.3s' }}></div>
+                          <div style={{ width: '100%', background: 'var(--surface-subtle)', borderRadius: '6px 6px 0 0', position: 'relative', height: '100%' }}>
+                            <div style={{ position: 'absolute', bottom: 0, width: '100%', background: bar.color, borderRadius: '6px 6px 0 0', height: `${percent ?? 0}%`, transition: 'height 0.3s' }}></div>
                           </div>
-                          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{bar.label} ({bar.pct != null ? `${bar.pct}%` : 'not disclosed'})</span>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{bar.label} ({percent != null ? `${percent}%` : 'not disclosed'})</span>
                         </div>
                       );
                     })}
                   </div>
                 </div>
 
-                <div style={{ background: 'rgba(15,23,42,0.5)', border: '1px solid var(--input-border)', padding: '24px', borderRadius: '12px' }}>
+                <div style={{ background: 'var(--surface-panel)', border: '1px solid var(--border-color)', padding: '24px', borderRadius: '12px' }}>
                   <h3 style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.025em', marginBottom: '16px' }}>Key Governance Metrics</h3>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', paddingTop: '8px' }}>
                     <div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', marginBottom: '4px' }}>
                         <span style={{ color: 'var(--text-secondary)' }}>Board Independence</span>
-                        <span style={{ fontWeight: 700, color: '#4ADE80' }}>{independence}%</span>
+                        <span style={{ fontWeight: 700, color: 'var(--status-success)' }}>{formatPercent(independence)}</span>
                       </div>
-                      <div style={{ width: '100%', background: 'var(--surface-panel)', height: '8px', borderRadius: '9999px', overflow: 'hidden' }}>
-                        <div style={{ background: '#4ADE80', height: '100%', width: `${independence}%` }}></div>
+                      <div style={{ width: '100%', background: 'var(--surface-subtle)', height: '8px', borderRadius: '9999px', overflow: 'hidden' }}>
+                        <div style={{ background: 'var(--status-success)', height: '100%', width: `${independence ?? 0}%` }}></div>
                       </div>
                     </div>
                     <div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', marginBottom: '4px' }}>
                         <span style={{ color: 'var(--text-secondary)' }}>Say-on-Pay Approval</span>
-                        <span style={{ fontWeight: 700, color: '#D66CAE' }}>{boardData.sayOnPayApproval}</span>
+                        <span style={{ fontWeight: 700, color: 'var(--accent-primary)' }}>{boardData.sayOnPayApproval}</span>
                       </div>
                     </div>
                     <div>
                       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.875rem', marginBottom: '4px' }}>
                         <span style={{ color: 'var(--text-secondary)' }}>CEO Pay Ratio</span>
-                        <span style={{ fontWeight: 700, color: '#FB923C' }}>{boardData.ceoPayRatio}</span>
+                        <span style={{ fontWeight: 700, color: 'var(--status-warning)' }}>{boardData.ceoPayRatio}</span>
                       </div>
                     </div>
                   </div>
@@ -432,8 +453,8 @@ export default function BoardProfiles() {
               <div style={{ marginTop: '24px', padding: '16px', background: 'rgba(179,31,126,0.05)', border: '1px solid rgba(179,31,126,0.2)', borderRadius: '12px', display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
                 <CheckCircle2 className="text-blue-400" size={20} style={{ flexShrink: 0, marginTop: '2px' }} />
                 <div>
-                  <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#DBEAFE', marginBottom: '4px' }}>Data Source</h4>
-                  <p style={{ fontSize: '0.875rem', color: 'rgba(191,219,254,0.7)' }}>All data AI-extracted from {currentTicker}'s latest DEF 14A proxy statement filed with SEC EDGAR.</p>
+                  <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' }}>Data Source</h4>
+                  <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>All data AI-extracted from {currentTicker}&apos;s latest DEF 14A proxy statement filed with SEC EDGAR.</p>
                 </div>
               </div>
             </div>
@@ -446,23 +467,23 @@ export default function BoardProfiles() {
                   <h2>Executive Compensation — {companyName}</h2>
                   <p className="text-sm text-slate-400" style={{ marginTop: '4px' }}>Named Executive Officers (NEOs) from DEF 14A proxy statement.</p>
                 </div>
-                <span className="badge" style={{ fontSize: '0.7rem' }}>Claude AI Extracted</span>
+                <span className="badge" style={{ fontSize: '0.7rem' }}>AI extracted</span>
               </div>
 
-              <div style={{ border: '1px solid rgba(51,65,85,0.5)', borderRadius: '12px', marginBottom: '32px' }}>
+              <div className="board-table-scroll" style={{ border: '1px solid var(--border-color)', borderRadius: '12px', marginBottom: '32px' }}>
                 <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
                   <thead>
-                    <tr style={{ background: 'var(--input-bg)', borderBottom: '1px solid rgba(51,65,85,0.5)', fontSize: '0.875rem' }}>
-                      <th style={{ padding: '16px', fontWeight: 600, color: 'var(--text-secondary)' }}>NEO</th>
-                      <th style={{ padding: '16px', fontWeight: 600, color: 'var(--text-secondary)' }}>Title</th>
-                      <th style={{ padding: '16px', fontWeight: 600, color: 'var(--text-secondary)', textAlign: 'right' }}>Base Salary</th>
-                      <th style={{ padding: '16px', fontWeight: 600, color: 'var(--text-secondary)', textAlign: 'right' }}>Stock Awards</th>
-                      <th style={{ padding: '16px', fontWeight: 600, color: 'var(--text-primary)', textAlign: 'right' }}>Total</th>
+                    <tr style={{ background: 'var(--table-header-bg)', borderBottom: '1px solid var(--table-header-border)', fontSize: '0.875rem' }}>
+                      <th scope="col" style={{ padding: '16px', fontWeight: 600, color: 'var(--text-secondary)' }}>NEO</th>
+                      <th scope="col" style={{ padding: '16px', fontWeight: 600, color: 'var(--text-secondary)' }}>Title</th>
+                      <th scope="col" style={{ padding: '16px', fontWeight: 600, color: 'var(--text-secondary)', textAlign: 'right' }}>Base Salary</th>
+                      <th scope="col" style={{ padding: '16px', fontWeight: 600, color: 'var(--text-secondary)', textAlign: 'right' }}>Stock Awards</th>
+                      <th scope="col" style={{ padding: '16px', fontWeight: 600, color: 'var(--text-primary)', textAlign: 'right' }}>Total</th>
                     </tr>
                   </thead>
                   <tbody>
                     {boardData.compensation.map((d, i) => (
-                      <tr key={i} style={{ borderBottom: '1px solid rgba(51,65,85,0.3)', fontSize: '0.875rem' }}>
+                      <tr key={`${d.name}-${i}`} style={{ borderBottom: '1px solid var(--border-color)', fontSize: '0.875rem' }}>
                         <td style={{ padding: '16px', fontWeight: 500, color: 'var(--text-primary)' }}>{d.name}</td>
                         <td style={{ padding: '16px', color: 'var(--text-secondary)' }}>{d.title}</td>
                         <td style={{ padding: '16px', color: 'var(--text-secondary)', textAlign: 'right' }}>{d.salary}</td>
@@ -475,15 +496,15 @@ export default function BoardProfiles() {
               </div>
 
               <h2 style={{ fontSize: '1.1rem', marginBottom: '16px', marginTop: '8px' }}>Pay vs. Performance (PvP)</h2>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '24px' }}>
-                <div style={{ background: 'rgba(30,41,59,0.5)', border: '1px solid var(--input-border)', padding: '20px', borderRadius: '12px', textAlign: 'center' }}>
+              <div className="board-comp-grid">
+                <div style={{ background: 'var(--surface-subtle)', border: '1px solid var(--border-color)', padding: '20px', borderRadius: '12px', textAlign: 'center' }}>
                   <h4 style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>CEO Pay Ratio</h4>
                   <div style={{ fontSize: '1.875rem', fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', marginBottom: '4px' }}>{boardData.ceoPayRatio}</div>
                   <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Based on median employee salary</p>
                 </div>
-                <div style={{ background: 'rgba(30,41,59,0.5)', border: '1px solid var(--input-border)', padding: '20px', borderRadius: '12px', textAlign: 'center' }}>
+                <div style={{ background: 'var(--surface-subtle)', border: '1px solid var(--border-color)', padding: '20px', borderRadius: '12px', textAlign: 'center' }}>
                   <h4 style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Say-on-Pay Approval</h4>
-                  <div style={{ fontSize: '1.875rem', fontFamily: 'var(--font-mono)', color: '#4ADE80', marginBottom: '4px' }}>{boardData.sayOnPayApproval}</div>
+                  <div style={{ fontSize: '1.875rem', fontFamily: 'var(--font-mono)', color: 'var(--status-success)', marginBottom: '4px' }}>{boardData.sayOnPayApproval}</div>
                   <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>From latest annual shareholder meeting</p>
                 </div>
               </div>
@@ -492,23 +513,24 @@ export default function BoardProfiles() {
 
           {/* Multi-company comparison table (shown when 2+ tickers selected) */}
           {compareTickers.length >= 2 && (
-            <div style={{ marginTop: '24px', padding: '24px', background: 'rgba(15,23,42,0.5)', border: '1px solid var(--input-border)', borderRadius: '12px' }}>
+            <div style={{ marginTop: '24px', padding: '24px', background: 'var(--surface-subtle)', border: '1px solid var(--border-color)', borderRadius: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
-                <BarChart3 size={20} style={{ color: '#D66CAE' }} />
+                <BarChart3 size={20} style={{ color: 'var(--accent-primary)' }} />
                 <h2 style={{ fontSize: '1.1rem', margin: 0 }}>Side-by-Side Comparison</h2>
               </div>
               {compareTickers.some(t => compareEntries.get(t)?.loading) && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)', marginBottom: '16px', fontSize: '0.85rem' }}>
+                <div role="status" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)', marginBottom: '16px', fontSize: '0.85rem' }}>
                   <Loader2 size={14} className="spinner" /> Loading comparison data...
                 </div>
               )}
-              <div style={{ border: '1px solid rgba(51,65,85,0.5)', borderRadius: '10px', overflow: 'auto' }}>
+              <div style={{ border: '1px solid var(--border-color)', borderRadius: '10px', overflow: 'auto' }}>
                 <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
+                  <caption className="sr-only">Board governance comparison for selected companies</caption>
                   <thead>
-                    <tr style={{ background: 'var(--input-bg)', borderBottom: '1px solid rgba(51,65,85,0.5)', fontSize: '0.85rem' }}>
-                      <th style={{ padding: '14px 16px', fontWeight: 600, color: 'var(--text-secondary)' }}>Metric</th>
+                    <tr style={{ background: 'var(--table-header-bg)', borderBottom: '1px solid var(--table-header-border)', fontSize: '0.85rem' }}>
+                      <th scope="col" style={{ padding: '14px 16px', fontWeight: 600, color: 'var(--text-secondary)' }}>Metric</th>
                       {compareTickers.map(t => (
-                        <th key={t} style={{ padding: '14px 16px', fontWeight: 600, color: 'var(--text-primary)', textAlign: 'center', borderLeft: '1px solid rgba(51,65,85,0.5)' }}>
+                        <th scope="col" key={t} style={{ padding: '14px 16px', fontWeight: 600, color: 'var(--text-primary)', textAlign: 'center', borderLeft: '1px solid var(--border-color)' }}>
                           {compareEntries.get(t)?.companyData?.name || t}
                         </th>
                       ))}
@@ -516,19 +538,19 @@ export default function BoardProfiles() {
                   </thead>
                   <tbody>
                     {[
-                      { label: 'Board Size', getValue: (bd: BoardDataResult | null) => bd ? String(bd.boardSize) : '—' },
-                      { label: 'Independence %', getValue: (bd: BoardDataResult | null) => bd ? `${bd.independencePercent}%` : '—' },
-                      { label: 'Female %', getValue: (bd: BoardDataResult | null) => bd ? `${bd.diversity.femalePercent}%` : '—' },
+                      { label: 'Board Size', getValue: (bd: BoardDataResult | null) => bd?.boardSize != null ? String(bd.boardSize) : '—' },
+                      { label: 'Independence %', getValue: (bd: BoardDataResult | null) => formatPercent(bd?.independencePercent) },
+                      { label: 'Female %', getValue: (bd: BoardDataResult | null) => formatPercent(bd?.diversity.femalePercent) },
                       { label: 'CEO Pay Ratio', getValue: (bd: BoardDataResult | null) => bd?.ceoPayRatio || '—' },
                       { label: 'Say-on-Pay Approval', getValue: (bd: BoardDataResult | null) => bd?.sayOnPayApproval || '—' },
-                    ].map((metric, i) => (
-                      <tr key={i} style={{ borderBottom: '1px solid rgba(51,65,85,0.3)', fontSize: '0.85rem' }}>
-                        <td style={{ padding: '12px 16px', fontWeight: 500, color: 'var(--text-secondary)' }}>{metric.label}</td>
+                    ].map(metric => (
+                      <tr key={metric.label} style={{ borderBottom: '1px solid var(--border-color)', fontSize: '0.85rem' }}>
+                        <th scope="row" style={{ padding: '12px 16px', fontWeight: 500, color: 'var(--text-secondary)' }}>{metric.label}</th>
                         {compareTickers.map(t => {
                           const entry = compareEntries.get(t);
                           return (
-                            <td key={t} style={{ padding: '12px 16px', textAlign: 'center', borderLeft: '1px solid rgba(51,65,85,0.5)', color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', fontSize: '0.85rem' }}>
-                              {entry?.loading ? <Loader2 size={12} className="spinner" /> : entry?.error ? <span style={{ color: '#F59E0B', fontSize: '0.75rem' }}>{entry.error}</span> : metric.getValue(entry?.boardData || null)}
+                            <td key={t} style={{ padding: '12px 16px', textAlign: 'center', borderLeft: '1px solid var(--border-color)', color: 'var(--text-primary)', fontFamily: 'var(--font-mono)', fontSize: '0.85rem' }}>
+                              {entry?.loading ? <Loader2 size={12} className="spinner" /> : entry?.error ? <span style={{ color: 'var(--status-warning)', fontSize: '0.75rem' }}>{entry.error}</span> : metric.getValue(entry?.boardData || null)}
                             </td>
                           );
                         })}
@@ -544,4 +566,3 @@ export default function BoardProfiles() {
     </div>
   );
 }
-

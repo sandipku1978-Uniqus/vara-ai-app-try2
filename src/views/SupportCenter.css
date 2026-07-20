@@ -18,7 +18,7 @@
   border-radius: 999px;
   background: rgba(179, 31, 126, 0.12);
   border: 1px solid rgba(179, 31, 126, 0.28);
-  color: #F1B8D7;
+  color: var(--accent-primary);
   font-size: 0.76rem;
   font-weight: 700;
   letter-spacing: 0.06em;
@@ -28,7 +28,7 @@
 .support-hero h1 {
   margin: 0 0 12px;
   font-size: 2rem;
-  color: white;
+  color: var(--text-primary);
 }
 
 .support-hero > p {
@@ -55,11 +55,11 @@
 
 .support-search-wrapper input {
   width: 100%;
-  background: rgba(15, 23, 42, 0.82);
-  border: 1px solid var(--glass-border);
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
   border-radius: 999px;
   padding: 14px 18px 14px 48px;
-  color: white;
+  color: var(--text-primary);
   font-size: 0.95rem;
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
@@ -82,18 +82,27 @@
 }
 
 .support-summary-card {
+  width: 100%;
   padding: 20px;
   text-align: left;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.support-summary-card:focus-visible {
+  outline: 3px solid rgba(179, 31, 126, 0.42);
+  outline-offset: 3px;
 }
 
 .support-summary-card svg {
-  color: #D66CAE;
+  color: var(--accent-primary);
   margin-bottom: 12px;
 }
 
 .support-summary-card h3 {
   margin: 0 0 8px;
-  color: white;
+  color: var(--text-primary);
   font-size: 1rem;
 }
 
@@ -131,7 +140,7 @@
   gap: 8px;
   margin: 0 0 12px;
   font-size: 0.88rem;
-  color: white;
+  color: var(--text-primary);
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -153,7 +162,7 @@
 
 .guide-nav a:hover {
   background: rgba(179, 31, 126, 0.12);
-  color: white;
+  color: var(--accent-primary);
 }
 
 .guide-side-notes {
@@ -179,7 +188,7 @@
 
 .guide-section h2 {
   margin: 0 0 10px;
-  color: white;
+  color: var(--text-primary);
   font-size: 1.25rem;
   display: flex;
   align-items: center;
@@ -200,7 +209,7 @@
 
 .guide-columns h4 {
   margin: 0 0 10px;
-  color: white;
+  color: var(--text-primary);
   font-size: 0.9rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -228,16 +237,16 @@
 }
 
 .faq-item {
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--glass-border);
   border-radius: 10px;
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--interactive-hover);
   overflow: hidden;
 }
 
 .faq-item summary {
   cursor: pointer;
   padding: 14px 16px;
-  color: white;
+  color: var(--text-primary);
   font-weight: 600;
   list-style: none;
 }
@@ -395,4 +404,3 @@
   max-height: calc(100vh - 48px);
   overflow-y: auto;
 }
-

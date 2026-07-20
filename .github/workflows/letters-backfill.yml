@@ -4,6 +4,9 @@
 
 name: URC comment-letter text backfill
 
+permissions:
+  contents: read
+
 on:
   schedule:
     - cron: '0 6 * * *'   # nightly 06:00 UTC (~2am ET) — EDGAR's quiet hours
@@ -22,18 +25,30 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 330
     env:
-      URC_SUPABASE_URL: ${{ secrets.URC_SUPABASE_URL }}
-      URC_SUPABASE_SERVICE_KEY: ${{ secrets.URC_SUPABASE_SERVICE_KEY }}
       EDGAR_USER_AGENT: 'Uniqus Research Center contact@uniqus.com'
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
           cache: npm
       - name: Install dependencies
         run: npm ci --no-audit --no-fund
-      - name: Ingest newly disseminated letters
-        run: npx tsx data-pipeline/ingest-letters.ts --since 5
-      - name: Fetch letter text
-        run: npx tsx data-pipeline/fetch-letter-text.ts --max-minutes ${{ github.event.inputs.max_minutes || '300' }}
+      - name: Reconcile current and prior-quarter letter metadata
+        # A 90-day overlap catches retroactively disseminated older-quarter
+        # records; the accession+CIK upsert makes the scan idempotent.
+        run: npx tsx data-pipeline/ingest-letters.ts --since 90
+        env:
+          URC_SUPABASE_URL: ${{ secrets.URC_SUPABASE_URL }}
+          URC_SUPABASE_SERVICE_KEY: ${{ secrets.URC_SUPABASE_SERVICE_KEY }}
+      - name: Reconcile legacy identities, rethread, and fetch letter text
+        # Stored text rows are checked locally first; permanently unresolved
+        # rows receive a bounded header refetch. The script checkpoints each
+        # row and calls urc_thread_letters after identity/content updates.
+        run: npx tsx data-pipeline/fetch-letter-text.ts --max-minutes "$MAX_MINUTES" --identifier-limit 20000 --identifier-refetch-limit 5000
+        env:
+          MAX_MINUTES: ${{ github.event.inputs.max_minutes || '300' }}
+          URC_SUPABASE_URL: ${{ secrets.URC_SUPABASE_URL }}
+          URC_SUPABASE_SERVICE_KEY: ${{ secrets.URC_SUPABASE_SERVICE_KEY }}

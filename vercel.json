@@ -1,4 +1,3 @@
 {
-  "framework": "nextjs",
-  "crons": [{ "path": "/api/cron/precompute", "schedule": "0 9 * * *" }]
+  "framework": "nextjs"
 }

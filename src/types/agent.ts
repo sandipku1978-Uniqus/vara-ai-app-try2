@@ -89,6 +89,12 @@ export interface AgentRun {
   evidence: AgentEvidencePacket | null;
 }
 
+export interface AgentPromptRequest {
+  id: string;
+  prompt: string;
+  requestedAt: string;
+}
+
 export interface AgentConversationTurn {
   prompt: string;
   answer: string;

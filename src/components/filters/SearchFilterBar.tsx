@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { Filter, X, ChevronDown, ChevronUp, ChevronRight } from 'lucide-react';
 import CompanyLookupField from './CompanyLookupField';
 import SicLookupField from './SicLookupField';
@@ -152,9 +152,10 @@ const pillBtnStyle = (active: boolean): React.CSSProperties => ({
 
 function CollapsibleSection({ title, defaultOpen = false, children }: { title: string; defaultOpen?: boolean; children: React.ReactNode }) {
   const [open, setOpen] = useState(defaultOpen);
+  const contentId = useId();
   return (
     <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: open ? '12px' : '0' }}>
-      <button onClick={() => setOpen(!open)} style={{
+      <button type="button" aria-expanded={open} aria-controls={contentId} onClick={() => setOpen(!open)} style={{
         display: 'flex', alignItems: 'center', gap: '6px', width: '100%',
         background: 'none', border: 'none', cursor: 'pointer', padding: '8px 0',
         color: 'var(--text-primary)', fontSize: '0.78rem', fontWeight: 600, textAlign: 'left',
@@ -162,13 +163,15 @@ function CollapsibleSection({ title, defaultOpen = false, children }: { title: s
         {open ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
         {title}
       </button>
-      {open && <div style={{ paddingLeft: '4px' }}>{children}</div>}
+      {open && <div id={contentId} style={{ paddingLeft: '4px' }}>{children}</div>}
     </div>
   );
 }
 
 export default function SearchFilterBar({ config, filters, onChange, onSearch, loading }: Props) {
   const [expanded, setExpanded] = useState(false);
+  const filterPanelId = useId();
+  const fieldId = useId();
 
   const applyDatePreset = (years: number) => {
     const end = new Date();
@@ -224,12 +227,15 @@ export default function SearchFilterBar({ config, filters, onChange, onSearch, l
   if (filters.accessionNumber) chips.push({ label: `Acc#: ${filters.accessionNumber}`, clear: () => onChange({ ...filters, accessionNumber: '' }) });
   if (filters.fileNumber) chips.push({ label: `File#: ${filters.fileNumber}`, clear: () => onChange({ ...filters, fileNumber: '' }) });
   if (filters.fiscalYearEnd) chips.push({ label: `FYE: ${FY_LABELS[filters.fiscalYearEnd] || filters.fiscalYearEnd}`, clear: () => onChange({ ...filters, fiscalYearEnd: '' }) });
-  if (filters.accountingFramework) chips.push({ label: `Framework: `, clear: () => onChange({ ...filters, accountingFramework: '' }) });
+  if (filters.accountingFramework) chips.push({ label: `Framework: ${filters.accountingFramework}`, clear: () => onChange({ ...filters, accountingFramework: '' }) });
 
   return (
     <div style={{ marginBottom: '16px' }}>
       {/* Toggle bar */}
       <button
+        type="button"
+        aria-expanded={expanded}
+        aria-controls={filterPanelId}
         onClick={() => setExpanded(!expanded)}
         style={{
           display: 'flex', alignItems: 'center', gap: '6px',
@@ -245,7 +251,7 @@ export default function SearchFilterBar({ config, filters, onChange, onSearch, l
         <Filter size={14} />
         Advanced Filters
         {activeCount > 0 && (
-          <span style={{ background: '#B31F7E', color: 'white', borderRadius: '10px', padding: '0 6px', fontSize: '0.7rem', fontWeight: 700, minWidth: '18px', textAlign: 'center' }}>
+          <span style={{ background: 'var(--accent-primary)', color: 'white', borderRadius: '10px', padding: '0 6px', fontSize: '0.7rem', fontWeight: 700, minWidth: '18px', textAlign: 'center' }}>
             {activeCount}
           </span>
         )}
@@ -263,7 +269,7 @@ export default function SearchFilterBar({ config, filters, onChange, onSearch, l
           {chips.slice(0, 4).map((c, i) => (
             <span key={i} style={chipStyle}>
               {c.label}
-              <button onClick={c.clear} style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', padding: 0 }}>
+              <button type="button" aria-label={`Remove ${c.label} filter`} onClick={c.clear} style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', padding: 0 }}>
                 <X size={10} />
               </button>
             </span>
@@ -271,7 +277,7 @@ export default function SearchFilterBar({ config, filters, onChange, onSearch, l
           {chips.length > 4 && (
             <span style={{ color: 'var(--text-muted)', fontSize: '0.74rem' }}>+{chips.length - 4} more</span>
           )}
-          <button onClick={handleClear} style={{ background: 'none', border: 'none', color: '#F87171', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 500 }}>
+          <button type="button" onClick={handleClear} style={{ background: 'none', border: 'none', color: 'var(--status-error)', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 500 }}>
             Clear All
           </button>
         </div>
@@ -279,7 +285,7 @@ export default function SearchFilterBar({ config, filters, onChange, onSearch, l
 
       {/* Expanded filter panel */}
       {expanded && (
-        <div style={{
+        <div id={filterPanelId} style={{
           background: 'var(--surface-panel)',
           border: '1px solid var(--border-color)',
           borderRadius: '12px',
@@ -292,8 +298,9 @@ export default function SearchFilterBar({ config, filters, onChange, onSearch, l
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'flex-end', paddingBottom: '12px', borderBottom: '1px solid var(--border-color)' }}>
             {config.showEntityName !== false && (
               <div style={{ minWidth: '180px', flex: '1 1 180px' }}>
-                <label style={labelStyle}>Company / Entity</label>
+                <label htmlFor={`${fieldId}-entity`} style={labelStyle}>Company / Entity</label>
                 <CompanyLookupField
+                  id={`${fieldId}-entity`}
                   value={filters.entityName}
                   onChange={value => onChange({ ...filters, entityName: value })}
                   placeholder="Type company or ticker"
@@ -303,19 +310,20 @@ export default function SearchFilterBar({ config, filters, onChange, onSearch, l
             {config.showDateRange !== false && (
               <>
                 <div style={{ minWidth: '140px' }}>
-                  <label style={labelStyle}>Filed After</label>
-                  <input type="date" value={filters.dateFrom} onChange={e => onChange({ ...filters, dateFrom: e.target.value })} style={inputStyle} />
+                  <label htmlFor={`${fieldId}-date-from`} style={labelStyle}>Filed After</label>
+                  <input id={`${fieldId}-date-from`} type="date" value={filters.dateFrom} onChange={e => onChange({ ...filters, dateFrom: e.target.value })} style={inputStyle} />
                 </div>
                 <div style={{ minWidth: '140px' }}>
-                  <label style={labelStyle}>Filed Before</label>
-                  <input type="date" value={filters.dateTo} onChange={e => onChange({ ...filters, dateTo: e.target.value })} style={inputStyle} />
+                  <label htmlFor={`${fieldId}-date-to`} style={labelStyle}>Filed Before</label>
+                  <input id={`${fieldId}-date-to`} type="date" value={filters.dateTo} onChange={e => onChange({ ...filters, dateTo: e.target.value })} style={inputStyle} />
                 </div>
                 <div style={{ minWidth: '200px' }}>
-                  <label style={labelStyle}>Quick Windows</label>
-                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                  <span id={`${fieldId}-quick-windows`} style={labelStyle}>Quick Windows</span>
+                  <div role="group" aria-labelledby={`${fieldId}-quick-windows`} style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                     {DATE_PRESETS.map(years => (
                       <button
                         key={years}
+                        type="button"
                         onClick={() => applyDatePreset(years)}
                         style={pillBtnStyle(false)}
                       >
@@ -328,8 +336,8 @@ export default function SearchFilterBar({ config, filters, onChange, onSearch, l
             )}
             {config.showSectionKeywords && (
               <div style={{ minWidth: '180px', flex: '1 1 180px' }}>
-                <label style={labelStyle}>Keywords in Section</label>
-                <input value={filters.sectionKeywords} onChange={e => onChange({ ...filters, sectionKeywords: e.target.value })}
+                <label htmlFor={`${fieldId}-section`} style={labelStyle}>Keywords in Section</label>
+                <input id={`${fieldId}-section`} value={filters.sectionKeywords} onChange={e => onChange({ ...filters, sectionKeywords: e.target.value })}
                   placeholder="e.g. risk factors, MD&A" style={{ ...inputStyle, width: '100%' }} />
               </div>
             )}
@@ -340,7 +348,7 @@ export default function SearchFilterBar({ config, filters, onChange, onSearch, l
             <CollapsibleSection title="Form Types" defaultOpen>
               <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                 {config.formTypeOptions.map(ft => (
-                  <button key={ft} onClick={() => toggleList('formTypes', ft)} style={pillBtnStyle(filters.formTypes.includes(ft))}>
+                  <button type="button" key={ft} aria-pressed={filters.formTypes.includes(ft)} onClick={() => toggleList('formTypes', ft)} style={pillBtnStyle(filters.formTypes.includes(ft))}>
                     {ft}
                   </button>
                 ))}
@@ -354,8 +362,9 @@ export default function SearchFilterBar({ config, filters, onChange, onSearch, l
               <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
                 {config.showSIC && (
                   <div style={{ minWidth: '160px', flex: '1 1 160px' }}>
-                    <label style={labelStyle}>Industry / SIC Code</label>
+                    <label htmlFor={`${fieldId}-sic`} style={labelStyle}>Industry / SIC Code</label>
                     <SicLookupField
+                      id={`${fieldId}-sic`}
                       value={filters.sicCode}
                       onChange={value => onChange({ ...filters, sicCode: value })}
                       placeholder="Browse SIC code or industry"
@@ -364,8 +373,9 @@ export default function SearchFilterBar({ config, filters, onChange, onSearch, l
                 )}
                 {config.showAccountant && (
                   <div style={{ minWidth: '160px', flex: '1 1 160px' }}>
-                    <label style={labelStyle}>Accountant / Auditor</label>
+                    <label htmlFor={`${fieldId}-auditor`} style={labelStyle}>Accountant / Auditor</label>
                     <AuditorLookupField
+                      id={`${fieldId}-auditor`}
                       value={filters.accountant}
                       onChange={value => onChange({ ...filters, accountant: value })}
                       placeholder="Select auditor"
@@ -374,8 +384,8 @@ export default function SearchFilterBar({ config, filters, onChange, onSearch, l
                 )}
                 {config.showFiscalYearEnd && (
                   <div style={{ minWidth: '120px' }}>
-                    <label style={labelStyle}>Fiscal Year End</label>
-                    <select value={filters.fiscalYearEnd} onChange={e => onChange({ ...filters, fiscalYearEnd: e.target.value })} style={selectStyle}>
+                    <label htmlFor={`${fieldId}-fye`} style={labelStyle}>Fiscal Year End</label>
+                    <select id={`${fieldId}-fye`} value={filters.fiscalYearEnd} onChange={e => onChange({ ...filters, fiscalYearEnd: e.target.value })} style={selectStyle}>
                       <option value="">Any</option>
                       {FY_ENDS.map(m => <option key={m} value={m}>{FY_LABELS[m]} ({m})</option>)}
                     </select>
@@ -391,8 +401,8 @@ export default function SearchFilterBar({ config, filters, onChange, onSearch, l
               <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
                 {config.showStateOfInc && (
                   <div style={{ minWidth: '140px' }}>
-                    <label style={labelStyle}>Incorporated In</label>
-                    <select value={filters.stateOfInc} onChange={e => onChange({ ...filters, stateOfInc: e.target.value })} style={selectStyle}>
+                    <label htmlFor={`${fieldId}-incorporated`} style={labelStyle}>Incorporated In</label>
+                    <select id={`${fieldId}-incorporated`} value={filters.stateOfInc} onChange={e => onChange({ ...filters, stateOfInc: e.target.value })} style={selectStyle}>
                       <option value="">Any State</option>
                       {US_STATES.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
@@ -400,8 +410,8 @@ export default function SearchFilterBar({ config, filters, onChange, onSearch, l
                 )}
                 {config.showHeadquarters && (
                   <div style={{ minWidth: '160px', flex: '1 1 160px' }}>
-                    <label style={labelStyle}>Headquarters In</label>
-                    <input value={filters.headquarters} onChange={e => onChange({ ...filters, headquarters: e.target.value })}
+                    <label htmlFor={`${fieldId}-hq`} style={labelStyle}>Headquarters In</label>
+                    <input id={`${fieldId}-hq`} value={filters.headquarters} onChange={e => onChange({ ...filters, headquarters: e.target.value })}
                       placeholder="e.g. California, New York" style={{ ...inputStyle, width: '100%' }} />
                   </div>
                 )}
@@ -414,7 +424,7 @@ export default function SearchFilterBar({ config, filters, onChange, onSearch, l
             <CollapsibleSection title="Exchange">
               <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                 {EXCHANGES.map(ex => (
-                  <button key={ex} onClick={() => toggleList('exchange', ex)} style={pillBtnStyle(filters.exchange.includes(ex))}>
+                  <button type="button" key={ex} aria-pressed={filters.exchange.includes(ex)} onClick={() => toggleList('exchange', ex)} style={pillBtnStyle(filters.exchange.includes(ex))}>
                     {ex}
                   </button>
                 ))}
@@ -427,7 +437,7 @@ export default function SearchFilterBar({ config, filters, onChange, onSearch, l
             <CollapsibleSection title="Accelerated / Filer Status">
               <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                 {ACCEL_STATUSES.map(s => (
-                  <button key={s.key} onClick={() => toggleList('acceleratedStatus', s.key)} style={pillBtnStyle(filters.acceleratedStatus.includes(s.key))}>
+                  <button type="button" key={s.key} aria-pressed={filters.acceleratedStatus.includes(s.key)} onClick={() => toggleList('acceleratedStatus', s.key)} style={pillBtnStyle(filters.acceleratedStatus.includes(s.key))}>
                     {s.label}
                   </button>
                 ))}
@@ -440,7 +450,7 @@ export default function SearchFilterBar({ config, filters, onChange, onSearch, l
             <CollapsibleSection title="Accounting Framework">
               <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                 {['US GAAP', 'IFRS', 'Ind AS'].map(fw => (
-                  <button key={fw} onClick={() => onChange({ ...filters, accountingFramework: filters.accountingFramework === fw ? '' : fw })} style={pillBtnStyle(filters.accountingFramework === fw)}>
+                  <button type="button" key={fw} aria-pressed={filters.accountingFramework === fw} onClick={() => onChange({ ...filters, accountingFramework: filters.accountingFramework === fw ? '' : fw })} style={pillBtnStyle(filters.accountingFramework === fw)}>
                     {fw}
                   </button>
                 ))}
@@ -457,15 +467,15 @@ export default function SearchFilterBar({ config, filters, onChange, onSearch, l
               <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', alignItems: 'flex-end' }}>
                 {config.showAccessionNumber && (
                   <div style={{ minWidth: '200px', flex: '1 1 200px' }}>
-                    <label style={labelStyle}>Accession Number</label>
-                    <input value={filters.accessionNumber} onChange={e => onChange({ ...filters, accessionNumber: e.target.value })}
+                    <label htmlFor={`${fieldId}-accession`} style={labelStyle}>Accession Number</label>
+                    <input id={`${fieldId}-accession`} value={filters.accessionNumber} onChange={e => onChange({ ...filters, accessionNumber: e.target.value })}
                       placeholder="e.g. 0000320193-24-000081" style={{ ...inputStyle, width: '100%' }} />
                   </div>
                 )}
                 {config.showFileNumber && (
                   <div style={{ minWidth: '160px', flex: '1 1 160px' }}>
-                    <label style={labelStyle}>File Number</label>
-                    <input value={filters.fileNumber} onChange={e => onChange({ ...filters, fileNumber: e.target.value })}
+                    <label htmlFor={`${fieldId}-file-number`} style={labelStyle}>File Number</label>
+                    <input id={`${fieldId}-file-number`} value={filters.fileNumber} onChange={e => onChange({ ...filters, fileNumber: e.target.value })}
                       placeholder="e.g. 001-36743" style={{ ...inputStyle, width: '100%' }} />
                   </div>
                 )}
@@ -479,18 +489,18 @@ export default function SearchFilterBar({ config, filters, onChange, onSearch, l
               {chips.map((c, i) => (
                 <span key={i} style={chipStyle}>
                   {c.label}
-                  <button onClick={c.clear} style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', padding: 0 }}><X size={10} /></button>
+                  <button type="button" aria-label={`Remove ${c.label} filter`} onClick={c.clear} style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', padding: 0 }}><X size={10} /></button>
                 </span>
               ))}
               {activeCount > 0 && (
-                <button onClick={handleClear} style={{ background: 'none', border: 'none', color: '#F87171', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 500 }}>
+                <button type="button" onClick={handleClear} style={{ background: 'none', border: 'none', color: 'var(--status-error)', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 500 }}>
                   Clear All
                 </button>
               )}
               {activeCount === 0 && <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>No filters applied</span>}
             </div>
-            <button onClick={onSearch} disabled={loading} style={{
-              padding: '8px 18px', background: 'linear-gradient(135deg, #B31F7E, #482A7A)', color: 'white', border: 'none', borderRadius: '999px',
+            <button type="button" onClick={onSearch} disabled={loading} style={{
+              padding: '8px 18px', background: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))', color: 'white', border: 'none', borderRadius: '999px',
               cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600, whiteSpace: 'nowrap', marginLeft: '12px',
             }}>
               Apply & Search
@@ -501,4 +511,3 @@ export default function SearchFilterBar({ config, filters, onChange, onSearch, l
     </div>
   );
 }
-

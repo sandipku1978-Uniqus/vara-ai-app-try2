@@ -53,8 +53,8 @@
 }
 
 .nav-btn:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: white;
+  background: var(--interactive-hover);
+  color: var(--text-primary);
 }
 
 .nav-btn.active {
@@ -86,8 +86,8 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  background: var(--bg-primary);
-  border: 1px solid var(--glass-border);
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
   padding: 12px 16px;
   border-radius: 8px;
   margin-bottom: 24px;
@@ -97,7 +97,7 @@
   background: transparent;
   border: none;
   flex: 1;
-  color: white;
+  color: var(--text-primary);
   font-size: 1rem;
   outline: none;
 }
@@ -111,8 +111,8 @@
 }
 
 .topic-card {
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid var(--glass-border);
+  background: var(--surface-panel-strong);
+  border: 1px solid var(--border-color);
   padding: 16px;
   border-radius: 8px;
   cursor: pointer;
@@ -120,8 +120,8 @@
 }
 
 .topic-card:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.1);
+  background: var(--interactive-hover);
+  border-color: rgba(179, 31, 126, 0.3);
   transform: translateY(-2px);
 }
 
@@ -147,7 +147,7 @@
 
 /* Checklist Styles */
 .checklist-container {
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--surface-panel-strong);
   border-radius: 12px;
   border: 1px solid var(--glass-border);
   overflow: hidden;
@@ -155,7 +155,7 @@
 
 .checklist-header {
   padding: 16px 20px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--surface-subtle);
   border-bottom: 1px solid var(--glass-border);
   display: flex;
   justify-content: space-between;
@@ -179,7 +179,7 @@
   align-items: flex-start;
   gap: 16px;
   padding: 16px 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--border-color);
   transition: background 0.2s;
 }
 
@@ -188,7 +188,7 @@
 }
 
 .checklist-item:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--interactive-hover);
 }
 
 .checklist-item.completed .item-text {
@@ -238,9 +238,63 @@
 }
 
 .item-text {
+  flex: 1;
   font-size: 0.95rem;
   line-height: 1.5;
   transition: color 0.2s;
+}
+
+.checklist-editor,
+.checklist-inline-editor {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.checklist-editor {
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--surface-panel);
+}
+
+.checklist-editor label {
+  width: 100%;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.checklist-editor input,
+.checklist-inline-editor input {
+  flex: 1;
+  min-width: 180px;
+  padding: 9px 11px;
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  background: var(--input-bg);
+  color: var(--text-primary);
+}
+
+.checklist-inline-editor {
+  flex: 1;
+}
+
+.checklist-item-actions {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.accounting-empty-state {
+  grid-column: 1 / -1;
+  padding: 24px;
+  border: 1px dashed var(--border-color);
+  border-radius: 10px;
+  color: var(--text-secondary);
+  text-align: center;
 }
 
 /* AI Pane */
@@ -253,7 +307,7 @@
   flex: 1;
   overflow-y: auto;
   border: 1px solid rgba(179, 31, 126, 0.2);
-  background: rgba(10, 15, 30, 0.5);
+  background: var(--surface-subtle);
   border-radius: 12px;
   padding: 24px;
   margin-bottom: 20px;
@@ -297,7 +351,7 @@
   border: 1px solid var(--glass-border);
   padding: 16px 20px;
   border-radius: 12px;
-  color: white;
+  color: var(--text-primary);
   font-size: 1rem;
   outline: none;
   font-family: var(--font-sans);
@@ -317,3 +371,58 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+@media (max-width: 900px) {
+  .accounting-hub-container {
+    height: auto;
+    min-height: 0;
+  }
+
+  .hub-layout {
+    flex-direction: column;
+  }
+
+  .hub-sidebar {
+    width: 100%;
+  }
+
+  .hub-nav {
+    flex-direction: row;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .hub-nav .nav-btn {
+    flex: 0 0 auto;
+  }
+
+  .hub-sidebar .sidebar-widget {
+    display: none;
+  }
+
+  .hub-main {
+    overflow: visible;
+    padding: 20px;
+  }
+}
+
+@media (max-width: 600px) {
+  .hub-main {
+    padding: 14px;
+  }
+
+  .topics-grid {
+    grid-template-columns: minmax(0, 1fr);
+    overflow: visible;
+  }
+
+  .checklist-header,
+  .checklist-item {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .checklist-item-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}

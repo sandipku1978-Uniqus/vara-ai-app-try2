@@ -75,8 +75,8 @@ export default function InsiderTrading() {
         const url = `https://www.sec.gov/Archives/edgar/data/${row.cik}/${accNum}/${row.primaryDocument}`;
         return (
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-            <a href={url} target="_blank" rel="noopener noreferrer" style={{ color: '#D66CAE', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-              View <ExternalLink size={12} />
+            <a href={url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-primary)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              View <ExternalLink size={12} aria-hidden="true" />
             </a>
             <AskCopilotButton compact prompt={`Analyze Form ${row.form} insider filing for ${row.entityName} from ${row.filingDate}`} />
           </span>
@@ -88,7 +88,7 @@ export default function InsiderTrading() {
   return (
     <div style={{ padding: '32px', maxWidth: '1200px', margin: '0 auto' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-        <UserCheck size={28} style={{ color: '#D66CAE' }} />
+        <UserCheck size={28} style={{ color: 'var(--accent-primary)' }} aria-hidden="true" />
         <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)' }}>Insider Trading</h1>
       </div>
       <p style={{ color: 'var(--text-secondary)', marginBottom: '24px', fontSize: '0.9rem' }}>
@@ -103,12 +103,12 @@ export default function InsiderTrading() {
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
           {companies.map(c => (
             <span key={c.ticker} style={{
-              background: 'rgba(214,108,174,0.15)', color: '#D66CAE', padding: '4px 12px',
+              background: 'var(--interactive-hover-strong)', color: 'var(--accent-primary)', padding: '4px 12px',
               borderRadius: '16px', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '6px'
             }}>
               {c.ticker}
-              <button onClick={() => setCompanies(prev => prev.filter(x => x.ticker !== c.ticker))}
-                style={{ background: 'none', border: 'none', color: '#D66CAE', cursor: 'pointer', padding: 0, fontSize: '1rem' }}>
+              <button type="button" aria-label={`Remove ${c.ticker}`} onClick={() => setCompanies(prev => prev.filter(x => x.ticker !== c.ticker))}
+                style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', padding: 0, fontSize: '1rem' }}>
                 &times;
               </button>
             </span>
@@ -116,10 +116,10 @@ export default function InsiderTrading() {
         </div>
       )}
 
-      {error && <div style={{ color: '#F87171', marginBottom: '16px' }}>{error}</div>}
+      {error && <div role="alert" style={{ color: 'var(--status-error)', background: 'var(--status-error-bg)', borderRadius: '8px', padding: '10px 12px', marginBottom: '16px' }}>{error}</div>}
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '48px', color: 'var(--text-muted)' }}>
+        <div role="status" style={{ textAlign: 'center', padding: '48px', color: 'var(--text-muted)' }}>
           <Loader2 size={24} className="spinner" style={{ marginBottom: '8px' }} />
           <div>Loading insider filings...</div>
         </div>
@@ -136,4 +136,3 @@ export default function InsiderTrading() {
     </div>
   );
 }
-

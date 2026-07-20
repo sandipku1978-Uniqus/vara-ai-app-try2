@@ -235,8 +235,10 @@ export function AIQnAPanel() {
     isChatOpen,
     setChatOpen,
     agentRuns,
+    agentPromptQueue,
     activeAgentRunId,
     setActiveAgentRunId,
+    removeAgentPromptRequest,
     startAgentRun,
     updateAgentRun,
     appendAgentLog,
@@ -257,6 +259,8 @@ export function AIQnAPanel() {
   const [loadingStage, setLoadingStage] = useState('');
   const [panelWidth, setPanelWidth] = useState<number | null>(null);
   const isResizing = useRef(false);
+  const processingRequestIdRef = useRef<string | null>(null);
+  const executePromptRef = useRef<((prompt: string) => Promise<void>) | null>(null);
   const panelBodyRef = useRef<HTMLDivElement>(null);
 
   // Resize handler — drag the left edge to resize the copilot panel
@@ -301,8 +305,6 @@ export function AIQnAPanel() {
   useEffect(() => {
     panelBodyRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   }, [activeRun?.id, tab]);
-
-  if (!isChatOpen) return null;
 
   async function executePrompt(prompt: string) {
     const runId = startAgentRun(prompt);
@@ -459,7 +461,7 @@ export function AIQnAPanel() {
                           companyName: match.company_name,
                           formType: match.form,
                           filingDate: match.date_filed,
-                          route: `/comment-letters?company=${encodeURIComponent(match.company_name)}`,
+                          route: `/comment-letters?company=${encodeURIComponent(match.company_name)}&thread=${encodeURIComponent(match.thread_id)}`,
                           externalUrl: `https://www.sec.gov/Archives/${match.filename}`,
                           description: excerpt.slice(0, 160) || 'SEC correspondence',
                         })
@@ -780,6 +782,22 @@ export function AIQnAPanel() {
     }
   }
 
+  useEffect(() => {
+    executePromptRef.current = executePrompt;
+  });
+
+  useEffect(() => {
+    const nextRequest = agentPromptQueue[0];
+    const executor = executePromptRef.current;
+    if (!isChatOpen || running || !nextRequest || !executor || processingRequestIdRef.current) return;
+
+    processingRequestIdRef.current = nextRequest.id;
+    void executor(nextRequest.prompt).finally(() => {
+      removeAgentPromptRequest(nextRequest.id);
+      processingRequestIdRef.current = null;
+    });
+  }, [agentPromptQueue, isChatOpen, removeAgentPromptRequest, running]);
+
   const handleSend = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!inputValue.trim() || running) return;
@@ -787,6 +805,8 @@ export function AIQnAPanel() {
     setInputValue('');
     await executePrompt(prompt);
   };
+
+  if (!isChatOpen) return null;
 
   const evidence = buildFallbackEvidence(activeRun);
   const suggestions = evidence?.followUps?.length
@@ -817,7 +837,7 @@ export function AIQnAPanel() {
   }
 
   return (
-    <div className="ai-panel glass-card" style={panelWidth ? { width: `${panelWidth}px` } : undefined}>
+    <div id="urc-copilot-panel" role="complementary" aria-label={`${BRAND.copilotName} research assistant`} className="ai-panel glass-card" style={panelWidth ? { width: `${panelWidth}px` } : undefined}>
       {/* Resize drag handle on the left edge */}
       <div
         className="ai-panel-resize-handle"
@@ -831,11 +851,11 @@ export function AIQnAPanel() {
         </div>
         <div className="ai-header-actions">
           {agentRuns.length > 0 && (
-            <button className="icon-btn-small" onClick={clearAgentRuns} title="Clear run history">
+            <button type="button" className="icon-btn-small" onClick={clearAgentRuns} title="Clear run history" aria-label="Clear copilot run history">
               <ClipboardList size={16} />
             </button>
           )}
-          <button className="icon-btn-small" onClick={() => setChatOpen(false)} title="Close copilot">
+          <button type="button" className="icon-btn-small" onClick={() => setChatOpen(false)} title="Close copilot" aria-label="Close copilot">
             <X size={18} />
           </button>
         </div>
@@ -1033,12 +1053,13 @@ export function AIQnAPanel() {
       <form className="ai-input-area" onSubmit={handleSend}>
         <input
           type="text"
+          aria-label={`Message ${BRAND.copilotName}`}
           value={inputValue}
           onChange={event => setInputValue(event.target.value)}
           placeholder={`Ask ${BRAND.shortName} to open filings, compare peers, find comment letters, or draft alerts...`}
           disabled={running}
         />
-        <button type="submit" disabled={!inputValue.trim() || running} className="send-btn">
+        <button type="submit" disabled={!inputValue.trim() || running} className="send-btn" aria-label={running ? 'Copilot is working' : 'Send message to copilot'}>
           {running ? <Loader2 size={16} className="spinner" /> : <Send size={16} />}
         </button>
       </form>

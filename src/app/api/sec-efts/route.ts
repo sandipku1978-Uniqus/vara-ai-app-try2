@@ -1,47 +1,68 @@
 import { NextResponse } from 'next/server';
+import { requireApiAccess } from '../../../lib/api-auth';
+import { checkResourceRateLimit, rateLimitResponse } from '../../../lib/rate-limit';
+import {
+  buildSecTargetUrl,
+  bytesToArrayBuffer,
+  fetchSecResponse,
+  readResponseWithLimit,
+  SecUpstreamError,
+} from '../../../lib/sec-upstream';
 
 const USER_AGENT = process.env.NEXT_PUBLIC_EDGAR_USER_AGENT || 'Uniqus Research Center contact@uniqus.com';
+const MAX_RESPONSE_BYTES = 5 * 1024 * 1024;
 
 export async function GET(request: Request) {
-  const url = new URL(request.url);
-  const path = url.searchParams.get('path');
+  const access = await requireApiAccess();
+  if (access.response) return access.response;
 
-  if (!path || path.includes('..')) {
-    return new NextResponse('Invalid path parameter', { status: 400 });
-  }
-
-  const baseUrl = 'https://efts.sec.gov';
-
-  const proxyParams = new URLSearchParams(url.searchParams);
+  const requestUrl = new URL(request.url);
+  const rawPath = requestUrl.searchParams.get('path');
+  if (!rawPath) return NextResponse.json({ error: 'Invalid SEC search request.' }, { status: 400 });
+  const proxyParams = new URLSearchParams(requestUrl.searchParams);
   proxyParams.delete('path');
-  const qs = proxyParams.toString();
-  const targetUrl = `${baseUrl}/${path.replace(/^\/+/, '')}${qs ? `?${qs}` : ''}`;
 
   try {
-    const upstreamRes = await fetch(targetUrl, {
-      method: 'GET',
+    const targetUrl = buildSecTargetUrl('efts', rawPath, proxyParams);
+    const rate = await checkResourceRateLimit(request, access.identity, {
+      operation: 'sec-efts',
+      userLimit: 120,
+      orgLimit: 600,
+      ipLimit: 180,
+    });
+    if (!rate.allowed) return rateLimitResponse(rate);
+
+    const upstreamResponse = await fetchSecResponse(targetUrl, 'efts', request.signal, USER_AGENT);
+    if (!upstreamResponse.ok) {
+      const status = upstreamResponse.status >= 400 && upstreamResponse.status <= 599
+        ? upstreamResponse.status
+        : 502;
+      return NextResponse.json({ error: 'SEC search upstream request failed.' }, { status });
+    }
+    const contentType = (upstreamResponse.headers.get('content-type') || '').toLowerCase();
+    if (!contentType.includes('json')) {
+      return NextResponse.json({ error: 'SEC search returned an unsupported response.' }, { status: 502 });
+    }
+    const bytes = await readResponseWithLimit(upstreamResponse, MAX_RESPONSE_BYTES, request.signal);
+    return new NextResponse(bytesToArrayBuffer(bytes), {
+      status: 200,
       headers: {
-        'User-Agent': USER_AGENT,
-        'Accept-Encoding': 'gzip, deflate',
+        'Cache-Control': 'private, max-age=60',
+        'Content-Type': 'application/json; charset=utf-8',
+        'X-Content-Type-Options': 'nosniff',
       },
     });
-
-    if (!upstreamRes.ok) {
-      return new NextResponse(upstreamRes.statusText, { status: upstreamRes.status });
+  } catch (error) {
+    if (error instanceof SecUpstreamError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
     }
-
-    const buffer = await upstreamRes.arrayBuffer();
-
-    const headers = new Headers();
-    const contentType = upstreamRes.headers.get('content-type');
-    if (contentType) headers.set('Content-Type', contentType);
-
-    return new NextResponse(buffer, {
-      status: 200,
-      headers
-    });
-  } catch (error: unknown) {
-    console.error('SEC EFTS Proxy Error:', error);
-    return new NextResponse('Proxy Fetch Error', { status: 500 });
+    if (request.signal.aborted) {
+      return NextResponse.json({ error: 'Request cancelled.' }, { status: 499 });
+    }
+    if (error instanceof Error && error.name === 'AbortError') {
+      return NextResponse.json({ error: 'SEC search upstream timed out.' }, { status: 504 });
+    }
+    console.error('SEC EFTS proxy failed:', error);
+    return NextResponse.json({ error: 'SEC search proxy request failed.' }, { status: 502 });
   }
 }

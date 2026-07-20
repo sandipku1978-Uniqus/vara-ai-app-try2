@@ -17,6 +17,8 @@
 
 import { createServiceClient } from './supabase';
 import { delay } from './edgar-index';
+import { createHash } from 'node:crypto';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 const EDGAR_BASE = 'https://www.sec.gov';
 const USER_AGENT =
@@ -28,6 +30,34 @@ const USER_AGENT =
 const REQUEST_INTERVAL_MS = 250;
 const MAX_CONTENT_CHARS = 600_000; // keep below the tsvector guard in the schema
 const BATCH = 500;
+
+export interface LetterIdentifiers {
+  subject: string | null;
+  fileNumber: string | null;
+  referencedAccession: string | null;
+  reviewKey: string | null;
+}
+
+export interface LegacyIdentifierRow {
+  accession: string;
+  cik: number;
+  content: string;
+}
+
+export function deriveStoredLetterIdentifierPatch(content: string, checkedAt: string) {
+  const identifiers = extractLetterIdentifiers(content);
+  return {
+    subject: identifiers.subject,
+    file_number: identifiers.fileNumber,
+    referenced_accession: identifiers.referencedAccession,
+    review_key: identifiers.reviewKey,
+    identifier_checked_at: checkedAt,
+  };
+}
+
+export function shouldRethreadLetters(identifierUpdates: number, contentUpdates: number): boolean {
+  return identifierUpdates + contentUpdates > 0;
+}
 
 function getArg(name: string): string | undefined {
   const idx = process.argv.indexOf(`--${name}`);
@@ -46,6 +76,48 @@ function htmlToText(html: string): string {
     .replace(/[ \t]+/g, ' ')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
+}
+
+/** Derive a stable review identity from the SEC/registrant letter header.
+ * A bare issuer file number is not enough because it spans many reviews; the
+ * key requires either a referenced accession or file number + form + period. */
+export function extractLetterIdentifiers(raw: string): LetterIdentifiers {
+  // The SEC submission envelope contains the comment letter's own accession.
+  // It is not the issuer filing under review and must never seed episode identity.
+  const withoutSubmissionHeaders = raw
+    .replace(/<SEC-HEADER>[\s\S]*?<\/SEC-HEADER>/gi, ' ')
+    .replace(/<IMS-HEADER>[\s\S]*?<\/IMS-HEADER>/gi, ' ');
+  const header = htmlToText(
+    withoutSubmissionHeaders
+      .slice(0, 250_000)
+      .replace(/<PDF>[\s\S]*?<\/PDF>/gi, ' ')
+      .replace(/^begin \d{3} [^\n]*[\s\S]*?^end$/gim, ' ')
+  );
+  const subject = header.match(/(?:^|\n)\s*Re\s*:\s*([^\n]{3,500})/i)?.[1]?.trim() || null;
+  const fileNumber = header.match(/\bFile\s*(?:No\.?|Number)\s*[:#]?\s*([0-9]{3}-[0-9A-Za-z.-]+)/i)?.[1]?.toUpperCase() || null;
+  const referencedAccession = header.match(
+    /\b(?:referenced\s+)?accession(?:\s+(?:number|no\.?))?\s*[:#]?\s*(\d{10}-\d{2}-\d{6})\b/i
+  )?.[1] || null;
+  const form = header.match(/\bForm\s+(10-[KQ]|8-K|20-F|40-F|6-K|S-[1348]|F-[134]|DEF\s+14A)(?:\/A)?\b/i)?.[0]
+    ?.replace(/^Form\s+/i, '')
+    .replace(/\s+/g, '')
+    .toUpperCase() || null;
+  const explicitPeriodYear = header.match(
+    /\b(?:fiscal\s+(?:year|quarter)|reporting\s+period|period)\b[^\n]{0,180}\b((?:19|20)\d{2})\b/i
+  )?.[1] || header.match(
+    /\bForm\s+(?:10-[KQ]|8-K|20-F|40-F|6-K|S-[1348]|F-[134]|DEF\s+14A)(?:\/A)?\b[^\n]{0,180}\b((?:19|20)\d{2})\b/i
+  )?.[1];
+  const subjectYears = subject?.match(/\b(?:19|20)\d{2}\b/g) || [];
+  const periodYear = explicitPeriodYear || (subjectYears.length > 0 ? subjectYears[subjectYears.length - 1] : null);
+  const basis = referencedAccession
+    ? `accession:${referencedAccession}`
+    : fileNumber && form && periodYear
+      ? `file:${fileNumber}|form:${form}|period:${periodYear}`
+      : null;
+  const reviewKey = basis
+    ? `review-${createHash('sha256').update(basis).digest('hex').slice(0, 24)}`
+    : null;
+  return { subject, fileNumber, referencedAccession, reviewKey };
 }
 
 /** Decode a classic uuencoded block (EDGAR embeds PDFs this way inside <PDF>). */
@@ -123,7 +195,7 @@ export async function extractLetterText(raw: string): Promise<{ text: string | n
   return { text: combined.slice(0, MAX_CONTENT_CHARS), error: null };
 }
 
-async function fetchSubmission(filename: string): Promise<string | null> {
+async function fetchSubmission(filename: string): Promise<{ raw: string | null; error: string | null }> {
   const url = `${EDGAR_BASE}/Archives/${filename}`;
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
@@ -131,22 +203,125 @@ async function fetchSubmission(filename: string): Promise<string | null> {
         headers: { 'User-Agent': USER_AGENT, 'Accept-Encoding': 'gzip, deflate' },
         signal: AbortSignal.timeout(30_000),
       });
-      if (response.status === 404) return null;
+      if (response.status === 404) return { raw: null, error: 'not_found' };
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      return await response.text();
+      return { raw: await response.text(), error: null };
     } catch {
       await delay(1000 * 2 ** attempt);
     }
   }
-  return null;
+  return { raw: null, error: 'fetch_failed' };
+}
+
+export function nextLetterRetryAt(attempts: number, now = Date.now()): string {
+  const delayMinutes = Math.min(15 * 2 ** Math.min(Math.max(attempts - 1, 0), 10), 7 * 24 * 60);
+  return new Date(now + delayMinutes * 60_000).toISOString();
+}
+
+async function updateLetterIdentifiers(
+  client: SupabaseClient,
+  row: { accession: string; cik: number },
+  patch: Record<string, unknown>
+): Promise<boolean> {
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    try {
+      const { error } = await client
+        .from('urc_comment_letters')
+        .update(patch)
+        .eq('accession', row.accession)
+        .eq('cik', row.cik);
+      if (!error) return true;
+    } catch {
+      // Retry below; leaving identifier_checked_at null makes the phase resumable.
+    }
+    if (attempt < 3) await delay(500 * 2 ** attempt);
+  }
+  return false;
+}
+
+/**
+ * Reconcile identity columns added after the original text backfill.
+ * Stored text is processed without SEC traffic first. Permanently unresolved
+ * text rows then receive a bounded header-only refetch. identifier_checked_at
+ * is the idempotent checkpoint; transient fetch failures remain eligible.
+ */
+async function backfillLegacyIdentifiers(
+  client: SupabaseClient,
+  deadline: number,
+  localLimit: number,
+  headerRefetchLimit: number
+): Promise<number> {
+  let updated = 0;
+  let localProcessed = 0;
+  while (Date.now() < deadline && localProcessed < localLimit) {
+    const { data, error } = await client
+      .from('urc_comment_letters')
+      .select('accession, cik, content')
+      .is('identifier_checked_at', null)
+      .not('content', 'is', null)
+      .order('date_filed', { ascending: false })
+      .limit(Math.min(BATCH, localLimit - localProcessed));
+    if (error) throw new Error(`stored identifier select failed: ${error.message}`);
+    const rows = (data || []) as LegacyIdentifierRow[];
+    if (rows.length === 0) break;
+    for (const row of rows) {
+      if (Date.now() >= deadline || localProcessed >= localLimit) break;
+      localProcessed += 1;
+      const checkedAt = new Date().toISOString();
+      if (await updateLetterIdentifiers(client, row, deriveStoredLetterIdentifierPatch(row.content, checkedAt))) {
+        updated += 1;
+      }
+    }
+  }
+
+  let remoteProcessed = 0;
+  while (Date.now() < deadline && remoteProcessed < headerRefetchLimit) {
+    const { data, error } = await client
+      .from('urc_comment_letters')
+      .select('accession, cik, filename')
+      .is('identifier_checked_at', null)
+      .is('content', null)
+      .not('content_error', 'is', null)
+      .neq('content_error', 'fetch_failed')
+      .order('date_filed', { ascending: false })
+      .limit(Math.min(BATCH, headerRefetchLimit - remoteProcessed));
+    if (error) throw new Error(`header identifier select failed: ${error.message}`);
+    const rows = (data || []) as Array<{ accession: string; cik: number; filename: string }>;
+    if (rows.length === 0) break;
+    for (const row of rows) {
+      if (Date.now() >= deadline || remoteProcessed >= headerRefetchLimit) break;
+      remoteProcessed += 1;
+      const fetchedSubmission = await fetchSubmission(row.filename);
+      if (fetchedSubmission.error === 'fetch_failed') continue;
+      const checkedAt = new Date().toISOString();
+      const patch = fetchedSubmission.raw
+        ? deriveStoredLetterIdentifierPatch(fetchedSubmission.raw, checkedAt)
+        : { identifier_checked_at: checkedAt };
+      if (await updateLetterIdentifiers(client, row, patch)) updated += 1;
+      await delay(REQUEST_INTERVAL_MS);
+    }
+  }
+
+  if (updated > 0) {
+    console.log(`Identifier reconciliation: ${updated} legacy rows checked (${localProcessed} stored-text, ${remoteProcessed} header refetches).`);
+  }
+  return updated;
 }
 
 async function main() {
   const limit = Number(getArg('limit') || 0);
   const maxMinutes = Number(getArg('max-minutes') || 0);
+  const identifierLimit = Math.max(0, Number(getArg('identifier-limit') ?? 20_000));
+  const identifierRefetchLimit = Math.max(0, Number(getArg('identifier-refetch-limit') ?? 5_000));
   const deadline = maxMinutes > 0 ? Date.now() + maxMinutes * 60_000 : Infinity;
 
   const client = createServiceClient();
+  const identifierUpdates = await backfillLegacyIdentifiers(
+    client,
+    deadline,
+    identifierLimit,
+    identifierRefetchLimit
+  );
   let fetched = 0;
   let errored = 0;
 
@@ -154,11 +329,13 @@ async function main() {
     if (Date.now() >= deadline) break;
     if (limit > 0 && fetched + errored >= limit) break;
 
+    const queueTime = new Date().toISOString();
     const { data: rows, error } = await client
       .from('urc_comment_letters')
-      .select('accession, cik, filename')
+      .select('accession, cik, filename, content_fetch_attempts')
       .is('content', null)
-      .is('content_error', null)
+      .or('content_error.is.null,content_error.eq.fetch_failed')
+      .or(`content_next_retry_at.is.null,content_next_retry_at.lte.${queueTime}`)
       .order('date_filed', { ascending: false })
       .limit(BATCH);
     if (error) throw new Error(`select failed: ${error.message}`);
@@ -171,10 +348,25 @@ async function main() {
       if (Date.now() >= deadline) break;
       if (limit > 0 && fetched + errored >= limit) break;
 
-      const raw = await fetchSubmission(row.filename);
-      const { text, error: extractError } = raw
-        ? await extractLetterText(raw)
-        : { text: null, error: 'fetch_failed' as string | null };
+      const attemptCount = Number(row.content_fetch_attempts || 0) + 1;
+      const attemptTime = new Date().toISOString();
+      const fetchedSubmission = await fetchSubmission(row.filename);
+      const identifiers = fetchedSubmission.raw ? extractLetterIdentifiers(fetchedSubmission.raw) : null;
+      const { text, error: extractError } = fetchedSubmission.raw
+        ? await extractLetterText(fetchedSubmission.raw)
+        : { text: null, error: fetchedSubmission.error };
+      const retryable = extractError === 'fetch_failed';
+      const identifierPatch = identifiers
+        ? {
+            subject: identifiers.subject,
+            file_number: identifiers.fileNumber,
+            referenced_accession: identifiers.referencedAccession,
+            review_key: identifiers.reviewKey,
+            identifier_checked_at: attemptTime,
+          }
+        : fetchedSubmission.error === 'not_found'
+          ? { identifier_checked_at: attemptTime }
+          : {};
 
       // Transient network blips on the update must not kill a multi-hour run —
       // retry, then skip the row (it stays unfetched and is retried next run)
@@ -185,8 +377,22 @@ async function main() {
             .from('urc_comment_letters')
             .update(
               text
-                ? { content: text, content_fetched_at: new Date().toISOString(), content_error: null }
-                : { content_error: extractError, content_fetched_at: new Date().toISOString() }
+                ? {
+                    ...identifierPatch,
+                    content: text,
+                    content_fetched_at: attemptTime,
+                    content_error: null,
+                    content_fetch_attempts: attemptCount,
+                    content_last_attempt_at: attemptTime,
+                    content_next_retry_at: null,
+                  }
+                : {
+                    ...identifierPatch,
+                    content_error: extractError,
+                    content_fetch_attempts: attemptCount,
+                    content_last_attempt_at: attemptTime,
+                    content_next_retry_at: retryable ? nextLetterRetryAt(attemptCount) : null,
+                  }
             )
             .eq('accession', row.accession)
             .eq('cik', row.cik);
@@ -209,7 +415,13 @@ async function main() {
     }
   }
 
-  console.log(`Done. ${fetched} letters stored, ${errored} marked (pdf_only / no_text / fetch_failed).`);
+  if (shouldRethreadLetters(identifierUpdates, fetched + errored)) {
+    const { data: threaded, error: threadError } = await client.rpc('urc_thread_letters');
+    if (threadError) console.error('Threading failed (re-run later):', threadError.message);
+    else console.log(`Threading: ${threaded} rows (re)assigned after header extraction.`);
+  }
+
+  console.log(`Done. ${identifierUpdates} legacy identifiers reconciled, ${fetched} letters stored, ${errored} unavailable or scheduled for retry.`);
 }
 
 if (process.argv[1]?.includes('fetch-letter-text')) {

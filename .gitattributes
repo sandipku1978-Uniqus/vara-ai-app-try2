@@ -1,0 +1,3 @@
+# Runtime logs are text artifacts. Some retired ingestion logs were written as
+# UTF-16LE, whose null bytes otherwise make Git label their deletion "Bin".
+*.log text diff

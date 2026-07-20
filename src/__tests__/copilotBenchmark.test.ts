@@ -1,3 +1,4 @@
+import { describe, expect, test } from 'vitest';
 import { buildHeuristicAgentPlan } from '../services/agentPlanner';
 import type { AgentContextSnapshot } from '../types/agent';
 

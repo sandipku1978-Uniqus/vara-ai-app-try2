@@ -216,6 +216,7 @@ try {
         const accountant = ${JSON.stringify(DEBUG_ACCOUNTANT)};
         const sectionKeywords = ${JSON.stringify(DEBUG_SECTION_KEYWORDS)};
         const entityName = ${JSON.stringify(DEBUG_ENTITY)};
+        const limit = ${JSON.stringify(DEBUG_LIMIT)};
         const baseFilters = {
           keyword: '',
           dateFrom,
@@ -311,7 +312,7 @@ try {
           filters: baseFilters,
           mode,
           defaultForms: formScope,
-          limit: DEBUG_LIMIT,
+          limit,
           hydrateTextSignals: true,
         });
 

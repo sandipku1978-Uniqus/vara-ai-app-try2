@@ -10,33 +10,28 @@
 |---|---|---|
 | Next.js App Router migration + SSR | ✅ Done | `src/app/*`, `vercel.json` framework=nextjs, live site serves `_next` |
 | Vercel KV caching | ✅ Done | `src/lib/cache.ts`, `@vercel/kv` dep |
-| Pre-computed starter results (cron) | ✅ Done | `/api/cron/precompute` daily 09:00 |
+| Pre-computed starter results (cron) | 🛑 Retired | The placeholder route now fails closed and no Vercel cron invokes it; request-time scoped caching is the supported design |
 | Claude streaming + compare + redline | ✅ Done | `/api/stream`, `/api/compare`, redline commits |
 | og:image cards | ✅ Done | `/api/og` |
 | PostHog analytics | ✅ Done | `PostHogProvider.tsx` |
 | Clerk authentication (partner gating) | ⚠️ Half-done | `ClerkProvider` mounted, but **no `middleware.ts`** — nothing is actually gated |
-| Daily ES ingest | ⚠️ At risk | `elasticsearch/daily-ingest.ts` exists but has **no cron/scheduler**; last local ingest log shows 2,800 errors / 9,598 skipped |
+| Enriched filing metadata refresh | ⚠️ At risk | The retired external-index ingest has been removed; production freshness now depends on scheduling the supported Supabase data pipeline |
 | 25-query copilot benchmark | ❌ Not built | no eval suite in repo (TCA has one to port) |
 | IFRS/Ind AS cross-framework layer | 🟡 Partial | multi-currency IFRS filers landed (`090bcb1`); no curated KB / framework toggle |
 | Custom domain research.uniqus.com | ❌ Not done | still uniqus-research.vercel.app (repo index lists domain as "planned") |
 
 ## P0 — Data freshness (the silent killer)
 
-The ES index (`sec-filings`) is only as fresh as the last manual `daily-ingest.ts` run.
-No scheduler exists — Vercel cron only hits `precompute`, and a full ingest can't run
-inside a Vercel function timeout anyway. If nothing ran since early April, **the index
-is missing ~3.5 months of filings** — including Q1 10-Qs and proxy season. TCA's
-`src/lib/sec/es-client.ts` queries the same index, so staleness leaks into champion
-answers too.
+The retired external index and its ingest scripts are no longer part of the supported
+runtime. Filing search now combines live EDGAR EFTS with Supabase metadata, while the
+scheduled GitHub Actions data pipeline refreshes the owned metadata and letter corpus.
+The former Vercel precompute cron was only a placeholder and has been removed; it must
+not be treated as data-freshness coverage.
 
-1. **Verify index freshness first**: query max `filedAt` in the `sec-filings` index.
-2. **Automate ingest off-Vercel**: GitHub Actions scheduled workflow (or the existing
-   TCA Railway worker) running `npx tsx elasticsearch/daily-ingest.ts --since 3` daily,
-   with retry.
-3. **Backfill the gap** once scheduled (`--since <days-since-April-5>`), rate-limit safe.
-4. **Ingest health telemetry**: write a `last_ingest` doc (timestamp, indexed/skipped/error
-   counts) and expose `/api/health`; alert via the same Teams error webhook TCA uses when
-   ingest is >48h stale or error rate spikes. Triage the 2,800 errors from the last run.
+1. **Verify metadata freshness first**: query the maximum filing date in the Supabase filing table.
+2. **Monitor the scheduled GitHub Actions workflows** and alert on failed or stale runs.
+3. **Backfill any gap** with the supported incremental Supabase pipeline, rate-limit safe.
+4. **Add ingest health telemetry** (timestamps, inserted/skipped/error counts) and expose it through an authenticated health surface.
 
 ## P1 — Actually gate the platform
 

@@ -1,0 +1,110 @@
+.shell {
+  display: grid;
+  width: min(560px, calc(100% - 32px));
+  min-height: 260px;
+  margin: 72px auto 32px;
+  padding: 32px;
+  place-items: center;
+  align-content: center;
+  gap: 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 20px;
+  background: var(--surface-panel);
+  color: var(--text-primary);
+  text-align: center;
+  box-shadow: var(--glow-shadow);
+}
+
+.shell h1,
+.shell h2,
+.shell p {
+  margin: 0;
+}
+
+.shell p {
+  max-width: 48ch;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--border-color);
+  border-top-color: var(--accent-primary);
+  border-radius: 50%;
+  animation: route-state-spin 0.8s linear infinite;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.primaryAction,
+.secondaryAction {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  padding: 9px 18px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.primaryAction {
+  background: var(--accent-primary);
+  color: #fff;
+}
+
+.primaryAction:hover {
+  background: var(--accent-primary-hover);
+  color: #fff;
+}
+
+.secondaryAction {
+  border-color: var(--border-color);
+  background: var(--surface-panel-strong);
+  color: var(--text-primary);
+}
+
+.secondaryAction:hover {
+  background: var(--interactive-hover);
+  color: var(--text-primary);
+}
+
+.primaryAction:focus-visible,
+.secondaryAction:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent-primary) 35%, transparent);
+  outline-offset: 2px;
+}
+
+.context {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+@keyframes route-state-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner { animation-duration: 1.8s; }
+}
+
+@media (max-width: 600px) {
+  .shell {
+    min-height: 220px;
+    margin-top: 32px;
+    padding: 24px 20px;
+  }
+}

@@ -21,12 +21,11 @@ interface DataTableProps<T> {
   data: T[];
   pageSize?: number;
   emptyMessage?: string;
-  onRowClick?: (row: T, idx: number) => void;
   rowKey?: (row: T, idx: number) => string;
 }
 
 export default function DataTable<T extends Record<string, any>>({
-  columns, data, pageSize = 15, emptyMessage = 'No results found.', onRowClick, rowKey
+  columns, data, pageSize = 15, emptyMessage = 'No results found.', rowKey
 }: DataTableProps<T>) {
   const [sortCol, setSortCol] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
@@ -68,15 +67,20 @@ export default function DataTable<T extends Record<string, any>>({
               {columns.map(col => (
                 <th
                   key={col.key}
-                  style={{ textAlign: col.align || 'left', width: col.width, cursor: col.sortable !== false ? 'pointer' : 'default' }}
-                  onClick={() => col.sortable !== false && handleSort(col.key)}
+                  scope="col"
+                  aria-sort={col.sortable === false || sortCol !== col.key ? 'none' : sortDir === 'asc' ? 'ascending' : 'descending'}
+                  style={{ textAlign: col.align || 'left', width: col.width }}
                 >
-                  <span className="dt-th-content">
-                    {col.label || col.header}
-                    {sortCol === col.key && (
-                      sortDir === 'asc' ? <ChevronUp size={12} /> : <ChevronDown size={12} />
-                    )}
-                  </span>
+                  {col.sortable === false ? (
+                    <span className="dt-th-content">{col.label || col.header}</span>
+                  ) : (
+                    <button type="button" className="dt-sort-button" onClick={() => handleSort(col.key)}>
+                      <span>{col.label || col.header}</span>
+                      {sortCol === col.key && (
+                        sortDir === 'asc' ? <ChevronUp size={12} aria-hidden="true" /> : <ChevronDown size={12} aria-hidden="true" />
+                      )}
+                    </button>
+                  )}
                 </th>
               ))}
             </tr>
@@ -87,8 +91,6 @@ export default function DataTable<T extends Record<string, any>>({
             ) : paged.map((row, idx) => (
               <tr
                 key={rowKey ? rowKey(row, page * pageSize + idx) : page * pageSize + idx}
-                onClick={() => onRowClick?.(row, page * pageSize + idx)}
-                className={onRowClick ? 'dt-clickable' : ''}
               >
                 {columns.map(col => (
                   <td key={col.key} style={{ textAlign: col.align || 'left' }}>
@@ -107,9 +109,9 @@ export default function DataTable<T extends Record<string, any>>({
             Showing {page * pageSize + 1}–{Math.min((page + 1) * pageSize, sorted.length)} of {sorted.length}
           </span>
           <div className="dt-page-btns">
-            <button disabled={page === 0} onClick={() => setPage(p => p - 1)}><ChevronLeft size={14} /></button>
+            <button type="button" aria-label="Previous page" disabled={page === 0} onClick={() => setPage(p => p - 1)}><ChevronLeft size={14} aria-hidden="true" /></button>
             <span>Page {page + 1} of {totalPages}</span>
-            <button disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}><ChevronRight size={14} /></button>
+            <button type="button" aria-label="Next page" disabled={page >= totalPages - 1} onClick={() => setPage(p => p + 1)}><ChevronRight size={14} aria-hidden="true" /></button>
           </div>
         </div>
       )}

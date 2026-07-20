@@ -15,6 +15,8 @@ describe('filingExport', () => {
 
     it('returns a window object when popup succeeds', async () => {
       const mockWindow = {
+        opener: window,
+        close: vi.fn(),
         document: {
           write: vi.fn(),
           close: vi.fn(),
@@ -24,10 +26,32 @@ describe('filingExport', () => {
       const { createPrintWindow } = await import('../services/filingExport');
       const result = createPrintWindow('Test Filing');
       expect(result).toBe(mockWindow);
+      expect(window.open).toHaveBeenCalledWith('', '_blank');
+      expect(mockWindow.opener).toBeNull();
+      expect(mockWindow.close).not.toHaveBeenCalled();
+    });
+
+    it('closes and rejects a popup when opener isolation cannot be verified', async () => {
+      const close = vi.fn();
+      const documentWrite = vi.fn();
+      const mockWindow = {
+        get opener() { return window; },
+        set opener(_value: Window | null) { /* simulate a browser ignoring the assignment */ },
+        close,
+        document: { write: documentWrite, close: vi.fn() },
+      } as unknown as Window;
+      vi.spyOn(window, 'open').mockReturnValue(mockWindow);
+      const { createPrintWindow } = await import('../services/filingExport');
+
+      expect(createPrintWindow('Test Filing')).toBeNull();
+      expect(close).toHaveBeenCalledOnce();
+      expect(documentWrite).not.toHaveBeenCalled();
     });
 
     it('writes loading shell HTML to the new window', async () => {
       const mockWindow = {
+        opener: window,
+        close: vi.fn(),
         document: {
           write: vi.fn(),
           close: vi.fn(),
@@ -52,6 +76,8 @@ describe('filingExport', () => {
 
     it('returns true when popup succeeds', async () => {
       const mockWindow = {
+        opener: window,
+        close: vi.fn(),
         document: {
           write: vi.fn(),
           close: vi.fn(),

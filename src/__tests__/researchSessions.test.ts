@@ -1,13 +1,17 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import {
   cloneSearchFilters,
+  buildResearchRouteParams,
   createResearchSessionId,
   buildResearchSessionTitle,
   buildSearchSignature,
   loadResearchSessions,
+  parseResearchRouteParams,
   saveResearchSessions,
+  shouldHandleExternalResearchRoute,
   type ResearchSearchSession,
 } from '../services/researchSessions';
+import { scopedStorageKey, setActiveBrowserStorageScope } from '../services/storageNamespace';
 
 const makeFilters = () => ({
   keyword: '',
@@ -25,6 +29,7 @@ const makeFilters = () => ({
   accessionNumber: '',
   fileNumber: '',
   fiscalYearEnd: '',
+  accountingFramework: '',
 });
 
 const makeSession = (overrides: Partial<ResearchSearchSession> = {}): ResearchSearchSession => ({
@@ -48,6 +53,49 @@ const makeSession = (overrides: Partial<ResearchSearchSession> = {}): ResearchSe
 describe('researchSessions', () => {
   beforeEach(() => {
     window.sessionStorage.clear();
+    setActiveBrowserStorageScope('user:test:org:personal');
+  });
+
+  describe('route contract', () => {
+    it('round-trips mode and every supported filter', () => {
+      const filters = makeFilters();
+      filters.entityName = 'Apple Inc.';
+      filters.formTypes = ['10-K', '10-K/A'];
+      filters.dateFrom = '2020-01-01';
+      filters.sectionKeywords = 'risk factors';
+      filters.sicCode = '3571';
+      filters.exchange = ['NASDAQ'];
+      filters.acceleratedStatus = ['LAF'];
+      filters.accountant = 'EY';
+      filters.accountingFramework = 'US GAAP';
+
+      const params = buildResearchRouteParams('cybersecurity AND incident', 'boolean', filters);
+      const parsed = parseResearchRouteParams(params);
+
+      expect(parsed).toEqual({
+        query: 'cybersecurity AND incident',
+        mode: 'boolean',
+        filters,
+      });
+    });
+
+    it('supports filter-only browse URLs', () => {
+      const filters = makeFilters();
+      filters.formTypes = ['S-1'];
+      expect(parseResearchRouteParams(buildResearchRouteParams('', 'semantic', filters))).toEqual({
+        query: '',
+        mode: 'semantic',
+        filters,
+      });
+    });
+
+    it('gives an unconsumed external URL precedence over restored sessions', () => {
+      const route = parseResearchRouteParams(new URLSearchParams('q=new+request'));
+      expect(shouldHandleExternalResearchRoute(null, route, 'q=new+request', '')).toBe(true);
+      expect(shouldHandleExternalResearchRoute(null, route, 'q=new+request', 'q=old+request')).toBe(true);
+      expect(shouldHandleExternalResearchRoute(null, route, 'q=new+request', 'q=new+request')).toBe(false);
+      expect(shouldHandleExternalResearchRoute('existing-tab', route, 'tab=existing-tab&q=new+request', '')).toBe(false);
+    });
   });
 
   // ── cloneSearchFilters ──
@@ -208,12 +256,12 @@ describe('researchSessions', () => {
     });
 
     it('handles corrupted storage gracefully', () => {
-      window.sessionStorage.setItem('vara.research.sessions.v1', 'not valid json');
+      window.sessionStorage.setItem(scopedStorageKey('vara.research.sessions.v1')!, 'not valid json');
       expect(loadResearchSessions()).toEqual([]);
     });
 
     it('handles non-array storage gracefully', () => {
-      window.sessionStorage.setItem('vara.research.sessions.v1', '{"not": "array"}');
+      window.sessionStorage.setItem(scopedStorageKey('vara.research.sessions.v1')!, '{"not": "array"}');
       expect(loadResearchSessions()).toEqual([]);
     });
 

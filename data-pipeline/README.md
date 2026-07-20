@@ -40,6 +40,20 @@ npm run ingest:auditors
 Both loaders support `--dry-run` (writes JSONL locally, no DB writes) and
 `--limit N` for smoke tests.
 
+### Comment-letter identity and text backfill
+
+After applying `db/migrations/010_comment_letter_integrity.sql`, run:
+
+```text
+npm run ingest:letter-text -- --max-minutes 300 --identifier-limit 20000 --identifier-refetch-limit 5000
+```
+
+The command first derives review identifiers from already-stored letter text,
+then performs a bounded header refetch for legacy permanent-error rows. Each
+row is checkpointed with `identifier_checked_at`, so reruns are idempotent.
+It invokes `urc_thread_letters` after any identity or content update; do not
+run the threading function before this reconciliation phase completes.
+
 ## How search uses it
 
 `/api/es-search` (name kept for the frontend contract): text queries hit EFTS

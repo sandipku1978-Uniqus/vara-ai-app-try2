@@ -129,6 +129,16 @@ describe('filingDetailTools', () => {
       expect(csv).toContain('"Line1\nLine2"');
     });
 
+    it('neutralizes spreadsheet formulas from filing table cells', () => {
+      const csv = tablesToCsv([{
+        title: 'Untrusted Filing Table',
+        rows: [['=HYPERLINK("https://evil.test")', '\t@SUM(1,2)', '-2+3']],
+      }]);
+      expect(csv).toContain('"\'=HYPERLINK(""https://evil.test"")"');
+      expect(csv).toContain('"\'\t@SUM(1,2)"');
+      expect(csv).toContain("'-2+3");
+    });
+
     it('handles multiple tables', () => {
       const csv = tablesToCsv([
         { title: 'Table 1', rows: [['A']] },

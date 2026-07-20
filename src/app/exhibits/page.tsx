@@ -1,9 +1,10 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import RouteLoading from '../../components/layout/RouteLoading';
 
 const ExhibitSearch = dynamic(() => import('../../views/ExhibitSearch'), {
-  ssr: false
+  loading: () => <RouteLoading label="Loading exhibits and agreements" />,
 });
 
 export default function Page() {

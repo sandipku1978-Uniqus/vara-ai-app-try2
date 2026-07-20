@@ -1,5 +1,14 @@
 import { Document, Packer, Paragraph, TextRun, HeadingLevel } from 'docx';
 
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function parseMarkdownToDocx(markdown: string) {
   const children: Paragraph[] = [];
   
@@ -95,7 +104,8 @@ export async function generateMemoDocx(markdown: string, tickers: string[], sect
   const url = window.URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `Uniqus_Comparison_${section.replace(/\s+/g, '_')}.docx`;
+  const safeSection = section.replace(/[^A-Za-z0-9_-]+/g, '_').replace(/^_+|_+$/g, '') || 'comparison';
+  a.download = `Uniqus_Comparison_${safeSection}.docx`;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
@@ -169,17 +179,37 @@ function markdownToHtml(md: string): string {
 /**
  * Generate a PDF from markdown analysis — opens a styled print view.
  */
+export function createMemoPrintWindow(): Window | null {
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) return null;
+
+  try {
+    printWindow.opener = null;
+    if (printWindow.opener !== null) {
+      printWindow.close();
+      return null;
+    }
+  } catch {
+    printWindow.close();
+    return null;
+  }
+
+  return printWindow;
+}
+
 export function generateMemoPdf(markdown: string, tickers: string[], section: string): void {
   const title = `Uniqus Research Center - ${section} Comparison: ${tickers.join(' vs ')}`;
   const htmlContent = markdownToHtml(markdown);
 
-  const printWindow = window.open('', '_blank');
+  const printWindow = createMemoPrintWindow();
   if (!printWindow) return;
 
   printWindow.document.write(`<!DOCTYPE html>
 <html>
 <head>
-  <title>${title}</title>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src 'none'; script-src 'none'; object-src 'none'; form-action 'none'; base-uri 'none'" />
+  <title>${escapeHtml(title)}</title>
   <style>
     body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; color: #1a1a2e; line-height: 1.6; }
     h1 { font-size: 24px; border-bottom: 2px solid #482879; padding-bottom: 12px; color: #482879; }
@@ -201,7 +231,7 @@ export function generateMemoPdf(markdown: string, tickers: string[], section: st
     <span class="brand">Uniqus Research Center</span>
     <span class="date">${new Date().toLocaleDateString()}</span>
   </div>
-  <h1>${section} - ${tickers.join(' vs ')}</h1>
+  <h1>${escapeHtml(section)} - ${escapeHtml(tickers.join(' vs '))}</h1>
   ${htmlContent}
 </body>
 </html>`);

@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { BRAND } from '../../config/brand';
 import uniqLogoColor from '../../assets/brand/uniqus-logo-color.png';
 import uniqLogoMark from '../../assets/brand/uniqus-logo-white.png';
@@ -18,16 +19,14 @@ interface BrandLockupProps extends BrandMarkProps {
   showParent?: boolean;
 }
 
-function resolveLogoSource(tone: Tone) {
-  return tone === 'light' ? uniqLogoMark.src : uniqLogoColor.src;
-}
-
 export function URCBrandMark({ size = 24, className, tone = 'light' }: BrandMarkProps) {
   return (
-    <img
+    <Image
       // Tone-aware: the white mark disappears on light backgrounds
-      src={resolveLogoSource(tone)}
+      src={tone === 'light' ? uniqLogoMark : uniqLogoColor}
       alt={BRAND.parentName}
+      width={size}
+      height={size}
       className={className}
       style={{
         display: 'block',
@@ -50,6 +49,8 @@ export function URCBrandLockup({
   const textColor = tone === 'light' ? '#FFFFFF' : '#413F42';
   const subColor = tone === 'light' ? 'rgba(255,255,255,0.72)' : '#7A6C7B';
   const logoHeight = size + 10;
+  const logoSource = tone === 'light' ? uniqLogoMark : uniqLogoColor;
+  const logoWidth = Math.max(1, Math.round((logoSource.width / logoSource.height) * logoHeight));
   const productLine = BRAND.productName.replace(`${BRAND.parentName} `, '');
   const supportingLine = 'SEC intelligence platform';
 
@@ -66,16 +67,19 @@ export function URCBrandLockup({
         maxWidth: '100%',
       }}
     >
-      <img
-        src={resolveLogoSource(tone)}
+      <Image
+        src={logoSource}
         alt={BRAND.parentName}
+        width={logoWidth}
+        height={logoHeight}
         suppressHydrationWarning
         style={{
           display: 'block',
-          // Fixed height always: 'width: 100%' inside an inline-flex parent
-          // with min-width: 0 collapsed the image to 0×0 (invisible logo)
+          // Match the rendered CSS dimensions to the image attributes. An
+          // auto width can round the imported bitmap's ratio differently and
+          // makes Next report a one-axis resize even though the ratio is kept.
           height: `${logoHeight}px`,
-          width: 'auto',
+          width: `${logoWidth}px`,
           maxWidth: '148px',
           objectFit: 'contain',
           flexShrink: 0,

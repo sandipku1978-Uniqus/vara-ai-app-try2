@@ -5,35 +5,39 @@
  * name or ticker, or fire a filing search, without touching the mouse.
  */
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Building2, FileSearch, Navigation } from 'lucide-react';
 import { resolveCompanyEntity, type CompanyDirectoryEntry } from '../../services/secApi';
-
-const PAGES: Array<{ label: string; href: string; keywords: string }> = [
-  { label: 'Dashboard', href: '/dashboard', keywords: 'home monitor overview' },
-  { label: 'Research Workbench', href: '/search', keywords: 'search filings full text' },
-  { label: 'Comment Letters', href: '/comment-letters', keywords: 'sec staff upload corresp review' },
-  { label: 'Benchmarking', href: '/compare', keywords: 'peers compare financials' },
-  { label: 'Accounting Analytics', href: '/accounting-analytics', keywords: 'ratios' },
-  { label: 'Accounting Standards', href: '/accounting', keywords: 'asc asu reference' },
-  { label: 'ESG Research', href: '/esg', keywords: 'climate sustainability' },
-  { label: 'Board Profiles', href: '/boards', keywords: 'governance compensation' },
-  { label: 'Insider Trading', href: '/insiders', keywords: 'form 4' },
-  { label: '8-K Event Filings', href: '/earnings', keywords: 'events' },
-  { label: 'Securities Regulation', href: '/regulation', keywords: 'rules' },
-  { label: 'SEC Enforcement', href: '/enforcement', keywords: 'aaer actions' },
-  { label: 'IPO Center', href: '/ipo', keywords: 's-1' },
-  { label: 'M&A Research', href: '/mna', keywords: 'merger deals' },
-  { label: 'Exhibits & Agreements', href: '/exhibits', keywords: 'contracts' },
-  { label: 'No-Action Letters', href: '/no-action-letters', keywords: '' },
-];
+import { PRODUCT_ROUTES } from '../../config/routes';
 
 interface PaletteItem {
   kind: 'page' | 'company' | 'search';
   label: string;
   hint: string;
   href: string;
+}
+
+export function trapCommandPaletteFocus(
+  event: { key: string; shiftKey: boolean; preventDefault: () => void },
+  dialog: HTMLElement
+): void {
+  if (event.key !== 'Tab') return;
+
+  const focusable = Array.from(
+    dialog.querySelectorAll<HTMLElement>('input,button:not([disabled]),a[href]')
+  ).filter(element => element.tabIndex >= 0);
+  if (focusable.length === 0) return;
+
+  const first = focusable[0];
+  const last = focusable[focusable.length - 1];
+  if (event.shiftKey && document.activeElement === first) {
+    event.preventDefault();
+    last.focus();
+  } else if (!event.shiftKey && document.activeElement === last) {
+    event.preventDefault();
+    first.focus();
+  }
 }
 
 export default function CommandPalette() {
@@ -43,26 +47,51 @@ export default function CommandPalette() {
   const [company, setCompany] = useState<CompanyDirectoryEntry | null>(null);
   const [highlighted, setHighlighted] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const listboxId = useId();
+
+  const openPalette = useCallback(() => {
+    previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setOpen(true);
+    setQuery('');
+    setCompany(null);
+    setHighlighted(0);
+  }, []);
+
+  const closePalette = useCallback(() => {
+    setOpen(false);
+    window.requestAnimationFrame(() => previousFocusRef.current?.focus());
+  }, []);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
         event.preventDefault();
-        setOpen(prev => !prev);
-        setQuery('');
-        setCompany(null);
-        setHighlighted(0);
+        if (open) closePalette(); else openPalette();
       } else if (event.key === 'Escape') {
-        setOpen(false);
+        if (open) closePalette();
       }
     };
+    const onOpenRequest = () => openPalette();
     window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, []);
+    window.addEventListener('urc:open-command-palette', onOpenRequest);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('urc:open-command-palette', onOpenRequest);
+    };
+  }, [closePalette, open, openPalette]);
 
   useEffect(() => {
-    if (open) setTimeout(() => inputRef.current?.focus(), 30);
+    if (!open) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const timer = window.setTimeout(() => inputRef.current?.focus(), 30);
+    return () => {
+      window.clearTimeout(timer);
+      document.body.style.overflow = previousOverflow;
+    };
   }, [open]);
 
   useEffect(() => {
@@ -83,9 +112,9 @@ export default function CommandPalette() {
       href: `/company/${company.ticker}`,
     });
   }
-  for (const page of PAGES) {
+  for (const page of PRODUCT_ROUTES.filter(route => route.palette)) {
     if (!normalized || page.label.toLowerCase().includes(normalized) || page.keywords.includes(normalized)) {
-      items.push({ kind: 'page', label: page.label, hint: 'Go to page', href: page.href });
+      items.push({ kind: 'page', label: page.label, hint: 'Go to page', href: page.path });
     }
   }
   if (normalized) {
@@ -99,18 +128,26 @@ export default function CommandPalette() {
   const visible = items.slice(0, 9);
 
   const go = useCallback((item: PaletteItem) => {
-    setOpen(false);
+    closePalette();
     router.push(item.href);
-  }, [router]);
+  }, [closePalette, router]);
 
   if (!open) return null;
 
   return (
     <div
-      onClick={() => setOpen(false)}
+      onClick={closePalette}
       style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(5,10,31,0.6)', backdropFilter: 'blur(4px)', display: 'flex', justifyContent: 'center', paddingTop: '14vh' }}>
-      <div onClick={event => event.stopPropagation()}
-        style={{ width: 'min(560px, 92vw)', height: 'fit-content', background: '#131322', border: '1px solid var(--input-border)', borderRadius: '14px', overflow: 'hidden', boxShadow: '0 24px 64px rgba(0,0,0,0.5)' }}>
+      <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Quick navigation and filing search"
+        onClick={event => event.stopPropagation()}
+        onKeyDown={event => {
+          if (dialogRef.current) trapCommandPaletteFocus(event, dialogRef.current);
+        }}
+        style={{ width: 'min(560px, 92vw)', height: 'fit-content', background: 'var(--surface-panel-strong)', border: '1px solid var(--border-color)', borderRadius: '14px', overflow: 'hidden', boxShadow: '0 24px 64px rgba(0,0,0,0.35)' }}>
         <input
           ref={inputRef}
           value={query}
@@ -121,16 +158,23 @@ export default function CommandPalette() {
             if (event.key === 'Enter' && visible[highlighted]) go(visible[highlighted]);
           }}
           placeholder="Jump to a page, ticker, company, or search…"
-          aria-label="Command palette"
-          style={{ width: '100%', padding: '14px 16px', background: 'transparent', border: 'none', borderBottom: '1px solid var(--surface-panel)', color: 'var(--text-primary)', fontSize: '0.95rem', outline: 'none' }}
+          role="combobox"
+          aria-label="Quick navigation search"
+          aria-autocomplete="list"
+          aria-expanded="true"
+          aria-controls={listboxId}
+          aria-activedescendant={visible[highlighted] ? `${listboxId}-option-${highlighted}` : undefined}
+          style={{ width: '100%', padding: '14px 16px', background: 'transparent', border: 'none', borderBottom: '1px solid var(--border-color)', color: 'var(--text-primary)', fontSize: '0.95rem', outline: 'none' }}
         />
-        <div role="listbox" aria-label="Command palette results">
+        <div id={listboxId} role="listbox" aria-label="Command palette results">
           {visible.map((item, index) => (
             <button
               key={`${item.kind}:${item.href}`}
+              id={`${listboxId}-option-${index}`}
               type="button"
               role="option"
               aria-selected={index === highlighted}
+              tabIndex={-1}
               onMouseEnter={() => setHighlighted(index)}
               onClick={() => go(item)}
               style={{
@@ -138,9 +182,9 @@ export default function CommandPalette() {
                 padding: '10px 16px', background: index === highlighted ? 'rgba(179,31,126,0.18)' : 'transparent',
                 border: 'none', cursor: 'pointer',
               }}>
-              {item.kind === 'company' ? <Building2 size={15} style={{ color: 'var(--accent-soft)' }} />
-                : item.kind === 'search' ? <FileSearch size={15} style={{ color: 'var(--text-secondary)' }} />
-                : <Navigation size={15} style={{ color: 'var(--text-secondary)' }} />}
+              {item.kind === 'company' ? <Building2 size={15} style={{ color: '#F9A8D4' }} />
+                : item.kind === 'search' ? <FileSearch size={15} style={{ color: 'var(--text-muted)' }} />
+                : <Navigation size={15} style={{ color: 'var(--text-muted)' }} />}
               <span style={{ color: 'var(--text-primary)', fontSize: '0.85rem', flex: 1 }}>{item.label}</span>
               <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>{item.hint}</span>
             </button>
@@ -149,7 +193,7 @@ export default function CommandPalette() {
             <div style={{ padding: '14px 16px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>No matches.</div>
           )}
         </div>
-        <div style={{ padding: '8px 16px', borderTop: '1px solid var(--surface-panel)', color: '#475569', fontSize: '0.7rem' }}>
+        <div style={{ padding: '8px 16px', borderTop: '1px solid var(--border-color)', color: 'var(--text-muted)', fontSize: '0.7rem' }}>
           ↑↓ navigate · Enter open · Esc close
         </div>
       </div>

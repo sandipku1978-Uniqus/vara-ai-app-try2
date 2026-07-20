@@ -1,7 +1,7 @@
 /**
  * GET /api/es-search — enriched SEC filing search.
  *
- * Historically backed by an Elastic Cloud full-text index; that account was
+ * Historically backed by a dedicated full-text index; that account was
  * retired (cost). Same request/response contract, new engine:
  *
  *   text queries  → EDGAR EFTS full-text search (free, always current)
@@ -18,32 +18,49 @@
  */
 
 import { NextResponse } from 'next/server';
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { canonicalizeAuditorInput } from '../../../services/auditors';
+import { requireApiAccess } from '../../../lib/api-auth';
+import { isValidIsoDate, parseBoundedInteger } from '../../../lib/api-query';
+import {
+  acquireResourceConcurrency,
+  checkResourceRateLimit,
+  rateLimitResponse,
+  releaseAiConcurrency,
+} from '../../../lib/rate-limit';
+import { getWebSupabase } from '../../../lib/supabase-web';
+import { buildSecTargetUrl, fetchSecResponse, readResponseWithLimit } from '../../../lib/sec-upstream';
 
-const EFTS_URL = 'https://efts.sec.gov/LATEST/search-index';
 const USER_AGENT =
   process.env.NEXT_PUBLIC_EDGAR_USER_AGENT || 'Uniqus Research Center contact@uniqus.com';
 
 /** Extra candidates fetched beyond the requested page so post-filtering by
  *  auditor/SIC still fills the page. */
-const CANDIDATE_CAP = 300;
-
-let supabase: SupabaseClient | null = null;
-
-function getSupabase(): SupabaseClient | null {
-  if (supabase) return supabase;
-  const url = process.env.URC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.URC_SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) return null;
-  supabase = createClient(url, key, { auth: { persistSession: false } });
-  return supabase;
-}
+const CANDIDATE_CAP = 1_000;
+export const EFTS_CANDIDATE_REQUEST_CAP = 100;
+export const EFTS_CANDIDATE_TIME_BUDGET_MS = 45_000;
+const EFTS_INTER_PAGE_DELAY_MS = 125;
 
 interface EftsHit {
   _id: string;
   _score?: number;
   _source: Record<string, unknown> & { ciks?: string[] };
+}
+
+type EftsTotalRelation = 'eq' | 'gte';
+
+async function delayBetweenEftsPages(signal: AbortSignal): Promise<void> {
+  // Unit tests exercise the request bound without waiting through SEC pacing.
+  if (process.env.NODE_ENV === 'test') return;
+  await new Promise<void>((resolve, reject) => {
+    const timer = setTimeout(resolve, EFTS_INTER_PAGE_DELAY_MS);
+    const onAbort = () => {
+      clearTimeout(timer);
+      reject(new Error('EFTS candidate collection cancelled'));
+    };
+    if (signal.aborted) return onAbort();
+    signal.addEventListener('abort', onAbort, { once: true });
+    setTimeout(() => signal.removeEventListener('abort', onAbort), EFTS_INTER_PAGE_DELAY_MS + 1);
+  });
 }
 
 async function fetchEftsCandidates(params: {
@@ -52,9 +69,19 @@ async function fetchEftsCandidates(params: {
   startdt?: string;
   enddt?: string;
   entityName?: string;
+  startOffset: number;
   cik?: string;
+
   cap: number;
-}): Promise<{ total: number; hits: EftsHit[] }> {
+  signal: AbortSignal;
+}): Promise<{
+  total: number;
+  relation: EftsTotalRelation;
+  hits: EftsHit[];
+  completeCorpus: boolean;
+  interrupted: boolean;
+  requests: number;
+}> {
   const base = new URLSearchParams({ q: params.q });
   if (params.forms) base.set('forms', params.forms);
   if (params.startdt || params.enddt) {
@@ -73,36 +100,76 @@ async function fetchEftsCandidates(params: {
   const collected: EftsHit[] = [];
   const seen = new Set<string>();
   let total = 0;
-  let offset = 0;
+  let relation: EftsTotalRelation = 'eq';
+  let offset = params.startOffset;
+  let requests = 0;
+  let interrupted = false;
+  const loopController = new AbortController();
+  const abortFromRequest = () => loopController.abort(params.signal.reason);
+  if (params.signal.aborted) loopController.abort(params.signal.reason);
+  else params.signal.addEventListener('abort', abortFromRequest, { once: true });
+  const deadline = setTimeout(() => loopController.abort('EFTS candidate time budget exceeded'), EFTS_CANDIDATE_TIME_BUDGET_MS);
 
-  // EFTS controls its own page size; stride by hits actually received.
-  while (collected.length < params.cap && offset < 9_900) {
-    const pageParams = new URLSearchParams(base);
-    pageParams.set('from', String(offset));
-    const response = await fetch(`${EFTS_URL}?${pageParams.toString()}`, {
-      headers: { 'User-Agent': USER_AGENT, Accept: 'application/json' },
-      signal: AbortSignal.timeout(20_000),
-      next: { revalidate: 300 },
-    });
-    if (!response.ok) {
-      if (collected.length > 0) break; // return what we have
-      throw new Error(`EFTS ${response.status}`);
+  try {
+    // EFTS controls its own page size; stride by hits actually received.
+    while (
+      collected.length < params.cap
+      && offset <= 10_000
+      && requests < EFTS_CANDIDATE_REQUEST_CAP
+      && !loopController.signal.aborted
+    ) {
+      const pageParams = new URLSearchParams(base);
+      pageParams.set('from', String(offset));
+      pageParams.set('size', String(Math.min(100, params.cap - collected.length)));
+      const target = buildSecTargetUrl('efts', 'LATEST/search-index', pageParams);
+      let response: Response;
+      try {
+        requests += 1;
+        response = await fetchSecResponse(target, 'efts', loopController.signal, USER_AGENT);
+      } catch (error) {
+        if (collected.length === 0) throw error;
+        interrupted = true;
+        break;
+      }
+      if (!response.ok) {
+        if (collected.length > 0) {
+          interrupted = true;
+          break;
+        }
+        throw new Error(`EFTS ${response.status}`);
+      }
+      const bytes = await readResponseWithLimit(response, 5 * 1024 * 1024, loopController.signal);
+      const data = JSON.parse(new TextDecoder().decode(bytes));
+      const pageHits: EftsHit[] = data?.hits?.hits ?? [];
+      total = Number(data?.hits?.total?.value ?? total);
+      if (data?.hits?.total?.relation === 'gte') relation = 'gte';
+      for (const hit of pageHits) {
+        if (seen.has(hit._id)) continue;
+        seen.add(hit._id);
+        collected.push(hit);
+        if (collected.length >= params.cap) break;
+      }
+      if (pageHits.length === 0) break;
+      offset += pageHits.length;
+      if (relation === 'eq' && offset >= total) break;
+      if (collected.length < params.cap) await delayBetweenEftsPages(loopController.signal);
     }
-    const data = await response.json();
-    const pageHits: EftsHit[] = data?.hits?.hits ?? [];
-    total = data?.hits?.total?.value ?? total;
-    for (const hit of pageHits) {
-      if (seen.has(hit._id)) continue;
-      seen.add(hit._id);
-      collected.push(hit);
-      if (collected.length >= params.cap) break;
+    if (loopController.signal.aborted || requests >= EFTS_CANDIDATE_REQUEST_CAP) {
+      interrupted = !(relation === 'eq' && offset >= total);
     }
-    if (pageHits.length === 0) break;
-    offset += pageHits.length;
-    if (offset >= total) break;
+  } finally {
+    clearTimeout(deadline);
+    params.signal.removeEventListener('abort', abortFromRequest);
   }
 
-  return { total, hits: collected };
+  return {
+    total,
+    relation,
+    hits: collected,
+    completeCorpus: params.startOffset === 0 && relation === 'eq' && offset >= total,
+    interrupted,
+    requests,
+  };
 }
 
 function hitCiks(hit: EftsHit): number[] {
@@ -112,13 +179,8 @@ function hitCiks(hit: EftsHit): number[] {
 }
 
 export async function GET(request: Request) {
-  const db = getSupabase();
-  if (!db) {
-    return NextResponse.json(
-      { error: 'Enriched search is not configured (Supabase env missing)' },
-      { status: 503 }
-    );
-  }
+  const access = await requireApiAccess();
+  if (access.response) return access.response;
 
   const params = new URL(request.url).searchParams;
   const q = (params.get('q') || '').trim();
@@ -131,8 +193,51 @@ export async function GET(request: Request) {
   const auditorParam = (params.get('auditor') || '').trim();
   const auditor = auditorParam ? canonicalizeAuditorInput(auditorParam) : '';
   const sicCode = (params.get('sicCode') || '').trim();
-  const from = Math.max(0, Number(params.get('from') || 0) || 0);
-  const size = Math.min(Math.max(Number(params.get('size') || 10) || 10, 1), 100);
+  if (
+    q.length > 2000
+    || (forms?.length || 0) > 500
+    || (entityName?.length || 0) > 300
+    || auditorParam.length > 200
+    || (sicCode && !/^\d{4}$/.test(sicCode))
+    || (startdt && !isValidIsoDate(startdt))
+    || (enddt && !isValidIsoDate(enddt))
+    || (startdt && enddt && startdt > enddt)
+  ) {
+    return NextResponse.json({ error: 'Invalid or oversized search parameter.' }, { status: 400 });
+  }
+  if (params.has('mode') || params.has('acceleratedStatus')) {
+    return NextResponse.json(
+      { error: 'mode and acceleratedStatus are filing-text predicates and are not supported by this candidate endpoint' },
+      { status: 400 }
+    );
+  }
+  const from = parseBoundedInteger(params.get('from'), 0, 0, 10_000);
+  const size = parseBoundedInteger(params.get('size'), 10, 1, 100);
+  if (from === null || size === null) {
+    return NextResponse.json({ error: 'from or size is outside the supported integer range.' }, { status: 400 });
+  }
+  const facetsApplied = Boolean(auditor || sicCode);
+  if (q && facetsApplied && from + size > CANDIDATE_CAP) {
+    return NextResponse.json({
+      error: `Facet-filtered enriched search is bounded to the first ${CANDIDATE_CAP} upstream candidates. Narrow the query or use a page within that candidate window.`,
+      meta: { candidateCoverage: { examined: 0, upstreamTotal: 0, complete: false } },
+    }, { status: 422 });
+  }
+
+  const db = getWebSupabase();
+  if (!db) {
+    return NextResponse.json(
+      { error: 'Enriched search is not configured with a restricted database role.' },
+      { status: 503 }
+    );
+  }
+  const rate = await checkResourceRateLimit(request, access.identity, {
+    operation: 'enriched-search',
+    userLimit: 90,
+    orgLimit: 450,
+    ipLimit: 120,
+  });
+  if (!rate.allowed) return rateLimitResponse(rate);
 
   // Facet entity matching is a trigram-assisted ILIKE. Corporate suffixes
   // (", Inc.", "Corp") are made of ultra-common trigrams that blow the GIN
@@ -172,7 +277,7 @@ export async function GET(request: Request) {
       const total = rows.length > 0 ? Number(rows[0].total_count) : 0;
       return NextResponse.json({
         hits: {
-          total: { value: total, relation: 'eq' },
+          total: { value: total, relation: total >= 10_000 ? 'gte' : 'eq' },
           hits: rows.map(row => ({
             _id: `${row.accession}:${row.filename}`,
             _score: 0,
@@ -197,8 +302,44 @@ export async function GET(request: Request) {
 
     // ── Text search: EFTS candidates + Postgres facets/enrichment ──────────
     const needed = from + size;
-    const cap = Math.min(CANDIDATE_CAP, Math.max(needed * 3, 60));
-    const efts = await fetchEftsCandidates({ q, forms, startdt, enddt, entityName, cik, cap });
+    // Facet matches can be sparse or clustered late in the upstream order.
+    // Scan the full bounded candidate window so an early short page cannot
+    // make the client stop before later matching candidates are examined.
+    const cap = facetsApplied ? CANDIDATE_CAP : needed;
+    const candidateRequest = {
+      q,
+      forms,
+      startdt,
+      enddt,
+      entityName,
+      cik,
+      startOffset: facetsApplied ? 0 : from,
+      cap: facetsApplied ? cap : size,
+      signal: request.signal,
+    };
+    let efts: Awaited<ReturnType<typeof fetchEftsCandidates>>;
+    if (facetsApplied) {
+      // One sparse facet query can fan out to 100 paced SEC requests. Serialize
+      // that path globally so parallel users cannot exceed EDGAR's fair-access
+      // envelope; simple one-page text searches remain independent.
+      const capacity = await acquireResourceConcurrency(request, access.identity, {
+        operation: 'efts-candidate-scan',
+        userLimit: 1,
+        orgLimit: 1,
+        ipLimit: 1,
+        globalLimit: 1,
+        leaseSeconds: 60,
+      });
+      if (!capacity.allowed) return rateLimitResponse(capacity);
+      try {
+        efts = await fetchEftsCandidates(candidateRequest);
+      } finally {
+        await releaseAiConcurrency(capacity.lease);
+      }
+    } else {
+      efts = await fetchEftsCandidates(candidateRequest);
+    }
+
 
     const allCiks = Array.from(new Set(efts.hits.flatMap(hitCiks)));
     const auditorByCik = new Map<number, string>();
@@ -231,6 +372,10 @@ export async function GET(request: Request) {
           ...hit._source,
           auditor: hitAuditor,
           sic: company?.sic ?? hit._source.sic ?? '',
+          sics: Array.from(new Set([
+            ...(Array.isArray(hit._source.sics) ? hit._source.sics.map(String) : hit._source.sics ? [String(hit._source.sics)] : []),
+            ...(company?.sic ? [company.sic] : []),
+          ])),
           sic_description: company?.sic_description ?? '',
           tickers: company?.tickers?.length ? company.tickers : hit._source.tickers ?? [],
         },
@@ -244,20 +389,44 @@ export async function GET(request: Request) {
 
     const filtered = enriched.filter(hit => {
       if (auditor && !matchesAuditor(String(hit._source.auditor || ''))) return false;
-      if (sicCode && String(hit._source.sic || '') !== sicCode) return false;
+      const hitSics = Array.isArray(hit._source.sics)
+        ? hit._source.sics.map(String)
+        : [String(hit._source.sic || hit._source.sics || '')];
+      if (sicCode && !hitSics.includes(sicCode)) return false;
       return true;
     });
 
-    const facetsApplied = Boolean(auditor || sicCode);
-    const page = filtered.slice(from, from + size);
+    const candidateComplete = efts.completeCorpus;
+    const page = facetsApplied ? filtered.slice(from, from + size) : filtered;
     return NextResponse.json({
       hits: {
         // When facets filtered the candidate pool we only know the filtered
         // count within the fetched window — report it as a lower bound.
         total: facetsApplied
-          ? { value: filtered.length, relation: filtered.length >= cap ? 'gte' : 'eq' }
-          : { value: efts.total, relation: 'eq' },
+          ? { value: filtered.length, relation: candidateComplete ? 'eq' : 'gte' }
+          : { value: efts.total, relation: efts.relation },
         hits: page,
+      },
+      meta: {
+        ...(facetsApplied
+          ? {
+              candidateCoverage: {
+                examined: efts.hits.length,
+                upstreamTotal: efts.total,
+                complete: candidateComplete,
+              },
+            }
+          : {
+              pageCoverage: {
+                requestedFrom: from,
+                requestedSize: size,
+                received: page.length,
+                complete: !efts.interrupted && (
+                  page.length >= size || (efts.relation === 'eq' && from + page.length >= efts.total)
+                ),
+                upstreamRequests: efts.requests,
+              },
+            }),
       },
     });
   } catch (error) {

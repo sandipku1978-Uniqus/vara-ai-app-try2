@@ -1,35 +1,35 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { defaultSearchFilters } from '../components/filters/SearchFilterBar';
-import { canUseInstantElasticsearchSearch, mapSearchHit } from '../services/filingResearch';
+import { canUseInstantEnrichedSearch, mapSearchHit } from '../services/filingResearch';
 import type { EdgarSearchHit } from '../services/secApi';
 
 describe('filingResearch', () => {
   beforeEach(() => {
-    process.env.NEXT_PUBLIC_USE_ELASTICSEARCH = 'true';
+    process.env.NEXT_PUBLIC_USE_ENRICHED_SEARCH = 'true';
   });
 
-  describe('canUseInstantElasticsearchSearch', () => {
-    it('uses Elasticsearch immediately for semantic searches when the Research flow opts in', () => {
+  describe('canUseInstantEnrichedSearch', () => {
+    it('uses enriched results immediately for filing research when the flow opts in', () => {
       expect(
-        canUseInstantElasticsearchSearch('temporary equity', { ...defaultSearchFilters }, 'semantic', true)
+        canUseInstantEnrichedSearch('temporary equity', { ...defaultSearchFilters }, 'semantic', true)
       ).toBe(true);
     });
 
-    it('uses Elasticsearch immediately for boolean searches when the Research flow opts in', () => {
+    it('keeps boolean searches on the filing-text validation path', () => {
       expect(
-        canUseInstantElasticsearchSearch('ASC 842 adoption W/10 lease', { ...defaultSearchFilters }, 'boolean', true)
-      ).toBe(true);
+        canUseInstantEnrichedSearch('ASC 842 adoption W/10 lease', { ...defaultSearchFilters }, 'boolean', true)
+      ).toBe(false);
     });
 
     it('keeps shared search helpers on the legacy path until a caller opts in', () => {
       expect(
-        canUseInstantElasticsearchSearch('temporary equity', { ...defaultSearchFilters }, 'semantic')
+        canUseInstantEnrichedSearch('temporary equity', { ...defaultSearchFilters }, 'semantic')
       ).toBe(false);
     });
 
     it('keeps section-keyword searches on the filing-text validation path', () => {
       expect(
-        canUseInstantElasticsearchSearch(
+        canUseInstantEnrichedSearch(
           'temporary equity',
           { ...defaultSearchFilters, sectionKeywords: 'balance sheet' },
           'semantic',
@@ -69,7 +69,7 @@ describe('filingResearch', () => {
       ...overrides,
     });
 
-    it('maps indexed auditor and filer status metadata from Elasticsearch hits', () => {
+    it('maps indexed auditor and filer status metadata from enriched hits', () => {
       const result = mapSearchHit(makeHit());
       expect(result.auditor).toBe('Deloitte');
       expect(result.acceleratedStatus).toBe('Large Accelerated Filer');
@@ -78,7 +78,18 @@ describe('filingResearch', () => {
       expect(result.fileNumber).toBe('001-36743');
     });
 
-    it('uses content highlights as the match snippet when Elasticsearch returns them', () => {
+    it('retains every EFTS SIC code and accepts the enriched singular field', () => {
+      const multiple = mapSearchHit(makeHit({
+        _source: { ...makeHit()._source, sics: ['2834', '3571'] },
+      }));
+      const singular = mapSearchHit(makeHit({
+        _source: { ...makeHit()._source, sics: undefined, sic: '3571' },
+      }));
+      expect(multiple.sic).toBe('2834, 3571');
+      expect(singular.sic).toBe('3571');
+    });
+
+    it('uses content highlights as the match snippet when enriched results return them', () => {
       const result = mapSearchHit(makeHit({
         highlight: {
           content: ['... temporary equity was presented outside permanent equity and audited by Deloitte ...'],

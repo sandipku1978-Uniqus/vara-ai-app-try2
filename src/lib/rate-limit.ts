@@ -1,60 +1,427 @@
-/**
- * Per-IP sliding-window rate limiter for the Claude-backed routes, which are
- * currently reachable without auth — anyone who finds the URL can burn
- * Anthropic tokens. In-memory per serverless instance: not airtight across
- * lambdas, but it stops sustained abuse from a single source, which is the
- * realistic attack. Upgrade path: Upstash Redis when auth tiers land.
- */
+import crypto from 'node:crypto';
+import { kv } from '@vercel/kv';
+import { isProductionDeployment } from './clerk-config';
 
-interface Window {
-  timestamps: number[];
+const WINDOW_SECONDS = 5 * 60;
+const DEFAULT_DAILY_TOKEN_BUDGET = 250_000;
+const MAX_LOCAL_WINDOWS = 10_000;
+const CONCURRENCY_LEASE_SECONDS = 180;
+const MAX_CONCURRENCY_LEASE_SECONDS = 15 * 60;
+const MAX_TOKEN_RESERVATION = 500_000;
+
+interface LocalCounter {
+  count: number;
+  expiresAt: number;
 }
 
-const WINDOW_MS = 5 * 60 * 1000;
-const MAX_REQUESTS = 20; // per IP per 5 minutes across AI endpoints
+export interface RateLimitIdentity {
+  userId: string;
+  orgId: string | null;
+}
 
-const windows = new Map<string, Window>();
+export interface RateLimitOptions {
+  operation: string;
+}
 
-function prune(now: number): void {
-  // Bound memory: drop empty/expired windows opportunistically
-  if (windows.size < 5000) return;
-  for (const [key, value] of windows) {
-    if (value.timestamps.length === 0 || now - value.timestamps[value.timestamps.length - 1] > WINDOW_MS) {
-      windows.delete(key);
-    }
-  }
+export interface ResourceRateLimitOptions {
+  operation: string;
+  userLimit?: number;
+  orgLimit?: number;
+  ipLimit?: number;
+}
+
+export interface ResourceConcurrencyOptions {
+  operation: string;
+  userLimit?: number;
+  orgLimit?: number;
+  ipLimit?: number;
+  globalLimit?: number;
+  leaseSeconds?: number;
+}
+
+export interface RateLimitResult {
+  allowed: boolean;
+  retryAfterSeconds: number;
+  reason?: 'rate' | 'budget' | 'concurrency' | 'unavailable';
+}
+
+export interface AiConcurrencyLease {
+  token: string;
+  keys: string[];
+  local: boolean;
+  released: boolean;
+}
+
+export interface AiConcurrencyResult extends RateLimitResult {
+  lease?: AiConcurrencyLease;
+}
+
+const localCounters = new Map<string, LocalCounter>();
+const localConcurrency = new Map<string, Map<string, number>>();
+
+function boundedPositiveInteger(value: string | undefined, fallback: number): number {
+  const parsed = Number(value);
+  return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function dailyTokenBudget(): number {
+  return boundedPositiveInteger(process.env.AI_DAILY_TOKEN_BUDGET_PER_USER, DEFAULT_DAILY_TOKEN_BUDGET);
+}
+
+function hasDistributedStore(): boolean {
+  return Boolean(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
+}
+
+function opaqueKeyPart(value: string): string {
+  return crypto.createHash('sha256').update(value).digest('base64url').slice(0, 24);
 }
 
 export function clientIpFrom(request: Request): string {
-  const forwarded = request.headers.get('x-forwarded-for');
-  if (forwarded) return forwarded.split(',')[0].trim();
-  return request.headers.get('x-real-ip') || 'unknown';
+  // Vercel overwrites these headers at the trusted edge. Do not trust a raw
+  // caller-supplied x-forwarded-for header in production.
+  const trusted = request.headers.get('x-real-ip')
+    || request.headers.get('x-vercel-forwarded-for')?.split(',')[0]?.trim();
+  if (trusted) return trusted;
+
+  if (!isProductionDeployment()) {
+    return request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'local';
+  }
+  return 'unknown';
 }
 
-export function checkAiRateLimit(request: Request): { allowed: boolean; retryAfterSeconds: number } {
-  const now = Date.now();
-  prune(now);
-  const key = clientIpFrom(request);
-  const window = windows.get(key) ?? { timestamps: [] };
-  window.timestamps = window.timestamps.filter(t => now - t < WINDOW_MS);
+function pruneLocalCounters(now: number): void {
+  if (localCounters.size < MAX_LOCAL_WINDOWS) return;
+  for (const [key, value] of localCounters) {
+    if (value.expiresAt <= now) localCounters.delete(key);
+  }
+}
 
-  if (window.timestamps.length >= MAX_REQUESTS) {
-    const retryAfterSeconds = Math.ceil((window.timestamps[0] + WINDOW_MS - now) / 1000);
-    windows.set(key, window);
-    return { allowed: false, retryAfterSeconds: Math.max(retryAfterSeconds, 1) };
+function incrementLocal(key: string, increment: number, ttlSeconds: number): number {
+  const now = Date.now();
+  pruneLocalCounters(now);
+  const current = localCounters.get(key);
+  if (!current || current.expiresAt <= now) {
+    localCounters.set(key, { count: increment, expiresAt: now + ttlSeconds * 1000 });
+    return increment;
+  }
+  current.count += increment;
+  return current.count;
+}
+
+async function incrementDistributed(key: string, increment: number, ttlSeconds: number): Promise<number> {
+  const count = increment === 1 ? await kv.incr(key) : await kv.incrby(key, increment);
+  if (count === increment) await kv.expire(key, ttlSeconds);
+  return count;
+}
+
+async function incrementCounter(key: string, increment: number, ttlSeconds: number): Promise<number> {
+  if (hasDistributedStore()) return incrementDistributed(key, increment, ttlSeconds);
+  if (isProductionDeployment()) {
+    throw new Error('Distributed rate limiting requires KV_REST_API_URL and KV_REST_API_TOKEN.');
+  }
+  return incrementLocal(key, increment, ttlSeconds);
+}
+
+function secondsUntilWindowReset(windowSeconds: number): number {
+  const nowSeconds = Math.floor(Date.now() / 1000);
+  return Math.max(windowSeconds - (nowSeconds % windowSeconds), 1);
+}
+
+export async function checkAiRateLimit(
+  request: Request,
+  identity: RateLimitIdentity,
+  options: RateLimitOptions
+): Promise<RateLimitResult> {
+  const operation = options.operation.replace(/[^a-z0-9_-]/gi, '').slice(0, 40) || 'unknown';
+  const bucket = Math.floor(Date.now() / (WINDOW_SECONDS * 1000));
+  const ip = clientIpFrom(request);
+  const scopes: Array<{ key: string; limit: number }> = [
+    { key: `user:${opaqueKeyPart(identity.userId)}:all:${bucket}`, limit: 30 },
+    { key: `user:${opaqueKeyPart(identity.userId)}:${operation}:${bucket}`, limit: 20 },
+    { key: `ip:${opaqueKeyPart(ip)}:all:${bucket}`, limit: 60 },
+  ];
+  if (identity.orgId) {
+    scopes.push({ key: `org:${opaqueKeyPart(identity.orgId)}:all:${bucket}`, limit: 150 });
   }
 
-  window.timestamps.push(now);
-  windows.set(key, window);
-  return { allowed: true, retryAfterSeconds: 0 };
+  try {
+    for (const scope of scopes) {
+      const count = await incrementCounter(`ai-rate:${scope.key}`, 1, WINDOW_SECONDS + 5);
+      if (count > scope.limit) {
+        return { allowed: false, retryAfterSeconds: secondsUntilWindowReset(WINDOW_SECONDS), reason: 'rate' };
+      }
+    }
+
+    return { allowed: true, retryAfterSeconds: 0 };
+  } catch (error) {
+    console.error('AI rate limiter unavailable:', error);
+    if (isProductionDeployment()) {
+      return { allowed: false, retryAfterSeconds: 30, reason: 'unavailable' };
+    }
+    return { allowed: true, retryAfterSeconds: 0 };
+  }
 }
 
-export function rateLimitResponse(retryAfterSeconds: number): Response {
-  return new Response(
-    JSON.stringify({ error: 'Rate limit exceeded — try again shortly.' }),
-    {
-      status: 429,
-      headers: { 'Content-Type': 'application/json', 'Retry-After': String(retryAfterSeconds) },
-    }
+/**
+ * Conservative reservation for model input plus requested output. Three
+ * characters per input token intentionally errs above the common four-char
+ * approximation, and per-call overhead covers message framing/tokenization.
+ */
+export function estimateModelTokenReservation(
+  inputCharacters: number,
+  maxOutputTokens: number,
+  callCount = 1
+): number {
+  const safeCharacters = Number.isFinite(inputCharacters) ? Math.max(0, Math.ceil(inputCharacters)) : 0;
+  const safeOutput = Number.isFinite(maxOutputTokens) ? Math.max(0, Math.ceil(maxOutputTokens)) : 0;
+  const safeCalls = Number.isFinite(callCount) ? Math.max(1, Math.ceil(callCount)) : 1;
+  return Math.min(
+    Math.ceil(safeCharacters / 3) + safeOutput + safeCalls * 512,
+    MAX_TOKEN_RESERVATION
   );
+}
+
+/** Reserve spend only after a cache miss, immediately before model work. */
+export async function reserveAiTokenBudget(
+  identity: RateLimitIdentity,
+  estimatedTokens: number
+): Promise<RateLimitResult> {
+  const tokenCost = Math.min(Math.max(Math.ceil(estimatedTokens || 0), 0), MAX_TOKEN_RESERVATION);
+  if (tokenCost === 0) return { allowed: true, retryAfterSeconds: 0 };
+
+  try {
+    const day = new Date().toISOString().slice(0, 10);
+    const budgetKey = `ai-budget:${opaqueKeyPart(identity.userId)}:${day}`;
+    const reserved = await incrementCounter(budgetKey, tokenCost, 26 * 60 * 60);
+    if (reserved > dailyTokenBudget()) {
+      return { allowed: false, retryAfterSeconds: secondsUntilWindowReset(24 * 60 * 60), reason: 'budget' };
+    }
+    return { allowed: true, retryAfterSeconds: 0 };
+  } catch (error) {
+    console.error('AI budget limiter unavailable:', error);
+    if (isProductionDeployment()) {
+      return { allowed: false, retryAfterSeconds: 30, reason: 'unavailable' };
+    }
+    return { allowed: true, retryAfterSeconds: 0 };
+  }
+}
+
+export async function checkResourceRateLimit(
+  request: Request,
+  identity: RateLimitIdentity,
+  options: ResourceRateLimitOptions
+): Promise<RateLimitResult> {
+  const operation = options.operation.replace(/[^a-z0-9_-]/gi, '').slice(0, 40) || 'unknown';
+  const bucket = Math.floor(Date.now() / (WINDOW_SECONDS * 1000));
+  const ip = clientIpFrom(request);
+  const scopes: Array<{ key: string; limit: number }> = [
+    { key: `user:${opaqueKeyPart(identity.userId)}:${operation}:${bucket}`, limit: options.userLimit || 120 },
+    { key: `ip:${opaqueKeyPart(ip)}:${operation}:${bucket}`, limit: options.ipLimit || 180 },
+  ];
+  if (identity.orgId) {
+    scopes.push({ key: `org:${opaqueKeyPart(identity.orgId)}:${operation}:${bucket}`, limit: options.orgLimit || 600 });
+  }
+
+  try {
+    for (const scope of scopes) {
+      const count = await incrementCounter(`resource-rate:${scope.key}`, 1, WINDOW_SECONDS + 5);
+      if (count > scope.limit) {
+        return { allowed: false, retryAfterSeconds: secondsUntilWindowReset(WINDOW_SECONDS), reason: 'rate' };
+      }
+    }
+    return { allowed: true, retryAfterSeconds: 0 };
+  } catch (error) {
+    console.error('Resource rate limiter unavailable:', error);
+    if (isProductionDeployment()) {
+      return { allowed: false, retryAfterSeconds: 30, reason: 'unavailable' };
+    }
+    return { allowed: true, retryAfterSeconds: 0 };
+  }
+}
+
+function normalizedLeaseSeconds(requestedSeconds: number): number {
+  if (!Number.isFinite(requestedSeconds)) return CONCURRENCY_LEASE_SECONDS;
+  return Math.min(Math.max(Math.ceil(requestedSeconds), 30), MAX_CONCURRENCY_LEASE_SECONDS);
+}
+
+function acquireLocalConcurrency(key: string, token: string, limit: number, leaseSeconds: number): boolean {
+  const now = Date.now();
+  const leases = localConcurrency.get(key) || new Map<string, number>();
+  for (const [member, expiresAt] of leases) {
+    if (expiresAt <= now) leases.delete(member);
+  }
+  if (leases.size >= limit) {
+    localConcurrency.set(key, leases);
+    return false;
+  }
+  leases.set(token, now + leaseSeconds * 1000);
+  localConcurrency.set(key, leases);
+  return true;
+}
+
+async function acquireDistributedConcurrency(
+  key: string,
+  token: string,
+  limit: number,
+  leaseSeconds: number
+): Promise<boolean> {
+  const now = Date.now();
+  await kv.zremrangebyscore(key, 0, now);
+  await kv.zadd(key, { score: now + leaseSeconds * 1000, member: token });
+  await kv.expire(key, leaseSeconds + 5);
+  const count = await kv.zcard(key);
+  if (count <= limit) return true;
+  await kv.zrem(key, token);
+  return false;
+}
+
+export async function acquireAiConcurrency(
+  identity: RateLimitIdentity,
+  requestedLeaseSeconds = CONCURRENCY_LEASE_SECONDS
+): Promise<AiConcurrencyResult> {
+  const token = crypto.randomUUID();
+  const leaseSeconds = normalizedLeaseSeconds(requestedLeaseSeconds);
+  const local = !hasDistributedStore();
+  if (local && isProductionDeployment()) {
+    return { allowed: false, retryAfterSeconds: 30, reason: 'unavailable' };
+  }
+
+  const scopes: Array<{ key: string; limit: number }> = [
+    {
+      key: `ai-concurrency:user:${opaqueKeyPart(identity.userId)}`,
+      limit: boundedPositiveInteger(process.env.AI_MAX_CONCURRENT_PER_USER, 2),
+    },
+  ];
+  if (identity.orgId) {
+    scopes.push({
+      key: `ai-concurrency:org:${opaqueKeyPart(identity.orgId)}`,
+      limit: boundedPositiveInteger(process.env.AI_MAX_CONCURRENT_PER_ORG, 10),
+    });
+  }
+
+  const lease: AiConcurrencyLease = { token, keys: [], local, released: false };
+  try {
+    for (const scope of scopes) {
+      const acquired = local
+        ? acquireLocalConcurrency(scope.key, token, scope.limit, leaseSeconds)
+        : await acquireDistributedConcurrency(scope.key, token, scope.limit, leaseSeconds);
+      if (!acquired) {
+        await releaseAiConcurrency(lease);
+        return { allowed: false, retryAfterSeconds: 5, reason: 'concurrency' };
+      }
+      lease.keys.push(scope.key);
+    }
+    return { allowed: true, retryAfterSeconds: 0, lease };
+  } catch (error) {
+    console.error('AI concurrency limiter unavailable:', error);
+    await releaseAiConcurrency(lease);
+    if (isProductionDeployment()) {
+      return { allowed: false, retryAfterSeconds: 30, reason: 'unavailable' };
+    }
+    return { allowed: true, retryAfterSeconds: 0, lease };
+  }
+}
+
+/** Bound expensive non-AI fan-out work independently from model capacity. */
+export async function acquireResourceConcurrency(
+  request: Request,
+  identity: RateLimitIdentity,
+  options: ResourceConcurrencyOptions
+): Promise<AiConcurrencyResult> {
+  const token = crypto.randomUUID();
+  const local = !hasDistributedStore();
+  if (local && isProductionDeployment()) {
+    return { allowed: false, retryAfterSeconds: 30, reason: 'unavailable' };
+  }
+
+  const operation = options.operation.replace(/[^a-z0-9_-]/gi, '').slice(0, 40) || 'unknown';
+  const leaseSeconds = normalizedLeaseSeconds(options.leaseSeconds ?? 60);
+  const limit = (value: number | undefined, fallback: number) => (
+    Number.isSafeInteger(value) && Number(value) > 0 ? Number(value) : fallback
+  );
+  const scopes: Array<{ key: string; limit: number }> = [
+    {
+      key: `resource-concurrency:user:${opaqueKeyPart(identity.userId)}:${operation}`,
+      limit: limit(options.userLimit, 2),
+    },
+    {
+      key: `resource-concurrency:ip:${opaqueKeyPart(clientIpFrom(request))}:${operation}`,
+      limit: limit(options.ipLimit, 4),
+    },
+  ];
+  if (identity.orgId) {
+    scopes.push({
+      key: `resource-concurrency:org:${opaqueKeyPart(identity.orgId)}:${operation}`,
+      limit: limit(options.orgLimit, 10),
+    });
+  }
+  if (options.globalLimit) {
+    scopes.push({
+      key: `resource-concurrency:global:${operation}`,
+      limit: limit(options.globalLimit, 2),
+    });
+  }
+
+  const lease: AiConcurrencyLease = { token, keys: [], local, released: false };
+  try {
+    for (const scope of scopes) {
+      const acquired = local
+        ? acquireLocalConcurrency(scope.key, token, scope.limit, leaseSeconds)
+        : await acquireDistributedConcurrency(scope.key, token, scope.limit, leaseSeconds);
+      if (!acquired) {
+        await releaseAiConcurrency(lease);
+        return { allowed: false, retryAfterSeconds: 5, reason: 'concurrency' };
+      }
+      lease.keys.push(scope.key);
+    }
+    return { allowed: true, retryAfterSeconds: 0, lease };
+  } catch (error) {
+    console.error('Resource concurrency limiter unavailable:', error);
+    await releaseAiConcurrency(lease);
+    if (isProductionDeployment()) {
+      return { allowed: false, retryAfterSeconds: 30, reason: 'unavailable' };
+    }
+    return { allowed: true, retryAfterSeconds: 0, lease };
+  }
+}
+
+export async function releaseAiConcurrency(lease: AiConcurrencyLease | undefined): Promise<void> {
+  if (!lease || lease.released) return;
+  lease.released = true;
+  try {
+    for (const key of lease.keys) {
+      if (lease.local) {
+        const leases = localConcurrency.get(key);
+        leases?.delete(lease.token);
+        if (leases?.size === 0) localConcurrency.delete(key);
+      } else {
+        await kv.zrem(key, lease.token);
+      }
+    }
+  } catch (error) {
+    // TTL expiry is the final safety net if release fails.
+    console.error('AI concurrency lease cleanup failed:', error);
+  }
+}
+
+export function rateLimitResponse(result: RateLimitResult): Response {
+  const unavailable = result.reason === 'unavailable';
+  const budget = result.reason === 'budget';
+  const concurrency = result.reason === 'concurrency';
+  const status = unavailable ? 503 : 429;
+  const error = unavailable
+    ? 'Request controls are temporarily unavailable.'
+    : budget
+      ? 'Daily AI usage budget reached.'
+      : concurrency
+        ? 'Too many AI requests are already in progress.'
+      : 'Rate limit exceeded — try again shortly.';
+
+  return Response.json({ error }, {
+    status,
+    headers: {
+      'Cache-Control': 'no-store',
+      'Retry-After': String(Math.max(result.retryAfterSeconds, 1)),
+    },
+  });
 }

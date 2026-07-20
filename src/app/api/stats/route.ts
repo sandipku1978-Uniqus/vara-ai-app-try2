@@ -5,17 +5,21 @@
  */
 
 import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { requireApiAccess } from '../../../lib/api-auth';
+import { checkResourceRateLimit, rateLimitResponse } from '../../../lib/rate-limit';
+import { getWebSupabase } from '../../../lib/supabase-web';
 
 export const revalidate = 600;
 
-export async function GET() {
-  const url = process.env.URC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.URC_SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) return NextResponse.json({ error: 'Stats not configured' }, { status: 503 });
+export async function GET(request: Request) {
+  const access = await requireApiAccess();
+  if (access.response) return access.response;
+  const db = getWebSupabase();
+  if (!db) return NextResponse.json({ error: 'Stats not configured with a restricted database role.' }, { status: 503 });
+  const rate = await checkResourceRateLimit(request, access.identity, { operation: 'stats' });
+  if (!rate.allowed) return rateLimitResponse(rate);
 
   try {
-    const db = createClient(url, key, { auth: { persistSession: false } });
     const { data, error } = await db.rpc('urc_data_stats');
     if (error) throw new Error(error.message);
     const row = Array.isArray(data) ? data[0] : data;
@@ -26,6 +30,8 @@ export async function GET() {
         count: Number(row?.letters_estimate ?? 0),
         withText: Number(row?.letters_with_text ?? 0),
         through: row?.letters_through ?? null,
+        lastTextFetch: row?.letters_last_text_fetch ?? null,
+        retryPending: Number(row?.letters_retry_pending ?? 0),
         source: 'SEC EDGAR (UPLOAD/CORRESP)',
       },
     });

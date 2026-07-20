@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { Loader2, Search, X } from 'lucide-react';
 import { loadCompanyDirectory } from '../../services/agentEvidence';
 
 interface CompanyLookupFieldProps {
+  id?: string;
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
@@ -64,6 +65,7 @@ function scoreOption(option: CompanyOption, query: string): number {
 }
 
 export default function CompanyLookupField({
+  id,
   value,
   onChange,
   placeholder = 'Type company or ticker...',
@@ -71,7 +73,10 @@ export default function CompanyLookupField({
   const [options, setOptions] = useState<CompanyOption[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
   const rootRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const listboxId = useId();
 
   useEffect(() => {
     let cancelled = false;
@@ -114,26 +119,62 @@ export default function CompanyLookupField({
     return ranked;
   }, [options, value]);
 
+  function chooseOption(option: CompanyOption) {
+    onChange(option.title);
+    setOpen(false);
+    setActiveIndex(-1);
+    inputRef.current?.focus();
+  }
+
   return (
     <div ref={rootRef} style={{ position: 'relative' }}>
       <div style={shellStyle}>
         {loading ? <Loader2 size={14} className="spinner" /> : <Search size={14} style={{ color: 'var(--text-muted)' }} />}
         <input
+          id={id}
+          ref={inputRef}
           value={value}
           onChange={event => {
             onChange(event.target.value);
             setOpen(true);
+            setActiveIndex(0);
           }}
-          onFocus={() => setOpen(true)}
+          onFocus={() => { setOpen(true); setActiveIndex(matches.length > 0 ? 0 : -1); }}
+          onKeyDown={event => {
+            if (event.key === 'ArrowDown' && matches.length > 0) {
+              event.preventDefault();
+              setOpen(true);
+              setActiveIndex(index => Math.min(index + 1, matches.length - 1));
+            } else if (event.key === 'ArrowUp' && matches.length > 0) {
+              event.preventDefault();
+              setOpen(true);
+              setActiveIndex(index => Math.max(index - 1, 0));
+            } else if (event.key === 'Enter' && open && activeIndex >= 0) {
+              event.preventDefault();
+              chooseOption(matches[activeIndex]);
+            } else if (event.key === 'Escape') {
+              setOpen(false);
+              setActiveIndex(-1);
+            }
+          }}
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded={open}
+          aria-controls={listboxId}
+          aria-activedescendant={open && activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined}
+          aria-label="Company or entity"
           placeholder={placeholder}
           style={inputStyle}
         />
         {value && (
           <button
             type="button"
+            aria-label="Clear company or entity"
             onClick={() => {
               onChange('');
               setOpen(false);
+              setActiveIndex(-1);
+              inputRef.current?.focus();
             }}
             style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, color: 'var(--text-muted)' }}
           >
@@ -144,6 +185,9 @@ export default function CompanyLookupField({
 
       {open && (
         <div
+          id={listboxId}
+          role="listbox"
+          aria-label="Company matches"
           style={{
             position: 'absolute',
             top: 'calc(100% + 6px)',
@@ -159,18 +203,20 @@ export default function CompanyLookupField({
           }}
         >
           {matches.length > 0 ? (
-            matches.map(option => (
+            matches.map((option, index) => (
               <button
                 key={`${option.ticker}-${option.cik}`}
+                id={`${listboxId}-option-${index}`}
                 type="button"
-                onClick={() => {
-                  onChange(option.title);
-                  setOpen(false);
-                }}
+                role="option"
+                aria-selected={index === activeIndex}
+                tabIndex={-1}
+                onMouseMove={() => setActiveIndex(index)}
+                onClick={() => chooseOption(option)}
                 style={{
                   width: '100%',
                   padding: '10px 12px',
-                  background: 'transparent',
+                  background: index === activeIndex ? 'var(--interactive-hover)' : 'transparent',
                   border: 'none',
                   borderBottom: '1px solid var(--border-color)',
                   cursor: 'pointer',

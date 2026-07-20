@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
+import { useState, useRef, useCallback, useEffect, useMemo, type KeyboardEvent } from 'react';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 
-import { ArrowLeft, Bookmark, MessageSquare, ExternalLink, Columns, Highlighter, Settings2, Download, List, AlertCircle, FileText, Loader2 } from 'lucide-react';
+import { ArrowLeft, Bookmark, MessageSquare, ExternalLink, Columns, Highlighter, Settings2, Download, List, AlertCircle, FileText, Loader2, X } from 'lucide-react';
 import { useApp } from '../context/AppState';
 import { BRAND } from '../config/brand';
-import { buildSecDocumentUrl, buildSecProxyUrl, fetchCompanySubmissions, fetchFilingText, type SecSubmission } from '../services/secApi';
+import { buildSecDocumentUrl, buildSecProxyUrl, fetchCompanySubmissions, fetchFilingText, fetchSubmissionHistory, type SecFilingSeries, type SecSubmission } from '../services/secApi';
 import { createPrintWindow, renderCleanPrintView } from '../services/filingExport';
 import { buildDisclosureDiff, downloadTextFile, extractTablesFromHtml, tablesToCsv, type DisclosureDiffSummary } from '../services/filingDetailTools';
 import { aiSummarizeRedline } from '../services/aiApi';
@@ -14,6 +14,8 @@ import { TextDiffViewer } from '../components/research/TextDiffViewer';
 import { buildHighlightTerms } from '../services/searchAssist';
 import { clearDocumentHighlights, highlightDocumentSearchTerms } from '../services/filingHighlights';
 import type { ResearchSearchMode } from '../services/filingResearch';
+import { scopedStorageKey } from '../services/storageNamespace';
+import { sanitizeSearchReturnTo } from '../lib/internalNavigation';
 import './FilingDetail.css';
 
 interface TocEntry {
@@ -32,6 +34,7 @@ interface FilingRouteState {
   highlightMode?: ResearchSearchMode;
   highlightSectionKeywords?: string;
   originatingSearchSessionId?: string | null;
+  returnTo?: string;
 }
 
 interface ComparableFiling {
@@ -52,6 +55,39 @@ interface FilingAnnotation {
 const ANNOTATIONS_STORAGE_KEY = 'vara.filing.annotations.v1';
 const REDLINE_SUMMARY_CACHE = new Map<string, { comparedFiling: ComparableFiling; summary: DisclosureDiffSummary; aiSummary: string | null }>();
 
+export function formatFilingMetadataValue(value: string, hydrationComplete: boolean): string {
+  return value || (hydrationComplete ? 'Unavailable' : 'Loading...');
+}
+// Filing HTML varies widely, so keep these generic enough for 10-K, 20-F, S-1,
+// proxy, and other item/part-based forms.
+const SECTION_HEADER_RE = /^(item\s+\d+[a-z]?\b|part\s+[iv]+\b)/i;
+const ANCHOR_ITEM_RE = /^#?item_(\d+)_?([a-z])?(?:_|$)/i;
+const SKIP_TOC_ENTRY_RE = /^(table of contents|back to top|page|toc|\d+|f-\d+|[\divx]+)$/i;
+
+/** Walk up from a link to its containing TD, then read the adjacent description cell. */
+function getSiblingTdText(link: HTMLElement): string {
+  let el: HTMLElement | null = link;
+  while (el && el.tagName !== 'TD') el = el.parentElement;
+  if (!el) return '';
+  const nextTd = el.nextElementSibling as HTMLElement | null;
+  if (!nextTd || nextTd.tagName !== 'TD') return '';
+  const text = (nextTd.textContent || '').replace(/\s+/g, ' ').trim();
+  return /^\d+$/.test(text) ? '' : text;
+}
+
+/** Clean up link text into a concise TOC label. */
+function cleanTocLabel(text: string, itemPrefix?: string, siblingDesc?: string): string {
+  let label = text.replace(/\s+/g, ' ').trim();
+  label = label.replace(/^(item|part)\s/i, match => match.charAt(0).toUpperCase() + match.slice(1).toLowerCase());
+  if (siblingDesc && /^(Item\s+\d+[A-Za-z]?\.?|Part\s+[IV]+\.?)$/i.test(label)) {
+    label = `${label} ${siblingDesc}`;
+  }
+  if (itemPrefix && !SECTION_HEADER_RE.test(label)) {
+    label = `Item ${itemPrefix.toUpperCase()}. ${label}`;
+  }
+  return label.length > 60 ? `${label.slice(0, 57)}...` : label;
+}
+
 function normalizeComparableForm(formType: string): string {
   return formType.trim().toUpperCase().replace(/\s+/g, '').replace(/\/A$/, '');
 }
@@ -64,7 +100,9 @@ function toDateValue(value: string): number {
 function loadAnnotations(filingId: string): FilingAnnotation[] {
   if (typeof window === 'undefined') return [];
   try {
-    const raw = window.localStorage.getItem(ANNOTATIONS_STORAGE_KEY);
+    const storageKey = scopedStorageKey(ANNOTATIONS_STORAGE_KEY);
+    if (!storageKey) return [];
+    const raw = window.localStorage.getItem(storageKey);
     if (!raw) return [];
     const parsed = JSON.parse(raw) as Record<string, FilingAnnotation[]>;
     return parsed[filingId] || [];
@@ -76,22 +114,23 @@ function loadAnnotations(filingId: string): FilingAnnotation[] {
 function saveAnnotations(filingId: string, annotations: FilingAnnotation[]): void {
   if (typeof window === 'undefined') return;
   try {
-    const raw = window.localStorage.getItem(ANNOTATIONS_STORAGE_KEY);
+    const storageKey = scopedStorageKey(ANNOTATIONS_STORAGE_KEY);
+    if (!storageKey) return;
+    const raw = window.localStorage.getItem(storageKey);
     const parsed = raw ? (JSON.parse(raw) as Record<string, FilingAnnotation[]>) : {};
     parsed[filingId] = annotations;
-    window.localStorage.setItem(ANNOTATIONS_STORAGE_KEY, JSON.stringify(parsed));
+    window.localStorage.setItem(storageKey, JSON.stringify(parsed));
   } catch {
     // Ignore storage failures and keep notes in-memory.
   }
 }
 
 function pickPreviousComparableFiling(
-  submissions: SecSubmission,
+  recent: SecFilingSeries,
   currentAccession: string,
   currentFormType: string,
   currentFilingDate: string
 ): ComparableFiling | null {
-  const recent = submissions.filings.recent;
   const targetForm = normalizeComparableForm(currentFormType);
   const currentDateValue = toDateValue(currentFilingDate);
 
@@ -128,9 +167,37 @@ function pickPreviousComparableFiling(
   return bestMatch;
 }
 
+function findFilingInSeries(series: SecFilingSeries, accession: string) {
+  const index = series.accessionNumber.findIndex(item => item === accession);
+  if (index === -1) return null;
+  return {
+    filingDate: series.filingDate[index] || '',
+    formType: series.form[index] || '',
+    fileNumber: series.fileNumber[index] || '',
+    primaryDocument: series.primaryDocument[index] || '',
+  };
+}
+
+async function loadRelevantHistoricalSeries(submissions: SecSubmission, filingDate = ''): Promise<SecFilingSeries[]> {
+  const files = submissions.filings.files || [];
+  const candidates = (filingDate
+    ? files.filter(file => !file.filingFrom || !file.filingTo || (file.filingFrom <= filingDate && filingDate <= file.filingTo) || file.filingTo < filingDate)
+    : files)
+    .sort((a, b) => (b.filingTo || '').localeCompare(a.filingTo || ''))
+    .slice(0, 3);
+  const series: SecFilingSeries[] = [];
+  for (const file of candidates) {
+    const history = await fetchSubmissionHistory(file.name);
+    if (history) series.push(history);
+  }
+  return series;
+}
+
 export default function FilingDetail() {
   const location = usePathname();
   const navigate = useRouter();
+  const filingSearchParams = useSearchParams();
+  const filingRouteParamString = filingSearchParams?.toString() || '';
   const {
     addToWatchlist,
     setChatOpen,
@@ -140,26 +207,51 @@ export default function FilingDetail() {
     setPendingFilingSectionLabel,
   } = useApp();
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const sidebarRef = useRef<HTMLElement>(null);
+  const sidebarToggleRef = useRef<HTMLButtonElement>(null);
   const currentHtmlRef = useRef<string | null>(null);
   const currentTextRef = useRef<string | null>(null);
   
-  // NOTE: Next.js doesn't support complex state in URL routing natively via usePathname
-  // We extract ID from the pathname simply.
-  const routeState = null as FilingRouteState | null;
+  const routeState = useMemo<FilingRouteState>(() => {
+    const params = new URLSearchParams(filingRouteParamString);
+    const returnTo = params.get('returnTo');
+    return {
+      companyName: params.get('company') || '',
+      filingDate: params.get('date') || '',
+      formType: params.get('form') || '',
+      fileNumber: params.get('file') || '',
+      auditor: params.get('auditor') || '',
+      highlightQuery: params.get('highlight') || '',
+      highlightMode: params.get('highlightMode') === 'boolean' ? 'boolean' : 'semantic',
+      highlightSectionKeywords: params.get('highlightSection') || '',
+      originatingSearchSessionId: params.get('session'),
+      returnTo: sanitizeSearchReturnTo(returnTo),
+    };
+  }, [filingRouteParamString]);
   const highlightTerms = useMemo(
     () => buildHighlightTerms(routeState?.highlightQuery || '', routeState?.highlightMode || 'semantic', routeState?.highlightSectionKeywords || ''),
     [routeState?.highlightMode, routeState?.highlightQuery, routeState?.highlightSectionKeywords]
   );
 
   const id = location.replace(/^\/filing\//, '');
+  const parts = id.split('_');
+  const cik = parts[0] || '';
+  const accession = parts[1] || '';
+  const primaryDoc = parts.slice(2).join('_');
+  const isValidFilingId = Boolean(cik && accession && primaryDoc);
+  const secUrl = buildSecDocumentUrl(cik, accession, primaryDoc);
+  const formattedAccession = accession.replace(/-/g, '');
 
   const [showSidebar, setShowSidebar] = useState(true);
+  const [isMobileSidebar, setIsMobileSidebar] = useState(false);
   const [redlineMode, setRedlineMode] = useState(false);
   const [annotationMode, setAnnotationMode] = useState(false);
   const [activeTab, setActiveTab] = useState<'toc'|'metadata'|'tools'>('toc');
   const [iframeError, setIframeError] = useState(false);
   const [tocEntries, setTocEntries] = useState<TocEntry[]>([]);
   const [tocLoading, setTocLoading] = useState(false);
+  const [tocInspectionComplete, setTocInspectionComplete] = useState(false);
+  const [tocInspectionError, setTocInspectionError] = useState('');
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [filingMeta, setFilingMeta] = useState<FilingRouteState>({
     companyName: routeState?.companyName || '',
@@ -182,34 +274,131 @@ export default function FilingDetail() {
   const [redlineSummary, setRedlineSummary] = useState<DisclosureDiffSummary | null>(null);
   const [redlineAiSummary, setRedlineAiSummary] = useState<string | null>(null);
   const [redlineAiLoading, setRedlineAiLoading] = useState(false);
+  const [redlineAiError, setRedlineAiError] = useState('');
   const [redlineCandidate, setRedlineCandidate] = useState<ComparableFiling | null>(null);
+  const [metadataHydrationComplete, setMetadataHydrationComplete] = useState(
+    Boolean(routeState.companyName && routeState.filingDate && routeState.formType)
+  );
+  const [metadataError, setMetadataError] = useState('');
+  const [metadataRetryToken, setMetadataRetryToken] = useState(0);
+
+  const closeSidebar = useCallback(() => {
+    setShowSidebar(false);
+    if (isMobileSidebar) {
+      window.requestAnimationFrame(() => sidebarToggleRef.current?.focus());
+    }
+  }, [isMobileSidebar]);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 900px)');
+    const syncViewport = () => {
+      setIsMobileSidebar(mediaQuery.matches);
+      if (mediaQuery.matches) setShowSidebar(false);
+    };
+
+    syncViewport();
+    mediaQuery.addEventListener('change', syncViewport);
+    return () => mediaQuery.removeEventListener('change', syncViewport);
+  }, []);
+
+  useEffect(() => {
+    if (!isMobileSidebar || !showSidebar || !sidebarRef.current) return;
+
+    const sidebar = sidebarRef.current;
+    const previousOverflow = document.body.style.overflow;
+    const focusable = () => Array.from(
+      sidebar.querySelectorAll<HTMLElement>('button:not([disabled]), a[href], textarea:not([disabled]), input:not([disabled])')
+    );
+    document.body.style.overflow = 'hidden';
+    window.requestAnimationFrame(() => focusable()[0]?.focus());
+
+    const handleKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeSidebar();
+        return;
+      }
+      if (event.key !== 'Tab') return;
+      const items = focusable();
+      if (items.length === 0) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    sidebar.addEventListener('keydown', handleKeyDown);
+    return () => {
+      sidebar.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [closeSidebar, isMobileSidebar, showSidebar]);
+
+  const handleSidebarTabKeyDown = (
+    event: KeyboardEvent<HTMLButtonElement>,
+    currentTab: 'toc' | 'metadata' | 'tools'
+  ) => {
+    const tabs = ['toc', 'metadata', 'tools'] as const;
+    const currentIndex = tabs.indexOf(currentTab);
+    let nextIndex: number | null = null;
+    if (event.key === 'ArrowLeft') nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+    if (event.key === 'ArrowRight') nextIndex = (currentIndex + 1) % tabs.length;
+    if (event.key === 'Home') nextIndex = 0;
+    if (event.key === 'End') nextIndex = tabs.length - 1;
+    if (nextIndex === null) return;
+
+    event.preventDefault();
+    const nextTab = tabs[nextIndex];
+    setActiveTab(nextTab);
+    window.requestAnimationFrame(() => document.getElementById(`filing-sidebar-tab-${nextTab}`)?.focus());
+  };
 
   useEffect(() => {
     currentHtmlRef.current = null;
     currentTextRef.current = null;
-    setAnnotations(loadAnnotations(id));
+    setAnnotations(isValidFilingId ? loadAnnotations(id) : []);
+    setCompanyTickers([]);
+    setFilingMeta({
+      companyName: routeState.companyName || '',
+      filingDate: routeState.filingDate || '',
+      formType: routeState.formType || '',
+      fileNumber: routeState.fileNumber || '',
+      auditor: routeState.auditor || '',
+    });
     setSelectedQuote('');
     setAnnotationDraft('');
     setToolMessage('');
+    setIframeError(false);
+    setTocEntries([]);
+    setTocLoading(false);
+    setTocInspectionComplete(false);
+    setTocInspectionError('');
     setRedlineError('');
     setComparedFiling(null);
     setRedlineSummary(null);
     setRedlineAiSummary(null);
+    setRedlineAiError('');
     setRedlineCandidate(null);
-  }, [id]);
+    setMetadataError('');
+    setMetadataHydrationComplete(Boolean(routeState.companyName && routeState.filingDate && routeState.formType));
+  }, [id, isValidFilingId, routeState]);
 
   useEffect(() => {
-    saveAnnotations(id, annotations);
-  }, [annotations, id]);
+    if (isValidFilingId) saveAnnotations(id, annotations);
+  }, [annotations, id, isValidFilingId]);
 
   // Set filing context for AI chat panel
   useEffect(() => {
-    if (id && id.includes('_')) {
-      const p = id.split('_');
+    if (isValidFilingId) {
       setCurrentFilingContext({
-        cik: p[0],
-        accessionNumber: p[1],
-        primaryDocument: p.slice(2).join('_'),
+        cik,
+        accessionNumber: accession,
+        primaryDocument: primaryDoc,
         companyName: filingMeta.companyName || '',
         formType: filingMeta.formType || '',
         filingDate: filingMeta.filingDate || '',
@@ -220,28 +409,10 @@ export default function FilingDetail() {
       setCurrentFilingContext(null);
       setCurrentFilingSections([]);
     };
-  }, [filingMeta.auditor, filingMeta.companyName, filingMeta.filingDate, filingMeta.formType, id, setCurrentFilingContext, setCurrentFilingSections]);
-
-  if (!id || !id.includes('_')) {
-    return (
-      <div className="p-8 text-center text-white" style={{ marginTop: '100px' }}>
-        <h2>Invalid Filing ID Format.</h2>
-        <p>Expected: CIK_Accession_Document</p>
-        <button onClick={() => navigate.push('/search')} className="mt-4 primary-btn">Back to Search</button>
-      </div>
-    );
-  }
-
-  const parts = id.split('_');
-  const cik = parts[0];
-  const accession = parts[1];
-  const primaryDoc = parts.slice(2).join('_');
-
-  const secUrl = buildSecDocumentUrl(cik, accession, primaryDoc);
-  const formattedAccession = accession.replace(/-/g, '');
+  }, [accession, cik, filingMeta.auditor, filingMeta.companyName, filingMeta.filingDate, filingMeta.formType, isValidFilingId, primaryDoc, setCurrentFilingContext, setCurrentFilingSections]);
 
   useEffect(() => {
-    if (!filingMeta.formType || !filingMeta.filingDate) {
+    if (!isValidFilingId || !filingMeta.formType || !filingMeta.filingDate) {
       return;
     }
 
@@ -255,7 +426,7 @@ export default function FilingDetail() {
         }
 
         const candidate = pickPreviousComparableFiling(
-          submissions,
+          submissions.filings.recent,
           accession,
           filingMeta.formType || '',
           filingMeta.filingDate || ''
@@ -265,9 +436,25 @@ export default function FilingDetail() {
           return;
         }
 
-        setRedlineCandidate(candidate);
-        if (candidate) {
-          void fetchFilingText(cik, candidate.accessionNumber, candidate.primaryDocument);
+        let resolvedCandidate = candidate;
+        if (!resolvedCandidate) {
+          const histories = await loadRelevantHistoricalSeries(submissions, filingMeta.filingDate || '');
+          for (const history of histories) {
+            const historicalCandidate = pickPreviousComparableFiling(
+              history,
+              accession,
+              filingMeta.formType || '',
+              filingMeta.filingDate || ''
+            );
+            if (historicalCandidate && (!resolvedCandidate || historicalCandidate.filingDate > resolvedCandidate.filingDate)) {
+              resolvedCandidate = historicalCandidate;
+            }
+          }
+        }
+
+        setRedlineCandidate(resolvedCandidate);
+        if (resolvedCandidate) {
+          void fetchFilingText(cik, resolvedCandidate.accessionNumber, resolvedCandidate.primaryDocument);
         }
       } catch (error) {
         console.error('Redline prefetch failed:', error);
@@ -279,7 +466,7 @@ export default function FilingDetail() {
     return () => {
       cancelled = true;
     };
-  }, [accession, cik, filingMeta.filingDate, filingMeta.formType]);
+  }, [accession, cik, filingMeta.filingDate, filingMeta.formType, isValidFilingId]);
 
   const fetchCurrentFilingHtml = useCallback(async (): Promise<string> => {
     if (currentHtmlRef.current) {
@@ -370,36 +557,69 @@ export default function FilingDetail() {
   }, [fetchCurrentFilingHtml, filingMeta.companyName, primaryDoc]);
 
   useEffect(() => {
+    if (!isValidFilingId) {
+      setMetadataError('');
+      setMetadataHydrationComplete(true);
+      return;
+    }
+
     let cancelled = false;
+    setMetadataError('');
 
     async function hydrateMetadata() {
-      const submissions = await fetchCompanySubmissions(cik);
-      if (!submissions || cancelled) return;
+      try {
+        const submissions = await fetchCompanySubmissions(cik);
+        if (cancelled) return;
+        if (!submissions) {
+          if (!routeState.companyName || !routeState.filingDate || !routeState.formType) {
+            setMetadataError('Filing metadata is unavailable from the SEC company-submissions feed.');
+          }
+          return;
+        }
 
-      setCompanyTickers(submissions.tickers || []);
+        setCompanyTickers(submissions.tickers || []);
 
-      if (routeState?.companyName && routeState?.filingDate && routeState?.formType) {
-        return;
+        if (routeState?.companyName && routeState?.filingDate && routeState?.formType) {
+          return;
+        }
+
+        let match = findFilingInSeries(submissions.filings.recent, accession);
+        if (!match) {
+          for (const file of submissions.filings.files || []) {
+            const history = await fetchSubmissionHistory(file.name);
+            if (cancelled) return;
+            if (!history) continue;
+            match = findFilingInSeries(history, accession);
+            if (match) break;
+          }
+        }
+        if (!match) {
+          setMetadataError('This filing could not be matched in the issuer’s recent or historical SEC submissions.');
+          return;
+        }
+
+        setFilingMeta(prev => ({
+          companyName: prev.companyName || submissions.name || '',
+          filingDate: prev.filingDate || match?.filingDate || '',
+          formType: prev.formType || match?.formType || '',
+          fileNumber: prev.fileNumber || match?.fileNumber || '',
+          auditor: prev.auditor || '',
+        }));
+      } catch (error) {
+        console.error('Filing metadata hydration failed:', error);
+        if (!cancelled && (!routeState.companyName || !routeState.filingDate || !routeState.formType)) {
+          setMetadataError('Filing metadata could not be loaded from SEC submissions.');
+        }
+      } finally {
+        if (!cancelled) setMetadataHydrationComplete(true);
       }
-
-      const recent = submissions.filings.recent;
-      const matchIndex = recent.accessionNumber.findIndex(item => item === accession);
-      if (matchIndex === -1) return;
-
-      setFilingMeta(prev => ({
-        companyName: prev.companyName || submissions.name || '',
-        filingDate: prev.filingDate || recent.filingDate[matchIndex] || '',
-        formType: prev.formType || recent.form[matchIndex] || '',
-        fileNumber: prev.fileNumber || recent.fileNumber[matchIndex] || '',
-        auditor: prev.auditor || '',
-      }));
     }
 
     void hydrateMetadata();
     return () => {
       cancelled = true;
     };
-  }, [accession, cik, routeState]);
+  }, [accession, cik, isValidFilingId, metadataRetryToken, routeState]);
 
   /**
    * Dynamic TOC parser — works for any SEC form type (10-K, 20-F, S-1, DEF 14A, etc.)
@@ -412,42 +632,6 @@ export default function FilingDetail() {
    *
    * Strategy 3 (fallback): Scan headings/bold elements for section-like text.
    */
-
-  // Regex to detect section-like text: "Item 1", "Item 1A", "Part I", etc.
-  const SECTION_HEADER_RE = /^(item\s+\d+[a-z]?\b|part\s+[iv]+\b)/i;
-  // Detect item references inside anchor href values
-  const ANCHOR_ITEM_RE = /^#?item_(\d+)_?([a-z])?(?:_|$)/i;
-  // Skip non-section links (page numbers, "Table of Contents", "Back to top", etc.)
-  const SKIP_RE = /^(table of contents|back to top|page|toc|\d+|f-\d+|[\divx]+)$/i;
-
-  /** Walk up from a link to its containing TD, then grab the next sibling TD's text as a description.
-   *  Apple 10-K TOC uses: <td>Item 1.</td><td>Business</td><td>1</td> */
-  function getSiblingTdText(link: HTMLElement): string {
-    let el: HTMLElement | null = link;
-    while (el && el.tagName !== 'TD') el = el.parentElement;
-    if (!el) return '';
-    const nextTd = el.nextElementSibling as HTMLElement | null;
-    if (!nextTd || nextTd.tagName !== 'TD') return '';
-    const text = (nextTd.textContent || '').replace(/\s+/g, ' ').trim();
-    // Skip if it's just a page number
-    if (/^\d+$/.test(text)) return '';
-    return text;
-  }
-
-  /** Clean up link text into a concise TOC label (max ~60 chars) */
-  function cleanTocLabel(text: string, itemPrefix?: string, siblingDesc?: string): string {
-    let label = text.replace(/\s+/g, ' ').trim();
-    label = label.replace(/^(item|part)\s/i, m => m.charAt(0).toUpperCase() + m.slice(1).toLowerCase());
-    // Append sibling TD description if the label is just "Item N." without a title
-    if (siblingDesc && /^(Item\s+\d+[A-Za-z]?\.?|Part\s+[IV]+\.?)$/i.test(label)) {
-      label = `${label} ${siblingDesc}`;
-    }
-    if (itemPrefix && !SECTION_HEADER_RE.test(label)) {
-      label = `Item ${itemPrefix.toUpperCase()}. ${label}`;
-    }
-    if (label.length > 60) label = label.slice(0, 57) + '...';
-    return label;
-  }
 
   const parseToc = useCallback((doc: Document) => {
     const entries: TocEntry[] = [];
@@ -462,7 +646,7 @@ export default function FilingDetail() {
       if (!anchor || anchor === 'toc') continue;
       const text = (link.textContent || '').replace(/\s+/g, ' ').trim();
       if (text.length < 3 || text.length > 120) continue;
-      if (SKIP_RE.test(text)) continue;
+      if (SKIP_TOC_ENTRY_RE.test(text)) continue;
       const rect = link.getBoundingClientRect();
       validLinks.push({ el: link, anchor, text, rect });
     }
@@ -546,36 +730,60 @@ export default function FilingDetail() {
     return entries;
   }, []);
 
-  const handleIframeLoad = useCallback((e: React.SyntheticEvent<HTMLIFrameElement>) => {
-    const frame = e.target as HTMLIFrameElement;
+  const inspectIframeSections = useCallback((frame: HTMLIFrameElement) => {
+    setTocLoading(true);
+    setTocInspectionError('');
     try {
-      if (frame.contentDocument?.body?.innerHTML === '') {
+      const frameDocument = frame.contentDocument;
+      if (!frameDocument?.body || frameDocument.body.innerHTML === '') {
         setIframeError(true);
+        setTocEntries([]);
+        setCurrentFilingSections([]);
+        setTocInspectionComplete(true);
+        setTocInspectionError('Section navigation is unavailable because the embedded document did not load. The source filing remains available on SEC.gov.');
         return;
       }
-      // Parse TOC from the loaded document
-      if (frame.contentDocument) {
-        // Inject scroll styles so the SEC document has horizontal + vertical scrollbars
-        const styleEl = frame.contentDocument.createElement('style');
-        styleEl.textContent = `
-          html { overflow: auto !important; }
-          body { overflow: auto !important; overflow-x: auto !important; margin: 0; padding: 16px; }
-        `;
-        frame.contentDocument.head.appendChild(styleEl);
-        setTocLoading(true);
-        const entries = parseToc(frame.contentDocument);
-        setTocEntries(entries);
-        setCurrentFilingSections(entries);
-        setTocLoading(false);
-        setIframeLoadedToken(prev => prev + 1);
-      }
-    } catch {
-      // Cross-origin - can't inspect. TOC unavailable.
+
+      // Inject scroll styles so the SEC document has horizontal + vertical scrollbars.
+      const styleEl = frameDocument.createElement('style');
+      styleEl.textContent = `
+        html { overflow: auto !important; }
+        body { overflow: auto !important; overflow-x: auto !important; margin: 0; padding: 16px; }
+      `;
+      frameDocument.head?.appendChild(styleEl);
+      const entries = parseToc(frameDocument);
+      setIframeError(false);
+      setTocEntries(entries);
+      setCurrentFilingSections(entries);
+      setTocInspectionComplete(true);
+      setIframeLoadedToken(prev => prev + 1);
+    } catch (error) {
+      console.error('Filing section inspection failed:', error);
       setTocEntries([]);
       setCurrentFilingSections([]);
+      setTocInspectionComplete(true);
+      setTocInspectionError('Section navigation is unavailable because the embedded filing could not be inspected. The filing remains available in the document viewer and on SEC.gov.');
+    } finally {
       setTocLoading(false);
     }
   }, [parseToc, setCurrentFilingSections]);
+
+  const handleIframeLoad = useCallback((event: React.SyntheticEvent<HTMLIFrameElement>) => {
+    inspectIframeSections(event.currentTarget);
+  }, [inspectIframeSections]);
+
+  const handleIframeError = useCallback(() => {
+    setIframeError(true);
+    setTocEntries([]);
+    setCurrentFilingSections([]);
+    setTocLoading(false);
+    setTocInspectionComplete(true);
+    setTocInspectionError('Section navigation is unavailable because the embedded document failed to load. The source filing remains available on SEC.gov.');
+  }, [setCurrentFilingSections]);
+
+  const retryTocInspection = useCallback(() => {
+    if (iframeRef.current) inspectIframeSections(iframeRef.current);
+  }, [inspectIframeSections]);
 
   const scrollToSection = useCallback((entry: TocEntry) => {
     const frame = iframeRef.current;
@@ -673,12 +881,49 @@ export default function FilingDetail() {
     setPendingFilingSectionLabel(null);
   }, [pendingFilingSectionLabel, scrollToSection, setPendingFilingSectionLabel, tocEntries]);
 
+  const runRedlineAiSummary = useCallback(async (
+    summary: DisclosureDiffSummary,
+    previousFiling: ComparableFiling,
+    cacheKey: string,
+    isCancelled: () => boolean = () => false
+  ) => {
+    const addedStr = summary.addedBlocks.join('\n');
+    const removedStr = summary.removedBlocks.join('\n');
+    const changedStr = summary.changedBlocks.map(change => `[-${change.previous}-]\n[+${change.current}+]`).join('\n\n');
+    const aiPromptContext = `ADDED:\n${addedStr}\n\nREMOVED:\n${removedStr}\n\nCHANGED:\n${changedStr}`;
+
+    setRedlineAiLoading(true);
+    setRedlineAiSummary(null);
+    setRedlineAiError('');
+    try {
+      const aiText = await aiSummarizeRedline(aiPromptContext, { throwOnError: true });
+      if (isCancelled()) return;
+      setRedlineAiSummary(aiText);
+      REDLINE_SUMMARY_CACHE.set(cacheKey, {
+        comparedFiling: previousFiling,
+        summary,
+        aiSummary: aiText,
+      });
+    } catch (error) {
+      console.error('Failed AI redline summary:', error);
+      if (!isCancelled()) {
+        setRedlineAiError('The AI redline summary could not be generated. The deterministic change blocks remain available below.');
+      }
+    } finally {
+      if (!isCancelled()) setRedlineAiLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (!redlineMode || redlineSummary || redlineLoading || redlineError) {
       return;
     }
 
     if (!filingMeta.formType || !filingMeta.filingDate) {
+      if (metadataHydrationComplete) {
+        setRedlineError('Filing form and date metadata could not be resolved, so a comparable historical filing cannot be selected.');
+        setActiveTab('tools');
+      }
       return;
     }
 
@@ -701,11 +946,25 @@ export default function FilingDetail() {
           }
 
           previousFiling = pickPreviousComparableFiling(
-            submissions,
+            submissions.filings.recent,
             accession,
             filingMeta.formType || '',
             filingMeta.filingDate || ''
           );
+          if (!previousFiling) {
+            const histories = await loadRelevantHistoricalSeries(submissions, filingMeta.filingDate || '');
+            for (const history of histories) {
+              const candidate = pickPreviousComparableFiling(
+                history,
+                accession,
+                filingMeta.formType || '',
+                filingMeta.filingDate || ''
+              );
+              if (candidate && (!previousFiling || candidate.filingDate > previousFiling.filingDate)) {
+                previousFiling = candidate;
+              }
+            }
+          }
         }
 
         if (!previousFiling) {
@@ -723,7 +982,11 @@ export default function FilingDetail() {
           setComparedFiling(cachedSummary.comparedFiling);
           setRedlineSummary(cachedSummary.summary);
           setRedlineAiSummary(cachedSummary.aiSummary);
+          setRedlineAiError('');
           setActiveTab('tools');
+          if (!cachedSummary.aiSummary) {
+            void runRedlineAiSummary(cachedSummary.summary, cachedSummary.comparedFiling, cacheKey, () => cancelled);
+          }
           return;
         }
 
@@ -747,36 +1010,13 @@ export default function FilingDetail() {
         const summary = buildDisclosureDiff(currentText, previousText);
         setRedlineSummary(summary);
         setActiveTab('tools');
-        
-        // Execute AI summarization
-        const addedStr = summary.addedBlocks.join('\n');
-        const removedStr = summary.removedBlocks.join('\n');
-        const changedStr = summary.changedBlocks.map(c => `[-${c.previous}-]\n[+${c.current}+]`).join('\n\n');
-        
-        const aiPromptContext = `ADDED:\n${addedStr}\n\nREMOVED:\n${removedStr}\n\nCHANGED:\n${changedStr}`;
-        setRedlineAiLoading(true);
-        setRedlineAiSummary(null);
-        void aiSummarizeRedline(aiPromptContext).then(aiText => {
-            if (!cancelled) {
-              setRedlineAiSummary(aiText);
-              REDLINE_SUMMARY_CACHE.set(cacheKey, {
-                comparedFiling: previousFiling,
-                summary,
-                aiSummary: aiText
-              });
-            }
-        }).catch(err => {
-            console.error('Failed AI redline summary:', err);
-            if (!cancelled) setRedlineAiLoading(false);
-        }).finally(() => {
-            if (!cancelled) setRedlineAiLoading(false);
-        });
 
         REDLINE_SUMMARY_CACHE.set(cacheKey, {
           comparedFiling: previousFiling,
           summary,
           aiSummary: null
         });
+        void runRedlineAiSummary(summary, previousFiling, cacheKey, () => cancelled);
       } catch (error) {
         console.error('Redline load failed:', error);
         if (!cancelled) {
@@ -797,7 +1037,7 @@ export default function FilingDetail() {
       cancelled = true;
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps -- guard clause prevents re-execution; loading/error/summary are read but not triggers
-  }, [accession, cik, fetchCurrentFilingText, filingMeta.filingDate, filingMeta.formType, redlineCandidate, redlineMode]);
+  }, [accession, cik, fetchCurrentFilingText, filingMeta.filingDate, filingMeta.formType, metadataHydrationComplete, redlineCandidate, redlineMode, runRedlineAiSummary]);
 
   const handleCleanPdfExport = useCallback(async () => {
     setExportingPdf(true);
@@ -822,14 +1062,32 @@ export default function FilingDetail() {
     }
   }, [fetchCurrentFilingHtml, filingMeta.companyName, filingMeta.formType, primaryDoc, secUrl]);
 
+  if (!isValidFilingId) {
+    return (
+      <main className="filing-invalid-state" role="alert">
+        <AlertCircle size={32} aria-hidden="true" />
+        <h1>Invalid filing link</h1>
+        <p>The filing address is incomplete. Expected a CIK, accession number, and document name.</p>
+        <button type="button" onClick={() => navigate.push('/search')} className="primary-btn">
+          Back to Search
+        </button>
+      </main>
+    );
+  }
+
   return (
     <div className="filing-detail-container">
       {/* Top action bar */}
       <div className="filing-header-bar glass-card">
         <div className="header-left">
           <button
+            type="button"
             className="back-btn"
             onClick={() => {
+              if (routeState.returnTo) {
+                navigate.push(routeState.returnTo);
+                return;
+              }
               if (routeState?.originatingSearchSessionId) {
                 navigate.push(`/search?tab=${encodeURIComponent(routeState.originatingSearchSessionId)}`);
                 return;
@@ -849,24 +1107,30 @@ export default function FilingDetail() {
         <div className="header-center-tools">
           <div className="tool-toggle-group">
             <button
+              type="button"
               className={`tool-btn ${redlineMode ? 'active' : ''}`}
               onClick={() => {
                 const next = !redlineMode;
                 setRedlineMode(next);
                 if (next) {
                   setRedlineError('');
+                  setRedlineAiError('');
                   setComparedFiling(null);
                   setRedlineSummary(null);
+                  setRedlineAiSummary(null);
                 }
                 setActiveTab('tools');
               }}
               title="Compare to Previous Year (Redline)"
+              aria-pressed={redlineMode}
             >
               <Columns size={16} /> YoY Redline
             </button>
             <button
+              type="button"
               className={`tool-btn ${annotationMode ? 'active' : ''}`}
               title="Capture selected text and save notes"
+              aria-pressed={annotationMode}
               onClick={() => {
                 setAnnotationMode(prev => !prev);
                 setActiveTab('tools');
@@ -879,26 +1143,31 @@ export default function FilingDetail() {
             >
               <Highlighter size={16} /> Annotate
             </button>
-            <button className="tool-btn" title="Extract Financial Tables to CSV" onClick={() => void handleTableExtract()} disabled={extractingTables}>
+            <button type="button" className="tool-btn" title="Extract Financial Tables to CSV" onClick={() => void handleTableExtract()} disabled={extractingTables}>
               {extractingTables ? <Loader2 size={16} className="spinner" /> : <Download size={16} />} Extract Tables
             </button>
-            <button className="tool-btn" title="Open a clean print view for PDF export" onClick={() => void handleCleanPdfExport()} disabled={exportingPdf}>
+            <button type="button" className="tool-btn" title="Open a clean print view for PDF export" onClick={() => void handleCleanPdfExport()} disabled={exportingPdf}>
               {exportingPdf ? <Loader2 size={16} className="spinner" /> : <Download size={16} />} Print / Save PDF
             </button>
           </div>
         </div>
 
         <div className="header-actions">
-          <button className="icon-btn" title="Save to Watchlist" onClick={handleAddToWatchlist}><Bookmark size={18} /></button>
-          <a href={secUrl} target="_blank" rel="noreferrer" className="icon-btn" title="Open in SEC.gov"><ExternalLink size={18} /></a>
+          <button type="button" className="icon-btn" title="Save to Watchlist" aria-label="Save filing to watchlist" onClick={handleAddToWatchlist}><Bookmark size={18} aria-hidden="true" /></button>
+          <a href={secUrl} target="_blank" rel="noreferrer" className="icon-btn" title="Open in SEC.gov" aria-label="Open filing on SEC.gov"><ExternalLink size={18} aria-hidden="true" /></a>
           <button
+            ref={sidebarToggleRef}
+            type="button"
             className={`icon-btn ${showSidebar ? 'active-icon' : ''}`}
             onClick={() => setShowSidebar(!showSidebar)}
             title="Toggle Right Panel"
+            aria-label={showSidebar ? 'Close filing tools panel' : 'Open filing tools panel'}
+            aria-expanded={showSidebar}
+            aria-controls="filing-tools-panel"
           >
-            <Settings2 size={18} />
+            <Settings2 size={18} aria-hidden="true" />
           </button>
-          <button className="primary-btn sm ml-2" onClick={() => setChatOpen(true)}>
+          <button type="button" className="primary-btn sm ml-2" onClick={() => setChatOpen(true)}>
             <MessageSquare size={16} /> Ask {BRAND.copilotName}
           </button>
         </div>
@@ -923,7 +1192,7 @@ export default function FilingDetail() {
           )}
           <div className="doc-header-nav">
             <h3 className="doc-title">{primaryDoc}</h3>
-            <a href={secUrl} target="_blank" rel="noreferrer" className="icon-btn text-muted" title="Open on SEC.gov"><ExternalLink size={16}/></a>
+            <a href={secUrl} target="_blank" rel="noreferrer" className="icon-btn text-muted" title="Open on SEC.gov" aria-label="Open document on SEC.gov"><ExternalLink size={16} aria-hidden="true" /></a>
           </div>
           {annotationMode && selectedQuote && (
             <div className="annotation-composer-overlay">
@@ -967,29 +1236,73 @@ export default function FilingDetail() {
               src={buildSecProxyUrl(`Archives/edgar/data/${cik}/${formattedAccession}/${primaryDoc}`)}
               title="SEC Document View"
               className="sec-iframe"
+              sandbox="allow-same-origin"
+              referrerPolicy="no-referrer"
               scrolling="yes"
-              onError={() => setIframeError(true)}
+              onError={handleIframeError}
               onLoad={handleIframeLoad}
             />
           )}
         </div>
 
         {/* Right Sidebar */}
+        {isMobileSidebar && showSidebar && (
+          <button type="button" className="filing-sidebar-overlay" aria-label="Close filing tools panel" onClick={closeSidebar} />
+        )}
         {showSidebar && (
-          <aside className="filing-sidebar glass-card">
-            <div className="sidebar-tabs">
-              <button className={activeTab === 'toc' ? 'active' : ''} onClick={() => setActiveTab('toc')}>
+          <aside ref={sidebarRef} id="filing-tools-panel" className="filing-sidebar glass-card" aria-label="Filing tools panel">
+            <button type="button" className="filing-sidebar-close" aria-label="Close filing tools panel" onClick={closeSidebar}>
+              <X size={18} aria-hidden="true" />
+            </button>
+            <div className="sidebar-tabs" role="tablist" aria-label="Filing tools">
+              <button
+                type="button"
+                id="filing-sidebar-tab-toc"
+                role="tab"
+                aria-selected={activeTab === 'toc'}
+                aria-controls="filing-sidebar-panel-toc"
+                tabIndex={activeTab === 'toc' ? 0 : -1}
+                className={activeTab === 'toc' ? 'active' : ''}
+                onClick={() => setActiveTab('toc')}
+                onKeyDown={event => handleSidebarTabKeyDown(event, 'toc')}
+              >
                 <List size={16} /> TOC
               </button>
-              <button className={activeTab === 'metadata' ? 'active' : ''} onClick={() => setActiveTab('metadata')}>
+              <button
+                type="button"
+                id="filing-sidebar-tab-metadata"
+                role="tab"
+                aria-selected={activeTab === 'metadata'}
+                aria-controls="filing-sidebar-panel-metadata"
+                tabIndex={activeTab === 'metadata' ? 0 : -1}
+                className={activeTab === 'metadata' ? 'active' : ''}
+                onClick={() => setActiveTab('metadata')}
+                onKeyDown={event => handleSidebarTabKeyDown(event, 'metadata')}
+              >
                 Details
               </button>
-              <button className={activeTab === 'tools' ? 'active' : ''} onClick={() => setActiveTab('tools')}>
+              <button
+                type="button"
+                id="filing-sidebar-tab-tools"
+                role="tab"
+                aria-selected={activeTab === 'tools'}
+                aria-controls="filing-sidebar-panel-tools"
+                tabIndex={activeTab === 'tools' ? 0 : -1}
+                className={activeTab === 'tools' ? 'active' : ''}
+                onClick={() => setActiveTab('tools')}
+                onKeyDown={event => handleSidebarTabKeyDown(event, 'tools')}
+              >
                 Tools
               </button>
             </div>
 
-            <div className="sidebar-content scrollable">
+            <div
+              className="sidebar-content scrollable"
+              role="tabpanel"
+              id={`filing-sidebar-panel-${activeTab}`}
+              aria-labelledby={`filing-sidebar-tab-${activeTab}`}
+              tabIndex={0}
+            >
               {activeTab === 'toc' && (
                 <div className="toc-panel">
                   <h4>Document Sections</h4>
@@ -1012,10 +1325,26 @@ export default function FilingDetail() {
                         </li>
                       ))}
                     </ul>
+                  ) : primaryDoc.endsWith('.xml') ? (
+                    <div className="toc-empty" role="status">
+                      <p>Section navigation is unavailable for this XML filing.</p>
+                      <p className="toc-hint">The source filing remains available through the SEC.gov viewer.</p>
+                    </div>
+                  ) : tocInspectionError ? (
+                    <div className="toc-empty" role="alert">
+                      <p>{tocInspectionError}</p>
+                      {!iframeError && (
+                        <button type="button" className="secondary-btn" onClick={retryTocInspection}>Retry section detection</button>
+                      )}
+                    </div>
+                  ) : tocInspectionComplete ? (
+                    <div className="toc-empty" role="status">
+                      <p>No navigable sections were detected in this filing.</p>
+                      <p className="toc-hint">The filing remains available in the document viewer and on SEC.gov.</p>
+                    </div>
                   ) : (
                     <div className="toc-empty">
-                      <p>Sections will appear once the document loads.</p>
-                      <p className="toc-hint">For documents that cannot be previewed inline, use the SEC.gov viewer.</p>
+                      <p>Waiting for the document to load before detecting sections.</p>
                     </div>
                   )}
                   <div className="xbrl-hint">
@@ -1026,17 +1355,27 @@ export default function FilingDetail() {
 
               {activeTab === 'metadata' && (
                 <div className="metadata-panel">
+                  {metadataError && (
+                    <div role="alert" className="related-card" style={{ color: 'var(--status-error)', background: 'var(--status-error-bg)', marginBottom: '12px' }}>
+                      <p>{metadataError}</p>
+                      <button type="button" className="secondary-btn" onClick={() => {
+                        setMetadataHydrationComplete(false);
+                        setMetadataError('');
+                        setMetadataRetryToken(token => token + 1);
+                      }}>Retry SEC metadata</button>
+                    </div>
+                  )}
                   <div className="meta-row">
                     <span className="meta-label">Company</span>
-                    <span className="meta-value">{filingMeta.companyName || 'Loading...'}</span>
+                    <span className="meta-value">{formatFilingMetadataValue(filingMeta.companyName || '', metadataHydrationComplete)}</span>
                   </div>
                   <div className="meta-row">
                     <span className="meta-label">Filing Date</span>
-                    <span className="meta-value">{filingMeta.filingDate || 'Loading...'}</span>
+                    <span className="meta-value">{formatFilingMetadataValue(filingMeta.filingDate || '', metadataHydrationComplete)}</span>
                   </div>
                   <div className="meta-row">
                     <span className="meta-label">Form Type</span>
-                    <span className="meta-value">{filingMeta.formType || 'Loading...'}</span>
+                    <span className="meta-value">{formatFilingMetadataValue(filingMeta.formType || '', metadataHydrationComplete)}</span>
                   </div>
                   <div className="meta-row">
                     <span className="meta-label">Accession</span>
@@ -1072,6 +1411,8 @@ export default function FilingDetail() {
                     </div>
                     {!redlineMode ? (
                       <p className="tool-panel-copy">Turn on YoY Redline above to compare this filing against the closest prior comparable filing.</p>
+                    ) : !metadataHydrationComplete ? (
+                      <div className="tool-loading"><Loader2 size={16} className="toc-spinner" /> Resolving filing history metadata...</div>
                     ) : redlineLoading ? (
                       <div className="tool-loading"><Loader2 size={16} className="toc-spinner" /> Building comparison...</div>
                     ) : redlineError ? (
@@ -1096,13 +1437,26 @@ export default function FilingDetail() {
                           </div>
                         </div>
                         
-                        {(redlineAiLoading || redlineAiSummary) && (
-                          <div className="related-card mt-3" style={{ background: 'var(--accent-purple-light)', border: '1px solid rgba(178, 30, 125, 0.2)' }}>
-                             <h4 className="tool-subheading" style={{ color: 'var(--accent-purple)'}}>Executive Summary (Claude 4.6)</h4>
+                        {(redlineAiLoading || redlineAiSummary || redlineAiError) && (
+                          <div className="related-card mt-3" style={{ background: 'var(--surface-accent)', border: '1px solid color-mix(in srgb, var(--accent-primary) 24%, transparent)' }}>
+                             <h4 className="tool-subheading" style={{ color: 'var(--accent-primary)'}}>Evidence-linked AI summary</h4>
                              {redlineAiLoading ? (
                                <div className="tool-loading"><Loader2 size={16} className="toc-spinner" /> Summarizing {redlineSummary.addedCount + redlineSummary.removedCount + (redlineSummary.changedBlocks?.length || 0)} changes...</div>
+                             ) : redlineAiError ? (
+                               <div role="alert">
+                                 <p className="tool-panel-copy">{redlineAiError}</p>
+                                 <button type="button" className="secondary-btn" onClick={() => {
+                                   const cacheKey = `${accession}:${comparedFiling.accessionNumber}:${comparedFiling.primaryDocument}`;
+                                   void runRedlineAiSummary(redlineSummary, comparedFiling, cacheKey);
+                                 }}>Retry AI summary</button>
+                               </div>
                              ) : (
-                               <div className="font-sans text-sm whitespace-pre-wrap">{redlineAiSummary}</div>
+                               <>
+                                 <div className="font-sans text-sm whitespace-pre-wrap">{redlineAiSummary}</div>
+                                 <p className="tool-panel-copy" style={{ marginTop: '8px' }}>
+                                   Verify every quoted change against the added, removed, and modified disclosure blocks below before relying on this summary.
+                                 </p>
+                               </>
                              )}
                           </div>
                         )}
@@ -1196,4 +1550,3 @@ export default function FilingDetail() {
     </div>
   );
 }
-

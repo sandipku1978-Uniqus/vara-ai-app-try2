@@ -40,7 +40,7 @@
 }
 
 .text-blue { color: var(--accent-blue); }
-.text-orange { color: #F59E0B; }
+.text-orange { color: var(--status-warning); }
 
 /* Dashboard Cards Layout */
 .chart-card {
@@ -185,15 +185,6 @@
   border: 1px solid var(--glass-border);
   border-radius: 10px;
   text-decoration: none;
-  transition: all 0.25s ease;
-  cursor: pointer;
-}
-
-.rss-news-card:hover {
-  border-color: rgba(179, 31, 126, 0.3);
-  background: rgba(179, 31, 126, 0.04);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
 }
 
 .rss-timestamp {
@@ -226,10 +217,6 @@
   transition: color 0.15s ease;
 }
 
-.rss-news-card:hover .rss-learn-more {
-  color: var(--accent-blue-hover);
-}
-
 @media (max-width: 1024px) {
   .chart-card, .trending-card, .watchlist-card, .activity-card, .esg-card {
     grid-column: span 12;
@@ -250,12 +237,18 @@
 
 .trending-item {
   display: flex;
+  width: 100%;
   align-items: center;
   gap: 12px;
   padding: 10px;
   border-radius: 8px;
   background: var(--surface-subtle);
   transition: background 0.2s;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 
 .trending-item:hover {
@@ -287,6 +280,32 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.company-info {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.activity-item {
+  width: 100%;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.trending-item:focus-visible,
+.company-info:focus-visible,
+.activity-item:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
 }
 
 .watchlist-item {
@@ -360,8 +379,8 @@
   transition: all 0.15s;
 }
 .watchlist-remove-btn:hover {
-  background: rgba(239, 68, 68, 0.15);
-  color: #EF4444;
+  background: var(--status-error-bg);
+  color: var(--status-error);
 }
 
 .watchlist-add-hint {
@@ -523,12 +542,6 @@
   border-radius: 18px;
 }
 
-.rss-news-card:hover {
-  border-color: rgba(179, 31, 126, 0.24);
-  background: var(--surface-subtle);
-  box-shadow: 0 18px 42px rgba(58, 30, 65, 0.08);
-}
-
 .rss-timestamp,
 .trending-item .count,
 .text-blue {
@@ -578,4 +591,3 @@
   background: rgba(179, 31, 126, 0.12);
   border-color: rgba(179, 31, 126, 0.4);
 }
-

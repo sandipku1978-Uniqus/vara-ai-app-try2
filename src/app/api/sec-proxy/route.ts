@@ -1,65 +1,109 @@
 import { NextResponse } from 'next/server';
+import { requireApiAccess } from '../../../lib/api-auth';
+import { checkResourceRateLimit, rateLimitResponse } from '../../../lib/rate-limit';
+import {
+  buildSecTargetUrl,
+  bytesToArrayBuffer,
+  fetchSecResponse,
+  readResponseWithLimit,
+  sanitizeSecHtml,
+  SEC_DOCUMENT_CSP,
+  SecUpstreamError,
+  type SecUpstream,
+} from '../../../lib/sec-upstream';
 
 const USER_AGENT = process.env.NEXT_PUBLIC_EDGAR_USER_AGENT || 'Uniqus Research Center contact@uniqus.com';
+const MAX_RESPONSE_BYTES = 25 * 1024 * 1024;
 
-const UPSTREAM_URLS: Record<string, string> = {
-  proxy: 'https://www.sec.gov',
-  data: 'https://data.sec.gov',
-  efts: 'https://efts.sec.gov',
-};
+function safeHeaders(contentType: string, html: boolean): Headers {
+  const headers = new Headers({
+    'Cache-Control': 'private, max-age=300',
+    'Content-Type': contentType,
+    'Cross-Origin-Resource-Policy': 'same-origin',
+    'Referrer-Policy': 'no-referrer',
+    'X-Content-Type-Options': 'nosniff',
+  });
+  if (html) headers.set('Content-Security-Policy', SEC_DOCUMENT_CSP);
+  return headers;
+}
 
 export async function GET(request: Request) {
-  const url = new URL(request.url);
-  const upstream = url.searchParams.get('upstream') || 'proxy';
-  const path = url.searchParams.get('path');
+  const access = await requireApiAccess();
+  if (access.response) return access.response;
 
-  if (!path || path.includes('..')) {
-    return new NextResponse('Invalid path parameter', { status: 400 });
+  const requestUrl = new URL(request.url);
+  const rawUpstream = requestUrl.searchParams.get('upstream') || 'proxy';
+  const rawPath = requestUrl.searchParams.get('path');
+  if (!rawPath || !['proxy', 'data'].includes(rawUpstream)) {
+    return NextResponse.json({ error: 'Invalid SEC proxy request.' }, { status: 400 });
   }
 
-  const baseUrl = UPSTREAM_URLS[upstream];
-  if (!baseUrl) {
-    return new NextResponse('Invalid upstream parameter', { status: 400 });
-  }
-
-  // Forward remaining search params as query string for the upstream URL.
-  // We need to strip out our internal routing params first.
-  const proxyParams = new URLSearchParams(url.searchParams);
+  const upstream = rawUpstream as SecUpstream;
+  const proxyParams = new URLSearchParams(requestUrl.searchParams);
   proxyParams.delete('upstream');
   proxyParams.delete('path');
-  const qs = proxyParams.toString();
-  const targetUrl = `${baseUrl}/${path.replace(/^\/+/, '')}${qs ? `?${qs}` : ''}`;
 
   try {
-    const upstreamRes = await fetch(targetUrl, {
-      method: 'GET',
-      headers: {
-        'User-Agent': USER_AGENT,
-        'Accept-Encoding': 'gzip, deflate',
-      },
-      next: { revalidate: 3600 } // Add Next.js static cache proxying for 1 hr
+    const targetUrl = buildSecTargetUrl(upstream, rawPath, proxyParams);
+    const rate = await checkResourceRateLimit(request, access.identity, {
+      operation: 'sec-proxy',
+      userLimit: 180,
+      orgLimit: 900,
+      ipLimit: 240,
     });
+    if (!rate.allowed) return rateLimitResponse(rate);
 
-    // If it's a 403 or 429, forward it back
-    if (!upstreamRes.ok) {
-      return new NextResponse(upstreamRes.statusText, { status: upstreamRes.status });
+    const upstreamResponse = await fetchSecResponse(targetUrl, upstream, request.signal, USER_AGENT);
+    if (!upstreamResponse.ok) {
+      const status = upstreamResponse.status >= 400 && upstreamResponse.status <= 599
+        ? upstreamResponse.status
+        : 502;
+      return NextResponse.json({ error: 'SEC upstream request failed.' }, { status });
     }
 
-    // Stream the buffer data back directly bypassing text parsing to support binary too
-    const buffer = await upstreamRes.arrayBuffer();
-
-    const headers = new Headers();
-    // Copy the exact content-type back
-    const contentType = upstreamRes.headers.get('content-type');
-    if (contentType) headers.set('Content-Type', contentType);
-    
-
-    return new NextResponse(buffer, {
-      status: 200,
-      headers
-    });
-  } catch (error: unknown) {
-    console.error('SEC Proxy API Error:', error);
-    return new NextResponse('Proxy Fetch Error', { status: 500 });
+    const bytes = await readResponseWithLimit(upstreamResponse, MAX_RESPONSE_BYTES, request.signal);
+    const contentType = (upstreamResponse.headers.get('content-type') || '').toLowerCase();
+    if (contentType.includes('text/html') || contentType.includes('application/xhtml+xml')) {
+      const html = new TextDecoder('utf-8').decode(bytes);
+      const sanitized = sanitizeSecHtml(html, targetUrl);
+      return new NextResponse(sanitized, {
+        status: 200,
+        headers: safeHeaders('text/html; charset=utf-8', true),
+      });
+    }
+    if (contentType.includes('json')) {
+      return new NextResponse(bytesToArrayBuffer(bytes), {
+        status: 200,
+        headers: safeHeaders('application/json; charset=utf-8', false),
+      });
+    }
+    if (contentType.startsWith('image/')) {
+      if (!/^image\/(?:png|jpe?g|gif|webp)(?:;|$)/i.test(contentType)) {
+        return NextResponse.json({ error: 'Unsupported SEC image type.' }, { status: 415 });
+      }
+      return new NextResponse(bytesToArrayBuffer(bytes), {
+        status: 200,
+        headers: safeHeaders(contentType, false),
+      });
+    }
+    if (contentType.includes('text/plain') || contentType.includes('xml')) {
+      return new NextResponse(bytesToArrayBuffer(bytes), {
+        status: 200,
+        headers: safeHeaders('text/plain; charset=utf-8', false),
+      });
+    }
+    return NextResponse.json({ error: 'Unsupported SEC response type.' }, { status: 415 });
+  } catch (error) {
+    if (error instanceof SecUpstreamError) {
+      return NextResponse.json({ error: error.message }, { status: error.status });
+    }
+    if (request.signal.aborted) {
+      return NextResponse.json({ error: 'Request cancelled.' }, { status: 499 });
+    }
+    if (error instanceof Error && error.name === 'AbortError') {
+      return NextResponse.json({ error: 'SEC upstream timed out.' }, { status: 504 });
+    }
+    console.error('SEC proxy failed:', error);
+    return NextResponse.json({ error: 'SEC proxy request failed.' }, { status: 502 });
   }
 }

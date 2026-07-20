@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
@@ -8,14 +8,14 @@ import { BellRing, Clock, Eye, FileText, Loader2, Plus, RefreshCw, Search as Sea
 import { useApp } from '../context/AppState';
 import { BRAND } from '../config/brand';
 import { executeFilingResearchSearch } from '../services/filingResearch';
-import { countFilingsByMonth, fetchCompanySubmissions, type SecSubmission, lookupCIK } from '../services/secApi';
+import { fetchCompanySubmissions, type SecSubmission, lookupCIK } from '../services/secApi';
+import { defaultSearchFilters } from '../components/filters/SearchFilterBar';
+import { buildResearchRouteParams } from '../services/researchSessions';
+import { buildWatchlistAnalytics } from '../services/dashboardAnalytics';
+import { buildSavedAlertRouteParams } from '../services/alertRoutes';
 import './Dashboard.css';
 
-const INDUSTRY_TICKERS: Record<string, string[]> = {
-  Tech: ['AAPL', 'MSFT', 'NVDA'],
-  Financials: ['JPM'],
-  Auto: ['TSLA'],
-};
+const CHART_COLORS = ['#B31F7E', '#482A7A', '#E8B15E', '#247BA0', '#3A8D5D', '#D65A4A'];
 
 export default function Dashboard() {
   const {
@@ -44,79 +44,65 @@ export default function Dashboard() {
 
   const [watchlistData, setWatchlistData] = useState<Record<string, SecSubmission>>({});
   const [loadingWatchlist, setLoadingWatchlist] = useState(false);
-  const [filingVolumeData, setFilingVolumeData] = useState<Record<string, string | number>[]>([]);
+  const [filingVolumeData, setFilingVolumeData] = useState<Record<string, string | number | null>[]>([]);
   const [volumeLoading, setVolumeLoading] = useState(false);
   const [addTickerInput, setAddTickerInput] = useState('');
   const [addError, setAddError] = useState('');
   const [checkingAlerts, setCheckingAlerts] = useState<string[]>([]);
+  const [alertErrors, setAlertErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
+    let cancelled = false;
     async function loadWatchlist() {
       setLoadingWatchlist(true);
       const newMap: Record<string, SecSubmission> = {};
 
       for (const ticker of watchlist) {
-        const cik = await lookupCIK(ticker);
-        if (!cik) continue;
-        const data = await fetchCompanySubmissions(cik);
-        if (data) newMap[ticker] = data;
+        try {
+          const cik = await lookupCIK(ticker);
+          if (!cik) continue;
+          const data = await fetchCompanySubmissions(cik);
+          if (data) newMap[ticker] = data;
+        } catch {
+          // Missing issuers are surfaced below as unavailable, not zero-volume.
+        }
       }
 
-      setWatchlistData(newMap);
-      setLoadingWatchlist(false);
+      if (!cancelled) {
+        setWatchlistData(newMap);
+        setLoadingWatchlist(false);
+      }
     }
 
     void loadWatchlist();
+    return () => { cancelled = true; };
   }, [watchlist]);
 
   useEffect(() => {
-    async function loadFilingVolume() {
+    if (loadingWatchlist) {
       setVolumeLoading(true);
-      const currentYear = new Date().getFullYear();
-      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-      const industryCounts: Record<string, Record<string, number>> = {};
-
-      for (const [industry, tickers] of Object.entries(INDUSTRY_TICKERS)) {
-        industryCounts[industry] = {};
-        months.forEach(month => {
-          industryCounts[industry][month] = 0;
-        });
-
-        for (const ticker of tickers) {
-          const cik = await lookupCIK(ticker);
-          if (!cik) continue;
-          const submissions = await fetchCompanySubmissions(cik);
-          if (!submissions) continue;
-          const counts = countFilingsByMonth(submissions, currentYear);
-          for (const month of months) {
-            industryCounts[industry][month] += counts[month] || 0;
-          }
-        }
-      }
-
-      const currentMonth = new Date().getMonth();
-      const chartData = months.slice(0, currentMonth + 1).map(month => {
-        const row: Record<string, string | number> = { month };
-        for (const industry of Object.keys(INDUSTRY_TICKERS)) {
-          row[industry] = industryCounts[industry][month] || 0;
-        }
-        return row;
-      });
-
-      setFilingVolumeData(chartData);
-      setVolumeLoading(false);
+      return;
     }
 
-    void loadFilingVolume();
-  }, []);
+    const currentYear = new Date().getFullYear();
+    const currentMonth = new Date().getMonth();
+    setFilingVolumeData(buildWatchlistAnalytics(watchlist, watchlistData, currentYear, currentMonth).filingVolumeData);
+    setVolumeLoading(false);
+  }, [loadingWatchlist, watchlist, watchlistData]);
 
-  const trendingTopics = [
-    { topic: 'Artificial Intelligence', count: 'Trending' },
-    { topic: 'Cybersecurity Risk', count: 'Trending' },
-    { topic: 'Lease Accounting Adoption', count: 'Accounting' },
-    { topic: 'Derivative Disclosure', count: 'Search' },
-    { topic: 'Climate Disclosure', count: 'Trending' },
-  ];
+  const filingMix = useMemo(() => {
+    return buildWatchlistAnalytics(
+      watchlist,
+      watchlistData,
+      new Date().getFullYear(),
+      new Date().getMonth()
+    ).filingMix;
+  }, [watchlist, watchlistData]);
+
+  const unavailableWatchlistTickers = useMemo(
+    () => watchlist.filter(ticker => !watchlistData[ticker]),
+    [watchlist, watchlistData]
+  );
 
   const handleAddTicker = async () => {
     const ticker = addTickerInput.toUpperCase().trim();
@@ -142,6 +128,11 @@ export default function Dashboard() {
     if (!alert) return;
 
     setCheckingAlerts(prev => [...prev, alertId]);
+    setAlertErrors(prev => {
+      const next = { ...prev };
+      delete next[alertId];
+      return next;
+    });
     try {
       const results = await executeFilingResearchSearch({
         query: alert.query,
@@ -162,6 +153,10 @@ export default function Dashboard() {
       });
     } catch (error) {
       console.error('Alert check failed:', error);
+      setAlertErrors(prev => ({
+        ...prev,
+        [alertId]: 'This saved search could not be checked. Existing counts were not replaced; retry when the SEC search is available.',
+      }));
     } finally {
       setCheckingAlerts(prev => prev.filter(id => id !== alertId));
     }
@@ -205,28 +200,35 @@ export default function Dashboard() {
       <div className="dashboard-grid">
         <section className="glass-card chart-card">
           <div className="card-header">
-            <h3>Filing Volume by Industry (YTD)</h3>
-            <span className="badge">SEC EDGAR Live</span>
+            <h3>Watchlist Filing Volume (YTD){watchlist.length > CHART_COLORS.length ? ` — first ${CHART_COLORS.length}` : ''}</h3>
+            <span className="badge">SEC EDGAR Live{watchlist.length > CHART_COLORS.length ? ` · ${CHART_COLORS.length}/${watchlist.length} plotted` : ''}</span>
           </div>
+          {!volumeLoading && unavailableWatchlistTickers.length > 0 && (
+            <div role="alert" style={{ color: 'var(--status-warning)', fontSize: '0.78rem', marginBottom: '8px' }}>
+              Live EDGAR data was unavailable for {unavailableWatchlistTickers.join(', ')} in this refresh; those chart series are gaps, not zero filings.
+            </div>
+          )}
           <div className="chart-container">
             {volumeLoading ? (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', gap: '8px', color: 'var(--text-muted)' }}>
                 <Loader2 size={16} className="spinner" /> Loading filing volume from EDGAR...
               </div>
+            ) : watchlist.length === 0 ? (
+              <div className="empty-state">Add companies to your watchlist to chart their live filing volume.</div>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={filingVolumeData} margin={{ top: 5, right: 20, bottom: 5, left: -20 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(72, 42, 122, 0.08)" />
-                  <XAxis dataKey="month" stroke="#8F8390" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis stroke="#8F8390" fontSize={12} tickLine={false} axisLine={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--chart-grid)" />
+                  <XAxis dataKey="month" stroke="var(--chart-text)" fontSize={12} tickLine={false} axisLine={false} />
+                  <YAxis stroke="var(--chart-text)" fontSize={12} tickLine={false} axisLine={false} />
                   <RechartsTooltip
-                    contentStyle={{ backgroundColor: 'var(--surface-panel-strong)', borderColor: 'rgba(72, 42, 122, 0.16)', borderRadius: '16px' }}
+                    contentStyle={{ backgroundColor: 'var(--chart-tooltip-bg)', borderColor: 'var(--chart-tooltip-border)', borderRadius: '16px' }}
                     itemStyle={{ color: 'var(--text-primary)' }}
                     labelStyle={{ color: 'var(--text-secondary)' }}
                   />
-                  <Line type="monotone" dataKey="Tech" stroke="#B31F7E" strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
-                  <Line type="monotone" dataKey="Financials" stroke="#482A7A" strokeWidth={3} dot={{ r: 4 }} />
-                  <Line type="monotone" dataKey="Auto" stroke="#E8B15E" strokeWidth={3} dot={{ r: 4 }} />
+                  {watchlist.slice(0, CHART_COLORS.length).map((ticker, index) => (
+                    <Line key={ticker} type="monotone" dataKey={ticker} stroke={CHART_COLORS[index]} strokeWidth={3} dot={{ r: 4 }} activeDot={{ r: 6 }} />
+                  ))}
                 </LineChart>
               </ResponsiveContainer>
             )}
@@ -235,22 +237,36 @@ export default function Dashboard() {
 
         <section className="glass-card trending-card">
           <div className="card-header">
-            <h3>Top Research Themes</h3>
+            <h3>Watchlist Filing Mix (YTD)</h3>
             <TrendingUp size={18} className="text-blue" />
           </div>
           <div className="trending-list">
-            {trendingTopics.map((item, idx) => (
-              <div
-                key={idx}
+            {filingMix.map((item, idx) => (
+              <button
+                type="button"
+                key={item.form}
                 className="trending-item"
-                onClick={() => navigate.push(`/search?q=${encodeURIComponent(item.topic)}`)}
+                onClick={() => {
+                  const params = buildResearchRouteParams('', 'semantic', {
+                    ...defaultSearchFilters,
+                    formTypes: [item.form],
+                  });
+                  navigate.push(`/search?${params.toString()}`);
+                }}
                 style={{ cursor: 'pointer' }}
               >
                 <span className="rank">#{idx + 1}</span>
-                <span className="topic">{item.topic}</span>
-                <span className="count">{item.count}</span>
-              </div>
+                <span className="topic">{item.form}</span>
+                <span className="count">{item.count} filing{item.count === 1 ? '' : 's'}</span>
+              </button>
             ))}
+            {!loadingWatchlist && filingMix.length === 0 && (
+              <div className="empty-state">
+                {watchlist.length > 0 && unavailableWatchlistTickers.length === watchlist.length
+                  ? 'Live EDGAR watchlist data is unavailable for this refresh; retry by reopening the Dashboard.'
+                  : 'No watchlist filings are available for the current year.'}
+              </div>
+            )}
           </div>
         </section>
 
@@ -270,19 +286,23 @@ export default function Dashboard() {
 
               return (
                 <div key={ticker} className="watchlist-item">
-                  <div className="company-info" onClick={() => navigate.push(`/search?q=${ticker}`)} style={{ cursor: 'pointer', flex: 1 }}>
+                  <button type="button" className="company-info" onClick={() => navigate.push(`/search?q=${ticker}`)} aria-label={`Research ${companyName}`}>
                     <div className="company-logo-stub">{ticker[0]}</div>
                     <div>
                       <div className="company-name">{companyName}</div>
                       <div className="company-ticker">{ticker} {industry ? `| ${industry}` : ''}</div>
                     </div>
-                  </div>
+                  </button>
                   <div className="latest-filing">
-                    {latestForm ? <span className="f-badge">{latestForm}</span> : <span className="text-muted">No recent</span>}
+                    {latestForm
+                      ? <span className="f-badge">{latestForm}</span>
+                      : <span className="text-muted">{secData ? 'No recent' : 'Data unavailable'}</span>}
                     {latestDate && <span className="f-date">{latestDate}</span>}
                     <button
+                      type="button"
                       className="watchlist-remove-btn"
                       title="Remove from watchlist"
+                      aria-label={`Remove ${ticker} from watchlist`}
                       onClick={event => {
                         event.stopPropagation();
                         removeFromWatchlist(ticker);
@@ -310,12 +330,12 @@ export default function Dashboard() {
                   onKeyDown={event => event.key === 'Enter' && void handleAddTicker()}
                   style={{ flex: 1, padding: '9px 12px', borderRadius: '12px', border: '1px solid var(--input-border)', background: 'var(--input-bg)', color: 'var(--text-primary)', fontSize: '0.85rem' }}
                 />
-                <button className="watchlist-add-btn" onClick={() => void handleAddTicker()}>
+                <button type="button" className="watchlist-add-btn" onClick={() => void handleAddTicker()}>
                   <Plus size={14} /> Add
                 </button>
               </div>
             )}
-            {addError && <div style={{ color: '#B76B21', fontSize: '0.8rem', marginTop: '4px', paddingLeft: '8px' }}>{addError}</div>}
+            {addError && <div role="alert" style={{ color: 'var(--status-warning)', fontSize: '0.8rem', marginTop: '4px', paddingLeft: '8px' }}>{addError}</div>}
           </div>
         </section>
 
@@ -346,17 +366,25 @@ export default function Dashboard() {
               const display = recentFilings.slice(0, 5);
 
               if (display.length === 0) {
-                return <div className="empty-state">Add companies to your watchlist to see recent filings.</div>;
+                return (
+                  <div className="empty-state">
+                    {watchlist.length === 0
+                      ? 'Add companies to your watchlist to see recent filings.'
+                      : unavailableWatchlistTickers.length === watchlist.length
+                        ? 'Live EDGAR watchlist data is unavailable for this refresh.'
+                        : 'No recent filings were returned for the loaded watchlist companies.'}
+                  </div>
+                );
               }
 
               return display.map((filing, idx) => (
-                <div key={idx} className="activity-item" onClick={() => navigate.push(`/search?q=${filing.ticker}`)} style={{ cursor: 'pointer' }}>
+                <button type="button" key={idx} className="activity-item" onClick={() => navigate.push(`/search?q=${filing.ticker}`)}>
                   <FileText size={16} className={filing.form === '8-K' ? 'text-orange' : 'text-blue'} />
                   <div className="activity-details">
                     <p><strong>{filing.ticker}</strong> filed <strong>{filing.form}</strong></p>
                     <span>{filing.date}</span>
                   </div>
-                </div>
+                </button>
               ));
             })()}
           </div>
@@ -371,8 +399,8 @@ export default function Dashboard() {
             {savedAlerts.length === 0 ? (
               <div className="rss-news-card" style={{ gridColumn: '1 / -1' }}>
                 <div className="rss-timestamp">No alerts saved</div>
-                <h4 className="rss-headline">Create a recurring filing search from the Research Workbench</h4>
-                <p className="rss-summary">Alerts persist locally, can be checked for new filings, and make recurring accounting or disclosure research much easier to monitor.</p>
+                <h4 className="rss-headline">Create a local saved filing search from the Research Workbench</h4>
+                <p className="rss-summary">Saved searches persist in this browser and are checked manually or while this dashboard is open; they do not run as scheduled background notifications.</p>
                 <button className="secondary-btn" onClick={() => navigate.push('/search')}>
                   <BellRing size={14} /> Open Research
                 </button>
@@ -380,6 +408,7 @@ export default function Dashboard() {
             ) : (
               savedAlerts.slice(0, 3).map(alert => {
                 const isChecking = checkingAlerts.includes(alert.id);
+                const checkError = alertErrors[alert.id];
                 return (
                   <div key={alert.id} className="rss-news-card">
                     <div className="rss-timestamp">
@@ -387,14 +416,19 @@ export default function Dashboard() {
                     </div>
                     <h4 className="rss-headline">{alert.name}</h4>
                     <p className="rss-summary">
-                      {alert.latestNewAccessions.length > 0
+                      {checkError
+                        ? <span role="alert" style={{ color: '#FCA5A5' }}>{checkError}</span>
+                        : alert.latestNewAccessions.length > 0
                         ? `${alert.latestNewAccessions.length} new filing${alert.latestNewAccessions.length === 1 ? '' : 's'} detected.`
                         : `${alert.latestResultCount} current match${alert.latestResultCount === 1 ? '' : 'es'} in scope.`}
                     </p>
                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '10px' }}>
                       <button
                         className="secondary-btn"
-                        onClick={() => navigate.push(`/search?q=${encodeURIComponent(alert.query)}`)}
+                        onClick={() => {
+                          const params = buildSavedAlertRouteParams(alert);
+                          navigate.push(`/search?${params.toString()}`);
+                        }}
                       >
                         <SearchIcon size={14} /> Open
                       </button>
@@ -415,4 +449,3 @@ export default function Dashboard() {
     </div>
   );
 }
-

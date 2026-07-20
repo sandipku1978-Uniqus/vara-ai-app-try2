@@ -1,8 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { Bot, ClipboardCopy, Download, CheckCircle2 } from 'lucide-react';
+import { Bot, ClipboardCopy, Download, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useApp } from '../../context/AppState';
+import { buildCsv } from '../../utils/csv';
+
+export { buildCsv, escapeCsvCell } from '../../utils/csv';
 
 interface ResultsToolbarProps {
   /** Array of data rows currently displayed */
@@ -22,63 +25,64 @@ function rowToText(row: Record<string, any>, columns: Array<{ key: string; label
   }).join('\t');
 }
 
-function buildCsv(data: Record<string, any>[], columns: Array<{ key: string; label?: string; header?: string }>): string {
-  const header = columns.map(col => col.label || col.header || col.key).join(',');
-  const rows = data.map(row =>
-    columns.map(col => {
-      const val = row[col.key] != null ? String(row[col.key]) : '';
-      return val.includes(',') || val.includes('"') || val.includes('\n')
-        ? `"${val.replace(/"/g, '""')}"`
-        : val;
-    }).join(',')
-  );
-  return [header, ...rows].join('\n');
-}
-
 /**
  * Universal toolbar for search result tables.
  * Provides: Export CSV, Copy to Clipboard, Analyze in Copilot.
  */
-export default function ResultsToolbar({ data, columns, label = 'results' }: ResultsToolbarProps) {
-  const { setChatOpen } = useApp();
+export default function ResultsToolbar({ data, columns, label = 'results', copilotPrompt }: ResultsToolbarProps) {
+  const { setChatOpen, enqueueAgentPrompt } = useApp();
   const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState(false);
 
   if (data.length === 0) return null;
 
   function handleExportCsv() {
     const csv = buildCsv(data, columns);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob(['\uFEFF', csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `URC_${label.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.csv`;
+    const safeLabel = label.replace(/[^A-Za-z0-9_-]+/g, '_').replace(/^_+|_+$/g, '') || 'results';
+    link.download = `URC_${safeLabel}_${new Date().toISOString().slice(0, 10)}.csv`;
     link.click();
     URL.revokeObjectURL(url);
   }
 
-  function handleCopy() {
+  async function handleCopy() {
     const header = columns.map(col => col.label || col.header || col.key).join('\t');
     const rows = data.map(row => rowToText(row, columns));
-    navigator.clipboard.writeText([header, ...rows].join('\n')).then(() => {
+    setCopyError(false);
+    try {
+      await navigator.clipboard.writeText([header, ...rows].join('\n'));
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
-    });
+    } catch {
+      setCopied(false);
+      setCopyError(true);
+      setTimeout(() => setCopyError(false), 3000);
+    }
   }
 
   function handleAnalyzeInCopilot() {
+    const snapshot = data.slice(0, 20).map(row => rowToText(row, columns)).join('\n');
+    const prompt = copilotPrompt?.trim() || [
+      `Analyze these ${data.length} ${label} results.`,
+      'Identify supported patterns, notable outliers, and practical next steps based only on this immutable result snapshot.',
+      `${columns.map(col => col.label || col.header || col.key).join('\t')}\n${snapshot}`,
+    ].join('\n\n');
     setChatOpen(true);
-    // The copilot will pick up context from activeSearchContext
-    // If a specific prompt is provided, we could set it — but for now opening the panel is sufficient
+    enqueueAgentPrompt(prompt);
   }
 
   return (
-    <div style={{
+    <div role="toolbar" aria-label={`${label} result actions`} style={{
       display: 'flex',
       alignItems: 'center',
+      flexWrap: 'wrap',
       gap: '8px',
       padding: '8px 0',
       marginBottom: '8px',
-      borderBottom: '1px solid var(--surface-panel)',
+      borderBottom: '1px solid var(--border-color)',
       fontSize: '0.8rem',
     }}>
       <span style={{ color: 'var(--text-muted)', marginRight: '4px' }}>
@@ -86,10 +90,11 @@ export default function ResultsToolbar({ data, columns, label = 'results' }: Res
       </span>
 
       <button
+        type="button"
         onClick={handleExportCsv}
         style={{
           display: 'inline-flex', alignItems: 'center', gap: '4px',
-          background: 'var(--surface-panel)', border: '1px solid var(--input-border)',
+          background: 'var(--surface-subtle)', border: '1px solid var(--border-color)',
           borderRadius: '6px', padding: '4px 10px', color: 'var(--text-secondary)', cursor: 'pointer',
           fontSize: '0.78rem', transition: 'border-color 0.2s',
         }}
@@ -99,25 +104,28 @@ export default function ResultsToolbar({ data, columns, label = 'results' }: Res
       </button>
 
       <button
+        type="button"
         onClick={handleCopy}
+        aria-live="polite"
         style={{
           display: 'inline-flex', alignItems: 'center', gap: '4px',
-          background: 'var(--surface-panel)', border: '1px solid var(--input-border)',
-          borderRadius: '6px', padding: '4px 10px', color: copied ? '#4ade80' : 'var(--text-secondary)', cursor: 'pointer',
+          background: 'var(--interactive-hover)', border: '1px solid var(--border-color)',
+          borderRadius: '6px', padding: '4px 10px', color: copyError ? 'var(--status-error)' : copied ? 'var(--status-success)' : 'var(--text-secondary)', cursor: 'pointer',
           fontSize: '0.78rem', transition: 'color 0.2s, border-color 0.2s',
         }}
         title="Copy table to clipboard"
       >
-        {copied ? <><CheckCircle2 size={13} /> Copied</> : <><ClipboardCopy size={13} /> Copy</>}
+        {copyError ? <><AlertCircle size={13} /> Copy failed</> : copied ? <><CheckCircle2 size={13} /> Copied</> : <><ClipboardCopy size={13} /> Copy</>}
       </button>
 
       <button
+        type="button"
         onClick={handleAnalyzeInCopilot}
         style={{
           display: 'inline-flex', alignItems: 'center', gap: '4px',
-          background: 'linear-gradient(135deg, rgba(72,40,121,0.3), rgba(178,30,125,0.3))',
-          border: '1px solid rgba(214,108,174,0.3)',
-          borderRadius: '6px', padding: '4px 10px', color: '#D66CAE', cursor: 'pointer',
+          background: 'var(--interactive-hover-strong)',
+          border: '1px solid color-mix(in srgb, var(--accent-primary) 30%, transparent)',
+          borderRadius: '6px', padding: '4px 10px', color: 'var(--accent-primary)', cursor: 'pointer',
           fontSize: '0.78rem', transition: 'border-color 0.2s',
         }}
         title="Analyze these results with URC Copilot"

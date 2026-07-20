@@ -1,14 +1,16 @@
-import { beforeEach } from 'vitest';
+import { beforeEach, vi } from 'vitest';
 import '@testing-library/jest-dom';
 
-// Mock import.meta.env
-Object.defineProperty(import.meta, 'env', {
-  value: {
-    DEV: true,
-    NEXT_PUBLIC_EDGAR_USER_AGENT: 'Test App test@test.com',
-    VITE_CLERK_PUBLISHABLE_KEY: '',
-  },
-  writable: true,
+vi.mock('@clerk/nextjs', async importOriginal => {
+  const actual = await importOriginal<typeof import('@clerk/nextjs')>();
+  return {
+    ...actual,
+    useAuth: () => (
+      globalThis as typeof globalThis & {
+        __urcTestAuth?: { isLoaded: boolean; userId: string | null; orgId: string | null };
+      }
+    ).__urcTestAuth || { isLoaded: true, userId: 'user_test', orgId: null },
+  };
 });
 
 // Mock localStorage
@@ -60,4 +62,9 @@ Object.defineProperty(window, 'matchMedia', {
 beforeEach(() => {
   localStorageMock.clear();
   sessionStorageMock.clear();
+  (
+    globalThis as typeof globalThis & {
+      __urcTestAuth?: { isLoaded: boolean; userId: string | null; orgId: string | null };
+    }
+  ).__urcTestAuth = { isLoaded: true, userId: 'user_test', orgId: null };
 });

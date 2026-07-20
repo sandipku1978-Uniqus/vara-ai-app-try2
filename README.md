@@ -1,88 +1,81 @@
-# SEC Compliance Intelligence Platform (Intelligize+ Clone)
+# Uniqus Research
 
-A comprehensive, production-grade SEC compliance and research platform modeled after industry-standard tools like Intelligize. Designed for legal, financial, and compliance professionals to seamlessly research SEC filings, benchmark disclosures, analyze accounting standards, and derive AI-driven insights.
+Uniqus Research is a Next.js application for researching SEC filings, comparing disclosures and financial data, reviewing comment-letter correspondence, and producing evidence-linked AI analyses. It is designed for authenticated legal, accounting, financial, and compliance research workflows.
 
-## Core Features
-1. **Advanced SEC Search & Discovery:** Full-text semantic and boolean search emulation filtering by form type, industry, date, and ESG criteria.
-2. **Disclosure Benchmarking Matrix:** Side-by-side structural comparison of sections (e.g., Risk Factors, MD&A) across up to 10 peers, highlighting unique language vs. boilerplate.
-3. **Filing Viewer & Redlining:** Deep-dive document analysis with Year-over-Year text diffing and extractable financial/compensation tables.
-4. **Accounting Standards Hub:** Explore FASB ASC codifications, build custom US GAAP disclosure checklists, and query technical accounting knowledge.
-5. **ESG Research Center:** Map interoperability between GRI, SASB, ESRS, and TCFD frameworks. Visualize competitor ESG depth via heatmaps.
-6. **Board & Exec Comp Profiles:** Track board diversity matrices, analyze Executive Compensation (PvP, Summary Comp tables).
-7. **IPO Readiness Center:** Track global IPO pipelines, benchmark deal sizes, and analyze frequently drafted S-1 risk factors.
-8. **M&A Transactional Screener:** Screen precedent Merger Agreements and compare negotiated clauses (e.g., Material Adverse Effect definitions).
-9. **Protege AI Layer:** A unified generative AI assistant (powered by Claude) integrated across the platform for answering technical queries, summarizing filings, and generating peer comparisons.
+## What is implemented
 
-## Tech Stack
-- **Framework:** React 18, Vite, TypeScript
-- **State Management:** React Context API (`AppState.tsx`)
-- **Routing:** React Router DOM (v6)
-- **Styling:** Custom Vanilla CSS with a Dark Mode Glassmorphism aesthetic (Deep Navy `#0A0F1E` backgrounds, CSS variables)
-- **Icons & Charts:** `lucide-react`, `recharts`
-- **AI Integration:** Anthropic Claude via a server-side `/api/claude` endpoint
+- SEC filing search with exact Boolean, `NOT`, grouping, and proximity validation against filing text
+- Filing viewer with within-document search, annotations, table extraction, historical redlines, and export
+- Company dossiers, XBRL financial comparisons, PCAOB auditor information, and comment-letter review episodes
+- Disclosure benchmarking, board, ESG, M&A, IPO, earnings, exhibit, exempt-offering, and accounting research workflows
+- Evidence-linked Claude analysis through authenticated server routes
+- Responsive light/dark application shell, command palette, and keyboard-accessible shared controls
 
-## Setup & Run Instructions
+Each result surface identifies its source and limitations. Features that lack an authoritative source are not presented as live research data.
 
-### Prerequisites
-- Node.js (v18+ recommended)
-- `npm` or `yarn`
+## Stack
 
-### Installation
-1. Clone or navigate to the repository:
-   ```bash
-   cd comparableAI
-   ```
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
+- Next.js 16 App Router, React 18, and TypeScript
+- Supabase for research metadata and persisted server-side data
+- Clerk for authentication and feature entitlements
+- Anthropic Claude through server-only API routes
+- Vercel KV for distributed AI limits and cached summaries
+- Vitest, Testing Library, TypeScript, and ESLint for verification
 
-### Environment Setup
-Add a `.env` file at the root to configure the live SEC API and Claude integration:
-```env
-# Required for SEC EDGAR requests (Format: Name Email)
-VITE_EDGAR_USER_AGENT="YourName contact@yourdomain.com"
-# Required for all Protege AI insights and comparisons
-ANTHROPIC_API_KEY="sk-ant-..."
-# Optional override if you want a different Claude model
-ANTHROPIC_MODEL="claude-sonnet-4-20250514"
-```
+## Local setup
 
-### Running Locally
-Start the local Vite development server:
+Requirements: Node.js 20 or newer and npm.
+
 ```bash
-npm run dev
+npm install
+cp .env.example .env.local
+npm run dev -- -p 3033
 ```
-Open `http://localhost:5173` in your browser.
 
-The Vite dev server now exposes `/api/claude` locally, so Claude-backed features work in development without exposing the Anthropic key to the browser.
+Open `http://localhost:3033`. Next.js otherwise defaults to port 3000.
 
-## Deploying To Vercel
+Local development may use Clerk's keyless development flow. Production deliberately fails closed unless live Clerk keys and a research entitlement are configured.
 
-This repo includes Vercel serverless SEC proxy routes in `api/` plus route handling in `vercel.json`, so the SEC fetch/search endpoints continue working after deployment instead of only on localhost.
+## Environment
 
-### Recommended Setup
-1. Push this repo to GitHub.
-2. Import the repo into Vercel.
-3. Confirm these project settings:
-   - Build command: `npm run build`
-   - Output directory: `dist`
-4. Add these environment variables in Vercel:
-   ```env
-   VITE_EDGAR_USER_AGENT="Your Name contact@yourdomain.com"
-   ANTHROPIC_API_KEY="sk-ant-..."
-   ANTHROPIC_MODEL="claude-sonnet-4-20250514"
-   ```
-5. Deploy.
+Use [.env.example](.env.example) as the complete template. The principal settings are:
 
-### Important Notes
-- `/sec-proxy/*` is proxied through a Vercel function to `https://www.sec.gov/*`
-- `/sec-data/*` is proxied through a Vercel function to `https://data.sec.gov/*`
-- `/sec-efts/*` is proxied through a Vercel function to `https://efts.sec.gov/*`
-- `/api/claude` is handled server-side so the Anthropic API key stays off the client
-- SPA routes fall back to the app entry point through `vercel.json`
-- Use `.env.example` as the template and do not commit your real `.env`
+- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, and `CLERK_RESEARCH_FEATURE` for production access control
+- `ANTHROPIC_API_KEY` and optional `ANTHROPIC_MODEL` for AI routes
+- `KV_REST_API_URL`, `KV_REST_API_TOKEN`, `AI_DAILY_TOKEN_BUDGET_PER_USER`, and optional `AI_MAX_CONCURRENT_*` values for distributed limits and budgets
+- `URC_SUPABASE_URL` and `URC_SUPABASE_WEB_KEY` for production read/write routes that operate under database policy
+- `URC_SUPABASE_SERVICE_KEY` only for trusted ingestion and maintenance jobs
+- `NEXT_PUBLIC_EDGAR_USER_AGENT` for SEC requests, in `Organization contact@example.com` form
+- optional `NEXT_PUBLIC_POSTHOG_*` settings for consent-aware analytics
 
-## Architecture Notes
-- **API Strategy:** To ensure a structured demo without hitting prohibitive SEC rate limits or CORS boundaries, the platform uses a hybrid approach. Certain features fetch live SEC JSON schemas (e.g., fetching 10-Ks), while specialized analytical views (ESG mapping, M&A clauses, Board tables) orchestrate highly realistic mock data to simulate proprietary NLP extraction pipelines.
-- **AI "Protege":** The `src/services/aiApi.ts` layer governs all generative tasks, routing Claude requests through `/api/claude` so the Anthropic API key stays server-side. Always verified alongside the `ResponsibleAIBanner`.
+Never expose a service-role key, Anthropic or Clerk secret, KV token, or other server credential through a `NEXT_PUBLIC_*` variable.
+
+## Verification
+
+Run all local quality gates before submitting a change:
+
+```bash
+npm test
+npm run typecheck
+npm run lint
+npm run build
+npm audit --omit=dev
+```
+
+Targeted Vitest files can be run with `npx vitest run path/to/test.ts`.
+
+## Data pipeline
+
+The application uses SEC EDGAR/EFTS as the filing source and Supabase for enriched metadata such as auditor, issuer, SIC, and comment-letter data. Pipeline setup and ingestion commands are documented in [data-pipeline/README.md](data-pipeline/README.md). The historical external search index and Vite proxy are retired.
+
+Use a descriptive SEC user agent, respect upstream rate limits, retry bounded transient failures, and display partial coverage rather than presenting capped candidate windows as exact corpus totals.
+
+## Vercel deployment
+
+1. Import the repository into Vercel.
+2. Use `npm run build`; no custom output directory is required.
+3. Configure the application-runtime variables from `.env.example` with live credentials. Do not add `URC_SUPABASE_SERVICE_KEY` to Vercel; the web application uses only `URC_SUPABASE_WEB_KEY`.
+4. Apply the required Supabase migrations and configure `URC_SUPABASE_SERVICE_KEY` only as a secret for the scheduled ingestion workflows.
+5. Verify anonymous access is denied for protected pages and APIs, AI limits use KV, the production Clerk development-key warning is absent, and the quality-gate commands pass.
+
+SEC documents are fetched through the application routes as sanitized inert content; do not reintroduce a same-origin active HTML proxy or unsandboxed document rendering.

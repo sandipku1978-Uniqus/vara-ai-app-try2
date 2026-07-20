@@ -1,9 +1,10 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import RouteLoading from '../../components/layout/RouteLoading';
 
 const Dashboard = dynamic(() => import('../../views/Dashboard'), {
-  ssr: false
+  loading: () => <RouteLoading label="Loading dashboard" />,
 });
 
 export default function Page() {

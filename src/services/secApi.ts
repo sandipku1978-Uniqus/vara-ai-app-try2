@@ -2,7 +2,13 @@
 // SEC EDGAR requires a descriptive User-Agent string
 
 const USER_AGENT = process.env.NEXT_PUBLIC_EDGAR_USER_AGENT || 'Uniqus Research Center contact@uniqus.com';
-const edgarSearchCache = new Map<string, Promise<EdgarSearchHit[]>>();
+interface CachedEdgarSearch {
+  hits: EdgarSearchHit[];
+  coverage: SearchCandidateCoverage;
+}
+
+const edgarSearchCache = new Map<string, Promise<CachedEdgarSearch>>();
+const submissionHistoryCache = new Map<string, Promise<SecFilingSeries | null>>();
 
 function isDisabledEnvFlag(value: unknown): boolean {
   if (typeof value === 'boolean') return !value;
@@ -28,7 +34,7 @@ function isDisabledEnvFlag(value: unknown): boolean {
  *  route 503s gracefully when Supabase env is absent and the client falls
  *  back, so defaulting on is safe. Set either env var to "false" to opt out.
  *  The legacy NEXT_PUBLIC_USE_ELASTICSEARCH name still works. */
-export function isElasticsearchEnabled(): boolean {
+export function isEnrichedSearchEnabled(): boolean {
   return !(
     isDisabledEnvFlag(process.env.NEXT_PUBLIC_USE_ENRICHED_SEARCH) ||
     isDisabledEnvFlag(process.env.NEXT_PUBLIC_USE_ELASTICSEARCH)
@@ -292,6 +298,18 @@ export async function lookupCIK(ticker: string): Promise<string | null> {
   return null;
 }
 
+export interface SecFilingSeries {
+  accessionNumber: string[];
+  filingDate: string[];
+  reportDate: string[];
+  acceptanceDateTime: string[];
+  act: string[];
+  form: string[];
+  fileNumber: string[];
+  primaryDocument: string[];
+  primaryDocDescription: string[];
+}
+
 export interface SecSubmission {
   cik: string;
   name: string;
@@ -302,17 +320,13 @@ export interface SecSubmission {
   sic: string;
   sicDescription: string;
   filings: {
-    recent: {
-      accessionNumber: string[];
-      filingDate: string[];
-      reportDate: string[];
-      acceptanceDateTime: string[];
-      act: string[];
-      form: string[];
-      fileNumber: string[];
-      primaryDocument: string[];
-      primaryDocDescription: string[];
-    }
+    recent: SecFilingSeries;
+    files?: Array<{
+      name: string;
+      filingCount?: number;
+      filingFrom?: string;
+      filingTo?: string;
+    }>;
   }
 }
 
@@ -347,6 +361,28 @@ export async function fetchCompanySubmissions(cik: string): Promise<SecSubmissio
     console.error('Failed to fetch SEC Submissions:', error);
     return null;
   }
+}
+
+/** Fetch one official SEC historical-submissions segment referenced by filings.files. */
+export async function fetchSubmissionHistory(fileName: string): Promise<SecFilingSeries | null> {
+  const safeName = fileName.trim().replace(/^\/+/, '');
+  if (!safeName || safeName.includes('..')) return null;
+
+  if (!submissionHistoryCache.has(safeName)) {
+    submissionHistoryCache.set(safeName, (async () => {
+      try {
+        const response = await fetch(buildSecDataUrl(`submissions/${safeName}`), { headers: getHeaders() });
+        if (!response.ok) throw new Error(`SEC submission history error: ${response.status}`);
+        const payload = await response.json() as Partial<SecFilingSeries>;
+        return Array.isArray(payload.accessionNumber) ? payload as SecFilingSeries : null;
+      } catch (error) {
+        submissionHistoryCache.delete(safeName);
+        console.error('Failed to fetch SEC submission history:', error);
+        return null;
+      }
+    })());
+  }
+  return submissionHistoryCache.get(safeName)!;
 }
 
 /**
@@ -952,6 +988,7 @@ export interface EdgarSearchHit {
     biz_locations?: string[] | string;
     inc_states?: string[] | string;
     sics?: string[] | string;
+    sic?: string[] | string;
     root_forms?: string[];
     entity_name?: string;
     primary_document?: string;
@@ -969,19 +1006,30 @@ export interface EdgarSearchHit {
 export interface EdgarSearchResult {
   hits: {
     hits: EdgarSearchHit[];
-    total: { value: number };
+    total: { value: number; relation?: 'eq' | 'gte' };
+  };
+  meta?: {
+    candidateCoverage?: { examined: number; upstreamTotal: number; complete: boolean };
   };
 }
 
-export interface ElasticSearchExtendedParams {
+export interface SearchCandidateCoverage {
+  examined: number;
+  upstreamTotal: number;
+  complete: boolean;
+}
+
+export interface EnrichedSearchParams {
   auditor?: string;
   acceleratedStatus?: string;
   sicCode?: string;
-  mode?: 'semantic' | 'boolean';
-  useElasticsearch?: boolean;
+  useEnrichedSearch?: boolean;
+  onDegraded?: (reason: string) => void;
+  onCoverage?: (coverage: SearchCandidateCoverage) => void;
   /** Resolved issuer CIK. EFTS text searches filter reliably by `ciks`;
    *  entityName strings with punctuation ("Organon & Co.") mismatch. */
   entityCik?: string;
+
 }
 
 /** EDGAR full-text search coverage starts 2001; don't silently narrow undated queries. */
@@ -992,16 +1040,16 @@ const EFTS_PAGE_SIZE = 10;
 const EFTS_MAX_WINDOW = 10_000;
 
 /**
- * Search filings via Elasticsearch when available, otherwise fall back to EDGAR EFTS.
+ * Search filings via the enriched candidate endpoint when available, otherwise fall back to EDGAR EFTS.
  */
-async function searchViaElasticsearch(
+async function searchViaEnrichedSearch(
   query: string,
   forms: string,
   startDate: string,
   endDate: string,
   entityName: string,
   maxResults: number,
-  extended: ElasticSearchExtendedParams = {}
+  extended: EnrichedSearchParams = {}
 ): Promise<EdgarSearchHit[]> {
   const params = new URLSearchParams({
     q: query,
@@ -1014,27 +1062,48 @@ async function searchViaElasticsearch(
   if (entityName) params.set('entityName', entityName);
   if (extended.entityCik) params.set('cik', extended.entityCik);
   if (extended.auditor) params.set('auditor', extended.auditor);
-  if (extended.acceleratedStatus) params.set('acceleratedStatus', extended.acceleratedStatus);
   if (extended.sicCode) params.set('sicCode', extended.sicCode);
-  if (extended.mode) params.set('mode', extended.mode);
 
   const results: EdgarSearchHit[] = [];
   const seenIds = new Set<string>();
   let totalHits = Number.POSITIVE_INFINITY;
-  const pageSize = Math.min(maxResults, 500);
+  let totalRelation: 'eq' | 'gte' = 'eq';
+  let aggregateCoverage: SearchCandidateCoverage | null = null;
+  // /api/es-search intentionally exposes a 100-row page contract.
+  const pageSize = Math.min(maxResults, 100);
 
-  for (let offset = 0; offset < maxResults && results.length < maxResults && offset < totalHits; offset += pageSize) {
+  for (let offset = 0; offset < maxResults && results.length < maxResults && (totalRelation === 'gte' || offset < totalHits);) {
+    const requestedPageSize = Math.min(pageSize, maxResults - results.length);
     params.set('from', String(offset));
-    params.set('size', String(Math.min(pageSize, maxResults - results.length)));
+    params.set('size', String(requestedPageSize));
 
-    const response = await fetch(`/api/es-search?${params.toString()}`);
-    if (!response.ok) {
-      throw new Error(`ES Search Error: ${response.status}`);
+    let response: Response | null = null;
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      response = await fetch(`/api/es-search?${params.toString()}`);
+      if (response.ok) break;
+      if ((response.status === 429 || response.status >= 500) && attempt < 2) {
+        await delay(250 * (2 ** attempt));
+        continue;
+      }
+      throw new Error(`Enriched search error: ${response.status}`);
     }
 
+    if (!response?.ok) throw new Error('Enriched search error: no successful response');
     const data: EdgarSearchResult = await response.json();
     const pageHits = data.hits?.hits || [];
     totalHits = data.hits?.total?.value || pageHits.length;
+    totalRelation = data.hits?.total?.relation || 'eq';
+    if (data.meta?.candidateCoverage) {
+      const coverage = data.meta.candidateCoverage;
+      aggregateCoverage = aggregateCoverage
+        ? {
+            examined: Math.max(aggregateCoverage.examined, coverage.examined),
+            upstreamTotal: Math.max(aggregateCoverage.upstreamTotal, coverage.upstreamTotal),
+            complete: aggregateCoverage.complete && coverage.complete,
+          }
+        : coverage;
+      extended.onCoverage?.(aggregateCoverage);
+    }
 
     for (const hit of pageHits) {
       if (seenIds.has(hit._id)) continue;
@@ -1043,8 +1112,10 @@ async function searchViaElasticsearch(
       if (results.length >= maxResults) break;
     }
 
-    if (pageHits.length < pageSize) break;
-    if (offset + pageSize < maxResults) await delay(50);
+    if (pageHits.length === 0) break;
+    offset += pageHits.length;
+    if (pageHits.length < requestedPageSize) break;
+    if (offset < maxResults) await delay(50);
   }
 
   return results;
@@ -1052,7 +1123,7 @@ async function searchViaElasticsearch(
 
 /**
  * Search EDGAR full-text search for specific form types.
- * Routes through Elasticsearch only when the caller opts in and NEXT_PUBLIC_USE_ELASTICSEARCH is enabled.
+ * Routes through enriched search only when the caller opts in and NEXT_PUBLIC_USE_ENRICHED_SEARCH is enabled.
  */
 export async function searchEdgarFilings(
   query: string,
@@ -1061,15 +1132,15 @@ export async function searchEdgarFilings(
   endDate?: string,
   entityName?: string,
   maxResults = 100,
-  extended: ElasticSearchExtendedParams = {}
+  extended: EnrichedSearchParams = {}
 ): Promise<EdgarSearchHit[]> {
-  const shouldUseElasticsearch = extended.useElasticsearch === true && isElasticsearchEnabled();
+  const shouldUseEnrichedSearch = extended.useEnrichedSearch === true && isEnrichedSearchEnabled();
 
-  if (shouldUseElasticsearch) {
-    // ES is an optimization, never a hard dependency: on failure or an empty
+  if (shouldUseEnrichedSearch) {
+    // Enrichment is an optimization, never a hard dependency: on failure or an empty
     // index, fall through to live EDGAR EFTS so the user still gets results.
     try {
-      const esResults = await searchViaElasticsearch(
+      const enrichedResults = await searchViaEnrichedSearch(
         query,
         forms,
         startDate || EDGAR_FTS_FLOOR,
@@ -1078,10 +1149,12 @@ export async function searchEdgarFilings(
         maxResults,
         extended
       );
-      if (esResults.length > 0) return esResults;
-      console.warn('[search] Elasticsearch returned 0 hits; falling back to EDGAR EFTS');
+      if (enrichedResults.length > 0) return enrichedResults;
+      console.warn('[search] Enriched search returned 0 hits; falling back to EDGAR EFTS');
+      extended.onDegraded?.('Enriched candidate search returned no hits; live SEC EDGAR fallback is in use.');
     } catch (error) {
-      console.error('[search] Elasticsearch search failed; falling back to EDGAR EFTS:', error);
+      console.error('[search] Enriched search failed; falling back to EDGAR EFTS:', error);
+      extended.onDegraded?.('Enriched candidate search is unavailable; live SEC EDGAR fallback is in use.');
     }
   }
   // EFTS rejects an empty q: an entity-resolved browse ("OGN 10-K" → issuer
@@ -1110,6 +1183,8 @@ export async function searchEdgarFilings(
         const results: EdgarSearchHit[] = [];
         const seenIds = new Set<string>();
         let totalHits = Number.POSITIVE_INFINITY;
+        let totalRelation: 'eq' | 'gte' = 'eq';
+        let exhaustedUpstream = false;
 
         // EFTS ignores large size requests and always returns ~10 hits/page, so
         // page with from += actual-hits-received; anything else truncates recall
@@ -1133,6 +1208,7 @@ export async function searchEdgarFilings(
               const data: EdgarSearchResult = await response.json();
               pageHits = data.hits?.hits || [];
               totalForPage = data.hits?.total?.value || pageHits.length;
+              totalRelation = data.hits?.total?.relation || 'eq';
               break;
             }
 
@@ -1159,6 +1235,7 @@ export async function searchEdgarFilings(
           }
 
           if (pageHits.length === 0) {
+            exhaustedUpstream = true;
             break;
           }
           offset += pageHits.length;
@@ -1174,7 +1251,19 @@ export async function searchEdgarFilings(
           const dateB = b._source?.file_date || '';
           return dateB.localeCompare(dateA);
         });
-        return results;
+        const finiteTotal = Number.isFinite(totalHits) ? totalHits : results.length;
+        const upstreamTotal = Math.max(finiteTotal, results.length);
+        const complete = exhaustedUpstream || (
+          totalRelation === 'eq' && results.length >= upstreamTotal && upstreamTotal <= EFTS_MAX_WINDOW
+        );
+        return {
+          hits: results,
+          coverage: {
+            examined: results.length,
+            upstreamTotal,
+            complete,
+          },
+        };
       } catch (error) {
         edgarSearchCache.delete(cacheKey);
         console.error('EDGAR search failed:', error);
@@ -1183,7 +1272,37 @@ export async function searchEdgarFilings(
     })());
   }
 
-  return edgarSearchCache.get(cacheKey)!;
+  const cached = await edgarSearchCache.get(cacheKey)!;
+  extended.onCoverage?.(cached.coverage);
+  return cached.hits;
+}
+
+/** Read the authoritative total for an EDGAR EFTS query without pretending
+ * the bounded hit array is the population size. */
+export async function fetchEdgarSearchTotal(
+  query: string,
+  forms: string,
+  startDate?: string,
+  endDate?: string,
+  entityName?: string
+): Promise<{ value: number; relation: 'eq' | 'gte' }> {
+  const params = new URLSearchParams({
+    q: query,
+    forms,
+    dateRange: 'custom',
+    startdt: startDate || EDGAR_FTS_FLOOR,
+    enddt: endDate || new Date().toISOString().split('T')[0],
+    from: '0',
+    size: '10',
+  });
+  if (entityName) params.set('entityName', entityName);
+  const response = await fetch(buildSecEftsUrl('LATEST/search-index', params), { headers: getHeaders() });
+  if (!response.ok) throw new Error(`EDGAR total search error: ${response.status}`);
+  const data = await response.json() as EdgarSearchResult;
+  return {
+    value: Number(data.hits?.total?.value || 0),
+    relation: data.hits?.total?.relation || 'eq',
+  };
 }
 
 /**
@@ -1199,21 +1318,27 @@ export interface FilingDocument {
 
 export async function fetchFilingIndex(accessionNumber: string): Promise<FilingDocument[]> {
   try {
-    // The EDGAR filing index JSON endpoint
-    const response = await fetch(buildSecProxyUrl('cgi-bin/browse-edgar', {
-      action: 'getcompany',
-      accession: accessionNumber,
-      type: '',
-      dateb: '',
-      owner: 'include',
-      count: 40,
-      search_text: '',
-    }), {
+    const cleanAccession = accessionNumber.replace(/\D/g, '');
+    const cik = cleanAccession.slice(0, 10).replace(/^0+/, '') || '0';
+    if (cleanAccession.length < 18) return [];
+
+    const archivePath = `Archives/edgar/data/${cik}/${cleanAccession}`;
+    const response = await fetch(buildSecProxyUrl(`${archivePath}/index.json`), {
       headers: getHeaders()
     });
     if (!response.ok) throw new Error(`Filing index Error: ${response.statusText}`);
-    // Fallback: return empty, the component will use the accession directly
-    return [];
+    const payload = await response.json() as {
+      directory?: { item?: Array<{ name?: string; type?: string; size?: number | string }> };
+    };
+    return (payload.directory?.item || [])
+      .filter(item => Boolean(item.name) && item.type !== 'dir')
+      .map(item => ({
+        name: item.name || '',
+        description: item.name || '',
+        type: item.type || '',
+        size: item.size == null ? '' : String(item.size),
+        url: buildSecDocumentUrl(cik, accessionNumber, item.name || ''),
+      }));
   } catch (error) {
     console.error('Failed to fetch filing index:', error);
     return [];
@@ -1407,52 +1532,72 @@ export async function searchExhibits(query: string, exhibitTypes: string, dateFr
   return searchEdgarFilings(query, exhibitTypes, dateFrom, dateTo, entityName);
 }
 
-export async function searchFormADV(query: string, dateFrom?: string, dateTo?: string, entityName?: string) {
-  return searchEdgarFilings(query, 'ADV,ADV/A,ADV-W', dateFrom, dateTo, entityName);
-}
-
 /**
  * Fetch and parse SEC litigation releases index page.
  */
-export async function fetchLitigationReleases(): Promise<{ date: string; title: string; url: string; releaseNumber: string }[]> {
-  try {
-    const response = await fetch(buildSecProxyUrl('litigation/litreleases.htm'), { headers: getHeaders() });
-    if (!response.ok) return [];
-    const html = await response.text();
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, 'text/html');
-    const items: { date: string; title: string; url: string; releaseNumber: string }[] = [];
-    const links = doc.querySelectorAll('a[href*="litreleases/"]');
-    for (const link of Array.from(links)) {
-      const href = link.getAttribute('href') || '';
-      const text = (link.textContent || '').trim();
-      if (!text || text.length < 5) continue;
-      // Try to extract release number from href
-      const numMatch = href.match(/lr(\d+)/);
-      const releaseNumber = numMatch ? `LR-${numMatch[1]}` : '';
-      // Try to find date from parent/sibling
-      const parent = link.parentElement;
-      const dateMatch = parent?.textContent?.match(/(\w+ \d{1,2}, \d{4})/);
-      items.push({
-        title: text,
-        url: href.startsWith('http') ? href : `https://www.sec.gov${href}`,
-        releaseNumber,
-        date: dateMatch ? dateMatch[1] : '',
-      });
-      if (items.length >= 50) break;
-    }
-    return items;
-  } catch (error) {
-    console.error('Failed to fetch litigation releases:', error);
-    return [];
+export interface LitigationRelease {
+  date: string;
+  title: string;
+  url: string;
+  releaseNumber: string;
+}
+
+export function parseLitigationReleases(html: string): LitigationRelease[] {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  const seen = new Set<string>();
+  const items: LitigationRelease[] = [];
+
+  for (const row of Array.from(doc.querySelectorAll('.pr-list-page-row, tbody tr'))) {
+    const link = row.querySelector<HTMLAnchorElement>(
+      'a[href*="/enforcement-litigation/litigation-releases/lr-"]'
+    );
+    if (!link) continue;
+    const href = link.getAttribute('href') || '';
+    const title = (link.textContent || '').replace(/\s+/g, ' ').trim();
+    const releaseFromRow = row.querySelector('.view-table_subfield_release_number .view-table_subfield_value')?.textContent || '';
+    const numberMatch = `${releaseFromRow} ${href}`.match(/LR[-\s]?(\d+)/i);
+    const releaseNumber = numberMatch ? `LR-${numberMatch[1]}` : '';
+    const url = href.startsWith('https://www.sec.gov') ? href : `https://www.sec.gov${href.startsWith('/') ? href : `/${href}`}`;
+    if (!title || !releaseNumber || seen.has(url)) continue;
+    seen.add(url);
+    items.push({
+      title,
+      url,
+      releaseNumber,
+      date: (row.querySelector('time')?.textContent || '').replace(/\s+/g, ' ').trim(),
+    });
   }
+
+  return items;
+}
+
+export async function fetchLitigationReleases(): Promise<LitigationRelease[]> {
+  const response = await fetch(buildSecProxyUrl('enforcement-litigation/litigation-releases'), { headers: getHeaders() });
+  if (!response.ok) {
+    throw new Error(`SEC litigation releases returned ${response.status}`);
+  }
+  const releases = parseLitigationReleases(await response.text());
+  if (releases.length === 0) {
+    throw new Error('SEC litigation releases returned no parseable entries; the official page contract may have changed.');
+  }
+  return releases;
 }
 
 /**
  * Compute standard financial ratios from extracted metrics.
  */
-export function computeFinancialRatios(metrics: Record<string, { value: number; unit: string }>): Record<string, number | null> {
+export function computeFinancialRatios(
+  metrics: Record<string, { value: number; unit: string }>,
+  priorMetrics: Record<string, { value: number; unit: string }> = {}
+): Record<string, number | null> {
   const get = (key: string) => metrics[key]?.value ?? null;
+  const averageBalance = (key: string) => {
+    const current = metrics[key];
+    const prior = priorMetrics[key];
+    if (!current) return null;
+    if (!prior || prior.unit !== current.unit) return current.value;
+    return (current.value + prior.value) / 2;
+  };
   const divide = (numerator: number | null, denominator: number | null, multiply = 1) =>
     numerator != null && denominator != null && denominator !== 0 ? (numerator / denominator) * multiply : null;
   const rev = get('Revenues');
@@ -1463,8 +1608,9 @@ export function computeFinancialRatios(metrics: Record<string, { value: number; 
   );
   const oi = get('OperatingIncome');
   const ni = get('NetIncome');
-  const ta = get('TotalAssets');
   const eq = get('StockholdersEquity');
+  const averageAssets = averageBalance('TotalAssets');
+  const averageEquity = averageBalance('StockholdersEquity');
   const debt = get('TotalDebt');
   const currentAssets = get('CurrentAssets');
   const currentLiabilities = get('CurrentLiabilities');
@@ -1473,10 +1619,10 @@ export function computeFinancialRatios(metrics: Record<string, { value: number; 
     grossMargin: divide(gp, rev, 100),
     operatingMargin: divide(oi, rev, 100),
     netMargin: divide(ni, rev, 100),
-    returnOnEquity: divide(ni, eq, 100),
-    returnOnAssets: divide(ni, ta, 100),
+    returnOnEquity: divide(ni, averageEquity, 100),
+    returnOnAssets: divide(ni, averageAssets, 100),
     debtToEquity: divide(debt, eq),
-    assetTurnover: divide(rev, ta),
+    assetTurnover: divide(rev, averageAssets),
     currentRatio: divide(currentAssets, currentLiabilities),
   };
 }

@@ -2,7 +2,7 @@ import { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Exempt Offerings - Uniqus Research Center',
-  description: 'Regulation D, Regulation A, and other exempt offering filings.',
+  description: 'Search SEC Form D and D/A exempt offering notices.',
 };
 
 export default function Layout({ children }: { children: React.ReactNode }) {

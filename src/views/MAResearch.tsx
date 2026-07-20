@@ -18,8 +18,9 @@ interface DealFiling {
   cik: string;
   primaryDocument: string;
   // AI-extracted fields (loaded on demand)
-  extractedDetails?: DealDetailsResult | null;
+  extractedDetails?: DealDetailsResult;
   extracting?: boolean;
+  extractionError?: string;
 }
 
 // Clause types available for extraction
@@ -33,7 +34,7 @@ const CLAUSE_TYPES = [
 ];
 
 // Module-level cache
-const dealDetailsCache = new Map<string, DealDetailsResult | null>();
+const dealDetailsCache = new Map<string, DealDetailsResult>();
 const clauseCache = new Map<string, Record<string, { text: string; section: string }>>();
 
 export default function MAResearch() {
@@ -43,6 +44,7 @@ export default function MAResearch() {
   // Deal screener state
   const [dealFilings, setDealFilings] = useState<DealFiling[]>([]);
   const [dealLoading, setDealLoading] = useState(false);
+  const [dealError, setDealError] = useState('');
 
   // Clause library state
   const [selectedClause, setSelectedClause] = useState(CLAUSE_TYPES[0]);
@@ -50,14 +52,16 @@ export default function MAResearch() {
   const [clauseLoading, setClauseLoading] = useState(false);
   const [clauseFilingQuery, setClauseFilingQuery] = useState('');
   const [clauseFilingSearching, setClauseFilingSearching] = useState(false);
+  const [clauseSearchCompleted, setClauseSearchCompleted] = useState(false);
+  const [clauseSearchError, setClauseSearchError] = useState('');
   const [clauseFilings, setClauseFilings] = useState<DealFiling[]>([]);
   const [selectedClauseFiling, setSelectedClauseFiling] = useState<DealFiling | null>(null);
+  const [clauseExtractionError, setClauseExtractionError] = useState('');
 
-  // Load deal screener on mount
-  useEffect(() => {
-    async function loadDeals() {
-      setDealLoading(true);
-      try {
+  const loadDeals = useCallback(async () => {
+    setDealLoading(true);
+    setDealError('');
+    try {
         const oneYearAgo = new Date();
         oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
         const dateFrom = oneYearAgo.toISOString().split('T')[0];
@@ -93,23 +97,26 @@ export default function MAResearch() {
             primaryDocument: idParts.length > 1 ? idParts[1] : '',
           });
         }
-        setDealFilings(filings);
-      } catch (error) {
-        console.error('M&A deal screener error:', error);
-      } finally {
-        setDealLoading(false);
-      }
+      setDealFilings(filings);
+    } catch (error) {
+      console.error('M&A deal screener error:', error);
+      setDealFilings([]);
+      setDealError('Recent M&A filings could not be loaded from SEC EDGAR. No empty-result conclusion can be drawn.');
+    } finally {
+      setDealLoading(false);
     }
-    loadDeals();
   }, []);
 
+  useEffect(() => { void loadDeals(); }, [loadDeals]);
+
   // Server-side entity deal search: the text box used to only filter the
-  // 15 pre-loaded feed rows client-side, so any deal outside the feed
+  // pre-loaded feed rows client-side, so any deal outside the feed
   // (e.g. Organon / Sun Pharma) looked like it didn't exist.
   const searchDealsForEntity = useCallback(async (text: string) => {
     const trimmed = text.trim();
-    if (!trimmed) return;
+    if (!trimmed) { void loadDeals(); return; }
     setDealLoading(true);
+    setDealError('');
     try {
       const oneYearAgo = new Date();
       oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
@@ -119,7 +126,9 @@ export default function MAResearch() {
         '8-K,8-K/A,SC 13D,SC TO-T,DEFM14A,S-4,425',
         oneYearAgo.toISOString().split('T')[0],
         new Date().toISOString().split('T')[0],
-        scoped.entityName || undefined
+        scoped.entityName || undefined,
+        100,
+        scoped.cik ? { entityCik: scoped.cik } : {}
       );
       const seen = new Set<string>();
       const filings: DealFiling[] = [];
@@ -144,10 +153,11 @@ export default function MAResearch() {
       setDealFilings(filings);
     } catch (error) {
       console.error('M&A entity deal search error:', error);
+      setDealError('The entity deal search could not reach SEC EDGAR. No empty-result conclusion can be drawn.');
     } finally {
       setDealLoading(false);
     }
-  }, []);
+  }, [loadDeals]);
 
   // Extract deal details on demand
   const handleExtractDetails = useCallback(async (idx: number) => {
@@ -158,7 +168,7 @@ export default function MAResearch() {
     if (dealDetailsCache.has(filing.accessionNumber)) {
       setDealFilings(prev => {
         const updated = [...prev];
-        updated[idx] = { ...updated[idx], extractedDetails: dealDetailsCache.get(filing.accessionNumber)! };
+        updated[idx] = { ...updated[idx], extractedDetails: dealDetailsCache.get(filing.accessionNumber)!, extractionError: undefined };
         return updated;
       });
       return;
@@ -166,31 +176,34 @@ export default function MAResearch() {
 
     setDealFilings(prev => {
       const updated = [...prev];
-      updated[idx] = { ...updated[idx], extracting: true };
+      updated[idx] = { ...updated[idx], extracting: true, extractionError: undefined };
       return updated;
     });
 
     try {
-      let text = '';
-      if (filing.cik && filing.primaryDocument) {
-        text = await fetchFilingText(filing.cik, filing.accessionNumber, filing.primaryDocument);
+      if (!filing.cik || !filing.primaryDocument) {
+        throw new Error('The filing document could not be resolved from SEC metadata.');
       }
-
-      let details: DealDetailsResult | null = null;
-      if (text && text.length > 200) {
-        details = await aiExtractDealDetails(text);
-      }
+      const text = await fetchFilingText(filing.cik, filing.accessionNumber, filing.primaryDocument);
+      if (text.trim().length <= 200) throw new Error('The filing text was unavailable.');
+      const details = await aiExtractDealDetails(text);
       dealDetailsCache.set(filing.accessionNumber, details);
 
       setDealFilings(prev => {
         const updated = [...prev];
-        updated[idx] = { ...updated[idx], extractedDetails: details, extracting: false };
+        updated[idx] = { ...updated[idx], extractedDetails: details, extracting: false, extractionError: undefined };
         return updated;
       });
-    } catch {
+    } catch (error) {
+      console.error('M&A detail extraction error:', error);
       setDealFilings(prev => {
         const updated = [...prev];
-        updated[idx] = { ...updated[idx], extractedDetails: null, extracting: false };
+        updated[idx] = {
+          ...updated[idx],
+          extractedDetails: undefined,
+          extracting: false,
+          extractionError: 'Analysis failed. Reload the source evidence and retry.',
+        };
         return updated;
       });
     }
@@ -210,6 +223,11 @@ export default function MAResearch() {
   const handleClauseFilingSearch = useCallback(async () => {
     if (!clauseFilingQuery.trim()) return;
     setClauseFilingSearching(true);
+    setClauseSearchCompleted(false);
+    setClauseSearchError('');
+    setSelectedClauseFiling(null);
+    setClauseResults(null);
+    setClauseExtractionError('');
     try {
       const hits = await searchEdgarFilings(clauseFilingQuery, '8-K,SC 13D');
       const filings: DealFiling[] = [];
@@ -231,10 +249,13 @@ export default function MAResearch() {
         });
       }
       setClauseFilings(filings);
-    } catch {
+    } catch (error) {
+      console.error('M&A clause filing search error:', error);
       setClauseFilings([]);
+      setClauseSearchError('The SEC filing search failed. No zero-result conclusion can be drawn; retry the same search.');
     } finally {
       setClauseFilingSearching(false);
+      setClauseSearchCompleted(true);
     }
   }, [clauseFilingQuery]);
 
@@ -243,26 +264,26 @@ export default function MAResearch() {
     if (!selectedClauseFiling) return;
     const cacheKey = `${selectedClauseFiling.accessionNumber}:${selectedClause}`;
     if (clauseCache.has(cacheKey)) {
+      setClauseExtractionError('');
       setClauseResults(clauseCache.get(cacheKey)!);
       return;
     }
 
     setClauseLoading(true);
     setClauseResults(null);
+    setClauseExtractionError('');
     try {
-      let text = '';
-      if (selectedClauseFiling.cik && selectedClauseFiling.primaryDocument) {
-        text = await fetchFilingText(selectedClauseFiling.cik, selectedClauseFiling.accessionNumber, selectedClauseFiling.primaryDocument);
+      if (!selectedClauseFiling.cik || !selectedClauseFiling.primaryDocument) {
+        throw new Error('The filing document could not be resolved from SEC metadata.');
       }
-      if (text && text.length > 200) {
-        const result = await aiExtractClauses(text, [selectedClause]);
-        if (result) {
-          clauseCache.set(cacheKey, result);
-          setClauseResults(result);
-        }
-      }
+      const text = await fetchFilingText(selectedClauseFiling.cik, selectedClauseFiling.accessionNumber, selectedClauseFiling.primaryDocument);
+      if (text.trim().length <= 200) throw new Error('The filing text was unavailable.');
+      const result = await aiExtractClauses(text, [selectedClause]);
+      clauseCache.set(cacheKey, result);
+      setClauseResults(result);
     } catch (error) {
       console.error('Clause extraction error:', error);
+      setClauseExtractionError('Clause extraction failed. The filing evidence is unchanged; retry when the source and AI service are available.');
     } finally {
       setClauseLoading(false);
     }
@@ -279,18 +300,18 @@ export default function MAResearch() {
 
       <div className="ma-layout">
         <aside className="ma-sidebar glass-card">
-          <nav className="ma-nav">
-            <button className={`nav-btn ${activeTab === 'screener' ? 'active' : ''}`} onClick={() => setActiveTab('screener')}>
+          <nav className="ma-nav" aria-label="M&A research views">
+            <button type="button" aria-pressed={activeTab === 'screener'} className={`nav-btn ${activeTab === 'screener' ? 'active' : ''}`} onClick={() => setActiveTab('screener')}>
               <Briefcase size={18} /> Deal Screener
             </button>
-            <button className={`nav-btn ${activeTab === 'clauses' ? 'active' : ''}`} onClick={() => setActiveTab('clauses')}>
+            <button type="button" aria-pressed={activeTab === 'clauses'} className={`nav-btn ${activeTab === 'clauses' ? 'active' : ''}`} onClick={() => setActiveTab('clauses')}>
               <Scale size={18} /> Clause Library
             </button>
           </nav>
 
           <div className="sidebar-filters" style={{ marginTop: '32px' }}>
             <h4>Data Source</h4>
-            <div style={{ marginTop: '12px', padding: '12px', background: 'rgba(179,31,126,0.05)', border: '1px solid rgba(179,31,126,0.2)', borderRadius: '8px' }}>
+            <div style={{ marginTop: '12px', padding: '12px', background: 'var(--surface-accent)', border: '1px solid var(--border-color)', borderRadius: '8px' }}>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
                 Deal data sourced from SEC EDGAR full-text search. Click "Extract" on any deal to run AI analysis on the filing text.
               </p>
@@ -301,14 +322,16 @@ export default function MAResearch() {
         <main className="ma-main glass-card" style={{ overflow: 'auto' }}>
           {activeTab === 'screener' && (
             <div className="tab-pane fade-in">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <div className="ma-pane-header">
                 <div>
                   <h2>Recent M&A Filings</h2>
-                  <p className="text-sm text-slate-400" style={{ marginTop: '4px' }}>8-K, SC 13D, and SC TO-T filings mentioning mergers or acquisitions (past 12 months).</p>
+                  <p className="text-sm" style={{ marginTop: '4px', color: 'var(--text-secondary)' }}>8-K, SC 13D, and SC TO-T filings mentioning mergers or acquisitions (past 12 months).</p>
                 </div>
                 <div className="search-bar-inline">
                   <Search size={16} className="search-bar-icon" />
+                  <label className="sr-only" htmlFor="ma-entity-filter">Filter M&amp;A filings by entity name</label>
                   <input
+                    id="ma-entity-filter"
                     type="text"
                     placeholder="Search deals by company (press Enter)..."
                     value={searchQuery}
@@ -319,8 +342,13 @@ export default function MAResearch() {
               </div>
 
               {dealLoading ? (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px', gap: '8px', color: 'var(--text-secondary)' }}>
+                <div role="status" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px', gap: '8px', color: 'var(--text-muted)' }}>
                   <Loader2 size={16} className="spinner" /> Loading M&A filings from EDGAR...
+                </div>
+              ) : dealError ? (
+                <div role="alert" style={{ padding: '32px', textAlign: 'center', color: 'var(--status-error)' }}>
+                  <p>{dealError}</p>
+                  <button type="button" className="secondary-btn" onClick={() => void loadDeals()} style={{ marginTop: '12px' }}>Retry filings</button>
                 </div>
               ) : (
               <>
@@ -344,43 +372,48 @@ export default function MAResearch() {
                   />
                 </>
               )}
-              <div style={{ border: '1px solid rgba(51,65,85,0.5)', borderRadius: '12px', overflow: 'hidden', marginBottom: '32px' }}>
+              <div className="ma-table-scroll" style={{ border: '1px solid var(--border-color)', borderRadius: '12px', marginBottom: '32px' }}>
                 <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
+                  <caption className="sr-only">Recent SEC filings associated with mergers and acquisitions</caption>
                   <thead>
-                    <tr style={{ background: 'var(--input-bg)', borderBottom: '1px solid rgba(51,65,85,0.5)', fontSize: '0.875rem' }}>
-                      <th style={{ padding: '16px', fontWeight: 600, color: 'var(--text-secondary)' }}>Entity</th>
-                      <th style={{ padding: '16px', fontWeight: 600, color: 'var(--text-secondary)' }}>Form</th>
-                      <th style={{ padding: '16px', fontWeight: 600, color: 'var(--text-secondary)' }}>Filed</th>
-                      <th style={{ padding: '16px', fontWeight: 600, color: 'var(--text-secondary)' }}>AI Details</th>
-                      <th style={{ padding: '16px', fontWeight: 600, color: 'var(--text-secondary)' }}></th>
+                    <tr style={{ background: 'var(--table-header-bg)', borderBottom: '1px solid var(--table-header-border)', fontSize: '0.875rem' }}>
+                      <th scope="col" style={{ padding: '16px', fontWeight: 600, color: 'var(--text-primary)' }}>Entity</th>
+                      <th scope="col" style={{ padding: '16px', fontWeight: 600, color: 'var(--text-primary)' }}>Form</th>
+                      <th scope="col" style={{ padding: '16px', fontWeight: 600, color: 'var(--text-primary)' }}>Filed</th>
+                      <th scope="col" style={{ padding: '16px', fontWeight: 600, color: 'var(--text-primary)' }}>AI Details</th>
+                      <th scope="col" style={{ padding: '16px', fontWeight: 600, color: 'var(--text-primary)' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredDeals.length === 0 ? (
-                      <tr><td colSpan={5} style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)' }}>No M&A filings found.</td></tr>
+                      <tr><td colSpan={5} style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)' }}>No M&amp;A filings found.</td></tr>
                     ) : filteredDeals.map((deal, idx) => (
-                      <tr key={idx} style={{ borderBottom: '1px solid rgba(51,65,85,0.3)', fontSize: '0.875rem' }}>
+                      <tr key={idx} style={{ borderBottom: '1px solid var(--border-color)', fontSize: '0.875rem' }}>
                         <td style={{ padding: '16px', fontWeight: 500, color: 'var(--text-primary)' }}>{deal.entityName}</td>
                         <td style={{ padding: '16px' }}>
-                          <span style={{ background: 'var(--surface-panel)', padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{deal.formType}</span>
+                          <span style={{ background: 'var(--surface-subtle)', padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{deal.formType}</span>
                         </td>
-                        <td style={{ padding: '16px', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', fontSize: '0.75rem' }}>{deal.fileDate}</td>
+                        <td style={{ padding: '16px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: '0.75rem' }}>{deal.fileDate}</td>
                         <td style={{ padding: '16px' }}>
                           {deal.extracting ? (
-                            <span style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <span role="status" style={{ color: 'var(--text-muted)', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
                               <Loader2 size={12} className="spinner" /> Extracting...
                             </span>
                           ) : deal.extractedDetails ? (
-                            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-primary)' }}>
                               <div>{deal.extractedDetails.target} / {deal.extractedDetails.acquirer}</div>
-                              <div style={{ color: '#4ADE80' }}>{deal.extractedDetails.value} — {deal.extractedDetails.dealType}</div>
+                              <div style={{ color: 'var(--status-success)' }}>{deal.extractedDetails.value} — {deal.extractedDetails.dealType}</div>
                             </div>
-                          ) : deal.extractedDetails === null ? (
-                            <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>No details found</span>
+                          ) : deal.extractionError ? (
+                            <span role="alert" style={{ color: 'var(--status-error)', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                              {deal.extractionError}
+                              <button type="button" className="secondary-btn" onClick={() => void handleExtractDetails(dealFilings.indexOf(deal))}>Retry</button>
+                            </span>
                           ) : (
                             <button
+                              type="button"
                               onClick={() => handleExtractDetails(dealFilings.indexOf(deal))}
-                              style={{ background: 'rgba(179,31,126,0.1)', border: '1px solid rgba(179,31,126,0.3)', color: '#D66CAE', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', cursor: 'pointer' }}
+                              style={{ background: 'var(--interactive-hover)', border: '1px solid color-mix(in srgb, var(--accent-primary) 30%, transparent)', color: 'var(--accent-primary)', padding: '4px 10px', borderRadius: '6px', fontSize: '0.75rem', cursor: 'pointer' }}
                             >
                               Extract with AI
                             </button>
@@ -392,7 +425,7 @@ export default function MAResearch() {
                               href={`https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&accession=${deal.accessionNumber}&type=${deal.formType}&dateb=&owner=include&count=1`}
                               target="_blank"
                               rel="noreferrer"
-                              style={{ color: '#D66CAE', fontSize: '0.75rem', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '4px', textDecoration: 'none' }}
+                              style={{ color: 'var(--accent-primary)', fontSize: '0.75rem', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '4px', textDecoration: 'none' }}
                             >
                               <FileSearch size={14} /> SEC.gov
                             </a>
@@ -413,24 +446,29 @@ export default function MAResearch() {
             <div className="tab-pane fade-in">
               <div style={{ marginBottom: '24px' }}>
                 <h2>AI Clause Extraction</h2>
-                <p className="text-sm text-slate-400" style={{ marginTop: '4px' }}>Search for a merger filing, then extract specific clause types with AI.</p>
+                <p className="text-sm" style={{ marginTop: '4px', color: 'var(--text-secondary)' }}>Search for a merger filing, then extract specific clause types with AI.</p>
               </div>
 
               {/* Step 1: Find a filing */}
-              <div style={{ background: 'rgba(15,23,42,0.5)', border: '1px solid var(--input-border)', padding: '16px', borderRadius: '12px', marginBottom: '24px' }}>
-                <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.025em', fontWeight: 600, display: 'block', marginBottom: '8px' }}>
+              <div className="ma-clause-step" style={{ marginBottom: '24px' }}>
+                <label htmlFor="ma-clause-filing-search" style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.025em', fontWeight: 600, display: 'block', marginBottom: '8px' }}>
                   Step 1: Search for a merger filing
                 </label>
-                <div style={{ display: 'flex', gap: '8px' }}>
+                <div className="ma-clause-search-row">
                   <input
+                    id="ma-clause-filing-search"
                     type="text"
                     placeholder="e.g., merger agreement, acquisition..."
                     value={clauseFilingQuery}
-                    onChange={e => setClauseFilingQuery(e.target.value)}
+                    onChange={e => {
+                      setClauseFilingQuery(e.target.value);
+                      setClauseSearchCompleted(false);
+                      setClauseSearchError('');
+                    }}
                     onKeyDown={e => e.key === 'Enter' && handleClauseFilingSearch()}
-                    style={{ flex: 1, padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--input-border)', background: 'var(--surface-panel)', color: 'var(--text-primary)', fontSize: '0.85rem' }}
+                    style={{ flex: 1, padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--input-border)', background: 'var(--input-bg)', color: 'var(--text-primary)', fontSize: '0.85rem' }}
                   />
-                  <button className="primary-btn sm" onClick={handleClauseFilingSearch} disabled={clauseFilingSearching}>
+                  <button type="button" className="primary-btn sm" onClick={handleClauseFilingSearch} disabled={clauseFilingSearching}>
                     {clauseFilingSearching ? <Loader2 size={14} className="spinner" /> : <Search size={14} />} Search
                   </button>
                 </div>
@@ -438,34 +476,49 @@ export default function MAResearch() {
                 {clauseFilings.length > 0 && (
                   <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                     {clauseFilings.map((f, i) => (
-                      <div
+                      <button
+                        type="button"
                         key={i}
-                        onClick={() => setSelectedClauseFiling(f)}
+                        className="ma-clause-option"
+                        aria-pressed={selectedClauseFiling?.accessionNumber === f.accessionNumber}
+                        onClick={() => {
+                          setSelectedClauseFiling(f);
+                          setClauseResults(null);
+                          setClauseExtractionError('');
+                        }}
                         style={{
-                          padding: '8px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem',
-                          background: selectedClauseFiling?.accessionNumber === f.accessionNumber ? 'rgba(179,31,126,0.15)' : 'var(--surface-panel)',
-                          border: `1px solid ${selectedClauseFiling?.accessionNumber === f.accessionNumber ? 'rgba(179,31,126,0.3)' : 'var(--surface-panel)'}`,
-                          color: 'var(--text-primary)'
+                          background: selectedClauseFiling?.accessionNumber === f.accessionNumber ? 'var(--interactive-hover-strong)' : 'var(--surface-panel-strong)',
+                          border: `1px solid ${selectedClauseFiling?.accessionNumber === f.accessionNumber ? 'var(--accent-primary)' : 'var(--border-color)'}`,
                         }}
                       >
-                        {f.entityName} <span style={{ color: 'var(--text-secondary)' }}>— {f.formType} ({f.fileDate})</span>
-                      </div>
+                        {f.entityName} <span style={{ color: 'var(--text-muted)' }}>— {f.formType} ({f.fileDate})</span>
+                      </button>
                     ))}
                   </div>
+                )}
+                {clauseSearchError && !clauseFilingSearching && (
+                  <div role="alert" style={{ marginTop: '12px', color: 'var(--status-error)' }}>
+                    <p>{clauseSearchError}</p>
+                    <button type="button" className="secondary-btn" onClick={() => void handleClauseFilingSearch()} style={{ marginTop: '8px' }}>Retry filing search</button>
+                  </div>
+                )}
+                {clauseSearchCompleted && !clauseFilingSearching && !clauseSearchError && clauseFilings.length === 0 && (
+                  <p style={{ marginTop: '12px', color: 'var(--text-muted)' }}>No matching merger filings were returned.</p>
                 )}
               </div>
 
               {/* Step 2: Select clause type and extract */}
-              <div style={{ background: 'rgba(15,23,42,0.5)', border: '1px solid var(--input-border)', padding: '16px', borderRadius: '12px', marginBottom: '24px', display: 'flex', gap: '16px', alignItems: 'flex-end' }}>
+              <div className="ma-clause-step ma-clause-controls" style={{ marginBottom: '24px', gap: '16px' }}>
                 <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.025em', fontWeight: 600, display: 'block', marginBottom: '8px' }}>
+                  <label htmlFor="ma-clause-type" style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.025em', fontWeight: 600, display: 'block', marginBottom: '8px' }}>
                     Step 2: Select clause type
                   </label>
                   <select
+                    id="ma-clause-type"
                     className="select-input"
                     style={{ width: '100%' }}
                     value={selectedClause}
-                    onChange={e => { setSelectedClause(e.target.value); setClauseResults(null); }}
+                    onChange={e => { setSelectedClause(e.target.value); setClauseResults(null); setClauseExtractionError(''); }}
                   >
                     {CLAUSE_TYPES.map(k => (
                       <option key={k}>{k}</option>
@@ -473,6 +526,7 @@ export default function MAResearch() {
                   </select>
                 </div>
                 <button
+                  type="button"
                   className="primary-btn sm"
                   onClick={handleExtractClauses}
                   disabled={!selectedClauseFiling || clauseLoading}
@@ -483,17 +537,24 @@ export default function MAResearch() {
 
               {/* Results */}
               {clauseLoading && (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px', gap: '8px', color: 'var(--text-secondary)' }}>
+                <div role="status" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px', gap: '8px', color: 'var(--text-muted)' }}>
                   <Loader2 size={16} className="spinner" /> AI is extracting clause language...
                 </div>
               )}
 
-              {clauseResults && !clauseLoading && (
+              {clauseExtractionError && !clauseLoading && (
+                <div role="alert" style={{ padding: '32px', textAlign: 'center', color: 'var(--status-error)' }}>
+                  <p>{clauseExtractionError}</p>
+                  <button type="button" className="secondary-btn" onClick={() => void handleExtractClauses()} style={{ marginTop: '8px' }}>Retry clause extraction</button>
+                </div>
+              )}
+
+              {clauseResults && !clauseLoading && !clauseExtractionError && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   {Object.entries(clauseResults).map(([clauseType, data]) => (
-                    <div key={clauseType} style={{ background: 'var(--input-bg)', border: '1px solid var(--input-border)', borderRadius: '12px', padding: '20px' }}>
+                    <div key={clauseType} style={{ background: 'var(--surface-panel-strong)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '20px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-                        <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#D66CAE' }}>{clauseType}</h3>
+                        <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--accent-primary)' }}>{clauseType}</h3>
                         <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{data.section}</span>
                       </div>
                       <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>{data.text}</p>
@@ -505,13 +566,13 @@ export default function MAResearch() {
                 </div>
               )}
 
-              {!clauseLoading && !clauseResults && selectedClauseFiling && (
+              {!clauseLoading && !clauseResults && !clauseExtractionError && selectedClauseFiling && (
                 <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)' }}>
                   Select a clause type and click "Extract Clause" to analyze the filing.
                 </div>
               )}
 
-              {!selectedClauseFiling && !clauseLoading && (
+              {!selectedClauseFiling && !clauseLoading && !clauseFilingSearching && !clauseSearchError && (
                 <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)' }}>
                   Search for a merger filing above, then select it to extract clauses.
                 </div>
@@ -523,4 +584,3 @@ export default function MAResearch() {
     </div>
   );
 }
-

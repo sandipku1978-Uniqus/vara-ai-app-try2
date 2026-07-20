@@ -8,7 +8,7 @@ describe('secApi', () => {
   beforeEach(() => {
     mockFetch.mockReset();
     vi.resetModules();
-    delete process.env.NEXT_PUBLIC_USE_ELASTICSEARCH;
+    delete process.env.NEXT_PUBLIC_USE_ENRICHED_SEARCH;
   });
 
   describe('CIK_MAP', () => {
@@ -124,8 +124,8 @@ describe('secApi', () => {
   });
 
   describe('searchEdgarFilings backend selection', () => {
-    it('uses the legacy EFTS endpoint when NEXT_PUBLIC_USE_ELASTICSEARCH is the string "false"', async () => {
-      process.env.NEXT_PUBLIC_USE_ELASTICSEARCH = 'false';
+    it('uses the SEC EFTS endpoint when NEXT_PUBLIC_USE_ENRICHED_SEARCH is the string "false"', async () => {
+      process.env.NEXT_PUBLIC_USE_ENRICHED_SEARCH = 'false';
       mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({ hits: { hits: [], total: { value: 0 } } }),
@@ -139,8 +139,8 @@ describe('secApi', () => {
       expect(String(mockFetch.mock.calls[0][0])).not.toContain('/api/es-search?');
     });
 
-    it('keeps the legacy EFTS endpoint by default even when NEXT_PUBLIC_USE_ELASTICSEARCH is the string "true"', async () => {
-      process.env.NEXT_PUBLIC_USE_ELASTICSEARCH = 'true';
+    it('keeps the SEC EFTS endpoint by default even when enriched search is enabled', async () => {
+      process.env.NEXT_PUBLIC_USE_ENRICHED_SEARCH = 'true';
       mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({ hits: { hits: [], total: { value: 0 } } }),
@@ -154,16 +154,51 @@ describe('secApi', () => {
       expect(String(mockFetch.mock.calls[0][0])).not.toContain('/api/es-search?');
     });
 
-    const esHit = {
+    it('reports bounded plain-EFTS collection as partial candidate coverage', async () => {
+      const onCoverage = vi.fn();
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          hits: {
+            hits: Array.from({ length: 10 }, (_, index) => ({
+              _id: `hit-${index}`,
+              _source: { file_date: '2026-01-15', form: '10-K' },
+            })),
+            total: { value: 5_000, relation: 'eq' },
+          },
+        }),
+      });
+
+      const { searchEdgarFilings } = await import('../services/secApi');
+      const hits = await searchEdgarFilings('controls', '10-K', '2023-01-01', '2026-03-22', '', 5, { onCoverage });
+
+      expect(hits).toHaveLength(5);
+      expect(onCoverage).toHaveBeenCalledWith({ examined: 5, upstreamTotal: 5_000, complete: false });
+    });
+
+    it('reports an exhausted zero-hit plain-EFTS search as complete', async () => {
+      const onCoverage = vi.fn();
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({ hits: { hits: [], total: { value: 0, relation: 'eq' } } }),
+      });
+
+      const { searchEdgarFilings } = await import('../services/secApi');
+      await searchEdgarFilings('no-such-disclosure', '10-K', '2023-01-01', '2026-03-22', '', 10, { onCoverage });
+
+      expect(onCoverage).toHaveBeenCalledWith({ examined: 0, upstreamTotal: 0, complete: true });
+    });
+
+    const enrichedHit = {
       _id: '0000320193-26-000001:aapl-10k.htm',
       _source: { file_date: '2026-01-15', form: '10-K' },
     };
 
-    it('uses the Elasticsearch endpoint when the caller explicitly opts in', async () => {
-      process.env.NEXT_PUBLIC_USE_ELASTICSEARCH = 'true';
+    it('uses the enriched endpoint when the caller explicitly opts in', async () => {
+      process.env.NEXT_PUBLIC_USE_ENRICHED_SEARCH = 'true';
       mockFetch.mockResolvedValue({
         ok: true,
-        json: async () => ({ hits: { hits: [esHit], total: { value: 1 } } }),
+        json: async () => ({ hits: { hits: [enrichedHit], total: { value: 1 } } }),
       });
 
       const { searchEdgarFilings } = await import('../services/secApi');
@@ -174,18 +209,38 @@ describe('secApi', () => {
         '2026-03-22',
         '',
         5,
-        { useElasticsearch: true }
+        { useEnrichedSearch: true }
       );
 
       expect(mockFetch).toHaveBeenCalledTimes(1);
       expect(String(mockFetch.mock.calls[0][0])).toContain('/api/es-search?');
     });
 
-    it('forwards the search mode to Elasticsearch when provided', async () => {
-      process.env.NEXT_PUBLIC_USE_ELASTICSEARCH = 'true';
+    it('reports enriched candidate coverage to the caller', async () => {
+      process.env.NEXT_PUBLIC_USE_ENRICHED_SEARCH = 'true';
+      const onCoverage = vi.fn();
       mockFetch.mockResolvedValue({
         ok: true,
-        json: async () => ({ hits: { hits: [esHit], total: { value: 1 } } }),
+        json: async () => ({
+          hits: { hits: [enrichedHit], total: { value: 1, relation: 'eq' } },
+          meta: { candidateCoverage: { examined: 250, upstreamTotal: 1200, complete: false } },
+        }),
+      });
+
+      const { searchEdgarFilings } = await import('../services/secApi');
+      await searchEdgarFilings('controls', '10-K', '2023-01-01', '2026-03-22', '', 5, {
+        useEnrichedSearch: true,
+        onCoverage,
+      });
+
+      expect(onCoverage).toHaveBeenCalledWith({ examined: 250, upstreamTotal: 1200, complete: false });
+    });
+
+    it('does not send the client research mode to the enriched endpoint', async () => {
+      process.env.NEXT_PUBLIC_USE_ENRICHED_SEARCH = 'true';
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({ hits: { hits: [enrichedHit], total: { value: 1 } } }),
       });
 
       const { searchEdgarFilings } = await import('../services/secApi');
@@ -196,15 +251,16 @@ describe('secApi', () => {
         '2026-03-22',
         '',
         5,
-        { mode: 'semantic', useElasticsearch: true }
+        { useEnrichedSearch: true }
       );
 
       expect(mockFetch).toHaveBeenCalledTimes(1);
-      expect(String(mockFetch.mock.calls[0][0])).toContain('mode=semantic');
+      expect(String(mockFetch.mock.calls[0][0])).not.toContain('mode=');
     });
 
-    it('falls back to EDGAR EFTS when Elasticsearch fails', async () => {
-      process.env.NEXT_PUBLIC_USE_ELASTICSEARCH = 'true';
+    it('falls back to EDGAR EFTS when enriched search fails', async () => {
+      process.env.NEXT_PUBLIC_USE_ENRICHED_SEARCH = 'true';
+      const onDegraded = vi.fn();
       mockFetch.mockImplementation(async (url: string) => {
         if (String(url).includes('/api/es-search?')) {
           return { ok: false, status: 503, statusText: 'Service Unavailable' };
@@ -223,16 +279,17 @@ describe('secApi', () => {
         '2026-03-22',
         '',
         5,
-        { useElasticsearch: true }
+        { useEnrichedSearch: true, onDegraded }
       );
 
       const urls = mockFetch.mock.calls.map(call => String(call[0]));
       expect(urls[0]).toContain('/api/es-search?');
       expect(urls.some(url => url.includes('/api/sec-efts?'))).toBe(true);
+      expect(onDegraded).toHaveBeenCalledWith(expect.stringContaining('live SEC EDGAR fallback'));
     });
 
-    it('falls back to EDGAR EFTS when Elasticsearch returns zero hits', async () => {
-      process.env.NEXT_PUBLIC_USE_ELASTICSEARCH = 'true';
+    it('falls back to EDGAR EFTS when enriched search returns zero hits', async () => {
+      process.env.NEXT_PUBLIC_USE_ENRICHED_SEARCH = 'true';
       mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({ hits: { hits: [], total: { value: 0 } } }),
@@ -246,12 +303,60 @@ describe('secApi', () => {
         '2026-03-22',
         '',
         5,
-        { useElasticsearch: true }
+        { useEnrichedSearch: true }
       );
 
       const urls = mockFetch.mock.calls.map(call => String(call[0]));
       expect(urls[0]).toContain('/api/es-search?');
       expect(urls.some(url => url.includes('/api/sec-efts?'))).toBe(true);
+    });
+  });
+
+  describe('authoritative totals and filing indexes', () => {
+    it('returns the EDGAR total separately from a bounded result page', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({ hits: { hits: [], total: { value: 1171, relation: 'eq' } } }),
+      });
+
+      const { fetchEdgarSearchTotal } = await import('../services/secApi');
+      await expect(fetchEdgarSearchTotal('', 'S-1,S-1/A,F-1,F-1/A,424B4', '2026-01-01', '2026-07-19'))
+        .resolves.toEqual({ value: 1171, relation: 'eq' });
+
+      const url = String(mockFetch.mock.calls[0][0]);
+      expect(url).toContain('/api/sec-efts?');
+      expect(url).toContain('forms=S-1%2CS-1/A%2CF-1%2CF-1/A%2C424B4');
+      expect(url).toContain('size=10');
+    });
+
+    it('parses the official filing directory index into document URLs', async () => {
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          directory: {
+            item: [
+              { name: 'aapl-20230930.htm', type: 'text/html', size: 1442 },
+              { name: 'Financial_Report.xlsx', type: 'application/vnd.ms-excel', size: '925' },
+              { name: 'subdir', type: 'dir', size: 0 },
+            ],
+          },
+        }),
+      });
+
+      const { fetchFilingIndex } = await import('../services/secApi');
+      const documents = await fetchFilingIndex('0000320193-23-000106');
+
+      expect(String(mockFetch.mock.calls[0][0])).toContain(
+        'path=Archives/edgar/data/320193/000032019323000106/index.json'
+      );
+      expect(documents).toHaveLength(2);
+      expect(documents[0]).toMatchObject({
+        name: 'aapl-20230930.htm',
+        description: 'aapl-20230930.htm',
+        type: 'text/html',
+        size: '1442',
+      });
+      expect(documents[0].url).toContain('/320193/000032019323000106/aapl-20230930.htm');
     });
   });
 });

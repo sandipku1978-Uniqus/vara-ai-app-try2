@@ -11,6 +11,31 @@
   align-items: flex-end;
 }
 
+.board-company-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-end;
+  min-width: 0;
+}
+
+.board-compare-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.board-compare-select {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+
 .board-title h1 {
   font-size: 1.8rem;
   margin-bottom: 4px;
@@ -25,6 +50,7 @@
   gap: 24px;
   flex: 1;
   min-height: 0;
+  min-width: 0;
 }
 
 .board-sidebar {
@@ -59,8 +85,8 @@
 }
 
 .board-nav .nav-btn:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: white;
+  background: var(--interactive-hover);
+  color: var(--text-primary);
 }
 
 .board-nav .nav-btn.active {
@@ -73,7 +99,7 @@
   display: flex;
   flex-direction: column;
   padding-bottom: 12px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .gov-metric:last-child {
@@ -87,6 +113,24 @@
   flex-direction: column;
   overflow-y: auto;
   min-height: 0;
+  min-width: 0;
+}
+
+.board-table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.board-diversity-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.board-comp-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
 }
 
 /* Reusing tab-pane and pane-header styles universally */
@@ -97,6 +141,67 @@
 
 .table-container {
   /* Enforces rounded corners on table borders */
-  background: rgba(10, 15, 30, 0.5);
+  background: var(--surface-panel);
 }
 
+@media (max-width: 960px) {
+  .board-header {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .board-company-controls {
+    align-items: stretch;
+  }
+
+  .board-compare-controls {
+    justify-content: flex-start;
+  }
+
+  .board-layout {
+    flex-direction: column;
+  }
+
+  .board-sidebar {
+    width: 100%;
+  }
+
+  .board-nav {
+    flex-direction: row;
+    overflow-x: auto;
+  }
+
+  .board-nav .nav-btn {
+    flex: 0 0 auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .board-container {
+    gap: 16px;
+  }
+
+  .board-title h1 {
+    font-size: 1.45rem;
+  }
+
+  .board-main {
+    padding: 16px;
+  }
+
+  .board-diversity-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .board-comp-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .ticker-selector {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+}

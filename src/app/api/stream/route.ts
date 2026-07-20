@@ -1,47 +1,48 @@
-import { Anthropic } from '@anthropic-ai/sdk';
 import { cacheService } from '../../../lib/cache';
+import { createAnthropicClient, isAnthropicTimeout } from '../../../lib/ai-runtime';
 import { SEC_RESEARCH_SYSTEM_PROMPT } from '../../../lib/systemPrompts';
-import { checkAiRateLimit, rateLimitResponse } from '../../../lib/rate-limit';
+import {
+  acquireAiConcurrency,
+  checkAiRateLimit,
+  estimateModelTokenReservation,
+  rateLimitResponse,
+  releaseAiConcurrency,
+  reserveAiTokenBudget,
+} from '../../../lib/rate-limit';
+import { requireApiAccess } from '../../../lib/api-auth';
+import { validateChatRequest } from '../../../lib/ai-input';
+import { buildFrameworkContext } from '../../../lib/framework-context';
 import crypto from 'crypto';
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY || '',
-});
+const anthropic = createAnthropicClient(process.env.ANTHROPIC_API_KEY || '');
 
 const CLAUDE_MODEL = process.env.ANTHROPIC_MODEL || 'claude-sonnet-5';
 
 export async function POST(req: Request) {
   try {
-    const rate = checkAiRateLimit(req);
-    if (!rate.allowed) return rateLimitResponse(rate.retryAfterSeconds);
-    const body = await req.json();
-    const { prompt, messages = [], maxTokens = 4096, temperature = 0.2, frameworks = [] } = body;
+    const access = await requireApiAccess();
+    if (access.response) return access.response;
 
-    if (!prompt && (!messages || messages.length === 0)) {
-      return new Response(JSON.stringify({ error: 'Missing prompt or messages' }), { status: 400 });
-    }
+    const validation = await validateChatRequest(req);
+    if (validation.response) return validation.response;
+    const { prompt, messages, maxTokens, frameworks } = validation.value;
+    const isComplex = frameworks.length > 0;
+    const effectiveMaxTokens = isComplex ? 8192 : maxTokens;
 
-    // Input validation
-    const clampedMaxTokens = Math.min(Math.max(Number(maxTokens) || 4096, 1), 16384);
-    if (messages.length > 100) {
-      return new Response(JSON.stringify({ error: 'Too many messages (max 100)' }), { status: 400 });
-    }
+    const rate = await checkAiRateLimit(req, access.identity, {
+      operation: 'stream',
+    });
+    if (!rate.allowed) return rateLimitResponse(rate);
 
     if (!process.env.ANTHROPIC_API_KEY) {
-      return new Response(
-        JSON.stringify({ text: 'API Key not configured. This is a fallback response from the local development server simulating the Copilot.' }),
-        { status: 200, headers: { 'Content-Type': 'application/json' } }
-      );
+      return Response.json({ error: 'AI service is not configured.' }, { status: 503 });
     }
 
     // 1. Check cache — if hit, return JSON immediately (no streaming needed).
     //    Key includes frameworks (they change the injected KB and model config)
     //    and the EFFECTIVE params, so different configs can't collide.
-    const isComplexForKey = frameworks.length > 0;
     const payloadSignature = JSON.stringify({ prompt, messages, frameworks: [...frameworks].sort() });
-    const keyMaxTokens = isComplexForKey ? 8192 : maxTokens;
-    const keyTemp = isComplexForKey ? 1 : temperature;
-    const hash = crypto.createHash('sha256').update(`${payloadSignature}-${keyMaxTokens}-${keyTemp}`).digest('hex');
+    const hash = crypto.createHash('sha256').update(`${access.identity.cacheScope}:${payloadSignature}-${effectiveMaxTokens}`).digest('hex');
     const cacheKey = `ai-cache:${hash}`;
 
     const cachedResponse = await cacheService.get<string>(cacheKey);
@@ -53,41 +54,47 @@ export async function POST(req: Request) {
     }
 
     // 2. Build messages with framework KB context
-    let kbContext = '';
-    if (frameworks.includes('IFRS')) {
-      try {
-        kbContext += '\nIFRS Context: ' + require('../../../data/standards/ifrs-kb.json').standards.map((s: any) => `${s.id}: ${s.keyDifferences.join(' ')}`).join('\n');
-      } catch (e) {}
-    }
-    if (frameworks.includes('Ind AS')) {
-      try {
-        kbContext += '\nInd AS Context: ' + require('../../../data/standards/ind-as-kb.json').standards.map((s: any) => `${s.id}: ${s.keyDifferences.join(' ')}`).join('\n');
-      } catch (e) {}
-    }
+    const kbContext = buildFrameworkContext(frameworks);
 
-    const apiMessages = messages.length > 0 ? messages : [{ role: 'user' as const, content: prompt }];
+    const apiMessages = messages.length > 0 ? messages.map(message => ({ ...message })) : [{ role: 'user' as const, content: prompt }];
     if (kbContext && apiMessages.length > 0) {
       apiMessages[apiMessages.length - 1].content += `\n\n[Reference material — internal cross-framework knowledge base, NOT from any filing]:${kbContext}`;
     }
 
-    const isComplex = frameworks.length > 0;
+    const estimatedTokens = estimateModelTokenReservation(
+      SEC_RESEARCH_SYSTEM_PROMPT.length + apiMessages.reduce((total, message) => total + message.content.length, 0),
+      effectiveMaxTokens
+    );
 
     // 3. Stream response via SSE
     // Note: Extended thinking is not compatible with streaming, so complex queries
     // fall back to non-streaming with thinking enabled
     if (isComplex) {
-      const msg = await anthropic.messages.create({
-        model: CLAUDE_MODEL,
-        max_tokens: 8192,
-        // Sonnet 5: adaptive thinking only; temperature must be omitted
-        thinking: { type: 'adaptive' },
-        system: [{
-          type: 'text',
-          text: SEC_RESEARCH_SYSTEM_PROMPT,
-          cache_control: { type: 'ephemeral' },
-        }],
-        messages: apiMessages,
-      });
+      const concurrency = await acquireAiConcurrency(access.identity);
+      if (!concurrency.allowed) return rateLimitResponse(concurrency);
+      const budget = await reserveAiTokenBudget(access.identity, estimatedTokens);
+      if (!budget.allowed) {
+        await releaseAiConcurrency(concurrency.lease);
+        return rateLimitResponse(budget);
+      }
+      const msg = await (async () => {
+        try {
+          return await anthropic.messages.create({
+            model: CLAUDE_MODEL,
+            max_tokens: 8192,
+            // Sonnet 5: adaptive thinking only; temperature must be omitted
+            thinking: { type: 'adaptive' },
+            system: [{
+              type: 'text',
+              text: SEC_RESEARCH_SYSTEM_PROMPT,
+              cache_control: { type: 'ephemeral' },
+            }],
+            messages: apiMessages,
+          }, { signal: req.signal });
+        } finally {
+          await releaseAiConcurrency(concurrency.lease);
+        }
+      })();
 
       const textPayload = msg.content
         .filter((block) => block.type === 'text')
@@ -106,19 +113,33 @@ export async function POST(req: Request) {
     }
 
     // 4. SSE streaming for standard queries
-    const stream = anthropic.messages.stream({
-      model: CLAUDE_MODEL,
-      max_tokens: clampedMaxTokens,
-      // Sonnet 5 runs adaptive thinking when the field is omitted and rejects
-      // non-default temperature — keep the fast SSE path explicitly thinking-off
-      thinking: { type: 'disabled' },
-      system: [{
-        type: 'text',
-        text: SEC_RESEARCH_SYSTEM_PROMPT,
-        cache_control: { type: 'ephemeral' },
-      }],
-      messages: apiMessages,
-    });
+    const concurrency = await acquireAiConcurrency(access.identity);
+    if (!concurrency.allowed) return rateLimitResponse(concurrency);
+    const budget = await reserveAiTokenBudget(access.identity, estimatedTokens);
+    if (!budget.allowed) {
+      await releaseAiConcurrency(concurrency.lease);
+      return rateLimitResponse(budget);
+    }
+    const stream = await (async () => {
+      try {
+        return anthropic.messages.stream({
+          model: CLAUDE_MODEL,
+          max_tokens: maxTokens,
+          // Sonnet 5 runs adaptive thinking when the field is omitted and rejects
+          // non-default temperature — keep the fast SSE path explicitly thinking-off
+          thinking: { type: 'disabled' },
+          system: [{
+            type: 'text',
+            text: SEC_RESEARCH_SYSTEM_PROMPT,
+            cache_control: { type: 'ephemeral' },
+          }],
+          messages: apiMessages,
+        }, { signal: req.signal });
+      } catch (error) {
+        await releaseAiConcurrency(concurrency.lease);
+        throw error;
+      }
+    })();
 
     const encoder = new TextEncoder();
     let fullText = '';
@@ -144,15 +165,22 @@ export async function POST(req: Request) {
           controller.close();
 
           // Cache the full response after stream completes
-          const ttlSeconds = temperature < 0.3 ? 604800 : 3600;
-          await cacheService.set(cacheKey, fullText, { ex: ttlSeconds });
+          await cacheService.set(cacheKey, fullText, { ex: 3600 });
         } catch (error) {
           controller.enqueue(
-            encoder.encode(`data: ${JSON.stringify({ error: 'Stream error' })}\n\n`)
+            encoder.encode(`data: ${JSON.stringify({
+              error: isAnthropicTimeout(error) ? 'AI generation timed out.' : 'Stream error',
+            })}\n\n`)
           );
           controller.enqueue(encoder.encode('data: [DONE]\n\n'));
           controller.close();
+        } finally {
+          await releaseAiConcurrency(concurrency.lease);
         }
+      },
+      cancel() {
+        stream.abort();
+        void releaseAiConcurrency(concurrency.lease);
       },
     });
 
@@ -164,6 +192,12 @@ export async function POST(req: Request) {
       },
     });
   } catch (error: unknown) {
+    if (req.signal.aborted) {
+      return Response.json({ error: 'Request cancelled.' }, { status: 499 });
+    }
+    if (isAnthropicTimeout(error)) {
+      return Response.json({ error: 'AI generation timed out.' }, { status: 504 });
+    }
     console.error('Claude Stream API Error:', error);
     return new Response(JSON.stringify({ error: 'An error occurred processing your request' }), { status: 500 });
   }

@@ -6,6 +6,9 @@
 
 name: URC data refresh
 
+permissions:
+  contents: read
+
 on:
   schedule:
     - cron: '30 10 * * *'   # daily 10:30 UTC (~6:30am ET) — after EDGAR's overnight index update
@@ -28,13 +31,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      URC_SUPABASE_URL: ${{ secrets.URC_SUPABASE_URL }}
-      URC_SUPABASE_SERVICE_KEY: ${{ secrets.URC_SUPABASE_SERVICE_KEY }}
       EDGAR_USER_AGENT: 'Uniqus Research Center contact@uniqus.com'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
           cache: npm
@@ -43,12 +46,22 @@ jobs:
         run: npm ci --no-audit --no-fund
 
       - name: Refresh filing metadata
-        run: npx tsx data-pipeline/ingest-metadata.ts --since ${{ github.event.inputs.metadata_since_days || '3' }}
+        run: npx tsx data-pipeline/ingest-metadata.ts --since "$METADATA_SINCE_DAYS"
+        env:
+          METADATA_SINCE_DAYS: ${{ github.event.inputs.metadata_since_days || '3' }}
+          URC_SUPABASE_URL: ${{ secrets.URC_SUPABASE_URL }}
+          URC_SUPABASE_SERVICE_KEY: ${{ secrets.URC_SUPABASE_SERVICE_KEY }}
 
       - name: Enrich company SIC/state (incremental, self-completing)
         run: npx tsx data-pipeline/enrich-companies.ts --sic --limit 2000
+        env:
+          URC_SUPABASE_URL: ${{ secrets.URC_SUPABASE_URL }}
+          URC_SUPABASE_SERVICE_KEY: ${{ secrets.URC_SUPABASE_SERVICE_KEY }}
 
       # Weekly schedule (Sunday 11:00) or manual opt-in
       - name: Refresh auditor engagements
         if: github.event.schedule == '0 11 * * 0' || github.event.inputs.run_auditors == 'true'
         run: npx tsx data-pipeline/load-auditors.ts
+        env:
+          URC_SUPABASE_URL: ${{ secrets.URC_SUPABASE_URL }}
+          URC_SUPABASE_SERVICE_KEY: ${{ secrets.URC_SUPABASE_SERVICE_KEY }}

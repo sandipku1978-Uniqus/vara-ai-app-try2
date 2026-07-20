@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useId } from 'react';
 import { Search, X, Loader2 } from 'lucide-react';
 import { buildSecProxyUrl, loadTickerMap } from '../../services/secApi';
+import './CompanySearchInput.css';
 
 interface CompanySearchInputProps {
   onSelect: (ticker: string, cik: string) => void;
@@ -15,10 +16,12 @@ export default function CompanySearchInput({ onSelect, placeholder = 'Search tic
   const [results, setResults] = useState<{ ticker: string; cik: string; title?: string }[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
   const [tickerMap, setTickerMap] = useState<Record<string, string> | null>(null);
   const [titleMap, setTitleMap] = useState<Record<string, string>>({});
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const listboxId = useId();
 
   useEffect(() => {
     async function load() {
@@ -88,56 +91,80 @@ export default function CompanySearchInput({ onSelect, placeholder = 'Search tic
 
     setResults(matches.slice(0, 15));
     setShowDropdown(matches.length > 0);
+    setActiveIndex(matches.length > 0 ? 0 : -1);
   }, [tickerMap, titleMap]);
 
+  const chooseResult = useCallback((result: { ticker: string; cik: string }) => {
+    onSelect(result.ticker, result.cik);
+    setQuery(result.ticker);
+    setShowDropdown(false);
+    setActiveIndex(-1);
+    inputRef.current?.focus();
+  }, [onSelect]);
+
   return (
-    <div className={`company-search-input ${className}`} style={{ position: 'relative' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--input-bg)', border: '1px solid var(--input-border)', borderRadius: '12px', padding: '8px 12px' }}>
-        {loading ? <Loader2 size={14} className="spinner" /> : <Search size={14} style={{ color: '#7A6C7B' }} />}
+    <div className={`company-search-input ${className}`}>
+      <div className="company-search-control">
+        {loading ? <Loader2 size={14} className="spinner" aria-label="Loading company directory" /> : <Search size={14} aria-hidden="true" />}
         <input
           ref={inputRef}
           type="text"
           value={query}
           onChange={e => handleSearch(e.target.value)}
           onFocus={() => results.length > 0 && setShowDropdown(true)}
+          onKeyDown={event => {
+            if (event.key === 'ArrowDown' && results.length > 0) {
+              event.preventDefault();
+              setShowDropdown(true);
+              setActiveIndex(index => Math.min(index + 1, results.length - 1));
+            } else if (event.key === 'ArrowUp' && results.length > 0) {
+              event.preventDefault();
+              setShowDropdown(true);
+              setActiveIndex(index => Math.max(index - 1, 0));
+            } else if (event.key === 'Enter' && showDropdown && activeIndex >= 0) {
+              event.preventDefault();
+              chooseResult(results[activeIndex]);
+            } else if (event.key === 'Escape') {
+              setShowDropdown(false);
+              setActiveIndex(-1);
+            }
+          }}
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded={showDropdown}
+          aria-controls={listboxId}
+          aria-activedescendant={showDropdown && activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined}
+          aria-label={placeholder}
           placeholder={placeholder}
-          style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: 'var(--text-primary)', fontSize: '0.85rem' }}
+          className="company-search-field"
         />
         {query && (
-          <button onClick={() => { setQuery(''); setResults([]); setShowDropdown(false); }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-            <X size={14} style={{ color: 'var(--text-muted)' }} />
+          <button type="button" className="company-search-clear" aria-label="Clear company search" onClick={() => { setQuery(''); setResults([]); setShowDropdown(false); setActiveIndex(-1); inputRef.current?.focus(); }}>
+            <X size={14} aria-hidden="true" />
           </button>
         )}
       </div>
 
       {showDropdown && results.length > 0 && (
-        <div ref={dropdownRef} style={{
-          position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 50,
-          background: '#FFF9FC', border: '1px solid rgba(72,42,122,0.12)', borderRadius: '12px',
-          marginTop: '4px', maxHeight: '300px', overflowY: 'auto', boxShadow: '0 18px 42px rgba(58,30,65,0.12)'
-        }}>
-          {results.map(r => (
-            <div
+        <div ref={dropdownRef} id={listboxId} role="listbox" aria-label="Company matches" className="company-search-listbox">
+          {results.map((r, index) => (
+            <button
               key={r.ticker}
-              onClick={() => {
-                onSelect(r.ticker, r.cik);
-                setQuery(r.ticker);
-                setShowDropdown(false);
-              }}
-              style={{
-                padding: '8px 12px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between',
-                alignItems: 'center', borderBottom: '1px solid rgba(72,42,122,0.08)',
-                fontSize: '0.85rem', transition: 'background 0.1s'
-              }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(247,231,241,0.9)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+              id={`${listboxId}-option-${index}`}
+              type="button"
+              role="option"
+              aria-selected={index === activeIndex}
+              tabIndex={-1}
+              onClick={() => chooseResult(r)}
+              className={`company-search-option${index === activeIndex ? ' is-active' : ''}`}
+              onMouseMove={() => setActiveIndex(index)}
             >
-              <span>
-                <strong style={{ color: '#B31F7E' }}>{r.ticker}</strong>
-                {r.title && <span style={{ color: '#7A6C7B', marginLeft: '8px' }}>{r.title}</span>}
+              <span className="company-search-option-label">
+                <strong>{r.ticker}</strong>
+                {r.title && <span>{r.title}</span>}
               </span>
-              <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontFamily: 'var(--font-mono)' }}>CIK: {r.cik}</span>
-            </div>
+              <span className="company-search-option-cik">CIK: {r.cik}</span>
+            </button>
           ))}
         </div>
       )}

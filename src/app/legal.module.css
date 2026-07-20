@@ -1,0 +1,137 @@
+.legalPage {
+  width: min(920px, 100%);
+  margin: 0 auto;
+  padding: 32px 20px 64px;
+  color: var(--text-primary);
+}
+
+.legalHeader,
+.legalSection,
+.consentPanel {
+  border: 1px solid var(--border-color);
+  background: var(--surface-panel);
+  box-shadow: var(--glow-shadow);
+}
+
+.legalHeader {
+  margin-bottom: 20px;
+  padding: clamp(24px, 5vw, 48px);
+  border-radius: 24px;
+}
+
+.eyebrow {
+  margin-bottom: 10px;
+  color: var(--accent-primary);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.legalHeader h1 {
+  margin-bottom: 12px;
+  font-size: clamp(2rem, 6vw, 3.25rem);
+}
+
+.intro,
+.updated,
+.legalSection p,
+.legalSection li,
+.consentPanel p {
+  color: var(--text-secondary);
+  line-height: 1.7;
+}
+
+.updated {
+  margin-top: 14px;
+  font-size: 0.8rem;
+}
+
+.legalSection,
+.consentPanel {
+  margin-top: 16px;
+  padding: clamp(20px, 4vw, 32px);
+  border-radius: 18px;
+}
+
+.legalSection h2,
+.consentPanel h2 {
+  margin-bottom: 12px;
+  font-size: 1.15rem;
+}
+
+.legalSection ul {
+  display: grid;
+  gap: 8px;
+  padding-left: 20px;
+}
+
+.consentStatus {
+  margin: 16px 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--surface-subtle);
+  color: var(--text-primary);
+  font-size: 0.88rem;
+}
+
+.consentActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.primaryButton,
+.secondaryButton {
+  min-height: 42px;
+  padding: 9px 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.primaryButton {
+  border: 1px solid var(--accent-primary);
+  background: var(--accent-primary);
+  color: #fff;
+}
+
+.secondaryButton {
+  border: 1px solid var(--border-color);
+  background: var(--surface-panel-strong);
+  color: var(--text-primary);
+}
+
+.primaryButton:focus-visible,
+.secondaryButton:focus-visible,
+.backLink:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent-primary) 45%, transparent);
+  outline-offset: 3px;
+}
+
+.backLink {
+  display: inline-flex;
+  margin-top: 24px;
+  font-weight: 700;
+}
+
+@media (max-width: 600px) {
+  .legalPage {
+    padding: 16px 12px 40px;
+  }
+
+  .legalHeader,
+  .legalSection,
+  .consentPanel {
+    border-radius: 14px;
+  }
+
+  .consentActions {
+    flex-direction: column;
+  }
+
+  .primaryButton,
+  .secondaryButton {
+    width: 100%;
+  }
+}

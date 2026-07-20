@@ -3,7 +3,7 @@ import { canonicalizeAuditorInput, findAuditorMention } from './auditors';
 import type { AgentAction, AgentContextSnapshot, AgentPlan, AgentToolName } from '../types/agent';
 import type { ResearchSearchMode } from './filingResearch';
 
-const FORM_TYPES = ['10-K', '10-Q', '8-K', 'DEF 14A', '20-F', '6-K', 'S-1', 'UPLOAD', 'CORRESP'] as const;
+type SupportedFormType = '10-K' | '10-Q' | '8-K' | 'DEF 14A' | '20-F' | '6-K' | 'S-1';
 const LATEST_FILING_PATTERN = '(?:latest|most\\s+recent|newest|current)';
 const FORM_TOKEN_PATTERN = '10-k|10 k|10-q|10 q|8-k|8 k|def 14a|def-14a|20-f|20 f|6-k|6 k|s-1|s 1';
 
@@ -29,7 +29,7 @@ function cleanCompanyHint(value: string): string {
 }
 
 function findFormType(prompt: string): string | null {
-  const matchers: Array<{ form: (typeof FORM_TYPES)[number]; re: RegExp }> = [
+  const matchers: Array<{ form: SupportedFormType; re: RegExp }> = [
     { form: '10-K', re: /\b10[\s-]?k\b/i },
     { form: '10-Q', re: /\b10[\s-]?q\b/i },
     { form: '8-K', re: /\b8[\s-]?k\b/i },
@@ -496,6 +496,162 @@ function isAllowedActionType(value: string): value is AgentToolName {
   ].includes(value);
 }
 
+function boundedString(value: unknown, maxLength: number): string | undefined {
+  if (typeof value !== 'string') return undefined;
+  const result = value.trim().slice(0, maxLength);
+  return result || undefined;
+}
+
+function boundedStringArray(
+  value: unknown,
+  options: { maxItems: number; maxLength: number; pattern?: RegExp; uppercase?: boolean }
+): string[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+  const output: string[] = [];
+  for (const item of value) {
+    const bounded = boundedString(item, options.maxLength);
+    if (!bounded) continue;
+    const normalized = options.uppercase ? bounded.toUpperCase() : bounded;
+    if (options.pattern && !options.pattern.test(normalized)) continue;
+    if (!output.includes(normalized)) output.push(normalized);
+    if (output.length >= options.maxItems) break;
+  }
+  return output;
+}
+
+function sanitizeSearchFilters(value: unknown): SearchFilters | undefined {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
+  const record = value as Record<string, unknown>;
+  const output: SearchFilters = { ...defaultSearchFilters };
+  const stringFields: Array<keyof SearchFilters> = [
+    'keyword', 'dateFrom', 'dateTo', 'entityName', 'sectionKeywords', 'sicCode',
+    'stateOfInc', 'headquarters', 'accountant', 'accessionNumber', 'fileNumber',
+    'fiscalYearEnd', 'accountingFramework',
+  ];
+
+  for (const field of stringFields) {
+    const bounded = boundedString(record[field], field === 'keyword' || field === 'sectionKeywords' ? 2_000 : 300);
+    if (bounded) (output[field] as string) = bounded;
+  }
+  output.formTypes = boundedStringArray(record.formTypes, { maxItems: 20, maxLength: 40 }) || [];
+  output.exchange = boundedStringArray(record.exchange, { maxItems: 10, maxLength: 20 }) || [];
+  output.acceleratedStatus = boundedStringArray(record.acceleratedStatus, { maxItems: 10, maxLength: 20 }) || [];
+
+  if (output.sicCode && !/^\d{4}$/.test(output.sicCode)) output.sicCode = '';
+  if (output.dateFrom && !/^\d{4}-\d{2}-\d{2}$/.test(output.dateFrom)) output.dateFrom = '';
+  if (output.dateTo && !/^\d{4}-\d{2}-\d{2}$/.test(output.dateTo)) output.dateTo = '';
+  return output;
+}
+
+/** Strictly validate model-produced tool inputs before the UI executor sees them. */
+export function sanitizeAgentActionInput(type: AgentToolName, value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  const input = value as Record<string, unknown>;
+  const output: Record<string, unknown> = {};
+  const copyString = (key: string, maxLength: number) => {
+    const result = boundedString(input[key], maxLength);
+    if (result !== undefined) output[key] = result;
+  };
+  const copyBoolean = (key: string) => {
+    if (typeof input[key] === 'boolean') output[key] = input[key];
+  };
+  const copyEnum = (key: string, allowed: readonly string[]) => {
+    const result = boundedString(input[key], 80);
+    if (result && allowed.includes(result)) output[key] = result;
+  };
+  const copyFilters = () => {
+    const filters = sanitizeSearchFilters(input.filters);
+    if (filters) output.filters = filters;
+  };
+
+  switch (type) {
+    case 'resolve_company':
+      copyString('companyHint', 300);
+      break;
+    case 'find_latest_filing':
+      copyString('companyHint', 300);
+      copyString('formType', 40);
+      break;
+    case 'open_filing':
+      copyBoolean('useLatestResolvedFiling');
+      copyBoolean('useActiveFiling');
+      break;
+    case 'jump_to_section':
+      copyString('sectionLabel', 300);
+      break;
+    case 'search_filings':
+    case 'search_comment_letters':
+      copyString('query', 2_000);
+      copyString('companyHint', 300);
+      copyEnum('mode', ['semantic', 'boolean']);
+      copyEnum('targetPage', ['search', 'accounting', 'comment-letters']);
+      copyString('defaultForms', 300);
+      copyFilters();
+      if (typeof input.limit === 'number' && Number.isFinite(input.limit)) {
+        output.limit = Math.min(100, Math.max(1, Math.floor(input.limit)));
+      }
+      break;
+    case 'find_peers':
+      copyString('companyHint', 300);
+      copyString('auditor', 300);
+      copyBoolean('fromFiling');
+      copyFilters();
+      if (typeof input.sicCode === 'string' && /^\d{4}$/.test(input.sicCode.trim())) {
+        output.sicCode = input.sicCode.trim();
+      }
+      break;
+    case 'apply_filters':
+      copyString('query', 2_000);
+      copyEnum('mode', ['semantic', 'boolean']);
+      copyEnum('targetPage', ['search', 'accounting', 'comment-letters']);
+      copyString('defaultForms', 300);
+      copyFilters();
+      break;
+    case 'set_compare_cohort': {
+      const companyHints = boundedStringArray(input.companyHints, { maxItems: 10, maxLength: 300 });
+      const tickers = boundedStringArray(input.tickers, {
+        maxItems: 10,
+        maxLength: 12,
+        pattern: /^[A-Z0-9.-]{1,12}$/,
+        uppercase: true,
+      });
+      if (companyHints) output.companyHints = companyHints;
+      if (tickers) output.tickers = tickers;
+      copyBoolean('fromSearchResults');
+      copyEnum('viewMode', ['financials', 'text-diff', 'audit-matrix']);
+      copyString('selectedSection', 300);
+      if (typeof input.sicCode === 'string' && /^\d{4}$/.test(input.sicCode.trim())) {
+        output.sicCode = input.sicCode.trim();
+      }
+      if (typeof input.maxCompanies === 'number' && Number.isFinite(input.maxCompanies)) {
+        output.maxCompanies = Math.min(10, Math.max(2, Math.floor(input.maxCompanies)));
+      }
+      break;
+    }
+    case 'summarize_filing':
+      copyString('sectionLabel', 300);
+      copyString('mode', 80);
+      break;
+    case 'summarize_result_set':
+      copyString('mode', 80);
+      break;
+    case 'draft_alert':
+      copyString('nameHint', 300);
+      copyString('query', 2_000);
+      copyEnum('mode', ['semantic', 'boolean']);
+      copyString('defaultForms', 300);
+      copyFilters();
+      break;
+    case 'save_alert':
+      break;
+    case 'export_clean_pdf':
+      copyBoolean('useActiveFiling');
+      break;
+  }
+
+  return output;
+}
+
 function hasAction(actions: AgentAction[], type: AgentToolName): boolean {
   return actions.some(action => action.type === type);
 }
@@ -550,16 +706,18 @@ export function sanitizeAgentPlan(candidate: unknown, prompt: string, context: A
   if (!candidate || typeof candidate !== 'object') return fallback;
 
   const record = candidate as Record<string, unknown>;
-  const rawActions = Array.isArray(record.actions) ? record.actions : [];
+  const rawActions = Array.isArray(record.actions) ? record.actions.slice(0, 20) : [];
   const actions = rawActions
     .map(action => {
       if (!action || typeof action !== 'object') return null;
       const item = action as Record<string, unknown>;
       const type = typeof item.type === 'string' ? item.type : '';
-      if (!isAllowedActionType(type)) return null;
-      const title = typeof item.title === 'string' && item.title.trim() ? item.title.trim() : type;
-      const input = item.input && typeof item.input === 'object' ? (item.input as Record<string, unknown>) : {};
-      const reason = typeof item.reason === 'string' ? item.reason : undefined;
+      // Model plans may draft consequential changes, but they cannot enqueue a
+      // persistence action. Saving remains an explicit user confirmation path.
+      if (!isAllowedActionType(type) || type === 'save_alert') return null;
+      const title = boundedString(item.title, 300) || type;
+      const input = sanitizeAgentActionInput(type, item.input);
+      const reason = boundedString(item.reason, 1_000);
       return makeAction(type, title, input, reason);
     })
     .filter((action): action is AgentAction => Boolean(action));
@@ -587,12 +745,15 @@ export function sanitizeAgentPlan(candidate: unknown, prompt: string, context: A
   }
 
   return {
-    goal: typeof record.goal === 'string' && record.goal.trim() ? record.goal : fallback.goal,
-    rationale: typeof record.rationale === 'string' && record.rationale.trim() ? record.rationale : fallback.rationale,
+    goal: boundedString(record.goal, 1_000) || fallback.goal,
+    rationale: boundedString(record.rationale, 2_000) || fallback.rationale,
     confidence: record.confidence === 'high' || record.confidence === 'medium' || record.confidence === 'low' ? record.confidence : fallback.confidence,
     actions: repairedActions,
     followUps: Array.isArray(record.followUps)
-      ? record.followUps.filter((item): item is string => typeof item === 'string' && item.trim().length > 0).slice(0, 6)
+      ? record.followUps
+        .map(item => boundedString(item, 500))
+        .filter((item): item is string => Boolean(item))
+        .slice(0, 6)
       : fallback.followUps,
   };
 }

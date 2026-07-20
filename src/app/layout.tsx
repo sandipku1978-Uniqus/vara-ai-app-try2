@@ -2,33 +2,32 @@ import '../index.css';
 import { ClerkProvider } from '@clerk/nextjs';
 import type { Metadata } from 'next';
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://uniqus-research.vercel.app';
+
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://uniqus-research.vercel.app'),
+  metadataBase: new URL(siteUrl),
   title: 'Uniqus Research Center - SEC Intelligence Platform',
-  description: 'A comprehensive, production-grade SEC compliance and research platform for legal, financial, and compliance professionals.',
+  description: 'An SEC filing research workspace for legal, financial, and compliance professionals.',
   openGraph: {
     title: 'Uniqus Research Center - SEC Intelligence Platform',
-    description: 'A comprehensive, production-grade SEC compliance and research platform for legal, financial, and compliance professionals.',
-    url: 'https://research.uniqus.com',
+    description: 'An SEC filing research workspace for legal, financial, and compliance professionals.',
+    url: siteUrl,
     siteName: 'Uniqus Research Center',
-    images: [
-      {
-        url: '/api/og?title=SEC%20Intelligence%20Platform',
-        width: 1200,
-        height: 630,
-        alt: 'Uniqus Research Center',
-      },
-    ],
     locale: 'en_US',
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Uniqus Research Center - SEC Intelligence Platform',
-    description: 'A comprehensive, production-grade SEC compliance and research platform for legal, financial, and compliance professionals.',
-    images: ['/api/og?title=SEC%20Intelligence%20Platform'],
+    description: 'An SEC filing research workspace for legal, financial, and compliance professionals.',
   },
+  alternates: {
+    canonical: '/',
+  },
+  manifest: '/manifest.webmanifest',
 };
+
+const themeBootstrapScript = `(function(){try{var key='urc.theme.v1';var stored=localStorage.getItem(key);var theme=stored==='light'||stored==='dark'?stored:(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.dataset.theme=theme;document.documentElement.style.colorScheme=theme;}catch(e){}})();`;
 
 import { AppProvider } from '../context/AppState';
 import { Layout } from '../components/layout/Layout';
@@ -42,11 +41,14 @@ export default function RootLayout({
 }) {
   return (
     <ClerkProvider>
-      <html lang="en">
+      <html lang="en" suppressHydrationWarning>
         <PostHogProvider>
         <head>
+          <script dangerouslySetInnerHTML={{ __html: themeBootstrapScript }} />
           <link rel="preconnect" href="https://fonts.googleapis.com" />
           <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+          {/* The App Router root layout is the document shell for every route. */}
+          {/* eslint-disable-next-line @next/next/no-page-custom-font */}
           <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
         </head>
         <body>

@@ -43,6 +43,10 @@
   --chart-text-strong: #6C6270;
   --chart-tooltip-bg: #FFFFFF;
   --chart-tooltip-border: rgba(72, 42, 122, 0.14);
+  --status-error: #B42318;
+  --status-error-bg: #FEF3F2;
+  --status-success: #16794E;
+  --status-warning: #8A4B08;
   --copilot-sidebar-width: clamp(380px, 32vw, 520px);
   
   --font-sans: 'Montserrat', system-ui, -apple-system, sans-serif;
@@ -89,6 +93,10 @@
   --chart-text-strong: #E8DDE7;
   --chart-tooltip-bg: #20182B;
   --chart-tooltip-border: rgba(238, 223, 236, 0.16);
+  --status-error: #FDA29B;
+  --status-error-bg: rgba(180, 35, 24, 0.16);
+  --status-success: #6CE9A6;
+  --status-warning: #FEC84B;
 }
 
 * {
@@ -123,6 +131,28 @@ a:hover {
 
 button {
   font-family: var(--font-sans);
+}
+
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.specialist-result-card:hover,
+.specialist-result-card:focus-visible {
+  border-color: color-mix(in srgb, var(--accent-primary) 40%, transparent) !important;
+}
+
+.specialist-result-card:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--accent-primary) 30%, transparent);
+  outline-offset: 2px;
 }
 
 .glass-card {
@@ -706,5 +736,3 @@ th, td {
     line-height: 1.7;
   }
 }
-
-

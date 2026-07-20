@@ -1,7 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, act } from '@testing-library/react';
+import { render, act, waitFor } from '@testing-library/react';
 import { AppProvider, useApp } from '../context/AppState';
 import React from 'react';
+import { buildStorageScope, scopedStorageKey } from '../services/storageNamespace';
 
 function TestConsumer({ onRender }: { onRender: (ctx: ReturnType<typeof useApp>) => void }) {
   const ctx = useApp();
@@ -33,6 +34,39 @@ describe('AppState', () => {
   });
 
   describe('watchlist', () => {
+    it('reloads identity data on user and organization changes without cross-overwriting', async () => {
+      const testGlobal = globalThis as typeof globalThis & {
+        __urcTestAuth?: { isLoaded: boolean; userId: string | null; orgId: string | null };
+      };
+      const keyA = scopedStorageKey('vara.watchlist.v1', buildStorageScope('user_a', 'org_1'))!;
+      const keyB = scopedStorageKey('vara.watchlist.v1', buildStorageScope('user_b', 'org_1'))!;
+      const keyBOrg2 = scopedStorageKey('vara.watchlist.v1', buildStorageScope('user_b', 'org_2'))!;
+      window.localStorage.setItem(keyA, JSON.stringify(['AAA']));
+      window.localStorage.setItem(keyB, JSON.stringify(['BBB']));
+      window.localStorage.setItem(keyBOrg2, JSON.stringify(['CCC']));
+      testGlobal.__urcTestAuth = { isLoaded: true, userId: 'user_a', orgId: 'org_1' };
+
+      let watchlist: string[] = [];
+      const renderTree = () => (
+        <AppProvider>
+          <TestConsumer onRender={ctx => { watchlist = ctx.watchlist; }} />
+        </AppProvider>
+      );
+      const { rerender } = render(renderTree());
+      await waitFor(() => expect(watchlist).toEqual(['AAA']));
+
+      testGlobal.__urcTestAuth = { isLoaded: true, userId: 'user_b', orgId: 'org_1' };
+      rerender(renderTree());
+      await waitFor(() => expect(watchlist).toEqual(['BBB']));
+      expect(JSON.parse(window.localStorage.getItem(keyB)!)).toEqual(['BBB']);
+
+      testGlobal.__urcTestAuth = { isLoaded: true, userId: 'user_b', orgId: 'org_2' };
+      rerender(renderTree());
+      await waitFor(() => expect(watchlist).toEqual(['CCC']));
+      expect(JSON.parse(window.localStorage.getItem(keyBOrg2)!)).toEqual(['CCC']);
+      expect(JSON.parse(window.localStorage.getItem(keyA)!)).toEqual(['AAA']);
+    });
+
     it('initializes with default watchlist', () => {
       let watchlist: string[] = [];
       renderWithProvider(ctx => { watchlist = ctx.watchlist; });
@@ -166,6 +200,22 @@ describe('AppState', () => {
       expect(runId).toBeTruthy();
       expect(ctx!.agentRuns.length).toBe(1);
       expect(ctx!.agentRuns[0].status).toBe('running');
+    });
+
+    it('queues external Copilot prompts until the panel executor consumes them', () => {
+      let ctx: ReturnType<typeof useApp> | null = null;
+      renderWithProvider(c => { ctx = c; });
+      let requestId = '';
+
+      act(() => { requestId = ctx!.enqueueAgentPrompt('  Analyze this filing  '); });
+
+      expect(requestId).toBeTruthy();
+      expect(ctx!.agentPromptQueue).toHaveLength(1);
+      expect(ctx!.agentPromptQueue[0].prompt).toBe('Analyze this filing');
+      expect(ctx!.agentRuns).toEqual([]);
+
+      act(() => { ctx!.removeAgentPromptRequest(requestId); });
+      expect(ctx!.agentPromptQueue).toEqual([]);
     });
 
     it('updates an agent run', () => {

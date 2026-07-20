@@ -1,3 +1,5 @@
+import { escapeCsvCell } from '../utils/csv';
+
 export interface DisclosureDiffSummary {
   currentBlockCount: number;
   previousBlockCount: number;
@@ -98,8 +100,8 @@ export function buildDisclosureDiff(currentText: string, previousText: string): 
 
   const retainedCount = currentBlocks.filter(block => previousMap.has(normalizeBlock(block))).length;
 
-  let finalAdded = [...addedBlocks];
-  let finalRemoved = [...removedBlocks];
+  const finalAdded = [...addedBlocks];
+  const finalRemoved = [...removedBlocks];
   const changedBlocks: Array<{ previous: string; current: string }> = [];
 
   // Find fuzzy block matches to identify "modified" blocks rather than just added/removed
@@ -194,13 +196,6 @@ export function extractTablesFromHtml(html: string): ExtractedTable[] {
       };
     })
     .filter(table => table.rows.length >= 2 && table.rows.some(row => row.length >= 2));
-}
-
-function escapeCsvCell(value: string): string {
-  if (/[",\n]/.test(value)) {
-    return `"${value.replace(/"/g, '""')}"`;
-  }
-  return value;
 }
 
 export function tablesToCsv(tables: ExtractedTable[]): string {

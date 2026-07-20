@@ -9,33 +9,17 @@
  * outside eight hardcoded tickers.
  */
 
-import { Metadata } from 'next';
+import type { Metadata } from 'next';
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { createClient } from '@supabase/supabase-js';
+import { getWebSupabase } from '../../../lib/supabase-web';
+import { fetchDossierCompanyData } from './companyData';
 import DossierTabs from './DossierTabs';
 
 export const revalidate = 86400; // 24h ISR
 export const dynamicParams = true;
 
 const SEC_USER_AGENT = 'Uniqus Research Center contact@uniqus.com';
-
-interface SECSubmission {
-  name: string;
-  tickers: string[];
-  exchanges: string[];
-  sicDescription: string;
-  sic: string;
-  stateOfIncorporation: string;
-  filings: {
-    recent: {
-      accessionNumber: string[];
-      filingDate: string[];
-      form: string[];
-      primaryDocument: string[];
-      primaryDocDescription: string[];
-    };
-  };
-}
 
 async function resolveCik(raw: string): Promise<string | null> {
   const trimmed = decodeURIComponent(raw).trim();
@@ -58,25 +42,10 @@ async function resolveCik(raw: string): Promise<string | null> {
   return null;
 }
 
-async function fetchCompanyData(cik: string): Promise<SECSubmission | null> {
-  try {
-    const res = await fetch(`https://data.sec.gov/submissions/CIK${cik}.json`, {
-      headers: { 'User-Agent': SEC_USER_AGENT },
-      next: { revalidate: 86400 },
-    });
-    if (!res.ok) return null;
-    return res.json();
-  } catch {
-    return null;
-  }
-}
-
 async function fetchAuditor(cik: string): Promise<{ auditor: string; periodEnd: string | null } | null> {
-  const url = process.env.URC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.URC_SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) return null;
+  const db = getWebSupabase();
+  if (!db) return null;
   try {
-    const db = createClient(url, key, { auth: { persistSession: false } });
     const { data } = await db
       .from('urc_current_auditors')
       .select('firm_canonical, fiscal_period_end')
@@ -104,7 +73,7 @@ export async function generateMetadata({
   const { ticker } = await params;
   const cik = await resolveCik(ticker);
   if (!cik) return { title: 'Company Not Found | Uniqus Research Center' };
-  const data = await fetchCompanyData(cik);
+  const data = await fetchDossierCompanyData(cik);
   const companyName = data?.name ?? ticker.toUpperCase();
   return {
     title: `${companyName} — Issuer Dossier | Uniqus Research Center`,
@@ -113,9 +82,9 @@ export async function generateMetadata({
 }
 
 const labelStyle: React.CSSProperties = {
-  fontSize: 12, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 4px',
+  fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 4px',
 };
-const valueStyle: React.CSSProperties = { fontSize: 17, fontWeight: 600, margin: 0, color: '#f1f5f9' };
+const valueStyle: React.CSSProperties = { fontSize: 17, fontWeight: 600, margin: 0, color: 'var(--text-primary)' };
 
 export default async function CompanyPage({
   params,
@@ -127,7 +96,7 @@ export default async function CompanyPage({
   if (!cik) notFound();
 
   const [data, auditorInfo] = await Promise.all([
-    fetchCompanyData(cik!),
+    fetchDossierCompanyData(cik!),
     fetchAuditor(cik!),
   ]);
   if (!data) notFound();
@@ -135,40 +104,40 @@ export default async function CompanyPage({
   const primaryTicker = data!.tickers?.[0] || null;
 
   return (
-    <main style={{ maxWidth: 1000, margin: '0 auto', padding: '40px 24px', fontFamily: 'system-ui, sans-serif', color: '#e2e8f0' }}>
-      <p style={{ fontSize: 13, color: '#64748b', margin: '0 0 16px' }}>
-        <a href="/dashboard" style={{ color: '#94a3b8' }}>Home</a>
+    <main style={{ width: '100%', maxWidth: 1000, margin: '0 auto', padding: '40px 24px', color: 'var(--text-primary)' }}>
+      <nav aria-label="Breadcrumb" style={{ fontSize: 13, color: 'var(--text-muted)', margin: '0 0 16px' }}>
+        <Link href="/dashboard" style={{ color: 'var(--text-secondary)' }}>Home</Link>
         <span> / </span>
-        <a href="/search" style={{ color: '#94a3b8' }}>Research</a>
+        <Link href="/search" style={{ color: 'var(--text-secondary)' }}>Research</Link>
         <span> / </span>
-        <span style={{ color: '#e2e8f0', fontWeight: 600 }}>{data!.name}</span>
-      </p>
+        <span aria-current="page" style={{ color: 'var(--text-primary)', fontWeight: 600 }}>{data!.name}</span>
+      </nav>
 
       <div style={{ marginBottom: 28 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 16, flexWrap: 'wrap' }}>
-          <h1 style={{ fontSize: 34, fontWeight: 800, margin: 0, color: '#ffffff' }}>{data!.name}</h1>
+          <h1 style={{ fontSize: 34, fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>{data!.name}</h1>
           {primaryTicker && (
-            <span style={{ fontSize: 20, fontWeight: 600, color: '#4ade80', letterSpacing: '0.05em' }}>
+            <span style={{ fontSize: 20, fontWeight: 600, color: 'var(--accent-primary)', letterSpacing: '0.05em' }}>
               {data!.tickers.join(' · ')}
             </span>
           )}
         </div>
-        <p style={{ marginTop: 8, color: '#94a3b8', fontSize: 14 }}>
+        <p style={{ marginTop: 8, color: 'var(--text-secondary)', fontSize: 14 }}>
           CIK {Number(cik)}{data!.exchanges?.length ? ` · ${data!.exchanges.filter(Boolean).join(', ')}` : ''}
         </p>
       </div>
 
       <section style={{
         display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 20,
-        marginBottom: 36, padding: 22, backgroundColor: '#0f172a', borderRadius: 12, border: '1px solid #1e293b',
+        marginBottom: 36, padding: 22, backgroundColor: 'var(--surface-panel)', borderRadius: 16, border: '1px solid var(--border-color)', boxShadow: 'var(--glow-shadow)',
       }}>
         <div>
           <p style={labelStyle}>Current auditor</p>
-          <p style={{ ...valueStyle, color: auditorInfo ? '#f9a8d4' : '#64748b' }}>
+          <p style={{ ...valueStyle, color: auditorInfo ? 'var(--accent-primary)' : 'var(--text-muted)' }}>
             {auditorInfo ? auditorInfo.auditor : 'Not on record'}
           </p>
           {auditorInfo?.periodEnd && (
-            <p style={{ fontSize: 11, color: '#64748b', margin: '2px 0 0' }}>
+            <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: '2px 0 0' }}>
               per Form AP · FY ended {auditorInfo.periodEnd}
             </p>
           )}
@@ -176,7 +145,7 @@ export default async function CompanyPage({
         <div>
           <p style={labelStyle}>Industry (SIC)</p>
           <p style={valueStyle}>{data!.sicDescription || 'N/A'}</p>
-          <p style={{ fontSize: 11, color: '#64748b', margin: '2px 0 0' }}>{data!.sic || ''}</p>
+          <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: '2px 0 0' }}>{data!.sic || ''}</p>
         </div>
         <div>
           <p style={labelStyle}>State of incorporation</p>
@@ -190,8 +159,8 @@ export default async function CompanyPage({
         recentFilings={data!.filings.recent}
       />
 
-      <footer style={{ marginTop: 56, paddingTop: 24, borderTop: '1px solid #1e293b', textAlign: 'center' }}>
-        <p style={{ fontSize: 12, color: '#475569' }}>
+      <footer style={{ marginTop: 56, paddingTop: 24, borderTop: '1px solid var(--border-color)', textAlign: 'center' }}>
+        <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>
           Filings: SEC EDGAR · Auditor: PCAOB Form AP · Financials: XBRL company facts. Powered by Uniqus Research Center.
         </p>
       </footer>

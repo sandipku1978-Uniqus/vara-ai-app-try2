@@ -8,6 +8,8 @@ import {
   Gavel, Globe, HelpCircle, LayoutDashboard, LineChart, Mail,
   Mic, Scale, Search, Shield, TrendingUp, UserCheck, Users
 } from 'lucide-react';
+import { ENFORCEMENT_SCOPE_LIMITATION } from '../config/enforcement';
+import { EARNINGS_SCOPE_LABEL, EARNINGS_SCOPE_LIMITATION } from '../config/earnings';
 import { BRAND } from '../config/brand';
 import './SupportCenter.css';
 
@@ -44,13 +46,13 @@ const PLATFORM_LINKS = [
   { group: 'Business Intelligence', items: [
     { label: 'Accounting Standards', href: '/accounting', icon: BookOpen },
     { label: 'Accounting Analytics', href: '/accounting-analytics', icon: LineChart },
-    { label: '8-K Event Filings', href: '/earnings', icon: Mic },
+    { label: EARNINGS_SCOPE_LABEL, href: '/earnings', icon: Mic },
   ]},
   { group: 'Regulation & Compliance', items: [
     { label: 'Securities Regulation', href: '/regulation', icon: Scale },
     { label: 'Comment Letters', href: '/comment-letters', icon: Mail },
     { label: 'No-Action Letters', href: '/no-action-letters', icon: FileText },
-    { label: 'SEC Enforcement', href: '/enforcement', icon: Gavel },
+    { label: 'SEC Litigation Releases', href: '/enforcement', icon: Gavel },
   ]},
   { group: 'Transactions', items: [
     { label: 'IPO Center', href: '/ipo', icon: TrendingUp },
@@ -71,13 +73,13 @@ const GUIDE_SECTIONS: GuideSection[] = [
     summary: 'The Research Workbench is the central hub for SEC disclosure research. Start here when you have a topic, entity, or filing type in mind and want to explore what issuers are disclosing.',
     steps: [
       'Open the Research Workbench from the sidebar or press the search bar on the Dashboard.',
-      'Enter a keyword, company name, or disclosure topic in the main search field. Natural-language queries like "Apple revenue recognition" are interpreted automatically.',
-      'Use the 17 advanced filters (form type, date range, SIC code, auditor, exchange, filer status, section keywords, and more) to narrow results before searching.',
-      'Toggle between Semantic mode (broad idea discovery) and Boolean mode (AND, OR, NOT, "phrase", w/5 proximity) depending on your precision needs.',
+      'Enter a keyword, company name, or disclosure topic in the main search field. Filing Research mode can extract supported company, form, date, and auditor constraints from plain-language input.',
+      'Use form type, date range, SIC code, auditor, exchange, filer status, section keywords, and other available fields to narrow results before searching.',
+      'Toggle between Filing Research mode for assisted query preparation and Boolean mode for AND, OR, NOT, quoted phrases, and w/# proximity.',
       'Click any result row to open the filing in the Filing Detail viewer.',
     ],
     notes: [
-      'Filters are enforced before results are shown, so they act as real gates rather than loose search hints.',
+      'Results are constrained by supported metadata filters and filing-text checks; missing source metadata can still affect coverage.',
       'If a search returns too many results, add form type and date range filters before further narrowing.',
       'Natural language search automatically detects form types, date windows, auditor names, and entity references from your query.',
     ],
@@ -89,9 +91,9 @@ const GUIDE_SECTIONS: GuideSection[] = [
   {
     id: 'research-workbench',
     title: 'Research Workbench Deep Dive',
-    summary: 'Master the full workflow: semantic vs. Boolean search, research sessions with tabs, trend reports, and saved alerts.',
+    summary: 'Master the full workflow: assisted filing search, Boolean search, research sessions with tabs, result insights, and saved alerts.',
     steps: [
-      'Use Semantic mode for broad idea discovery — it interprets intent behind your query and finds conceptually related filings.',
+      'Use Filing Research mode to turn supported plain-language constraints into a deterministic SEC search. It is not conceptual or vector retrieval.',
       'Switch to Boolean mode when you need exact-match results. Use AND, OR, NOT, "quoted phrases", and proximity operators like w/5 or near/10.',
       'Each search opens in a new tab within your research session, so you can compare multiple queries side by side.',
       'Generate a trend report after a search to get an AI-powered summary of what the result set shows.',
@@ -100,7 +102,7 @@ const GUIDE_SECTIONS: GuideSection[] = [
     notes: [
       'Saved alerts and annotations are browser-local. They help with repeat research but are not shared across devices.',
       'If a Boolean search returns nothing, check for typos in quoted phrases and try widening the date window first.',
-      'Research sessions persist during your browser session. Closing the browser clears them.',
+      'Research sessions are saved in the current browser and can be restored there; they are not shared across devices.',
     ],
     links: [
       { label: 'Open Research Workbench', href: '/search' },
@@ -130,12 +132,12 @@ const GUIDE_SECTIONS: GuideSection[] = [
   {
     id: 'dashboard',
     title: 'Dashboard Overview',
-    summary: 'The Dashboard provides a quick-glance view of your research activity: recent filings, watchlist companies, saved alerts, and summary charts.',
+    summary: 'The Dashboard shows filing activity for your browser-local watchlist, local saved-search alerts, and watchlist-scoped charts.',
     steps: [
-      'Review recent filing activity and trending topics in the overview cards.',
+      'Review current-year filing volume and form mix for the companies in your watchlist.',
       'Use the watchlist to track specific companies and see their latest filings at a glance.',
-      'Access saved search alerts to re-execute frequent queries with one click.',
-      'Click any filing or company card to jump directly to the detailed view.',
+      'Use local saved-search alerts to open or manually re-check frequent queries.',
+      'Use filing-volume and watchlist cards to open a prefilled Research Workbench search; open a filing result there for the detailed viewer.',
     ],
     notes: [
       'Dashboard data refreshes when you navigate to the page. Watchlist items and alerts are browser-local.',
@@ -166,12 +168,12 @@ const GUIDE_SECTIONS: GuideSection[] = [
   {
     id: 'board-profiles',
     title: 'Board Profiles & Executive Compensation',
-    summary: 'Research board composition, director backgrounds, committee memberships, and executive compensation across companies using AI-powered extraction from DEF 14A proxy statements.',
+    summary: 'Research AI-extracted director roles, independence, committee memberships, gender breakdown, and executive compensation from DEF 14A proxy statements.',
     steps: [
-      'Search for a company by ticker or name to load its board and compensation data.',
-      'Add multiple companies (e.g., AAPL and GOOGL) to compare board structures side by side.',
-      'Switch between the Directors tab (board members, committees, tenure) and Compensation tab (executive pay, equity awards).',
-      'Use the governance metrics sidebar to see board independence, diversity, and meeting attendance scores.',
+      'Enter a public-company ticker to load its board and compensation data.',
+      'Add multiple companies (e.g., AAPL and GOOGL) to compare extracted governance metrics side by side.',
+      'Switch among Director Profiles, Board Diversity, and Executive Comp to review the fields available in each view.',
+      'Use Governance Overview for board size, independence, and CEO pay ratio; the comparison table also includes female representation and say-on-pay approval when extracted.',
     ],
     notes: [
       'Board data is AI-extracted from DEF 14A filings using Claude. Extraction requires a valid Anthropic API key.',
@@ -185,11 +187,11 @@ const GUIDE_SECTIONS: GuideSection[] = [
   {
     id: 'accounting-research',
     title: 'Accounting Standards & Analytics',
-    summary: 'The Accounting Research Hub lets you search for adoption topics, policy language, and peer treatment across filings. Accounting Analytics provides quantitative analysis of accounting trends.',
+    summary: 'The Accounting Research Hub combines a standards-topic directory, SEC filing research, result-set memos, and a browser-local checklist. Accounting Analytics compares financial ratios for selected companies.',
     steps: [
       'In the Accounting Research Hub, search for specific accounting standards (e.g., ASC 606, ASC 842) to find how companies describe their adoption.',
       'Filter by industry or SIC code to see how peers in your sector handle the same topic.',
-      'Use Accounting Analytics for quantitative trend analysis across filing populations.',
+      'Use Accounting Analytics to compare latest-year profitability, leverage, liquidity, and efficiency ratios for companies you select.',
       'Open individual filings from results to review the actual disclosure language in context.',
     ],
     notes: [
@@ -203,37 +205,37 @@ const GUIDE_SECTIONS: GuideSection[] = [
   },
   {
     id: 'regulation-compliance',
-    title: 'Regulation, Comment Letters & Enforcement',
-    summary: 'Research SEC securities regulation, track comment letter correspondence between the SEC and registrants, review no-action letters, and monitor enforcement actions.',
+    title: 'Regulation, Comment Letters & Litigation Releases',
+    summary: 'Research SEC securities regulation, track comment letter correspondence between the SEC and registrants, review no-action letters, and monitor official SEC litigation releases.',
     steps: [
       'Use Securities Regulation to browse and search current SEC rules and regulations.',
       'Search Comment Letters to see what the SEC staff has asked specific companies or industries about.',
       'Browse No-Action Letters for SEC staff guidance on specific regulatory questions.',
-      'Monitor SEC Enforcement actions to track settled cases, penalties, and compliance trends.',
+      'Monitor SEC litigation releases for civil actions filed by the Commission.',
     ],
     notes: [
       'Comment letter searches work best with company name or specific disclosure topic keywords.',
-      'Enforcement data includes administrative proceedings, civil actions, and trading suspensions.',
+      ENFORCEMENT_SCOPE_LIMITATION,
     ],
     links: [
       { label: 'Securities Regulation', href: '/regulation' },
       { label: 'Comment Letters', href: '/comment-letters' },
       { label: 'No-Action Letters', href: '/no-action-letters' },
-      { label: 'SEC Enforcement', href: '/enforcement' },
+      { label: 'SEC Litigation Releases', href: '/enforcement' },
     ],
   },
   {
     id: 'esg-research',
     title: 'ESG Research Center',
-    summary: 'Research environmental, social, and governance disclosures across SEC filings. Track ESG reporting trends, compare disclosure practices, and identify material ESG topics by industry.',
+    summary: 'Browse official sustainability-framework links, compare AI-rated ESG disclosure depth for selected companies, and review recent 8-K candidates.',
     steps: [
-      'Search for ESG-related keywords like "climate risk", "DEI", or "sustainability" to find relevant disclosures.',
-      'Filter by industry (SIC code) to see how peers in your sector approach ESG reporting.',
-      'Compare ESG disclosure depth across companies in your peer set.',
-      'Open filings to review the actual ESG language in its full context.',
+      'Use Interoperability Matrices to open official framework sources and review the built-in cross-framework topic mapping.',
+      'Add public-company tickers to the Disclosure Heatmap; AI rates the configured topics from each available latest 10-K.',
+      'Compare rated topics across the selected tickers and use the coverage note to identify companies that could not be rated.',
+      'Use Earnings Releases to filter recent 8-K candidates, generate an on-demand source summary, and open the source filing.',
     ],
     notes: [
-      'ESG disclosure is evolving rapidly — date filters are especially useful for tracking how language has changed over time.',
+      'AI heatmap ratings and generated summaries require source review; dashed cells mean a selected company was not rated.',
     ],
     links: [
       { label: 'Open ESG Research', href: '/esg' },
@@ -242,77 +244,60 @@ const GUIDE_SECTIONS: GuideSection[] = [
   {
     id: 'transactions',
     title: 'Transactions: IPO, M&A, Exhibits & More',
-    summary: 'Research IPO readiness filings, M&A transaction documents, material agreements, exempt offerings (Reg D/S/A/CF), and investment adviser registrations.',
+    summary: 'Research IPO filings, M&A transaction documents, material agreements, and Form D exempt-offering notices.',
     steps: [
-      'Use the IPO Center to research S-1/F-1 registration statements, SPAC filings, and direct listing disclosures.',
-      'Open M&A Research to search for merger proxies, tender offers, and transaction-related 8-K filings.',
+      'Use the IPO Center to browse S-1, S-1/A, F-1, F-1/A, and 424B4 filings and analyze selected registration statements.',
+      'Open M&A Research to screen 8-K, SC 13D, and SC TO-T results and search 8-K or SC 13D filings for clause extraction.',
       'Browse Exhibits & Agreements to find specific exhibit types — material contracts (EX-10.x), merger agreements (EX-2.1), subsidiary lists (EX-21), and more.',
-      'Search Exempt Offerings for Reg D, Reg S, Reg A, and Regulation Crowdfunding filings.',
-      'Use ADV Registrations to research investment adviser registrations and amendments.',
+      'Search Exempt Offerings for Form D and D/A notices filed through EDGAR.',
     ],
     notes: [
       'Exhibit search supports specific exhibit type codes for precision (e.g., EX-10.1, EX-2.1, EX-21).',
-      'M&A searches pair well with the 8-K Event Filings page for tracking material event disclosures.',
+      'Use Research Workbench with an 8-K form filter for broad material-event research; the earnings page is limited to EX-99.1 documents.',
     ],
     links: [
       { label: 'IPO Center', href: '/ipo' },
       { label: 'M&A Research', href: '/mna' },
       { label: 'Exhibits & Agreements', href: '/exhibits' },
       { label: 'Exempt Offerings', href: '/exempt-offerings' },
-      { label: 'ADV Registrations', href: '/adv-registrations' },
     ],
   },
   {
     id: 'events-insiders',
-    title: '8-K Events & Insider Trading',
+    title: 'Earnings Release Exhibits & Insider Trading',
     summary: 'Track material corporate events through 8-K filings and monitor insider transactions (Forms 3, 4, 5) for officers, directors, and 10%+ beneficial owners.',
     steps: [
-      'Use 8-K Event Filings to search for specific event types like earnings releases, executive changes, or material agreements.',
+      'Use Earnings Release Exhibits to search official EX-99.1 documents attached to 8-K, 8-K/A, or 6-K parent filings.',
       'Filter by company or date range to track event sequences for a specific issuer.',
-      'Open Insider Trading to search Forms 3, 4, and 5 for officer and director transactions.',
-      'Review transaction patterns: purchases vs. sales, option exercises, and ownership changes over time.',
+      'Open Insider Trading and add companies to list their Forms 3, 4, and 5 ownership filings.',
+      'Open the SEC source document to inspect transaction codes, share amounts, option exercises, and ownership changes; those fields are not parsed into the platform table.',
     ],
     notes: [
-      'Insider transaction data is sourced from SEC EDGAR. Large batches of Form 4 filings around earnings dates are common.',
+      'Insider filing metadata is sourced from SEC EDGAR. Large batches of Form 4 filings around earnings dates are common.',
+      EARNINGS_SCOPE_LIMITATION,
     ],
     links: [
-      { label: '8-K Event Filings', href: '/earnings' },
+      { label: EARNINGS_SCOPE_LABEL, href: '/earnings' },
       { label: 'Insider Trading', href: '/insiders' },
     ],
   },
   {
     id: 'company-detail',
     title: 'Company Detail Pages',
-    summary: 'Every company has a dedicated detail page showing CIK, SIC code, recent filings, and quick links to all company-specific research tools.',
+    summary: 'Issuer dossiers show CIK, exchange, SIC, state of incorporation, current auditor when available, recent submissions, comment-letter episodes, and latest XBRL financials.',
     steps: [
-      'Navigate to any company page by searching for a ticker (e.g., /company/AAPL) or clicking a company name in search results.',
-      'Review the company header: CIK number, SIC code, state of incorporation, and filer status.',
-      'Browse the complete filings table with form type, date, and description.',
-      'Click any filing to open it in the Filing Detail viewer.',
+      'Navigate directly to /company/TICKER (for example, /company/AAPL) or open an issuer dossier from a company link or the command palette.',
+      'Review the issuer identity and source fields: CIK, exchange, SIC code, state of incorporation, and current auditor when available.',
+      'Browse up to 15 recent SEC submissions with form type, date, and description.',
+      'Use View to open a recent source document on SEC.gov; use Research Workbench results when you need the Filing Detail viewer and its tools.',
     ],
     notes: [
       'Company data comes from the SEC EDGAR company submissions API.',
-      'The filings table shows all form types. Use the form type column to filter to what you need.',
+      'The issuer dossier is a recent-submissions view, not a complete historical filing archive; use Research Workbench for broader history.',
     ],
     links: [
       { label: 'Try: Apple (AAPL)', href: '/company/AAPL' },
       { label: 'Try: Microsoft (MSFT)', href: '/company/MSFT' },
-    ],
-  },
-  {
-    id: 'api-portal',
-    title: 'API Data Integration Portal',
-    summary: 'The API Portal provides documentation and tools for integrating SEC data into your own workflows and systems.',
-    steps: [
-      'Browse available API endpoints for SEC EDGAR data access.',
-      'Review request/response examples for each endpoint.',
-      'Use the portal to understand rate limits and data freshness.',
-    ],
-    notes: [
-      'The API Portal is a reference tool — actual API access depends on your deployment configuration.',
-    ],
-    links: [
-      { label: 'Open API Portal', href: '/api-portal' },
     ],
   },
 ];
@@ -320,15 +305,15 @@ const GUIDE_SECTIONS: GuideSection[] = [
 const FAQS: FaqItem[] = [
   {
     question: 'How do I search for a specific company\'s filings?',
-    answer: 'Use the Research Workbench (/search) and enter the company name or ticker in the entity/company field. You can also navigate directly to /company/TICKER (e.g., /company/AAPL) for a dedicated company page with all filings.',
+    answer: 'Use the Research Workbench (/search) and enter the company name or ticker in the entity/company field. You can also navigate directly to /company/TICKER (e.g., /company/AAPL) for a dossier with recent submissions, comment letters, and financials.',
   },
   {
-    question: 'What is the difference between Semantic and Boolean search?',
-    answer: 'Semantic mode interprets the intent behind your query and finds conceptually related filings — best for broad research. Boolean mode supports exact-match operators: AND, OR, NOT, "quoted phrases", and proximity operators like w/5 or near/10 — best for targeted, precise queries.',
+    question: 'What is the difference between Filing Research and Boolean search?',
+    answer: 'Filing Research mode extracts supported constraints from plain-language input and runs a deterministic SEC search; it is not conceptual retrieval. Boolean mode supports AND, OR, NOT, quoted phrases, and proximity operators like w/5 or near/10.',
   },
   {
-    question: 'How do the 17 search filters work?',
-    answer: 'Filters include keyword, date range (from/to), entity name, form types, section keywords, SIC code, state of incorporation, headquarters, exchange, accelerated filer status, accountant/auditor, accession number, file number, fiscal year end, and accounting framework. All filters are enforced before results are returned.',
+    question: 'How do the search filters work?',
+    answer: 'Available filters include keyword, date range, entity, form types, section keywords, SIC, state, headquarters, exchange, filer status, auditor, accession number, file number, fiscal year end, and accounting framework. Supported metadata predicates are sent with the search, while text-dependent predicates are checked against retrieved filing text. Source metadata gaps can affect coverage.',
   },
   {
     question: 'Why does Print / Save PDF open a print view instead of downloading a PDF directly?',
@@ -348,7 +333,7 @@ const FAQS: FaqItem[] = [
   },
   {
     question: 'How does the AI extraction work for Board Profiles?',
-    answer: 'Board and compensation data is extracted from DEF 14A proxy statements using Claude AI. The system parses director names, committee memberships, tenure, and executive compensation tables. This requires a valid Anthropic API key in the deployment.',
+    answer: 'Board and compensation data is extracted from DEF 14A proxy statements using Claude AI. The system parses director names, roles, independence, committee memberships, diversity fields, and executive compensation. This requires a valid Anthropic API key in the deployment.',
   },
   {
     question: 'What is the fastest way to narrow a noisy result set?',
@@ -360,11 +345,11 @@ const FAQS: FaqItem[] = [
   },
   {
     question: 'How do I track insider transactions?',
-    answer: 'Go to Insider Trading (/insiders) and search by company or insider name. The page shows Forms 3, 4, and 5 filings including transaction types, share amounts, and ownership changes for officers, directors, and 10%+ beneficial owners.',
+    answer: 'Go to Insider Trading (/insiders) and add one or more companies. The page lists Forms 3, 4, and 5 filing metadata and links to each SEC source document; inspect the source document for transaction codes, share amounts, and ownership changes.',
   },
   {
     question: 'What form types are available for search?',
-    answer: 'All SEC EDGAR form types are searchable: 10-K, 10-Q, 8-K, DEF 14A, S-1, F-1, SC 13D/G, Forms 3/4/5, 20-F, 6-K, N-1A, ADV, and hundreds more. Use the form type filter in the Research Workbench for the full list.',
+    answer: 'The Research Workbench supports common issuer EDGAR forms including 10-K, 10-Q, 8-K, DEF 14A, S-1, F-1, SC 13D/G, Forms 3/4/5, 20-F, 6-K, and N-1A. Specialist corpora such as Form ADV are not part of issuer EDGAR search.',
   },
 ];
 
@@ -420,21 +405,21 @@ export default function SupportCenter() {
         </div>
 
         <div className="support-summary-grid">
-          <div className="support-summary-card glass-card" onClick={() => router.push('/search')} style={{ cursor: 'pointer' }}>
+          <button type="button" className="support-summary-card glass-card" onClick={() => router.push('/search')}>
             <Filter size={20} />
             <h3>Use filters first</h3>
-            <p>17 advanced filters — issuer, form, date, SIC, auditor, exchange, filer status, section keywords — narrow results before you search.</p>
-          </div>
-          <div className="support-summary-card glass-card" onClick={() => router.push('/search')} style={{ cursor: 'pointer' }}>
+            <p>Issuer, form, date, SIC, auditor, exchange, filer status, and section filters narrow the SEC search before results are ranked.</p>
+          </button>
+          <button type="button" className="support-summary-card glass-card" onClick={() => router.push('/search')}>
             <FileSearch size={20} />
             <h3>Open the filing</h3>
             <p>Move into Filing Detail for section jumps, annotations, YoY redline, table extraction, and PDF export.</p>
-          </div>
-          <div className="support-summary-card glass-card" onClick={() => router.push('/compare')} style={{ cursor: 'pointer' }}>
+          </button>
+          <button type="button" className="support-summary-card glass-card" onClick={() => router.push('/compare')}>
             <BarChart3 size={20} />
             <h3>Benchmark peers</h3>
             <p>Compare XBRL financials across companies, build peer cohorts by SIC code, and generate redline disclosure diffs.</p>
-          </div>
+          </button>
         </div>
       </section>
 

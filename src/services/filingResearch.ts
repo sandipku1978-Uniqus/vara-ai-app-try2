@@ -2,11 +2,12 @@ import type { SearchFilters } from '../components/filters/SearchFilterBar';
 import {
   fetchCompanySubmissions,
   fetchFilingText,
-  isElasticsearchEnabled,
+  isEnrichedSearchEnabled,
   resolveCompanyEntity,
   searchEdgarFilings,
   type EdgarSearchHit,
-  type ElasticSearchExtendedParams,
+  type EnrichedSearchParams,
+  type SearchCandidateCoverage,
   type SecSubmission,
 } from './secApi';
 import {
@@ -81,7 +82,7 @@ interface ExecuteSearchOptions {
   mode?: ResearchSearchMode;
   defaultForms?: string;
   limit?: number;
-  useElasticsearch?: boolean;
+  useEnrichedSearch?: boolean;
   hydrateTextSignals?: boolean;
   deferTextValidation?: boolean;
   preferFastCandidateCollection?: boolean;
@@ -96,6 +97,8 @@ interface ExecuteSearchOptions {
    *  'off': never (Boolean mode is always off). */
   entityScope?: EntityScopeMode;
   onProgress?: (results: FilingResearchResult[]) => void;
+  onDegraded?: (reason: string) => void;
+  onCoverage?: (coverage: SearchCandidateCoverage) => void;
 }
 
 export type EntityScopeMode = 'conservative' | 'aggressive' | 'off';
@@ -356,6 +359,31 @@ function parseFormScope(formScope: string): string[] {
 
 function normalizeFormValue(value: string): string {
   return value.trim().toUpperCase().replace(/\s+/g, '');
+}
+
+export function isExhibitDocumentType(documentType: string): boolean {
+  const normalized = normalizeFormValue(documentType).replace(/^EX\s+/, 'EX-');
+  return normalized.startsWith('EX-');
+}
+
+export function matchesDocumentTypePrefixes(documentType: string, selectedTypes: string[]): boolean {
+  if (selectedTypes.length === 0) return isExhibitDocumentType(documentType);
+  const normalizedDocument = normalizeFormValue(documentType).replace(/^EX\s+/, 'EX-');
+  return selectedTypes.some(selected => {
+    const normalizedSelected = normalizeFormValue(selected).replace(/^EX\s+/, 'EX-');
+    return normalizedDocument === normalizedSelected || normalizedDocument.startsWith(`${normalizedSelected}.`);
+  });
+}
+
+export function partitionParentAndExhibitForms(
+  selectedForms: string[],
+  defaultParentForms: string[]
+): { parentForms: string[]; exhibitTypes: string[] } {
+  const parentForms = selectedForms.filter(form => !isExhibitDocumentType(form));
+  return {
+    parentForms: parentForms.length > 0 ? parentForms : defaultParentForms,
+    exhibitTypes: selectedForms.filter(isExhibitDocumentType),
+  };
 }
 
 function normalizeBaseForm(value: string): string {
@@ -635,6 +663,23 @@ function matchesSectionKeywords(filingText: string, sectionKeywords: string): bo
   return options.some(option => normalizedText.includes(option));
 }
 
+function matchesAccountingFramework(filingText: string, framework: string): boolean {
+  const selected = framework.trim().toLowerCase();
+  if (!selected) return true;
+  if (!filingText.trim()) return false;
+
+  if (selected === 'us gaap') {
+    return /\b(?:u\.?s\.\s+gaap|us-gaap|accounting principles generally accepted in the united states)\b/i.test(filingText);
+  }
+  if (selected === 'ifrs') {
+    return /\b(?:ifrs|international financial reporting standards)\b/i.test(filingText);
+  }
+  if (selected === 'ind as') {
+    return /\b(?:ind(?:ian)?\s+as|indian accounting standards?)\b/i.test(filingText);
+  }
+  return normalizeLooseText(filingText).includes(normalizeLooseText(framework));
+}
+
 function sortResearchResults(results: FilingResearchResult[], preferRelevance: boolean): FilingResearchResult[] {
   return results.sort((a, b) => {
     const byRelevance = (b.relevanceScore ?? b.score) - (a.relevanceScore ?? a.score);
@@ -735,20 +780,15 @@ function matchesBaseFilters(result: FilingResearchResult, filters: SearchFilters
 
 function requiresCompanyMetadata(filters: SearchFilters): boolean {
   const needsCompanyFields = Boolean(
-    filters.entityName.trim() ||
-    filters.fileNumber.trim() ||
     filters.sicCode.trim() ||
+    filters.fileNumber.trim() ||
     filters.stateOfInc.trim() ||
     filters.headquarters.trim() ||
     filters.exchange.length > 0 ||
     filters.fiscalYearEnd.trim()
   );
 
-  if (!needsCompanyFields) {
-    return false;
-  }
-
-  return !isElasticsearchEnabled();
+  return needsCompanyFields;
 }
 
 function matchesSignalFilters(result: FilingResearchResult, filters: SearchFilters, filingText: string): boolean {
@@ -763,6 +803,10 @@ function matchesSignalFilters(result: FilingResearchResult, filters: SearchFilte
   }
 
   if (!matchesFilerKeys(filters.acceleratedStatus, result)) {
+    return false;
+  }
+
+  if (!matchesAccountingFramework(filingText, filters.accountingFramework)) {
     return false;
   }
 
@@ -849,7 +893,9 @@ export function mapSearchHit(hit: EdgarSearchHit): FilingResearchResult {
     filingUrl: buildFilingUrl(base.cik, base.accessionNumber, base.primaryDocument),
     companyName: source?.entity_name || base.entityName,
     tickers: source?.tickers || [],
-    sic: firstString(source?.sics),
+    // EFTS uses `sics[]`; the enriched route historically emitted singular
+    // `sic`. Preserve every code so a secondary valid SIC is not discarded.
+    sic: joinStrings(source?.sics || source?.sic),
     sicDescription: source?.sic_description || '',
     exchange: source?.exchange || '',
     stateOfIncorporation: source?.state_of_incorporation || firstString(source?.inc_states),
@@ -962,63 +1008,93 @@ async function hydrateResultSignals(result: FilingResearchResult): Promise<Filin
   return signal;
 }
 
-function shouldUseElasticsearch(useElasticsearch: boolean): boolean {
-  return useElasticsearch && isElasticsearchEnabled();
+function shouldUseEnrichedSearch(useEnrichedSearch: boolean): boolean {
+  return useEnrichedSearch && isEnrichedSearchEnabled();
 }
 
-function buildExtendedSearchParams(
+function buildEnrichedSearchParams(
   filters: SearchFilters,
-  mode: ResearchSearchMode,
-  useElasticsearch: boolean
-): ElasticSearchExtendedParams {
+  useEnrichedSearch: boolean,
+  onDegraded?: (reason: string) => void,
+  onCoverage?: (coverage: SearchCandidateCoverage) => void
+): EnrichedSearchParams {
+  const requiresClientValidation = Boolean(
+    filters.sectionKeywords.trim() ||
+    filters.accountant.trim() ||
+    filters.acceleratedStatus.length > 0 ||
+    filters.accountingFramework.trim() ||
+    filters.sicCode.trim() ||
+    filters.fileNumber.trim() ||
+    filters.stateOfInc.trim() ||
+    filters.headquarters.trim() ||
+    filters.exchange.length > 0 ||
+    filters.fiscalYearEnd.trim()
+  );
   return {
-    auditor: canonicalizeAuditorInput(filters.accountant.trim()) || undefined,
-    acceleratedStatus: filters.acceleratedStatus.length > 0 ? filters.acceleratedStatus.join(',') : undefined,
-    sicCode: filters.sicCode.trim() ? filters.sicCode.trim().match(/\d{3,4}/)?.[0] : undefined,
-    mode,
-    useElasticsearch: shouldUseElasticsearch(useElasticsearch),
+    // The enriched endpoint is a candidate accelerator, not an authority for
+    // filing-text predicates. Route those searches through EFTS and validate
+    // locally instead of silently trusting unsupported query parameters.
+    useEnrichedSearch: shouldUseEnrichedSearch(useEnrichedSearch) && !requiresClientValidation,
+    onDegraded,
+    onCoverage,
   };
 }
 
-export function canUseInstantElasticsearchSearch(
+export function canUseInstantEnrichedSearch(
   _query: string,
   filters: SearchFilters,
   mode: ResearchSearchMode,
-  useElasticsearch = false
+  useEnrichedSearch = false
 ): boolean {
-  if (!shouldUseElasticsearch(useElasticsearch)) {
+  if (!shouldUseEnrichedSearch(useEnrichedSearch)) {
     return false;
   }
 
-  if (filters.sectionKeywords.trim()) {
+  if (mode !== 'semantic') {
     return false;
   }
 
-  return mode === 'semantic' || mode === 'boolean';
+  return !(
+    filters.sectionKeywords.trim() ||
+    filters.accountant.trim() ||
+    filters.acceleratedStatus.length > 0 ||
+    filters.accountingFramework.trim() ||
+    filters.sicCode.trim() ||
+    filters.fileNumber.trim() ||
+    filters.stateOfInc.trim() ||
+    filters.headquarters.trim() ||
+    filters.exchange.length > 0 ||
+    filters.fiscalYearEnd.trim()
+  );
 }
 
 function requiresTextFiltering(
   filters: SearchFilters,
   rawQuery: string,
   mode: ResearchSearchMode,
-  useElasticsearch: boolean
+  useEnrichedSearch: boolean
 ): boolean {
-  if (filters.sectionKeywords.trim()) {
-    return true;
-  }
-
-  if (canUseInstantElasticsearchSearch(rawQuery, filters, mode, useElasticsearch)) {
-    return false;
-  }
-
-  if (filters.accountant.trim() || filters.acceleratedStatus.length > 0) {
-    return !shouldUseElasticsearch(useElasticsearch);
-  }
-
   if (mode === 'boolean') {
     const parsed = parseBooleanQuery(rawQuery);
     return Boolean(parsed.expression);
   }
+
+  if (filters.sectionKeywords.trim()) {
+    return true;
+  }
+
+  if (filters.accountingFramework.trim()) {
+    return true;
+  }
+
+  if (canUseInstantEnrichedSearch(rawQuery, filters, mode, useEnrichedSearch)) {
+    return false;
+  }
+
+  if (filters.accountant.trim() || filters.acceleratedStatus.length > 0) {
+    return true;
+  }
+
   return false;
 }
 
@@ -1028,13 +1104,15 @@ export async function executeFilingResearchSearch({
   mode = 'semantic',
   defaultForms = '',
   limit = 50,
-  useElasticsearch = false,
+  useEnrichedSearch = false,
   hydrateTextSignals = false,
   deferTextValidation = false,
   preferFastCandidateCollection = false,
   includeExhibits = false,
   entityScope = 'conservative',
   onProgress,
+  onDegraded,
+  onCoverage,
 }: ExecuteSearchOptions): Promise<FilingResearchResult[]> {
   let query = rawQuery;
   let filters = rawFilters;
@@ -1074,11 +1152,26 @@ export async function executeFilingResearchSearch({
   const semanticAuditorSearch = mode === 'semantic' && Boolean(filters.accountant.trim());
   const needsCompanyMetadata = requiresCompanyMetadata(filters);
   const requestedLimit = Math.max(limit, 1);
-  const fastPass = deferTextValidation;
+  const fastPass = deferTextValidation && mode !== 'boolean';
   const fastCandidateCollection = deferTextValidation || preferFastCandidateCollection;
   const displayLimit = Math.min(requestedLimit, 500);
-  const needsTextFiltering = requiresTextFiltering(filters, query, mode, useElasticsearch);
+  const needsTextFiltering = requiresTextFiltering(filters, query, mode, useEnrichedSearch);
   const shouldHydrateSignals = !fastPass && (hydrateTextSignals || needsTextFiltering);
+  const upstreamCoverageState: { value: SearchCandidateCoverage | null } = { value: null };
+  const captureUpstreamCoverage = (coverage: SearchCandidateCoverage) => {
+    upstreamCoverageState.value = upstreamCoverageState.value
+      ? {
+          examined: Math.max(upstreamCoverageState.value.examined, coverage.examined),
+          upstreamTotal: Math.max(upstreamCoverageState.value.upstreamTotal, coverage.upstreamTotal),
+          complete: upstreamCoverageState.value.complete && coverage.complete,
+        }
+      : coverage;
+
+    // For text-filtered searches, collection coverage is not yet validation
+    // coverage. Publish it only after the collected filings have actually been
+    // checked, otherwise a deadline can look like an authoritative full scan.
+    if (!shouldHydrateSignals) onCoverage?.(upstreamCoverageState.value);
+  };
 
   const booleanServerQueries = mode === 'boolean' ? buildBooleanCandidateQueries(query || filters.keyword).slice(0, 5) : [];
   const semanticServerQueries = mode === 'semantic' ? buildSemanticCandidateQueries(serverQuery, filters) : [];
@@ -1088,11 +1181,14 @@ export async function executeFilingResearchSearch({
       ? (booleanServerQueries.length > 0 ? booleanServerQueries : [serverQuery])
       : (semanticServerQueries.length > 0 ? semanticServerQueries : [serverQuery]);
 
-  const filteredServerQueries = (
+  const candidateServerQueries = (
     fastCandidateCollection
       ? serverQueries.slice(0, mode === 'boolean' ? 3 : semanticAuditorSearch ? 2 : 3)
       : serverQueries
   ).filter(Boolean);
+  // Empty-query browse is intentional for form/date/SIC and other filter-only
+  // requests. Both EFTS and the enriched metadata route support that contract.
+  const filteredServerQueries = candidateServerQueries.length > 0 ? candidateServerQueries : [''];
 
   // An issuer-scoped browse intentionally has NO text query ("OGN 10-K" →
   // entity + cleared text). filter(Boolean) used to drop that empty query,
@@ -1139,7 +1235,7 @@ export async function executeFilingResearchSearch({
           filters.dateTo || undefined,
           filters.entityName || undefined,
           fastCandidateCollection ? Math.min(perQueryResultLimit, 140) : perQueryResultLimit,
-          { ...buildExtendedSearchParams(filters, mode, useElasticsearch), entityCik: entityCik || undefined }
+          { ...buildEnrichedSearchParams(filters, useEnrichedSearch && !includeExhibits, onDegraded, captureUpstreamCoverage), entityCik: entityCik || undefined }
         );
 
         const queryPriority = filteredServerQueries.length - queryIndex;
@@ -1186,13 +1282,19 @@ export async function executeFilingResearchSearch({
   const progressInterval = 15;
   const waveStartTime = Date.now();
   const maxWaveTimeMs = 45_000; // Stop after 45 seconds to avoid endless validation
+  let validationExamined = 0;
+  let validationTimedOut = false;
+  let completedQueryVariants = 0;
 
   const wavePerQueryLimit = fastCandidateCollection ? Math.min(perQueryResultLimit, 140) : perQueryResultLimit;
   const waveQueryVariants = fastCandidateCollection ? filteredServerQueries.slice(0, 2) : filteredServerQueries;
 
   for (const [queryIndex, candidateQuery] of waveQueryVariants.entries()) {
     if (filteredResults.length >= displayLimit) break;
-    if (Date.now() - waveStartTime > maxWaveTimeMs) break;
+    if (Date.now() - waveStartTime > maxWaveTimeMs) {
+      validationTimedOut = true;
+      break;
+    }
 
     let queryBatchHits: EdgarSearchHit[];
     try {
@@ -1203,7 +1305,7 @@ export async function executeFilingResearchSearch({
         filters.dateTo || undefined,
         filters.entityName || undefined,
         wavePerQueryLimit,
-        { ...buildExtendedSearchParams(filters, mode, useElasticsearch), entityCik: entityCik || undefined }
+        { ...buildEnrichedSearchParams(filters, useEnrichedSearch && !includeExhibits, onDegraded, captureUpstreamCoverage), entityCik: entityCik || undefined }
       );
     } catch (error) {
       lastSearchError = error instanceof Error ? error : new Error('EDGAR search failed');
@@ -1221,6 +1323,7 @@ export async function executeFilingResearchSearch({
     }
 
     if (newHits.length === 0) {
+      completedQueryVariants += 1;
       if (mode === 'boolean') await delay(120);
       continue;
     }
@@ -1229,6 +1332,9 @@ export async function executeFilingResearchSearch({
     let waveCandidates = uniqueById(newHits.map(mapSearchHit));
     if (needsCompanyMetadata) waveCandidates = await hydrateCompanyMetadataBatch(waveCandidates);
     waveCandidates = waveCandidates.filter(result => matchesBaseFilters(result, filters, formScope, excludeExhibits));
+    // Candidates rejected by deterministic metadata filters have still been
+    // examined for this validation pass.
+    validationExamined += Math.max(0, newHits.length - waveCandidates.length);
 
     // Validate each candidate in this wave (fetch text, check auditor/boolean/section)
     for (let index = 0; index < waveCandidates.length && filteredResults.length < displayLimit && Date.now() - waveStartTime < maxWaveTimeMs; index += batchSize) {
@@ -1240,6 +1346,7 @@ export async function executeFilingResearchSearch({
           signalMap.set(getSignalCacheKey(result), signal);
         })
       );
+      validationExamined += chunk.length;
 
       for (const result of chunk) {
         const filingText = signalMap.get(getSignalCacheKey(result))?.text || '';
@@ -1263,6 +1370,13 @@ export async function executeFilingResearchSearch({
       }
     }
 
+    if (Date.now() - waveStartTime >= maxWaveTimeMs && validationExamined < hitMap.size) {
+      validationTimedOut = true;
+      break;
+    }
+
+    completedQueryVariants += 1;
+
     if (mode === 'boolean' && queryIndex + 1 < filteredServerQueries.length) await delay(120);
   }
 
@@ -1270,6 +1384,28 @@ export async function executeFilingResearchSearch({
 
   const finalResults = sortResearchResults(filteredResults, preferRelevance).slice(0, displayLimit);
   await enrichResultsFromFacetStore(finalResults);
+
+  const upstreamCoverage = upstreamCoverageState.value;
+  const upstreamTotal = Math.max(
+    upstreamCoverage?.upstreamTotal ?? 0,
+    upstreamCoverage?.examined ?? 0,
+    hitMap.size
+  );
+  const collectionComplete = upstreamCoverage?.complete ?? true;
+  const validationComplete = (
+    !validationTimedOut &&
+    completedQueryVariants === waveQueryVariants.length &&
+    collectionComplete &&
+    validationExamined >= hitMap.size
+  );
+  onCoverage?.({
+    examined: Math.min(validationExamined, upstreamTotal),
+    upstreamTotal,
+    complete: validationComplete,
+  });
+  if (validationTimedOut) {
+    onDegraded?.('Filing-text validation reached its time limit; only a partial candidate window was verified.');
+  }
 
   if (needsCompanyMetadata) {
     return finalResults;
