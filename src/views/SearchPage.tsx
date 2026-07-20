@@ -54,6 +54,7 @@ import { looksLikeBooleanQuery } from '../utils/booleanSearch';
 import { canUseInstantEnrichedSearch } from '../services/filingResearch';
 import { BRAND } from '../config/brand';
 import './SearchPage.css';
+import '../styles/evidence-ledger.css';
 
 // Amendments included for every core form: EFTS matches form types exactly, so
 // omitting 10-K/A etc. hides restatements — often the most material filings.
@@ -1469,7 +1470,7 @@ export default function SearchPage() {
         )}
 
         <div
-          className="research-workspace"
+          className="research-workspace el-scope"
           role={activeSession ? 'tabpanel' : undefined}
           id={activeSession ? `research-panel-${activeSession.id}` : undefined}
           aria-labelledby={activeSession ? researchTabId(activeSession.id) : undefined}
@@ -1545,6 +1546,15 @@ export default function SearchPage() {
                     >
                       <div className="topline">
                         <span className="date">{result.fileDate}</span>
+                        {/* Truth-bound provenance: text-validated hits carry a
+                            non-metadata matchReason; 'Matched filing metadata'
+                            means the filing text was not checked. */}
+                        {(() => {
+                          const textValidated = Boolean(result.matchReason && !/metadata/i.test(result.matchReason));
+                          const badgeClass = textValidated ? 'el-badge-verified' : result.matchReason ? 'el-badge-neutral' : 'el-badge-review';
+                          const badgeLabel = textValidated ? 'Text validated' : result.matchReason ? 'Metadata' : 'Preliminary';
+                          return <span className={`el-badge ${badgeClass}`}>{badgeLabel}</span>;
+                        })()}
                         <span className="form">{formatResultFormLabel(result)}</span>
                       </div>
                       <div className="company">{result.entityName}</div>

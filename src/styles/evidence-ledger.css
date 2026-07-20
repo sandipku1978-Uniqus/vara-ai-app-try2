@@ -283,3 +283,84 @@
   background: var(--el-surface-sunken);
   animation: el-shimmer 1.4s ease-in-out infinite;
 }
+
+/* ════════════════════════════════════════════════════════════════════════
+   App integration (Phase 2)
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* Until the full-page migration, el- surfaces inside the app keep the app
+   typeface; the ledger's system stack applies only to the gallery. */
+.research-workspace.el-scope {
+  --el-font-ui: var(--font-sans);
+  background: transparent;
+}
+
+/* Dark-theme bridge: same meaning-only state colors, contrast-lifted onto
+   the app's dark surfaces. */
+:root[data-theme='dark'] .el-scope {
+  --el-canvas: var(--bg-primary);
+  --el-surface: var(--bg-elevated);
+  --el-surface-sunken: var(--surface-subtle);
+  --el-rule: var(--border-color);
+  --el-rule-strong: rgba(238, 223, 236, 0.28);
+  --el-ink: var(--text-primary);
+  --el-ink-secondary: var(--text-secondary);
+  --el-ink-muted: var(--text-muted);
+  --el-ink-faint: rgba(214, 205, 215, 0.45);
+  --el-plum: var(--accent-primary);
+  --el-plum-strong: var(--accent-soft);
+  --el-plum-wash: rgba(179, 31, 126, 0.16);
+  --el-link: #8AB4F8;
+  --el-link-wash: rgba(29, 78, 216, 0.22);
+  --el-verified: #6CE9A6;
+  --el-verified-wash: rgba(22, 122, 61, 0.2);
+  --el-review: #FEC84B;
+  --el-review-wash: rgba(146, 97, 12, 0.22);
+  --el-risk: #FDA29B;
+  --el-risk-wash: rgba(176, 42, 38, 0.2);
+  --el-shadow-overlay: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+/* Workbench hit list as ledger rows: flat surfaces, ruled separation,
+   tabular dates, wash-selected state instead of glow. */
+.el-scope .research-hit-card {
+  background: var(--el-surface);
+  border: 1px solid var(--el-rule);
+  border-radius: var(--el-radius-panel);
+  box-shadow: none;
+}
+.el-scope .research-hit-card:hover {
+  background: var(--el-surface);
+  border-color: var(--el-rule-strong);
+  transform: none;
+}
+.el-scope .research-hit-card.active {
+  background: var(--el-plum-wash);
+  border-color: var(--el-plum);
+  box-shadow: inset 2px 0 0 var(--el-plum);
+}
+.el-scope .research-hit-card .date {
+  font-family: var(--el-font-mono);
+  font-size: var(--el-text-xs);
+  color: var(--el-ink-muted);
+  letter-spacing: 0;
+}
+.el-scope .research-hit-card .company {
+  color: var(--el-ink);
+  font-weight: 600;
+}
+.el-scope .research-hit-card .meta {
+  color: var(--el-ink-muted);
+  font-size: var(--el-text-sm);
+}
+.el-scope .research-hit-card .match-reason {
+  color: var(--el-ink-secondary);
+  font-size: var(--el-text-sm);
+}
+.el-scope .research-hit-card .snippet {
+  font-family: var(--el-font-source);
+  font-size: var(--el-text-sm);
+  color: var(--el-ink-secondary);
+  border-left: 2px solid var(--el-rule-strong);
+  padding-left: var(--el-space-2);
+}
