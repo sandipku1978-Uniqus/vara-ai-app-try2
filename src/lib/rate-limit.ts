@@ -72,6 +72,21 @@ function hasDistributedStore(): boolean {
   return Boolean(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
 }
 
+let warnedLocalControlsInProduction = false;
+
+/**
+ * Option A (2026-07-20): with no KV store provisioned, production falls back
+ * to per-instance in-memory limits — the pre-rollout posture — instead of
+ * failing closed. Configuring KV_REST_API_URL/KV_REST_API_TOKEN activates
+ * distributed limits, and a configured-but-broken store still fails closed.
+ */
+function useLocalControlsFallback(): void {
+  if (!warnedLocalControlsInProduction && isProductionDeployment()) {
+    warnedLocalControlsInProduction = true;
+    console.warn('[rate-limit] KV_REST_API_URL/KV_REST_API_TOKEN not set — using per-instance in-memory request controls. Provision Upstash/Vercel KV to activate distributed limits.');
+  }
+}
+
 function opaqueKeyPart(value: string): string {
   return crypto.createHash('sha256').update(value).digest('base64url').slice(0, 24);
 }
@@ -116,9 +131,7 @@ async function incrementDistributed(key: string, increment: number, ttlSeconds: 
 
 async function incrementCounter(key: string, increment: number, ttlSeconds: number): Promise<number> {
   if (hasDistributedStore()) return incrementDistributed(key, increment, ttlSeconds);
-  if (isProductionDeployment()) {
-    throw new Error('Distributed rate limiting requires KV_REST_API_URL and KV_REST_API_TOKEN.');
-  }
+  useLocalControlsFallback();
   return incrementLocal(key, increment, ttlSeconds);
 }
 
@@ -282,9 +295,7 @@ export async function acquireAiConcurrency(
   const token = crypto.randomUUID();
   const leaseSeconds = normalizedLeaseSeconds(requestedLeaseSeconds);
   const local = !hasDistributedStore();
-  if (local && isProductionDeployment()) {
-    return { allowed: false, retryAfterSeconds: 30, reason: 'unavailable' };
-  }
+  if (local) useLocalControlsFallback();
 
   const scopes: Array<{ key: string; limit: number }> = [
     {
@@ -330,9 +341,7 @@ export async function acquireResourceConcurrency(
 ): Promise<AiConcurrencyResult> {
   const token = crypto.randomUUID();
   const local = !hasDistributedStore();
-  if (local && isProductionDeployment()) {
-    return { allowed: false, retryAfterSeconds: 30, reason: 'unavailable' };
-  }
+  if (local) useLocalControlsFallback();
 
   const operation = options.operation.replace(/[^a-z0-9_-]/gi, '').slice(0, 40) || 'unknown';
   const leaseSeconds = normalizedLeaseSeconds(options.leaseSeconds ?? 60);

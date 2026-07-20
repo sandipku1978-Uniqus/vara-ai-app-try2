@@ -2,6 +2,14 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+vi.mock('@vercel/kv', () => ({
+  kv: new Proxy({}, {
+    get: () => () => {
+      throw new Error('distributed store unreachable');
+    },
+  }),
+}));
+
 import {
   estimateModelTokenReservation,
   reserveAiTokenBudget,
@@ -33,10 +41,24 @@ describe('AI spend reservations', () => {
     expect(overBudget).toMatchObject({ allowed: false, reason: 'budget' });
   });
 
-  it('fails closed in production when the distributed budget store is unavailable', async () => {
+  it('falls back to in-memory controls in production when no KV store is configured (Option A)', async () => {
     vi.stubEnv('NODE_ENV', 'production');
     vi.stubEnv('VERCEL_ENV', 'production');
-    const result = await reserveAiTokenBudget({ userId: 'prod-user', orgId: null }, 1_000);
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const result = await reserveAiTokenBudget({ userId: `prod-user-${Date.now()}`, orgId: null }, 1_000);
+      expect(result).toMatchObject({ allowed: true });
+    } finally {
+      warn.mockRestore();
+    }
+  });
+
+  it('still fails closed in production when a configured KV store is broken', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    vi.stubEnv('VERCEL_ENV', 'production');
+    vi.stubEnv('KV_REST_API_URL', 'https://kv.invalid');
+    vi.stubEnv('KV_REST_API_TOKEN', 'broken-token');
+    const result = await reserveAiTokenBudget({ userId: 'prod-user-strict', orgId: null }, 1_000);
     expect(result).toMatchObject({ allowed: false, reason: 'unavailable' });
   });
 
