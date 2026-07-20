@@ -11,7 +11,7 @@ const UPSTREAM_ORIGINS: Record<SecUpstream, string> = {
 const QUERY_KEYS: Record<SecUpstream, Set<string>> = {
   proxy: new Set(['action', 'CIK', 'type', 'dateb', 'owner', 'count', 'output', 'search']),
   data: new Set(),
-  efts: new Set(['q', 'forms', 'dateRange', 'startdt', 'enddt', 'entityName', 'from', 'size']),
+  efts: new Set(['q', 'forms', 'dateRange', 'startdt', 'enddt', 'entityName', 'ciks', 'from', 'size']),
 };
 
 const SAFE_HTML_TAGS = [
