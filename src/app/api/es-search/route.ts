@@ -163,6 +163,8 @@ export async function GET(request: Request) {
         p_sic: sicCode || null,
         p_limit: size,
         p_offset: from,
+        // Exact issuer identity beats the name-ILIKE approximation (009)
+        p_cik: cik ? Number(cik) : null,
       });
       if (error) throw new Error(`urc_search_filings: ${error.message}`);
 
