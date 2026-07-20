@@ -26,7 +26,6 @@ import { clearDocumentHighlights, highlightDocumentSearchTerms } from '../servic
 import {
   buildSearchTrendSummary,
   executeFilingResearchSearch,
-  resolveEntityScope,
   type FilingResearchResult,
   type ResearchSearchMode,
 } from '../services/filingResearch';
@@ -104,11 +103,6 @@ function formatResultFormLabel(result: FilingResearchResult): string {
   }
   return `${filingForm} · ${documentType}`;
 }
-
-// Issuer scoping is shared platform-wide (resolveEntityScope in
-// filingResearch) — per-page ticker maps are what made most companies
-// silently unsearchable here.
-const resolveEntityHint = (rawQuery: string) => resolveEntityScope(rawQuery, 'conservative');
 
 function buildAlertName(query: string, filters: SearchFilters): string {
   if (query.trim()) return query.trim();
@@ -503,14 +497,10 @@ export default function SearchPage() {
       let effectiveQuery = interpreted.query || trimmed;
       let effectiveFilters = interpreted.filters;
 
-      if (!effectiveFilters.entityName.trim() && effectiveQuery) {
-        const hint = await resolveEntityHint(effectiveQuery);
-        if (hint.entityName) {
-          effectiveFilters = { ...effectiveFilters, entityName: hint.entityName };
-          effectiveQuery = hint.query;
-        }
-      }
-
+      // Issuer scoping happens inside executeFilingResearchSearch — the
+      // single shared resolver (with CIK threading) for every surface. A
+      // page-level pre-resolve here set entityName without the CIK and
+      // bypassed it.
       const resolvedSearch = {
         // An entity-resolved search intentionally clears the text query —
         // falling back to the raw prompt here would re-add the company name

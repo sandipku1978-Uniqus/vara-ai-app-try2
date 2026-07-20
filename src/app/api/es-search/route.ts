@@ -52,6 +52,7 @@ async function fetchEftsCandidates(params: {
   startdt?: string;
   enddt?: string;
   entityName?: string;
+  cik?: string;
   cap: number;
 }): Promise<{ total: number; hits: EftsHit[] }> {
   const base = new URLSearchParams({ q: params.q });
@@ -61,7 +62,13 @@ async function fetchEftsCandidates(params: {
     if (params.startdt) base.set('startdt', params.startdt);
     if (params.enddt) base.set('enddt', params.enddt);
   }
-  if (params.entityName) base.set('entityName', params.entityName);
+  if (params.cik) {
+    // Resolved-issuer text searches filter by CIK: EFTS entityName matching
+    // silently misses names with punctuation ("Organon & Co.")
+    base.set('ciks', params.cik.padStart(10, '0'));
+  } else if (params.entityName) {
+    base.set('entityName', params.entityName);
+  }
 
   const collected: EftsHit[] = [];
   const seen = new Set<string>();
@@ -119,6 +126,8 @@ export async function GET(request: Request) {
   const startdt = params.get('startdt') || undefined;
   const enddt = params.get('enddt') || undefined;
   const entityName = params.get('entityName') || undefined;
+  const cikRaw = (params.get('cik') || '').trim();
+  const cik = /^\d{1,10}$/.test(cikRaw) ? cikRaw : undefined;
   const auditorParam = (params.get('auditor') || '').trim();
   const auditor = auditorParam ? canonicalizeAuditorInput(auditorParam) : '';
   const sicCode = (params.get('sicCode') || '').trim();
@@ -187,7 +196,7 @@ export async function GET(request: Request) {
     // ── Text search: EFTS candidates + Postgres facets/enrichment ──────────
     const needed = from + size;
     const cap = Math.min(CANDIDATE_CAP, Math.max(needed * 3, 60));
-    const efts = await fetchEftsCandidates({ q, forms, startdt, enddt, entityName, cap });
+    const efts = await fetchEftsCandidates({ q, forms, startdt, enddt, entityName, cik, cap });
 
     const allCiks = Array.from(new Set(efts.hits.flatMap(hitCiks)));
     const auditorByCik = new Map<number, string>();

@@ -979,6 +979,9 @@ export interface ElasticSearchExtendedParams {
   sicCode?: string;
   mode?: 'semantic' | 'boolean';
   useElasticsearch?: boolean;
+  /** Resolved issuer CIK. EFTS text searches filter reliably by `ciks`;
+   *  entityName strings with punctuation ("Organon & Co.") mismatch. */
+  entityCik?: string;
 }
 
 /** EDGAR full-text search coverage starts 2001; don't silently narrow undated queries. */
@@ -1009,6 +1012,7 @@ async function searchViaElasticsearch(
     size: String(Math.min(maxResults, 500)),
   });
   if (entityName) params.set('entityName', entityName);
+  if (extended.entityCik) params.set('cik', extended.entityCik);
   if (extended.auditor) params.set('auditor', extended.auditor);
   if (extended.acceleratedStatus) params.set('acceleratedStatus', extended.acceleratedStatus);
   if (extended.sicCode) params.set('sicCode', extended.sicCode);
@@ -1092,6 +1096,12 @@ export async function searchEdgarFilings(
     enddt: endDate || new Date().toISOString().split('T')[0],
   });
   if (entityName) baseParams.set('entityName', entityName);
+  if (extended.entityCik) {
+    // CIK beats a display-name match on the EFTS side — names with
+    // punctuation ("Organon & Co.") silently miss the entity filter.
+    baseParams.set('ciks', extended.entityCik.padStart(10, '0'));
+    baseParams.delete('entityName');
+  }
 
   const cacheKey = `${baseParams.toString()}|max=${maxResults}`;
   if (!edgarSearchCache.has(cacheKey)) {

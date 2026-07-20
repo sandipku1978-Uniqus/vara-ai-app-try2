@@ -111,22 +111,22 @@ export type EntityScopeMode = 'conservative' | 'aggressive' | 'off';
 export async function resolveEntityScope(
   rawText: string,
   scope: Exclude<EntityScopeMode, 'off'> = 'conservative'
-): Promise<{ entityName: string; query: string }> {
+): Promise<{ entityName: string; cik: string; query: string }> {
   const trimmed = rawText.trim();
-  if (!trimmed) return { entityName: '', query: trimmed };
+  if (!trimmed) return { entityName: '', cik: '', query: trimmed };
 
   // Whole text reads as one company ("organon", "OGN", "Organon & Co")
   const whole = await resolveCompanyEntity(trimmed);
-  if (whole) return { entityName: whole.title, query: '' };
+  if (whole) return { entityName: whole.title, cik: whole.cik, query: '' };
 
   const words = trimmed.split(/\s+/);
-  if (words.length < 2) return { entityName: '', query: trimmed };
+  if (words.length < 2) return { entityName: '', cik: '', query: trimmed };
 
   // Longest leading multi-word company name ("sun pharma advanced 8-K")
   for (let take = Math.min(4, words.length - 1); take >= 2; take--) {
     const lead = await resolveCompanyEntity(words.slice(0, take).join(' '));
     if (lead) {
-      return { entityName: lead.title, query: words.slice(take).join(' ') };
+      return { entityName: lead.title, cik: lead.cik, query: words.slice(take).join(' ') };
     }
   }
 
@@ -138,11 +138,11 @@ export async function resolveEntityScope(
     const isTickerMatch = lead.ticker === words[0].toUpperCase();
     const typedAsTicker = words[0] === words[0].toUpperCase();
     if (scope === 'aggressive' || !isTickerMatch || typedAsTicker) {
-      return { entityName: lead.title, query: words.slice(1).join(' ') };
+      return { entityName: lead.title, cik: lead.cik, query: words.slice(1).join(' ') };
     }
   }
 
-  return { entityName: '', query: trimmed };
+  return { entityName: '', cik: '', query: trimmed };
 }
 
 function delay(ms: number): Promise<void> {
@@ -1038,6 +1038,9 @@ export async function executeFilingResearchSearch({
 }: ExecuteSearchOptions): Promise<FilingResearchResult[]> {
   let query = rawQuery;
   let filters = rawFilters;
+  // Resolved issuer CIK — EFTS filters reliably by CIK where entity-name
+  // strings with punctuation ("Organon & Co.") silently mismatch.
+  let entityCik = '';
 
   // Entity scoping ("apple 10-K", "OGN climate", "Organon exhibit"): company
   // text must become an issuer scope, not a relevance term — full-text
@@ -1055,6 +1058,7 @@ export async function executeFilingResearchSearch({
     if (scoped.entityName) {
       query = scoped.query;
       filters = { ...filters, keyword: '', entityName: scoped.entityName };
+      entityCik = scoped.cik;
     }
   }
 
@@ -1135,7 +1139,7 @@ export async function executeFilingResearchSearch({
           filters.dateTo || undefined,
           filters.entityName || undefined,
           fastCandidateCollection ? Math.min(perQueryResultLimit, 140) : perQueryResultLimit,
-          buildExtendedSearchParams(filters, mode, useElasticsearch)
+          { ...buildExtendedSearchParams(filters, mode, useElasticsearch), entityCik: entityCik || undefined }
         );
 
         const queryPriority = filteredServerQueries.length - queryIndex;
@@ -1199,7 +1203,7 @@ export async function executeFilingResearchSearch({
         filters.dateTo || undefined,
         filters.entityName || undefined,
         wavePerQueryLimit,
-        buildExtendedSearchParams(filters, mode, useElasticsearch)
+        { ...buildExtendedSearchParams(filters, mode, useElasticsearch), entityCik: entityCik || undefined }
       );
     } catch (error) {
       lastSearchError = error instanceof Error ? error : new Error('EDGAR search failed');
