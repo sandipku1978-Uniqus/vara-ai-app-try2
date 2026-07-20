@@ -54,6 +54,8 @@ export default function ExemptOfferings() {
         filters,
         defaultForms: 'D,D/A',
         limit: 50,
+        // Users mostly type issuer names here — resolve lowercase too
+        entityScope: 'aggressive',
       });
       setResults(matches.map(match => ({
         entityName: match.entityName,

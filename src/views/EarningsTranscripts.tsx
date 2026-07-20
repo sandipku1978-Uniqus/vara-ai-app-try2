@@ -56,6 +56,8 @@ export default function EarningsTranscripts() {
         filters,
         defaultForms: formTypes,
         limit: 50,
+        // Users mostly type company names here — resolve lowercase too
+        entityScope: 'aggressive',
       });
       setResults(matches.map(match => ({
         entityName: match.entityName,

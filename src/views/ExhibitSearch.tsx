@@ -71,6 +71,9 @@ export default function ExhibitSearch() {
         defaultForms: '10-K,10-K/A,8-K,S-1,S-1/A,DEF 14A',
         limit: 50,
         includeExhibits: true,
+        // The exhibits box is predominantly a company filter ("Organon",
+        // "sun pharma") — resolve lowercase names/tickers to issuer scope
+        entityScope: 'aggressive',
       });
       setResults(matches.map(match => ({
         entityName: match.entityName,

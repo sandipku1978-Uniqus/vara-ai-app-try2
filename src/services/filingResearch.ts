@@ -88,7 +88,61 @@ interface ExecuteSearchOptions {
   /** Include exhibit sub-documents (EX-99.x etc.) as separate results.
    *  Off by default — only the Exhibit Search surface wants them. */
   includeExhibits?: boolean;
+  /** How eagerly free text is scoped to an issuer via the SEC directory.
+   *  'conservative' (default): whole-text company, or a leading ticker the
+   *  user typed in caps — topic-heavy surfaces like the Research Workbench.
+   *  'aggressive': also lowercase leading company names/tickers — surfaces
+   *  whose search box is predominantly a company filter (Exhibits, M&A).
+   *  'off': never (Boolean mode is always off). */
+  entityScope?: EntityScopeMode;
   onProgress?: (results: FilingResearchResult[]) => void;
+}
+
+export type EntityScopeMode = 'conservative' | 'aggressive' | 'off';
+
+/**
+ * Resolve free text to an issuer scope using the full SEC ticker directory
+ * (10K+ listed companies). Shared by every search surface — per-page
+ * hardcoded ticker maps are what made "OGN" / "Organon" silently
+ * unsearchable. Returns entityName plus the residual topic text (empty when
+ * the whole text was the company — keeping the name as a text query made
+ * relevance ranking surface the oldest strong match first).
+ */
+export async function resolveEntityScope(
+  rawText: string,
+  scope: Exclude<EntityScopeMode, 'off'> = 'conservative'
+): Promise<{ entityName: string; query: string }> {
+  const trimmed = rawText.trim();
+  if (!trimmed) return { entityName: '', query: trimmed };
+
+  // Whole text reads as one company ("organon", "OGN", "Organon & Co")
+  const whole = await resolveCompanyEntity(trimmed);
+  if (whole) return { entityName: whole.title, query: '' };
+
+  const words = trimmed.split(/\s+/);
+  if (words.length < 2) return { entityName: '', query: trimmed };
+
+  // Longest leading multi-word company name ("sun pharma advanced 8-K")
+  for (let take = Math.min(4, words.length - 1); take >= 2; take--) {
+    const lead = await resolveCompanyEntity(words.slice(0, take).join(' '));
+    if (lead) {
+      return { entityName: lead.title, query: words.slice(take).join(' ') };
+    }
+  }
+
+  // Single leading token. Ticker-style matches only count when typed in
+  // caps under 'conservative' — otherwise ordinary words ("all", "cash",
+  // "target") mis-resolve to tickers inside topic queries.
+  const lead = await resolveCompanyEntity(words[0]);
+  if (lead) {
+    const isTickerMatch = lead.ticker === words[0].toUpperCase();
+    const typedAsTicker = words[0] === words[0].toUpperCase();
+    if (scope === 'aggressive' || !isTickerMatch || typedAsTicker) {
+      return { entityName: lead.title, query: words.slice(1).join(' ') };
+    }
+  }
+
+  return { entityName: '', query: trimmed };
 }
 
 function delay(ms: number): Promise<void> {
@@ -979,24 +1033,28 @@ export async function executeFilingResearchSearch({
   deferTextValidation = false,
   preferFastCandidateCollection = false,
   includeExhibits = false,
+  entityScope = 'conservative',
   onProgress,
 }: ExecuteSearchOptions): Promise<FilingResearchResult[]> {
   let query = rawQuery;
   let filters = rawFilters;
 
-  // Entity-only queries ("apple 10-K", "COIN 8-K") are browses, not text
-  // searches: full-text ranking the word "apple" surfaced a 2009 filing
-  // first. Scope to the issuer and sort newest-first instead.
+  // Entity scoping ("apple 10-K", "OGN climate", "Organon exhibit"): company
+  // text must become an issuer scope, not a relevance term — full-text
+  // ranking the word "apple" surfaced a 2009 filing first, and unresolved
+  // companies silently miss. Runs for every caller unless the query is a
+  // Boolean expression or the caller already scoped an issuer.
   if (
-    mode === 'semantic' &&
+    mode !== 'boolean' &&
+    entityScope !== 'off' &&
     !filters.entityName.trim() &&
     !filters.sectionKeywords.trim() &&
     (query || filters.keyword).trim()
   ) {
-    const entity = await resolveCompanyEntity(query || filters.keyword);
-    if (entity) {
-      query = '';
-      filters = { ...filters, keyword: '', entityName: entity.title };
+    const scoped = await resolveEntityScope((query || filters.keyword).trim(), entityScope);
+    if (scoped.entityName) {
+      query = scoped.query;
+      filters = { ...filters, keyword: '', entityName: scoped.entityName };
     }
   }
 

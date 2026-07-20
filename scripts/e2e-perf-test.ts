@@ -117,7 +117,8 @@ async function generatePoints(): Promise<TestPoint[]> {
   const nCthreads = Math.round(TOTAL * 0.10);
   const nCsearch = Math.round(TOTAL * 0.05);
   const nD = Math.round(TOTAL * 0.15);
-  const nE = TOTAL - nA - nB - nCthreads - nCsearch - nD;
+  const nF = Math.max(20, Math.round(TOTAL * 0.08));
+  const nE = TOTAL - nA - nB - nCthreads - nCsearch - nD - nF;
 
   // Which years actually have data (2010 backfill may still be in flight)
   const { data: yearProbe } = await db
@@ -278,6 +279,28 @@ async function generatePoints(): Promise<TestPoint[]> {
   }
   void dYears;
 
+  // --- Class F: entity searchability — a random sample of the FULL SEC
+  // ticker directory must return filings via the production entity path.
+  // Guards the "Organon was silently unsearchable" class of failure.
+  const dirRes = await fetch('https://www.sec.gov/files/company_tickers.json', {
+    headers: { 'User-Agent': 'Uniqus Research Center contact@uniqus.com' },
+  });
+  const dirJson = await dirRes.json();
+  const dirEntries = Object.values(dirJson) as Array<{ cik_str: number; ticker: string; title: string }>;
+  for (const c of sample(dirEntries, nF)) {
+    const qs = new URLSearchParams({ entityName: c.title.slice(0, 60), size: '5' });
+    points.push({
+      cls: 'F',
+      label: `entity ${c.ticker} ${c.title.slice(0, 30)}`,
+      url: `${BASE}/api/es-search?${qs}`,
+      check: (json) => {
+        const hits = (json as any)?.hits?.hits ?? [];
+        if (hits.length === 0) return `no filings for listed issuer ${c.ticker}`;
+        return null;
+      },
+    });
+  }
+
   // --- Class E: enrichment — tickers must match the facet store
   const { data: companies } = await db
     .from('urc_sec_companies')
@@ -364,7 +387,7 @@ function pct(sorted: number[], p: number): number {
   const byClass = (c: string) => points.filter((p) => p.cls === c);
   console.log(
     `Generated ${points.length} points — A:${byClass('A').length} B:${byClass('B').length} ` +
-    `C:${byClass('C').length} D:${byClass('D').length} E:${byClass('E').length}`,
+    `C:${byClass('C').length} D:${byClass('D').length} E:${byClass('E').length} F:${byClass('F').length}`,
   );
 
   const started = new Date().toISOString();
@@ -380,7 +403,7 @@ function pct(sorted: number[], p: number): number {
   const results = [...fastResults, ...eftsResults];
   const wallSeconds = (performance.now() - t0) / 1000;
 
-  const classes = ['A', 'B', 'C', 'D', 'E'];
+  const classes = ['A', 'B', 'C', 'D', 'E', 'F'];
   const summary = classes.map((c) => {
     const rs = results.filter((r) => r.cls === c);
     const lat = rs.map((r) => r.ms).sort((a, b) => a - b);

@@ -26,13 +26,13 @@ import { clearDocumentHighlights, highlightDocumentSearchTerms } from '../servic
 import {
   buildSearchTrendSummary,
   executeFilingResearchSearch,
+  resolveEntityScope,
   type FilingResearchResult,
   type ResearchSearchMode,
 } from '../services/filingResearch';
 import {
   buildSecDocumentUrl,
   buildSecProxyUrl,
-  resolveCompanyEntity,
 } from '../services/secApi';
 import {
   buildSearchSignature,
@@ -105,38 +105,10 @@ function formatResultFormLabel(result: FilingResearchResult): string {
   return `${filingForm} · ${documentType}`;
 }
 
-/**
- * Scope a query to an issuer using the full SEC ticker directory (10K+
- * companies) — this used to be a hardcoded ~10-name map, so "OGN" or
- * "Organon" never resolved and fell into full-text search. Returns an empty
- * query when the whole text is the company: keeping the company name as a
- * text query made relevance ranking surface a 2009 filing first.
- */
-async function resolveEntityHint(rawQuery: string): Promise<{ entityName: string; query: string }> {
-  const trimmed = rawQuery.trim();
-  if (!trimmed) return { entityName: '', query: trimmed };
-
-  // The whole text reads as one company ("organon", "OGN", "Organon & Co")
-  const whole = await resolveCompanyEntity(trimmed);
-  if (whole) return { entityName: whole.title, query: '' };
-
-  // Leading token is the company, the rest is the topic ("OGN climate risk").
-  // A ticker-style match only counts when the user typed it in caps —
-  // otherwise ordinary words ("all", "it", "cash") mis-resolve to tickers.
-  const words = trimmed.split(/\s+/);
-  if (words.length > 1) {
-    const lead = await resolveCompanyEntity(words[0]);
-    if (lead) {
-      const isTickerMatch = lead.ticker === words[0].toUpperCase();
-      const typedAsTicker = words[0] === words[0].toUpperCase();
-      if (!isTickerMatch || typedAsTicker) {
-        return { entityName: lead.title, query: words.slice(1).join(' ') };
-      }
-    }
-  }
-
-  return { entityName: '', query: trimmed };
-}
+// Issuer scoping is shared platform-wide (resolveEntityScope in
+// filingResearch) — per-page ticker maps are what made most companies
+// silently unsearchable here.
+const resolveEntityHint = (rawQuery: string) => resolveEntityScope(rawQuery, 'conservative');
 
 function buildAlertName(query: string, filters: SearchFilters): string {
   if (query.trim()) return query.trim();

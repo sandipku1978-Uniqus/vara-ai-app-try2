@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { FileSearch, Scale, Link2, Search, Briefcase, Loader2 } from 'lucide-react';
 import { searchEdgarFilings, fetchFilingText } from '../services/secApi';
+import { resolveEntityScope } from '../services/filingResearch';
 import { aiExtractDealDetails, aiExtractClauses, type DealDetailsResult } from '../services/aiApi';
 import ResultsToolbar from '../components/tables/ResultsToolbar';
 import AskCopilotButton from '../components/tables/AskCopilotButton';
@@ -100,6 +101,52 @@ export default function MAResearch() {
       }
     }
     loadDeals();
+  }, []);
+
+  // Server-side entity deal search: the text box used to only filter the
+  // 15 pre-loaded feed rows client-side, so any deal outside the feed
+  // (e.g. Organon / Sun Pharma) looked like it didn't exist.
+  const searchDealsForEntity = useCallback(async (text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    setDealLoading(true);
+    try {
+      const oneYearAgo = new Date();
+      oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+      const scoped = await resolveEntityScope(trimmed, 'aggressive');
+      const hits = await searchEdgarFilings(
+        scoped.entityName ? (scoped.query || 'merger agreement OR acquisition') : trimmed,
+        '8-K,8-K/A,SC 13D,SC TO-T,DEFM14A,S-4,425',
+        oneYearAgo.toISOString().split('T')[0],
+        new Date().toISOString().split('T')[0],
+        scoped.entityName || undefined
+      );
+      const seen = new Set<string>();
+      const filings: DealFiling[] = [];
+      for (const hit of hits) {
+        if (filings.length >= 15) break;
+        const src = hit._source as any;
+        const entityName = src?.display_names?.[0] || src?.entity_name || '';
+        const accession = src?.adsh || '';
+        const rowKey = `${entityName}|${accession}`.toUpperCase();
+        if (!entityName || seen.has(rowKey)) continue;
+        seen.add(rowKey);
+        const idParts = hit._id.split(':');
+        filings.push({
+          entityName: entityName.replace(/\s*\(CIK\s+\d+\)/, '').trim(),
+          fileDate: src?.file_date || '',
+          formType: src?.file_type || src?.form || '8-K',
+          accessionNumber: accession,
+          cik: (src?.ciks?.[0] || '').replace(/^0+/, ''),
+          primaryDocument: idParts.length > 1 ? idParts[1] : '',
+        });
+      }
+      setDealFilings(filings);
+    } catch (error) {
+      console.error('M&A entity deal search error:', error);
+    } finally {
+      setDealLoading(false);
+    }
   }, []);
 
   // Extract deal details on demand
@@ -263,9 +310,10 @@ export default function MAResearch() {
                   <Search size={16} className="search-bar-icon" />
                   <input
                     type="text"
-                    placeholder="Filter by entity name..."
+                    placeholder="Search deals by company (press Enter)..."
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') searchDealsForEntity(searchQuery); }}
                   />
                 </div>
               </div>

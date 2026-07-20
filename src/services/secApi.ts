@@ -197,29 +197,81 @@ export async function loadTickerMap(): Promise<Record<string, string>> {
  * Returns null when the text doesn't read as a company — topic queries like
  * "apple revenue recognition" stay full-text searches.
  */
+/**
+ * Pure matching core, separated from the directory fetch so the full SEC
+ * ticker corpus can be proven resolvable in unit tests (every ticker and
+ * every company title in company_tickers.json must match).
+ */
+function normalizeCompanyText(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+interface DirectoryIndex {
+  byTicker: Map<string, CompanyDirectoryEntry>;
+  byExactTitle: Map<string, CompanyDirectoryEntry>;
+  normalizedTitles: { title: string; entry: CompanyDirectoryEntry }[];
+}
+
+// Normalizing 10K+ titles per lookup made both searches and the
+// full-directory coverage test crawl — index once per directory instance.
+const directoryIndexCache = new WeakMap<CompanyDirectoryEntry[], DirectoryIndex>();
+
+function getDirectoryIndex(directory: CompanyDirectoryEntry[]): DirectoryIndex {
+  const cached = directoryIndexCache.get(directory);
+  if (cached) return cached;
+  const byTicker = new Map<string, CompanyDirectoryEntry>();
+  const byExactTitle = new Map<string, CompanyDirectoryEntry>();
+  const normalizedTitles: DirectoryIndex['normalizedTitles'] = [];
+  // File order is ~market-cap descending; first writer wins so "apple"
+  // resolves to Apple Inc., not Apple Hospitality REIT.
+  for (const entry of directory) {
+    if (!byTicker.has(entry.ticker)) byTicker.set(entry.ticker, entry);
+    const norm = normalizeCompanyText(entry.title);
+    if (norm && !byExactTitle.has(norm)) byExactTitle.set(norm, entry);
+    normalizedTitles.push({ title: norm, entry });
+  }
+  const index = { byTicker, byExactTitle, normalizedTitles };
+  directoryIndexCache.set(directory, index);
+  return index;
+}
+
+export function matchCompanyEntry(
+  directory: CompanyDirectoryEntry[],
+  text: string
+): CompanyDirectoryEntry | null {
+  const trimmed = text.trim();
+  if (!trimmed) return null;
+  const index = getDirectoryIndex(directory);
+  const wordCount = trimmed.split(/\s+/).length;
+  const normalized = normalizeCompanyText(trimmed);
+
+  // Exact ticker — short inputs only, so sentences never read as tickers
+  if (wordCount <= 6) {
+    const tickerHit = index.byTicker.get(trimmed.toUpperCase());
+    if (tickerHit) return tickerHit;
+  }
+
+  if (normalized.length < 4) return null;
+  // Exact title beats prefix ("Orange" must not resolve to Orange County
+  // Bancorp); exact equality is allowed at any length (official names run
+  // long). The prefix shortcut is capped so topics don't read as companies.
+  const exact = index.byExactTitle.get(normalized);
+  if (exact) return exact;
+  if (wordCount <= 6) {
+    const prefix = normalized + ' ';
+    for (const { title, entry } of index.normalizedTitles) {
+      if (title.startsWith(prefix)) return entry;
+    }
+  }
+  return null;
+}
+
 export async function resolveCompanyEntity(
   text: string
 ): Promise<CompanyDirectoryEntry | null> {
-  const trimmed = text.trim();
-  if (!trimmed || trimmed.split(/\s+/).length > 4) return null;
-
   await loadTickerMap();
   if (!_companyDirectory) return null;
-
-  const upper = trimmed.toUpperCase();
-  const tickerHit = _companyDirectory.find(entry => entry.ticker === upper);
-  if (tickerHit) return tickerHit;
-
-  const normalized = trimmed.toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
-  if (normalized.length < 4) return null;
-  // First match in file order wins — the file is ~market-cap ordered, so
-  // "apple" resolves to Apple Inc., not Apple Hospitality REIT.
-  for (const entry of _companyDirectory) {
-    const title = entry.title.toLowerCase().replace(/[^a-z0-9 ]+/g, ' ').replace(/\s+/g, ' ').trim();
-    if (title === normalized) return entry;
-    if (title.startsWith(normalized + ' ')) return entry;
-  }
-  return null;
+  return matchCompanyEntry(_companyDirectory, text);
 }
 
 /**
