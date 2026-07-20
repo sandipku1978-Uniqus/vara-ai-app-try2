@@ -1418,8 +1418,8 @@ Keep it crisp and practical.`;
                   style={{
                     padding: '6px 12px', borderRadius: '8px', fontSize: '0.75rem', cursor: 'pointer',
                     border: '1px solid ' + (commonSize ? 'rgba(214,108,174,0.6)' : 'var(--input-border)'),
-                    background: commonSize ? 'rgba(179,31,126,0.25)' : 'rgba(255,255,255,0.04)',
-                    color: commonSize ? '#F9A8D4' : '#94A3B8',
+                    background: commonSize ? 'rgba(179,31,126,0.25)' : 'var(--surface-panel)',
+                    color: commonSize ? 'var(--accent-soft)' : 'var(--text-secondary)',
                   }}>
                   % Common-size
                 </button>

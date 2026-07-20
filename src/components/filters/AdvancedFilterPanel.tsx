@@ -184,7 +184,7 @@ export default function AdvancedFilterPanel({ config, filters, onChange, onApply
             <div className="afp-section-body">
               <div className="afp-date-row">
                 <input type="date" value={filters.dateFrom} onChange={e => onChange({ ...filters, dateFrom: e.target.value })} className="afp-date-input" />
-                <span style={{ color: '#64748B', fontSize: '0.75rem' }}>to</span>
+                <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>to</span>
                 <input type="date" value={filters.dateTo} onChange={e => onChange({ ...filters, dateTo: e.target.value })} className="afp-date-input" />
               </div>
             </div>

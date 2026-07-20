@@ -73,7 +73,7 @@ function renderHeadline(headline: string): { __html: string } {
     .replace(/>/g, '&gt;');
   return {
     __html: escaped
-      .replace(/&lt;b&gt;/g, '<mark style="background:rgba(214,108,174,0.25);color:#F9A8D4;padding:0 2px;border-radius:2px;">')
+      .replace(/&lt;b&gt;/g, '<mark style="background:rgba(214,108,174,0.25);color:var(--accent-soft);padding:0 2px;border-radius:2px;">')
       .replace(/&lt;\/b&gt;/g, '</mark>'),
   };
 }
@@ -301,8 +301,8 @@ export default function CommentLetters() {
               style={{
                 padding: '7px 12px', borderRadius: '8px', fontSize: '0.78rem', cursor: 'pointer',
                 border: '1px solid ' + (formFilter === value ? 'rgba(214,108,174,0.6)' : 'var(--input-border)'),
-                background: formFilter === value ? 'rgba(179,31,126,0.25)' : 'rgba(255,255,255,0.04)',
-                color: formFilter === value ? '#F9A8D4' : '#94A3B8',
+                background: formFilter === value ? 'rgba(179,31,126,0.25)' : 'var(--surface-panel)',
+                color: formFilter === value ? 'var(--accent-soft)' : 'var(--text-secondary)',
               }}>
               {label}
             </button>
@@ -411,8 +411,8 @@ export default function CommentLetters() {
                             contested reviews are the richest precedents */}
                         <span style={{
                           fontSize: '0.7rem', padding: '2px 8px', borderRadius: '4px', whiteSpace: 'nowrap',
-                          color: isLongReview ? '#F9A8D4' : '#94A3B8',
-                          background: isLongReview ? 'rgba(179,31,126,0.18)' : 'rgba(255,255,255,0.06)',
+                          color: isLongReview ? 'var(--accent-soft)' : 'var(--text-secondary)',
+                          background: isLongReview ? 'rgba(179,31,126,0.18)' : 'var(--surface-panel)',
                         }}>
                           {thread.uploads} round{thread.uploads === 1 ? '' : 's'} · {days}d
                         </span>

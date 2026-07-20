@@ -92,7 +92,7 @@ export default function CompanySearchInput({ onSelect, placeholder = 'Search tic
 
   return (
     <div className={`company-search-input ${className}`} style={{ position: 'relative' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.9)', border: '1px solid rgba(72,42,122,0.12)', borderRadius: '12px', padding: '8px 12px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--text-secondary)', border: '1px solid rgba(72,42,122,0.12)', borderRadius: '12px', padding: '8px 12px' }}>
         {loading ? <Loader2 size={14} className="spinner" /> : <Search size={14} style={{ color: '#7A6C7B' }} />}
         <input
           ref={inputRef}
@@ -105,7 +105,7 @@ export default function CompanySearchInput({ onSelect, placeholder = 'Search tic
         />
         {query && (
           <button onClick={() => { setQuery(''); setResults([]); setShowDropdown(false); }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-            <X size={14} style={{ color: '#64748B' }} />
+            <X size={14} style={{ color: 'var(--text-muted)' }} />
           </button>
         )}
       </div>
@@ -136,7 +136,7 @@ export default function CompanySearchInput({ onSelect, placeholder = 'Search tic
                 <strong style={{ color: '#B31F7E' }}>{r.ticker}</strong>
                 {r.title && <span style={{ color: '#7A6C7B', marginLeft: '8px' }}>{r.title}</span>}
               </span>
-              <span style={{ color: '#64748B', fontSize: '0.75rem', fontFamily: 'var(--font-mono)' }}>CIK: {r.cik}</span>
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', fontFamily: 'var(--font-mono)' }}>CIK: {r.cik}</span>
             </div>
           ))}
         </div>

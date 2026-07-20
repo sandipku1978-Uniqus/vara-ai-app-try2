@@ -106,7 +106,7 @@ Be direct and specific. No preamble.`;
         {summary && !loading && (
           <button
             onClick={(e) => { e.stopPropagation(); setCollapsed(c => !c); }}
-            style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer', padding: '2px' }}
+            style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '2px' }}
           >
             {collapsed ? <ChevronDown size={14} /> : <ChevronUp size={14} />}
           </button>
@@ -114,14 +114,14 @@ Be direct and specific. No preamble.`;
       </div>
 
       {loading && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#94A3B8', marginTop: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-secondary)', marginTop: '8px' }}>
           <Loader2 size={14} className="spinner" />
           <span>Analyzing {resultCount} {moduleLabel}...</span>
         </div>
       )}
 
       {error && (
-        <div style={{ color: '#94A3B8', marginTop: '8px', fontStyle: 'italic' }}>
+        <div style={{ color: 'var(--text-secondary)', marginTop: '8px', fontStyle: 'italic' }}>
           AI summary unavailable. Results are displayed below.
         </div>
       )}
@@ -129,7 +129,7 @@ Be direct and specific. No preamble.`;
       {summary && !collapsed && (
         <div
           className="md-content"
-          style={{ color: '#CBD5E1', marginTop: '8px' }}
+          style={{ color: 'var(--text-secondary)', marginTop: '8px' }}
           dangerouslySetInnerHTML={{ __html: renderMarkdown(summary) }}
         />
       )}

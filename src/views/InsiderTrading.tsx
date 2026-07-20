@@ -89,9 +89,9 @@ export default function InsiderTrading() {
     <div style={{ padding: '32px', maxWidth: '1200px', margin: '0 auto' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
         <UserCheck size={28} style={{ color: '#D66CAE' }} />
-        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'white' }}>Insider Trading</h1>
+        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)' }}>Insider Trading</h1>
       </div>
-      <p style={{ color: '#94A3B8', marginBottom: '24px', fontSize: '0.9rem' }}>
+      <p style={{ color: 'var(--text-secondary)', marginBottom: '24px', fontSize: '0.9rem' }}>
         Forms 3, 4, and 5 insider ownership and transaction filings from SEC EDGAR.
       </p>
 
@@ -119,7 +119,7 @@ export default function InsiderTrading() {
       {error && <div style={{ color: '#F87171', marginBottom: '16px' }}>{error}</div>}
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '48px', color: '#64748B' }}>
+        <div style={{ textAlign: 'center', padding: '48px', color: 'var(--text-muted)' }}>
           <Loader2 size={24} className="spinner" style={{ marginBottom: '8px' }} />
           <div>Loading insider filings...</div>
         </div>
@@ -129,9 +129,9 @@ export default function InsiderTrading() {
           <DataTable columns={columns} data={filings} pageSize={25} />
         </>
       ) : companies.length > 0 ? (
-        <div style={{ textAlign: 'center', padding: '48px', color: '#64748B' }}>No insider filings found.</div>
+        <div style={{ textAlign: 'center', padding: '48px', color: 'var(--text-muted)' }}>No insider filings found.</div>
       ) : (
-        <div style={{ textAlign: 'center', padding: '48px', color: '#64748B' }}>Add companies above to view insider trading filings.</div>
+        <div style={{ textAlign: 'center', padding: '48px', color: 'var(--text-muted)' }}>Add companies above to view insider trading filings.</div>
       )}
     </div>
   );

@@ -290,7 +290,7 @@ Write a concise memo with:
               <div className="pane-header" style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
                 <div>
                   <h2>Early Adoption & Policy Research</h2>
-                  <p style={{ color: '#94A3B8', margin: '6px 0 0', maxWidth: '900px' }}>
+                  <p style={{ color: 'var(--text-secondary)', margin: '6px 0 0', maxWidth: '900px' }}>
                     Search for how companies are actually addressing a standard in their filings, benchmark disclosure language across peers, and save alerts for future filings.
                   </p>
                 </div>
@@ -313,8 +313,8 @@ Write a concise memo with:
               </div>
 
               <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                <div style={{ flex: 1, minWidth: '280px', display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '12px', padding: '12px 14px' }}>
-                  <Search size={16} style={{ color: '#94A3B8' }} />
+                <div style={{ flex: 1, minWidth: '280px', display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--surface-panel)', border: '1px solid var(--surface-panel)', borderRadius: '12px', padding: '12px 14px' }}>
+                  <Search size={16} style={{ color: 'var(--text-secondary)' }} />
                   <input
                     value={researchQuery}
                     onChange={event => setResearchQuery(event.target.value)}
@@ -325,7 +325,7 @@ Write a concise memo with:
                       }
                     }}
                     placeholder='Try "ASU 2023-09", DISE, or ASC 842 adoption w/10 lease'
-                    style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: 'white', fontSize: '0.92rem' }}
+                    style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: 'var(--text-primary)', fontSize: '0.92rem' }}
                   />
                 </div>
                 <button className="primary-btn" onClick={() => void runResearch()} disabled={researchLoading}>
@@ -377,16 +377,16 @@ Write a concise memo with:
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
                 <div className="glass-card" style={{ padding: '14px' }}>
-                  <div style={{ color: '#64748B', fontSize: '0.78rem', textTransform: 'uppercase' }}>Matched Filings</div>
-                  <div style={{ color: 'white', fontSize: '1.6rem', fontWeight: 700 }}>{researchResults.length}</div>
+                  <div style={{ color: 'var(--text-muted)', fontSize: '0.78rem', textTransform: 'uppercase' }}>Matched Filings</div>
+                  <div style={{ color: 'var(--text-primary)', fontSize: '1.6rem', fontWeight: 700 }}>{researchResults.length}</div>
                 </div>
                 <div className="glass-card" style={{ padding: '14px' }}>
-                  <div style={{ color: '#64748B', fontSize: '0.78rem', textTransform: 'uppercase' }}>Issuers</div>
-                  <div style={{ color: 'white', fontSize: '1.6rem', fontWeight: 700 }}>{researchMetrics.issuers}</div>
+                  <div style={{ color: 'var(--text-muted)', fontSize: '0.78rem', textTransform: 'uppercase' }}>Issuers</div>
+                  <div style={{ color: 'var(--text-primary)', fontSize: '1.6rem', fontWeight: 700 }}>{researchMetrics.issuers}</div>
                 </div>
                 <div className="glass-card" style={{ padding: '14px' }}>
-                  <div style={{ color: '#64748B', fontSize: '0.78rem', textTransform: 'uppercase' }}>Top Auditor</div>
-                  <div style={{ color: 'white', fontSize: '1.1rem', fontWeight: 600 }}>{researchMetrics.topAuditor}</div>
+                  <div style={{ color: 'var(--text-muted)', fontSize: '0.78rem', textTransform: 'uppercase' }}>Top Auditor</div>
+                  <div style={{ color: 'var(--text-primary)', fontSize: '1.1rem', fontWeight: 600 }}>{researchMetrics.topAuditor}</div>
                 </div>
               </div>
 
@@ -406,10 +406,10 @@ Write a concise memo with:
                 <div style={{ borderLeft: '4px solid #B31F7E', background: 'rgba(15,23,42,0.6)', borderRadius: '12px', padding: '16px 18px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
                     <Sparkles size={18} className="text-blue-400" />
-                    <h3 style={{ margin: 0, color: 'white', fontSize: '1rem' }}>Accounting Research Memo</h3>
+                    <h3 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '1rem' }}>Accounting Research Memo</h3>
                   </div>
                   {researchMemoLoading ? (
-                    <div style={{ color: '#CBD5E1', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <Loader2 size={16} className="spinner" /> Generating memo from the current filing set...
                     </div>
                   ) : (

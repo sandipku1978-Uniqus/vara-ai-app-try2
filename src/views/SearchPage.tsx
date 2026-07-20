@@ -1403,8 +1403,8 @@ export default function SearchPage() {
                       style={{
                         padding: '4px 10px', borderRadius: '6px', fontSize: '0.72rem', cursor: 'pointer',
                         border: '1px solid ' + (resultSort === value ? 'rgba(214,108,174,0.6)' : 'var(--input-border)'),
-                        background: resultSort === value ? 'rgba(179,31,126,0.25)' : 'rgba(255,255,255,0.04)',
-                        color: resultSort === value ? '#F9A8D4' : '#94A3B8',
+                        background: resultSort === value ? 'rgba(179,31,126,0.25)' : 'var(--surface-panel)',
+                        color: resultSort === value ? 'var(--accent-soft)' : 'var(--text-secondary)',
                       }}>
                       {label}
                     </button>

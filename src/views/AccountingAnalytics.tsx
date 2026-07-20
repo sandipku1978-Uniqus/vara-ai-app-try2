@@ -118,10 +118,10 @@ export default function AccountingAnalytics() {
     <div style={{ padding: '32px', maxWidth: '1200px', margin: '0 auto' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
         <TrendingUp size={28} style={{ color: '#D66CAE' }} />
-        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'white' }}>Accounting Analytics</h1>
+        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)' }}>Accounting Analytics</h1>
       </div>
 
-      <p style={{ color: '#94A3B8', marginBottom: '24px', fontSize: '0.9rem' }}>
+      <p style={{ color: 'var(--text-secondary)', marginBottom: '24px', fontSize: '0.9rem' }}>
         Financial ratio analysis computed from normalized SEC XBRL data. Add companies to compare profitability, leverage, and operating efficiency using the same metric map used elsewhere in the platform.
       </p>
 
@@ -158,18 +158,18 @@ export default function AccountingAnalytics() {
       )}
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '48px', color: '#64748B' }}>
+        <div style={{ textAlign: 'center', padding: '48px', color: 'var(--text-muted)' }}>
           <Loader2 size={24} className="spinner" style={{ marginBottom: '8px' }} />
           <div>Computing financial ratios from normalized XBRL facts...</div>
         </div>
       ) : ratioData.length > 0 ? (
-        <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: '12px', padding: '24px', border: '1px solid rgba(255,255,255,0.06)' }}>
+        <div style={{ background: 'var(--surface-panel)', borderRadius: '12px', padding: '24px', border: '1px solid var(--surface-panel)' }}>
           <ResponsiveContainer width="100%" height={400}>
             <BarChart data={chartData} layout="vertical" margin={{ left: 120 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-              <XAxis type="number" stroke="#64748B" fontSize={12} />
-              <YAxis type="category" dataKey="name" stroke="#94A3B8" fontSize={12} width={110} />
-              <Tooltip contentStyle={{ background: '#1E293B', border: '1px solid #334155', borderRadius: '8px', color: 'white' }} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--surface-panel)" />
+              <XAxis type="number" stroke="var(--text-muted)" fontSize={12} />
+              <YAxis type="category" dataKey="name" stroke="var(--text-secondary)" fontSize={12} width={110} />
+              <Tooltip contentStyle={{ background: '#1E293B', border: '1px solid #334155', borderRadius: '8px', color: 'var(--text-primary)' }} />
               <Legend />
               {ratioData.map((company, index) => (
                 <Bar key={company.ticker} dataKey={company.ticker} fill={COLORS[index % COLORS.length]} radius={[0, 4, 4, 0]} />
@@ -180,10 +180,10 @@ export default function AccountingAnalytics() {
           <div style={{ marginTop: '24px' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
               <thead>
-                <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                  <th style={{ textAlign: 'left', padding: '8px', color: '#94A3B8' }}>Metric</th>
+                <tr style={{ borderBottom: '1px solid var(--input-border)' }}>
+                  <th style={{ textAlign: 'left', padding: '8px', color: 'var(--text-secondary)' }}>Metric</th>
                   {ratioData.map(company => (
-                    <th key={company.ticker} style={{ textAlign: 'right', padding: '8px', color: '#94A3B8' }}>
+                    <th key={company.ticker} style={{ textAlign: 'right', padding: '8px', color: 'var(--text-secondary)' }}>
                       {company.ticker}
                     </th>
                   ))}
@@ -191,10 +191,10 @@ export default function AccountingAnalytics() {
               </thead>
               <tbody>
                 {Object.entries(RATIO_LABELS).map(([key, label]) => (
-                  <tr key={key} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                    <td style={{ padding: '8px', color: '#CBD5E1' }}>{label}</td>
+                  <tr key={key} style={{ borderBottom: '1px solid var(--surface-panel)' }}>
+                    <td style={{ padding: '8px', color: 'var(--text-secondary)' }}>{label}</td>
                     {ratioData.map(company => (
-                      <td key={company.ticker} style={{ textAlign: 'right', padding: '8px', color: 'white' }}>
+                      <td key={company.ticker} style={{ textAlign: 'right', padding: '8px', color: 'var(--text-primary)' }}>
                         {formatRatioValue(key, company.ratios[key])}
                       </td>
                     ))}
@@ -205,9 +205,9 @@ export default function AccountingAnalytics() {
           </div>
         </div>
       ) : companies.length > 0 ? (
-        <div style={{ textAlign: 'center', padding: '48px', color: '#64748B' }}>No ratio data available.</div>
+        <div style={{ textAlign: 'center', padding: '48px', color: 'var(--text-muted)' }}>No ratio data available.</div>
       ) : (
-        <div style={{ textAlign: 'center', padding: '48px', color: '#64748B' }}>Add companies above to compute and compare financial ratios.</div>
+        <div style={{ textAlign: 'center', padding: '48px', color: 'var(--text-muted)' }}>Add companies above to compute and compare financial ratios.</div>
       )}
     </div>
   );

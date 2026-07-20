@@ -294,7 +294,7 @@ export default function ESGResearch() {
                         cursor: 'pointer', transition: 'all 0.15s'
                       }}
                     >
-                      <span style={{ fontWeight: 600, color: 'white' }}>{metric}</span>
+                      <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{metric}</span>
                       <div style={{ display: 'flex', gap: '8px' }}>
                         <span className="badge sasb">SASB: {codes.sasb}</span>
                         <span className="badge gri">GRI: {codes.gri}</span>
@@ -345,8 +345,8 @@ export default function ESGResearch() {
               {heatmapLoading ? (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px', gap: '12px' }}>
                   <Loader2 size={32} className="spinner" />
-                  <p style={{ color: '#94A3B8' }}>AI is analyzing 10-K filings for ESG disclosure quality...</p>
-                  <p style={{ color: '#64748B', fontSize: '0.8rem' }}>This may take 30-60 seconds (fetching & analyzing 4 filings)</p>
+                  <p style={{ color: 'var(--text-secondary)' }}>AI is analyzing 10-K filings for ESG disclosure quality...</p>
+                  <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>This may take 30-60 seconds (fetching & analyzing 4 filings)</p>
                 </div>
               ) : heatmapError ? (
                 <div style={{ textAlign: 'center', padding: '40px', color: '#F59E0B' }}>
@@ -355,7 +355,7 @@ export default function ESGResearch() {
                   <button className="primary-btn sm" style={{ marginTop: '12px' }} onClick={() => { setHeatmapData([]); setHeatmapTickerSnapshot([]); }}>Retry</button>
                 </div>
               ) : heatmapData.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '40px', color: '#64748B' }}>
+                <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
                   Switch to the Heatmap tab to load AI-rated ESG disclosures.
                 </div>
               ) : (
@@ -364,9 +364,9 @@ export default function ESGResearch() {
                 <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ background: '#0F172A', borderBottom: '1px solid #334155', fontSize: '0.875rem' }}>
-                      <th style={{ padding: '16px', fontWeight: 600, color: '#CBD5E1' }}>ESG Topic Category</th>
+                      <th style={{ padding: '16px', fontWeight: 600, color: 'var(--text-secondary)' }}>ESG Topic Category</th>
                       {esgTickers.map(t => (
-                        <th key={t} style={{ padding: '16px', fontWeight: 600, color: 'white', textAlign: 'center', borderLeft: '1px solid rgba(51,65,85,0.5)' }}>{t}</th>
+                        <th key={t} style={{ padding: '16px', fontWeight: 600, color: 'var(--text-primary)', textAlign: 'center', borderLeft: '1px solid rgba(51,65,85,0.5)' }}>{t}</th>
                       ))}
                     </tr>
                   </thead>
@@ -377,7 +377,7 @@ export default function ESGResearch() {
                         onClick={() => handleMetricClick(row.topic)}
                         style={{ borderBottom: '1px solid rgba(51,65,85,0.5)', cursor: 'pointer', background: selectedMetric === row.topic ? 'rgba(179,31,126,0.05)' : 'transparent' }}
                       >
-                        <td style={{ padding: '16px', color: '#CBD5E1', fontSize: '0.875rem', fontWeight: 500 }}>{row.topic}</td>
+                        <td style={{ padding: '16px', color: 'var(--text-secondary)', fontSize: '0.875rem', fontWeight: 500 }}>{row.topic}</td>
                         {esgTickers.map(t => (
                           <td key={t} style={{ padding: '8px', borderLeft: '1px solid rgba(51,65,85,0.5)' }}>
                             <div className={`heatmap-cell ${row[t.toLowerCase()] || 'unrated'}`}></div>
@@ -391,8 +391,8 @@ export default function ESGResearch() {
 
               {selectedMetric && (
                 <div style={{ marginTop: '16px', padding: '20px', background: 'rgba(179,31,126,0.05)', border: '1px solid rgba(179,31,126,0.2)', borderRadius: '12px', animation: 'fadeIn 0.2s ease-out' }}>
-                  <h4 style={{ color: 'white', marginBottom: '8px' }}>{selectedMetric}</h4>
-                  <p style={{ color: '#94A3B8', fontSize: '0.875rem', lineHeight: 1.6 }}>
+                  <h4 style={{ color: 'var(--text-primary)', marginBottom: '8px' }}>{selectedMetric}</h4>
+                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', lineHeight: 1.6 }}>
                     AI-rated disclosure depth based on the latest 10-K filing from SEC EDGAR. Click a different topic to compare.
                   </p>
                 </div>
@@ -402,7 +402,7 @@ export default function ESGResearch() {
 
               {/* Legend */}
               <div className="heatmap-legend">
-                <span style={{ color: '#94A3B8', fontSize: '0.75rem' }}>Legend:</span>
+                <span style={{ color: 'var(--text-secondary)', fontSize: '0.75rem' }}>Legend:</span>
                 <span className="legend-swatch">
                   <div className="swatch high"></div> High Detail
                 </span>
@@ -436,11 +436,11 @@ export default function ESGResearch() {
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 {earningsLoading ? (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px', gap: '8px', color: '#94A3B8' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px', gap: '8px', color: 'var(--text-secondary)' }}>
                     <Loader2 size={16} className="spinner" /> Loading recent 8-K filings from EDGAR...
                   </div>
                 ) : filteredReleases.length === 0 ? (
-                  <div style={{ padding: '48px', textAlign: 'center', color: '#64748B' }}>
+                  <div style={{ padding: '48px', textAlign: 'center', color: 'var(--text-muted)' }}>
                     {transcriptSearch ? `No releases match "${transcriptSearch}".` : 'No recent earnings releases found.'}
                   </div>
                 ) : filteredReleases.map((ts, idx) => (
@@ -451,15 +451,15 @@ export default function ESGResearch() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <div style={{ background: 'rgba(37,99,235,0.2)', color: '#D66CAE', fontWeight: 700, padding: '4px 8px', borderRadius: '4px', fontSize: '0.875rem' }}>8-K</div>
-                        <h4 style={{ color: 'white', fontWeight: 500, margin: 0 }}>{ts.company}</h4>
+                        <h4 style={{ color: 'var(--text-primary)', fontWeight: 500, margin: 0 }}>{ts.company}</h4>
                       </div>
-                      <div style={{ color: '#94A3B8', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <div style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
                         <BarChart3 size={14}/> {ts.date}
                       </div>
                     </div>
 
                     <div style={{ paddingLeft: '16px', borderLeft: '2px solid #334155' }}>
-                      <p style={{ fontSize: '0.875rem', color: '#CBD5E1', margin: '4px 0' }}>{ts.summary}</p>
+                      <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', margin: '4px 0' }}>{ts.summary}</p>
                     </div>
                   </div>
                 ))}

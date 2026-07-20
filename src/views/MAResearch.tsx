@@ -244,7 +244,7 @@ export default function MAResearch() {
           <div className="sidebar-filters" style={{ marginTop: '32px' }}>
             <h4>Data Source</h4>
             <div style={{ marginTop: '12px', padding: '12px', background: 'rgba(179,31,126,0.05)', border: '1px solid rgba(179,31,126,0.2)', borderRadius: '8px' }}>
-              <p style={{ fontSize: '0.8rem', color: '#94A3B8' }}>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
                 Deal data sourced from SEC EDGAR full-text search. Click "Extract" on any deal to run AI analysis on the filing text.
               </p>
             </div>
@@ -271,7 +271,7 @@ export default function MAResearch() {
               </div>
 
               {dealLoading ? (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px', gap: '8px', color: '#94A3B8' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px', gap: '8px', color: 'var(--text-secondary)' }}>
                   <Loader2 size={16} className="spinner" /> Loading M&A filings from EDGAR...
                 </div>
               ) : (
@@ -300,35 +300,35 @@ export default function MAResearch() {
                 <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ background: '#0F172A', borderBottom: '1px solid rgba(51,65,85,0.5)', fontSize: '0.875rem' }}>
-                      <th style={{ padding: '16px', fontWeight: 600, color: '#CBD5E1' }}>Entity</th>
-                      <th style={{ padding: '16px', fontWeight: 600, color: '#CBD5E1' }}>Form</th>
-                      <th style={{ padding: '16px', fontWeight: 600, color: '#CBD5E1' }}>Filed</th>
-                      <th style={{ padding: '16px', fontWeight: 600, color: '#CBD5E1' }}>AI Details</th>
-                      <th style={{ padding: '16px', fontWeight: 600, color: '#CBD5E1' }}></th>
+                      <th style={{ padding: '16px', fontWeight: 600, color: 'var(--text-secondary)' }}>Entity</th>
+                      <th style={{ padding: '16px', fontWeight: 600, color: 'var(--text-secondary)' }}>Form</th>
+                      <th style={{ padding: '16px', fontWeight: 600, color: 'var(--text-secondary)' }}>Filed</th>
+                      <th style={{ padding: '16px', fontWeight: 600, color: 'var(--text-secondary)' }}>AI Details</th>
+                      <th style={{ padding: '16px', fontWeight: 600, color: 'var(--text-secondary)' }}></th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredDeals.length === 0 ? (
-                      <tr><td colSpan={5} style={{ padding: '32px', textAlign: 'center', color: '#64748B' }}>No M&A filings found.</td></tr>
+                      <tr><td colSpan={5} style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)' }}>No M&A filings found.</td></tr>
                     ) : filteredDeals.map((deal, idx) => (
                       <tr key={idx} style={{ borderBottom: '1px solid rgba(51,65,85,0.3)', fontSize: '0.875rem' }}>
-                        <td style={{ padding: '16px', fontWeight: 500, color: 'white' }}>{deal.entityName}</td>
+                        <td style={{ padding: '16px', fontWeight: 500, color: 'var(--text-primary)' }}>{deal.entityName}</td>
                         <td style={{ padding: '16px' }}>
-                          <span style={{ background: '#1E293B', padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem', color: '#94A3B8' }}>{deal.formType}</span>
+                          <span style={{ background: '#1E293B', padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{deal.formType}</span>
                         </td>
-                        <td style={{ padding: '16px', color: '#94A3B8', fontFamily: 'var(--font-mono)', fontSize: '0.75rem' }}>{deal.fileDate}</td>
+                        <td style={{ padding: '16px', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', fontSize: '0.75rem' }}>{deal.fileDate}</td>
                         <td style={{ padding: '16px' }}>
                           {deal.extracting ? (
-                            <span style={{ color: '#94A3B8', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <span style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
                               <Loader2 size={12} className="spinner" /> Extracting...
                             </span>
                           ) : deal.extractedDetails ? (
-                            <div style={{ fontSize: '0.75rem', color: '#CBD5E1' }}>
+                            <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
                               <div>{deal.extractedDetails.target} / {deal.extractedDetails.acquirer}</div>
                               <div style={{ color: '#4ADE80' }}>{deal.extractedDetails.value} — {deal.extractedDetails.dealType}</div>
                             </div>
                           ) : deal.extractedDetails === null ? (
-                            <span style={{ color: '#64748B', fontSize: '0.75rem' }}>No details found</span>
+                            <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>No details found</span>
                           ) : (
                             <button
                               onClick={() => handleExtractDetails(dealFilings.indexOf(deal))}
@@ -370,7 +370,7 @@ export default function MAResearch() {
 
               {/* Step 1: Find a filing */}
               <div style={{ background: 'rgba(15,23,42,0.5)', border: '1px solid #334155', padding: '16px', borderRadius: '12px', marginBottom: '24px' }}>
-                <label style={{ fontSize: '0.75rem', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.025em', fontWeight: 600, display: 'block', marginBottom: '8px' }}>
+                <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.025em', fontWeight: 600, display: 'block', marginBottom: '8px' }}>
                   Step 1: Search for a merger filing
                 </label>
                 <div style={{ display: 'flex', gap: '8px' }}>
@@ -380,7 +380,7 @@ export default function MAResearch() {
                     value={clauseFilingQuery}
                     onChange={e => setClauseFilingQuery(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && handleClauseFilingSearch()}
-                    style={{ flex: 1, padding: '8px 12px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '0.85rem' }}
+                    style={{ flex: 1, padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--input-border)', background: 'var(--surface-panel)', color: 'var(--text-primary)', fontSize: '0.85rem' }}
                   />
                   <button className="primary-btn sm" onClick={handleClauseFilingSearch} disabled={clauseFilingSearching}>
                     {clauseFilingSearching ? <Loader2 size={14} className="spinner" /> : <Search size={14} />} Search
@@ -395,12 +395,12 @@ export default function MAResearch() {
                         onClick={() => setSelectedClauseFiling(f)}
                         style={{
                           padding: '8px 12px', borderRadius: '6px', cursor: 'pointer', fontSize: '0.85rem',
-                          background: selectedClauseFiling?.accessionNumber === f.accessionNumber ? 'rgba(179,31,126,0.15)' : 'rgba(255,255,255,0.03)',
-                          border: `1px solid ${selectedClauseFiling?.accessionNumber === f.accessionNumber ? 'rgba(179,31,126,0.3)' : 'rgba(255,255,255,0.05)'}`,
-                          color: 'white'
+                          background: selectedClauseFiling?.accessionNumber === f.accessionNumber ? 'rgba(179,31,126,0.15)' : 'var(--surface-panel)',
+                          border: `1px solid ${selectedClauseFiling?.accessionNumber === f.accessionNumber ? 'rgba(179,31,126,0.3)' : 'var(--surface-panel)'}`,
+                          color: 'var(--text-primary)'
                         }}
                       >
-                        {f.entityName} <span style={{ color: '#94A3B8' }}>— {f.formType} ({f.fileDate})</span>
+                        {f.entityName} <span style={{ color: 'var(--text-secondary)' }}>— {f.formType} ({f.fileDate})</span>
                       </div>
                     ))}
                   </div>
@@ -410,7 +410,7 @@ export default function MAResearch() {
               {/* Step 2: Select clause type and extract */}
               <div style={{ background: 'rgba(15,23,42,0.5)', border: '1px solid #334155', padding: '16px', borderRadius: '12px', marginBottom: '24px', display: 'flex', gap: '16px', alignItems: 'flex-end' }}>
                 <div style={{ flex: 1 }}>
-                  <label style={{ fontSize: '0.75rem', color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.025em', fontWeight: 600, display: 'block', marginBottom: '8px' }}>
+                  <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.025em', fontWeight: 600, display: 'block', marginBottom: '8px' }}>
                     Step 2: Select clause type
                   </label>
                   <select
@@ -435,7 +435,7 @@ export default function MAResearch() {
 
               {/* Results */}
               {clauseLoading && (
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px', gap: '8px', color: '#94A3B8' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px', gap: '8px', color: 'var(--text-secondary)' }}>
                   <Loader2 size={16} className="spinner" /> AI is extracting clause language...
                 </div>
               )}
@@ -446,10 +446,10 @@ export default function MAResearch() {
                     <div key={clauseType} style={{ background: '#0F172A', border: '1px solid #334155', borderRadius: '12px', padding: '20px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
                         <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#D66CAE' }}>{clauseType}</h3>
-                        <span style={{ fontSize: '0.75rem', color: '#64748B' }}>{data.section}</span>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{data.section}</span>
                       </div>
-                      <p style={{ fontSize: '0.875rem', color: '#94A3B8', lineHeight: 1.6 }}>{data.text}</p>
-                      <div style={{ marginTop: '12px', fontSize: '0.75rem', color: '#64748B' }}>
+                      <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>{data.text}</p>
+                      <div style={{ marginTop: '12px', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                         From: {selectedClauseFiling?.entityName} ({selectedClauseFiling?.fileDate})
                       </div>
                     </div>
@@ -458,13 +458,13 @@ export default function MAResearch() {
               )}
 
               {!clauseLoading && !clauseResults && selectedClauseFiling && (
-                <div style={{ padding: '32px', textAlign: 'center', color: '#64748B' }}>
+                <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)' }}>
                   Select a clause type and click "Extract Clause" to analyze the filing.
                 </div>
               )}
 
               {!selectedClauseFiling && !clauseLoading && (
-                <div style={{ padding: '32px', textAlign: 'center', color: '#64748B' }}>
+                <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)' }}>
                   Search for a merger filing above, then select it to extract clauses.
                 </div>
               )}

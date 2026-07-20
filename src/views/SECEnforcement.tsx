@@ -64,20 +64,20 @@ export default function SECEnforcement() {
     <div style={{ padding: '32px', maxWidth: '1200px', margin: '0 auto' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
         <Gavel size={28} style={{ color: '#D66CAE' }} />
-        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'white' }}>SEC Enforcement</h1>
+        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)' }}>SEC Enforcement</h1>
       </div>
-      <p style={{ color: '#94A3B8', marginBottom: '24px', fontSize: '0.9rem' }}>
+      <p style={{ color: 'var(--text-secondary)', marginBottom: '24px', fontSize: '0.9rem' }}>
         SEC litigation releases and enforcement actions.
       </p>
 
-      <div style={{ marginBottom: '24px', maxWidth: '400px', display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', padding: '6px 12px' }}>
-        <Search size={14} style={{ color: '#94A3B8' }} />
+      <div style={{ marginBottom: '24px', maxWidth: '400px', display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--surface-panel)', border: '1px solid var(--input-border)', borderRadius: '8px', padding: '6px 12px' }}>
+        <Search size={14} style={{ color: 'var(--text-secondary)' }} />
         <input value={filterText} onChange={e => setFilterText(e.target.value)} placeholder="Filter releases..."
-          style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: 'white', fontSize: '0.85rem' }} />
+          style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', color: 'var(--text-primary)', fontSize: '0.85rem' }} />
       </div>
 
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '48px', color: '#64748B' }}>
+        <div style={{ textAlign: 'center', padding: '48px', color: 'var(--text-muted)' }}>
           <Loader2 size={24} className="spinner" style={{ marginBottom: '8px' }} />
           <div>Loading enforcement actions...</div>
         </div>
@@ -87,7 +87,7 @@ export default function SECEnforcement() {
           <DataTable columns={columns} data={filtered} pageSize={25} />
         </>
       ) : (
-        <div style={{ textAlign: 'center', padding: '48px', color: '#64748B' }}>No enforcement actions found.</div>
+        <div style={{ textAlign: 'center', padding: '48px', color: 'var(--text-muted)' }}>No enforcement actions found.</div>
       )}
     </div>
   );

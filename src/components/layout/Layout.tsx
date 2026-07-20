@@ -267,15 +267,15 @@ function Breadcrumbs() {
   }
 
   return (
-    <nav aria-label="Breadcrumb" style={{ padding: '10px 24px 0', fontSize: '0.75rem', color: '#64748B' }}>
-      <a href="/dashboard" style={{ color: '#94A3B8', textDecoration: 'none' }}>Home</a>
+    <nav aria-label="Breadcrumb" style={{ padding: '10px 24px 0', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+      <a href="/dashboard" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Home</a>
       {trail.map((crumb, index) => (
         <span key={crumb.label}>
           <span style={{ margin: '0 6px' }}>/</span>
           {crumb.href ? (
-            <a href={crumb.href} style={{ color: '#94A3B8', textDecoration: 'none' }}>{crumb.label}</a>
+            <a href={crumb.href} style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>{crumb.label}</a>
           ) : (
-            <span style={{ color: index === trail.length - 1 ? '#CBD5E1' : undefined, fontWeight: index === trail.length - 1 ? 600 : 400 }}>
+            <span style={{ color: index === trail.length - 1 ? 'var(--text-primary)' : undefined, fontWeight: index === trail.length - 1 ? 600 : 400 }}>
               {crumb.label}
             </span>
           )}

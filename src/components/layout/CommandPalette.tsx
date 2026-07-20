@@ -110,7 +110,7 @@ export default function CommandPalette() {
       onClick={() => setOpen(false)}
       style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(5,10,31,0.6)', backdropFilter: 'blur(4px)', display: 'flex', justifyContent: 'center', paddingTop: '14vh' }}>
       <div onClick={event => event.stopPropagation()}
-        style={{ width: 'min(560px, 92vw)', height: 'fit-content', background: '#131322', border: '1px solid rgba(255,255,255,0.12)', borderRadius: '14px', overflow: 'hidden', boxShadow: '0 24px 64px rgba(0,0,0,0.5)' }}>
+        style={{ width: 'min(560px, 92vw)', height: 'fit-content', background: '#131322', border: '1px solid var(--input-border)', borderRadius: '14px', overflow: 'hidden', boxShadow: '0 24px 64px rgba(0,0,0,0.5)' }}>
         <input
           ref={inputRef}
           value={query}
@@ -122,7 +122,7 @@ export default function CommandPalette() {
           }}
           placeholder="Jump to a page, ticker, company, or search…"
           aria-label="Command palette"
-          style={{ width: '100%', padding: '14px 16px', background: 'transparent', border: 'none', borderBottom: '1px solid rgba(255,255,255,0.08)', color: 'white', fontSize: '0.95rem', outline: 'none' }}
+          style={{ width: '100%', padding: '14px 16px', background: 'transparent', border: 'none', borderBottom: '1px solid var(--surface-panel)', color: 'var(--text-primary)', fontSize: '0.95rem', outline: 'none' }}
         />
         <div role="listbox" aria-label="Command palette results">
           {visible.map((item, index) => (
@@ -138,18 +138,18 @@ export default function CommandPalette() {
                 padding: '10px 16px', background: index === highlighted ? 'rgba(179,31,126,0.18)' : 'transparent',
                 border: 'none', cursor: 'pointer',
               }}>
-              {item.kind === 'company' ? <Building2 size={15} style={{ color: '#F9A8D4' }} />
-                : item.kind === 'search' ? <FileSearch size={15} style={{ color: '#94A3B8' }} />
-                : <Navigation size={15} style={{ color: '#94A3B8' }} />}
-              <span style={{ color: 'white', fontSize: '0.85rem', flex: 1 }}>{item.label}</span>
-              <span style={{ color: '#64748B', fontSize: '0.72rem' }}>{item.hint}</span>
+              {item.kind === 'company' ? <Building2 size={15} style={{ color: 'var(--accent-soft)' }} />
+                : item.kind === 'search' ? <FileSearch size={15} style={{ color: 'var(--text-secondary)' }} />
+                : <Navigation size={15} style={{ color: 'var(--text-secondary)' }} />}
+              <span style={{ color: 'var(--text-primary)', fontSize: '0.85rem', flex: 1 }}>{item.label}</span>
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>{item.hint}</span>
             </button>
           ))}
           {visible.length === 0 && (
-            <div style={{ padding: '14px 16px', color: '#64748B', fontSize: '0.85rem' }}>No matches.</div>
+            <div style={{ padding: '14px 16px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>No matches.</div>
           )}
         </div>
-        <div style={{ padding: '8px 16px', borderTop: '1px solid rgba(255,255,255,0.08)', color: '#475569', fontSize: '0.7rem' }}>
+        <div style={{ padding: '8px 16px', borderTop: '1px solid var(--surface-panel)', color: '#475569', fontSize: '0.7rem' }}>
           ↑↓ navigate · Enter open · Esc close
         </div>
       </div>

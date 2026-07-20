@@ -148,7 +148,7 @@ export default function EarningsTranscripts() {
               {recentItems.map((item, i) => (
                 <div key={i} style={cardStyle} onClick={() => viewFiling(item)}
                   onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(214,108,174,0.4)')}
-                  onMouseLeave={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)')}>
+                  onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--surface-panel)')}>
                   <div style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.entityName}</div>
                   {item.description && <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '6px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.description}</div>}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

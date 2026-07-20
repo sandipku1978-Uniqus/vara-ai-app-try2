@@ -78,10 +78,10 @@ export default function ResultsToolbar({ data, columns, label = 'results' }: Res
       gap: '8px',
       padding: '8px 0',
       marginBottom: '8px',
-      borderBottom: '1px solid rgba(255,255,255,0.06)',
+      borderBottom: '1px solid var(--surface-panel)',
       fontSize: '0.8rem',
     }}>
-      <span style={{ color: '#64748B', marginRight: '4px' }}>
+      <span style={{ color: 'var(--text-muted)', marginRight: '4px' }}>
         {data.length} result{data.length !== 1 ? 's' : ''}
       </span>
 
@@ -89,8 +89,8 @@ export default function ResultsToolbar({ data, columns, label = 'results' }: Res
         onClick={handleExportCsv}
         style={{
           display: 'inline-flex', alignItems: 'center', gap: '4px',
-          background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)',
-          borderRadius: '6px', padding: '4px 10px', color: '#94A3B8', cursor: 'pointer',
+          background: 'var(--surface-panel)', border: '1px solid var(--input-border)',
+          borderRadius: '6px', padding: '4px 10px', color: 'var(--text-secondary)', cursor: 'pointer',
           fontSize: '0.78rem', transition: 'border-color 0.2s',
         }}
         title="Export as CSV"
@@ -102,8 +102,8 @@ export default function ResultsToolbar({ data, columns, label = 'results' }: Res
         onClick={handleCopy}
         style={{
           display: 'inline-flex', alignItems: 'center', gap: '4px',
-          background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.1)',
-          borderRadius: '6px', padding: '4px 10px', color: copied ? '#4ade80' : '#94A3B8', cursor: 'pointer',
+          background: 'var(--surface-panel)', border: '1px solid var(--input-border)',
+          borderRadius: '6px', padding: '4px 10px', color: copied ? '#4ade80' : 'var(--text-secondary)', cursor: 'pointer',
           fontSize: '0.78rem', transition: 'color 0.2s, border-color 0.2s',
         }}
         title="Copy table to clipboard"
