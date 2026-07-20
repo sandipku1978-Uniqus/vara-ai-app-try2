@@ -2,6 +2,7 @@ import { defaultSearchFilters, type SearchFilters } from '../components/filters/
 import {
   buildSecDocumentUrl,
   buildSecProxyUrl,
+  aliasTickerFor,
   fetchCompanySubmissions,
   fetchCompanySubmissionsBatch,
   fetchFilingText,
@@ -343,6 +344,16 @@ export async function resolveCompanyHint(companyHint: string): Promise<ResolvedC
         ticker: trimmed.toUpperCase(),
         title: entry?.title || trimmed.toUpperCase(),
       };
+    }
+  }
+
+  const alias = aliasTickerFor(trimmed);
+  if (alias) {
+    const cik = await lookupCIK(alias);
+    if (cik) {
+      const directory = await loadCompanyDirectory();
+      const entry = directory.find(item => item.ticker === alias);
+      return { cik: cik.padStart(10, '0'), ticker: alias, title: entry?.title || alias };
     }
   }
 

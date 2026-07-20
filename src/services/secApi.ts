@@ -281,6 +281,52 @@ export async function resolveCompanyEntity(
 }
 
 /**
+ * Brand names that don't match the SEC registrant name ("Google" filed as
+ * Alphabet Inc.). Alias targets are re-validated against the live directory
+ * at resolve time, so a delisting can never leave a dangling redirect.
+ */
+const COMPANY_BRAND_ALIASES: Record<string, string> = {
+  GOOGLE: 'GOOGL',
+  YOUTUBE: 'GOOGL',
+  FACEBOOK: 'META',
+  INSTAGRAM: 'META',
+  WHATSAPP: 'META',
+};
+
+export function aliasTickerFor(text: string): string | null {
+  const key = text.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  return COMPANY_BRAND_ALIASES[key] || null;
+}
+
+/**
+ * Resolve anything a user types into a company field — ticker, company name,
+ * or household brand — to a directory entry. Every add-company surface goes
+ * through this so name tolerance is the default, not per-page behavior.
+ */
+export async function resolveCompanyInput(
+  text: string
+): Promise<CompanyDirectoryEntry | null> {
+  const trimmed = text.trim();
+  if (!trimmed) return null;
+  await loadTickerMap();
+  if (!_companyDirectory) return null;
+  const direct = matchCompanyEntry(_companyDirectory, trimmed);
+  if (direct) return direct;
+  const alias = aliasTickerFor(trimmed);
+  return alias ? matchCompanyEntry(_companyDirectory, alias) : null;
+}
+
+/**
+ * Ticker-or-name-tolerant CIK lookup for user-typed input. Exact tickers stay
+ * exact; anything else resolves through the company directory and brand aliases.
+ */
+export async function lookupCIKFlexible(input: string): Promise<string | null> {
+  const resolved = await resolveCompanyInput(input);
+  if (resolved) return resolved.cik.padStart(10, '0');
+  return lookupCIK(input);
+}
+
+/**
  * Look up a CIK by ticker symbol.
  * Checks the hardcoded CIK_MAP first, then falls back to SEC's full ticker list.
  */

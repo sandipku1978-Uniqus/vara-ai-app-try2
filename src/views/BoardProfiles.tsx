@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Users, PieChart, DollarSign, Search, CheckCircle2, Loader2, BarChart3 } from 'lucide-react';
-import { fetchCompanySubmissions, lookupCIK, findLatestFiling, fetchFilingText, SecSubmission } from '../services/secApi';
+import { fetchCompanySubmissions, lookupCIK, lookupCIKFlexible, resolveCompanyInput, findLatestFiling, fetchFilingText, SecSubmission } from '../services/secApi';
 import { aiExtractBoardData, BoardDataResult } from '../services/aiApi';
 import CompanySearchInput from '../components/filters/CompanySearchInput';
 import './BoardProfiles.css';
@@ -48,7 +48,7 @@ export default function BoardProfiles() {
   const fetchData = useCallback(async (ticker: string) => {
     setIsLoading(true);
     setBoardError('');
-    const cik = await lookupCIK(ticker.toUpperCase());
+    const cik = await lookupCIKFlexible(ticker);
     if (!cik) {
       setCompanyData(null);
       setIsLoading(false);
@@ -219,11 +219,16 @@ export default function BoardProfiles() {
 
   const handleTickerSearch = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && tickerInput.trim()) {
-      const upper = tickerInput.trim().toUpperCase();
-      setCurrentTicker(upper);
-      if (!compareTickers.includes(upper) && compareTickers.length < 3) {
-        setCompareTickers(prev => [...prev, upper]);
-      }
+      const typed = tickerInput.trim();
+      void (async () => {
+        const resolved = await resolveCompanyInput(typed);
+        const upper = (resolved?.ticker || typed).toUpperCase();
+        setCurrentTicker(upper);
+        setTickerInput(upper);
+        if (!compareTickers.includes(upper) && compareTickers.length < 3) {
+          setCompareTickers(prev => [...prev, upper]);
+        }
+      })();
     }
   };
 

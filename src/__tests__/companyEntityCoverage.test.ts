@@ -18,7 +18,7 @@
  */
 
 import { describe, expect, test } from 'vitest';
-import { matchCompanyEntry, type CompanyDirectoryEntry } from '../services/secApi';
+import { aliasTickerFor, matchCompanyEntry, type CompanyDirectoryEntry } from '../services/secApi';
 import snapshotRows from './fixtures/company-tickers-snapshot.json';
 
 const directory = snapshotRows as CompanyDirectoryEntry[];
@@ -79,5 +79,26 @@ describe('company entity coverage — full SEC directory', () => {
   test('topic sentences do not read as companies', () => {
     expect(matchCompanyEntry(directory, 'revenue recognition disclosures in the pharmaceutical industry sector')).toBeNull();
     expect(matchCompanyEntry(directory, 'ic')).toBeNull(); // sub-4-char non-ticker
+  });
+});
+
+describe('brand aliases — household names that file under another registrant', () => {
+  test('every alias target is a live ticker in the directory', () => {
+    for (const brand of ['google', 'YouTube', 'Facebook', 'instagram', 'WhatsApp']) {
+      const ticker = aliasTickerFor(brand);
+      expect(ticker, `alias for ${brand}`).toBeTruthy();
+      const entry = matchCompanyEntry(directory, ticker!);
+      expect(entry?.ticker, `directory row for ${brand} → ${ticker}`).toBe(ticker);
+    }
+  });
+
+  test('google resolves to Alphabet, facebook to Meta', () => {
+    expect(matchCompanyEntry(directory, aliasTickerFor('google')!)?.title).toMatch(/Alphabet/i);
+    expect(matchCompanyEntry(directory, aliasTickerFor('facebook')!)?.title).toMatch(/Meta/i);
+  });
+
+  test('non-brand text has no alias', () => {
+    expect(aliasTickerFor('revenue recognition')).toBeNull();
+    expect(aliasTickerFor('apple')).toBeNull();
   });
 });

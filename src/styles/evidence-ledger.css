@@ -1,0 +1,285 @@
+/**
+ * Evidence Ledger — Phase 1 design tokens.
+ *
+ * Source: docs/uniqus-evidence-ledger-redesign-handoff-2026-07-20.zip →
+ * plan/total-redesign-plan-2026-07-19.md ("Design system reset").
+ *
+ * Scoped under .el-scope so the token system can be reviewed in the
+ * component gallery without touching product routes. Cutover happens by
+ * promoting these to :root and retiring the legacy variables, route by
+ * route (redesign plan, Phase 1).
+ *
+ * Principles encoded here:
+ *  - Warm-neutral canvas, flat white work surfaces, ink/slate text.
+ *  - Color carries STATE: plum = selection/authorship/primary action,
+ *    blue = links/citations, green = verified/fresh, amber = review
+ *    required, red = failure/material risk. Backgrounds stay neutral.
+ *  - 4px spacing base; radii 4 (controls) / 6 (panels) / 8 (dialogs only).
+ *  - Rules and contrast before shadows; one overlay shadow token.
+ *  - Serif is reserved for source-document text; mono for accession
+ *    numbers, tickers, and query syntax.
+ */
+
+.el-scope {
+  /* ── Canvas & surfaces ─────────────────────────────────────────────── */
+  --el-canvas: #FAF9F7;            /* warm-neutral page background        */
+  --el-surface: #FFFFFF;           /* flat white work surface             */
+  --el-surface-sunken: #F4F2EF;    /* input wells, table header bands     */
+  --el-rule: #E4E1DC;              /* 1px dividers                        */
+  --el-rule-strong: #C9C5BE;       /* section-level rules                 */
+
+  /* ── Ink ───────────────────────────────────────────────────────────── */
+  --el-ink: #1B1A19;               /* primary text                        */
+  --el-ink-secondary: #504C47;     /* supporting text                     */
+  --el-ink-muted: #7C776F;         /* metadata, captions                  */
+  --el-ink-faint: #A39E95;         /* placeholders, disabled              */
+
+  /* ── State colors (meaning, never atmosphere) ──────────────────────── */
+  --el-plum: #7A1F5C;              /* selection, authorship, primary CTA  */
+  --el-plum-strong: #641949;       /* hover/active on primary             */
+  --el-plum-wash: #F6EBF2;         /* selected-row wash, annotation bg    */
+  --el-link: #1D4ED8;              /* links and citations                 */
+  --el-link-wash: #EBF0FD;
+  --el-verified: #167A3D;          /* verified source / fresh data        */
+  --el-verified-wash: #E9F5EE;
+  --el-review: #92610C;            /* review required                     */
+  --el-review-wash: #FBF3E2;
+  --el-risk: #B02A26;              /* failure, material risk              */
+  --el-risk-wash: #FBECEB;
+
+  /* ── Typography ────────────────────────────────────────────────────── */
+  --el-font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+  --el-font-source: Georgia, 'Iowan Old Style', 'Times New Roman', serif;
+  --el-font-mono: 'IBM Plex Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  --el-text-xs: 0.72rem;   /* 11.5px — badges, table captions           */
+  --el-text-sm: 0.8rem;    /* 12.8px — metadata, secondary              */
+  --el-text-base: 0.875rem;/* 14px   — UI default, table cells          */
+  --el-text-md: 1rem;      /* 16px   — source excerpts (serif)          */
+  --el-text-lg: 1.125rem;  /* 18px   — panel titles                     */
+  --el-text-xl: 1.375rem;  /* 22px   — page titles (no marketing sizes) */
+
+  /* ── Spacing (4px base) & rhythm ───────────────────────────────────── */
+  --el-space-1: 4px;
+  --el-space-2: 8px;
+  --el-space-3: 12px;
+  --el-space-4: 16px;
+  --el-space-6: 24px;
+  --el-space-8: 32px;
+
+  --el-row-compact: 32px;
+  --el-row-default: 44px;
+  --el-row-comfortable: 56px;
+
+  /* ── Radii & elevation ─────────────────────────────────────────────── */
+  --el-radius-control: 4px;
+  --el-radius-panel: 6px;
+  --el-radius-dialog: 8px;
+  --el-shadow-overlay: 0 8px 24px rgba(27, 26, 25, 0.14); /* overlays ONLY */
+
+  /* ── Base application inside the scope ─────────────────────────────── */
+  background: var(--el-canvas);
+  color: var(--el-ink);
+  font-family: var(--el-font-ui);
+  font-size: var(--el-text-base);
+  line-height: 1.45;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ════════════════════════════════════════════════════════════════════════
+   Core component classes — the shared vocabulary every archetype reuses.
+   ════════════════════════════════════════════════════════════════════════ */
+
+/* Panels: flat, ruled, quiet */
+.el-panel {
+  background: var(--el-surface);
+  border: 1px solid var(--el-rule);
+  border-radius: var(--el-radius-panel);
+}
+
+.el-panel-title {
+  font-size: var(--el-text-lg);
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+/* Command / query bar */
+.el-query-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--el-space-2);
+  height: 52px;
+  padding: 0 var(--el-space-4);
+  background: var(--el-surface);
+  border: 1px solid var(--el-rule-strong);
+  border-radius: var(--el-radius-panel);
+}
+.el-query-bar:focus-within {
+  border-color: var(--el-plum);
+  box-shadow: 0 0 0 2px var(--el-plum-wash);
+}
+.el-query-bar input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  color: var(--el-ink);
+}
+.el-query-bar input::placeholder { color: var(--el-ink-faint); }
+
+/* Filter tokens */
+.el-token {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--el-space-1);
+  height: 28px;
+  padding: 0 var(--el-space-3);
+  background: var(--el-surface-sunken);
+  border: 1px solid var(--el-rule);
+  border-radius: var(--el-radius-control);
+  font-size: var(--el-text-sm);
+  color: var(--el-ink-secondary);
+  white-space: nowrap;
+}
+.el-token button {
+  border: none; background: none; cursor: pointer;
+  color: var(--el-ink-muted); font-size: inherit; padding: 0;
+}
+
+/* Evidence table */
+.el-table { width: 100%; border-collapse: collapse; }
+.el-table thead th {
+  text-align: left;
+  font-size: var(--el-text-xs);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--el-ink-muted);
+  padding: var(--el-space-2) var(--el-space-3);
+  border-bottom: 1px solid var(--el-rule-strong);
+  background: var(--el-surface);
+}
+.el-table tbody td {
+  padding: var(--el-space-3);
+  border-bottom: 1px solid var(--el-rule);
+  vertical-align: top;
+  font-size: var(--el-text-base);
+}
+.el-table tbody tr { background: var(--el-surface); }
+.el-table tbody tr:hover { background: var(--el-canvas); }
+.el-table tbody tr.el-selected {
+  background: var(--el-plum-wash);
+  box-shadow: inset 3px 0 0 var(--el-plum);
+}
+
+/* Source excerpt: the one serif voice */
+.el-excerpt {
+  font-family: var(--el-font-source);
+  font-size: var(--el-text-md);
+  line-height: 1.5;
+  color: var(--el-ink);
+  max-width: 46rem; /* ~75ch of serif */
+}
+
+/* Identifiers */
+.el-mono {
+  font-family: var(--el-font-mono);
+  font-size: var(--el-text-sm);
+  letter-spacing: 0;
+}
+
+/* State badges — shared vocabulary */
+.el-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--el-space-1);
+  height: 20px;
+  padding: 0 var(--el-space-2);
+  border-radius: var(--el-radius-control);
+  font-size: var(--el-text-xs);
+  font-weight: 600;
+}
+.el-badge-verified { background: var(--el-verified-wash); color: var(--el-verified); }
+.el-badge-review   { background: var(--el-review-wash);   color: var(--el-review); }
+.el-badge-risk     { background: var(--el-risk-wash);     color: var(--el-risk); }
+.el-badge-citation { background: var(--el-link-wash);     color: var(--el-link); }
+.el-badge-neutral  { background: var(--el-surface-sunken); color: var(--el-ink-secondary); }
+
+/* Links & citations */
+.el-link { color: var(--el-link); text-decoration: none; }
+.el-link:hover { text-decoration: underline; }
+
+.el-citation-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--el-space-2);
+  padding: var(--el-space-1) var(--el-space-2);
+  border: 1px solid var(--el-rule);
+  border-left: 3px solid var(--el-plum);
+  border-radius: var(--el-radius-control);
+  background: var(--el-surface);
+  font-size: var(--el-text-sm);
+}
+
+/* Buttons */
+.el-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--el-space-2);
+  height: 32px;
+  padding: 0 var(--el-space-4);
+  border-radius: var(--el-radius-control);
+  font-size: var(--el-text-base);
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+.el-btn-primary { background: var(--el-plum); color: #FFFFFF; }
+.el-btn-primary:hover { background: var(--el-plum-strong); }
+.el-btn-secondary {
+  background: var(--el-surface);
+  color: var(--el-ink);
+  border-color: var(--el-rule-strong);
+}
+.el-btn-secondary:hover { background: var(--el-surface-sunken); }
+
+/* AI synthesis block: labeled, sourced, reviewable — never floating */
+.el-synthesis {
+  border: 1px solid var(--el-rule);
+  border-radius: var(--el-radius-panel);
+  background: var(--el-surface);
+}
+.el-synthesis-header {
+  display: flex;
+  align-items: center;
+  gap: var(--el-space-2);
+  padding: var(--el-space-2) var(--el-space-3);
+  border-bottom: 1px solid var(--el-rule);
+  font-size: var(--el-text-xs);
+  color: var(--el-ink-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.el-synthesis-body { padding: var(--el-space-3); }
+
+/* Empty / error states must explain themselves */
+.el-state {
+  padding: var(--el-space-6);
+  border: 1px dashed var(--el-rule-strong);
+  border-radius: var(--el-radius-panel);
+  background: var(--el-surface);
+  color: var(--el-ink-secondary);
+}
+.el-state strong { color: var(--el-ink); }
+.el-state.el-state-error { border-color: var(--el-risk); border-style: solid; }
+
+/* Loading skeleton */
+@keyframes el-shimmer { 0% { opacity: 0.55; } 50% { opacity: 1; } 100% { opacity: 0.55; } }
+.el-skeleton {
+  height: 12px;
+  border-radius: var(--el-radius-control);
+  background: var(--el-surface-sunken);
+  animation: el-shimmer 1.4s ease-in-out infinite;
+}

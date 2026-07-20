@@ -4,12 +4,14 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
-import { BellRing, Clock, Eye, FileText, Loader2, Plus, RefreshCw, Search as SearchIcon, TrendingUp, X } from 'lucide-react';
+import { BellRing, Clock, Eye, FileText, Loader2, RefreshCw, Search as SearchIcon, TrendingUp, X } from 'lucide-react';
 import { useApp } from '../context/AppState';
 import { BRAND } from '../config/brand';
 import { executeFilingResearchSearch } from '../services/filingResearch';
 import { fetchCompanySubmissions, type SecSubmission, lookupCIK } from '../services/secApi';
 import { defaultSearchFilters } from '../components/filters/SearchFilterBar';
+import CompanySearchInput from '../components/filters/CompanySearchInput';
+import { describeForm } from '../lib/formLabels';
 import { buildResearchRouteParams } from '../services/researchSessions';
 import { buildWatchlistAnalytics } from '../services/dashboardAnalytics';
 import { buildSavedAlertRouteParams } from '../services/alertRoutes';
@@ -46,7 +48,6 @@ export default function Dashboard() {
   const [loadingWatchlist, setLoadingWatchlist] = useState(false);
   const [filingVolumeData, setFilingVolumeData] = useState<Record<string, string | number | null>[]>([]);
   const [volumeLoading, setVolumeLoading] = useState(false);
-  const [addTickerInput, setAddTickerInput] = useState('');
   const [addError, setAddError] = useState('');
   const [checkingAlerts, setCheckingAlerts] = useState<string[]>([]);
   const [alertErrors, setAlertErrors] = useState<Record<string, string>>({});
@@ -104,23 +105,15 @@ export default function Dashboard() {
     [watchlist, watchlistData]
   );
 
-  const handleAddTicker = async () => {
-    const ticker = addTickerInput.toUpperCase().trim();
-    if (!ticker) return;
-    if (watchlist.includes(ticker)) {
+  const handleAddCompany = (ticker: string) => {
+    const upper = ticker.toUpperCase().trim();
+    if (!upper) return;
+    if (watchlist.includes(upper)) {
       setAddError('Already in watchlist.');
       return;
     }
-
     setAddError('');
-    const cik = await lookupCIK(ticker);
-    if (!cik) {
-      setAddError(`Ticker "${ticker}" not found in SEC EDGAR.`);
-      return;
-    }
-
-    addToWatchlist(ticker);
-    setAddTickerInput('');
+    addToWatchlist(upper);
   };
 
   const checkAlert = async (alertId: string) => {
@@ -256,7 +249,14 @@ export default function Dashboard() {
                 style={{ cursor: 'pointer' }}
               >
                 <span className="rank">#{idx + 1}</span>
-                <span className="topic">{item.form}</span>
+                <span className="topic">
+                  {item.form}
+                  {describeForm(item.form) && (
+                    <span style={{ color: 'var(--text-muted)', fontWeight: 400, fontSize: '0.78rem' }}>
+                      {' '}· {describeForm(item.form)}
+                    </span>
+                  )}
+                </span>
                 <span className="count">{item.count} filing{item.count === 1 ? '' : 's'}</span>
               </button>
             ))}
@@ -318,21 +318,11 @@ export default function Dashboard() {
               <div className="empty-state">No companies in watchlist yet.</div>
             )}
             {!loadingWatchlist && (
-              <div className="watchlist-add-hint" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <input
-                  type="text"
-                  placeholder="Enter ticker..."
-                  value={addTickerInput}
-                  onChange={event => {
-                    setAddTickerInput(event.target.value);
-                    setAddError('');
-                  }}
-                  onKeyDown={event => event.key === 'Enter' && void handleAddTicker()}
-                  style={{ flex: 1, padding: '9px 12px', borderRadius: '12px', border: '1px solid var(--input-border)', background: 'var(--input-bg)', color: 'var(--text-primary)', fontSize: '0.85rem' }}
+              <div className="watchlist-add-hint">
+                <CompanySearchInput
+                  onSelect={ticker => handleAddCompany(ticker)}
+                  placeholder="Add ticker or company name..."
                 />
-                <button type="button" className="watchlist-add-btn" onClick={() => void handleAddTicker()}>
-                  <Plus size={14} /> Add
-                </button>
               </div>
             )}
             {addError && <div role="alert" style={{ color: 'var(--status-warning)', fontSize: '0.8rem', marginTop: '4px', paddingLeft: '8px' }}>{addError}</div>}
@@ -382,7 +372,7 @@ export default function Dashboard() {
                   <FileText size={16} className={filing.form === '8-K' ? 'text-orange' : 'text-blue'} />
                   <div className="activity-details">
                     <p><strong>{filing.ticker}</strong> filed <strong>{filing.form}</strong></p>
-                    <span>{filing.date}</span>
+                    <span>{filing.date}{describeForm(filing.form) ? ` · ${describeForm(filing.form)}` : ''}</span>
                   </div>
                 </button>
               ));

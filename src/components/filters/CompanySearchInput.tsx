@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback, useId } from 'react';
 import { Search, X, Loader2 } from 'lucide-react';
-import { buildSecProxyUrl, loadTickerMap } from '../../services/secApi';
+import { aliasTickerFor, buildSecProxyUrl, loadTickerMap } from '../../services/secApi';
 import './CompanySearchInput.css';
 
 interface CompanySearchInputProps {
@@ -69,6 +69,12 @@ export default function CompanySearchInput({ onSelect, placeholder = 'Search tic
     // Exact ticker match first
     if (tickerMap[upper]) {
       matches.push({ ticker: upper, cik: tickerMap[upper], title: titleMap[upper] });
+    }
+
+    // Household brand → registrant ("google" files as Alphabet Inc.)
+    const aliasTicker = aliasTickerFor(upper);
+    if (aliasTicker && tickerMap[aliasTicker] && !matches.find(m => m.ticker === aliasTicker)) {
+      matches.push({ ticker: aliasTicker, cik: tickerMap[aliasTicker], title: titleMap[aliasTicker] });
     }
 
     // Prefix ticker matches

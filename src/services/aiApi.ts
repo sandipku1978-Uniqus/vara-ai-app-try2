@@ -42,12 +42,13 @@ interface ClaudeResponsePayload {
 // transient statuses once from here — each attempt re-passes auth, rate
 // limits, and budget. 4xx responses (validation, auth, rate limits) never retry.
 const TRANSIENT_CLAUDE_STATUSES = new Set([500, 502, 503, 504, 529]);
+const TRANSIENT_RETRY_DELAY_MS = process.env.VITEST ? 25 : 1500;
 
 async function callClaude(prompt: string, options: ClaudeRequestOptions = {}): Promise<string> {
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt < 2; attempt += 1) {
-    if (attempt > 0) await new Promise(resolve => setTimeout(resolve, 1500));
+    if (attempt > 0) await new Promise(resolve => setTimeout(resolve, TRANSIENT_RETRY_DELAY_MS));
 
     let response: Response;
     try {

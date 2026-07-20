@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { Rocket, TrendingUp, BarChart, BookOpen, Clock, Activity, Download, Settings, ChevronRight, Search, FileText, AlertCircle, Loader2, ArrowLeft, ExternalLink, Shield, DollarSign, Users, Briefcase, PieChart } from 'lucide-react';
-import { searchEdgarFilings, fetchEdgarSearchTotal, fetchFilingText, fetchCompanySubmissions, CIK_MAP, lookupCIK } from '../services/secApi';
+import { searchEdgarFilings, fetchEdgarSearchTotal, fetchFilingText, fetchCompanySubmissions, CIK_MAP, lookupCIKFlexible } from '../services/secApi';
 import { aiAnalyzeS1 } from '../services/aiApi';
 import { defaultSearchFilters } from '../components/filters/SearchFilterBar';
 import { buildCsv } from '../components/tables/ResultsToolbar';
@@ -216,7 +216,7 @@ export default function IPOCenter() {
       } else {
         // Fallback: check if user entered a ticker and search submissions
         const ticker = searchQuery.trim().toUpperCase();
-        const cik = CIK_MAP[ticker] || await lookupCIK(ticker);
+        const cik = CIK_MAP[ticker] || await lookupCIKFlexible(searchQuery.trim());
         if (cik) {
           const submissions = await fetchCompanySubmissions(cik);
           if (submissions) {

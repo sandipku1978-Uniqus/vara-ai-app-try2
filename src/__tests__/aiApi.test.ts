@@ -58,7 +58,7 @@ describe('aiApi', () => {
     });
 
     it('handles network errors gracefully', async () => {
-      mockFetch.mockRejectedValueOnce(new Error('Network error'));
+      mockFetch.mockRejectedValue(new Error('Network error'));
       const { askAi } = await import('../services/aiApi');
       const result = await askAi('test');
       expect(result).toBeTruthy();
@@ -113,14 +113,14 @@ describe('aiApi', () => {
     });
 
     it('returns error message on failure', async () => {
-      mockFetch.mockRejectedValueOnce(new Error('Failed'));
+      mockFetch.mockRejectedValue(new Error('Failed'));
       const { aiSummarize } = await import('../services/aiApi');
       const result = await aiSummarize('text');
       expect(result).toBeTruthy();
     });
 
     it('throws on failure when the caller requests an explicit error state', async () => {
-      mockFetch.mockRejectedValueOnce(new Error('Failed'));
+      mockFetch.mockRejectedValue(new Error('Failed'));
       const { aiSummarize } = await import('../services/aiApi');
       await expect(aiSummarize('text', { throwOnError: true })).rejects.toThrow('Failed');
     });
@@ -234,7 +234,7 @@ describe('aiApi', () => {
     });
 
     it('rejects when analysis cannot be generated instead of returning pseudo-analysis', async () => {
-      mockFetch.mockRejectedValueOnce(new Error('API down'));
+      mockFetch.mockRejectedValue(new Error('API down'));
       const { aiAnalyzeS1 } = await import('../services/aiApi');
       await expect(aiAnalyzeS1('text', 'overview')).rejects.toThrow('API down');
     });
@@ -242,7 +242,7 @@ describe('aiApi', () => {
 
   describe('aiAscLookup', () => {
     it('rejects when guidance cannot be generated instead of returning a fallback answer', async () => {
-      mockFetch.mockRejectedValueOnce(new Error('API down'));
+      mockFetch.mockRejectedValue(new Error('API down'));
       const { aiAscLookup } = await import('../services/aiApi');
       await expect(aiAscLookup('ASC 606')).rejects.toThrow('API down');
     });
@@ -271,7 +271,7 @@ describe('aiApi', () => {
     });
 
     it('returns null on error', async () => {
-      mockFetch.mockRejectedValueOnce(new Error('Failed'));
+      mockFetch.mockRejectedValue(new Error('Failed'));
       const { aiExtractBoardData } = await import('../services/aiApi');
       const result = await aiExtractBoardData('text');
       expect(result).toBeNull();
@@ -316,7 +316,7 @@ describe('aiApi', () => {
     });
 
     it('returns null on error', async () => {
-      mockFetch.mockRejectedValueOnce(new Error('Failed'));
+      mockFetch.mockRejectedValue(new Error('Failed'));
       const { aiRateESGDisclosure } = await import('../services/aiApi');
       const result = await aiRateESGDisclosure('text', ['topic']);
       expect(result).toBeNull();
@@ -338,7 +338,7 @@ describe('aiApi', () => {
     });
 
     it('rejects on error instead of returning an empty deal result', async () => {
-      mockFetch.mockRejectedValueOnce(new Error('Failed'));
+      mockFetch.mockRejectedValue(new Error('Failed'));
       const { aiExtractDealDetails } = await import('../services/aiApi');
       await expect(aiExtractDealDetails('text')).rejects.toThrow('Failed');
     });
@@ -355,7 +355,7 @@ describe('aiApi', () => {
 
   describe('aiExtractClauses', () => {
     it('rejects on provider failure instead of returning an empty clause result', async () => {
-      mockFetch.mockRejectedValueOnce(new Error('Failed'));
+      mockFetch.mockRejectedValue(new Error('Failed'));
       const { aiExtractClauses } = await import('../services/aiApi');
       await expect(aiExtractClauses('agreement text', ['No-shop'])).rejects.toThrow('Failed');
     });

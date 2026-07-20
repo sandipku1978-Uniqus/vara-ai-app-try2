@@ -1,0 +1,92 @@
+/**
+ * Plain-English labels for SEC form types. Raw codes like "4" or "PX14A6G"
+ * are meaningless to most readers, so surfaces that rank or list forms show
+ * these next to the code. Keyed by root form; amendments append "(amendment)".
+ */
+const FORM_LABELS: Record<string, string> = {
+  '10-K': 'Annual report',
+  '10-KT': 'Transition annual report',
+  '10-Q': 'Quarterly report',
+  '8-K': 'Material events report',
+  '6-K': 'Foreign issuer interim report',
+  '20-F': 'Foreign issuer annual report',
+  '40-F': 'Canadian issuer annual report',
+  '3': 'Initial insider ownership',
+  '4': 'Insider transaction report',
+  '5': 'Annual insider ownership',
+  '144': 'Notice of proposed insider sale',
+  'DEF 14A': 'Proxy statement',
+  'DEFA14A': 'Additional proxy materials',
+  'DEFM14A': 'Merger proxy statement',
+  'DEFR14A': 'Revised proxy statement',
+  'PRE 14A': 'Preliminary proxy statement',
+  'PRER14A': 'Revised preliminary proxy',
+  'DFAN14A': 'Non-management proxy solicitation',
+  'PX14A6G': 'Shareholder exempt solicitation',
+  'S-1': 'IPO registration statement',
+  'S-3': 'Shelf registration statement',
+  'S-4': 'Merger registration statement',
+  'S-8': 'Employee plan registration',
+  'F-1': 'Foreign issuer IPO registration',
+  'F-3': 'Foreign issuer shelf registration',
+  'F-4': 'Foreign issuer merger registration',
+  'F-6': 'ADR registration',
+  'F-6EF': 'ADR registration (auto-effective)',
+  '424B1': 'Prospectus',
+  '424B2': 'Prospectus (pricing)',
+  '424B3': 'Prospectus (updated)',
+  '424B4': 'Prospectus (final)',
+  '424B5': 'Prospectus (pricing supplement)',
+  'FWP': 'Free-writing prospectus',
+  'SC 13D': 'Activist ownership stake (>5%)',
+  'SC 13D/A': 'Activist ownership stake (>5%)',
+  'SCHEDULE 13D': 'Activist ownership stake (>5%)',
+  'SC 13G': 'Passive ownership stake (>5%)',
+  'SCHEDULE 13G': 'Passive ownership stake (>5%)',
+  'SC TO-T': 'Third-party tender offer',
+  'SC 14D9': 'Tender offer response',
+  '425': 'Merger communication',
+  'CB': 'Cross-border transaction notice',
+  '13F-HR': 'Institutional holdings report',
+  'N-CSR': 'Fund annual report',
+  'N-CSRS': 'Fund semi-annual report',
+  'N-2': 'Closed-end fund registration',
+  'NPORT-P': 'Fund portfolio holdings',
+  '11-K': 'Employee stock plan annual report',
+  'SD': 'Conflict minerals disclosure',
+  'D': 'Private placement notice',
+  '1-A': 'Regulation A offering statement',
+  '1-K': 'Regulation A annual report',
+  '1-SA': 'Regulation A semi-annual report',
+  'C': 'Crowdfunding offering',
+  'CORRESP': 'Response to SEC staff',
+  'UPLOAD': 'SEC comment letter',
+  'DRS': 'Confidential draft registration',
+  '10-12G': 'Securities registration (OTC)',
+  '10-12B': 'Securities registration (exchange)',
+  '8-A12B': 'Exchange listing registration',
+  '8-A12G': 'OTC listing registration',
+  '25': 'Delisting notice',
+  '25-NSE': 'Delisting notice (exchange)',
+  '15-12B': 'Deregistration notice',
+  '15-12G': 'Deregistration notice',
+  'RW': 'Registration withdrawal',
+  'ARS': 'Annual report to shareholders',
+  'SUPPL': 'Prospectus supplement (foreign)',
+  '18-K': 'Foreign government annual report',
+  '40FR12B': 'Canadian issuer registration',
+  '20FR12B': 'Foreign issuer registration',
+  'X-17A-5': 'Broker-dealer annual audit',
+  'NT 10-K': 'Late annual report notice',
+  'NT 10-Q': 'Late quarterly report notice',
+};
+
+export function describeForm(form: string): string | null {
+  const trimmed = form.trim().toUpperCase();
+  const direct = FORM_LABELS[trimmed];
+  if (direct) return direct;
+  const root = trimmed.replace(/\/A$/, '');
+  const base = FORM_LABELS[root];
+  if (!base) return null;
+  return root === trimmed ? base : `${base} (amendment)`;
+}
