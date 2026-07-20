@@ -11,6 +11,7 @@ import {
   updateCitationNote,
 } from '../../services/memoTray';
 import { aiDraftMemoFromCitations } from '../../services/aiApi';
+import MemoDraft from './MemoDraft';
 import '../../styles/evidence-ledger.css';
 import './MemoTray.css';
 
@@ -149,7 +150,7 @@ export default function MemoTray() {
                       <Copy size={13} /> {copied === 'draft' ? 'Copied' : ''}
                     </button>
                   </div>
-                  <pre>{draft}</pre>
+                  <MemoDraft text={draft} />
                 </div>
               )}
             </>
