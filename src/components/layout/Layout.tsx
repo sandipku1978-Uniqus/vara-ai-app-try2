@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../../context/AppState';
 import { URCBrandLockup, URCBrandMark } from '../brand/URCBrand';
+import MemoTray from '../memo/MemoTray';
 import { BRAND } from '../../config/brand';
 import { EARNINGS_SCOPE_LABEL } from '../../config/earnings';
 import { clerkEnabled } from '../../services/auth';
@@ -345,6 +346,7 @@ export function Layout({ children }: { children: ReactNode }) {
           {children}
         </main>
       </div>
+      {!isLanding && <MemoTray />}
     </div>
   );
 }

@@ -165,6 +165,42 @@ function getUserFacingError(error: unknown, fallback: string): string {
   return fallback;
 }
 
+export interface MemoCitationInput {
+  company: string;
+  form: string;
+  fileDate: string;
+  accessionNumber: string;
+  excerpt: string;
+  note: string;
+}
+
+/**
+ * Draft a research memo grounded strictly in the tray's cited evidence.
+ * The model is told to cite by [n] and to flag gaps rather than fill them.
+ */
+export async function aiDraftMemoFromCitations(citations: MemoCitationInput[]): Promise<string> {
+  const evidence = citations
+    .map((citation, index) =>
+      `[${index + 1}] ${citation.company} — Form ${citation.form}, filed ${citation.fileDate} (accession ${citation.accessionNumber})` +
+      (citation.excerpt.trim() ? `\nCited excerpt: ${citation.excerpt.trim()}` : '') +
+      (citation.note.trim() ? `\nResearcher note: ${citation.note.trim()}` : ''))
+    .join('\n\n');
+
+  const prompt = [
+    'Draft a concise SEC research memo based ONLY on the cited evidence below.',
+    'Requirements:',
+    '- Cite every factual statement with its bracketed source number, e.g. [1].',
+    '- Do not introduce facts, figures, or filings that are not in the evidence.',
+    '- Where the evidence is insufficient for a conclusion, say so explicitly and list what additional filings would resolve it.',
+    '- Structure: Purpose, Evidence summary, Observations, Open questions.',
+    '',
+    'CITED EVIDENCE:',
+    evidence,
+  ].join('\n');
+
+  return callClaude(prompt, { maxTokens: 2048 });
+}
+
 export async function askAi(
   question: string,
   context?: string,

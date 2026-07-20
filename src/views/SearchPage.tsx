@@ -5,6 +5,7 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 
 import {
   BellRing,
+  BookMarked,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -60,6 +61,8 @@ import { canUseInstantEnrichedSearch } from '../services/filingResearch';
 import { BRAND } from '../config/brand';
 import './SearchPage.css';
 import '../styles/evidence-ledger.css';
+import { addCitation, citationId, removeCitation } from '../services/memoTray';
+import { useMemoTray } from '../hooks/useMemoTray';
 
 // Amendments included for every core form: EFTS matches form types exactly, so
 // omitting 10-K/A etc. hides restatements — often the most material filings.
@@ -375,6 +378,7 @@ export default function SearchPage() {
   const [resolvedPreviewDocs, setResolvedPreviewDocs] = useState<Record<string, string>>({});
   // Company suggestions for the query bar — same directory + brand aliases
   // as every other company input.
+  const memoCitations = useMemoTray();
   const [companyDirectory, setCompanyDirectory] = useState<CompanyDirectoryEntry[]>([]);
   const [querySuggestions, setQuerySuggestions] = useState<CompanyDirectoryEntry[]>([]);
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
@@ -1222,6 +1226,10 @@ export default function SearchPage() {
     return () => { cancelled = true; };
   }, [selectedResult, resolvedPreviewDocs]);
 
+  const selectedIsCited = selectedResult
+    ? memoCitations.some(item => item.id === citationId(selectedResult.cik, selectedResult.accessionNumber))
+    : false;
+
   const selectedPrimaryDocument = selectedResult
     ? (isPlaceholderPrimaryDocument(selectedResult.primaryDocument, selectedResult.accessionNumber)
         ? resolvedPreviewDocs[selectedResult.id] || ''
@@ -1745,6 +1753,29 @@ export default function SearchPage() {
                     <a href={selectedDocumentUrl} target="_blank" rel="noreferrer" className="secondary-btn">
                       <ExternalLink size={14} /> SEC.gov
                     </a>
+                    <button
+                      type="button"
+                      className="secondary-btn"
+                      aria-pressed={selectedIsCited}
+                      onClick={() => {
+                        if (selectedIsCited) {
+                          removeCitation(citationId(selectedResult.cik, selectedResult.accessionNumber));
+                          return;
+                        }
+                        addCitation({
+                          kind: 'filing',
+                          cik: selectedResult.cik,
+                          accessionNumber: selectedResult.accessionNumber,
+                          company: selectedResult.entityName,
+                          form: selectedResult.formType,
+                          fileDate: selectedResult.fileDate,
+                          excerpt: selectedResult.matchSnippet || selectedResult.description || '',
+                          sourceUrl: selectedResult.filingUrl || selectedDocumentUrl,
+                        });
+                      }}
+                    >
+                      <BookMarked size={14} /> {selectedIsCited ? 'Cited ✓' : 'Cite'}
+                    </button>
                   </div>
                 </div>
 
