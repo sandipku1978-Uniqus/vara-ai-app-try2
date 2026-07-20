@@ -27,32 +27,56 @@ const STORAGE_KEY = 'urc.memo.tray.v1';
 type Listener = () => void;
 const listeners = new Set<Listener>();
 let cache: MemoCitation[] | null = null;
+// The browser storage scope initializes asynchronously; track which key the
+// cache was hydrated under so an early empty read can never clobber citations
+// persisted by another page once the scope arrives.
+let cacheKey: string | null | undefined;
 
 function storageKey(): string | null {
   return scopedStorageKey(STORAGE_KEY);
 }
 
 function read(): MemoCitation[] {
-  if (cache) return cache;
-  if (typeof window === 'undefined') return [];
+  if (typeof window === 'undefined') return cache || [];
+  const key = storageKey();
+  if (cache && cacheKey === key) return cache;
+  if (!key) {
+    cache = cache || [];
+    cacheKey = key;
+    return cache;
+  }
   try {
-    const key = storageKey();
-    const raw = key ? window.localStorage.getItem(key) : null;
-    cache = raw ? (JSON.parse(raw) as MemoCitation[]) : [];
+    const raw = window.localStorage.getItem(key);
+    const stored = raw ? (JSON.parse(raw) as MemoCitation[]) : [];
+    // Citations captured before the scope was ready live only in memory —
+    // merge them instead of losing either side.
+    const pending = (cache || []).filter(item => !stored.some(existing => existing.id === item.id));
+    cache = [...stored, ...pending];
+    cacheKey = key;
+    if (pending.length > 0) persist(cache, key);
   } catch {
-    cache = [];
+    cache = cache || [];
+    cacheKey = key;
   }
   return cache;
 }
 
-function write(items: MemoCitation[]): void {
-  cache = items;
+function persist(items: MemoCitation[], key: string): void {
   try {
-    const key = storageKey();
-    if (key) window.localStorage.setItem(key, JSON.stringify(items));
+    window.localStorage.setItem(key, JSON.stringify(items));
   } catch {
     // Quota/private-mode failures keep the tray in-memory for the session.
   }
+}
+
+function write(items: MemoCitation[]): void {
+  // Hydrate from storage first so a stale in-memory cache can never
+  // overwrite citations persisted by another page.
+  read();
+  cache = items;
+  const key = storageKey();
+  cacheKey = key;
+  if (key && typeof window !== 'undefined') persist(items, key);
   listeners.forEach(listener => listener());
 }
 

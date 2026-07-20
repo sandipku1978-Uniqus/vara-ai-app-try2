@@ -9,6 +9,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ExternalLink, Loader2 } from 'lucide-react';
+import CiteButton from '../../../components/memo/CiteButton';
 import {
   fetchCompanyFacts,
   extractComparableFinancials,
@@ -125,7 +126,7 @@ export default function DossierTabs({
             </caption>
             <thead>
               <tr>
-                {['Date', 'Form', 'Description', 'Document'].map(header => (
+                {['Date', 'Form', 'Description', 'Document', 'Memo'].map(header => (
                   <th key={header} scope="col" style={{ padding: '12px 16px', textAlign: 'left', color: 'var(--text-muted)', fontWeight: 600, borderBottom: '1px solid var(--border-color)' }}>{header}</th>
                 ))}
               </tr>
@@ -148,6 +149,21 @@ export default function DossierTabs({
                       <a href={url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-primary)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                         View <ExternalLink size={12} aria-hidden="true" />
                       </a>
+                    </td>
+                    <td style={{ padding: '10px 16px', borderBottom: '1px solid var(--border-color)' }}>
+                      <CiteButton
+                        compact
+                        citation={{
+                          kind: 'filing',
+                          cik: String(cik),
+                          accessionNumber: recentFilings.accessionNumber[i],
+                          company: companyName,
+                          form: recentFilings.form[i],
+                          fileDate: recentFilings.filingDate[i],
+                          excerpt: recentFilings.primaryDocDescription[i] || '',
+                          sourceUrl: url,
+                        }}
+                      />
                     </td>
                   </tr>
                 );

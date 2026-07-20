@@ -6,6 +6,7 @@ import { useSearchParams } from 'next/navigation';
 import { Mail, Search, Loader2, ExternalLink, MessageSquare, ChevronDown, ChevronRight } from 'lucide-react';
 import AskCopilotButton from '../components/tables/AskCopilotButton';
 import CompanySearchInput from '../components/filters/CompanySearchInput';
+import CiteButton from '../components/memo/CiteButton';
 import { useApp } from '../context/AppState';
 
 /** Topic-first entry points — accountants start from an issue, not a query.
@@ -304,10 +305,25 @@ export function ThreadConversation({ threadId }: { threadId: string }) {
               <FormBadge form={letter.form} />
               <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{letter.date_filed}</span>
             </div>
-            <a href={edgarUrl(letter.filename)} target="_blank" rel="noreferrer"
-              style={{ color: '#D66CAE', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-              Full letter <ExternalLink size={11} />
-            </a>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <CiteButton
+                compact
+                citation={{
+                  kind: 'letter',
+                  cik: String(letter.cik),
+                  accessionNumber: letter.accession,
+                  company: letter.company_name,
+                  form: letter.form,
+                  fileDate: letter.date_filed,
+                  excerpt: letter.has_text ? letter.preview.slice(0, 400) : '',
+                  sourceUrl: edgarUrl(letter.filename),
+                }}
+              />
+              <a href={edgarUrl(letter.filename)} target="_blank" rel="noreferrer"
+                style={{ color: '#D66CAE', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                Full letter <ExternalLink size={11} />
+              </a>
+            </div>
           </div>
           {letter.has_text ? (
             <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.5, whiteSpace: 'pre-line' }}>
@@ -583,6 +599,19 @@ export default function CommentLetters() {
                         style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                         EDGAR <ExternalLink size={11} />
                       </a>
+                      <CiteButton
+                        compact
+                        citation={{
+                          kind: 'letter',
+                          cik: String(match.cik),
+                          accessionNumber: match.accession,
+                          company: match.company_name,
+                          form: match.form,
+                          fileDate: match.date_filed,
+                          excerpt: (match.headline || '').replace(/<\/?b>/g, '').slice(0, 400),
+                          sourceUrl: edgarUrl(match.filename),
+                        }}
+                      />
                     </div>
                   </div>
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.55 }}
