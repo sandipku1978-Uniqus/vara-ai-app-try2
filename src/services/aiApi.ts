@@ -37,32 +37,54 @@ interface ClaudeResponsePayload {
   error?: string;
 }
 
+// The server intentionally makes exactly one model attempt per request (spend
+// control), so a single upstream blip becomes a user-visible failure. Retry
+// transient statuses once from here — each attempt re-passes auth, rate
+// limits, and budget. 4xx responses (validation, auth, rate limits) never retry.
+const TRANSIENT_CLAUDE_STATUSES = new Set([500, 502, 503, 504, 529]);
+
 async function callClaude(prompt: string, options: ClaudeRequestOptions = {}): Promise<string> {
-  const response = await fetch(CLAUDE_API_ENDPOINT, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      prompt,
-      messages: options.messages,
-      maxTokens: options.maxTokens,
-      frameworks: options.frameworks,
-    }),
-  });
+  let lastError: Error | null = null;
 
-  const payload = (await response.json().catch(() => null)) as ClaudeResponsePayload | null;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    if (attempt > 0) await new Promise(resolve => setTimeout(resolve, 1500));
 
-  if (!response.ok) {
-    throw new Error(payload?.error || 'Claude request failed.');
+    let response: Response;
+    try {
+      response = await fetch(CLAUDE_API_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt,
+          messages: options.messages,
+          maxTokens: options.maxTokens,
+          frameworks: options.frameworks,
+        }),
+      });
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error('Claude request failed.');
+      continue;
+    }
+
+    const payload = (await response.json().catch(() => null)) as ClaudeResponsePayload | null;
+
+    if (!response.ok) {
+      lastError = new Error(payload?.error || 'Claude request failed.');
+      if (TRANSIENT_CLAUDE_STATUSES.has(response.status)) continue;
+      throw lastError;
+    }
+
+    const text = payload?.text?.trim();
+    if (!text) {
+      throw new Error('Claude returned an empty response.');
+    }
+
+    return text;
   }
 
-  const text = payload?.text?.trim();
-  if (!text) {
-    throw new Error('Claude returned an empty response.');
-  }
-
-  return text;
+  throw lastError ?? new Error('Claude request failed.');
 }
 
 /**

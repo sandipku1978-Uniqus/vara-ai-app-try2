@@ -133,4 +133,13 @@ export const CORE_FORMS = new Set([
   'D', 'D/A',
   // Draft registration statements
   'DRS', 'DRS/A',
+  // Securities registrations, Reg A / crowdfunding offerings, closed-end fund
+  // registrations, and deregistrations — 7 issuers' only post-2010 EDGAR
+  // activity was in these forms (ticker-coverage sweep 2026-07-20)
+  '10-12G', '10-12G/A', '10-12B', '10-12B/A',
+  '8-A12B', '8-A12B/A', '8-A12G', '8-A12G/A',
+  '1-A', '1-A/A', '1-K', '1-K/A', '1-SA', '1-Z',
+  'C', 'C/A', 'C-U',
+  'N-2', 'N-2/A', 'N-8A', 'N-8A/A',
+  '15-12B', '15-12G', '15-15D', 'RW',
 ]);
