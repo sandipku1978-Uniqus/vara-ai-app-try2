@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 
 import { Mail, Search, Loader2, ExternalLink, MessageSquare, ChevronDown, ChevronRight } from 'lucide-react';
 import AskCopilotButton from '../components/tables/AskCopilotButton';
+import CompanySearchInput from '../components/filters/CompanySearchInput';
 import { useApp } from '../context/AppState';
 
 /** Topic-first entry points — accountants start from an issue, not a query.
@@ -503,12 +504,19 @@ export default function CommentLetters() {
             onKeyDown={e => e.key === 'Enter' && runSearch(keyword, formFilter, companyFilter)}
             style={{ width: '100%', padding: '9px 12px', background: 'var(--input-bg)', border: '1px solid var(--input-border)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '0.85rem', outline: 'none' }} />
         </div>
-        <div style={{ minWidth: '170px' }}>
-          <input value={companyFilter} onChange={e => setCompanyFilter(e.target.value)}
+        <div style={{ minWidth: '220px' }}>
+          {/* Letters are keyed by registrant name, so suggestion picks pass
+              the company title; free text still filters as typed. */}
+          <CompanySearchInput
+            selectValue="title"
+            initialValue={companyFilter}
             placeholder="Company name…"
-            aria-label="Filter by company name"
-            onKeyDown={e => e.key === 'Enter' && runSearch(keyword, formFilter, companyFilter)}
-            style={{ width: '100%', padding: '9px 12px', background: 'var(--input-bg)', border: '1px solid var(--input-border)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '0.85rem', outline: 'none' }} />
+            onTextChange={text => setCompanyFilter(text)}
+            onSelect={title => {
+              setCompanyFilter(title);
+              if (keyword.trim()) runSearch(keyword, formFilter, title);
+            }}
+          />
         </div>
         <div style={{ display: 'flex', gap: '6px' }}>
           {([['', 'All'], ['UPLOAD', 'Staff letters'], ['CORRESP', 'Responses']] as const).map(([value, label]) => (

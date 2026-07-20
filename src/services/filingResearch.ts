@@ -3,7 +3,7 @@ import {
   fetchCompanySubmissions,
   fetchFilingText,
   isEnrichedSearchEnabled,
-  resolveCompanyEntity,
+  resolveCompanyInput,
   searchEdgarFilings,
   type EdgarSearchHit,
   type EnrichedSearchParams,
@@ -119,7 +119,7 @@ export async function resolveEntityScope(
   if (!trimmed) return { entityName: '', cik: '', query: trimmed };
 
   // Whole text reads as one company ("organon", "OGN", "Organon & Co")
-  const whole = await resolveCompanyEntity(trimmed);
+  const whole = await resolveCompanyInput(trimmed);
   if (whole) return { entityName: whole.title, cik: whole.cik, query: '' };
 
   const words = trimmed.split(/\s+/);
@@ -127,7 +127,7 @@ export async function resolveEntityScope(
 
   // Longest leading multi-word company name ("sun pharma advanced 8-K")
   for (let take = Math.min(4, words.length - 1); take >= 2; take--) {
-    const lead = await resolveCompanyEntity(words.slice(0, take).join(' '));
+    const lead = await resolveCompanyInput(words.slice(0, take).join(' '));
     if (lead) {
       return { entityName: lead.title, cik: lead.cik, query: words.slice(take).join(' ') };
     }
@@ -136,7 +136,7 @@ export async function resolveEntityScope(
   // Single leading token. Ticker-style matches only count when typed in
   // caps under 'conservative' — otherwise ordinary words ("all", "cash",
   // "target") mis-resolve to tickers inside topic queries.
-  const lead = await resolveCompanyEntity(words[0]);
+  const lead = await resolveCompanyInput(words[0]);
   if (lead) {
     const isTickerMatch = lead.ticker === words[0].toUpperCase();
     const typedAsTicker = words[0] === words[0].toUpperCase();

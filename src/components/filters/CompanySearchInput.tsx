@@ -9,10 +9,23 @@ interface CompanySearchInputProps {
   onSelect: (ticker: string, cik: string) => void;
   placeholder?: string;
   className?: string;
+  /** Fires on every keystroke so hosts can also accept free text. */
+  onTextChange?: (text: string) => void;
+  /** 'title' passes the registrant name to onSelect instead of the ticker —
+   *  for corpora keyed by company names (e.g. comment letters). */
+  selectValue?: 'ticker' | 'title';
+  /** Host-driven value sync (deep links, external resets). */
+  initialValue?: string;
 }
 
-export default function CompanySearchInput({ onSelect, placeholder = 'Search ticker or company...', className = '' }: CompanySearchInputProps) {
-  const [query, setQuery] = useState('');
+export default function CompanySearchInput({ onSelect, placeholder = 'Search ticker or company...', className = '', onTextChange, selectValue = 'ticker', initialValue }: CompanySearchInputProps) {
+  const [query, setQuery] = useState(initialValue || '');
+
+  useEffect(() => {
+    if (initialValue !== undefined) {
+      setQuery(current => (initialValue === current ? current : initialValue));
+    }
+  }, [initialValue]);
   const [results, setResults] = useState<{ ticker: string; cik: string; title?: string }[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -58,6 +71,7 @@ export default function CompanySearchInput({ onSelect, placeholder = 'Search tic
 
   const handleSearch = useCallback((q: string) => {
     setQuery(q);
+    onTextChange?.(q);
     if (!tickerMap || q.trim().length < 1) {
       setResults([]);
       setShowDropdown(false);
@@ -100,13 +114,15 @@ export default function CompanySearchInput({ onSelect, placeholder = 'Search tic
     setActiveIndex(matches.length > 0 ? 0 : -1);
   }, [tickerMap, titleMap]);
 
-  const chooseResult = useCallback((result: { ticker: string; cik: string }) => {
-    onSelect(result.ticker, result.cik);
-    setQuery(result.ticker);
+  const chooseResult = useCallback((result: { ticker: string; cik: string; title?: string }) => {
+    const value = selectValue === 'title' ? (result.title || result.ticker) : result.ticker;
+    onSelect(value, result.cik);
+    setQuery(value);
+    onTextChange?.(value);
     setShowDropdown(false);
     setActiveIndex(-1);
     inputRef.current?.focus();
-  }, [onSelect]);
+  }, [onSelect, onTextChange, selectValue]);
 
   return (
     <div className={`company-search-input ${className}`}>
