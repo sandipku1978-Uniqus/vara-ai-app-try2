@@ -75,22 +75,20 @@ describe('protected API authorization matrix', () => {
     expect(result.response?.status).toBe(503);
   });
 
-  it('rejects keyless, test-key, and featureless production configurations', () => {
+  it('rejects keyless production but accepts test keys and no feature (Option A)', () => {
     vi.stubEnv('NODE_ENV', 'production');
     vi.stubEnv('VERCEL_ENV', 'production');
 
     vi.stubEnv('NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY', '');
     vi.stubEnv('CLERK_SECRET_KEY', '');
-    expect(getClerkProductionConfigError()).toMatch(/live Clerk key/);
+    expect(getClerkProductionConfigError()).toMatch(/required in production/);
 
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     vi.stubEnv('NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY', 'pk_test_example');
     vi.stubEnv('CLERK_SECRET_KEY', 'sk_test_example');
-    expect(getClerkProductionConfigError()).toMatch(/live Clerk key/);
-
-    vi.stubEnv('NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY', 'pk_live_example');
-    vi.stubEnv('CLERK_SECRET_KEY', 'sk_live_example');
     vi.stubEnv('CLERK_RESEARCH_FEATURE', '');
-    expect(getClerkProductionConfigError()).toMatch(/CLERK_RESEARCH_FEATURE/);
+    expect(getClerkProductionConfigError()).toBeNull();
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('relaxed mode'));
   });
 
   it('accepts a complete live production configuration', () => {

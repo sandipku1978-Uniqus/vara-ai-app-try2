@@ -13,11 +13,15 @@ export function getResearchFeature(): ClerkFeature | null {
   return value && FEATURE_PATTERN.test(value) ? (value as ClerkFeature) : null;
 }
 
+let warnedRelaxedConfig = false;
+
 /**
- * Production must never silently fall back to Clerk keyless/development mode or
- * to an unconfigured entitlement. Local development and tests may use Clerk's
- * keyless flow, but a production request fails closed until all three values are
- * configured with live credentials.
+ * Production requires Clerk keys, but — by explicit decision (Option A,
+ * 2026-07-20) — runs like the other Uniqus apps: a development-instance key
+ * pair and no entitlement feature are accepted, with a logged warning.
+ * The strict posture (live keys + CLERK_RESEARCH_FEATURE) reactivates by
+ * simply providing those values; nothing else changes. Auth still fails
+ * closed when NO keys are configured at all.
  */
 export function getClerkProductionConfigError(): string | null {
   if (!isProductionDeployment()) return null;
@@ -26,14 +30,25 @@ export function getClerkProductionConfigError(): string | null {
   const secretKey = process.env.CLERK_SECRET_KEY?.trim() || '';
   const configuredFeature = process.env.CLERK_RESEARCH_FEATURE?.trim() || '';
 
-  if (!publishableKey.startsWith(LIVE_PUBLISHABLE_KEY_PREFIX)) {
-    return 'NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY must be a live Clerk key in production.';
+  if (!publishableKey) {
+    return 'NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY is required in production.';
   }
-  if (!secretKey.startsWith(LIVE_SECRET_KEY_PREFIX)) {
-    return 'CLERK_SECRET_KEY must be a live Clerk key in production.';
+  if (!secretKey) {
+    return 'CLERK_SECRET_KEY is required in production.';
   }
-  if (!FEATURE_PATTERN.test(configuredFeature)) {
-    return 'CLERK_RESEARCH_FEATURE must name a Clerk user or organization feature in production.';
+
+  if (!warnedRelaxedConfig) {
+    const relaxations: string[] = [];
+    if (!publishableKey.startsWith(LIVE_PUBLISHABLE_KEY_PREFIX) || !secretKey.startsWith(LIVE_SECRET_KEY_PREFIX)) {
+      relaxations.push('development-instance Clerk keys (user cap + dev banner apply)');
+    }
+    if (!FEATURE_PATTERN.test(configuredFeature)) {
+      relaxations.push('no CLERK_RESEARCH_FEATURE — signed-in users are not entitlement-gated');
+    }
+    if (relaxations.length > 0) {
+      console.warn(`[clerk-config] Running production auth in relaxed mode: ${relaxations.join('; ')}. Provide live keys and CLERK_RESEARCH_FEATURE to activate the strict posture.`);
+      warnedRelaxedConfig = true;
+    }
   }
   return null;
 }

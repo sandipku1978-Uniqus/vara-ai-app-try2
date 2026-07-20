@@ -33,8 +33,8 @@ describe('database security migration chain', () => {
     }
   });
 
-  it('009 references only RPC signatures that still exist after earlier drops', () => {
-    const sql = migration('009_web_role_security.sql');
+  it('010 references only RPC signatures that still exist after earlier drops', () => {
+    const sql = migration('010_web_role_security.sql');
 
     expect(sql).not.toContain('urc_search_letters(text, text, date, date, integer, integer)');
     expect(sql).not.toContain('urc_recent_threads(integer, integer)');
@@ -46,8 +46,8 @@ describe('database security migration chain', () => {
     );
   });
 
-  it('010 restores least-privilege grants after replacing functions', () => {
-    const sql = migration('010_comment_letter_integrity.sql');
+  it('011 restores least-privilege grants after replacing functions', () => {
+    const sql = migration('011_comment_letter_integrity.sql');
     const statsCreate = sql.indexOf('create function public.urc_data_stats()');
     const statsRevoke = sql.indexOf('revoke all on function public.urc_data_stats()', statsCreate);
     const statsGrant = sql.indexOf('grant execute on function public.urc_data_stats() to urc_web, service_role', statsRevoke);

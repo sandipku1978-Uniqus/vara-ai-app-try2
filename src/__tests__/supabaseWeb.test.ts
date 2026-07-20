@@ -23,19 +23,21 @@ describe('restricted Supabase web client', () => {
     vi.unstubAllEnvs();
   });
 
-  it('rejects service-role fallback and a non-urc_web JWT in production', async () => {
+  it('falls back to the service key with a warning, but rejects a non-urc_web web key (Option A)', async () => {
     vi.stubEnv('NODE_ENV', 'production');
     vi.stubEnv('VERCEL_ENV', 'production');
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const { getWebSupabase } = await import('../lib/supabase-web');
 
-    expect(getWebSupabase()).toBeNull();
-    expect(createClient).not.toHaveBeenCalled();
+    // No web key: production keeps working on the service key, loudly.
+    expect(getWebSupabase()).toEqual({ kind: 'restricted-client' });
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('URC_SUPABASE_WEB_KEY not set'));
 
+    // A provided-but-wrong web key still fails closed.
     vi.resetModules();
     vi.stubEnv('URC_SUPABASE_WEB_KEY', unsignedRoleToken('service_role'));
     const reloaded = await import('../lib/supabase-web');
     expect(reloaded.getWebSupabase()).toBeNull();
-    expect(createClient).not.toHaveBeenCalled();
   });
 
   it('constructs a production client only for a urc_web role token', async () => {

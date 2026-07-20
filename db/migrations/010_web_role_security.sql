@@ -80,7 +80,7 @@ create policy urc_web_update_summaries on public.urc_thread_summaries
 
 -- Revoke implicit PUBLIC execution from every URC RPC/overload created by the
 -- migration history. Grant only the read RPCs used by the web application.
-revoke all on function public.urc_search_filings(text[], date, date, text, text, text, integer, integer) from public, anon, authenticated;
+revoke all on function public.urc_search_filings(text[], date, date, text, text, text, integer, integer, bigint) from public, anon, authenticated;
 revoke all on function public.urc_search_letters(text, text, date, date, integer, integer, text) from public, anon, authenticated;
 revoke all on function public.urc_recent_threads(integer, integer, text, bigint) from public, anon, authenticated;
 revoke all on function public.urc_thread_detail(text) from public, anon, authenticated;
@@ -89,7 +89,7 @@ revoke all on function public.urc_companies_needing_sic(integer) from public, an
 revoke all on function public.urc_thread_letters() from public, anon, authenticated;
 revoke all on function public.urc_refresh_current_auditors() from public, anon, authenticated, urc_web;
 
-grant execute on function public.urc_search_filings(text[], date, date, text, text, text, integer, integer) to urc_web, service_role;
+grant execute on function public.urc_search_filings(text[], date, date, text, text, text, integer, integer, bigint) to urc_web, service_role;
 grant execute on function public.urc_search_letters(text, text, date, date, integer, integer, text) to urc_web, service_role;
 grant execute on function public.urc_recent_threads(integer, integer, text, bigint) to urc_web, service_role;
 grant execute on function public.urc_thread_detail(text) to urc_web, service_role;
@@ -98,7 +98,7 @@ grant execute on function public.urc_companies_needing_sic(integer) to service_r
 grant execute on function public.urc_thread_letters() to service_role;
 grant execute on function public.urc_refresh_current_auditors() to service_role;
 
-alter function public.urc_search_filings(text[], date, date, text, text, text, integer, integer)
+alter function public.urc_search_filings(text[], date, date, text, text, text, integer, integer, bigint)
   set search_path = pg_catalog, public;
 alter function public.urc_search_letters(text, text, date, date, integer, integer, text)
   set search_path = pg_catalog, public;

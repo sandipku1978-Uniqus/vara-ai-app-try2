@@ -25,15 +25,20 @@ export function getWebSupabase(): SupabaseClient | null {
 
   const url = process.env.URC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
   const webKey = process.env.URC_SUPABASE_WEB_KEY?.trim() || '';
-  const localServiceKey = !isProductionDeployment()
-    ? process.env.URC_SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY
-    : undefined;
-  const key = webKey || localServiceKey;
+  // Option A (2026-07-20): until a urc_web-role JWT is provisioned,
+  // production may fall back to the service key — matching the pre-rollout
+  // posture — with a logged warning. Providing URC_SUPABASE_WEB_KEY
+  // activates least-privilege; an invalid web key still fails closed.
+  const serviceKey = process.env.URC_SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const key = webKey || serviceKey;
   if (!url || !key) return null;
 
-  if (isProductionDeployment() && jwtRole(key) !== 'urc_web') {
+  if (webKey && isProductionDeployment() && jwtRole(webKey) !== 'urc_web') {
     console.error('URC_SUPABASE_WEB_KEY must be a JWT for the restricted urc_web role.');
     return null;
+  }
+  if (!webKey && isProductionDeployment()) {
+    console.warn('[supabase-web] URC_SUPABASE_WEB_KEY not set — web routes are using the service key. Mint a urc_web JWT to activate least-privilege.');
   }
 
   webClient = createClient(url, key, { auth: { persistSession: false } });
