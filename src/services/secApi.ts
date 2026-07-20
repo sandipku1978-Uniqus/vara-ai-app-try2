@@ -280,6 +280,12 @@ export async function resolveCompanyEntity(
   return matchCompanyEntry(_companyDirectory, text);
 }
 
+/** Full SEC company directory (cached after first load). */
+export async function getCompanyDirectory(): Promise<CompanyDirectoryEntry[]> {
+  await loadTickerMap();
+  return _companyDirectory || [];
+}
+
 /**
  * Brand names that don't match the SEC registrant name ("Google" filed as
  * Alphabet Inc.). Alias targets are re-validated against the live directory
@@ -314,6 +320,53 @@ export async function resolveCompanyInput(
   if (direct) return direct;
   const alias = aliasTickerFor(trimmed);
   return alias ? matchCompanyEntry(_companyDirectory, alias) : null;
+}
+
+/**
+ * True when a result's "primary document" is really the master.idx submission
+ * path a facet-store row carries — an Archives URL built from it always 404s.
+ */
+export function isPlaceholderPrimaryDocument(doc: string, accessionNumber: string): boolean {
+  return doc.startsWith('edgar/') || doc === `${accessionNumber}.txt`;
+}
+
+const primaryDocumentCache = new Map<string, Promise<string>>();
+
+/**
+ * Resolve the real primary document for a filing: submissions API first,
+ * then the Archives directory listing (largest HTML) for filings that have
+ * fallen out of the submissions recent window.
+ */
+export function resolvePrimaryDocumentPath(cik: string, accessionNumber: string): Promise<string> {
+  const key = `${cik}:${accessionNumber}`;
+  const cached = primaryDocumentCache.get(key);
+  if (cached) return cached;
+  const promise = (async () => {
+    try {
+      const submissions = await fetchCompanySubmissions(cik);
+      if (submissions) {
+        const recent = submissions.filings.recent;
+        const index = recent.accessionNumber.indexOf(accessionNumber);
+        if (index !== -1 && recent.primaryDocument[index]) return recent.primaryDocument[index];
+      }
+      const response = await fetch(
+        buildSecProxyUrl(`Archives/edgar/data/${cik}/${accessionNumber.replace(/-/g, '')}/index.json`),
+        { headers: getHeaders() }
+      );
+      if (response.ok) {
+        const listing = await response.json() as { directory?: { item?: Array<{ name?: string; size?: string }> } };
+        const htmlDocs = (listing.directory?.item || [])
+          .filter(item => /\.html?$/i.test(item.name || '') && !/index/i.test(item.name || ''))
+          .sort((a, b) => Number(b.size || 0) - Number(a.size || 0));
+        return htmlDocs[0]?.name || '';
+      }
+    } catch (error) {
+      console.error('Primary document resolution failed:', error);
+    }
+    return '';
+  })();
+  primaryDocumentCache.set(key, promise);
+  return promise;
 }
 
 /**

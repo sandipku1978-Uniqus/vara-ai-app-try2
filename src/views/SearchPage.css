@@ -728,6 +728,7 @@
 }
 
 .research-query-form {
+  position: relative; /* anchors the company-suggestion dropdown */
   display: flex;
   align-items: center;
   gap: 12px;

@@ -6,7 +6,7 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { ArrowLeft, Bookmark, MessageSquare, ExternalLink, Columns, Highlighter, Settings2, Download, List, AlertCircle, FileText, Loader2, X } from 'lucide-react';
 import { useApp } from '../context/AppState';
 import { BRAND } from '../config/brand';
-import { buildSecDocumentUrl, buildSecProxyUrl, fetchCompanySubmissions, fetchFilingText, fetchSubmissionHistory, type SecFilingSeries, type SecSubmission } from '../services/secApi';
+import { buildSecDocumentUrl, buildSecProxyUrl, fetchCompanySubmissions, fetchFilingText, fetchSubmissionHistory, resolvePrimaryDocumentPath, type SecFilingSeries, type SecSubmission } from '../services/secApi';
 import { createPrintWindow, renderCleanPrintView } from '../services/filingExport';
 import { buildDisclosureDiff, downloadTextFile, extractTablesFromHtml, tablesToCsv, type DisclosureDiffSummary } from '../services/filingDetailTools';
 import { aiSummarizeRedline } from '../services/aiApi';
@@ -260,37 +260,9 @@ export default function FilingDetail() {
     if (!cik || !accession || !primaryDocIsPlaceholder) return;
     setResolvedPrimaryDoc('');
     let cancelled = false;
-
-    async function resolvePrimaryDocument() {
-      try {
-        let doc = '';
-        const submissions = await fetchCompanySubmissions(cik);
-        if (submissions) {
-          const recent = submissions.filings.recent;
-          const index = recent.accessionNumber.indexOf(accession);
-          if (index !== -1) doc = recent.primaryDocument[index] || '';
-        }
-        if (!doc) {
-          // Older filings fall out of the submissions "recent" window; the
-          // Archives directory listing always exists. Largest HTML wins.
-          const response = await fetch(buildSecProxyUrl(`Archives/edgar/data/${cik}/${accession.replace(/-/g, '')}/index.json`));
-          if (response.ok) {
-            const listing = await response.json() as { directory?: { item?: Array<{ name?: string; size?: string }> } };
-            const htmlDocs = (listing.directory?.item || [])
-              .filter(item => /\.html?$/i.test(item.name || '') && !/index/i.test(item.name || ''))
-              .sort((a, b) => Number(b.size || 0) - Number(a.size || 0));
-            doc = htmlDocs[0]?.name || '';
-          }
-        }
-        if (!cancelled && doc) {
-          setResolvedPrimaryDoc(doc);
-        }
-      } catch (error) {
-        console.error('Primary document resolution failed:', error);
-      }
-    }
-
-    void resolvePrimaryDocument();
+    void resolvePrimaryDocumentPath(cik, accession).then(doc => {
+      if (!cancelled && doc) setResolvedPrimaryDoc(doc);
+    });
     return () => { cancelled = true; };
   }, [accession, cik, primaryDocIsPlaceholder]);
 

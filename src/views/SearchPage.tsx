@@ -31,6 +31,11 @@ import {
 import {
   buildSecDocumentUrl,
   buildSecProxyUrl,
+  isPlaceholderPrimaryDocument,
+  resolvePrimaryDocumentPath,
+  aliasTickerFor,
+  getCompanyDirectory,
+  type CompanyDirectoryEntry,
   type SearchCandidateCoverage,
 
 } from '../services/secApi';
@@ -365,6 +370,14 @@ export default function SearchPage() {
 
   const [sessions, setSessions] = useState<ResearchSearchSession[]>(() => loadResearchSessions());
   const [query, setQuery] = useState(initialQuery);
+  // Facet-store rows carry a placeholder primary document; the preview pane
+  // resolves the real one per result id so the iframe never 404s.
+  const [resolvedPreviewDocs, setResolvedPreviewDocs] = useState<Record<string, string>>({});
+  // Company suggestions for the query bar — same directory + brand aliases
+  // as every other company input.
+  const [companyDirectory, setCompanyDirectory] = useState<CompanyDirectoryEntry[]>([]);
+  const [querySuggestions, setQuerySuggestions] = useState<CompanyDirectoryEntry[]>([]);
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
   const [searchMode, setSearchMode] = useState<ResearchSearchMode>(initialRouteSearch?.mode || 'semantic');
   const [filters, setFilters] = useState<SearchFilters>(() =>
     cloneSearchFilters(initialRouteSearch?.filters || defaultSearchFilters)
@@ -462,6 +475,46 @@ export default function SearchPage() {
     ),
     [activeResolvedSearch]
   );
+
+  useEffect(() => {
+    let cancelled = false;
+    void getCompanyDirectory().then(directory => {
+      if (!cancelled) setCompanyDirectory(directory);
+    });
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    const trimmed = query.trim();
+    if (!trimmed || trimmed.split(/\s+/).length > 4 || companyDirectory.length === 0) {
+      setQuerySuggestions([]);
+      return;
+    }
+    const upper = trimmed.toUpperCase();
+    const lower = trimmed.toLowerCase();
+    const seen = new Set<string>();
+    const matches: CompanyDirectoryEntry[] = [];
+    const push = (entry: CompanyDirectoryEntry | undefined) => {
+      if (entry && !seen.has(entry.ticker)) {
+        seen.add(entry.ticker);
+        matches.push(entry);
+      }
+    };
+    push(companyDirectory.find(entry => entry.ticker === upper));
+    const alias = aliasTickerFor(upper);
+    if (alias) push(companyDirectory.find(entry => entry.ticker === alias));
+    for (const entry of companyDirectory) {
+      if (matches.length >= 8) break;
+      if (entry.ticker.startsWith(upper)) push(entry);
+    }
+    if (lower.length >= 3) {
+      for (const entry of companyDirectory) {
+        if (matches.length >= 8) break;
+        if (entry.title.toLowerCase().includes(lower)) push(entry);
+      }
+    }
+    setQuerySuggestions(matches.slice(0, 8));
+  }, [query, companyDirectory]);
 
   const selectedResult = useMemo(() => {
     if (displayResults.length === 0) return null;
@@ -1158,11 +1211,27 @@ export default function SearchPage() {
     setAlertMessage('Saved locally in this browser. Rerun it manually from the Dashboard; it does not send scheduled background notifications.');
   }
 
-  const selectedDocumentUrl = selectedResult
-    ? buildSecDocumentUrl(selectedResult.cik, selectedResult.accessionNumber, selectedResult.primaryDocument)
+  useEffect(() => {
+    if (!selectedResult) return;
+    if (!isPlaceholderPrimaryDocument(selectedResult.primaryDocument, selectedResult.accessionNumber)) return;
+    if (resolvedPreviewDocs[selectedResult.id] !== undefined) return;
+    let cancelled = false;
+    void resolvePrimaryDocumentPath(selectedResult.cik, selectedResult.accessionNumber).then(doc => {
+      if (!cancelled) setResolvedPreviewDocs(prev => ({ ...prev, [selectedResult.id]: doc }));
+    });
+    return () => { cancelled = true; };
+  }, [selectedResult, resolvedPreviewDocs]);
+
+  const selectedPrimaryDocument = selectedResult
+    ? (isPlaceholderPrimaryDocument(selectedResult.primaryDocument, selectedResult.accessionNumber)
+        ? resolvedPreviewDocs[selectedResult.id] || ''
+        : selectedResult.primaryDocument)
     : '';
-  const selectedProxyUrl = selectedResult
-    ? buildSecProxyUrl(`Archives/edgar/data/${selectedResult.cik}/${selectedResult.accessionNumber.replace(/-/g, '')}/${selectedResult.primaryDocument}`)
+  const selectedDocumentUrl = selectedResult && selectedPrimaryDocument
+    ? buildSecDocumentUrl(selectedResult.cik, selectedResult.accessionNumber, selectedPrimaryDocument)
+    : '';
+  const selectedProxyUrl = selectedResult && selectedPrimaryDocument
+    ? buildSecProxyUrl(`Archives/edgar/data/${selectedResult.cik}/${selectedResult.accessionNumber.replace(/-/g, '')}/${selectedPrimaryDocument}`)
     : '';
 
   return (
@@ -1370,11 +1439,50 @@ export default function SearchPage() {
                       : 'Example: "car parking" w/10 installation'
                   }
                   value={query}
-                  onChange={event => setQuery(event.target.value)}
+                  onChange={event => {
+                    setQuery(event.target.value);
+                    setSuggestionsOpen(true);
+                  }}
+                  onFocus={() => setSuggestionsOpen(true)}
+                  onBlur={() => window.setTimeout(() => setSuggestionsOpen(false), 150)}
+                  aria-autocomplete="list"
+                  aria-expanded={suggestionsOpen && querySuggestions.length > 0}
                 />
                 <button type="submit" className="primary-btn" disabled={loading}>
                   {loading ? <Loader2 size={16} className="spinner" /> : 'Search'}
                 </button>
+                {suggestionsOpen && querySuggestions.length > 0 && (
+                  <div role="listbox" aria-label="Company suggestions" style={{
+                    position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 30,
+                    marginTop: '4px', borderRadius: '8px', overflow: 'hidden',
+                    background: 'var(--bg-elevated)', border: '1px solid var(--border-color)',
+                    boxShadow: 'var(--glow-shadow)',
+                  }}>
+                    {querySuggestions.map(entry => (
+                      <button
+                        key={entry.ticker}
+                        type="button"
+                        role="option"
+                        aria-selected="false"
+                        onMouseDown={event => {
+                          event.preventDefault();
+                          setQuery(`${entry.ticker} `);
+                          setSuggestionsOpen(false);
+                        }}
+                        style={{
+                          display: 'flex', gap: '10px', alignItems: 'baseline', width: '100%',
+                          padding: '8px 12px', border: 'none', cursor: 'pointer', textAlign: 'left',
+                          background: 'transparent', color: 'var(--text-primary)', fontSize: '0.82rem',
+                        }}
+                        onMouseEnter={event => { event.currentTarget.style.background = 'var(--interactive-hover)'; }}
+                        onMouseLeave={event => { event.currentTarget.style.background = 'transparent'; }}
+                      >
+                        <strong style={{ color: 'var(--accent-primary)', minWidth: '52px' }}>{entry.ticker}</strong>
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{entry.title}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
               </form>
 
               {searchInterpretation.length > 0 && (
@@ -1658,6 +1766,11 @@ export default function SearchPage() {
                           <ExternalLink size={14} /> SEC.gov
                         </a>
                       </div>
+                    </div>
+                  ) : !selectedProxyUrl ? (
+                    <div className="research-empty-state">
+                      <Loader2 size={22} className="spinner" />
+                      <div>Locating the official document for this filing on SEC EDGAR...</div>
                     </div>
                   ) : (
                     <iframe
