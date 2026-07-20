@@ -430,4 +430,13 @@ function pct(sorted: number[], p: number): number {
   fs.writeFileSync(outPath, JSON.stringify({ base: BASE, started, wallSeconds, summary, totalPass, total: results.length, failures }, null, 2));
   console.log(`\nFailures: ${failures.length} — full detail in ${outPath}`);
   for (const f of failures.slice(0, 25)) console.log(`  [${f.cls}] ${f.label} → ${f.failure}`);
+
+  // Release-gate mode: --min-pass 97 makes the run exit non-zero when the
+  // pass rate regresses below the threshold. Without the flag, informational.
+  const minPassRate = Number(argValue('min-pass') || 0);
+  const passRate = (totalPass / results.length) * 100;
+  if (minPassRate > 0 && passRate < minPassRate) {
+    console.error(`GATE FAILED: pass rate ${passRate.toFixed(1)}% is below the required ${minPassRate}%`);
+    process.exit(1);
+  }
 })();

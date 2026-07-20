@@ -1,0 +1,62 @@
+name: Accuracy gate
+
+# Weekly proof that search accuracy is still 100%: builds the app, serves it
+# locally with the CI/e2e auth bypass (inert on hosted deploys), then runs the
+# full 10,426-ticker directory sweep plus the 1,000-point e2e suite against it.
+# Fails loudly if any ticker stops resolving or the e2e pass rate regresses.
+
+on:
+  schedule:
+    - cron: '30 4 * * 1' # Mondays 04:30 UTC, before the daily data refresh
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: accuracy-gate
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      URC_SUPABASE_URL: ${{ secrets.URC_SUPABASE_URL }}
+      URC_SUPABASE_SERVICE_KEY: ${{ secrets.URC_SUPABASE_SERVICE_KEY }}
+      URC_E2E_BYPASS_AUTH: '1'
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Start production server
+        run: |
+          npx next start -p 3111 &
+          for i in $(seq 1 45); do
+            curl -sf -o /dev/null http://localhost:3111/ && exit 0
+            sleep 2
+          done
+          echo "Server did not become ready" >&2
+          exit 1
+      - name: Full ticker coverage sweep (100% required)
+        run: npx tsx scripts/ticker-coverage-test.ts --base http://localhost:3111 --out ticker-coverage-report.json
+      - name: 1,000-point e2e performance suite
+        run: npx tsx scripts/e2e-perf-test.ts --base http://localhost:3111 --out e2e-perf-report.json --min-pass 97
+      - name: Publish summary
+        if: always()
+        run: |
+          {
+            echo "## Accuracy gate"
+            echo '```json'
+            [ -f ticker-coverage-report.json ] && node -e "const r=require('./ticker-coverage-report.json');console.log(JSON.stringify({tickers:r.tickers,pass:r.pass,fail:r.fail,emptyVerified:r.emptyVerified,latency:r.latency,failures:(r.failures||[]).slice(0,20)},null,1))" || echo '"ticker report missing"'
+            echo '```'
+            echo '```json'
+            [ -f e2e-perf-report.json ] && node -e "const r=require('./e2e-perf-report.json');const s=r.summary||r;console.log(JSON.stringify(s,null,1).slice(0,4000))" || echo '"e2e report missing"'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -37,9 +37,13 @@ export default function EarningsTranscripts() {
       setRecentLoading(true);
       setRecentError('');
       try {
+        // "Recent" means recent: an unbounded window relevance-ranks 2005-era
+        // releases above last week's. Search a rolling window and sort by date.
+        const windowStart = new Date();
+        windowStart.setDate(windowStart.getDate() - 45);
         const matches = await executeFilingResearchSearch({
           query: 'earnings results',
-          filters: { ...defaultSearchFilters },
+          filters: { ...defaultSearchFilters, dateFrom: windowStart.toISOString().slice(0, 10) },
           defaultForms: '8-K,8-K/A,6-K',
           limit: 180,
           includeExhibits: true,
@@ -47,6 +51,7 @@ export default function EarningsTranscripts() {
         if (cancelled) return;
         setRecentItems(matches
           .filter(match => matchesDocumentTypePrefixes(match.documentType, ['EX-99.1']))
+          .sort((a, b) => (b.fileDate || '').localeCompare(a.fileDate || ''))
           .slice(0, 8)
           .map(match => ({
           entityName: match.entityName,

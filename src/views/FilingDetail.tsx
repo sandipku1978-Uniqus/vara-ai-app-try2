@@ -233,14 +233,66 @@ export default function FilingDetail() {
     [routeState?.highlightMode, routeState?.highlightQuery, routeState?.highlightSectionKeywords]
   );
 
-  const id = location.replace(/^\/filing\//, '');
+  const rawId = location.replace(/^\/filing\//, '');
+  const id = (() => {
+    try {
+      return decodeURIComponent(rawId);
+    } catch {
+      return rawId;
+    }
+  })();
   const parts = id.split('_');
   const cik = parts[0] || '';
   const accession = parts[1] || '';
-  const primaryDoc = parts.slice(2).join('_');
+  const routePrimaryDoc = parts.slice(2).join('_');
+  // Facet-store rows only know the master.idx submission path, not the real
+  // primary document — treat that as a placeholder and resolve it below,
+  // otherwise every Archives URL built from it is a guaranteed 404.
+  const primaryDocIsPlaceholder =
+    routePrimaryDoc.startsWith('edgar/') || routePrimaryDoc === `${accession}.txt`;
+  const [resolvedPrimaryDoc, setResolvedPrimaryDoc] = useState('');
+  const primaryDoc = primaryDocIsPlaceholder && resolvedPrimaryDoc ? resolvedPrimaryDoc : routePrimaryDoc;
   const isValidFilingId = Boolean(cik && accession && primaryDoc);
   const secUrl = buildSecDocumentUrl(cik, accession, primaryDoc);
   const formattedAccession = accession.replace(/-/g, '');
+
+  useEffect(() => {
+    if (!cik || !accession || !primaryDocIsPlaceholder) return;
+    setResolvedPrimaryDoc('');
+    let cancelled = false;
+
+    async function resolvePrimaryDocument() {
+      try {
+        let doc = '';
+        const submissions = await fetchCompanySubmissions(cik);
+        if (submissions) {
+          const recent = submissions.filings.recent;
+          const index = recent.accessionNumber.indexOf(accession);
+          if (index !== -1) doc = recent.primaryDocument[index] || '';
+        }
+        if (!doc) {
+          // Older filings fall out of the submissions "recent" window; the
+          // Archives directory listing always exists. Largest HTML wins.
+          const response = await fetch(buildSecProxyUrl(`Archives/edgar/data/${cik}/${accession.replace(/-/g, '')}/index.json`));
+          if (response.ok) {
+            const listing = await response.json() as { directory?: { item?: Array<{ name?: string; size?: string }> } };
+            const htmlDocs = (listing.directory?.item || [])
+              .filter(item => /\.html?$/i.test(item.name || '') && !/index/i.test(item.name || ''))
+              .sort((a, b) => Number(b.size || 0) - Number(a.size || 0));
+            doc = htmlDocs[0]?.name || '';
+          }
+        }
+        if (!cancelled && doc) {
+          setResolvedPrimaryDoc(doc);
+        }
+      } catch (error) {
+        console.error('Primary document resolution failed:', error);
+      }
+    }
+
+    void resolvePrimaryDocument();
+    return () => { cancelled = true; };
+  }, [accession, cik, primaryDocIsPlaceholder]);
 
   const [showSidebar, setShowSidebar] = useState(true);
   const [isMobileSidebar, setIsMobileSidebar] = useState(false);
@@ -248,6 +300,10 @@ export default function FilingDetail() {
   const [annotationMode, setAnnotationMode] = useState(false);
   const [activeTab, setActiveTab] = useState<'toc'|'metadata'|'tools'>('toc');
   const [iframeError, setIframeError] = useState(false);
+
+  // A placeholder document can 404 the iframe before resolution completes;
+  // clear the error whenever the document URL changes.
+  useEffect(() => { setIframeError(false); }, [secUrl]);
   const [tocEntries, setTocEntries] = useState<TocEntry[]>([]);
   const [tocLoading, setTocLoading] = useState(false);
   const [tocInspectionComplete, setTocInspectionComplete] = useState(false);
