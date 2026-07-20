@@ -25,6 +25,9 @@ jobs:
       URC_SUPABASE_URL: ${{ secrets.URC_SUPABASE_URL }}
       URC_SUPABASE_SERVICE_KEY: ${{ secrets.URC_SUPABASE_SERVICE_KEY }}
       URC_E2E_BYPASS_AUTH: '1'
+      # npm run build pins NEXT_LOCAL_BUILD=1 (writes .next-build); next start
+      # must read the same distDir.
+      NEXT_LOCAL_BUILD: '1'
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
