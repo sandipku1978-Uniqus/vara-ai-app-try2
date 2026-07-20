@@ -1090,6 +1090,15 @@ export async function executeFilingResearchSearch({
       : serverQueries
   ).filter(Boolean);
 
+  // An issuer-scoped browse intentionally has NO text query ("OGN 10-K" →
+  // entity + cleared text). filter(Boolean) used to drop that empty query,
+  // so the fetch loop below never ran — instant zero results with no
+  // request. Keep one empty candidate: the enriched lane treats q='' as a
+  // facet browse and the legacy lane substitutes the quoted issuer name.
+  if (filteredServerQueries.length === 0 && filters.entityName.trim()) {
+    filteredServerQueries.push('');
+  }
+
   // ── Collect-then-validate pipeline ──
   // For text-filtered searches (auditor, boolean, section keywords) we use a
   // wave-based strategy: collect a batch of candidates from EDGAR, validate them,
