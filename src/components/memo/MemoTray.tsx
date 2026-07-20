@@ -2,26 +2,35 @@
 
 import { useCallback, useState } from 'react';
 import { BookMarked, Copy, Download, Loader2, Sparkles, Trash2, X } from 'lucide-react';
-import { useMemoTray } from '../../hooks/useMemoTray';
+import { useMemoDraft, useMemoTray } from '../../hooks/useMemoTray';
 import {
+  clearMemoDraft,
   clearMemoTray,
   formatCitationsText,
   formatMemoMarkdown,
   removeCitation,
+  setMemoDraft,
   updateCitationNote,
 } from '../../services/memoTray';
 import { aiDraftMemoFromCitations } from '../../services/aiApi';
+import { fetchFilingText, resolvePrimaryDocumentPath } from '../../services/secApi';
 import MemoDraft from './MemoDraft';
 import '../../styles/evidence-ledger.css';
 import './MemoTray.css';
 
 export default function MemoTray() {
   const citations = useMemoTray();
+  const draftRecord = useMemoDraft();
   const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState('');
   const [drafting, setDrafting] = useState(false);
   const [draftError, setDraftError] = useState('');
   const [copied, setCopied] = useState<'citations' | 'draft' | ''>('');
+
+  const draft = draftRecord?.text || '';
+  const draftIsStale = Boolean(
+    draftRecord &&
+    draftRecord.citationIds.join('|') !== citations.map(citation => citation.id).join('|')
+  );
 
   const copyText = useCallback(async (text: string, which: 'citations' | 'draft') => {
     try {
@@ -47,15 +56,32 @@ export default function MemoTray() {
     setDrafting(true);
     setDraftError('');
     try {
-      const memo = await aiDraftMemoFromCitations(citations.map(citation => ({
-        company: citation.company,
-        form: citation.form,
-        fileDate: citation.fileDate,
-        accessionNumber: citation.accessionNumber,
-        excerpt: citation.excerpt,
-        note: citation.note,
-      })));
-      setDraft(memo);
+      // A citation captured from a metadata match carries almost no text —
+      // read the actual filing so the memo has real evidence to work from.
+      const enriched = await Promise.all(citations.map(async citation => {
+        let excerpt = citation.excerpt;
+        if (citation.kind === 'filing' && excerpt.trim().length < 200) {
+          try {
+            const doc = await resolvePrimaryDocumentPath(citation.cik, citation.accessionNumber);
+            const text = doc ? await fetchFilingText(citation.cik, citation.accessionNumber, doc) : '';
+            if (text && text.trim().length > excerpt.trim().length) {
+              excerpt = text.replace(/\s+/g, ' ').trim().slice(0, 2400);
+            }
+          } catch {
+            // Metadata-only citation stays as captured.
+          }
+        }
+        return {
+          company: citation.company,
+          form: citation.form,
+          fileDate: citation.fileDate,
+          accessionNumber: citation.accessionNumber,
+          excerpt,
+          note: citation.note,
+        };
+      }));
+      const memo = await aiDraftMemoFromCitations(enriched);
+      setMemoDraft(memo, citations.map(citation => citation.id));
     } catch (error) {
       console.error('Memo draft failed:', error);
       setDraftError('The memo draft could not be generated. The cited evidence is unchanged — retry when ready.');
@@ -136,7 +162,7 @@ export default function MemoTray() {
                 <button type="button" className="el-btn el-btn-primary" onClick={() => void draftMemo()} disabled={drafting}>
                   {drafting ? <Loader2 size={14} className="spinner" /> : <Sparkles size={14} />} Draft memo with AI
                 </button>
-                <button type="button" className="memo-tray-clear" onClick={() => { clearMemoTray(); setDraft(''); }}>
+                <button type="button" className="memo-tray-clear" onClick={() => { clearMemoTray(); clearMemoDraft(); }}>
                   Clear all
                 </button>
               </div>
@@ -144,8 +170,17 @@ export default function MemoTray() {
               {draftError && <div className="el-state el-state-error memo-tray-empty">{draftError}</div>}
               {draft && (
                 <div className="memo-tray-draft">
+                  {draftIsStale && (
+                    <div className="memo-tray-draft-stale">
+                      Citations changed since this draft was generated — regenerate to reflect the current evidence.
+                    </div>
+                  )}
                   <div className="memo-tray-draft-head">
-                    <span>AI draft — grounded only in the {citations.length} citation{citations.length === 1 ? '' : 's'} above</span>
+                    <span>
+                      AI draft
+                      {draftRecord?.generatedAt ? ` — ${new Date(draftRecord.generatedAt).toLocaleString()}` : ''}
+                      {` — grounded only in ${draftRecord?.citationIds.length ?? citations.length} citation${(draftRecord?.citationIds.length ?? citations.length) === 1 ? '' : 's'}`}
+                    </span>
                     <button type="button" className="memo-tray-icon-btn" onClick={() => void copyText(draft, 'draft')} aria-label="Copy memo draft">
                       <Copy size={13} /> {copied === 'draft' ? 'Copied' : ''}
                     </button>

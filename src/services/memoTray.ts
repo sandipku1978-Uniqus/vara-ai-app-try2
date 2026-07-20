@@ -116,6 +116,85 @@ export function clearMemoTray(): void {
   write([]);
 }
 
+/**
+ * The generated memo draft persists next to the citations it was drafted
+ * from, so a page refresh never discards work. citationIds lets the tray
+ * flag the draft as stale when the evidence set changes afterward.
+ */
+export interface MemoDraftRecord {
+  text: string;
+  generatedAt: string;
+  citationIds: string[];
+}
+
+const DRAFT_STORAGE_KEY = 'urc.memo.draft.v1';
+const draftListeners = new Set<Listener>();
+let draftCache: MemoDraftRecord | null | undefined;
+let draftCacheKey: string | null | undefined;
+
+function draftStorageKey(): string | null {
+  return scopedStorageKey(DRAFT_STORAGE_KEY);
+}
+
+function persistDraft(record: MemoDraftRecord | null, key: string): void {
+  try {
+    if (record) window.localStorage.setItem(key, JSON.stringify(record));
+    else window.localStorage.removeItem(key);
+  } catch {
+    // In-memory fallback only.
+  }
+}
+
+function readDraft(): MemoDraftRecord | null {
+  if (typeof window === 'undefined') return draftCache ?? null;
+  const key = draftStorageKey();
+  if (draftCache !== undefined && draftCacheKey === key) return draftCache;
+  if (!key) {
+    draftCache = draftCache ?? null;
+    draftCacheKey = key;
+    return draftCache;
+  }
+  try {
+    const raw = window.localStorage.getItem(key);
+    const stored = raw ? (JSON.parse(raw) as MemoDraftRecord) : null;
+    // A draft generated before the scope was ready beats nothing stored.
+    if (!stored && draftCache) persistDraft(draftCache, key);
+    else draftCache = stored;
+    draftCacheKey = key;
+  } catch {
+    draftCache = draftCache ?? null;
+    draftCacheKey = key;
+  }
+  return draftCache ?? null;
+}
+
+export function subscribeMemoDraft(listener: Listener): () => void {
+  draftListeners.add(listener);
+  return () => draftListeners.delete(listener);
+}
+
+export function getMemoDraft(): MemoDraftRecord | null {
+  return readDraft();
+}
+
+export function setMemoDraft(text: string, citationIds: string[]): void {
+  readDraft();
+  draftCache = { text, generatedAt: new Date().toISOString(), citationIds };
+  const key = draftStorageKey();
+  draftCacheKey = key;
+  if (key && typeof window !== 'undefined') persistDraft(draftCache, key);
+  draftListeners.forEach(listener => listener());
+}
+
+export function clearMemoDraft(): void {
+  readDraft();
+  draftCache = null;
+  const key = draftStorageKey();
+  draftCacheKey = key;
+  if (key && typeof window !== 'undefined') persistDraft(null, key);
+  draftListeners.forEach(listener => listener());
+}
+
 /** Numbered plain-text citations, ready to paste into a memo or email. */
 export function formatCitationsText(items: MemoCitation[]): string {
   return items

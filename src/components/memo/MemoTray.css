@@ -135,6 +135,14 @@
   overflow-y: auto;
   padding: var(--el-space-3);
 }
+.memo-tray-draft-stale {
+  margin-bottom: 6px;
+  padding: 6px 8px;
+  border-radius: var(--el-radius-control);
+  background: var(--el-review-wash);
+  color: var(--el-review);
+  font-size: var(--el-text-xs);
+}
 .memo-tray-draft-head {
   display: flex;
   justify-content: space-between;

@@ -188,9 +188,12 @@ export async function aiDraftMemoFromCitations(citations: MemoCitationInput[]): 
 
   const prompt = [
     'Draft a concise SEC research memo based ONLY on the cited evidence below.',
+    'Write as a senior SEC research analyst: specific and factual, never filler.',
     'Requirements:',
     '- Cite every factual statement with its bracketed source number, e.g. [1].',
     '- Do not introduce facts, figures, or filings that are not in the evidence.',
+    '- No circular or self-referential statements ("this memo summarizes the evidence") — the Purpose line names the issuer(s), form types, and the substantive matter the excerpts actually concern.',
+    '- Observations must pull concrete specifics from the excerpts (named businesses, risks, amounts, accounting topics, auditor). If an excerpt is metadata-only, state that plainly in one bullet and move the analytical need to Open questions.',
     '- Where the evidence is insufficient for a conclusion, say so explicitly and list what additional filings would resolve it.',
     'Format (strict):',
     '- Title line: "# Research memo — <subject>".',

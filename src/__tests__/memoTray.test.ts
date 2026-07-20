@@ -63,3 +63,16 @@ describe('memo tray citation ledger', () => {
     expect(markdown).toContain('[1] Organon & Co.');
   });
 });
+
+describe('memo draft persistence', () => {
+  it('stores the draft with its citation ids and clears cleanly', async () => {
+    const { setMemoDraft, getMemoDraft, clearMemoDraft } = await import('../services/memoTray');
+    setMemoDraft('# Research memo — test', ['1821825:0001193125-26-307767']);
+    const record = getMemoDraft();
+    expect(record?.text).toContain('Research memo');
+    expect(record?.citationIds).toEqual(['1821825:0001193125-26-307767']);
+    expect(record?.generatedAt).toBeTruthy();
+    clearMemoDraft();
+    expect(getMemoDraft()).toBeNull();
+  });
+});
