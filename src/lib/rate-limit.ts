@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import { kv } from '@vercel/kv';
-import { isProductionDeployment } from './clerk-config';
+import { isLocalE2eBypass, isProductionDeployment } from './clerk-config';
 
 const WINDOW_SECONDS = 5 * 60;
 const DEFAULT_DAILY_TOKEN_BUDGET = 250_000;
@@ -130,6 +130,7 @@ async function incrementDistributed(key: string, increment: number, ttlSeconds: 
 }
 
 async function incrementCounter(key: string, increment: number, ttlSeconds: number): Promise<number> {
+  if (isLocalE2eBypass()) return 0;
   if (hasDistributedStore()) return incrementDistributed(key, increment, ttlSeconds);
   useLocalControlsFallback();
   return incrementLocal(key, increment, ttlSeconds);
@@ -292,6 +293,7 @@ export async function acquireAiConcurrency(
   identity: RateLimitIdentity,
   requestedLeaseSeconds = CONCURRENCY_LEASE_SECONDS
 ): Promise<AiConcurrencyResult> {
+  if (isLocalE2eBypass()) return { allowed: true, retryAfterSeconds: 0 };
   const token = crypto.randomUUID();
   const leaseSeconds = normalizedLeaseSeconds(requestedLeaseSeconds);
   const local = !hasDistributedStore();
@@ -339,6 +341,7 @@ export async function acquireResourceConcurrency(
   identity: RateLimitIdentity,
   options: ResourceConcurrencyOptions
 ): Promise<AiConcurrencyResult> {
+  if (isLocalE2eBypass()) return { allowed: true, retryAfterSeconds: 0 };
   const token = crypto.randomUUID();
   const local = !hasDistributedStore();
   if (local) useLocalControlsFallback();

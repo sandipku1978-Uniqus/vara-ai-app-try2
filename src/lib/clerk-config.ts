@@ -8,6 +8,15 @@ export function isProductionDeployment(): boolean {
   return process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production';
 }
 
+/**
+ * Local e2e harness escape hatch: lets accuracy sweeps exercise a local
+ * production build without a Clerk session. The VERCEL env var is always set
+ * on Vercel deployments, so this can never activate in a hosted environment.
+ */
+export function isLocalE2eBypass(): boolean {
+  return !process.env.VERCEL && process.env.URC_E2E_BYPASS_AUTH === '1';
+}
+
 export function getResearchFeature(): ClerkFeature | null {
   const value = process.env.CLERK_RESEARCH_FEATURE?.trim();
   return value && FEATURE_PATTERN.test(value) ? (value as ClerkFeature) : null;

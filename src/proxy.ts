@@ -1,6 +1,6 @@
 import { clerkMiddleware } from '@clerk/nextjs/server';
 import { NextResponse, type NextFetchEvent, type NextRequest } from 'next/server';
-import { getClerkProductionConfigError, getResearchFeature } from './lib/clerk-config';
+import { getClerkProductionConfigError, getResearchFeature, isLocalE2eBypass } from './lib/clerk-config';
 import { PUBLIC_PAGE_PATHS } from './config/routes';
 
 const PUBLIC_PATHS = new Set([
@@ -47,6 +47,7 @@ const authenticatedProxy = clerkMiddleware(async (auth, request) => {
 });
 
 export default function proxy(request: NextRequest, event: NextFetchEvent) {
+  if (isLocalE2eBypass()) return NextResponse.next();
   const configError = getClerkProductionConfigError();
   if (configError) {
     if (isPublicRequest(request)) return NextResponse.next();

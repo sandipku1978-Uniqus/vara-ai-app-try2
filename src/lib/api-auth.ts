@@ -1,5 +1,5 @@
 import { auth } from '@clerk/nextjs/server';
-import { getClerkProductionConfigError, getResearchFeature } from './clerk-config';
+import { getClerkProductionConfigError, getResearchFeature, isLocalE2eBypass } from './clerk-config';
 
 export interface ApiIdentity {
   userId: string;
@@ -19,6 +19,12 @@ function jsonError(status: number, error: string): Response {
 }
 
 export async function requireApiAccess(requireEntitlement = true): Promise<ApiAccessResult> {
+  if (isLocalE2eBypass()) {
+    return {
+      identity: { userId: 'local-e2e', orgId: null, cacheScope: 'local-e2e:personal' },
+    };
+  }
+
   const configError = getClerkProductionConfigError();
   if (configError) {
     console.error(`Protected API disabled: ${configError}`);
