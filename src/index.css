@@ -1,18 +1,23 @@
+/*
+ * Light theme — institutional flat look (LinkedIn-style): warm-gray canvas,
+ * solid white cards with hairline neutral borders, near-black ink, brand
+ * color reserved for actions and accents rather than tinting surfaces.
+ */
 :root {
   color-scheme: light;
-  --shell-bg: #0A1119;
-  --shell-bg-strong: #12101E;
-  --shell-panel: rgba(18, 16, 30, 0.94);
-  --shell-border: rgba(238, 223, 236, 0.12);
-  --shell-text-primary: #F8F5F8;
-  --shell-text-secondary: rgba(248, 245, 248, 0.72);
-  --surface-canvas: #FBF6F9;
-  --surface-panel: rgba(255, 255, 255, 0.9);
+  --shell-bg: #FFFFFF;
+  --shell-bg-strong: #FFFFFF;
+  --shell-panel: rgba(255, 255, 255, 0.97);
+  --shell-border: rgba(0, 0, 0, 0.08);
+  --shell-text-primary: #1F1F1F;
+  --shell-text-secondary: rgba(31, 31, 31, 0.65);
+  --surface-canvas: #F4F2EE;
+  --surface-panel: #FFFFFF;
   --surface-panel-strong: #FFFFFF;
-  --surface-subtle: #F5E8F1;
-  --surface-accent: #F7E7F1;
-  --bg-primary: #FBF6F9;
-  --bg-secondary: #F5E8F1;
+  --surface-subtle: #F6F4F0;
+  --surface-accent: #F5EDF3;
+  --bg-primary: #F4F2EE;
+  --bg-secondary: #EDEBE6;
   --bg-elevated: #FFFFFF;
   --accent-blue: #B31F7E;
   --accent-blue-hover: #8E165F;
@@ -21,34 +26,35 @@
   --accent-secondary: #482A7A;
   --accent-soft: #D66CAE;
   --accent-soft-strong: #F1B8D7;
-  --text-primary: #413F42;
-  --text-secondary: #6C6270;
-  --text-muted: #8F8390;
-  --border-color: rgba(72, 42, 122, 0.14);
-  --glass-bg: rgba(255, 255, 255, 0.78);
-  --glass-border: rgba(72, 42, 122, 0.12);
-  --glow-shadow: 0 22px 60px rgba(122, 52, 106, 0.12);
-  --app-background:
-    radial-gradient(circle at top right, rgba(214, 108, 174, 0.12), transparent 28%),
-    linear-gradient(180deg, #FCF8FB 0%, #F7EFF5 100%);
-  --input-bg: rgba(255, 255, 255, 0.92);
-  --input-border: rgba(72, 42, 122, 0.14);
-  --interactive-hover: rgba(179, 31, 126, 0.08);
-  --interactive-hover-strong: rgba(179, 31, 126, 0.12);
-  --table-header-bg: #F6EEF4;
-  --table-header-border: rgba(72, 42, 122, 0.18);
-  --chart-grid: rgba(72, 42, 122, 0.14);
-  --chart-axis: rgba(72, 42, 122, 0.18);
-  --chart-text: #8F8390;
-  --chart-text-strong: #6C6270;
+  --text-primary: #1D1C1A;
+  --text-secondary: #5C5955;
+  --text-muted: #837F79;
+  --border-color: rgba(0, 0, 0, 0.08);
+  --glass-bg: #FFFFFF;
+  --glass-border: rgba(0, 0, 0, 0.08);
+  --glow-shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 4px 14px rgba(0, 0, 0, 0.06);
+  --app-background: #F4F2EE;
+  --input-bg: #FFFFFF;
+  --input-border: rgba(0, 0, 0, 0.16);
+  --interactive-hover: rgba(0, 0, 0, 0.04);
+  --interactive-hover-strong: rgba(179, 31, 126, 0.10);
+  --table-header-bg: #F6F4F0;
+  --table-header-border: rgba(0, 0, 0, 0.10);
+  --chart-grid: rgba(0, 0, 0, 0.08);
+  --chart-axis: rgba(0, 0, 0, 0.18);
+  --chart-text: #7A766F;
+  --chart-text-strong: #4A4744;
   --chart-tooltip-bg: #FFFFFF;
-  --chart-tooltip-border: rgba(72, 42, 122, 0.14);
+  --chart-tooltip-border: rgba(0, 0, 0, 0.10);
   --status-error: #B42318;
   --status-error-bg: #FEF3F2;
   --status-success: #16794E;
   --status-warning: #8A4B08;
   --copilot-sidebar-width: clamp(380px, 32vw, 520px);
-  
+  --shell-glow: none;
+  --shell-glow-corner: none;
+  --shell-shadow: 1px 0 0 rgba(0, 0, 0, 0.04);
+
   --font-sans: 'Montserrat', system-ui, -apple-system, sans-serif;
   --font-mono: 'IBM Plex Mono', 'SFMono-Regular', monospace;
 }
@@ -97,6 +103,9 @@
   --status-error-bg: rgba(180, 35, 24, 0.16);
   --status-success: #6CE9A6;
   --status-warning: #FEC84B;
+  --shell-glow: radial-gradient(circle at top, rgba(214, 108, 174, 0.12), transparent 30%);
+  --shell-glow-corner: radial-gradient(circle at top right, rgba(214, 108, 174, 0.12), transparent 35%);
+  --shell-shadow: 24px 0 60px rgba(58, 30, 65, 0.12);
 }
 
 * {

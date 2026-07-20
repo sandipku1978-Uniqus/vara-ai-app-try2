@@ -178,7 +178,7 @@ export default function Benchmarking() {
   const axisLineColor = isDarkMode ? 'rgba(238, 223, 236, 0.18)' : 'rgba(72, 42, 122, 0.18)';
   const gridStroke = isDarkMode ? 'rgba(238, 223, 236, 0.12)' : 'rgba(72, 42, 122, 0.14)';
   const groupedBorderColor = isDarkMode ? 'rgba(238, 223, 236, 0.14)' : 'rgba(72, 42, 122, 0.14)';
-  const tableHeaderBackground = isDarkMode ? '#1A1424' : '#F6EEF4';
+  const tableHeaderBackground = isDarkMode ? '#1A1424' : '#F6F4F0';
   const tableHeaderText = isDarkMode ? '#F8F5F8' : '#413F42';
   const tableMutedText = isDarkMode ? '#B9AFC0' : '#6C6270';
   const [selectedTickers, setSelectedTickers] = useState<string[]>(['AAPL', 'MSFT']);

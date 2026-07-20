@@ -36,9 +36,9 @@
   z-index: 10;
   background:
     linear-gradient(180deg, var(--surface-panel-strong), var(--surface-subtle)),
-    radial-gradient(circle at top, rgba(214, 108, 174, 0.12), transparent 30%);
+    var(--shell-glow);
   border-right: 1px solid var(--border-color);
-  box-shadow: 24px 0 60px rgba(58, 30, 65, 0.12);
+  box-shadow: var(--shell-shadow);
   overflow: hidden;
   transition: width 0.22s ease, box-shadow 0.22s ease;
 }
@@ -242,7 +242,7 @@
   border-bottom: 1px solid var(--border-color);
   background:
     linear-gradient(180deg, var(--surface-panel-strong), var(--surface-panel)),
-    radial-gradient(circle at top right, rgba(214, 108, 174, 0.12), transparent 35%);
+    var(--shell-glow-corner);
   backdrop-filter: blur(18px);
   position: sticky;
   top: 0;
