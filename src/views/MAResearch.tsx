@@ -299,7 +299,7 @@ export default function MAResearch() {
               <div style={{ border: '1px solid rgba(51,65,85,0.5)', borderRadius: '12px', overflow: 'hidden', marginBottom: '32px' }}>
                 <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
                   <thead>
-                    <tr style={{ background: '#0F172A', borderBottom: '1px solid rgba(51,65,85,0.5)', fontSize: '0.875rem' }}>
+                    <tr style={{ background: 'var(--input-bg)', borderBottom: '1px solid rgba(51,65,85,0.5)', fontSize: '0.875rem' }}>
                       <th style={{ padding: '16px', fontWeight: 600, color: 'var(--text-secondary)' }}>Entity</th>
                       <th style={{ padding: '16px', fontWeight: 600, color: 'var(--text-secondary)' }}>Form</th>
                       <th style={{ padding: '16px', fontWeight: 600, color: 'var(--text-secondary)' }}>Filed</th>
@@ -314,7 +314,7 @@ export default function MAResearch() {
                       <tr key={idx} style={{ borderBottom: '1px solid rgba(51,65,85,0.3)', fontSize: '0.875rem' }}>
                         <td style={{ padding: '16px', fontWeight: 500, color: 'var(--text-primary)' }}>{deal.entityName}</td>
                         <td style={{ padding: '16px' }}>
-                          <span style={{ background: '#1E293B', padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{deal.formType}</span>
+                          <span style={{ background: 'var(--surface-panel)', padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{deal.formType}</span>
                         </td>
                         <td style={{ padding: '16px', color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)', fontSize: '0.75rem' }}>{deal.fileDate}</td>
                         <td style={{ padding: '16px' }}>
@@ -369,7 +369,7 @@ export default function MAResearch() {
               </div>
 
               {/* Step 1: Find a filing */}
-              <div style={{ background: 'rgba(15,23,42,0.5)', border: '1px solid #334155', padding: '16px', borderRadius: '12px', marginBottom: '24px' }}>
+              <div style={{ background: 'rgba(15,23,42,0.5)', border: '1px solid var(--input-border)', padding: '16px', borderRadius: '12px', marginBottom: '24px' }}>
                 <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.025em', fontWeight: 600, display: 'block', marginBottom: '8px' }}>
                   Step 1: Search for a merger filing
                 </label>
@@ -408,7 +408,7 @@ export default function MAResearch() {
               </div>
 
               {/* Step 2: Select clause type and extract */}
-              <div style={{ background: 'rgba(15,23,42,0.5)', border: '1px solid #334155', padding: '16px', borderRadius: '12px', marginBottom: '24px', display: 'flex', gap: '16px', alignItems: 'flex-end' }}>
+              <div style={{ background: 'rgba(15,23,42,0.5)', border: '1px solid var(--input-border)', padding: '16px', borderRadius: '12px', marginBottom: '24px', display: 'flex', gap: '16px', alignItems: 'flex-end' }}>
                 <div style={{ flex: 1 }}>
                   <label style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.025em', fontWeight: 600, display: 'block', marginBottom: '8px' }}>
                     Step 2: Select clause type
@@ -443,7 +443,7 @@ export default function MAResearch() {
               {clauseResults && !clauseLoading && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   {Object.entries(clauseResults).map(([clauseType, data]) => (
-                    <div key={clauseType} style={{ background: '#0F172A', border: '1px solid #334155', borderRadius: '12px', padding: '20px' }}>
+                    <div key={clauseType} style={{ background: 'var(--input-bg)', border: '1px solid var(--input-border)', borderRadius: '12px', padding: '20px' }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
                         <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: '#D66CAE' }}>{clauseType}</h3>
                         <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{data.section}</span>

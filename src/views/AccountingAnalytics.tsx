@@ -169,7 +169,7 @@ export default function AccountingAnalytics() {
               <CartesianGrid strokeDasharray="3 3" stroke="var(--surface-panel)" />
               <XAxis type="number" stroke="var(--text-muted)" fontSize={12} />
               <YAxis type="category" dataKey="name" stroke="var(--text-secondary)" fontSize={12} width={110} />
-              <Tooltip contentStyle={{ background: '#1E293B', border: '1px solid #334155', borderRadius: '8px', color: 'var(--text-primary)' }} />
+              <Tooltip contentStyle={{ background: 'var(--surface-panel)', border: '1px solid var(--input-border)', borderRadius: '8px', color: 'var(--text-primary)' }} />
               <Legend />
               {ratioData.map((company, index) => (
                 <Bar key={company.ticker} dataKey={company.ticker} fill={COLORS[index % COLORS.length]} radius={[0, 4, 4, 0]} />

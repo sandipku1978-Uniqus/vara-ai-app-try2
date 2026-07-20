@@ -224,9 +224,9 @@ export default function BoardProfiles() {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-end' }}>
-          <div className="ticker-selector glass-card" style={{ padding: '4px 16px', display: 'flex', alignItems: 'center', borderRadius: '12px', border: '1px solid #334155' }}>
+          <div className="ticker-selector glass-card" style={{ padding: '4px 16px', display: 'flex', alignItems: 'center', borderRadius: '12px', border: '1px solid var(--input-border)' }}>
             <span style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)', marginRight: '12px' }}>Target Company:</span>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#0F172A', padding: '6px 12px', borderRadius: '4px', border: '1px solid #334155' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--input-bg)', padding: '6px 12px', borderRadius: '4px', border: '1px solid var(--input-border)' }}>
               <Search size={14} className="text-blue-400" />
               <input
                 type="text"
@@ -343,7 +343,7 @@ export default function BoardProfiles() {
               <div style={{ border: '1px solid rgba(51,65,85,0.5)', borderRadius: '12px' }}>
                 <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
                   <thead>
-                    <tr style={{ background: '#0F172A', borderBottom: '1px solid rgba(51,65,85,0.5)', fontSize: '0.875rem' }}>
+                    <tr style={{ background: 'var(--input-bg)', borderBottom: '1px solid rgba(51,65,85,0.5)', fontSize: '0.875rem' }}>
                       <th style={{ padding: '16px', fontWeight: 600, color: 'var(--text-secondary)' }}>Director Name</th>
                       <th style={{ padding: '16px', fontWeight: 600, color: 'var(--text-secondary)' }}>Role</th>
                       <th style={{ padding: '16px', fontWeight: 600, color: 'var(--text-secondary)' }}>Independent</th>
@@ -359,7 +359,7 @@ export default function BoardProfiles() {
                           {dir.independent ? (
                             <span style={{ background: 'rgba(22,163,74,0.15)', color: '#4ADE80', padding: '2px 8px', borderRadius: '9999px', fontSize: '0.75rem', border: '1px solid rgba(22,163,74,0.2)' }}>Yes</span>
                           ) : (
-                            <span style={{ background: '#1E293B', color: 'var(--text-secondary)', padding: '2px 8px', borderRadius: '9999px', fontSize: '0.75rem' }}>No</span>
+                            <span style={{ background: 'var(--surface-panel)', color: 'var(--text-secondary)', padding: '2px 8px', borderRadius: '9999px', fontSize: '0.75rem' }}>No</span>
                           )}
                         </td>
                         <td style={{ padding: '16px', color: 'var(--text-secondary)' }}>{dir.committees.length > 0 ? dir.committees.join(', ') : '—'}</td>
@@ -379,7 +379,7 @@ export default function BoardProfiles() {
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '24px' }}>
-                <div style={{ background: 'rgba(15,23,42,0.5)', border: '1px solid #334155', padding: '24px', borderRadius: '12px' }}>
+                <div style={{ background: 'rgba(15,23,42,0.5)', border: '1px solid var(--input-border)', padding: '24px', borderRadius: '12px' }}>
                   <h3 style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.025em', marginBottom: '16px', display: 'flex', justifyContent: 'space-between' }}>
                     Gender Identity
                     <span style={{ color: '#D66CAE', fontWeight: 700 }}>Total: {boardSize ?? '—'}</span>
@@ -391,7 +391,7 @@ export default function BoardProfiles() {
                       return (
                         <div key={bar.label} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
                           <span style={{ fontSize: '0.875rem', fontWeight: 700 }}>{count ?? '—'}</span>
-                          <div style={{ width: '100%', background: '#1E293B', borderRadius: '6px 6px 0 0', position: 'relative', height: '100%' }}>
+                          <div style={{ width: '100%', background: 'var(--surface-panel)', borderRadius: '6px 6px 0 0', position: 'relative', height: '100%' }}>
                             <div style={{ position: 'absolute', bottom: 0, width: '100%', background: bar.color, borderRadius: '6px 6px 0 0', height: `${bar.pct ?? 0}%`, transition: 'height 0.3s' }}></div>
                           </div>
                           <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{bar.label} ({bar.pct != null ? `${bar.pct}%` : 'not disclosed'})</span>
@@ -401,7 +401,7 @@ export default function BoardProfiles() {
                   </div>
                 </div>
 
-                <div style={{ background: 'rgba(15,23,42,0.5)', border: '1px solid #334155', padding: '24px', borderRadius: '12px' }}>
+                <div style={{ background: 'rgba(15,23,42,0.5)', border: '1px solid var(--input-border)', padding: '24px', borderRadius: '12px' }}>
                   <h3 style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.025em', marginBottom: '16px' }}>Key Governance Metrics</h3>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', paddingTop: '8px' }}>
                     <div>
@@ -409,7 +409,7 @@ export default function BoardProfiles() {
                         <span style={{ color: 'var(--text-secondary)' }}>Board Independence</span>
                         <span style={{ fontWeight: 700, color: '#4ADE80' }}>{independence}%</span>
                       </div>
-                      <div style={{ width: '100%', background: '#1E293B', height: '8px', borderRadius: '9999px', overflow: 'hidden' }}>
+                      <div style={{ width: '100%', background: 'var(--surface-panel)', height: '8px', borderRadius: '9999px', overflow: 'hidden' }}>
                         <div style={{ background: '#4ADE80', height: '100%', width: `${independence}%` }}></div>
                       </div>
                     </div>
@@ -452,7 +452,7 @@ export default function BoardProfiles() {
               <div style={{ border: '1px solid rgba(51,65,85,0.5)', borderRadius: '12px', marginBottom: '32px' }}>
                 <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
                   <thead>
-                    <tr style={{ background: '#0F172A', borderBottom: '1px solid rgba(51,65,85,0.5)', fontSize: '0.875rem' }}>
+                    <tr style={{ background: 'var(--input-bg)', borderBottom: '1px solid rgba(51,65,85,0.5)', fontSize: '0.875rem' }}>
                       <th style={{ padding: '16px', fontWeight: 600, color: 'var(--text-secondary)' }}>NEO</th>
                       <th style={{ padding: '16px', fontWeight: 600, color: 'var(--text-secondary)' }}>Title</th>
                       <th style={{ padding: '16px', fontWeight: 600, color: 'var(--text-secondary)', textAlign: 'right' }}>Base Salary</th>
@@ -476,12 +476,12 @@ export default function BoardProfiles() {
 
               <h2 style={{ fontSize: '1.1rem', marginBottom: '16px', marginTop: '8px' }}>Pay vs. Performance (PvP)</h2>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '24px' }}>
-                <div style={{ background: 'rgba(30,41,59,0.5)', border: '1px solid #334155', padding: '20px', borderRadius: '12px', textAlign: 'center' }}>
+                <div style={{ background: 'rgba(30,41,59,0.5)', border: '1px solid var(--input-border)', padding: '20px', borderRadius: '12px', textAlign: 'center' }}>
                   <h4 style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>CEO Pay Ratio</h4>
                   <div style={{ fontSize: '1.875rem', fontFamily: 'var(--font-mono)', color: 'var(--text-primary)', marginBottom: '4px' }}>{boardData.ceoPayRatio}</div>
                   <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Based on median employee salary</p>
                 </div>
-                <div style={{ background: 'rgba(30,41,59,0.5)', border: '1px solid #334155', padding: '20px', borderRadius: '12px', textAlign: 'center' }}>
+                <div style={{ background: 'rgba(30,41,59,0.5)', border: '1px solid var(--input-border)', padding: '20px', borderRadius: '12px', textAlign: 'center' }}>
                   <h4 style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Say-on-Pay Approval</h4>
                   <div style={{ fontSize: '1.875rem', fontFamily: 'var(--font-mono)', color: '#4ADE80', marginBottom: '4px' }}>{boardData.sayOnPayApproval}</div>
                   <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>From latest annual shareholder meeting</p>
@@ -492,7 +492,7 @@ export default function BoardProfiles() {
 
           {/* Multi-company comparison table (shown when 2+ tickers selected) */}
           {compareTickers.length >= 2 && (
-            <div style={{ marginTop: '24px', padding: '24px', background: 'rgba(15,23,42,0.5)', border: '1px solid #334155', borderRadius: '12px' }}>
+            <div style={{ marginTop: '24px', padding: '24px', background: 'rgba(15,23,42,0.5)', border: '1px solid var(--input-border)', borderRadius: '12px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
                 <BarChart3 size={20} style={{ color: '#D66CAE' }} />
                 <h2 style={{ fontSize: '1.1rem', margin: 0 }}>Side-by-Side Comparison</h2>
@@ -505,7 +505,7 @@ export default function BoardProfiles() {
               <div style={{ border: '1px solid rgba(51,65,85,0.5)', borderRadius: '10px', overflow: 'auto' }}>
                 <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
                   <thead>
-                    <tr style={{ background: '#0F172A', borderBottom: '1px solid rgba(51,65,85,0.5)', fontSize: '0.85rem' }}>
+                    <tr style={{ background: 'var(--input-bg)', borderBottom: '1px solid rgba(51,65,85,0.5)', fontSize: '0.85rem' }}>
                       <th style={{ padding: '14px 16px', fontWeight: 600, color: 'var(--text-secondary)' }}>Metric</th>
                       {compareTickers.map(t => (
                         <th key={t} style={{ padding: '14px 16px', fontWeight: 600, color: 'var(--text-primary)', textAlign: 'center', borderLeft: '1px solid rgba(51,65,85,0.5)' }}>

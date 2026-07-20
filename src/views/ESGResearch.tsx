@@ -276,7 +276,7 @@ export default function ESGResearch() {
                 ))}
               </div>
 
-              <div style={{ marginTop: '32px', padding: '24px', background: 'rgba(30,41,59,0.5)', borderRadius: '12px', border: '1px solid #334155' }}>
+              <div style={{ marginTop: '32px', padding: '24px', background: 'rgba(30,41,59,0.5)', borderRadius: '12px', border: '1px solid var(--input-border)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
                   <Activity className="text-green-400" size={24} />
                   <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Cross-Framework Mapping</h3>
@@ -288,7 +288,7 @@ export default function ESGResearch() {
                       key={metric}
                       onClick={() => setSelectedMapping(selectedMapping === metric ? null : metric)}
                       style={{
-                        padding: '12px 16px', background: selectedMapping === metric ? 'rgba(179,31,126,0.08)' : '#0F172A',
+                        padding: '12px 16px', background: selectedMapping === metric ? 'rgba(179,31,126,0.08)' : 'var(--input-bg)',
                         borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                         border: `1px solid ${selectedMapping === metric ? 'rgba(179,31,126,0.3)' : 'rgba(51,65,85,0.5)'}`,
                         cursor: 'pointer', transition: 'all 0.15s'
@@ -360,10 +360,10 @@ export default function ESGResearch() {
                 </div>
               ) : (
                 <>
-              <div className="heatmap-container" style={{ overflow: 'auto', border: '1px solid #334155', borderRadius: '12px' }}>
+              <div className="heatmap-container" style={{ overflow: 'auto', border: '1px solid var(--input-border)', borderRadius: '12px' }}>
                 <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
                   <thead>
-                    <tr style={{ background: '#0F172A', borderBottom: '1px solid #334155', fontSize: '0.875rem' }}>
+                    <tr style={{ background: 'var(--input-bg)', borderBottom: '1px solid var(--input-border)', fontSize: '0.875rem' }}>
                       <th style={{ padding: '16px', fontWeight: 600, color: 'var(--text-secondary)' }}>ESG Topic Category</th>
                       {esgTickers.map(t => (
                         <th key={t} style={{ padding: '16px', fontWeight: 600, color: 'var(--text-primary)', textAlign: 'center', borderLeft: '1px solid rgba(51,65,85,0.5)' }}>{t}</th>
@@ -445,7 +445,7 @@ export default function ESGResearch() {
                   </div>
                 ) : filteredReleases.map((ts, idx) => (
                   <div key={idx} className="transcript-card" style={{
-                    background: '#0F172A', border: '1px solid #334155', padding: '20px', borderRadius: '12px',
+                    background: 'var(--input-bg)', border: '1px solid var(--input-border)', padding: '20px', borderRadius: '12px',
                     transition: 'all 0.2s'
                   }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
@@ -458,7 +458,7 @@ export default function ESGResearch() {
                       </div>
                     </div>
 
-                    <div style={{ paddingLeft: '16px', borderLeft: '2px solid #334155' }}>
+                    <div style={{ paddingLeft: '16px', borderLeft: '2px solid var(--input-border)' }}>
                       <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', margin: '4px 0' }}>{ts.summary}</p>
                     </div>
                   </div>
