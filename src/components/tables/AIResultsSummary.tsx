@@ -39,12 +39,15 @@ export default function AIResultsSummary({ query, resultsSummary, resultCount, m
   }, [cacheKey]);
 
   async function analyze() {
-    if (loading || resultCount === 0 || !query.trim()) return;
+    if (loading || resultCount === 0) return;
 
     setLoading(true);
     setError(false);
     try {
-      const prompt = `You are analyzing a metadata snapshot from SEC ${moduleLabel} search results. The user searched for "${query}" and got ${resultCount} results.
+      const scopeLine = query.trim()
+        ? `The user searched for "${query}" and got ${resultCount} results.`
+        : `The user is browsing the ${resultCount} most recent ${moduleLabel} (no keyword filter).`;
+      const prompt = `You are analyzing a metadata snapshot from SEC ${moduleLabel} search results. ${scopeLine}
 
 Here is the available metadata for the top results:
 ${resultsSummary}
@@ -67,7 +70,10 @@ State that source filings must be reviewed before relying on the analysis. Be di
     }
   }
 
-  if (resultCount === 0 || !query.trim()) return null;
+  // The insight summarizes the RESULTS, not the query — so it belongs on any
+  // non-empty result set, including chip-only, company-scoped, and default
+  // (unsearched) listings, which previously hid the card with no explanation.
+  if (resultCount === 0) return null;
 
   return (
     <section aria-label={`AI insight for ${moduleLabel}`} aria-busy={loading} style={{

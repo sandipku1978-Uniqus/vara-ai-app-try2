@@ -1621,7 +1621,7 @@ export default function SearchPage() {
                 {displayResults.some(result => !result.auditor?.trim()) && !auditorNoticeDismissed && (
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', padding: '8px 12px', margin: '0 0 8px', borderRadius: '8px', background: 'color-mix(in srgb, var(--status-warning) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--status-warning) 30%, transparent)', fontSize: '0.75rem', color: 'var(--status-warning)' }}>
                     <span>Auditor identification covers fiscal 2017+ (PCAOB Form AP); older or non-issuer filings may not show one.</span>
-                    <button type="button" onClick={() => setAuditorNoticeDismissed(true)}
+                    <button type="button" onClick={() => setAuditorNoticeDismissed(true)} aria-label="Dismiss auditor coverage notice"
                       style={{ background: 'none', border: 'none', color: 'var(--status-warning)', cursor: 'pointer', fontSize: '0.85rem', lineHeight: 1 }}>×</button>
                   </div>
                 )}

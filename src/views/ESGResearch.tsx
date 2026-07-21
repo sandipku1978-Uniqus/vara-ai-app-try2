@@ -542,14 +542,32 @@ ${evidence.text}`, { throwOnError: true });
                 </table>
               </div>
 
-              {selectedMetric && (
-                <div style={{ marginTop: '12px', padding: '14px', background: 'color-mix(in srgb, var(--accent-primary) 5%, var(--surface-panel))', border: '1px solid color-mix(in srgb, var(--accent-primary) 20%, var(--border-color))', borderRadius: '6px' }}>
-                  <h4 style={{ color: 'var(--text-primary)', marginBottom: '8px' }}>{selectedMetric}</h4>
-                  <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', lineHeight: 1.6 }}>
-                    AI-rated disclosure depth based on the latest 10-K filing from SEC EDGAR. Click a different topic to compare.
-                  </p>
-                </div>
-              )}
+              {selectedMetric && (() => {
+                // Show the SELECTED topic's actual per-company ratings, drawn
+                // from the row already in the heatmap — not a generic sentence
+                // that reads identically for every topic.
+                const selectedRow = heatmapData.find(r => r.topic === selectedMetric);
+                return (
+                  <div style={{ marginTop: '12px', padding: '14px', background: 'color-mix(in srgb, var(--accent-primary) 5%, var(--surface-panel))', border: '1px solid color-mix(in srgb, var(--accent-primary) 20%, var(--border-color))', borderRadius: '6px' }}>
+                    <h4 style={{ color: 'var(--text-primary)', marginBottom: '8px' }}>{selectedMetric} — disclosure depth by company</h4>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '10px' }}>
+                      {esgTickers.map(t => {
+                        const rating = (selectedRow?.[t.toLowerCase()] as string) || 'unrated';
+                        return (
+                          <span key={t} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', border: '1px solid var(--border-color)', borderRadius: '999px', padding: '3px 10px' }}>
+                            <span aria-hidden="true" className={`heatmap-cell ${rating}`} style={{ width: '10px', height: '10px' }}></span>
+                            <strong>{t}</strong>
+                            <span style={{ color: 'var(--text-muted)', textTransform: 'capitalize' }}>{rating}</span>
+                          </span>
+                        );
+                      })}
+                    </div>
+                    <p style={{ color: 'var(--text-muted)', fontSize: '0.78rem', lineHeight: 1.5, margin: 0 }}>
+                      AI-rated from each company's latest 10-K on SEC EDGAR. Review the source filing before relying on a rating.
+                    </p>
+                  </div>
+                );
+              })()}
               {heatmapData.length > 0 && (
                 <p className="heatmap-coverage">Analyzed {heatmapCoverage.analyzed} of {heatmapCoverage.total} selected companies. Dashed cells were not rated.</p>
               )}

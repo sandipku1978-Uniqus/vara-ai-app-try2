@@ -232,11 +232,14 @@ export function Navbar({ mobileNavOpen, onMobileNavToggle, menuButtonRef }: { mo
             <kbd>⌘K</kbd>
           </button>
         )}
+        {/* Label, icon, and subtext all advertise the DESTINATION (what the
+            click does), so the control never reads as a contradictory mix of
+            current-state name and switch-action hint. */}
         <button className="theme-toggle-btn" onClick={toggleThemeMode} title={mounted ? nextThemeLabel : 'Switching theme...'} type="button">
-          {mounted ? (themeMode === 'dark' ? <Moon size={17} /> : <Sun size={17} />) : <div style={{width: 17, height: 17}} />}
+          {mounted ? (themeMode === 'dark' ? <Sun size={17} /> : <Moon size={17} />) : <div style={{width: 17, height: 17}} />}
           <span className="theme-toggle-copy">
-            <strong>{mounted ? (themeMode === 'dark' ? 'Dark mode' : 'Light mode') : 'Theme'}</strong>
-            <span>{mounted ? (themeMode === 'dark' ? 'Switches to light surfaces' : 'Switches to darker viewing') : 'Loading...'}</span>
+            <strong>{mounted ? (themeMode === 'dark' ? 'Light mode' : 'Dark mode') : 'Theme'}</strong>
+            <span>{mounted ? (themeMode === 'dark' ? 'Switch to light surfaces' : 'Switch to dark surfaces') : 'Loading...'}</span>
           </span>
         </button>
         {!isLanding && (

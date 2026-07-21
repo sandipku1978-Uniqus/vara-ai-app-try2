@@ -908,7 +908,12 @@ Keep it crisp and practical.`;
               <LayoutGrid size={16} /> Audit Matrix
             </button>
           </div>
-          <button className="icon-btn" title="Export as CSV" onClick={handleCsvExport}><Download size={18} /> Export</button>
+          {/* Export produces a CSV only for the two data views; Text Redline
+              exports through the disclosure-matrix's own DOCX/PDF actions, so
+              the CSV button would be a silent no-op there. */}
+          {viewMode !== 'text-diff' && (
+            <button className="icon-btn" title="Export as CSV" onClick={handleCsvExport}><Download size={18} /> Export</button>
+          )}
         </div>
       </div>
 

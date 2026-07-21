@@ -64,25 +64,33 @@ export default function DataTable<T extends Record<string, any>>({
         <table className="data-table">
           <thead>
             <tr>
-              {columns.map(col => (
-                <th
-                  key={col.key}
-                  scope="col"
-                  aria-sort={col.sortable === false || sortCol !== col.key ? 'none' : sortDir === 'asc' ? 'ascending' : 'descending'}
-                  style={{ textAlign: col.align || 'left', width: col.width }}
-                >
-                  {col.sortable === false ? (
-                    <span className="dt-th-content">{col.label || col.header}</span>
-                  ) : (
-                    <button type="button" className="dt-sort-button" onClick={() => handleSort(col.key)}>
-                      <span>{col.label || col.header}</span>
-                      {sortCol === col.key && (
-                        sortDir === 'asc' ? <ChevronUp size={12} aria-hidden="true" /> : <ChevronDown size={12} aria-hidden="true" />
-                      )}
-                    </button>
-                  )}
-                </th>
-              ))}
+              {columns.map(col => {
+                // A render-only column (a link, an action button, a badge)
+                // sorts by its raw underlying value — accession, URL, boolean —
+                // which is meaningless to a user. Such columns are sortable
+                // only when they explicitly opt in; plain data columns stay
+                // sortable by default.
+                const isSortable = col.sortable === true || (col.sortable === undefined && !col.render);
+                return (
+                  <th
+                    key={col.key}
+                    scope="col"
+                    aria-sort={!isSortable || sortCol !== col.key ? 'none' : sortDir === 'asc' ? 'ascending' : 'descending'}
+                    style={{ textAlign: col.align || 'left', width: col.width }}
+                  >
+                    {!isSortable ? (
+                      <span className="dt-th-content">{col.label || col.header}</span>
+                    ) : (
+                      <button type="button" className="dt-sort-button" onClick={() => handleSort(col.key)}>
+                        <span>{col.label || col.header}</span>
+                        {sortCol === col.key && (
+                          sortDir === 'asc' ? <ChevronUp size={12} aria-hidden="true" /> : <ChevronDown size={12} aria-hidden="true" />
+                        )}
+                      </button>
+                    )}
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           <tbody>
