@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { loadSicDirectory, type SicDirectoryEntry } from '../../services/referenceData';
 
 interface SicSearchInputProps {
@@ -49,6 +49,7 @@ export default function SicSearchInput({ value, onChange, ariaLabel }: SicSearch
   const [text, setText] = useState(value);
   const [open, setOpen] = useState(false);
   const [focused, setFocused] = useState(false);
+  const listboxId = useId();
 
   useEffect(() => {
     let cancelled = false;
@@ -106,6 +107,8 @@ export default function SicSearchInput({ value, onChange, ariaLabel }: SicSearch
         onBlur={() => { setFocused(false); window.setTimeout(() => setOpen(false), 150); }}
         placeholder="Industry — try biotech, software, banks... or a SIC code (3571)"
         aria-label={ariaLabel || 'Industry SIC code or name'}
+        role="combobox"
+        aria-controls={listboxId}
         aria-autocomplete="list"
         aria-expanded={open && suggestions.length > 0}
         style={{
@@ -120,7 +123,7 @@ export default function SicSearchInput({ value, onChange, ariaLabel }: SicSearch
         </div>
       )}
       {open && suggestions.length > 0 && !(isCode && suggestions.length === 1 && resolved) && (
-        <div role="listbox" aria-label="Industry suggestions" style={{
+        <div role="listbox" id={listboxId} aria-label="Industry suggestions" style={{
           position: 'absolute', top: 'calc(100% - 0px)', left: 0, right: 0, zIndex: 30,
           marginTop: '4px', borderRadius: '8px', overflow: 'hidden',
           background: 'var(--bg-elevated)', border: '1px solid var(--border-color)',

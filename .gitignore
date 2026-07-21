@@ -20,3 +20,4 @@ data-pipeline/*.jsonl
 .next-build
 *.tsbuildinfo
 *.log
+.vercel

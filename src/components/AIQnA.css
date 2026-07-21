@@ -43,8 +43,13 @@
 }
 
 .ai-panel-resize-handle:hover,
-.ai-panel-resize-handle:active {
+.ai-panel-resize-handle:active,
+.ai-panel-resize-handle:focus-visible {
   background: color-mix(in srgb, var(--accent-primary) 28%, transparent);
+}
+.ai-panel-resize-handle:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: -2px;
 }
 
 .ai-panel-header {

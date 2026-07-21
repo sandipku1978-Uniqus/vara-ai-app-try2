@@ -72,7 +72,7 @@ describe('specialist workflow failure states', () => {
     render(<ExemptOfferings />);
 
     await screen.findByText('No recent Form D or D/A filings were returned.');
-    fireEvent.change(screen.getByRole('textbox', { name: 'Search Form D filings' }), {
+    fireEvent.change(screen.getByRole('combobox', { name: 'Search Form D filings' }), {
       target: { value: 'solar fund' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Search' }));

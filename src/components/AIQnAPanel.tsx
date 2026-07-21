@@ -852,11 +852,25 @@ export function AIQnAPanel() {
 
   return (
     <div id="urc-copilot-panel" role="complementary" aria-label={`${BRAND.copilotName} research assistant`} className="ai-panel glass-card" style={panelWidth ? { width: `${panelWidth}px` } : undefined}>
-      {/* Resize drag handle on the left edge */}
+      {/* Resize handle on the left edge — drag with the mouse, or focus and
+          use arrow keys / Home / End for keyboard + assistive-tech access. */}
       <div
         className="ai-panel-resize-handle"
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize copilot panel (arrow keys)"
+        tabIndex={0}
         onMouseDown={handleResizeStart}
-        title="Drag to resize"
+        onKeyDown={e => {
+          const max = Math.round(window.innerWidth * 0.8);
+          const current = panelWidth || Math.min(window.innerWidth, 520);
+          const clamp = (w: number) => Math.max(320, Math.min(max, w));
+          if (e.key === 'ArrowLeft') { e.preventDefault(); setPanelWidth(clamp(current + 40)); }
+          else if (e.key === 'ArrowRight') { e.preventDefault(); setPanelWidth(clamp(current - 40)); }
+          else if (e.key === 'Home') { e.preventDefault(); setPanelWidth(max); }
+          else if (e.key === 'End') { e.preventDefault(); setPanelWidth(320); }
+        }}
+        title="Drag, or focus and use arrow keys, to resize"
       />
       <div className="ai-panel-header">
         <div className="ai-title">

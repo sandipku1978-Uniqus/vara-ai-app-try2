@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useEffect, useId, useState, type CSSProperties } from 'react';
 import {
   computeCompanySuggestions,
   getCompanyDirectory,
@@ -37,6 +37,7 @@ export default function EntitySearchInput({
 }: EntitySearchInputProps) {
   const [directory, setDirectory] = useState<CompanyDirectoryEntry[]>([]);
   const [open, setOpen] = useState(false);
+  const listboxId = useId();
 
   useEffect(() => {
     let cancelled = false;
@@ -68,6 +69,8 @@ export default function EntitySearchInput({
         onBlur={() => window.setTimeout(() => setOpen(false), 150)}
         placeholder={placeholder}
         aria-label={ariaLabel}
+        role="combobox"
+        aria-controls={listboxId}
         aria-autocomplete="list"
         aria-expanded={open && suggestions.length > 0}
         style={{
@@ -78,7 +81,7 @@ export default function EntitySearchInput({
         }}
       />
       {open && suggestions.length > 0 && (
-        <div role="listbox" aria-label="Company suggestions" style={{
+        <div role="listbox" id={listboxId} aria-label="Company suggestions" style={{
           position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 30,
           marginTop: '4px', borderRadius: '8px', overflow: 'hidden',
           background: 'var(--bg-elevated)', border: '1px solid var(--border-color)',

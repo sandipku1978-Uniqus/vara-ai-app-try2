@@ -112,7 +112,7 @@ export default function CompanySearchInput({ onSelect, placeholder = 'Search tic
     setResults(matches.slice(0, 15));
     setShowDropdown(matches.length > 0);
     setActiveIndex(matches.length > 0 ? 0 : -1);
-  }, [tickerMap, titleMap]);
+  }, [tickerMap, titleMap, onTextChange]);
 
   const chooseResult = useCallback((result: { ticker: string; cik: string; title?: string }) => {
     const value = selectValue === 'title' ? (result.title || result.ticker) : result.ticker;

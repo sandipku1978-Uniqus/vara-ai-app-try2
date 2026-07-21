@@ -1425,6 +1425,8 @@ export default function SearchPage() {
                   }}
                   onFocus={() => setSuggestionsOpen(true)}
                   onBlur={() => window.setTimeout(() => setSuggestionsOpen(false), 150)}
+                  role="combobox"
+                  aria-controls="workbench-company-listbox"
                   aria-autocomplete="list"
                   aria-expanded={suggestionsOpen && querySuggestions.length > 0}
                 />
@@ -1432,7 +1434,7 @@ export default function SearchPage() {
                   {loading ? <Loader2 size={16} className="spinner" /> : 'Search'}
                 </button>
                 {suggestionsOpen && querySuggestions.length > 0 && (
-                  <div role="listbox" aria-label="Company suggestions" style={{
+                  <div role="listbox" id="workbench-company-listbox" aria-label="Company suggestions" style={{
                     position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 30,
                     marginTop: '4px', borderRadius: '8px', overflow: 'hidden',
                     background: 'var(--bg-elevated)', border: '1px solid var(--border-color)',
