@@ -85,7 +85,7 @@ export default function SECEnforcement() {
       <div style={{ marginBottom: '12px', maxWidth: '480px', display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--input-bg)', border: '1px solid var(--input-border)', borderRadius: '4px', padding: '5px 10px' }}>
         <Search size={14} style={{ color: 'var(--text-muted)' }} aria-hidden="true" />
         <label className="sr-only" htmlFor="litigation-release-filter">Filter litigation releases</label>
-        <input id="litigation-release-filter" type="search" value={filterText} onChange={e => setFilterText(e.target.value)} placeholder="Filter releases..."
+        <input id="litigation-release-filter" type="search" value={filterText} onChange={e => setFilterText(e.target.value)} placeholder="Filter by party name or release number (e.g. LLC, LR-26590)..."
           style={{ flex: 1, minWidth: 0, background: 'transparent', border: 'none', outline: 'none', color: 'var(--text-primary)', fontSize: '0.82rem' }} />
       </div>
 

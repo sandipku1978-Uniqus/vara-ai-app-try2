@@ -13,6 +13,7 @@ import { renderMarkdown } from '../utils/markdownRenderer';
 import { DisclosureMatrix } from '../components/research/DisclosureMatrix';
 import CompanySearchInput from '../components/filters/CompanySearchInput';
 import SicSearchInput from '../components/filters/SicSearchInput';
+import { loadSicDirectoryIndex } from '../services/referenceData';
 import SectionMatrix, { type MatrixCell } from '../components/tables/SectionMatrix';
 import { useApp } from '../context/AppState';
 import './Benchmarking.css';
@@ -413,11 +414,17 @@ export default function Benchmarking() {
           if (peers.length >= 5) break;
         }
       }
+      // Describe the TARGET SIC, not the seed company — when the user typed a
+      // different industry, meta.sicDescription is the seed's industry, not
+      // the one they asked for.
+      const sicIndex = await loadSicDirectoryIndex();
+      const targetSicLabel = sicIndex[targetSic]?.title
+        || (targetSic === meta.sic ? meta.sicDescription : '');
       if (peers.length > 0) {
         setSelectedTickers(prev => [...new Set([...prev, ...peers])].slice(0, 20));
-        setPeerDiscoveryMessage(`Added ${peers.length} peers for SIC ${targetSic}${meta.sicDescription ? ` (${meta.sicDescription})` : ''}.`);
+        setPeerDiscoveryMessage(`Added ${peers.length} peers for SIC ${targetSic}${targetSicLabel ? ` (${targetSicLabel})` : ''}.`);
       } else {
-        setPeerDiscoveryMessage(`No peers found yet for SIC ${targetSic}. Try a broader seed company or add peers manually.`);
+        setPeerDiscoveryMessage(`No peers found yet for SIC ${targetSic}${targetSicLabel ? ` (${targetSicLabel})` : ''}. Try a broader seed company or add peers manually.`);
       }
     } catch (err) {
       console.error('Peer group error:', err);
