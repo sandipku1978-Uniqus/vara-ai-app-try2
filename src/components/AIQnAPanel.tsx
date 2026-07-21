@@ -456,13 +456,19 @@ export function AIQnAPanel() {
                       runtime.findings.push(
                         `${match.form === 'UPLOAD' ? 'SEC Staff letter to' : 'Response from'} ${match.company_name} (${match.date_filed}): "${excerpt}"`
                       );
+                      // Filing index page, not the raw .txt — PDF letters are
+                      // uuencoded inside the submission file. The accession is
+                      // the .txt basename in the master.idx-style filename.
+                      const letterAccession = (match.filename.split('/').pop() || '').replace(/\.txt$/i, '');
                       runtime.citations.push(
                         buildCommentLetterCitation({
                           companyName: match.company_name,
                           formType: match.form,
                           filingDate: match.date_filed,
                           route: `/comment-letters?company=${encodeURIComponent(match.company_name)}&thread=${encodeURIComponent(match.thread_id)}`,
-                          externalUrl: `https://www.sec.gov/Archives/${match.filename}`,
+                          externalUrl: letterAccession
+                            ? `https://www.sec.gov/Archives/edgar/data/${Number(match.cik)}/${letterAccession.replace(/-/g, '')}/${letterAccession}-index.htm`
+                            : `https://www.sec.gov/Archives/${match.filename}`,
                           description: excerpt.slice(0, 160) || 'SEC correspondence',
                         })
                       );

@@ -106,8 +106,13 @@ const cardStyle: React.CSSProperties = {
   transition: 'border-color 0.2s',
 };
 
-function edgarUrl(filename: string): string {
-  return `https://www.sec.gov/Archives/${filename}`;
+/**
+ * Letters filed as PDFs are uuencoded inside the raw .txt submission file, so
+ * linking it shows gibberish. The filing index page lists the actual letter
+ * document (PDF or HTML) for native viewing.
+ */
+function edgarLetterIndexUrl(cik: number | string, accession: string): string {
+  return `https://www.sec.gov/Archives/edgar/data/${Number(cik)}/${accession.replace(/-/g, '')}/${accession}-index.htm`;
 }
 
 /** ts_headline emits only <b> tags; letter text itself was tag-stripped at
@@ -316,10 +321,10 @@ export function ThreadConversation({ threadId }: { threadId: string }) {
                   form: letter.form,
                   fileDate: letter.date_filed,
                   excerpt: letter.has_text ? letter.preview.slice(0, 400) : '',
-                  sourceUrl: edgarUrl(letter.filename),
+                  sourceUrl: edgarLetterIndexUrl(letter.cik, letter.accession),
                 }}
               />
-              <a href={edgarUrl(letter.filename)} target="_blank" rel="noreferrer"
+              <a href={edgarLetterIndexUrl(letter.cik, letter.accession)} target="_blank" rel="noreferrer"
                 style={{ color: '#D66CAE', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                 Full letter <ExternalLink size={11} />
               </a>
@@ -595,7 +600,7 @@ export default function CommentLetters() {
                         style={{ color: 'var(--accent-primary)', fontSize: '0.75rem', background: 'none', border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                         <MessageSquare size={12} /> {expandedThread === match.thread_id ? 'Hide conversation' : 'View conversation'}
                       </button>
-                      <a href={edgarUrl(match.filename)} target="_blank" rel="noreferrer"
+                      <a href={edgarLetterIndexUrl(match.cik, match.accession)} target="_blank" rel="noreferrer"
                         style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                         EDGAR <ExternalLink size={11} />
                       </a>
@@ -609,7 +614,7 @@ export default function CommentLetters() {
                           form: match.form,
                           fileDate: match.date_filed,
                           excerpt: (match.headline || '').replace(/<\/?b>/g, '').slice(0, 400),
-                          sourceUrl: edgarUrl(match.filename),
+                          sourceUrl: edgarLetterIndexUrl(match.cik, match.accession),
                         }}
                       />
                     </div>
