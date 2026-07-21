@@ -95,7 +95,7 @@ export default function ResultsToolbar({ data, columns, label = 'results', copil
         style={{
           display: 'inline-flex', alignItems: 'center', gap: '4px',
           background: 'var(--surface-subtle)', border: '1px solid var(--border-color)',
-          borderRadius: '6px', padding: '4px 10px', color: 'var(--text-secondary)', cursor: 'pointer',
+          borderRadius: '4px', padding: '4px 10px', color: 'var(--text-secondary)', cursor: 'pointer',
           fontSize: '0.78rem', transition: 'border-color 0.2s',
         }}
         title="Export as CSV"
@@ -110,7 +110,7 @@ export default function ResultsToolbar({ data, columns, label = 'results', copil
         style={{
           display: 'inline-flex', alignItems: 'center', gap: '4px',
           background: 'var(--interactive-hover)', border: '1px solid var(--border-color)',
-          borderRadius: '6px', padding: '4px 10px', color: copyError ? 'var(--status-error)' : copied ? 'var(--status-success)' : 'var(--text-secondary)', cursor: 'pointer',
+          borderRadius: '4px', padding: '4px 10px', color: copyError ? 'var(--status-error)' : copied ? 'var(--status-success)' : 'var(--text-secondary)', cursor: 'pointer',
           fontSize: '0.78rem', transition: 'color 0.2s, border-color 0.2s',
         }}
         title="Copy table to clipboard"
@@ -125,7 +125,7 @@ export default function ResultsToolbar({ data, columns, label = 'results', copil
           display: 'inline-flex', alignItems: 'center', gap: '4px',
           background: 'var(--interactive-hover-strong)',
           border: '1px solid color-mix(in srgb, var(--accent-primary) 30%, transparent)',
-          borderRadius: '6px', padding: '4px 10px', color: 'var(--accent-primary)', cursor: 'pointer',
+          borderRadius: '4px', padding: '4px 10px', color: 'var(--accent-primary)', cursor: 'pointer',
           fontSize: '0.78rem', transition: 'border-color 0.2s',
         }}
         title="Analyze these results with URC Copilot"

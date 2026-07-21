@@ -1,3 +1,9 @@
+/*
+ * Shared data table — Evidence Ledger treatment. Flat surface, hairline
+ * rules, sunken uppercase header band, tabular numerals, quiet hover.
+ * Every table page (exhibits, earnings, insiders, enforcement, no-action,
+ * regulation, ADV, exempt offerings, accounting hub) inherits this.
+ */
 .data-table-wrapper {
   display: flex;
   flex-direction: column;
@@ -6,10 +12,10 @@
 
 .data-table-container {
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: 6px;
   overflow-x: auto;
   overflow-y: hidden;
-  background: var(--surface-panel);
+  background: var(--bg-elevated);
 }
 
 .data-table {
@@ -17,18 +23,21 @@
   min-width: max-content;
   text-align: left;
   border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
 }
 
 .data-table thead tr {
   background: var(--table-header-bg);
   border-bottom: 1px solid var(--table-header-border);
-  font-size: 0.8rem;
 }
 
 .data-table th {
-  padding: 14px 16px;
-  font-weight: 600;
-  color: var(--text-primary);
+  padding: 10px 16px;
+  font-weight: 700;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
   user-select: none;
 }
 
@@ -49,8 +58,14 @@
   color: inherit;
   font: inherit;
   font-weight: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
   text-align: inherit;
   cursor: pointer;
+}
+
+.dt-sort-button:hover {
+  color: var(--text-primary);
 }
 
 .dt-sort-button:focus-visible,
@@ -65,12 +80,16 @@
   transition: background 0.1s;
 }
 
+.data-table tbody tr:last-child {
+  border-bottom: 0;
+}
+
 .data-table tbody tr:hover {
-  background: rgba(179, 31, 126, 0.03);
+  background: var(--interactive-hover);
 }
 
 .data-table td {
-  padding: 12px 16px;
+  padding: 10px 16px;
   color: var(--text-primary);
 }
 
@@ -90,6 +109,7 @@
 .dt-page-info {
   font-size: 0.75rem;
   color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
 }
 
 .dt-page-btns {
@@ -101,9 +121,9 @@
 }
 
 .dt-page-btns button {
-  background: var(--interactive-hover);
+  background: transparent;
   border: 1px solid var(--border-color);
-  border-radius: 6px;
+  border-radius: 4px;
   padding: 4px 8px;
   cursor: pointer;
   color: var(--text-primary);
@@ -117,5 +137,6 @@
 }
 
 .dt-page-btns button:not(:disabled):hover {
-  background: rgba(179, 31, 126, 0.1);
+  background: var(--interactive-hover);
+  border-color: var(--accent-primary);
 }

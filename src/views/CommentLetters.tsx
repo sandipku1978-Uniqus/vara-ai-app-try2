@@ -99,9 +99,9 @@ interface SearchMatch {
 }
 
 const cardStyle: React.CSSProperties = {
-  background: 'var(--surface-panel)',
-  border: '1px solid var(--input-border)',
-  borderRadius: '12px',
+  background: 'var(--bg-elevated)',
+  border: '1px solid var(--border-color)',
+  borderRadius: '6px',
   padding: '16px',
   transition: 'border-color 0.2s',
 };
@@ -124,7 +124,7 @@ function renderHeadline(headline: string): { __html: string } {
     .replace(/>/g, '&gt;');
   return {
     __html: escaped
-      .replace(/&lt;b&gt;/g, '<mark style="background:rgba(214,108,174,0.25);color:#F9A8D4;padding:0 2px;border-radius:2px;">')
+      .replace(/&lt;b&gt;/g, '<mark style="background:var(--interactive-hover-strong);color:var(--accent-primary);padding:0 2px;border-radius:2px;">')
       .replace(/&lt;\/b&gt;/g, '</mark>'),
   };
 }
@@ -134,8 +134,10 @@ function FormBadge({ form }: { form: string }) {
   return (
     <span style={{
       fontSize: '0.7rem',
-      color: isStaff ? '#FBBF24' : '#6EE7B7',
-      background: isStaff ? 'rgba(245,158,11,0.12)' : 'rgba(16,185,129,0.12)',
+      color: isStaff ? 'var(--status-warning)' : 'var(--status-success)',
+      background: isStaff
+        ? 'color-mix(in srgb, var(--status-warning) 14%, transparent)'
+        : 'color-mix(in srgb, var(--status-success) 14%, transparent)',
       padding: '2px 8px',
       borderRadius: '4px',
       whiteSpace: 'nowrap',
@@ -303,7 +305,9 @@ export function ThreadConversation({ threadId }: { threadId: string }) {
           ...cardStyle,
           padding: '12px 14px',
           marginLeft: letter.form === 'UPLOAD' ? 0 : '28px',
-          borderLeft: letter.form === 'UPLOAD' ? '3px solid rgba(245,158,11,0.5)' : '3px solid rgba(16,185,129,0.5)',
+          borderLeft: letter.form === 'UPLOAD'
+            ? '3px solid color-mix(in srgb, var(--status-warning) 55%, transparent)'
+            : '3px solid color-mix(in srgb, var(--status-success) 55%, transparent)',
         }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -510,7 +514,7 @@ export default function CommentLetters() {
       )}
 
       {unavailable && (
-        <div role="alert" style={{ ...cardStyle, borderColor: 'rgba(245,158,11,0.4)', color: '#FBBF24', fontSize: '0.85rem', marginBottom: '16px' }}>
+        <div role="alert" style={{ ...cardStyle, borderColor: 'color-mix(in srgb, var(--status-warning) 40%, transparent)', color: 'var(--status-warning)', fontSize: '0.85rem', marginBottom: '16px' }}>
           <p>The letter corpus is not reachable right now.</p>
           <button type="button" className="secondary-btn" onClick={() => setBrowseReloadKey(key => key + 1)}>Retry letter corpus</button>
         </div>
