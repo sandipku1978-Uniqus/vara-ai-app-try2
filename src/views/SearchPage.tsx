@@ -1785,7 +1785,7 @@ export default function SearchPage() {
                 </div>
 
                 <div className="research-preview-frame-wrap">
-                  {previewError || selectedResult.primaryDocument.endsWith('.xml') ? (
+                  {previewError || /\.(xml|pdf)$/i.test(selectedPrimaryDocument) ? (
                     <div className="research-preview-fallback">
                       <FileText size={42} />
                       <h3>Inline preview unavailable</h3>

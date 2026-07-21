@@ -355,10 +355,13 @@ export function resolvePrimaryDocumentPath(cik: string, accessionNumber: string)
       );
       if (response.ok) {
         const listing = await response.json() as { directory?: { item?: Array<{ name?: string; size?: string }> } };
-        const htmlDocs = (listing.directory?.item || [])
-          .filter(item => /\.html?$/i.test(item.name || '') && !/index/i.test(item.name || ''))
-          .sort((a, b) => Number(b.size || 0) - Number(a.size || 0));
-        return htmlDocs[0]?.name || '';
+        const items = (listing.directory?.item || []).filter(item => !/index/i.test(item.name || ''));
+        const bySize = (docs: typeof items) => docs.sort((a, b) => Number(b.size || 0) - Number(a.size || 0));
+        const htmlDocs = bySize(items.filter(item => /\.html?$/i.test(item.name || '')));
+        if (htmlDocs[0]?.name) return htmlDocs[0].name;
+        // Comment letters and older submissions are often PDF-only.
+        const pdfDocs = bySize(items.filter(item => /\.pdf$/i.test(item.name || '')));
+        return pdfDocs[0]?.name || '';
       }
     } catch (error) {
       console.error('Primary document resolution failed:', error);

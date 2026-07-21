@@ -1245,14 +1245,16 @@ export default function FilingDetail() {
               </div>
             </div>
           )}
-          {primaryDoc.endsWith('.xml') || iframeError ? (
+          {/\.(xml|pdf)$/i.test(primaryDoc) || iframeError ? (
             <div className="iframe-fallback">
               <FileText size={48} style={{ color: 'var(--accent-blue)', marginBottom: '16px' }} />
               <h3>This document cannot be previewed inline</h3>
               <p style={{ color: 'var(--text-secondary)', marginBottom: '16px', maxWidth: '400px' }}>
-                {primaryDoc.endsWith('.xml')
+                {primaryDoc.toLowerCase().endsWith('.xml')
                   ? 'XML-based filings (Forms 3, 4, 5) use XSLT stylesheets that require the SEC viewer to render properly.'
-                  : 'The document failed to load in the embedded viewer.'}
+                  : primaryDoc.toLowerCase().endsWith('.pdf')
+                    ? 'This document was filed as a PDF — open it on SEC.gov to view it natively.'
+                    : 'The document failed to load in the embedded viewer.'}
               </p>
               <a href={secUrl} target="_blank" rel="noreferrer" className="primary-btn" style={{ textDecoration: 'none' }}>
                 <ExternalLink size={16} /> View on SEC.gov
@@ -1353,9 +1355,9 @@ export default function FilingDetail() {
                         </li>
                       ))}
                     </ul>
-                  ) : primaryDoc.endsWith('.xml') ? (
+                  ) : /\.(xml|pdf)$/i.test(primaryDoc) ? (
                     <div className="toc-empty" role="status">
-                      <p>Section navigation is unavailable for this XML filing.</p>
+                      <p>Section navigation is unavailable for this document format.</p>
                       <p className="toc-hint">The source filing remains available through the SEC.gov viewer.</p>
                     </div>
                   ) : tocInspectionError ? (
