@@ -34,7 +34,7 @@ import {
   buildSecProxyUrl,
   isPlaceholderPrimaryDocument,
   resolvePrimaryDocumentPath,
-  aliasTickerFor,
+  computeCompanySuggestions,
   getCompanyDirectory,
   type CompanyDirectoryEntry,
   type SearchCandidateCoverage,
@@ -489,35 +489,7 @@ export default function SearchPage() {
   }, []);
 
   useEffect(() => {
-    const trimmed = query.trim();
-    if (!trimmed || trimmed.split(/\s+/).length > 4 || companyDirectory.length === 0) {
-      setQuerySuggestions([]);
-      return;
-    }
-    const upper = trimmed.toUpperCase();
-    const lower = trimmed.toLowerCase();
-    const seen = new Set<string>();
-    const matches: CompanyDirectoryEntry[] = [];
-    const push = (entry: CompanyDirectoryEntry | undefined) => {
-      if (entry && !seen.has(entry.ticker)) {
-        seen.add(entry.ticker);
-        matches.push(entry);
-      }
-    };
-    push(companyDirectory.find(entry => entry.ticker === upper));
-    const alias = aliasTickerFor(upper);
-    if (alias) push(companyDirectory.find(entry => entry.ticker === alias));
-    for (const entry of companyDirectory) {
-      if (matches.length >= 8) break;
-      if (entry.ticker.startsWith(upper)) push(entry);
-    }
-    if (lower.length >= 3) {
-      for (const entry of companyDirectory) {
-        if (matches.length >= 8) break;
-        if (entry.title.toLowerCase().includes(lower)) push(entry);
-      }
-    }
-    setQuerySuggestions(matches.slice(0, 8));
+    setQuerySuggestions(computeCompanySuggestions(companyDirectory, query));
   }, [query, companyDirectory]);
 
   const selectedResult = useMemo(() => {

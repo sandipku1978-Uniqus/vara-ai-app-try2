@@ -1,5 +1,6 @@
 'use client';
 
+import EntitySearchInput from '../components/filters/EntitySearchInput';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { FileSearch, Search, Loader2, ExternalLink, TrendingUp } from 'lucide-react';
@@ -156,9 +157,12 @@ export default function ExhibitSearch() {
 
       <form onSubmit={event => { event.preventDefault(); void handleSearch(); }} style={{ display: 'flex', gap: '12px', marginBottom: '16px', alignItems: 'flex-end', flexWrap: 'wrap' }}>
         <div style={{ flex: '1 1 260px', maxWidth: '500px', minWidth: 0 }}>
-          <input value={filters.keyword} onChange={e => setFilters({ ...filters, keyword: e.target.value })} placeholder="Search exhibits..."
-            aria-label="Search exhibits"
-            style={{ width: '100%', padding: '8px 12px', background: 'var(--input-bg)', border: '1px solid var(--input-border)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '0.85rem', outline: 'none' }} />
+          <EntitySearchInput
+            value={filters.keyword}
+            onChange={text => setFilters({ ...filters, keyword: text })}
+            placeholder="Search exhibits..."
+            ariaLabel="Search exhibits"
+          />
         </div>
         <button type="submit" disabled={loading}
           style={{ padding: '8px 20px', background: 'var(--accent-primary)', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem' }}>

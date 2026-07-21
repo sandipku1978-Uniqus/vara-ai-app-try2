@@ -287,6 +287,44 @@ export async function getCompanyDirectory(): Promise<CompanyDirectoryEntry[]> {
 }
 
 /**
+ * Company suggestions for a free-text query: exact ticker, brand alias,
+ * ticker prefix, then title substring — the shared ranking every search bar
+ * uses. Returns nothing for text that doesn't read as a company.
+ */
+export function computeCompanySuggestions(
+  directory: CompanyDirectoryEntry[],
+  text: string,
+  limit = 8
+): CompanyDirectoryEntry[] {
+  const trimmed = text.trim();
+  if (!trimmed || trimmed.split(/\s+/).length > 4 || directory.length === 0) return [];
+  const upper = trimmed.toUpperCase();
+  const lower = trimmed.toLowerCase();
+  const seen = new Set<string>();
+  const matches: CompanyDirectoryEntry[] = [];
+  const push = (entry: CompanyDirectoryEntry | undefined) => {
+    if (entry && !seen.has(entry.ticker)) {
+      seen.add(entry.ticker);
+      matches.push(entry);
+    }
+  };
+  push(directory.find(entry => entry.ticker === upper));
+  const alias = aliasTickerFor(upper);
+  if (alias) push(directory.find(entry => entry.ticker === alias));
+  for (const entry of directory) {
+    if (matches.length >= limit) break;
+    if (entry.ticker.startsWith(upper)) push(entry);
+  }
+  if (lower.length >= 3) {
+    for (const entry of directory) {
+      if (matches.length >= limit) break;
+      if (entry.title.toLowerCase().includes(lower)) push(entry);
+    }
+  }
+  return matches.slice(0, limit);
+}
+
+/**
  * Brand names that don't match the SEC registrant name ("Google" filed as
  * Alphabet Inc.). Alias targets are re-validated against the live directory
  * at resolve time, so a delisting can never leave a dangling redirect.

@@ -1,5 +1,6 @@
 'use client';
 
+import EntitySearchInput from '../components/filters/EntitySearchInput';
 import { useState, useEffect, useCallback } from 'react';
 import { FileSearch, Scale, Link2, Search, Briefcase, Loader2 } from 'lucide-react';
 import { searchEdgarFilings, fetchFilingText } from '../services/secApi';
@@ -330,13 +331,18 @@ export default function MAResearch() {
                 <div className="search-bar-inline">
                   <Search size={16} className="search-bar-icon" />
                   <label className="sr-only" htmlFor="ma-entity-filter">Filter M&amp;A filings by entity name</label>
-                  <input
+                  <EntitySearchInput
                     id="ma-entity-filter"
-                    type="text"
-                    placeholder="Search deals by company (press Enter)..."
                     value={searchQuery}
-                    onChange={e => setSearchQuery(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter') searchDealsForEntity(searchQuery); }}
+                    onChange={setSearchQuery}
+                    placeholder="Search deals by company (press Enter)..."
+                    ariaLabel="Filter M&A filings by entity name"
+                    onSubmit={() => searchDealsForEntity(searchQuery)}
+                    onPick={entry => {
+                      setSearchQuery(entry.ticker);
+                      void searchDealsForEntity(entry.ticker);
+                    }}
+                    inputStyle={{ background: 'transparent', border: 'none', borderRadius: 0, padding: 0, fontSize: 'inherit' }}
                   />
                 </div>
               </div>

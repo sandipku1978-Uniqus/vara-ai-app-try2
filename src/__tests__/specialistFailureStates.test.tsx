@@ -16,6 +16,8 @@ vi.mock('../services/filingResearch', () => ({
 vi.mock('../services/secApi', () => ({
   searchEdgarFilings: mocks.searchEdgar,
   fetchFilingText: mocks.fetchFilingText,
+  getCompanyDirectory: async () => [],
+  computeCompanySuggestions: () => [],
 }));
 vi.mock('../services/aiApi', () => ({
   aiExtractDealDetails: mocks.extractDeal,
