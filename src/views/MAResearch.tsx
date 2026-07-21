@@ -3,7 +3,7 @@
 import EntitySearchInput from '../components/filters/EntitySearchInput';
 import { useState, useEffect, useCallback } from 'react';
 import { FileSearch, Scale, Link2, Search, Briefcase, Loader2 } from 'lucide-react';
-import { searchEdgarFilings, fetchFilingText } from '../services/secApi';
+import { searchEdgarFilings, fetchFilingText, buildSecFilingIndexUrl } from '../services/secApi';
 import { resolveEntityScope } from '../services/filingResearch';
 import { aiExtractDealDetails, aiExtractClauses, type DealDetailsResult } from '../services/aiApi';
 import ResultsToolbar from '../components/tables/ResultsToolbar';
@@ -428,7 +428,7 @@ export default function MAResearch() {
                         <td style={{ padding: '9px 12px', textAlign: 'right' }}>
                           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', justifyContent: 'flex-end' }}>
                             <a
-                              href={`https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&accession=${deal.accessionNumber}&type=${deal.formType}&dateb=&owner=include&count=1`}
+                              href={buildSecFilingIndexUrl(deal.cik, deal.accessionNumber)}
                               target="_blank"
                               rel="noreferrer"
                               style={{ color: 'var(--accent-primary)', fontSize: '0.75rem', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '4px', textDecoration: 'none' }}

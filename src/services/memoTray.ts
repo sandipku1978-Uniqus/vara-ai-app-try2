@@ -20,6 +20,7 @@ export interface MemoCitation {
   sourceUrl: string;        // canonical SEC.gov URL
   note: string;             // user's own annotation
   addedAt: string;
+  section?: string;         // optional: distinguishes two sections of one filing
 }
 
 const STORAGE_KEY = 'urc.memo.tray.v1';
@@ -89,16 +90,18 @@ export function getMemoCitations(): MemoCitation[] {
   return read();
 }
 
-export function citationId(cik: string, accessionNumber: string): string {
-  return `${cik}:${accessionNumber}`;
+// An optional section makes two distinct sections of the same filing two
+// distinct citations, instead of colliding to one.
+export function citationId(cik: string, accessionNumber: string, section?: string): string {
+  return section ? `${cik}:${accessionNumber}#${section}` : `${cik}:${accessionNumber}`;
 }
 
-export function isCited(cik: string, accessionNumber: string): boolean {
-  return read().some(item => item.id === citationId(cik, accessionNumber));
+export function isCited(cik: string, accessionNumber: string, section?: string): boolean {
+  return read().some(item => item.id === citationId(cik, accessionNumber, section));
 }
 
 export function addCitation(input: Omit<MemoCitation, 'id' | 'note' | 'addedAt'>): void {
-  const id = citationId(input.cik, input.accessionNumber);
+  const id = citationId(input.cik, input.accessionNumber, input.section);
   const existing = read();
   if (existing.some(item => item.id === id)) return;
   write([...existing, { ...input, id, note: '', addedAt: new Date().toISOString() }]);

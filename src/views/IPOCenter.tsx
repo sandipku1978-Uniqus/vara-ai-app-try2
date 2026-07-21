@@ -2,7 +2,7 @@
 
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { Rocket, TrendingUp, BarChart, BookOpen, Clock, Activity, Download, Settings, ChevronRight, Search, FileText, AlertCircle, Loader2, ArrowLeft, ExternalLink, Shield, DollarSign, Users, Briefcase, PieChart } from 'lucide-react';
-import { searchEdgarFilings, fetchEdgarSearchTotal, fetchFilingText, fetchCompanySubmissions, CIK_MAP, lookupCIKFlexible } from '../services/secApi';
+import { searchEdgarFilings, fetchEdgarSearchTotal, fetchFilingText, fetchCompanySubmissions, CIK_MAP, lookupCIKFlexible, buildSecFilingIndexUrl } from '../services/secApi';
 import { aiAnalyzeS1 } from '../services/aiApi';
 import { defaultSearchFilters } from '../components/filters/SearchFilterBar';
 import { buildCsv } from '../components/tables/ResultsToolbar';
@@ -352,8 +352,10 @@ export default function IPOCenter() {
   }, [analyzeSection]);
 
   const filingEvidenceReady = canAnalyzeIpoFilingEvidence(filingText, filingLoadError, loadingFiling);
-  const selectedFilingSourceUrl = selectedFiling
-    ? `https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&accession=${encodeURIComponent(selectedFiling.accessionNumber)}&type=${encodeURIComponent(selectedFiling.fileType)}&dateb=&owner=include&count=40`
+  // Reliable filing-index link (was a cgi-bin browse-edgar search that didn't
+  // resolve to the actual filing).
+  const selectedFilingSourceUrl = selectedFiling && selectedFiling.cik && selectedFiling.accessionNumber
+    ? buildSecFilingIndexUrl(selectedFiling.cik, selectedFiling.accessionNumber)
     : '';
 
   const runAnalysis = useCallback(async (section: string) => {

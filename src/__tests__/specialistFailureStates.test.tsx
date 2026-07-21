@@ -18,6 +18,7 @@ vi.mock('../services/secApi', () => ({
   fetchFilingText: mocks.fetchFilingText,
   getCompanyDirectory: async () => [],
   computeCompanySuggestions: () => [],
+  buildSecFilingIndexUrl: (cik: string, acc: string) => `https://www.sec.gov/Archives/edgar/data/${cik}/${acc}-index.htm`,
 }));
 vi.mock('../services/aiApi', () => ({
   aiExtractDealDetails: mocks.extractDeal,

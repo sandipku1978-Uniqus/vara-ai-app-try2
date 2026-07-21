@@ -374,6 +374,16 @@ export async function resolveCompanyInput(
 }
 
 /**
+ * Reliable link to a filing's index page — lists every document in the filing.
+ * Prefer this over cgi-bin/browse-edgar?accession=… which lands on a search
+ * page rather than the filing itself.
+ */
+export function buildSecFilingIndexUrl(cik: string | number, accessionNumber: string): string {
+  const cleanAccession = accessionNumber.replace(/-/g, '');
+  return `https://www.sec.gov/Archives/edgar/data/${Number(cik)}/${cleanAccession}/${accessionNumber}-index.htm`;
+}
+
+/**
  * True when a result's "primary document" is really the master.idx submission
  * path a facet-store row carries — an Archives URL built from it always 404s.
  */

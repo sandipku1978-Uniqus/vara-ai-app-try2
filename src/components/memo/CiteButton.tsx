@@ -14,7 +14,7 @@ interface CiteButtonProps {
 /** One shared cite control so every corpus feeds the same memo tray. */
 export default function CiteButton({ citation, compact = false, className = '' }: CiteButtonProps) {
   const citations = useMemoTray();
-  const id = citationId(citation.cik, citation.accessionNumber);
+  const id = citationId(citation.cik, citation.accessionNumber, citation.section);
   const cited = citations.some(item => item.id === id);
 
   return (
