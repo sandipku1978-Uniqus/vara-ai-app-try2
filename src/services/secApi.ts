@@ -287,6 +287,19 @@ export async function getCompanyDirectory(): Promise<CompanyDirectoryEntry[]> {
 }
 
 /**
+ * EDGAR full-text search matches on root_forms and silently corrupts the
+ * entire forms filter when any entry carries an amendment suffix — e.g.
+ * "8-K,10-K/A" returns ZERO hits where "8-K" alone returns many. Send
+ * deduped root forms only; amendments share their root in EFTS, and callers
+ * keep exact-form intent via client-side filtering.
+ */
+export function normalizeEftsForms(forms: string): string {
+  return Array.from(new Set(
+    forms.split(',').map(form => form.trim().replace(/\/A$/i, '')).filter(Boolean)
+  )).join(',');
+}
+
+/**
  * Company suggestions for a free-text query: exact ticker, brand alias,
  * ticker prefix, then title substring — the shared ranking every search bar
  * uses. Returns nothing for text that doesn't read as a company.
@@ -1303,7 +1316,7 @@ export async function searchEdgarFilings(
   const effectiveQuery = query.trim() || (entityName ? `"${entityName.trim()}"` : query);
   const baseParams = new URLSearchParams({
     q: effectiveQuery,
-    forms: forms,
+    forms: normalizeEftsForms(forms),
     dateRange: 'custom',
     startdt: startDate || EDGAR_FTS_FLOOR,
     enddt: endDate || new Date().toISOString().split('T')[0],

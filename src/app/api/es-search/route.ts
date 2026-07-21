@@ -19,6 +19,7 @@
 
 import { NextResponse } from 'next/server';
 import { canonicalizeAuditorInput } from '../../../services/auditors';
+import { normalizeEftsForms } from '../../../services/secApi';
 import { requireApiAccess } from '../../../lib/api-auth';
 import { isValidIsoDate, parseBoundedInteger } from '../../../lib/api-query';
 import {
@@ -83,7 +84,7 @@ async function fetchEftsCandidates(params: {
   requests: number;
 }> {
   const base = new URLSearchParams({ q: params.q });
-  if (params.forms) base.set('forms', params.forms);
+  if (params.forms) base.set('forms', normalizeEftsForms(params.forms));
   if (params.startdt || params.enddt) {
     base.set('dateRange', 'custom');
     if (params.startdt) base.set('startdt', params.startdt);

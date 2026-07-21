@@ -43,16 +43,21 @@ export default function ExhibitSearch() {
       setRecentLoading(true);
       setRecentError('');
       try {
+        // "Recent" means recent: bound the window and sort by date, or the
+        // relevance ranking surfaces years-old agreements first.
+        const windowStart = new Date();
+        windowStart.setDate(windowStart.getDate() - 60);
         const matches = await executeFilingResearchSearch({
           query: '',
-          filters: { ...defaultSearchFilters },
-          defaultForms: '10-K,10-K/A,8-K,S-1',
+          filters: { ...defaultSearchFilters, dateFrom: windowStart.toISOString().slice(0, 10) },
+          defaultForms: '10-K,10-K/A,8-K,S-1,S-4,DEFM14A,425',
           limit: 160,
           includeExhibits: true,
         });
         if (cancelled) return;
         setRecentItems(matches
           .filter(match => matchesDocumentTypePrefixes(match.documentType, ['EX-2.1', 'EX-10']))
+          .sort((a, b) => (b.fileDate || '').localeCompare(a.fileDate || ''))
           .slice(0, 8)
           .map(match => ({
           entityName: match.entityName,
@@ -80,21 +85,43 @@ export default function ExhibitSearch() {
 
   function toggleType(t: string) { setSelectedTypes(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]); }
 
+  // Deal documents (merger proxies, S-4s, 425s, tender offers) carry the
+  // acquisition agreements users search for — they must be in scope.
+  const EXHIBIT_SEARCH_FORMS = '10-K,10-K/A,8-K,8-K/A,S-1,S-1/A,DEF 14A,DEFM14A,S-4,S-4/A,425,SC TO-T,SC 13D';
+
   async function handleSearch() {
     setLoading(true); setSearched(true); setSearchError('');
     try {
-      const matches = await executeFilingResearchSearch({
+      const searchPass = (dateFrom?: string) => executeFilingResearchSearch({
         query: filters.keyword,
-        filters,
-        defaultForms: '10-K,10-K/A,8-K,S-1,S-1/A,DEF 14A',
+        filters: dateFrom && !filters.dateFrom ? { ...filters, dateFrom } : filters,
+        defaultForms: EXHIBIT_SEARCH_FORMS,
         limit: 250,
         includeExhibits: true,
         // The exhibits box is predominantly a company filter ("Organon",
         // "sun pharma") — resolve lowercase names/tickers to issuer scope
         entityScope: 'aggressive',
       });
+
+      // Recency-first collection: EFTS ranks by relevance, so a full-history
+      // pass lets strong old matches crowd out this year's deal documents.
+      // Search the trailing 24 months first, then widen to full history and
+      // merge, so both the latest agreements and the archive surface.
+      const windowStart = new Date();
+      windowStart.setMonth(windowStart.getMonth() - 24);
+      const recentPass = await searchPass(windowStart.toISOString().slice(0, 10));
+      const fullPass = filters.dateFrom ? [] : await searchPass(undefined);
+      const seen = new Set<string>();
+      const matches = [...recentPass, ...fullPass].filter(match => {
+        const key = `${match.accessionNumber}:${match.documentType}:${match.description}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+
       setResults(matches
         .filter(match => matchesDocumentTypePrefixes(match.documentType, selectedTypes))
+        .sort((a, b) => (b.fileDate || '').localeCompare(a.fileDate || ''))
         .slice(0, 50)
         .map(match => ({
         entityName: match.entityName,

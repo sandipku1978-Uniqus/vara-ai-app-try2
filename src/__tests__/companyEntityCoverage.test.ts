@@ -102,3 +102,12 @@ describe('brand aliases — household names that file under another registrant',
     expect(aliasTickerFor('apple')).toBeNull();
   });
 });
+
+describe('EFTS forms normalization', () => {
+  test('amendment suffixes are stripped and deduped — a /A entry poisons the whole EFTS filter', async () => {
+    const { normalizeEftsForms } = await import('../services/secApi');
+    expect(normalizeEftsForms('10-K,10-K/A,8-K,8-K/A,S-1,S-1/A,DEF 14A,DEFM14A,S-4,S-4/A,425')).toBe('10-K,8-K,S-1,DEF 14A,DEFM14A,S-4,425');
+    expect(normalizeEftsForms('8-K')).toBe('8-K');
+    expect(normalizeEftsForms('')).toBe('');
+  });
+});
