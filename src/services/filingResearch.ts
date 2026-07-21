@@ -125,6 +125,14 @@ export async function resolveEntityScope(
   const words = trimmed.split(/\s+/);
   if (words.length < 2) return { entityName: '', cik: '', query: trimmed };
 
+  // Standard citation, not a company: a short all-caps token followed by a
+  // number is an accounting/reporting standard (ASC 842, ASU 2023-09,
+  // IFRS 16, SFAS 141). "ASC" is also a real ticker (Ardmore Shipping), so
+  // without this guard "ASC 842 adoption" hijacks into a company search.
+  if (/^[A-Z]{2,5}$/.test(words[0]) && /^\d/.test(words[1])) {
+    return { entityName: '', cik: '', query: trimmed };
+  }
+
   // Longest leading multi-word company name ("sun pharma advanced 8-K")
   for (let take = Math.min(4, words.length - 1); take >= 2; take--) {
     const lead = await resolveCompanyInput(words.slice(0, take).join(' '));

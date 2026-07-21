@@ -153,7 +153,7 @@ export default function ExemptOfferings() {
           <DataTable columns={columns} data={results} pageSize={25} />
         </>
       ) : searched ? (
-        <div style={{ textAlign: 'center', padding: '28px 16px', color: 'var(--text-muted)' }}>No Form D filings found.</div>
+        <div style={{ textAlign: 'center', padding: '28px 16px', color: 'var(--text-muted)' }}>No Form D filings found. Form D filings carry almost no full text, so search works best by issuer — type a company name and pick it from the suggestions (e.g. Blue Owl Capital), rather than a generic keyword.</div>
       ) : (
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '10px' }}>
