@@ -746,11 +746,11 @@ export default function Benchmarking() {
     if (value == null) return '#475569';
     if (higherIsBetter) {
       if (value >= thresholds.green) return '#34D399';
-      if (value >= thresholds.amber) return '#FBBF24';
+      if (value >= thresholds.amber) return 'var(--status-warning)';
       return '#F87171';
     } else {
       if (value <= thresholds.green) return '#34D399';
-      if (value <= thresholds.amber) return '#FBBF24';
+      if (value <= thresholds.amber) return 'var(--status-warning)';
       return '#F87171';
     }
   };

@@ -182,7 +182,7 @@ export default function CommandPalette() {
                 padding: '10px 16px', background: index === highlighted ? 'rgba(179,31,126,0.18)' : 'transparent',
                 border: 'none', cursor: 'pointer',
               }}>
-              {item.kind === 'company' ? <Building2 size={15} style={{ color: '#F9A8D4' }} />
+              {item.kind === 'company' ? <Building2 size={15} style={{ color: 'var(--accent-soft)' }} />
                 : item.kind === 'search' ? <FileSearch size={15} style={{ color: 'var(--text-muted)' }} />
                 : <Navigation size={15} style={{ color: 'var(--text-muted)' }} />}
               <span style={{ color: 'var(--text-primary)', fontSize: '0.85rem', flex: 1 }}>{item.label}</span>
