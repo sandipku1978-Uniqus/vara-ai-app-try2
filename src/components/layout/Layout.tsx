@@ -119,13 +119,16 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen: boolean; on
         </button>
       )}
       <div className="sidebar-logo">
-        {visuallyCollapsed ? (
-          <div className="sidebar-brand-mark-shell" aria-label={BRAND.parentName} title={BRAND.parentName}>
-            <URCBrandMark size={28} tone={brandTone} className="sidebar-brand-mark" />
-          </div>
-        ) : (
-          <URCBrandLockup size={22} compact tone={brandTone} showParent className="sidebar-brand-lockup" />
-        )}
+        {/* The logo links home, as users expect. */}
+        <Link href="/dashboard" className="sidebar-logo-link" aria-label={`${BRAND.productName} — go to dashboard`} onClick={onMobileClose}>
+          {visuallyCollapsed ? (
+            <div className="sidebar-brand-mark-shell" title={BRAND.parentName}>
+              <URCBrandMark size={28} tone={brandTone} className="sidebar-brand-mark" />
+            </div>
+          ) : (
+            <URCBrandLockup size={22} compact tone={brandTone} showParent className="sidebar-brand-lockup" />
+          )}
+        </Link>
         <button
           type="button"
           className="sidebar-toggle-btn"
@@ -183,9 +186,15 @@ export function Navbar({ mobileNavOpen, onMobileNavToggle, menuButtonRef }: { mo
   const brandTone = themeMode === 'dark' ? 'light' : 'dark';
   const { isSignedIn, isLoaded } = useUser();
   const [mounted, setMounted] = useState(false);
+  // Platform-correct shortcut glyph — ⌘ on Mac, Ctrl elsewhere. Resolved
+  // after mount to avoid a hydration mismatch; ⌘ until then.
+  const [isMac, setIsMac] = useState(true);
 
   useEffect(() => {
     setMounted(true);
+    if (typeof navigator !== 'undefined') {
+      setIsMac(/Mac|iPhone|iPad|iPod/i.test(navigator.platform || navigator.userAgent));
+    }
   }, []);
 
   useEffect(() => {
@@ -229,7 +238,7 @@ export function Navbar({ mobileNavOpen, onMobileNavToggle, menuButtonRef }: { mo
           >
             <Search size={16} aria-hidden="true" />
             <span>Quick find</span>
-            <kbd>⌘K</kbd>
+            <kbd>{isMac ? '⌘K' : 'Ctrl K'}</kbd>
           </button>
         )}
         {/* Label, icon, and subtext all advertise the DESTINATION (what the

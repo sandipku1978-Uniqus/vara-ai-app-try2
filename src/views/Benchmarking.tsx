@@ -1083,11 +1083,11 @@ Keep it crisp and practical.`;
                   className="add-ticker-btn"
                   onClick={handleQuickPeerGroup}
                   disabled={peerLoading || selectedTickers.length === 0}
-                  title="Auto-add companies with same SIC code"
+                  title="Add companies sharing the first company's SIC industry"
                   style={{ whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '4px' }}
                 >
                   {peerLoading ? <Loader2 size={14} className="spinner" /> : <Users size={14} />}
-                  Peer Group
+                  Add industry peers
                 </button>
               </div>
             )}

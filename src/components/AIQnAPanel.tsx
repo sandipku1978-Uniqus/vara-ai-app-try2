@@ -260,6 +260,14 @@ export function AIQnAPanel() {
   const [panelWidth, setPanelWidth] = useState<number | null>(null);
   const isResizing = useRef(false);
   const processingRequestIdRef = useRef<string | null>(null);
+  const messageInputRef = useRef<HTMLInputElement>(null);
+
+  // A pill fills the composer with a draft and focuses it, so it reads as
+  // "edit, then send" rather than a message that was already sent.
+  const fillComposer = useCallback((text: string) => {
+    setInputValue(text);
+    requestAnimationFrame(() => messageInputRef.current?.focus());
+  }, []);
   const executePromptRef = useRef<((prompt: string) => Promise<void>) | null>(null);
   const panelBodyRef = useRef<HTMLDivElement>(null);
 
@@ -952,7 +960,7 @@ export function AIQnAPanel() {
                   <div className="section-label">Follow-ups</div>
                   <div className="suggestion-list">
                     {suggestions.slice(0, 4).map(suggestion => (
-                      <button key={suggestion} className="suggestion-pill" onClick={() => setInputValue(suggestion)}>
+                      <button key={suggestion} className="suggestion-pill" title="Fill the message box — edit if you like, then press Enter" onClick={() => fillComposer(suggestion)}>
                         {suggestion}
                       </button>
                     ))}
@@ -1043,7 +1051,7 @@ export function AIQnAPanel() {
                 <div className="section-label">{category}</div>
                 <div className="suggestion-list">
                   {SAMPLE_PROMPTS.filter(p => p.category === category).slice(0, 3).map(sp => (
-                    <button key={sp.label} className="suggestion-pill" onClick={() => setInputValue(sp.prompt)} title={sp.prompt}>
+                    <button key={sp.label} className="suggestion-pill" onClick={() => fillComposer(sp.prompt)} title={sp.prompt}>
                       {sp.label}
                     </button>
                   ))}
@@ -1058,6 +1066,7 @@ export function AIQnAPanel() {
 
       <form className="ai-input-area" onSubmit={handleSend}>
         <input
+          ref={messageInputRef}
           type="text"
           aria-label={`Message ${BRAND.copilotName}`}
           value={inputValue}

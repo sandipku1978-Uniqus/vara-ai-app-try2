@@ -171,15 +171,18 @@ export default function IPOCenter() {
   const [runningAllAnalyses, setRunningAllAnalyses] = useState(false);
   const runningAllAnalysesRef = useRef(false);
 
-  const handleSearch = useCallback(async () => {
-    if (!searchQuery.trim()) return;
+  const handleSearch = useCallback(async (overrideQuery?: string) => {
+    // Accept an explicit query so quick-search pills can run immediately
+    // without waiting for the setState round-trip (stale-closure guard).
+    const activeQuery = (typeof overrideQuery === 'string' ? overrideQuery : searchQuery).trim();
+    if (!activeQuery) return;
     setSearching(true);
     setSearchAttempted(true);
     setSearchError('');
     setSearchResults([]);
     try {
       // Try EDGAR full-text search
-      const hits = await searchEdgarFilings(searchQuery, 'S-1,S-1/A,F-1,F-1/A');
+      const hits = await searchEdgarFilings(activeQuery, 'S-1,S-1/A,F-1,F-1/A');
 
       if (hits.length > 0) {
         // Deduplicate by accession number, keeping only main S-1/S-1A documents
@@ -215,8 +218,8 @@ export default function IPOCenter() {
         setSearchResults(filings);
       } else {
         // Fallback: check if user entered a ticker and search submissions
-        const ticker = searchQuery.trim().toUpperCase();
-        const cik = CIK_MAP[ticker] || await lookupCIKFlexible(searchQuery.trim());
+        const ticker = activeQuery.toUpperCase();
+        const cik = CIK_MAP[ticker] || await lookupCIKFlexible(activeQuery);
         if (cik) {
           const submissions = await fetchCompanySubmissions(cik);
           if (submissions) {
@@ -529,7 +532,7 @@ export default function IPOCenter() {
                     onKeyDown={e => e.key === 'Enter' && handleSearch()}
                   />
                 </div>
-                <button type="button" className="primary-btn" onClick={handleSearch} disabled={searching}>
+                <button type="button" className="primary-btn" onClick={() => void handleSearch()} disabled={searching}>
                   {searching ? <><Loader2 size={16} className="spin" /> Searching...</> : <>Search EDGAR</>}
                 </button>
               </div>
@@ -537,7 +540,7 @@ export default function IPOCenter() {
               <div className="s1-quick-tickers">
                 <span>Quick search:</span>
                 {['Reddit', 'Arm Holdings', 'Rubrik', 'Instacart', 'DoorDash'].map(name => (
-                  <button type="button" key={name} className="s1-ticker-pill" onClick={() => { setSearchQuery(name); setSearchAttempted(false); setSearchError(''); }}>
+                  <button type="button" key={name} className="s1-ticker-pill" onClick={() => { setSearchQuery(name); setSearchError(''); void handleSearch(name); }}>
                     {name}
                   </button>
                 ))}

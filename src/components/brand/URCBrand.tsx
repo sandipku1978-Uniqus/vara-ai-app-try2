@@ -51,7 +51,10 @@ export function URCBrandLockup({
   const logoHeight = size + 10;
   const logoSource = tone === 'light' ? uniqLogoMark : uniqLogoColor;
   const logoWidth = Math.max(1, Math.round((logoSource.width / logoSource.height) * logoHeight));
-  const productLine = BRAND.productName.replace(`${BRAND.parentName} `, '');
+  // Show the full product name ("Uniqus Research Center") rather than stripping
+  // the parent — for an internal launch the firm's name belongs in the wordmark,
+  // not only implied by the logo mark.
+  const productLine = BRAND.productName;
   const supportingLine = 'SEC intelligence platform';
 
   return (
