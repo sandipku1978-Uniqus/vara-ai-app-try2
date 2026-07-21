@@ -401,3 +401,25 @@
   margin: var(--el-space-3);
   color: var(--el-ink-secondary);
 }
+
+/* Preview pane: cited-excerpt treatment — serif source text on a ruled
+   quote block instead of a gradient chip. */
+.el-scope .research-selected-snippet {
+  background: var(--el-surface-sunken);
+  border: 1px solid var(--el-rule);
+  border-left: 3px solid var(--el-plum);
+  border-radius: var(--el-radius-control);
+}
+.el-scope .research-selected-snippet > div:last-child {
+  font-family: var(--el-font-source);
+  font-size: var(--el-text-md);
+  line-height: 1.6;
+  color: var(--el-ink-secondary);
+}
+.el-scope .selected-match-label {
+  font-size: var(--el-text-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--el-ink-muted);
+}

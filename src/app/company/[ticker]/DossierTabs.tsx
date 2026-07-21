@@ -36,9 +36,9 @@ interface ThreadSummary {
 }
 
 const cardStyle: React.CSSProperties = {
-  backgroundColor: 'var(--surface-panel)',
+  backgroundColor: 'var(--bg-elevated)',
   border: '1px solid var(--border-color)',
-  borderRadius: 12,
+  borderRadius: 6,
 };
 
 const KEY_METRICS: Array<{ key: string; label: string }> = [
