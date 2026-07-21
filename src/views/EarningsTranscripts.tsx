@@ -9,6 +9,7 @@ import ResultsToolbar from '../components/tables/ResultsToolbar';
 import AskCopilotButton from '../components/tables/AskCopilotButton';
 import AIResultsSummary from '../components/tables/AIResultsSummary';
 import SearchFilterBar, { type SearchFilters, defaultSearchFilters } from '../components/filters/SearchFilterBar';
+import { resolveCompanyInput } from '../services/secApi';
 import {
   executeFilingResearchSearch,
   matchesDocumentTypePrefixes,
@@ -86,14 +87,22 @@ export default function EarningsTranscripts() {
         ['8-K', '8-K/A', '6-K']
       );
       const requestedExhibits = exhibitTypes.length > 0 ? exhibitTypes : ['EX-99.1'];
-      const executionFilters = { ...filters, formTypes: parentForms };
+      // A company keyword ("nvidia") must scope the issuer AND keep the
+      // earnings text term. If it were passed as the query, entity resolution
+      // would consume it whole and leave an empty text search — which misses
+      // the EX-99.1 earnings press releases entirely. So resolve the company
+      // to an explicit entity filter and keep "earnings results" as the query.
+      const typedCompany = filters.keyword.trim() ? await resolveCompanyInput(filters.keyword.trim()) : null;
+      const executionFilters = typedCompany
+        ? { ...filters, formTypes: parentForms, entityName: typedCompany.title }
+        : { ...filters, formTypes: parentForms };
+      const executionQuery = typedCompany ? 'earnings results' : (filters.keyword || 'earnings results');
       const matches = await executeFilingResearchSearch({
-        query: filters.keyword || 'earnings results',
+        query: executionQuery,
         filters: executionFilters,
         defaultForms: parentForms.join(','),
         limit: 250,
         includeExhibits: true,
-        // Users mostly type company names here — resolve lowercase too
         entityScope: 'aggressive',
       });
       setResults(matches
