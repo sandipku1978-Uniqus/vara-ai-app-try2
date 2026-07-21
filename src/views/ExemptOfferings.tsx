@@ -128,10 +128,14 @@ export default function ExemptOfferings() {
 
       <SearchFilterBar config={{
         showEntityName: true, showDateRange: true,
-        showSIC: true, showExchange: true,
+        showSIC: true,
         showStateOfInc: true, showHeadquarters: true,
         showAccessionNumber: true,
       }} filters={filters} onChange={setFilters} onSearch={handleSearch} loading={loading} />
+
+      <p style={{ color: 'var(--text-muted)', margin: '2px 0 12px', fontSize: '0.76rem', lineHeight: 1.4 }}>
+        Form D issuers are private companies raising exempt capital, so exchange listing does not apply and industry (SIC) is only present where the issuer has reported one to EDGAR. Filter on those fields narrows to issuers that carry the facet — it will not surface issuers whose filings omit it.
+      </p>
 
       {loading ? (
         <div role="status" style={{ textAlign: 'center', padding: '28px 16px', color: 'var(--text-muted)' }}><Loader2 size={22} className="spinner" style={{ marginBottom: '6px' }} /><div>Searching Form D filings...</div></div>

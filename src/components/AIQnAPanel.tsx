@@ -659,7 +659,13 @@ export function AIQnAPanel() {
           }
 
           if (action.type === 'summarize_result_set') {
-            appendAgentLog(runId, { actionId: action.id, type: action.type, title: action.title, detail: 'Queued the current evidence for summarization.', status: 'completed' });
+            const resultCount = runtime.searchResults.length;
+            if (resultCount === 0) {
+              appendAgentLog(runId, { actionId: action.id, type: action.type, title: action.title, detail: 'No result set was loaded, so there was nothing to summarize.', status: 'skipped' });
+              continue;
+            }
+            runtime.findings.push(`Summarized the current result set of ${resultCount} filing${resultCount === 1 ? '' : 's'}.`);
+            appendAgentLog(runId, { actionId: action.id, type: action.type, title: action.title, detail: `Summarized the ${resultCount} filing${resultCount === 1 ? '' : 's'} in the current result set — see the summary above the findings.`, status: 'completed' });
             continue;
           }
 
@@ -689,7 +695,7 @@ export function AIQnAPanel() {
           }
 
           if (action.type === 'save_alert') {
-            appendAgentLog(runId, { actionId: action.id, type: action.type, title: action.title, detail: 'Persistent changes require confirmation, so the alert remains in draft until you click Save.', status: 'skipped' });
+            appendAgentLog(runId, { actionId: action.id, type: action.type, title: action.title, detail: 'Saving an alert is a persistent change, so it needs your confirmation — the alert stays in draft until you click “Save Alert”.', status: 'skipped' });
             continue;
           }
 

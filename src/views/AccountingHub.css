@@ -345,6 +345,21 @@
   margin-left: auto;
 }
 
+.checklist-undo-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
+  font-size: 0.85rem;
+}
+
 .accounting-empty-state {
   grid-column: 1 / -1;
   padding: 16px;

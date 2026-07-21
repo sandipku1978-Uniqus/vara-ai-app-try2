@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { BookOpen, CheckSquare, Sparkles, Search, ChevronRight, Pencil, Trash2, Loader2, BellRing, Building2 } from 'lucide-react';
@@ -95,6 +95,8 @@ export default function AccountingHub() {
   const [newChecklistText, setNewChecklistText] = useState('');
   const [editingChecklistId, setEditingChecklistId] = useState<number | null>(null);
   const [editingChecklistText, setEditingChecklistText] = useState('');
+  const [deletedChecklistItem, setDeletedChecklistItem] = useState<{ item: ChecklistItem; index: number } | null>(null);
+  const undoTimerRef = useRef<number | null>(null);
 
   const filteredFasbTopics = useMemo(
     () => filterCuratedAscTopics(standardsQuery),
@@ -316,6 +318,30 @@ Write a concise memo with:
     setEditingChecklistId(null);
     setEditingChecklistText('');
   };
+
+  const removeChecklistItem = (id: number) => {
+    const index = checklistItems.findIndex(item => item.id === id);
+    if (index === -1) return;
+    const item = checklistItems[index];
+    setChecklistItems(prev => prev.filter(candidate => candidate.id !== id));
+    setDeletedChecklistItem({ item, index });
+    if (undoTimerRef.current) window.clearTimeout(undoTimerRef.current);
+    undoTimerRef.current = window.setTimeout(() => setDeletedChecklistItem(null), 8000);
+  };
+
+  const undoRemoveChecklistItem = () => {
+    if (!deletedChecklistItem) return;
+    const { item, index } = deletedChecklistItem;
+    setChecklistItems(prev => {
+      const next = prev.slice();
+      next.splice(Math.min(index, next.length), 0, item);
+      return next;
+    });
+    setDeletedChecklistItem(null);
+    if (undoTimerRef.current) window.clearTimeout(undoTimerRef.current);
+  };
+
+  useEffect(() => () => { if (undoTimerRef.current) window.clearTimeout(undoTimerRef.current); }, []);
 
   return (
     <div className="accounting-hub-container">
@@ -625,11 +651,17 @@ Write a concise memo with:
                       )}
                       <div className="checklist-item-actions">
                         <button type="button" className="icon-btn" aria-label={`Edit ${item.text}`} onClick={() => { setEditingChecklistId(item.id); setEditingChecklistText(item.text); }}><Pencil size={16} /></button>
-                        <button type="button" className="icon-btn" aria-label={`Delete ${item.text}`} onClick={() => setChecklistItems(prev => prev.filter(candidate => candidate.id !== item.id))}><Trash2 size={16} /></button>
+                        <button type="button" className="icon-btn" aria-label={`Delete ${item.text}`} onClick={() => removeChecklistItem(item.id)}><Trash2 size={16} /></button>
                       </div>
                     </li>
                   ))}
                 </ul>
+                {deletedChecklistItem && (
+                  <div role="status" className="checklist-undo-bar">
+                    <span>Removed “{deletedChecklistItem.item.text}”.</span>
+                    <button type="button" className="secondary-btn sm" onClick={undoRemoveChecklistItem}>Undo</button>
+                  </div>
+                )}
               </div>
             </div>
           )}

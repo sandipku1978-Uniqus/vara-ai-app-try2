@@ -26,6 +26,7 @@ export default function MemoTray() {
   const [drafting, setDrafting] = useState(false);
   const [draftError, setDraftError] = useState('');
   const [copied, setCopied] = useState<'citations' | 'draft' | ''>('');
+  const [copyError, setCopyError] = useState('');
 
   const draft = draftRecord?.text || '';
   const draftIsStale = Boolean(
@@ -34,12 +35,14 @@ export default function MemoTray() {
   );
 
   const copyText = useCallback(async (text: string, which: 'citations' | 'draft') => {
+    setCopyError('');
     try {
       await navigator.clipboard.writeText(text);
       setCopied(which);
       window.setTimeout(() => setCopied(''), 1800);
     } catch {
       setCopied('');
+      setCopyError('Clipboard access was blocked by the browser. Use “Export .md” to save the memo, or select the text manually and copy it (⌘/Ctrl+C).');
     }
   }, []);
 
@@ -187,6 +190,7 @@ export default function MemoTray() {
                 </button>
               </div>
 
+              {copyError && <div role="alert" className="el-state el-state-error memo-tray-empty">{copyError}</div>}
               {draftError && <div className="el-state el-state-error memo-tray-empty">{draftError}</div>}
               {draft && (
                 <div className="memo-tray-draft">
