@@ -98,7 +98,7 @@ export default function MAResearch() {
             primaryDocument: idParts.length > 1 ? idParts[1] : '',
           });
         }
-      setDealFilings(filings);
+      setDealFilings(filings.sort((a, b) => (b.fileDate || '').localeCompare(a.fileDate || '')));
     } catch (error) {
       console.error('M&A deal screener error:', error);
       setDealFilings([]);
@@ -151,7 +151,7 @@ export default function MAResearch() {
           primaryDocument: idParts.length > 1 ? idParts[1] : '',
         });
       }
-      setDealFilings(filings);
+      setDealFilings(filings.sort((a, b) => (b.fileDate || '').localeCompare(a.fileDate || '')));
     } catch (error) {
       console.error('M&A entity deal search error:', error);
       setDealError('The entity deal search could not reach SEC EDGAR. No empty-result conclusion can be drawn.');

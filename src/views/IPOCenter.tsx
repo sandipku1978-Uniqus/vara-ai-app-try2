@@ -131,7 +131,7 @@ export default function IPOCenter() {
           primaryDocument: src?.primary_document || (idParts.length > 2 ? idParts.slice(2).join(':') : idParts[1] || ''),
         });
       }
-      setPipelineIPOs(filings);
+      setPipelineIPOs(filings.sort((a, b) => (b.fileDate || '').localeCompare(a.fileDate || '')));
       setPipelineTotal(total);
     } catch (error) {
       console.error('IPO pipeline load error:', error);

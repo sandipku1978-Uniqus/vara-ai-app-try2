@@ -98,6 +98,7 @@ export default function EarningsTranscripts() {
       });
       setResults(matches
         .filter(match => matchesDocumentTypePrefixes(match.documentType, requestedExhibits))
+        .sort((a, b) => (b.fileDate || '').localeCompare(a.fileDate || ''))
         .slice(0, 50)
         .map(match => ({
         entityName: match.entityName,

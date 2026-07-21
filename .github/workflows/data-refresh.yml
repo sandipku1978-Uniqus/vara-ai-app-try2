@@ -52,6 +52,13 @@ jobs:
           URC_SUPABASE_URL: ${{ secrets.URC_SUPABASE_URL }}
           URC_SUPABASE_SERVICE_KEY: ${{ secrets.URC_SUPABASE_SERVICE_KEY }}
 
+      - name: Ingest new comment letters (UPLOAD/CORRESP metadata)
+        run: npx tsx data-pipeline/ingest-letters.ts --since "$METADATA_SINCE_DAYS"
+        env:
+          METADATA_SINCE_DAYS: ${{ github.event.inputs.metadata_since_days || '3' }}
+          URC_SUPABASE_URL: ${{ secrets.URC_SUPABASE_URL }}
+          URC_SUPABASE_SERVICE_KEY: ${{ secrets.URC_SUPABASE_SERVICE_KEY }}
+
       - name: Enrich company SIC/state (incremental, self-completing)
         run: npx tsx data-pipeline/enrich-companies.ts --sic --limit 2000
         env:

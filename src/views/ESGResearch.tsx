@@ -234,7 +234,7 @@ export default function ESGResearch() {
           });
         }
 
-        if (!cancelled) setEarningsReleases(releases);
+        if (!cancelled) setEarningsReleases(releases.sort((a, b) => (b.date || '').localeCompare(a.date || '')));
       } catch (error) {
         console.error('Earnings releases error:', error);
         if (!cancelled) setEarningsError('Unable to load recent 8-K filing metadata from SEC EDGAR.');
