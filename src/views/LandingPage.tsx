@@ -365,17 +365,12 @@ export default function LandingPage() {
             </button>
           </form>
 
+          {/* One primary action (the search above) and one "learn more" link.
+              Task-based entry points (Dashboard, IPO) live in the closing
+              section, so the hero doesn't compete with itself. */}
           <div className="landing-actions">
-            <button
-              type="button"
-              className="landing-secondary-button"
-              onClick={() => navigate.push('/dashboard')}
-            >
-              <LayoutDashboard size={16} />
-              Open Dashboard
-            </button>
             <button type="button" className="landing-link-button" onClick={scrollToCapabilities}>
-              Explore Platform Coverage
+              See what it covers
               <ChevronRight size={16} />
             </button>
           </div>
@@ -506,7 +501,7 @@ export default function LandingPage() {
               onClick={() => navigate.push('/search')}
             >
               <Search size={16} />
-              Start in Research
+              Open Research Workbench
             </button>
             <button
               type="button"
@@ -514,7 +509,7 @@ export default function LandingPage() {
               onClick={() => navigate.push('/dashboard')}
             >
               <LayoutDashboard size={16} />
-              View Dashboard
+              Go to Dashboard
             </button>
             <button
               type="button"

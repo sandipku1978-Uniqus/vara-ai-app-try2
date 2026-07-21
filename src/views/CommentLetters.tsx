@@ -544,7 +544,7 @@ export default function CommentLetters() {
         </div>
         <div style={{ display: 'flex', gap: '6px' }}>
           {([['', 'All'], ['UPLOAD', 'Staff letters'], ['CORRESP', 'Responses']] as const).map(([value, label]) => (
-            <button key={value} type="button" aria-pressed={formFilter === value} onClick={() => { setFormFilter(value); if (searched && keyword.trim()) runSearch(keyword, value, companyFilter); }}
+            <button key={value} type="button" aria-pressed={formFilter === value} onClick={() => { setFormFilter(value); if (searched && (keyword.trim() || companyFilter.trim())) runSearch(keyword, value, companyFilter); }}
               style={{
                 padding: '5px 9px', borderRadius: '4px', fontSize: '0.76rem', cursor: 'pointer',
                 border: '1px solid ' + (formFilter === value ? 'var(--accent-primary)' : 'var(--input-border)'),

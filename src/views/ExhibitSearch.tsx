@@ -1,7 +1,7 @@
 'use client';
 
 import EntitySearchInput from '../components/filters/EntitySearchInput';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { FileSearch, Search, Loader2, ExternalLink, TrendingUp } from 'lucide-react';
 import DataTable, { type ColumnDef } from '../components/tables/DataTable';
@@ -28,7 +28,13 @@ export default function ExhibitSearch() {
   const navigate = useRouter();
   const [filters, setFilters] = useState<SearchFilters>({ ...defaultSearchFilters });
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
-  const [results, setResults] = useState<ExhibitRow[]>([]);
+  // Hold the full fetched set; the displayed rows derive from it, so toggling
+  // an exhibit-type chip re-filters instantly without re-fetching.
+  const [rawResults, setRawResults] = useState<ExhibitRow[]>([]);
+  const results = useMemo(
+    () => rawResults.filter(row => matchesDocumentTypePrefixes(row.documentType, selectedTypes)).slice(0, 50),
+    [rawResults, selectedTypes]
+  );
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   const [recentItems, setRecentItems] = useState<ExhibitRow[]>([]);
@@ -119,10 +125,12 @@ export default function ExhibitSearch() {
         return true;
       });
 
-      setResults(matches
-        .filter(match => matchesDocumentTypePrefixes(match.documentType, selectedTypes))
+      // Store all exhibit rows (every type); the chip filter is applied to the
+      // derived `results`, so chips re-filter without another EFTS round-trip.
+      setRawResults(matches
+        .filter(match => matchesDocumentTypePrefixes(match.documentType, []))
         .sort((a, b) => (b.fileDate || '').localeCompare(a.fileDate || ''))
-        .slice(0, 50)
+        .slice(0, 200)
         .map(match => ({
         entityName: match.entityName,
         fileDate: match.fileDate,
@@ -133,7 +141,7 @@ export default function ExhibitSearch() {
         primaryDocument: match.primaryDocument,
         description: match.description,
       })));
-    } catch (err) { console.error(err); setResults([]); setSearchError('The SEC exhibit search failed. Retry the same criteria or narrow the date range.'); }
+    } catch (err) { console.error(err); setRawResults([]); setSearchError('The SEC exhibit search failed. Retry the same criteria or narrow the date range.'); }
     finally { setLoading(false); }
   }
 
