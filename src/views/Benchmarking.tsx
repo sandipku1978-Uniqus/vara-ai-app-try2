@@ -12,6 +12,7 @@ import ResponsibleAIBanner from '../components/ResponsibleAIBanner';
 import { renderMarkdown } from '../utils/markdownRenderer';
 import { DisclosureMatrix } from '../components/research/DisclosureMatrix';
 import CompanySearchInput from '../components/filters/CompanySearchInput';
+import SicSearchInput from '../components/filters/SicSearchInput';
 import SectionMatrix, { type MatrixCell } from '../components/tables/SectionMatrix';
 import { useApp } from '../context/AppState';
 import './Benchmarking.css';
@@ -913,18 +914,10 @@ Keep it crisp and practical.`;
             </p>
           </div>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-            <input
+            <SicSearchInput
               value={peerSicCode}
-              onChange={e => setPeerSicCode(e.target.value.replace(/[^\d]/g, '').slice(0, 4))}
-              placeholder="SIC code"
-              style={{
-                padding: '8px 10px',
-                minWidth: '120px',
-                background: 'var(--input-bg)',
-                border: '1px solid var(--input-border)',
-                borderRadius: '8px',
-                color: 'var(--text-primary)',
-              }}
+              onChange={setPeerSicCode}
+              ariaLabel="Peer group industry (SIC code or name)"
             />
             <button
               className="add-ticker-btn"
