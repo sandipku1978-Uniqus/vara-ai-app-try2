@@ -13,7 +13,8 @@ import {
   updateCitationNote,
 } from '../../services/memoTray';
 import { aiDraftMemoFromCitations } from '../../services/aiApi';
-import { fetchFilingText, resolvePrimaryDocumentPath } from '../../services/secApi';
+import { resolvePrimaryDocumentPath } from '../../services/secApi';
+import { buildImportantSectionSnippets, fetchFilingEvidence } from '../../services/agentEvidence';
 import MemoDraft from './MemoDraft';
 import '../../styles/evidence-ledger.css';
 import './MemoTray.css';
@@ -57,15 +58,34 @@ export default function MemoTray() {
     setDraftError('');
     try {
       // A citation captured from a metadata match carries almost no text —
-      // read the actual filing so the memo has real evidence to work from.
+      // pull the filing's substantive sections (Business, Risk Factors,
+      // MD&A, form-appropriate) via the same TOC-anchored extraction the
+      // Copilot uses, so the memo quotes disclosure, not cover-page
+      // boilerplate. Falls back to the document opening, then metadata.
       const enriched = await Promise.all(citations.map(async citation => {
         let excerpt = citation.excerpt;
         if (citation.kind === 'filing' && excerpt.trim().length < 200) {
           try {
-            const doc = await resolvePrimaryDocumentPath(citation.cik, citation.accessionNumber);
-            const text = doc ? await fetchFilingText(citation.cik, citation.accessionNumber, doc) : '';
-            if (text && text.trim().length > excerpt.trim().length) {
-              excerpt = text.replace(/\s+/g, ' ').trim().slice(0, 2400);
+            const primaryDocument = await resolvePrimaryDocumentPath(citation.cik, citation.accessionNumber);
+            if (primaryDocument) {
+              const locator = {
+                cik: citation.cik,
+                accessionNumber: citation.accessionNumber,
+                filingDate: citation.fileDate,
+                formType: citation.form,
+                primaryDocument,
+                companyName: citation.company,
+              };
+              const evidence = await fetchFilingEvidence(locator);
+              const snippets = buildImportantSectionSnippets(locator, evidence.html, evidence.text, evidence.sections);
+              if (snippets.length > 0) {
+                excerpt = snippets
+                  .map(snippet => `${snippet.label}: ${snippet.excerpt}`)
+                  .join('\n')
+                  .slice(0, 3200);
+              } else if (evidence.text.trim().length > excerpt.trim().length) {
+                excerpt = evidence.text.replace(/\s+/g, ' ').trim().slice(0, 2400);
+              }
             }
           } catch {
             // Metadata-only citation stays as captured.
