@@ -13,6 +13,20 @@ export default function GlobalError({
 }) {
   useEffect(() => {
     console.error('Unhandled error:', error);
+
+    // A deploy while this tab was open can orphan its JS chunks; that's not
+    // a user problem — reload once to pick up the new build. The session
+    // flag prevents a reload loop if the failure is real.
+    const isStaleChunk = /ChunkLoadError|Loading chunk|dynamically imported module|Importing a module script failed/i
+      .test(`${error.name} ${error.message}`);
+    if (isStaleChunk && typeof window !== 'undefined') {
+      const reloadFlag = 'urc.chunk-reload';
+      const lastReload = Number(window.sessionStorage.getItem(reloadFlag) || 0);
+      if (Date.now() - lastReload > 30_000) {
+        window.sessionStorage.setItem(reloadFlag, String(Date.now()));
+        window.location.reload();
+      }
+    }
   }, [error]);
 
   return (
