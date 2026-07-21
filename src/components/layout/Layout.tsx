@@ -121,10 +121,10 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen: boolean; on
       <div className="sidebar-logo">
         {visuallyCollapsed ? (
           <div className="sidebar-brand-mark-shell" aria-label={BRAND.parentName} title={BRAND.parentName}>
-            <URCBrandMark size={34} tone={brandTone} className="sidebar-brand-mark" />
+            <URCBrandMark size={28} tone={brandTone} className="sidebar-brand-mark" />
           </div>
         ) : (
-          <URCBrandLockup size={28} compact tone={brandTone} showParent className="sidebar-brand-lockup" />
+          <URCBrandLockup size={22} compact tone={brandTone} showParent className="sidebar-brand-lockup" />
         )}
         <button
           type="button"
@@ -133,44 +133,43 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen: boolean; on
           aria-label={visuallyCollapsed ? 'Expand side navigation' : 'Collapse side navigation'}
           title={visuallyCollapsed ? 'Expand navigation' : 'Collapse navigation'}
         >
-          {visuallyCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+          {visuallyCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
         </button>
       </div>
 
-      {/* Grouped by the accountant's job, not the data's domain:
-          Monitor → Research → Benchmark → Reference → Transactions */}
+      {/* Primary task order: Monitor → Research → Benchmark → Reference → Transactions. */}
       <nav className="sidebar-nav">
         <div className="nav-group-header">Monitor</div>
-        <SidebarNavItem to="/dashboard" label="Dashboard" icon={<LayoutDashboard size={18} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
-        <SidebarNavItem to="/earnings" label={EARNINGS_SCOPE_LABEL} icon={<Mic size={18} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
+        <SidebarNavItem to="/dashboard" label="Dashboard" icon={<LayoutDashboard size={16} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
+        <SidebarNavItem to="/earnings" label={EARNINGS_SCOPE_LABEL} icon={<Mic size={16} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
 
         <div className="nav-group-header">Research</div>
-        <SidebarNavItem to="/search" label="Research Workbench" icon={<Search size={18} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
-        <SidebarNavItem to="/comment-letters" label="Comment Letters" icon={<Mail size={18} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
-        <SidebarNavItem to="/exhibits" label="Exhibits & Agreements" icon={<FileSearch size={18} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
-        <SidebarNavItem to="/no-action-letters" label="No-Action Letters" icon={<ShieldCheck size={18} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
+        <SidebarNavItem to="/search" label="Research Workbench" icon={<Search size={16} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
+        <SidebarNavItem to="/comment-letters" label="Comment Letters" icon={<Mail size={16} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
+        <SidebarNavItem to="/exhibits" label="Exhibits & Agreements" icon={<FileSearch size={16} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
+        <SidebarNavItem to="/no-action-letters" label="No-Action Letters" icon={<ShieldCheck size={16} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
 
         <div className="nav-group-header">Benchmark</div>
-        <SidebarNavItem to="/compare" label="Benchmarking" icon={<BarChart2 size={18} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
-        <SidebarNavItem to="/accounting-analytics" label="Accounting Analytics" icon={<TrendingUp size={18} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
-        <SidebarNavItem to="/esg" label="ESG Research" icon={<Globe size={18} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
-        <SidebarNavItem to="/boards" label="Board Profiles" icon={<Users size={18} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
-        <SidebarNavItem to="/insiders" label="Insider Trading" icon={<UserCheck size={18} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
+        <SidebarNavItem to="/compare" label="Benchmarking" icon={<BarChart2 size={16} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
+        <SidebarNavItem to="/accounting-analytics" label="Accounting Analytics" icon={<TrendingUp size={16} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
+        <SidebarNavItem to="/esg" label="ESG Research" icon={<Globe size={16} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
+        <SidebarNavItem to="/boards" label="Board Profiles" icon={<Users size={16} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
+        <SidebarNavItem to="/insiders" label="Insider Trading" icon={<UserCheck size={16} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
 
         <div className="nav-group-header">Reference</div>
-        <SidebarNavItem to="/accounting" label="Accounting Standards" icon={<BookOpen size={18} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
-        <SidebarNavItem to="/regulation" label="Securities Regulation" icon={<Scale size={18} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
-        <SidebarNavItem to="/enforcement" label="SEC Litigation Releases" icon={<Gavel size={18} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
+        <SidebarNavItem to="/accounting" label="Accounting Standards" icon={<BookOpen size={16} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
+        <SidebarNavItem to="/regulation" label="Securities Regulation" icon={<Scale size={16} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
+        <SidebarNavItem to="/enforcement" label="SEC Litigation Releases" icon={<Gavel size={16} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
 
         <div className="nav-group-header">Transactions</div>
-        <SidebarNavItem to="/ipo" label="IPO Center" icon={<Briefcase size={18} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
-        <SidebarNavItem to="/mna" label="M&A Research" icon={<Handshake size={18} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
-        <SidebarNavItem to="/exempt-offerings" label="Exempt Offerings" icon={<DollarSign size={18} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
-        <SidebarNavItem to="/adv-registrations" label="ADV Registrations" icon={<ClipboardList size={18} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
+        <SidebarNavItem to="/ipo" label="IPO Center" icon={<Briefcase size={16} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
+        <SidebarNavItem to="/mna" label="M&A Research" icon={<Handshake size={16} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
+        <SidebarNavItem to="/exempt-offerings" label="Exempt Offerings" icon={<DollarSign size={16} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
+        <SidebarNavItem to="/adv-registrations" label="ADV Registrations" icon={<ClipboardList size={16} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
       </nav>
 
       <div className="sidebar-footer">
-        <SidebarNavItem to="/support" label="Support Center" icon={<LifeBuoy size={18} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
+        <SidebarNavItem to="/support" label="Support Center" icon={<LifeBuoy size={16} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
       </div>
     </aside>
   );

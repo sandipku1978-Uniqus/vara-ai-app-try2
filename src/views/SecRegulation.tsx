@@ -53,7 +53,7 @@ export default function SecRegulation() {
       key: 'url',
       header: 'Source',
       render: row => (
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
           <a href={row.url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-primary)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
             SEC.gov <ExternalLink size={12} />
           </a>
@@ -64,46 +64,47 @@ export default function SecRegulation() {
   ], []);
 
   const tabStyle = (active: boolean) => ({
-    padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '0.85rem',
-    background: active ? 'var(--accent-primary)' : 'var(--surface-subtle)', color: active ? '#fff' : 'var(--text-secondary)',
-    boxShadow: active ? 'none' : 'inset 0 0 0 1px var(--border-color)',
+    padding: '6px 10px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.8rem',
+    border: active ? '1px solid var(--accent-primary)' : '1px solid var(--border-color)',
+    background: active ? 'var(--interactive-hover-strong)' : 'var(--surface-panel)',
+    color: active ? 'var(--accent-primary)' : 'var(--text-secondary)',
   });
 
   return (
-    <div style={{ width: '100%', padding: 'clamp(20px, 4vw, 32px)', maxWidth: '1200px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-        <Scale size={28} style={{ color: 'var(--accent-primary)' }} />
-        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)' }}>Securities Regulation</h1>
+    <div style={{ width: '100%', padding: 'clamp(14px, 2vw, 20px)', maxWidth: '1440px', margin: '0 auto' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px' }}>
+        <Scale size={24} style={{ color: 'var(--accent-primary)' }} />
+        <h1 style={{ fontSize: '1.35rem', fontWeight: 700, color: 'var(--text-primary)' }}>Securities Regulation</h1>
       </div>
-      <p style={{ color: 'var(--text-secondary)', marginBottom: '8px', fontSize: '0.9rem' }}>
+      <p style={{ color: 'var(--text-secondary)', marginBottom: '3px', fontSize: '0.86rem' }}>
         Official SEC rulemaking activity and staff guidance. Staff guidance reflects staff views and is not a Commission rule.
       </p>
-      <p style={{ color: 'var(--text-muted)', marginBottom: '24px', fontSize: '0.78rem' }}>
+      <p style={{ color: 'var(--text-muted)', marginBottom: '12px', fontSize: '0.75rem' }}>
         Source: SEC Rulemaking Activity and SEC Staff Guidance indexes. Open the SEC.gov link to verify the controlling document.
       </p>
 
-      <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }} role="group" aria-label="Regulatory source">
+      <div style={{ display: 'flex', gap: '6px', marginBottom: '10px', flexWrap: 'wrap' }} role="group" aria-label="Regulatory source">
         <button type="button" aria-pressed={tab === 'rules'} style={tabStyle(tab === 'rules')} onClick={() => { setTab('rules'); setQuery(''); }}>Rules &amp; releases</button>
         <button type="button" aria-pressed={tab === 'guidance'} style={tabStyle(tab === 'guidance')} onClick={() => { setTab('guidance'); setQuery(''); }}>Staff guidance</button>
       </div>
 
-      <form onSubmit={event => { event.preventDefault(); void load(tab, query); }} style={{ display: 'flex', gap: '12px', marginBottom: '24px', maxWidth: '620px', flexWrap: 'wrap' }}>
+      <form onSubmit={event => { event.preventDefault(); void load(tab, query); }} style={{ display: 'flex', gap: '8px', marginBottom: '12px', maxWidth: '720px', flexWrap: 'wrap' }}>
         <input
           value={query}
           onChange={event => setQuery(event.target.value)}
           placeholder={tab === 'rules' ? 'Search rulemaking activity…' : 'Filter staff guidance…'}
           aria-label="Search official SEC regulation sources"
-          style={{ flex: '1 1 260px', minWidth: 0, padding: '8px 12px', background: 'var(--input-bg)', border: '1px solid var(--input-border)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '0.85rem', outline: 'none' }}
+          style={{ flex: '1 1 260px', minWidth: 0, padding: '7px 10px', background: 'var(--input-bg)', border: '1px solid var(--input-border)', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '0.82rem', outline: 'none' }}
         />
-        <button type="submit" disabled={loading} style={{ padding: '8px 20px', background: 'var(--accent-primary)', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem' }}>
+        <button type="submit" disabled={loading} style={{ padding: '7px 14px', background: 'var(--accent-primary)', color: '#fff', border: '1px solid var(--accent-primary)', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem' }}>
           {loading ? <Loader2 size={14} className="spinner" /> : <Search size={14} />} Search
         </button>
       </form>
 
       {loading ? (
-        <div role="status" style={{ textAlign: 'center', padding: '48px', color: 'var(--text-muted)' }}><Loader2 size={24} className="spinner" /><div>Loading the official SEC index…</div></div>
+        <div role="status" style={{ textAlign: 'center', padding: '28px', color: 'var(--text-muted)' }}><Loader2 size={20} className="spinner" /><div>Loading the official SEC index…</div></div>
       ) : error ? (
-        <div role="alert" style={{ textAlign: 'center', padding: '48px', color: 'var(--status-error)' }}>
+        <div role="alert" style={{ textAlign: 'center', padding: '20px', color: 'var(--status-error)', background: 'var(--status-error-bg)', border: '1px solid color-mix(in srgb, var(--status-error) 35%, var(--border-color))', borderRadius: '4px' }}>
           <p>{error}</p>
           <button type="button" className="secondary-btn" onClick={() => void load(tab, query)}>Retry official source</button>
         </div>
@@ -120,7 +121,7 @@ export default function SecRegulation() {
           <DataTable columns={columns} data={items} pageSize={25} />
         </>
       ) : (
-        <div style={{ textAlign: 'center', padding: '48px', color: 'var(--text-muted)' }}>No official SEC items matched this search.</div>
+        <div style={{ textAlign: 'center', padding: '28px', color: 'var(--text-muted)' }}>No official SEC items matched this search.</div>
       )}
     </div>
   );

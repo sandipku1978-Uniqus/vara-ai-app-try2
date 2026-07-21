@@ -382,7 +382,7 @@ ${evidence.text}`, { throwOnError: true });
             </button>
           </nav>
 
-          <div className="sidebar-widget" style={{ marginTop: '32px' }}>
+          <div className="sidebar-widget" style={{ marginTop: '20px' }}>
             <h4>Official Policy Sources</h4>
             <p className="policy-source-note">Requirements change frequently. Verify current legal status and effective dates with the issuing authority.</p>
             {POLICY_SOURCES.map(source => (
@@ -400,7 +400,7 @@ ${evidence.text}`, { throwOnError: true });
         <main className="esg-main glass-card">
           {activeTab === 'frameworks' && (
             <div className="tab-pane fade-in">
-              <div className="pane-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <div className="pane-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                 <div>
                   <h2>Interoperability Matrices</h2>
                   <p className="text-sm text-slate-400" style={{ marginTop: '4px' }}>Cross-reference disclosures between multiple standards.</p>
@@ -409,22 +409,22 @@ ${evidence.text}`, { throwOnError: true });
 
               <div className="framework-grid">
                 {frameworks.map(fw => (
-                  <a key={fw.id} href={fw.url} target="_blank" rel="noreferrer" className="framework-card" style={{ textDecoration: 'none', cursor: 'pointer', transition: 'all 0.2s' }}>
+                  <a key={fw.id} href={fw.url} target="_blank" rel="noreferrer" className="framework-card" style={{ textDecoration: 'none', cursor: 'pointer' }}>
                     <div className="fw-icon-wrapper"><Target size={24} className="text-blue-400"/></div>
                     <h3>{fw.name}</h3>
                     <p>{fw.desc}</p>
-                    <span className="text-btn" style={{ marginTop: '16px' }}>Browse Topics <ChevronRight size={16}/></span>
+                    <span className="text-btn" style={{ marginTop: '10px' }}>Browse Topics <ChevronRight size={16}/></span>
                   </a>
                 ))}
               </div>
 
-              <div style={{ marginTop: '32px', padding: '24px', background: 'var(--surface-subtle)', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
+              <div style={{ marginTop: '20px', padding: '16px', background: 'var(--surface-subtle)', borderRadius: '6px', border: '1px solid var(--border-color)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
                   <Activity className="text-green-400" size={24} />
                   <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Cross-Framework Mapping</h3>
                 </div>
-                <p className="text-sm text-slate-400" style={{ marginBottom: '16px' }}>Click a metric to see how it maps across standards.</p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <p className="text-sm text-slate-400" style={{ marginBottom: '10px' }}>Click a metric to see how it maps across standards.</p>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   {Object.entries(mappingsData).map(([metric, codes]) => (
                     <button
                       type="button"
@@ -433,10 +433,10 @@ ${evidence.text}`, { throwOnError: true });
                       aria-pressed={selectedMapping === metric}
                       style={{
                         width: '100%',
-                        padding: '12px 16px', background: selectedMapping === metric ? 'rgba(179,31,126,0.08)' : 'var(--surface-panel-strong)',
-                        borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        padding: '8px 12px', background: selectedMapping === metric ? 'color-mix(in srgb, var(--accent-primary) 8%, var(--surface-panel-strong))' : 'var(--surface-panel-strong)',
+                        borderRadius: '6px', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                         border: `1px solid ${selectedMapping === metric ? 'color-mix(in srgb, var(--accent-primary) 30%, transparent)' : 'var(--border-color)'}`,
-                        cursor: 'pointer', transition: 'all 0.15s'
+                        cursor: 'pointer', transition: 'background-color 0.15s, border-color 0.15s'
                       }}
                     >
                       <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{metric}</span>
@@ -454,7 +454,7 @@ ${evidence.text}`, { throwOnError: true });
 
           {activeTab === 'heatmap' && (
             <div className="tab-pane fade-in" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-              <div className="pane-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div className="pane-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                 <div>
                   <h2>AI-Rated ESG Disclosure Heatmap</h2>
                   <p className="text-sm text-slate-400" style={{ marginTop: '4px' }}>Claude AI rates disclosure depth from each company's latest 10-K filing.</p>
@@ -463,16 +463,17 @@ ${evidence.text}`, { throwOnError: true });
               </div>
 
               {/* Ticker management */}
-              <div style={{ marginBottom: '20px' }}>
-                <div style={{ maxWidth: '320px', marginBottom: '10px' }}>
+              <div style={{ marginBottom: '14px' }}>
+                <div style={{ maxWidth: '320px', marginBottom: '8px' }}>
                   <CompanySearchInput onSelect={addEsgTicker} placeholder="Add company to heatmap..." />
                 </div>
                 {esgTickers.length > 0 && (
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                     {esgTickers.map(t => (
                       <span key={t} style={{
-                        background: 'var(--interactive-hover-strong)', color: 'var(--accent-primary)', padding: '4px 12px',
-                        borderRadius: '16px', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '6px'
+                        background: 'var(--interactive-hover-strong)', color: 'var(--accent-primary)', padding: '3px 9px',
+                        borderRadius: '4px', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '6px',
+                        border: '1px solid color-mix(in srgb, var(--accent-primary) 24%, var(--border-color))'
                       }}>
                         {t}
                         <button
@@ -490,34 +491,34 @@ ${evidence.text}`, { throwOnError: true });
               </div>
 
               {heatmapLoading ? (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px', gap: '12px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '36px', gap: '8px' }}>
                   <Loader2 size={32} className="spinner" />
                   <p style={{ color: 'var(--text-secondary)' }}>AI is analyzing 10-K filings for ESG disclosure quality...</p>
                   <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Fetching and analyzing {canonicalTickers.length} filing{canonicalTickers.length === 1 ? '' : 's'}; this may take 30–60 seconds.</p>
                 </div>
               ) : heatmapError ? (
-                <div role="alert" style={{ textAlign: 'center', padding: '40px', color: 'var(--status-warning)' }}>
+                <div role="alert" style={{ textAlign: 'center', padding: '28px', color: 'var(--status-warning)' }}>
                   {heatmapError}
                   <br />
-                  <button type="button" className="primary-btn sm" style={{ marginTop: '12px' }} onClick={() => {
+                  <button type="button" className="primary-btn sm" style={{ marginTop: '8px' }} onClick={() => {
                     heatmapAttemptKeyRef.current = '';
                     activeHeatmapRequestRef.current = '';
                     setHeatmapRetryToken(token => token + 1);
                   }}>Retry</button>
                 </div>
               ) : heatmapData.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>
+                <div style={{ textAlign: 'center', padding: '28px', color: 'var(--text-muted)' }}>
                   Switch to the Heatmap tab to load AI-rated ESG disclosures.
                 </div>
               ) : (
                 <>
-              <div className="heatmap-container" style={{ overflow: 'auto', border: '1px solid var(--border-color)', borderRadius: '12px' }}>
+              <div className="heatmap-container" style={{ overflow: 'auto', border: '1px solid var(--border-color)', borderRadius: '6px' }}>
                 <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ background: 'var(--table-header-bg)', borderBottom: '1px solid var(--table-header-border)', fontSize: '0.875rem' }}>
-                      <th scope="col" style={{ padding: '16px', fontWeight: 600, color: 'var(--text-primary)' }}>ESG Topic Category</th>
+                      <th scope="col" style={{ padding: '9px 12px', fontWeight: 600, color: 'var(--text-primary)' }}>ESG Topic Category</th>
                       {esgTickers.map(t => (
-                        <th scope="col" key={t} style={{ padding: '16px', fontWeight: 600, color: 'var(--text-primary)', textAlign: 'center', borderLeft: '1px solid var(--border-color)' }}>{t}</th>
+                        <th scope="col" key={t} style={{ padding: '9px 12px', fontWeight: 600, color: 'var(--text-primary)', textAlign: 'center', borderLeft: '1px solid var(--border-color)' }}>{t}</th>
                       ))}
                     </tr>
                   </thead>
@@ -525,13 +526,13 @@ ${evidence.text}`, { throwOnError: true });
                     {heatmapData.map((row, idx) => (
                       <tr
                         key={idx}
-                        style={{ borderBottom: '1px solid var(--border-color)', background: selectedMetric === row.topic ? 'rgba(179,31,126,0.05)' : 'transparent' }}
+                        style={{ borderBottom: '1px solid var(--border-color)', background: selectedMetric === row.topic ? 'color-mix(in srgb, var(--accent-primary) 5%, transparent)' : 'transparent' }}
                       >
                         <th scope="row" style={{ padding: 0, color: 'var(--text-primary)', fontSize: '0.875rem', fontWeight: 500 }}>
                           <button type="button" className="esg-topic-button" aria-expanded={selectedMetric === row.topic} onClick={() => handleMetricClick(row.topic)}>{row.topic}</button>
                         </th>
                         {esgTickers.map(t => (
-                          <td key={t} aria-label={`${t}: ${row[t.toLowerCase()] || 'unrated'} disclosure for ${row.topic}`} style={{ padding: '8px', borderLeft: '1px solid var(--border-color)' }}>
+                          <td key={t} aria-label={`${t}: ${row[t.toLowerCase()] || 'unrated'} disclosure for ${row.topic}`} style={{ padding: '6px', borderLeft: '1px solid var(--border-color)' }}>
                             <div aria-hidden="true" className={`heatmap-cell ${row[t.toLowerCase()] || 'unrated'}`}></div>
                           </td>
                         ))}
@@ -542,7 +543,7 @@ ${evidence.text}`, { throwOnError: true });
               </div>
 
               {selectedMetric && (
-                <div style={{ marginTop: '16px', padding: '20px', background: 'rgba(179,31,126,0.05)', border: '1px solid rgba(179,31,126,0.2)', borderRadius: '12px', animation: 'fadeIn 0.2s ease-out' }}>
+                <div style={{ marginTop: '12px', padding: '14px', background: 'color-mix(in srgb, var(--accent-primary) 5%, var(--surface-panel))', border: '1px solid color-mix(in srgb, var(--accent-primary) 20%, var(--border-color))', borderRadius: '6px' }}>
                   <h4 style={{ color: 'var(--text-primary)', marginBottom: '8px' }}>{selectedMetric}</h4>
                   <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', lineHeight: 1.6 }}>
                     AI-rated disclosure depth based on the latest 10-K filing from SEC EDGAR. Click a different topic to compare.
@@ -576,7 +577,7 @@ ${evidence.text}`, { throwOnError: true });
 
           {activeTab === 'transcripts' && (
             <div className="tab-pane fade-in">
-              <div className="pane-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <div className="pane-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                 <div>
                   <h2>Recent 8-K earnings candidates</h2>
                   <p className="text-sm text-slate-400" style={{ marginTop: '4px' }}>Recent SEC 8-K candidates. Generate a source-grounded summary only when you need one.</p>
@@ -593,31 +594,30 @@ ${evidence.text}`, { throwOnError: true });
                 </div>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {earningsLoading ? (
-                  <div role="status" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px', gap: '8px', color: 'var(--text-secondary)' }}>
+                  <div role="status" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '28px', gap: '8px', color: 'var(--text-secondary)' }}>
                     <Loader2 size={16} className="spinner" /> Loading recent 8-K filings from EDGAR...
                   </div>
                 ) : earningsError ? (
-                  <div role="alert" style={{ padding: '40px', textAlign: 'center', color: 'var(--status-error)' }}>
+                  <div role="alert" style={{ padding: '28px', textAlign: 'center', color: 'var(--status-error)' }}>
                     {earningsError}
                     <br />
-                    <button type="button" className="primary-btn sm" style={{ marginTop: '12px' }} onClick={() => {
+                    <button type="button" className="primary-btn sm" style={{ marginTop: '8px' }} onClick={() => {
                       earningsAttemptedRef.current = false;
                       setEarningsRetryToken(token => token + 1);
                     }}>Retry SEC request</button>
                   </div>
                 ) : filteredReleases.length === 0 ? (
-                  <div style={{ padding: '48px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                  <div style={{ padding: '28px', textAlign: 'center', color: 'var(--text-muted)' }}>
                     {transcriptSearch ? `No 8-K candidates match "${transcriptSearch}".` : 'No recent 8-K earnings candidates found.'}
                   </div>
                 ) : filteredReleases.map(ts => (
                   <article key={ts.id} className="transcript-card" style={{
-                    background: 'var(--surface-panel-strong)', border: '1px solid var(--border-color)', padding: '20px', borderRadius: '12px',
-                    transition: 'all 0.2s'
+                    background: 'var(--surface-panel-strong)', border: '1px solid var(--border-color)', padding: '12px 14px', borderRadius: '6px'
                   }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <div style={{ background: 'var(--interactive-hover-strong)', color: 'var(--accent-primary)', fontWeight: 700, padding: '4px 8px', borderRadius: '4px', fontSize: '0.875rem' }}>8-K</div>
                         <h4 style={{ color: 'var(--text-primary)', fontWeight: 500, margin: 0 }}>{ts.company}</h4>
                       </div>
@@ -626,7 +626,7 @@ ${evidence.text}`, { throwOnError: true });
                       </div>
                     </div>
 
-                    <div style={{ paddingLeft: '16px', borderLeft: '2px solid var(--border-color)' }}>
+                    <div style={{ paddingLeft: '12px', borderLeft: '2px solid var(--border-color)' }}>
                       {ts.summaryStatus === 'loading' ? (
                         <p role="status" style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', margin: '4px 0', display: 'flex', gap: '8px', alignItems: 'center' }}><Loader2 size={14} className="spinner" /> Reading the source filing…</p>
                       ) : ts.summaryStatus === 'error' ? (

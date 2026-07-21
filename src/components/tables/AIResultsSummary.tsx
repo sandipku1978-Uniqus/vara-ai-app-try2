@@ -71,9 +71,9 @@ State that source filings must be reviewed before relying on the analysis. Be di
 
   return (
     <section aria-label={`AI insight for ${moduleLabel}`} aria-busy={loading} style={{
-      background: 'linear-gradient(135deg, rgba(72,40,121,0.08), rgba(178,30,125,0.08))',
-      border: '1px solid rgba(214,108,174,0.15)',
-      borderRadius: '10px',
+      background: 'var(--surface-accent)',
+      border: '1px solid var(--border-color)',
+      borderRadius: '6px',
       padding: '14px 18px',
       marginBottom: '16px',
       fontSize: '0.85rem',
@@ -104,8 +104,8 @@ State that source filings must be reviewed before relying on the analysis. Be di
             type="button"
             onClick={analyze}
             style={{
-              border: '1px solid var(--border-color)', borderRadius: '6px', padding: '5px 10px',
-              background: 'var(--surface-panel-strong)', color: 'var(--accent-primary)', cursor: 'pointer',
+              border: '1px solid var(--input-border)', borderRadius: '4px', padding: '5px 10px',
+              background: 'var(--surface-panel)', color: 'var(--accent-primary)', cursor: 'pointer',
               fontSize: '0.75rem', fontWeight: 600,
             }}
           >

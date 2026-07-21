@@ -86,25 +86,25 @@ export default function InsiderTrading() {
   ];
 
   return (
-    <div style={{ padding: '32px', maxWidth: '1200px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-        <UserCheck size={28} style={{ color: 'var(--accent-primary)' }} aria-hidden="true" />
-        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)' }}>Insider Trading</h1>
+    <div style={{ width: '100%', padding: 'clamp(14px, 2vw, 20px)', maxWidth: '1440px', margin: '0 auto' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '9px', marginBottom: '10px' }}>
+        <UserCheck size={22} style={{ color: 'var(--accent-primary)' }} aria-hidden="true" />
+        <h1 style={{ fontSize: '1.35rem', fontWeight: 700, color: 'var(--text-primary)' }}>Insider Trading</h1>
       </div>
-      <p style={{ color: 'var(--text-secondary)', marginBottom: '24px', fontSize: '0.9rem' }}>
+      <p style={{ color: 'var(--text-secondary)', marginBottom: '14px', fontSize: '0.86rem', lineHeight: 1.45 }}>
         Forms 3, 4, and 5 insider ownership and transaction filings from SEC EDGAR.
       </p>
 
-      <div style={{ marginBottom: '24px', maxWidth: '400px' }}>
+      <div style={{ marginBottom: '12px', maxWidth: '400px' }}>
         <CompanySearchInput onSelect={addCompany} placeholder="Add company by ticker..." />
       </div>
 
       {companies.length > 0 && (
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
+        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '12px' }}>
           {companies.map(c => (
             <span key={c.ticker} style={{
-              background: 'var(--interactive-hover-strong)', color: 'var(--accent-primary)', padding: '4px 12px',
-              borderRadius: '16px', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '6px'
+              background: 'var(--interactive-hover-strong)', color: 'var(--accent-primary)', padding: '3px 9px',
+              border: '1px solid var(--border-color)', borderRadius: '4px', fontSize: '0.8rem', display: 'inline-flex', alignItems: 'center', gap: '6px'
             }}>
               {c.ticker}
               <button type="button" aria-label={`Remove ${c.ticker}`} onClick={() => setCompanies(prev => prev.filter(x => x.ticker !== c.ticker))}
@@ -116,11 +116,11 @@ export default function InsiderTrading() {
         </div>
       )}
 
-      {error && <div role="alert" style={{ color: 'var(--status-error)', background: 'var(--status-error-bg)', borderRadius: '8px', padding: '10px 12px', marginBottom: '16px' }}>{error}</div>}
+      {error && <div role="alert" style={{ color: 'var(--status-error)', background: 'var(--status-error-bg)', border: '1px solid var(--status-error)', borderRadius: '4px', padding: '8px 10px', marginBottom: '12px' }}>{error}</div>}
 
       {loading ? (
-        <div role="status" style={{ textAlign: 'center', padding: '48px', color: 'var(--text-muted)' }}>
-          <Loader2 size={24} className="spinner" style={{ marginBottom: '8px' }} />
+        <div role="status" style={{ textAlign: 'center', padding: '28px 16px', color: 'var(--text-muted)' }}>
+          <Loader2 size={22} className="spinner" style={{ marginBottom: '6px' }} />
           <div>Loading insider filings...</div>
         </div>
       ) : filings.length > 0 ? (
@@ -129,9 +129,9 @@ export default function InsiderTrading() {
           <DataTable columns={columns} data={filings} pageSize={25} />
         </>
       ) : companies.length > 0 ? (
-        <div style={{ textAlign: 'center', padding: '48px', color: 'var(--text-muted)' }}>No insider filings found.</div>
+        <div style={{ textAlign: 'center', padding: '28px 16px', color: 'var(--text-muted)' }}>No insider filings found.</div>
       ) : (
-        <div style={{ textAlign: 'center', padding: '48px', color: 'var(--text-muted)' }}>Add companies above to view insider trading filings.</div>
+        <div style={{ textAlign: 'center', padding: '28px 16px', color: 'var(--text-muted)' }}>Add companies above to view insider trading filings.</div>
       )}
     </div>
   );

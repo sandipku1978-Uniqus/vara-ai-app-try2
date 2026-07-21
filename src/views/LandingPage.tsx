@@ -15,7 +15,6 @@ import {
   LayoutDashboard,
   Search,
   Shield,
-  Sparkles,
   TrendingUp,
 } from 'lucide-react';
 import { URCBrandLockup } from '../components/brand/URCBrand';
@@ -223,20 +222,10 @@ function LandingSignalCanvas() {
 
   const pulseBars = [32, 44, 38, 58, 49, 62, 74, 69, 82] as const;
   const coverageTags = ['10-K & 10-Q', 'S-1 & IPO', 'Comment letters', 'M&A clauses'] as const;
-  const repeatedModules = [...marqueeModules, ...marqueeModules];
 
   return (
     <div className="landing-signal" aria-hidden="true">
-      <div className="landing-signal__mesh" />
-      <div className="landing-signal__orb landing-signal__orb--one" />
-      <div className="landing-signal__orb landing-signal__orb--two" />
-
       <div className="landing-signal-card landing-signal-card--workspace">
-        <div className="landing-window-controls">
-          <span />
-          <span />
-          <span />
-        </div>
         <p className="landing-signal-card__eyebrow">Illustrative Research Workbench</p>
         <h3>Preview search, comparison, and the next research step.</h3>
 
@@ -317,8 +306,8 @@ function LandingSignalCanvas() {
 
       <div className="landing-marquee">
         <div className="landing-marquee__track">
-          {repeatedModules.map((module, index) => (
-            <span key={`${module}-${index}`} className="landing-marquee__pill">
+          {marqueeModules.map(module => (
+            <span key={module} className="landing-marquee__pill">
               {module}
             </span>
           ))}
@@ -349,7 +338,6 @@ export default function LandingPage() {
       <section className="landing-hero">
         <div className="landing-hero__copy">
           <div className="landing-kicker">
-            <Sparkles size={16} />
             <span>Uniqus product for SEC intelligence, benchmarking, and transaction research</span>
           </div>
 

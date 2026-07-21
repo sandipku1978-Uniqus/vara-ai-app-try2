@@ -10,13 +10,12 @@
 .consentPanel {
   border: 1px solid var(--border-color);
   background: var(--surface-panel);
-  box-shadow: var(--glow-shadow);
 }
 
 .legalHeader {
   margin-bottom: 20px;
   padding: clamp(24px, 5vw, 48px);
-  border-radius: 24px;
+  border-radius: 6px;
 }
 
 .eyebrow {
@@ -30,7 +29,7 @@
 
 .legalHeader h1 {
   margin-bottom: 12px;
-  font-size: clamp(2rem, 6vw, 3.25rem);
+  font-size: clamp(2rem, 6vw, 2.75rem);
 }
 
 .intro,
@@ -51,7 +50,7 @@
 .consentPanel {
   margin-top: 16px;
   padding: clamp(20px, 4vw, 32px);
-  border-radius: 18px;
+  border-radius: 6px;
 }
 
 .legalSection h2,
@@ -69,7 +68,7 @@
 .consentStatus {
   margin: 16px 0;
   padding: 12px 14px;
-  border-radius: 10px;
+  border-radius: 4px;
   background: var(--surface-subtle);
   color: var(--text-primary);
   font-size: 0.88rem;
@@ -85,7 +84,7 @@
 .secondaryButton {
   min-height: 42px;
   padding: 9px 16px;
-  border-radius: 10px;
+  border-radius: 4px;
   cursor: pointer;
   font-weight: 700;
 }
@@ -118,12 +117,6 @@
 @media (max-width: 600px) {
   .legalPage {
     padding: 16px 12px 40px;
-  }
-
-  .legalHeader,
-  .legalSection,
-  .consentPanel {
-    border-radius: 14px;
   }
 
   .consentActions {

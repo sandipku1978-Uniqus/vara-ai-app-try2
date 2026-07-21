@@ -736,7 +736,7 @@ export default function IPOCenter() {
                           <Rocket size={16} /> Analyze {analyses[activeAnalysisTab]?.label}
                         </button>
                         {!filingEvidenceReady && (
-                          <p className="s1-hint" style={{ marginTop: '12px' }}>
+                          <p className="s1-hint" style={{ marginTop: '8px' }}>
                             <AlertCircle size={14} /> {filingLoadError || 'Filing text must finish loading before analysis can run.'}
                           </p>
                         )}
@@ -850,7 +850,7 @@ export default function IPOCenter() {
                 </div>
               </div>
 
-              <div role="status" aria-live="polite" className="pane-subtitle" style={{ marginBottom: '12px' }}>
+              <div role="status" aria-live="polite" className="pane-subtitle" style={{ marginBottom: '8px' }}>
                 SEC EFTS query: {IPO_FORM_SCOPE} · {pipelineWindow.from || '—'} through {pipelineWindow.through || '—'} · {pipelineError
                   ? 'live counts are unavailable; no zero result is being asserted.'
                   : `showing ${pipelineIPOs.length.toLocaleString()} loaded filings of ${pipelineTotal.relation === 'gte' ? 'at least ' : ''}${pipelineTotal.value.toLocaleString()} total.`}
@@ -859,16 +859,16 @@ export default function IPOCenter() {
 
               <div className="ipo-table-container">
                 {pipelineLoading ? (
-                  <div className="text-muted" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px', gap: '8px' }}>
+                  <div className="text-muted" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '28px', gap: '8px' }}>
                     <Loader2 size={16} className="spin" /> Loading recent S-1 filings from EDGAR...
                   </div>
                 ) : pipelineError ? (
-                  <div role="alert" className="text-muted" style={{ textAlign: 'center', padding: '40px' }}>
+                  <div role="alert" className="text-muted" style={{ textAlign: 'center', padding: '28px' }}>
                     <p>{pipelineError}</p>
                     <button type="button" className="secondary-btn" onClick={() => void loadPipeline()}>Retry SEC feed</button>
                   </div>
                 ) : pipelineIPOs.length === 0 ? (
-                  <div className="text-muted" style={{ textAlign: 'center', padding: '40px' }}>
+                  <div className="text-muted" style={{ textAlign: 'center', padding: '28px' }}>
                     No IPO registration or 424B4 filings matched the six-month SEC query.
                   </div>
                 ) : (
@@ -911,7 +911,7 @@ export default function IPOCenter() {
           {activeTab === 'benchmarking' && (
             <div id="ipo-panel-benchmarking" className="tab-pane fade-in" role="tabpanel" aria-labelledby="ipo-tab-benchmarking">
               {pipelineError ? (
-                <div role="alert" className="text-muted" style={{ textAlign: 'center', padding: '40px' }}>
+                <div role="alert" className="text-muted" style={{ textAlign: 'center', padding: '28px' }}>
                   <p>{pipelineError} Live-feed metrics are unavailable, not zero.</p>
                   <button type="button" className="secondary-btn" onClick={() => void loadPipeline()}>Retry SEC feed</button>
                 </div>
@@ -958,7 +958,7 @@ export default function IPOCenter() {
           {activeTab === 'drafting' && (
             <div id="ipo-panel-drafting" className="tab-pane fade-in" role="tabpanel" aria-labelledby="ipo-tab-drafting">
               {pipelineError ? (
-                <div role="alert" className="text-muted" style={{ textAlign: 'center', padding: '40px' }}>
+                <div role="alert" className="text-muted" style={{ textAlign: 'center', padding: '28px' }}>
                   <p>{pipelineError} Filing activity is unavailable, not zero.</p>
                   <button type="button" className="secondary-btn" onClick={() => void loadPipeline()}>Retry SEC feed</button>
                 </div>
@@ -986,7 +986,7 @@ export default function IPOCenter() {
                   </div>
                 ))}
                 {pipelineSummary.monthCounts.length === 0 && (
-                  <div className="text-muted" style={{ textAlign: 'center', padding: '40px' }}>No filing-activity rows are available.</div>
+                  <div className="text-muted" style={{ textAlign: 'center', padding: '28px' }}>No filing-activity rows are available.</div>
                 )}
               </div>
               </>

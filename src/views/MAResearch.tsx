@@ -310,9 +310,9 @@ export default function MAResearch() {
             </button>
           </nav>
 
-          <div className="sidebar-filters" style={{ marginTop: '32px' }}>
+          <div className="sidebar-filters" style={{ marginTop: '20px' }}>
             <h4>Data Source</h4>
-            <div style={{ marginTop: '12px', padding: '12px', background: 'var(--surface-accent)', border: '1px solid var(--border-color)', borderRadius: '8px' }}>
+            <div style={{ marginTop: '8px', padding: '10px', background: 'var(--surface-accent)', border: '1px solid var(--border-color)', borderRadius: '6px' }}>
               <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
                 Deal data sourced from SEC EDGAR full-text search. Click "Extract" on any deal to run AI analysis on the filing text.
               </p>
@@ -348,13 +348,13 @@ export default function MAResearch() {
               </div>
 
               {dealLoading ? (
-                <div role="status" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px', gap: '8px', color: 'var(--text-muted)' }}>
+                <div role="status" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '28px', gap: '8px', color: 'var(--text-muted)' }}>
                   <Loader2 size={16} className="spinner" /> Loading M&A filings from EDGAR...
                 </div>
               ) : dealError ? (
-                <div role="alert" style={{ padding: '32px', textAlign: 'center', color: 'var(--status-error)' }}>
+                <div role="alert" style={{ padding: '24px', textAlign: 'center', color: 'var(--status-error)' }}>
                   <p>{dealError}</p>
-                  <button type="button" className="secondary-btn" onClick={() => void loadDeals()} style={{ marginTop: '12px' }}>Retry filings</button>
+                  <button type="button" className="secondary-btn" onClick={() => void loadDeals()} style={{ marginTop: '8px' }}>Retry filings</button>
                 </div>
               ) : (
               <>
@@ -378,29 +378,29 @@ export default function MAResearch() {
                   />
                 </>
               )}
-              <div className="ma-table-scroll" style={{ border: '1px solid var(--border-color)', borderRadius: '12px', marginBottom: '32px' }}>
+              <div className="ma-table-scroll" style={{ border: '1px solid var(--border-color)', borderRadius: '6px', marginBottom: '20px' }}>
                 <table style={{ width: '100%', textAlign: 'left', borderCollapse: 'collapse' }}>
                   <caption className="sr-only">Recent SEC filings associated with mergers and acquisitions</caption>
                   <thead>
                     <tr style={{ background: 'var(--table-header-bg)', borderBottom: '1px solid var(--table-header-border)', fontSize: '0.875rem' }}>
-                      <th scope="col" style={{ padding: '16px', fontWeight: 600, color: 'var(--text-primary)' }}>Entity</th>
-                      <th scope="col" style={{ padding: '16px', fontWeight: 600, color: 'var(--text-primary)' }}>Form</th>
-                      <th scope="col" style={{ padding: '16px', fontWeight: 600, color: 'var(--text-primary)' }}>Filed</th>
-                      <th scope="col" style={{ padding: '16px', fontWeight: 600, color: 'var(--text-primary)' }}>AI Details</th>
-                      <th scope="col" style={{ padding: '16px', fontWeight: 600, color: 'var(--text-primary)' }}>Actions</th>
+                      <th scope="col" style={{ padding: '9px 12px', fontWeight: 600, color: 'var(--text-primary)' }}>Entity</th>
+                      <th scope="col" style={{ padding: '9px 12px', fontWeight: 600, color: 'var(--text-primary)' }}>Form</th>
+                      <th scope="col" style={{ padding: '9px 12px', fontWeight: 600, color: 'var(--text-primary)' }}>Filed</th>
+                      <th scope="col" style={{ padding: '9px 12px', fontWeight: 600, color: 'var(--text-primary)' }}>AI Details</th>
+                      <th scope="col" style={{ padding: '9px 12px', fontWeight: 600, color: 'var(--text-primary)' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredDeals.length === 0 ? (
-                      <tr><td colSpan={5} style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)' }}>No M&amp;A filings found.</td></tr>
+                      <tr><td colSpan={5} style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)' }}>No M&amp;A filings found.</td></tr>
                     ) : filteredDeals.map((deal, idx) => (
                       <tr key={idx} style={{ borderBottom: '1px solid var(--border-color)', fontSize: '0.875rem' }}>
-                        <td style={{ padding: '16px', fontWeight: 500, color: 'var(--text-primary)' }}>{deal.entityName}</td>
-                        <td style={{ padding: '16px' }}>
+                        <td style={{ padding: '9px 12px', fontWeight: 500, color: 'var(--text-primary)' }}>{deal.entityName}</td>
+                        <td style={{ padding: '9px 12px' }}>
                           <span style={{ background: 'var(--surface-subtle)', padding: '4px 8px', borderRadius: '4px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{deal.formType}</span>
                         </td>
-                        <td style={{ padding: '16px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: '0.75rem' }}>{deal.fileDate}</td>
-                        <td style={{ padding: '16px' }}>
+                        <td style={{ padding: '9px 12px', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)', fontSize: '0.75rem' }}>{deal.fileDate}</td>
+                        <td style={{ padding: '9px 12px' }}>
                           {deal.extracting ? (
                             <span role="status" style={{ color: 'var(--text-muted)', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
                               <Loader2 size={12} className="spinner" /> Extracting...
@@ -425,7 +425,7 @@ export default function MAResearch() {
                             </button>
                           )}
                         </td>
-                        <td style={{ padding: '16px', textAlign: 'right' }}>
+                        <td style={{ padding: '9px 12px', textAlign: 'right' }}>
                           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', justifyContent: 'flex-end' }}>
                             <a
                               href={`https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&accession=${deal.accessionNumber}&type=${deal.formType}&dateb=&owner=include&count=1`}
@@ -450,14 +450,14 @@ export default function MAResearch() {
 
           {activeTab === 'clauses' && (
             <div className="tab-pane fade-in">
-              <div style={{ marginBottom: '24px' }}>
+              <div style={{ marginBottom: '16px' }}>
                 <h2>AI Clause Extraction</h2>
                 <p className="text-sm" style={{ marginTop: '4px', color: 'var(--text-secondary)' }}>Search for a merger filing, then extract specific clause types with AI.</p>
               </div>
 
               {/* Step 1: Find a filing */}
-              <div className="ma-clause-step" style={{ marginBottom: '24px' }}>
-                <label htmlFor="ma-clause-filing-search" style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.025em', fontWeight: 600, display: 'block', marginBottom: '8px' }}>
+              <div className="ma-clause-step" style={{ marginBottom: '16px' }}>
+                <label htmlFor="ma-clause-filing-search" style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.025em', fontWeight: 600, display: 'block', marginBottom: '6px' }}>
                   Step 1: Search for a merger filing
                 </label>
                 <div className="ma-clause-search-row">
@@ -472,7 +472,7 @@ export default function MAResearch() {
                       setClauseSearchError('');
                     }}
                     onKeyDown={e => e.key === 'Enter' && handleClauseFilingSearch()}
-                    style={{ flex: 1, padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--input-border)', background: 'var(--input-bg)', color: 'var(--text-primary)', fontSize: '0.85rem' }}
+                    style={{ flex: 1, padding: '7px 10px', borderRadius: '6px', border: '1px solid var(--input-border)', background: 'var(--input-bg)', color: 'var(--text-primary)', fontSize: '0.85rem' }}
                   />
                   <button type="button" className="primary-btn sm" onClick={handleClauseFilingSearch} disabled={clauseFilingSearching}>
                     {clauseFilingSearching ? <Loader2 size={14} className="spinner" /> : <Search size={14} />} Search
@@ -480,7 +480,7 @@ export default function MAResearch() {
                 </div>
 
                 {clauseFilings.length > 0 && (
-                  <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  <div style={{ marginTop: '8px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                     {clauseFilings.map((f, i) => (
                       <button
                         type="button"
@@ -503,20 +503,20 @@ export default function MAResearch() {
                   </div>
                 )}
                 {clauseSearchError && !clauseFilingSearching && (
-                  <div role="alert" style={{ marginTop: '12px', color: 'var(--status-error)' }}>
+                  <div role="alert" style={{ marginTop: '8px', color: 'var(--status-error)' }}>
                     <p>{clauseSearchError}</p>
-                    <button type="button" className="secondary-btn" onClick={() => void handleClauseFilingSearch()} style={{ marginTop: '8px' }}>Retry filing search</button>
+                    <button type="button" className="secondary-btn" onClick={() => void handleClauseFilingSearch()} style={{ marginTop: '6px' }}>Retry filing search</button>
                   </div>
                 )}
                 {clauseSearchCompleted && !clauseFilingSearching && !clauseSearchError && clauseFilings.length === 0 && (
-                  <p style={{ marginTop: '12px', color: 'var(--text-muted)' }}>No matching merger filings were returned.</p>
+                  <p style={{ marginTop: '8px', color: 'var(--text-muted)' }}>No matching merger filings were returned.</p>
                 )}
               </div>
 
               {/* Step 2: Select clause type and extract */}
-              <div className="ma-clause-step ma-clause-controls" style={{ marginBottom: '24px', gap: '16px' }}>
+              <div className="ma-clause-step ma-clause-controls" style={{ marginBottom: '16px', gap: '12px' }}>
                 <div style={{ flex: 1 }}>
-                  <label htmlFor="ma-clause-type" style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.025em', fontWeight: 600, display: 'block', marginBottom: '8px' }}>
+                  <label htmlFor="ma-clause-type" style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.025em', fontWeight: 600, display: 'block', marginBottom: '6px' }}>
                     Step 2: Select clause type
                   </label>
                   <select
@@ -543,28 +543,28 @@ export default function MAResearch() {
 
               {/* Results */}
               {clauseLoading && (
-                <div role="status" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px', gap: '8px', color: 'var(--text-muted)' }}>
+                <div role="status" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '28px', gap: '8px', color: 'var(--text-muted)' }}>
                   <Loader2 size={16} className="spinner" /> AI is extracting clause language...
                 </div>
               )}
 
               {clauseExtractionError && !clauseLoading && (
-                <div role="alert" style={{ padding: '32px', textAlign: 'center', color: 'var(--status-error)' }}>
+                <div role="alert" style={{ padding: '24px', textAlign: 'center', color: 'var(--status-error)' }}>
                   <p>{clauseExtractionError}</p>
                   <button type="button" className="secondary-btn" onClick={() => void handleExtractClauses()} style={{ marginTop: '8px' }}>Retry clause extraction</button>
                 </div>
               )}
 
               {clauseResults && !clauseLoading && !clauseExtractionError && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   {Object.entries(clauseResults).map(([clauseType, data]) => (
-                    <div key={clauseType} style={{ background: 'var(--surface-panel-strong)', border: '1px solid var(--border-color)', borderRadius: '12px', padding: '20px' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                    <div key={clauseType} style={{ background: 'var(--surface-panel-strong)', border: '1px solid var(--border-color)', borderRadius: '6px', padding: '14px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
                         <h3 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--accent-primary)' }}>{clauseType}</h3>
                         <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{data.section}</span>
                       </div>
                       <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>{data.text}</p>
-                      <div style={{ marginTop: '12px', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                      <div style={{ marginTop: '8px', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                         From: {selectedClauseFiling?.entityName} ({selectedClauseFiling?.fileDate})
                       </div>
                     </div>
@@ -573,13 +573,13 @@ export default function MAResearch() {
               )}
 
               {!clauseLoading && !clauseResults && !clauseExtractionError && selectedClauseFiling && (
-                <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)' }}>
                   Select a clause type and click "Extract Clause" to analyze the filing.
                 </div>
               )}
 
               {!selectedClauseFiling && !clauseLoading && !clauseFilingSearching && !clauseSearchError && (
-                <div style={{ padding: '32px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)' }}>
                   Search for a merger filing above, then select it to extract clauses.
                 </div>
               )}

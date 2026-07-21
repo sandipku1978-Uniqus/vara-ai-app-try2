@@ -137,7 +137,7 @@ export default function CommandPalette() {
   return (
     <div
       onClick={closePalette}
-      style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(5,10,31,0.6)', backdropFilter: 'blur(4px)', display: 'flex', justifyContent: 'center', paddingTop: '14vh' }}>
+      style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(17, 16, 15, 0.54)', display: 'flex', justifyContent: 'center', paddingTop: '14vh' }}>
       <div
         ref={dialogRef}
         role="dialog"
@@ -147,7 +147,7 @@ export default function CommandPalette() {
         onKeyDown={event => {
           if (dialogRef.current) trapCommandPaletteFocus(event, dialogRef.current);
         }}
-        style={{ width: 'min(560px, 92vw)', height: 'fit-content', background: 'var(--surface-panel-strong)', border: '1px solid var(--border-color)', borderRadius: '14px', overflow: 'hidden', boxShadow: '0 24px 64px rgba(0,0,0,0.35)' }}>
+        style={{ width: 'min(560px, 92vw)', height: 'fit-content', background: 'var(--surface-panel-strong)', border: '1px solid var(--input-border)', borderRadius: '6px', overflow: 'hidden', boxShadow: '0 14px 36px rgba(0, 0, 0, 0.24)' }}>
         <input
           ref={inputRef}
           value={query}
@@ -179,10 +179,10 @@ export default function CommandPalette() {
               onClick={() => go(item)}
               style={{
                 display: 'flex', alignItems: 'center', gap: '10px', width: '100%', textAlign: 'left',
-                padding: '10px 16px', background: index === highlighted ? 'rgba(179,31,126,0.18)' : 'transparent',
+                padding: '10px 16px', background: index === highlighted ? 'var(--surface-accent)' : 'transparent',
                 border: 'none', cursor: 'pointer',
               }}>
-              {item.kind === 'company' ? <Building2 size={15} style={{ color: 'var(--accent-soft)' }} />
+              {item.kind === 'company' ? <Building2 size={15} style={{ color: 'var(--accent-primary)' }} />
                 : item.kind === 'search' ? <FileSearch size={15} style={{ color: 'var(--text-muted)' }} />
                 : <Navigation size={15} style={{ color: 'var(--text-muted)' }} />}
               <span style={{ color: 'var(--text-primary)', fontSize: '0.85rem', flex: 1 }}>{item.label}</span>

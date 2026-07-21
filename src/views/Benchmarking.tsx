@@ -163,25 +163,25 @@ export default function Benchmarking() {
   const isDarkMode = themeMode === 'dark';
   const tooltipStyle = useMemo(
     () => ({
-      background: isDarkMode ? '#20182B' : '#FFFFFF',
-      border: `1px solid ${isDarkMode ? 'rgba(238, 223, 236, 0.16)' : 'rgba(72, 42, 122, 0.14)'}`,
-      borderRadius: '12px',
-      color: isDarkMode ? '#F8F5F8' : '#413F42',
-      boxShadow: isDarkMode ? '0 18px 36px rgba(0, 0, 0, 0.34)' : '0 18px 34px rgba(72, 42, 122, 0.12)',
+      background: 'var(--chart-tooltip-bg)',
+      border: '1px solid var(--chart-tooltip-border)',
+      borderRadius: '4px',
+      color: 'var(--text-primary)',
+      boxShadow: isDarkMode ? '0 4px 12px rgba(0, 0, 0, 0.24)' : '0 4px 12px rgba(0, 0, 0, 0.12)',
     }),
     [isDarkMode]
   );
   const axisStyle = useMemo(
-    () => ({ fill: isDarkMode ? '#B9AFC0' : '#8F8390', fontSize: 11 }),
-    [isDarkMode]
+    () => ({ fill: 'var(--chart-text)', fontSize: 11 }),
+    []
   );
-  const axisTickColor = isDarkMode ? '#E8DDE7' : '#6C6270';
-  const axisLineColor = isDarkMode ? 'rgba(238, 223, 236, 0.18)' : 'rgba(72, 42, 122, 0.18)';
-  const gridStroke = isDarkMode ? 'rgba(238, 223, 236, 0.12)' : 'rgba(72, 42, 122, 0.14)';
-  const groupedBorderColor = isDarkMode ? 'rgba(238, 223, 236, 0.14)' : 'rgba(72, 42, 122, 0.14)';
-  const tableHeaderBackground = isDarkMode ? '#1A1424' : '#F6F4F0';
-  const tableHeaderText = isDarkMode ? '#F8F5F8' : '#413F42';
-  const tableMutedText = isDarkMode ? '#B9AFC0' : '#6C6270';
+  const axisTickColor = 'var(--chart-text)';
+  const axisLineColor = 'var(--chart-axis)';
+  const gridStroke = 'var(--chart-grid)';
+  const groupedBorderColor = 'var(--border-color)';
+  const tableHeaderBackground = 'var(--table-header-bg)';
+  const tableHeaderText = 'var(--text-primary)';
+  const tableMutedText = 'var(--text-muted)';
   const [selectedTickers, setSelectedTickers] = useState<string[]>(['AAPL', 'MSFT']);
   // Multi-year per ticker: { AAPL: [2024, 2023], MSFT: [2024] }
   const [selectedYearsPerTicker, setSelectedYearsPerTicker] = useState<Record<string, number[]>>({});
@@ -744,28 +744,28 @@ export default function Benchmarking() {
   };
 
   const getRatioColor = (value: number | null, thresholds: { green: number; amber: number }, higherIsBetter = true): string => {
-    if (value == null) return '#475569';
+    if (value == null) return 'var(--text-muted)';
     if (higherIsBetter) {
-      if (value >= thresholds.green) return '#34D399';
+      if (value >= thresholds.green) return 'var(--status-success)';
       if (value >= thresholds.amber) return 'var(--status-warning)';
-      return '#F87171';
+      return 'var(--status-error)';
     } else {
-      if (value <= thresholds.green) return '#34D399';
+      if (value <= thresholds.green) return 'var(--status-success)';
       if (value <= thresholds.amber) return 'var(--status-warning)';
-      return '#F87171';
+      return 'var(--status-error)';
     }
   };
 
   const getRatioBg = (value: number | null, thresholds: { green: number; amber: number }, higherIsBetter = true): string => {
     if (value == null) return 'transparent';
     if (higherIsBetter) {
-      if (value >= thresholds.green) return 'rgba(16,185,129,0.08)';
-      if (value >= thresholds.amber) return 'rgba(245,158,11,0.06)';
-      return 'rgba(239,68,68,0.08)';
+      if (value >= thresholds.green) return 'color-mix(in srgb, var(--status-success) 9%, transparent)';
+      if (value >= thresholds.amber) return 'color-mix(in srgb, var(--status-warning) 8%, transparent)';
+      return 'color-mix(in srgb, var(--status-error) 9%, transparent)';
     } else {
-      if (value <= thresholds.green) return 'rgba(16,185,129,0.08)';
-      if (value <= thresholds.amber) return 'rgba(245,158,11,0.06)';
-      return 'rgba(239,68,68,0.08)';
+      if (value <= thresholds.green) return 'color-mix(in srgb, var(--status-success) 9%, transparent)';
+      if (value <= thresholds.amber) return 'color-mix(in srgb, var(--status-warning) 8%, transparent)';
+      return 'color-mix(in srgb, var(--status-error) 9%, transparent)';
     }
   };
 
@@ -890,7 +890,7 @@ Keep it crisp and practical.`;
         </div>
 
         <div className="benchmark-actions" style={{ display: 'flex', alignItems: 'center' }}>
-          <div className="view-toggles glass-card" style={{ padding: '4px', display: 'flex', gap: '4px', marginRight: '16px', borderRadius: '8px' }}>
+          <div className="view-toggles glass-card" style={{ padding: '4px', display: 'flex', gap: '4px', marginRight: '16px', borderRadius: '4px' }}>
             <button className={`toggle-view-btn ${viewMode === 'financials' ? 'active' : ''}`} onClick={() => setViewMode('financials')}>
               <DollarSign size={16} /> Financials
             </button>
@@ -941,20 +941,20 @@ Keep it crisp and practical.`;
         </div>
 
         {peerDiscoveryMessage && (
-          <div style={{ color: 'var(--text-primary)', fontSize: '0.82rem', background: 'rgba(179,31,126,0.08)', border: '1px solid rgba(179,31,126,0.16)', borderRadius: '8px', padding: '10px 12px' }}>
+          <div style={{ color: 'var(--text-primary)', fontSize: '0.82rem', background: 'var(--surface-accent)', border: '1px solid color-mix(in srgb, var(--accent-primary) 22%, var(--border-color))', borderRadius: '4px', padding: '10px 12px' }}>
             {peerDiscoveryMessage}
           </div>
         )}
 
         {cohortReportError && (
-          <div role="alert" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap', color: 'var(--status-error)', background: 'var(--status-error-bg)', border: '1px solid color-mix(in srgb, var(--status-error) 30%, transparent)', borderRadius: '8px', padding: '10px 12px' }}>
+          <div role="alert" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap', color: 'var(--status-error)', background: 'var(--status-error-bg)', border: '1px solid color-mix(in srgb, var(--status-error) 30%, transparent)', borderRadius: '4px', padding: '10px 12px' }}>
             <span>{cohortReportError}</span>
             <button type="button" className="secondary-btn" onClick={() => void handleGenerateCohortReport()}>Retry memo</button>
           </div>
         )}
 
         {cohortReport && (
-          <div style={{ borderLeft: '4px solid #B31F7E', background: 'var(--surface-panel)', borderRadius: '10px', padding: '16px 18px' }}>
+          <div style={{ borderLeft: '4px solid var(--accent-primary)', background: 'var(--surface-panel)', borderRadius: '4px', padding: '16px 18px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
               <Sparkles size={16} className="text-blue-400" />
               <h4 style={{ margin: 0, color: 'var(--text-primary)' }}>Cohort Memo</h4>
@@ -1035,7 +1035,7 @@ Keep it crisp and practical.`;
                       style={{
                         padding: '5px 10px',
                         fontSize: '0.78rem',
-                        color: '#D66CAE',
+                        color: 'var(--accent-primary)',
                         borderRight: `1px solid ${groupedBorderColor}`,
                         fontWeight: 600,
                         display: 'flex', alignItems: 'center', gap: '3px',
@@ -1114,7 +1114,7 @@ Keep it crisp and practical.`;
           onExportPdf={generateMemoPdf}
         />
       ) : aiAnalysis || aiAnalyzing || aiAnalysisError ? (
-        <div className="ai-comparison-panel glass-card" style={{ padding: '24px', marginBottom: '8px', borderLeft: '4px solid #B31F7E' }}>
+        <div className="ai-comparison-panel glass-card" style={{ padding: '24px', marginBottom: '8px', borderLeft: '4px solid var(--accent-primary)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
             <Sparkles className="text-blue-400" size={20} />
             <h3 style={{ fontWeight: 600, color: 'var(--text-primary)', margin: 0 }}>URC Financial Compare</h3>
@@ -1184,7 +1184,7 @@ Keep it crisp and practical.`;
                         </div>
                         <div className="kpi-metric">
                           <span className="kpi-card-label">Free Cash Flow</span>
-                          <span className="kpi-card-value" style={{ color: fcf.value != null && fcf.value > 0 ? '#34D399' : '#F87171' }}>{fcf.display}</span>
+                          <span className="kpi-card-value" style={{ color: fcf.value != null && fcf.value > 0 ? 'var(--status-success)' : 'var(--status-error)' }}>{fcf.display}</span>
                         </div>
                       </div>
                     </div>
@@ -1417,16 +1417,16 @@ Keep it crisp and practical.`;
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginBottom: '8px' }}>
                 <button type="button" onClick={() => setCommonSize(prev => !prev)}
                   style={{
-                    padding: '6px 12px', borderRadius: '8px', fontSize: '0.75rem', cursor: 'pointer',
-                    border: '1px solid ' + (commonSize ? 'rgba(214,108,174,0.6)' : 'var(--input-border)'),
-                    background: commonSize ? 'rgba(179,31,126,0.25)' : 'rgba(255,255,255,0.04)',
+                    padding: '6px 12px', borderRadius: '4px', fontSize: '0.75rem', cursor: 'pointer',
+                    border: '1px solid ' + (commonSize ? 'color-mix(in srgb, var(--accent-primary) 45%, var(--input-border))' : 'var(--input-border)'),
+                    background: commonSize ? 'var(--surface-accent)' : 'var(--input-bg)',
                     color: commonSize ? 'var(--accent-primary)' : 'var(--text-muted)',
                   }}>
                   % Common-size
                 </button>
                 <button type="button" onClick={exportMatrixToXlsx}
                   style={{
-                    padding: '6px 12px', borderRadius: '8px', fontSize: '0.75rem', cursor: 'pointer',
+                    padding: '6px 12px', borderRadius: '4px', fontSize: '0.75rem', cursor: 'pointer',
                     border: '1px solid var(--input-border)', background: 'var(--input-bg)', color: 'var(--text-secondary)',
                   }}>
                   Export XLSX
@@ -1471,10 +1471,10 @@ Keep it crisp and practical.`;
                       <React.Fragment key={section.title}>
                         <tr>
                           <td colSpan={columns.length + 1} style={{
-                            padding: '12px 20px', background: 'rgba(179,31,126,0.06)',
-                            fontWeight: 700, fontSize: '0.8rem', color: '#D66CAE',
+                            padding: '12px 20px', background: 'var(--surface-accent)',
+                            fontWeight: 700, fontSize: '0.8rem', color: 'var(--accent-primary)',
                             textTransform: 'uppercase', letterSpacing: '0.05em',
-                            borderTop: '1px solid rgba(179,31,126,0.15)', borderBottom: '1px solid rgba(179,31,126,0.15)'
+                            borderTop: '1px solid color-mix(in srgb, var(--accent-primary) 20%, var(--border-color))', borderBottom: '1px solid color-mix(in srgb, var(--accent-primary) 20%, var(--border-color))'
                           }}>
                             {section.title}
                           </td>
@@ -1490,7 +1490,7 @@ Keep it crisp and practical.`;
                                 <td key={col} style={{
                                   padding: '10px 14px', textAlign: 'right',
                                   fontFamily: 'var(--font-mono)', fontSize: '0.85rem',
-                                  color: m?.value != null ? (m.value < 0 ? '#F87171' : 'var(--text-primary)') : 'var(--text-muted)',
+                                  color: m?.value != null ? (m.value < 0 ? 'var(--status-error)' : 'var(--text-primary)') : 'var(--text-muted)',
                                   ...colBorderStyle(col, idx),
                                 }}>
                                   {commonSize
@@ -1507,10 +1507,10 @@ Keep it crisp and practical.`;
                     {/* COMPUTED RATIOS */}
                     <tr>
                       <td colSpan={columns.length + 1} style={{
-                        padding: '12px 20px', background: 'rgba(16,185,129,0.06)',
-                        fontWeight: 700, fontSize: '0.8rem', color: '#34D399',
+                        padding: '12px 20px', background: 'color-mix(in srgb, var(--status-success) 8%, transparent)',
+                        fontWeight: 700, fontSize: '0.8rem', color: 'var(--status-success)',
                         textTransform: 'uppercase', letterSpacing: '0.05em',
-                        borderTop: '1px solid rgba(16,185,129,0.15)', borderBottom: '1px solid rgba(16,185,129,0.15)'
+                        borderTop: '1px solid color-mix(in srgb, var(--status-success) 20%, var(--border-color))', borderBottom: '1px solid color-mix(in srgb, var(--status-success) 20%, var(--border-color))'
                       }}>
                         Computed Ratios & Analytical Metrics
                       </td>
@@ -1532,7 +1532,7 @@ Keep it crisp and practical.`;
                                 color: getRatioColor(r.value, ratio.thresholds, ratio.higherIsBetter),
                                 background: getRatioBg(r.value, ratio.thresholds, ratio.higherIsBetter),
                                 borderLeft: isBest
-                                  ? '3px solid #10B981'
+                                  ? '3px solid var(--status-success)'
                                   : (idx === 0 || colTicker(columns[idx - 1]) !== colTicker(col))
                                     ? `2px solid ${getColColor(col)}`
                                     : `1px solid ${groupedBorderColor}`,
@@ -1608,9 +1608,9 @@ Keep it crisp and practical.`;
             <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 500 }}>Form Type:</span>
             {Object.keys(SECTION_LISTS).map(ft => (
               <button key={ft} onClick={() => setMatrixFormType(ft)} style={{
-                padding: '6px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontSize: '0.8rem',
-                background: matrixFormType === ft ? '#B31F7E' : 'var(--surface-subtle)',
-                color: matrixFormType === ft ? '#FFFFFF' : 'var(--text-secondary)', transition: 'all 0.15s',
+                padding: '6px 16px', borderRadius: '4px', border: '1px solid ' + (matrixFormType === ft ? 'var(--accent-primary)' : 'var(--border-color)'), cursor: 'pointer', fontSize: '0.8rem',
+                background: matrixFormType === ft ? 'var(--accent-primary)' : 'var(--surface-subtle)',
+                color: matrixFormType === ft ? 'var(--surface-panel)' : 'var(--text-secondary)', transition: 'background-color 0.15s, border-color 0.15s, color 0.15s',
               }}>
                 {ft}
               </button>
@@ -1687,10 +1687,10 @@ Keep it crisp and practical.`;
             zIndex: 9999,
             background: 'var(--surface-panel-strong)',
             border: '1px solid var(--border-color)',
-            borderRadius: '8px',
+            borderRadius: '4px',
             padding: '4px',
             minWidth: '96px',
-            boxShadow: isDarkMode ? '0 16px 30px rgba(0,0,0,0.35)' : '0 16px 26px rgba(72,42,122,0.14)',
+            boxShadow: isDarkMode ? '0 4px 12px rgba(0,0,0,0.24)' : '0 4px 12px rgba(0,0,0,0.12)',
             display: 'flex',
             flexDirection: 'column',
             gap: '2px',
@@ -1709,7 +1709,7 @@ Keep it crisp and practical.`;
                   fontSize: '0.82rem', fontWeight: 500, cursor: 'pointer',
                   textAlign: 'left', whiteSpace: 'nowrap',
                 }}
-                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(179,31,126,0.15)')}
+                onMouseEnter={e => (e.currentTarget.style.background = 'var(--interactive-hover)')}
                 onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
               >
                 FY{y}

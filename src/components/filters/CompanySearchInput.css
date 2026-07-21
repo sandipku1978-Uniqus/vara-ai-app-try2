@@ -9,7 +9,7 @@
   gap: 8px;
   padding: 8px 12px;
   border: 1px solid var(--input-border);
-  border-radius: 12px;
+  border-radius: 4px;
   background: var(--input-bg);
   color: var(--text-muted);
   transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
@@ -69,9 +69,9 @@
   max-height: 300px;
   overflow-y: auto;
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: 4px;
   background: var(--surface-panel-strong);
-  box-shadow: var(--glow-shadow);
+  box-shadow: 0 12px 28px color-mix(in srgb, var(--text-primary) 14%, transparent);
 }
 
 .company-search-option {
@@ -80,8 +80,9 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 9px 12px;
+  padding: 9px 12px 9px 9px;
   border: 0;
+  border-left: 3px solid transparent;
   border-bottom: 1px solid var(--border-color);
   background: transparent;
   color: var(--text-primary);
@@ -98,6 +99,10 @@
 .company-search-option:hover,
 .company-search-option.is-active {
   background: var(--interactive-hover-strong);
+}
+
+.company-search-option.is-active {
+  border-left-color: var(--accent-primary);
 }
 
 .company-search-option-label {

@@ -180,8 +180,8 @@ export default function Dashboard() {
               `Comment letters: ${dataStats.letters.count.toLocaleString()} (${dataStats.letters.withText.toLocaleString()} full-text) · ${dataStats.letters.source}`,
             ].map(chip => (
               <span key={chip} style={{
-                fontSize: '0.7rem', color: 'var(--text-secondary)', background: 'var(--input-bg)',
-                border: '1px solid var(--input-border)', borderRadius: '999px', padding: '3px 10px',
+                fontSize: '0.7rem', color: 'var(--text-secondary)', background: 'var(--surface-subtle)',
+                border: '1px solid var(--input-border)', borderRadius: '4px', padding: '3px 8px',
               }}>
                 {chip}
               </span>
@@ -215,7 +215,7 @@ export default function Dashboard() {
                   <XAxis dataKey="month" stroke="var(--chart-text)" fontSize={12} tickLine={false} axisLine={false} />
                   <YAxis stroke="var(--chart-text)" fontSize={12} tickLine={false} axisLine={false} />
                   <RechartsTooltip
-                    contentStyle={{ backgroundColor: 'var(--chart-tooltip-bg)', borderColor: 'var(--chart-tooltip-border)', borderRadius: '16px' }}
+                    contentStyle={{ backgroundColor: 'var(--chart-tooltip-bg)', borderColor: 'var(--chart-tooltip-border)', borderRadius: '4px' }}
                     itemStyle={{ color: 'var(--text-primary)' }}
                     labelStyle={{ color: 'var(--text-secondary)' }}
                   />
@@ -334,10 +334,16 @@ export default function Dashboard() {
             <h3>Recent Filings</h3>
             <Clock size={18} className="text-blue" />
           </div>
-          <div className="activity-list">
+          <div className="recent-filings-ledger">
+            <div className="recent-filings-columns" aria-hidden="true">
+              <span>Form</span>
+              <span>Issuer</span>
+              <span>Event</span>
+              <span>Date</span>
+            </div>
             {loadingWatchlist && <div className="text-muted"><Loader2 size={16} className="spinner" /> Loading...</div>}
             {!loadingWatchlist && (() => {
-              const recentFilings: { ticker: string; form: string; date: string }[] = [];
+              const recentFilings: { ticker: string; issuer: string; form: string; date: string }[] = [];
 
               for (const ticker of watchlist) {
                 const secData = watchlistData[ticker];
@@ -346,6 +352,7 @@ export default function Dashboard() {
                 for (let i = 0; i < Math.min(3, recent.form.length); i += 1) {
                   recentFilings.push({
                     ticker,
+                    issuer: secData.name || ticker,
                     form: recent.form[i],
                     date: recent.filingDate[i],
                   });
@@ -368,12 +375,22 @@ export default function Dashboard() {
               }
 
               return display.map((filing, idx) => (
-                <button type="button" key={idx} className="activity-item" onClick={() => navigate.push(`/search?q=${filing.ticker}`)}>
-                  <FileText size={16} className={filing.form === '8-K' ? 'text-orange' : 'text-blue'} />
-                  <div className="activity-details">
-                    <p><strong>{filing.ticker}</strong> filed <strong>{filing.form}</strong></p>
-                    <span>{filing.date}{describeForm(filing.form) ? ` · ${describeForm(filing.form)}` : ''}</span>
-                  </div>
+                <button
+                  type="button"
+                  key={`${filing.ticker}-${filing.form}-${filing.date}-${idx}`}
+                  className="recent-filing-row"
+                  onClick={() => navigate.push(`/search?q=${filing.ticker}`)}
+                >
+                  <span className="recent-filing-form">
+                    <FileText size={14} className={filing.form === '8-K' ? 'text-orange' : 'text-blue'} aria-hidden="true" />
+                    <span className="f-badge">{filing.form}</span>
+                  </span>
+                  <span className="recent-filing-issuer">
+                    <strong>{filing.ticker}</strong>
+                    <span title={filing.issuer}>{filing.issuer}</span>
+                  </span>
+                  <span className="recent-filing-event">{describeForm(filing.form) || 'SEC filing'}</span>
+                  <time className="recent-filing-date" dateTime={filing.date}>{filing.date}</time>
                 </button>
               ));
             })()}
@@ -407,7 +424,7 @@ export default function Dashboard() {
                     <h4 className="rss-headline">{alert.name}</h4>
                     <p className="rss-summary">
                       {checkError
-                        ? <span role="alert" style={{ color: '#FCA5A5' }}>{checkError}</span>
+                        ? <span role="alert" style={{ color: 'var(--status-error)' }}>{checkError}</span>
                         : alert.latestNewAccessions.length > 0
                         ? `${alert.latestNewAccessions.length} new filing${alert.latestNewAccessions.length === 1 ? '' : 's'} detected.`
                         : `${alert.latestResultCount} current match${alert.latestResultCount === 1 ? '' : 'es'} in scope.`}

@@ -56,48 +56,48 @@ export default function ADVRegistrations() {
   ];
 
   return (
-    <div style={{ width: '100%', padding: 'clamp(20px, 4vw, 32px)', maxWidth: '1200px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-        <ClipboardList size={28} style={{ color: 'var(--accent-primary)' }} />
-        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)' }}>Investment Adviser Registrations</h1>
+    <div style={{ width: '100%', padding: 'clamp(14px, 2vw, 20px)', maxWidth: '1440px', margin: '0 auto' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px' }}>
+        <ClipboardList size={24} style={{ color: 'var(--accent-primary)' }} />
+        <h1 style={{ fontSize: '1.35rem', fontWeight: 700, color: 'var(--text-primary)' }}>Investment Adviser Registrations</h1>
       </div>
-      <p style={{ color: 'var(--text-secondary)', marginBottom: '12px', fontSize: '0.9rem' }}>
+      <p style={{ color: 'var(--text-secondary)', marginBottom: '3px', fontSize: '0.86rem' }}>
         Search current firm registrations and Form ADV disclosures from the SEC&apos;s Investment Adviser Public Disclosure (IAPD) system.
       </p>
-      <p style={{ color: 'var(--text-muted)', marginBottom: '24px', fontSize: '0.78rem' }}>
+      <p style={{ color: 'var(--text-muted)', marginBottom: '12px', fontSize: '0.75rem' }}>
         Source: IAPD/IARD. Form ADV is not an EDGAR issuer form; results link to the official firm summary and filed disclosure record.
       </p>
 
-      <form onSubmit={event => { event.preventDefault(); void handleSearch(); }} style={{ display: 'flex', gap: '12px', marginBottom: '20px', maxWidth: '720px', flexWrap: 'wrap' }}>
+      <form onSubmit={event => { event.preventDefault(); void handleSearch(); }} style={{ display: 'flex', gap: '8px', marginBottom: '12px', maxWidth: '760px', flexWrap: 'wrap' }}>
         <input
           value={query}
           onChange={event => setQuery(event.target.value)}
           aria-label="Firm name, CRD number, or SEC number"
           placeholder="Firm name, CRD number, or SEC number"
-          style={{ flex: '1 1 280px', minWidth: 0, padding: '9px 12px', background: 'var(--input-bg)', border: '1px solid var(--input-border)', borderRadius: '8px', color: 'var(--text-primary)' }}
+          style={{ flex: '1 1 280px', minWidth: 0, padding: '7px 10px', background: 'var(--input-bg)', border: '1px solid var(--input-border)', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '0.82rem' }}
         />
-        <button type="submit" className="primary-btn" disabled={loading || !query.trim()}>
+        <button type="submit" className="primary-btn" disabled={loading || !query.trim()} style={{ padding: '7px 14px', fontSize: '0.82rem' }}>
           {loading ? <Loader2 size={14} className="spinner" /> : <Search size={14} />} Search IAPD
         </button>
       </form>
 
       {error && (
-        <div role="alert" style={{ padding: '16px', border: '1px solid var(--status-warning)', borderRadius: '10px', color: 'var(--text-primary)', marginBottom: '20px' }}>
+        <div role="alert" style={{ padding: '10px 12px', border: '1px solid var(--status-warning)', borderRadius: '4px', background: 'color-mix(in srgb, var(--status-warning) 8%, var(--bg-elevated))', color: 'var(--text-primary)', marginBottom: '12px' }}>
           {error} <button type="button" className="secondary-btn" onClick={() => void handleSearch()}>Retry</button>
         </div>
       )}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '48px', color: 'var(--text-muted)' }}><Loader2 size={24} className="spinner" /> Loading official IAPD results…</div>
+        <div style={{ textAlign: 'center', padding: '28px', color: 'var(--text-muted)' }}><Loader2 size={20} className="spinner" /> Loading official IAPD results…</div>
       ) : results.length > 0 ? (
         <>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>Showing {results.length.toLocaleString()} of {total.toLocaleString()} matching IAPD firms.</p>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', margin: '0 0 6px' }}>Showing {results.length.toLocaleString()} of {total.toLocaleString()} matching IAPD firms.</p>
           <ResultsToolbar data={results} columns={columns} label="investment advisers" />
           <DataTable columns={columns} data={results} pageSize={25} />
         </>
       ) : searched && !error ? (
-        <div style={{ textAlign: 'center', padding: '48px', color: 'var(--text-muted)' }}>No IAPD firms matched that search.</div>
+        <div style={{ textAlign: 'center', padding: '28px', color: 'var(--text-muted)' }}>No IAPD firms matched that search.</div>
       ) : !searched ? (
-        <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text-muted)' }}>Enter a firm name or identifier to search the authoritative IAPD registry.</div>
+        <div style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)' }}>Enter a firm name or identifier to search the authoritative IAPD registry.</div>
       ) : null}
     </div>
   );

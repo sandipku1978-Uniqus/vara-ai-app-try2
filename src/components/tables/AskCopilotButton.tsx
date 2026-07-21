@@ -55,9 +55,9 @@ export default function AskCopilotButton({ prompt, compact = false, label }: Ask
       aria-controls="urc-copilot-panel"
       style={{
         display: 'inline-flex', alignItems: 'center', gap: '4px',
-        background: 'rgba(214,108,174,0.1)', border: '1px solid rgba(214,108,174,0.2)',
-        borderRadius: '6px', padding: '3px 8px', color: 'var(--accent-primary)', cursor: 'pointer',
-        fontSize: '0.75rem', transition: 'background 0.2s',
+        background: 'var(--surface-accent)', border: '1px solid var(--border-color)',
+        borderRadius: '4px', padding: '3px 8px', color: 'var(--accent-primary)', cursor: 'pointer',
+        fontSize: '0.75rem', transition: 'background-color 0.2s, border-color 0.2s',
       }}
     >
       <Bot size={12} aria-hidden="true" /> {label || 'Analyze'}

@@ -1,10 +1,23 @@
 .ma-container {
-  padding: 24px;
+  padding: 16px;
   height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  animation: fadeIn 0.4s ease-out;
+  gap: 12px;
+  animation: none;
+}
+
+.ma-container .glass-card {
+  background: var(--surface-panel);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.ma-container .glass-card:hover {
+  transform: none;
+  box-shadow: none;
 }
 
 .ma-header {
@@ -14,20 +27,20 @@
 }
 
 .ma-title h1 {
-  font-size: 1.5rem;
+  font-size: 1.4rem;
   font-weight: 600;
   color: var(--text-primary);
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .ma-title p {
   color: var(--text-secondary);
-  font-size: 0.9rem;
+  font-size: 0.84rem;
 }
 
 .ma-layout {
   display: flex;
-  gap: 24px;
+  gap: 12px;
   flex: 1;
   min-height: 0;
   min-width: 0;
@@ -35,8 +48,8 @@
 
 /* Sidebar Navigation */
 .ma-sidebar {
-  width: 250px;
-  padding: 16px;
+  width: 220px;
+  padding: 10px;
   display: flex;
   flex-direction: column;
   border-right: 1px solid var(--border-color);
@@ -46,19 +59,20 @@
 .ma-nav {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 2px;
 }
 
 .ma-nav .nav-btn {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  border-radius: 8px;
+  min-height: 36px;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 4px;
   background: transparent;
   color: var(--text-secondary);
   border: none;
-  font-size: 0.9rem;
+  font-size: 0.84rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -71,7 +85,7 @@
 }
 
 .ma-nav .nav-btn.active {
-  background: rgba(179, 31, 126, 0.1);
+  background: var(--interactive-hover-strong);
   color: var(--accent-primary);
   box-shadow: inset 3px 0 0 var(--accent-primary);
 }
@@ -82,7 +96,7 @@
   letter-spacing: 0.05em;
   color: var(--text-muted);
   font-weight: 600;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .filter-group label {
@@ -94,55 +108,61 @@
 /* Main Area */
 .ma-main {
   flex: 1;
-  padding: 24px;
+  padding: 16px;
   display: flex;
   flex-direction: column;
   background: var(--surface-panel);
-  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
   overflow-y: auto;
   min-height: 0;
   min-width: 0;
 }
 
-.tab-pane {
+.ma-container .tab-pane {
   display: flex;
   flex-direction: column;
   flex: 1;
   min-height: 0;
 }
 
-.pane-header h2 {
-  font-size: 1.25rem;
+.ma-container .pane-header h2 {
+  font-size: 1.15rem;
   font-weight: 600;
   color: var(--text-primary);
 }
 
-.search-bar {
+.ma-container .search-bar {
   position: relative;
   display: flex;
   align-items: center;
 }
 
-.search-bar input {
+.ma-container .search-bar input {
   width: 100%;
   background: var(--input-bg);
   border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 8px 16px 8px 36px;
+  border-radius: 4px;
+  padding: 7px 10px 7px 32px;
   color: var(--text-primary);
-  font-size: 0.9rem;
+  font-size: 0.84rem;
   transition: all 0.2s ease;
 }
 
-.search-bar input:focus {
+.ma-container .search-bar input:focus {
   outline: none;
   border-color: var(--accent-primary);
-  box-shadow: 0 0 0 2px rgba(179, 31, 126, 0.2);
+  box-shadow: none;
 }
 
-.search-bar .search-icon {
+.ma-container .search-bar input:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+.ma-container .search-bar .search-icon {
   position: absolute;
-  left: 12px;
+  left: 10px;
   color: var(--text-muted);
 }
 
@@ -150,8 +170,8 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 16px;
-  margin-bottom: 24px;
+  gap: 12px;
+  margin-bottom: 16px;
 }
 
 .ma-table-scroll {
@@ -164,9 +184,9 @@
 }
 
 .ma-clause-step {
-  padding: 16px;
+  padding: 12px;
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: 6px;
   background: var(--surface-panel);
 }
 
@@ -182,12 +202,12 @@
 
 .ma-clause-option {
   width: 100%;
-  padding: 8px 12px;
-  border-radius: 6px;
+  padding: 7px 10px;
+  border-radius: 4px;
   color: var(--text-primary);
   cursor: pointer;
   font: inherit;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
   text-align: left;
 }
 
@@ -207,17 +227,18 @@
 
   .ma-nav .nav-btn {
     flex: 0 0 auto;
+    min-height: 40px;
   }
 }
 
 @media (max-width: 640px) {
   .ma-container {
-    gap: 16px;
+    gap: 12px;
     padding: 12px;
   }
 
   .ma-main {
-    padding: 16px;
+    padding: 12px;
   }
 
   .ma-pane-header,

@@ -73,29 +73,29 @@ export default function SECEnforcement() {
   ];
 
   return (
-    <div style={{ padding: '32px', maxWidth: '1200px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
-        <Gavel size={28} style={{ color: 'var(--accent-primary)' }} aria-hidden="true" />
-        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)' }}>{ENFORCEMENT_SCOPE_LABEL}</h1>
+    <div style={{ width: '100%', padding: 'clamp(14px, 2vw, 20px)', maxWidth: '1440px', margin: '0 auto' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '5px' }}>
+        <Gavel size={24} style={{ color: 'var(--accent-primary)' }} aria-hidden="true" />
+        <h1 style={{ fontSize: '1.35rem', fontWeight: 700, color: 'var(--text-primary)' }}>{ENFORCEMENT_SCOPE_LABEL}</h1>
       </div>
-      <p style={{ color: 'var(--text-secondary)', marginBottom: '24px', fontSize: '0.9rem' }}>
+      <p style={{ color: 'var(--text-secondary)', marginBottom: '12px', fontSize: '0.86rem' }}>
         {ENFORCEMENT_SCOPE_DESCRIPTION} {ENFORCEMENT_SCOPE_LIMITATION}
       </p>
 
-      <div style={{ marginBottom: '24px', maxWidth: '400px', display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--input-bg)', border: '1px solid var(--input-border)', borderRadius: '8px', padding: '6px 12px' }}>
+      <div style={{ marginBottom: '12px', maxWidth: '480px', display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--input-bg)', border: '1px solid var(--input-border)', borderRadius: '4px', padding: '5px 10px' }}>
         <Search size={14} style={{ color: 'var(--text-muted)' }} aria-hidden="true" />
         <label className="sr-only" htmlFor="litigation-release-filter">Filter litigation releases</label>
         <input id="litigation-release-filter" type="search" value={filterText} onChange={e => setFilterText(e.target.value)} placeholder="Filter releases..."
-          style={{ flex: 1, minWidth: 0, background: 'transparent', border: 'none', outline: 'none', color: 'var(--text-primary)', fontSize: '0.85rem' }} />
+          style={{ flex: 1, minWidth: 0, background: 'transparent', border: 'none', outline: 'none', color: 'var(--text-primary)', fontSize: '0.82rem' }} />
       </div>
 
       {loading ? (
-        <div role="status" style={{ textAlign: 'center', padding: '48px', color: 'var(--text-muted)' }}>
-          <Loader2 size={24} className="spinner" style={{ marginBottom: '8px' }} />
+        <div role="status" style={{ textAlign: 'center', padding: '28px', color: 'var(--text-muted)' }}>
+          <Loader2 size={20} className="spinner" style={{ marginBottom: '6px' }} />
           <div>Loading litigation releases...</div>
         </div>
       ) : error ? (
-        <div role="alert" style={{ textAlign: 'center', padding: '48px', color: 'var(--status-error)', background: 'var(--status-error-bg)', borderRadius: '12px' }}>
+        <div role="alert" style={{ textAlign: 'center', padding: '20px', color: 'var(--status-error)', background: 'var(--status-error-bg)', border: '1px solid color-mix(in srgb, var(--status-error) 35%, var(--border-color))', borderRadius: '4px' }}>
           <p>{error}</p>
           <button type="button" className="secondary-btn" onClick={() => void load()}>Retry official source</button>
         </div>
@@ -105,7 +105,7 @@ export default function SECEnforcement() {
           <DataTable columns={columns} data={filtered} pageSize={25} />
         </>
       ) : (
-        <div style={{ textAlign: 'center', padding: '48px', color: 'var(--text-muted)' }}>No litigation releases found.</div>
+        <div style={{ textAlign: 'center', padding: '28px', color: 'var(--text-muted)' }}>No litigation releases found.</div>
       )}
     </div>
   );

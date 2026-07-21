@@ -1,6 +1,6 @@
 .section-matrix-container {
   border: 1px solid var(--border-color);
-  border-radius: 12px;
+  border-radius: 6px;
   overflow: auto;
   max-height: 600px;
   background: var(--surface-panel);
@@ -20,16 +20,16 @@
 }
 
 .section-matrix th {
-  padding: 14px 16px;
+  padding: 10px 12px;
   font-weight: 600;
-  font-size: 0.8rem;
+  font-size: 0.74rem;
   color: var(--text-primary);
   border-bottom: 1px solid var(--table-header-border);
 }
 
 .sm-section-col {
   text-align: left !important;
-  min-width: 280px;
+  min-width: 240px;
   position: sticky;
   left: 0;
   background: var(--table-header-bg);
@@ -52,8 +52,8 @@
 
 .sm-section-label {
   text-align: left;
-  padding: 12px 16px;
-  font-size: 0.8rem;
+  padding: 9px 12px;
+  font-size: 0.78rem;
   color: var(--text-primary);
   font-weight: 500;
   position: sticky;
@@ -62,7 +62,7 @@
 }
 
 .sm-cell {
-  padding: 8px;
+  padding: 6px;
   border-left: 1px solid var(--border-color);
 }
 
@@ -70,9 +70,11 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 6px;
+  min-width: 28px;
+  min-height: 28px;
+  padding: 4px;
   border: 0;
-  border-radius: 6px;
+  border-radius: 4px;
   background: transparent;
   cursor: pointer;
 }
@@ -97,7 +99,7 @@
 
 .sm-loading,
 .sm-empty {
-  padding: 48px;
+  padding: 32px;
   text-align: center;
   color: var(--text-muted);
   font-size: 0.9rem;

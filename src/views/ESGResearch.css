@@ -1,30 +1,44 @@
 .esg-container {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 12px;
   height: calc(100vh - 120px);
 }
 
+.esg-container .glass-card {
+  background: var(--surface-panel);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.esg-container .glass-card:hover {
+  transform: none;
+  box-shadow: none;
+}
+
 .esg-header h1 {
-  font-size: 1.8rem;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
+  font-size: 1.4rem;
 }
 
 .esg-header p {
   color: var(--text-secondary);
+  font-size: 0.85rem;
 }
 
 .esg-layout {
   display: flex;
-  gap: 24px;
+  gap: 12px;
   flex: 1;
   min-height: 0;
 }
 
 .esg-sidebar {
-  width: 260px;
+  width: 220px;
   flex-shrink: 0;
-  padding: 16px;
+  padding: 10px;
   display: flex;
   flex-direction: column;
 }
@@ -32,7 +46,7 @@
 .esg-nav {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 2px;
 }
 
 /* Reusing .nav-btn and .tab-pane from AccountingHub generally via standard classes, 
@@ -40,14 +54,15 @@
 .esg-nav .nav-btn {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
+  min-height: 36px;
+  gap: 8px;
+  padding: 8px 10px;
   background: transparent;
   border: none;
-  border-radius: 8px;
+  border-radius: 4px;
   color: var(--text-secondary);
   font-family: var(--font-sans);
-  font-size: 0.95rem;
+  font-size: 0.84rem;
   font-weight: 500;
   text-align: left;
   cursor: pointer;
@@ -60,16 +75,16 @@
 }
 
 .esg-nav .nav-btn.active {
-  background: color-mix(in srgb, var(--status-success) 14%, transparent);
-  color: var(--status-success);
-  box-shadow: inset 3px 0 0 var(--status-success);
+  background: var(--interactive-hover-strong);
+  color: var(--accent-primary);
+  box-shadow: inset 3px 0 0 var(--accent-primary);
 }
 
 .policy-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 0;
+  padding: 8px 0;
   border-bottom: 1px solid var(--border-color);
   color: var(--text-primary);
   gap: 8px;
@@ -102,7 +117,7 @@ a.policy-item:hover {
 }
 
 .policy-source-note {
-  margin: 8px 0;
+  margin: 6px 0;
 }
 
 .status-badge {
@@ -118,52 +133,52 @@ a.policy-item:hover {
 
 .esg-main {
   flex: 1;
-  padding: 32px;
+  padding: 16px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
 }
 
-.search-bar.no-margin {
+.esg-container .search-bar.no-margin {
   margin-bottom: 0;
-  padding: 8px 16px;
+  padding: 6px 10px;
 }
 
 .framework-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 12px;
 }
 
 .framework-card {
-  background: var(--surface-panel-strong);
+  background: var(--surface-panel);
   border: 1px solid var(--border-color);
-  padding: 24px;
-  border-radius: 12px;
+  padding: 14px;
+  border-radius: 6px;
   display: flex;
   flex-direction: column;
 }
 
 .fw-icon-wrapper {
-  background: rgba(179, 31, 126, 0.1);
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
+  background: var(--interactive-hover-strong);
+  width: 34px;
+  height: 34px;
+  border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 16px;
+  margin-bottom: 10px;
 }
 
 .framework-card h3 {
-  font-size: 1.1rem;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
+  font-size: 1rem;
 }
 
 .framework-card p {
   color: var(--text-secondary);
-  font-size: 0.9rem;
-  line-height: 1.5;
+  font-size: 0.84rem;
+  line-height: 1.45;
   flex: 1;
 }
 
@@ -181,14 +196,14 @@ a.policy-item:hover {
 }
 
 .text-btn:hover {
-  filter: brightness(1.2);
+  color: var(--accent-primary-hover);
 }
 
 .badge {
   font-family: var(--font-mono);
   font-size: 0.7rem;
   padding: 2px 8px;
-  border-radius: 12px;
+  border-radius: 4px;
   font-weight: 600;
 }
 
@@ -199,13 +214,13 @@ a.policy-item:hover {
 /* Heatmap Styles */
 .heatmap-cell {
   width: 100%;
-  height: 40px;
+  height: 32px;
   border-radius: 6px;
-  transition: transform 0.2s;
+  transition: border-color 0.2s;
 }
 
 .heatmap-cell:hover {
-  transform: scale(1.05);
+  transform: none;
 }
 
 .heatmap-cell.high { background: color-mix(in srgb, var(--status-success) 24%, var(--surface-panel-strong)); border: 1px solid color-mix(in srgb, var(--status-success) 34%, transparent); }
@@ -217,7 +232,7 @@ a.policy-item:hover {
 
 .esg-topic-button {
   width: 100%;
-  padding: 16px;
+  padding: 10px;
   border: 0;
   background: transparent;
   color: inherit;
@@ -233,7 +248,7 @@ a.policy-item:hover {
 }
 
 .heatmap-coverage {
-  margin-top: 10px;
+  margin-top: 6px;
   color: var(--text-muted);
   font-size: 0.74rem;
 }
@@ -248,8 +263,8 @@ a.policy-item:hover {
 /* Heatmap Legend */
 .heatmap-legend {
   display: flex;
-  gap: 16px;
-  margin-top: 16px;
+  gap: 12px;
+  margin-top: 10px;
   align-items: center;
   justify-content: flex-end;
 }
@@ -275,9 +290,9 @@ a.policy-item:hover {
 .release-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   flex-wrap: wrap;
-  margin-top: 12px;
+  margin-top: 8px;
 }
 
 .release-actions a {
@@ -298,36 +313,36 @@ a.policy-item:hover {
   pointer-events: none;
 }
 .search-bar-inline input {
-  padding: 8px 12px 8px 36px;
+  padding: 7px 10px 7px 32px;
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
-  border-radius: 8px;
+  border-radius: 4px;
   color: var(--text-primary);
-  font-size: 0.85rem;
-  width: 280px;
+  font-size: 0.82rem;
+  width: 250px;
   outline: none;
   transition: border-color 0.2s;
 }
 .search-bar-inline input:focus {
-  border-color: var(--accent-blue);
+  border-color: var(--accent-primary);
 }
 
 /* Global search bar icon fix */
-.search-bar {
+.esg-container .search-bar {
   position: relative;
   display: flex;
   align-items: center;
 }
-.search-bar .search-icon,
-.search-bar > svg {
+.esg-container .search-bar .search-icon,
+.esg-container .search-bar > svg {
   position: absolute;
-  left: 12px;
+  left: 10px;
   color: var(--text-muted);
   pointer-events: none;
   flex-shrink: 0;
 }
-.search-bar input {
-  padding-left: 36px;
+.esg-container .search-bar input {
+  padding-left: 32px;
   width: 100%;
 }
 
@@ -353,6 +368,7 @@ a.policy-item:hover {
 
   .esg-nav .nav-btn {
     flex: 0 0 auto;
+    min-height: 40px;
   }
 
   .esg-sidebar .sidebar-widget {
@@ -361,19 +377,19 @@ a.policy-item:hover {
 
   .esg-main {
     overflow: visible;
-    padding: 20px;
+    padding: 16px;
   }
 
-  .pane-header {
+  .esg-container .pane-header {
     align-items: flex-start !important;
-    gap: 12px;
+    gap: 10px;
     flex-wrap: wrap;
   }
 }
 
 @media (max-width: 600px) {
   .esg-main {
-    padding: 14px;
+    padding: 12px;
   }
 
   .framework-grid {

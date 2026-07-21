@@ -385,7 +385,7 @@ Write a concise memo with:
               </div>
 
               <form onSubmit={event => { event.preventDefault(); void runResearch(); }} style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                <div style={{ flex: '1 1 280px', minWidth: 0, display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--input-bg)', border: '1px solid var(--input-border)', borderRadius: '12px', padding: '12px 14px' }}>
+                <div style={{ flex: '1 1 280px', minWidth: 0, display: 'flex', alignItems: 'center', gap: '10px', background: 'var(--input-bg)', border: '1px solid var(--input-border)', borderRadius: '4px', padding: '12px 14px' }}>
                   <Search size={16} style={{ color: 'var(--text-muted)' }} />
                   <input
                     value={researchQuery}
@@ -464,28 +464,28 @@ Write a concise memo with:
               </div>
 
               {alertMessage && (
-                <div role="status" style={{ padding: '10px 12px', borderRadius: '10px', border: '1px solid rgba(179,31,126,0.2)', background: 'rgba(179,31,126,0.08)', color: 'var(--text-primary)' }}>
+                <div role="status" style={{ padding: '10px 12px', borderRadius: '4px', border: '1px solid color-mix(in srgb, var(--accent-primary) 20%, transparent)', background: 'color-mix(in srgb, var(--accent-primary) 8%, var(--surface-panel))', color: 'var(--text-primary)' }}>
                   {alertMessage}
                 </div>
               )}
 
               {researchError && (
-                <div role="alert" style={{ padding: '10px 12px', borderRadius: '10px', border: '1px solid color-mix(in srgb, var(--status-error) 30%, transparent)', background: 'var(--status-error-bg)', color: 'var(--status-error)' }}>
+                <div role="alert" style={{ padding: '10px 12px', borderRadius: '4px', border: '1px solid color-mix(in srgb, var(--status-error) 30%, transparent)', background: 'var(--status-error-bg)', color: 'var(--status-error)' }}>
                   {researchError}
                 </div>
               )}
 
               {researchMemoError && (
-                <div role="alert" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', padding: '10px 12px', borderRadius: '10px', border: '1px solid color-mix(in srgb, var(--status-error) 30%, transparent)', background: 'var(--status-error-bg)', color: 'var(--status-error)' }}>
+                <div role="alert" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap', padding: '10px 12px', borderRadius: '4px', border: '1px solid color-mix(in srgb, var(--status-error) 30%, transparent)', background: 'var(--status-error-bg)', color: 'var(--status-error)' }}>
                   <span>{researchMemoError}</span>
                   <button type="button" className="secondary-btn" onClick={() => void handleGenerateMemo()}>Retry memo</button>
                 </div>
               )}
 
               {(researchMemo || researchMemoLoading) && (
-                <div style={{ borderLeft: '4px solid var(--accent-primary)', background: 'var(--surface-subtle)', borderRadius: '12px', padding: '16px 18px' }}>
+                <div style={{ borderLeft: '4px solid var(--accent-primary)', background: 'var(--surface-subtle)', borderRadius: '4px', padding: '16px 18px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '10px' }}>
-                    <Sparkles size={18} className="text-blue-400" />
+                    <Sparkles size={18} style={{ color: 'var(--accent-primary)' }} />
                     <h3 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '1rem' }}>Accounting Research Memo</h3>
                   </div>
                   {researchMemoLoading ? (
@@ -637,14 +637,14 @@ Write a concise memo with:
           {activeTab === 'ai' && (
             <div className="tab-pane fade-in ai-pane">
               <div className="ai-intro text-center py-8">
-                <Sparkles size={48} className="text-blue-500 mx-auto mb-4" />
+                <Sparkles size={24} style={{ color: 'var(--accent-primary)', margin: '0 auto 12px' }} />
                 <h2>Ask AI for Accounting Guidance</h2>
-                <p className="text-slate-400 max-w-lg mx-auto">Describe the transaction, accounting issue, or disclosure question and get a fast ASC-oriented starting point.</p>
+                <p className="text-muted max-w-lg mx-auto">Describe the transaction, accounting issue, or disclosure question and get a fast ASC-oriented starting point.</p>
               </div>
 
               <div className="ai-chat-area">
                 {aiError && (
-                  <div role="alert" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap', padding: '12px 14px', borderRadius: '10px', border: '1px solid color-mix(in srgb, var(--status-error) 30%, transparent)', background: 'var(--status-error-bg)', color: 'var(--status-error)' }}>
+                  <div role="alert" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap', padding: '12px 14px', borderRadius: '4px', border: '1px solid color-mix(in srgb, var(--status-error) 30%, transparent)', background: 'var(--status-error-bg)', color: 'var(--status-error)' }}>
                     <span>{aiError}</span>
                     <button type="button" className="secondary-btn" onClick={() => void submitAscLookup()} disabled={isAiLoading}>Retry guidance</button>
                   </div>
@@ -658,7 +658,7 @@ Write a concise memo with:
                 )}
 
                 {isAiLoading && (
-                  <div className="ai-response-box loading text-slate-400" role="status">
+                  <div className="ai-response-box loading text-muted" role="status">
                     <Loader2 size={18} className="spinner inline mr-2" /> Connecting to technical accounting guidance...
                   </div>
                 )}

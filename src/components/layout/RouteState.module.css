@@ -8,11 +8,10 @@
   align-content: center;
   gap: 14px;
   border: 1px solid var(--border-color);
-  border-radius: 20px;
+  border-radius: 6px;
   background: var(--surface-panel);
   color: var(--text-primary);
   text-align: center;
-  box-shadow: var(--glow-shadow);
 }
 
 .shell h1,
@@ -52,7 +51,7 @@
   justify-content: center;
   padding: 9px 18px;
   border: 1px solid transparent;
-  border-radius: 10px;
+  border-radius: 4px;
   font: inherit;
   font-size: 0.88rem;
   font-weight: 700;

@@ -101,9 +101,8 @@ interface SearchMatch {
 const cardStyle: React.CSSProperties = {
   background: 'var(--bg-elevated)',
   border: '1px solid var(--border-color)',
-  borderRadius: '6px',
-  padding: '16px',
-  transition: 'border-color 0.2s',
+  borderRadius: '4px',
+  padding: '11px 12px',
 };
 
 /**
@@ -138,7 +137,7 @@ function FormBadge({ form }: { form: string }) {
       background: isStaff
         ? 'color-mix(in srgb, var(--status-warning) 14%, transparent)'
         : 'color-mix(in srgb, var(--status-success) 14%, transparent)',
-      padding: '2px 8px',
+      padding: '1px 6px',
       borderRadius: '4px',
       whiteSpace: 'nowrap',
     }}>
@@ -241,12 +240,12 @@ export function ThreadConversation({ threadId }: { threadId: string }) {
   }, [threadId]);
 
   if (letters === null) {
-    return <div style={{ padding: '16px', color: 'var(--text-muted)' }}><Loader2 size={16} className="spinner" /> Loading conversation…</div>;
+    return <div style={{ padding: '10px 12px', color: 'var(--text-muted)' }}><Loader2 size={16} className="spinner" /> Loading conversation…</div>;
   }
 
   if (lettersError) {
     return (
-      <div role="alert" style={{ ...cardStyle, marginTop: '10px', color: '#FCA5A5' }}>
+      <div role="alert" style={{ ...cardStyle, marginTop: '6px', color: 'var(--status-error)', background: 'var(--status-error-bg)' }}>
         <p>{lettersError}</p>
         <button type="button" className="secondary-btn" onClick={() => setReloadKey(key => key + 1)}>Retry conversation</button>
       </div>
@@ -254,18 +253,18 @@ export function ThreadConversation({ threadId }: { threadId: string }) {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', padding: '12px 0 4px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '8px 0 2px' }}>
       {aiSummary === 'checking' ? (
-        <div style={{ ...cardStyle, padding: '12px 14px', color: 'var(--text-secondary)', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ ...cardStyle, padding: '9px 11px', color: 'var(--text-secondary)', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
           <Loader2 size={14} className="spinner" /> Checking for a cached review summary…
         </div>
       ) : aiSummary === 'generating' ? (
-        <div role="status" style={{ ...cardStyle, padding: '12px 14px', color: 'var(--text-secondary)', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div role="status" style={{ ...cardStyle, padding: '9px 11px', color: 'var(--text-secondary)', fontSize: '0.78rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
           <Loader2 size={14} className="spinner" /> Generating the AI review summary from the source letters…
         </div>
       ) : aiSummary && typeof aiSummary === 'object' ? (
-        <div style={{ ...cardStyle, padding: '14px 16px', borderLeft: '3px solid rgba(179,31,126,0.6)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
+        <div style={{ ...cardStyle, padding: '10px 12px', borderLeft: '3px solid var(--accent-primary)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '6px', marginBottom: '5px', flexWrap: 'wrap' }}>
             <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--accent-soft)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               Review summary
             </span>
@@ -273,11 +272,11 @@ export function ThreadConversation({ threadId }: { threadId: string }) {
               AI-generated{aiSummary.model ? ` · ${aiSummary.model}` : ''}{aiSummary.generatedAt ? ` · ${aiSummary.generatedAt.slice(0, 10)}` : ''} · verify against the letters below
             </span>
           </div>
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.55, whiteSpace: 'pre-line' }}>
+          <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.45, whiteSpace: 'pre-line' }}>
             {aiSummary.summary.replace(/\*\*/g, '')}
           </div>
           {aiSummary.coverage && (
-            <div style={{ marginTop: '8px', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+            <div style={{ marginTop: '6px', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
               {aiSummary.coverage.lettersRepresented}/{aiSummary.coverage.totalLetters} letters represented · {aiSummary.coverage.lettersWithText} with extracted text
               {aiSummary.coverage.truncatedLetters > 0 ? ` · ${aiSummary.coverage.truncatedLetters} long letters excerpted from opening and closing` : ''}
               {aiSummary.coverage.missingTextLetters > 0 ? ` · ${aiSummary.coverage.missingTextLetters} unavailable` : ''}
@@ -286,12 +285,12 @@ export function ThreadConversation({ threadId }: { threadId: string }) {
           )}
         </div>
       ) : aiSummary === 'not-generated' ? (
-        <div style={{ ...cardStyle, padding: '12px 14px', color: 'var(--text-secondary)', fontSize: '0.78rem' }}>
+        <div style={{ ...cardStyle, padding: '9px 11px', color: 'var(--text-secondary)', fontSize: '0.78rem' }}>
           <p style={{ marginTop: 0 }}>No current cached AI summary exists. Generating one uses AI capacity and summarizes the extracted source-letter evidence.</p>
           <button type="button" className="secondary-btn" onClick={() => void generateSummary()}>Generate AI summary</button>
         </div>
       ) : aiSummary === 'error' ? (
-        <div role="alert" style={{ ...cardStyle, padding: '12px 14px', color: '#FCA5A5', fontSize: '0.78rem' }}>
+        <div role="alert" style={{ ...cardStyle, padding: '9px 11px', color: 'var(--status-error)', background: 'var(--status-error-bg)', fontSize: '0.78rem' }}>
           <p>{summaryError}</p>
           {summaryErrorPhase === 'lookup' ? (
             <button type="button" className="secondary-btn" onClick={() => setSummaryReloadKey(key => key + 1)}>Retry cached-summary lookup</button>
@@ -303,18 +302,18 @@ export function ThreadConversation({ threadId }: { threadId: string }) {
       {letters.map(letter => (
         <div key={`${letter.accession}:${letter.form}`} style={{
           ...cardStyle,
-          padding: '12px 14px',
-          marginLeft: letter.form === 'UPLOAD' ? 0 : '28px',
+          padding: '9px 11px',
+          marginLeft: letter.form === 'UPLOAD' ? 0 : '20px',
           borderLeft: letter.form === 'UPLOAD'
             ? '3px solid color-mix(in srgb, var(--status-warning) 55%, transparent)'
             : '3px solid color-mix(in srgb, var(--status-success) 55%, transparent)',
         }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <FormBadge form={letter.form} />
               <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{letter.date_filed}</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <CiteButton
                 compact
                 citation={{
@@ -329,13 +328,13 @@ export function ThreadConversation({ threadId }: { threadId: string }) {
                 }}
               />
               <a href={edgarLetterIndexUrl(letter.cik, letter.accession)} target="_blank" rel="noreferrer"
-                style={{ color: '#D66CAE', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                style={{ color: 'var(--accent-primary)', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                 Full letter <ExternalLink size={11} />
               </a>
             </div>
           </div>
           {letter.has_text ? (
-            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.5, whiteSpace: 'pre-line' }}>
+            <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.42, whiteSpace: 'pre-line' }}>
               {letter.preview}{letter.preview.length >= 700 ? '…' : ''}
             </div>
           ) : (
@@ -346,7 +345,7 @@ export function ThreadConversation({ threadId }: { threadId: string }) {
         </div>
       ))}
       {letters.length > 0 && (
-        <div style={{ paddingTop: '4px' }}>
+        <div style={{ paddingTop: '2px' }}>
           <AskCopilotButton
             prompt={`Summarize this SEC comment-letter conversation for ${letters[0].company_name}: what did the Staff challenge, how did the company respond, and how was it resolved?\n\nThe letters, in order:\n\n${letters
               .map(letter => `--- ${letter.form === 'UPLOAD' ? 'SEC STAFF LETTER' : 'COMPANY RESPONSE'} (${letter.date_filed}) ---\n${letter.has_text ? letter.preview : '[text not yet extracted]'}`)
@@ -490,23 +489,23 @@ export default function CommentLetters() {
   const showBrowse = !searched || (!loading && matches.length === 0 && !keyword.trim());
 
   return (
-    <div style={{ padding: '32px', maxWidth: '1100px', margin: '0 auto' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
-        <Mail size={28} style={{ color: '#D66CAE' }} />
-        <h1 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)' }}>Comment Letters</h1>
+    <div style={{ width: '100%', padding: 'clamp(14px, 2vw, 20px)', maxWidth: '1440px', margin: '0 auto' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+        <Mail size={24} style={{ color: 'var(--accent-primary)' }} />
+        <h1 style={{ fontSize: '1.35rem', fontWeight: 700, color: 'var(--text-primary)' }}>Comment Letters</h1>
       </div>
-      <p style={{ color: 'var(--text-secondary)', marginBottom: '24px', fontSize: '0.9rem' }}>
+      <p style={{ color: 'var(--text-secondary)', marginBottom: '12px', fontSize: '0.86rem' }}>
         SEC review conversations since 2005 — Staff letters (UPLOAD) threaded with company responses
         (CORRESP), full-text searchable{threadsTotal > 0 ? ` across ${threadsTotal.toLocaleString()} review episodes` : ''}.
       </p>
 
       {letterStats && (
-        <div style={{ ...cardStyle, marginBottom: '16px', padding: '12px 16px', borderLeft: '3px solid rgba(214,108,174,0.65)' }}>
+        <div style={{ ...cardStyle, marginBottom: '10px', padding: '8px 12px', borderLeft: '3px solid var(--accent-primary)' }}>
           <div style={{ color: 'var(--text-primary)', fontWeight: 650, fontSize: '0.86rem' }}>
             {letterStats.withText.toLocaleString()} of {letterStats.count.toLocaleString()} letters searchable
             {letterStats.count > 0 ? ` (${((letterStats.withText / letterStats.count) * 100).toFixed(2)}%)` : ''}
           </div>
-          <div style={{ color: 'var(--text-muted)', fontSize: '0.72rem', marginTop: '4px' }}>
+          <div style={{ color: 'var(--text-muted)', fontSize: '0.72rem', marginTop: '2px' }}>
             Metadata through {letterStats.through || 'unknown'} · last successful text extraction {letterStats.lastTextFetch ? new Date(letterStats.lastTextFetch).toLocaleString() : 'not reported'}
             {letterStats.retryPending > 0 ? ` · ${letterStats.retryPending.toLocaleString()} transient fetch failures queued for retry` : ''}
           </div>
@@ -514,22 +513,22 @@ export default function CommentLetters() {
       )}
 
       {unavailable && (
-        <div role="alert" style={{ ...cardStyle, borderColor: 'color-mix(in srgb, var(--status-warning) 40%, transparent)', color: 'var(--status-warning)', fontSize: '0.85rem', marginBottom: '16px' }}>
+        <div role="alert" style={{ ...cardStyle, borderColor: 'color-mix(in srgb, var(--status-warning) 40%, transparent)', color: 'var(--status-warning)', fontSize: '0.85rem', marginBottom: '10px' }}>
           <p>The letter corpus is not reachable right now.</p>
           <button type="button" className="secondary-btn" onClick={() => setBrowseReloadKey(key => key + 1)}>Retry letter corpus</button>
         </div>
       )}
 
       {/* Search */}
-      <div style={{ display: 'flex', gap: '12px', marginBottom: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
         <div style={{ flex: 1, minWidth: '240px' }}>
           <input value={keyword} onChange={e => setKeyword(e.target.value)}
             placeholder='e.g. revenue recognition principal agent, "material weakness", segment reporting'
             aria-label="Search inside SEC comment letters"
             onKeyDown={e => e.key === 'Enter' && runSearch(keyword, formFilter, companyFilter)}
-            style={{ width: '100%', padding: '9px 12px', background: 'var(--input-bg)', border: '1px solid var(--input-border)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '0.85rem', outline: 'none' }} />
+            style={{ width: '100%', padding: '7px 10px', background: 'var(--input-bg)', border: '1px solid var(--input-border)', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '0.84rem', outline: 'none' }} />
         </div>
-        <div style={{ minWidth: '220px' }}>
+        <div style={{ minWidth: '200px' }}>
           {/* Letters are keyed by registrant name, so suggestion picks pass
               the company title; free text still filters as typed. */}
           <CompanySearchInput
@@ -547,8 +546,8 @@ export default function CommentLetters() {
           {([['', 'All'], ['UPLOAD', 'Staff letters'], ['CORRESP', 'Responses']] as const).map(([value, label]) => (
             <button key={value} type="button" aria-pressed={formFilter === value} onClick={() => { setFormFilter(value); if (searched && keyword.trim()) runSearch(keyword, value, companyFilter); }}
               style={{
-                padding: '7px 12px', borderRadius: '8px', fontSize: '0.78rem', cursor: 'pointer',
-                border: '1px solid ' + (formFilter === value ? 'rgba(214,108,174,0.6)' : 'var(--input-border)'),
+                padding: '5px 9px', borderRadius: '4px', fontSize: '0.76rem', cursor: 'pointer',
+                border: '1px solid ' + (formFilter === value ? 'var(--accent-primary)' : 'var(--input-border)'),
                 background: formFilter === value ? 'var(--interactive-hover-strong)' : 'var(--input-bg)',
                 color: formFilter === value ? 'var(--accent-primary)' : 'var(--text-muted)',
               }}>
@@ -557,18 +556,18 @@ export default function CommentLetters() {
           ))}
         </div>
         <button type="button" onClick={() => runSearch(keyword, formFilter, companyFilter)} disabled={loading}
-          style={{ padding: '9px 20px', background: 'var(--accent-primary)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.85rem' }}>
+          style={{ padding: '7px 14px', background: 'var(--accent-primary)', color: 'white', border: '1px solid var(--accent-primary)', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem' }}>
           {loading ? <Loader2 size={14} className="spinner" /> : <Search size={14} />} Search
         </button>
       </div>
 
       {/* Topic-first entry — fires a tuned corpus query per issue */}
-      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
+      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '12px' }}>
         {TOPIC_CHIPS.map(chip => (
           <button key={chip.label} type="button"
             onClick={() => { setKeyword(chip.query); runSearch(chip.query, formFilter, companyFilter); }}
             style={{
-              padding: '6px 12px', borderRadius: '999px', fontSize: '0.75rem', cursor: 'pointer',
+              padding: '4px 8px', borderRadius: '4px', fontSize: '0.73rem', cursor: 'pointer',
               border: '1px solid var(--input-border)', background: 'var(--input-bg)', color: 'var(--text-secondary)',
             }}>
             {chip.label}
@@ -577,21 +576,21 @@ export default function CommentLetters() {
       </div>
 
       {loading ? (
-        <div role="status" style={{ textAlign: 'center', padding: '48px', color: 'var(--text-muted)' }}>
-          <Loader2 size={24} className="spinner" style={{ marginBottom: '8px' }} />
+        <div role="status" style={{ textAlign: 'center', padding: '28px', color: 'var(--text-muted)' }}>
+          <Loader2 size={20} className="spinner" style={{ marginBottom: '6px' }} />
           <div>Searching inside letters…</div>
         </div>
       ) : searched && keyword.trim() ? (
         matches.length > 0 ? (
           <div>
-            <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: '8px 0 12px' }}>
+            <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: '6px 0 8px' }}>
               {matchesTotal.toLocaleString()} matching letters — ranked by relevance
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               {matches.map(match => (
                 <div key={`${match.accession}:${match.cik}`} style={cardStyle}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '6px', marginBottom: '5px', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '7px', minWidth: 0 }}>
                       <a href={`/company/${match.cik}`} title="Open issuer dossier"
                         style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.88rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: 'none' }}>
                         {match.company_name}
@@ -599,7 +598,7 @@ export default function CommentLetters() {
                       <FormBadge form={match.form} />
                       <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{match.date_filed}</span>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
                       <button type="button" aria-expanded={expandedThread === match.thread_id} onClick={() => setExpandedThread(expandedThread === match.thread_id ? null : match.thread_id)}
                         style={{ color: 'var(--accent-primary)', fontSize: '0.75rem', background: 'none', border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                         <MessageSquare size={12} /> {expandedThread === match.thread_id ? 'Hide conversation' : 'View conversation'}
@@ -623,7 +622,7 @@ export default function CommentLetters() {
                       />
                     </div>
                   </div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.55 }}
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.45 }}
                     dangerouslySetInnerHTML={renderHeadline(match.headline || '')} />
                   {expandedThread === match.thread_id && <ThreadConversation threadId={match.thread_id} />}
                 </div>
@@ -631,7 +630,7 @@ export default function CommentLetters() {
             </div>
           </div>
         ) : (
-          <div role={searchError ? 'alert' : undefined} style={{ textAlign: 'center', padding: '48px', color: searchError ? 'var(--status-error)' : 'var(--text-muted)' }}>
+          <div role={searchError ? 'alert' : undefined} style={{ textAlign: 'center', padding: '28px', color: searchError ? 'var(--status-error)' : 'var(--text-muted)' }}>
             <p>{searchError || 'No searchable letter text matched. Check the corpus coverage above before treating this as no precedent.'}</p>
             {searchError && <button type="button" className="secondary-btn" onClick={() => void runSearch(keyword, formFilter, companyFilter)}>Retry letter search</button>}
           </div>
@@ -639,17 +638,17 @@ export default function CommentLetters() {
       ) : null}
 
       {showBrowse && !loading && (
-        <div style={{ marginTop: searched ? '8px' : '16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
-            <MessageSquare size={18} style={{ color: '#F59E0B' }} />
-            <h2 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--text-primary)' }}>Latest review conversations</h2>
+        <div style={{ marginTop: searched ? '6px' : '12px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+            <MessageSquare size={16} style={{ color: 'var(--status-warning)' }} />
+            <h2 style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-primary)' }}>Latest review conversations</h2>
           </div>
           {browseLoading ? (
-            <div role="status" style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
-              <Loader2 size={20} className="spinner" style={{ marginBottom: '8px' }} /><div>Loading conversations…</div>
+            <div role="status" style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)' }}>
+              <Loader2 size={18} className="spinner" style={{ marginBottom: '6px' }} /><div>Loading conversations…</div>
             </div>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               {requestedThreadError && (
                 <div role="alert" style={{ ...cardStyle, color: 'var(--status-error)', background: 'var(--status-error-bg)' }}>
                   <p>{requestedThreadError}</p>
@@ -665,37 +664,37 @@ export default function CommentLetters() {
                 const isLongReview = thread.uploads >= 3;
                 return (
                   <div key={thread.thread_id} id={`thread-card-${thread.thread_id}`} style={cardStyle}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
                       <button
                         type="button"
                         onClick={() => setExpandedThread(expandedThread === thread.thread_id ? null : thread.thread_id)}
                         aria-expanded={expandedThread === thread.thread_id}
                         aria-controls={`thread-${thread.thread_id}`}
-                        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', cursor: 'pointer', flexWrap: 'wrap', flex: 1, minWidth: 0, background: 'none', border: 'none', padding: 0, textAlign: 'left' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', minWidth: 0 }}>
-                          {expandedThread === thread.thread_id ? <ChevronDown size={16} style={{ color: 'var(--text-secondary)' }} /> : <ChevronRight size={16} style={{ color: 'var(--text-secondary)' }} />}
-                          <span style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '6px', cursor: 'pointer', flexWrap: 'wrap', flex: 1, minWidth: 0, background: 'none', border: 'none', padding: 0, textAlign: 'left' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '7px', minWidth: 0 }}>
+                          {expandedThread === thread.thread_id ? <ChevronDown size={14} style={{ color: 'var(--text-secondary)' }} /> : <ChevronRight size={14} style={{ color: 'var(--text-secondary)' }} />}
+                          <span style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.86rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {thread.company_name}
                           </span>
                         {/* Round count is the accountant's severity signal — long
                             contested reviews are the richest precedents */}
                         <span style={{
-                          fontSize: '0.7rem', padding: '2px 8px', borderRadius: '4px', whiteSpace: 'nowrap',
+                          fontSize: '0.69rem', padding: '1px 6px', borderRadius: '4px', whiteSpace: 'nowrap',
                           color: isLongReview ? 'var(--accent-primary)' : 'var(--text-muted)',
                           background: isLongReview ? 'var(--interactive-hover-strong)' : 'var(--surface-subtle)',
                         }}>
                           {thread.uploads} round{thread.uploads === 1 ? '' : 's'} · {days}d
                         </span>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.73rem', color: 'var(--text-secondary)' }}>
                         <span style={{ color: 'var(--status-warning)' }}>{thread.uploads} Staff</span>
                         <span style={{ color: 'var(--status-success)' }}>{thread.corresps} responses</span>
                         <span>{thread.first_letter} → {thread.last_letter}</span>
                         </div>
                       </button>
                       <a href={`/company/${thread.cik}`} aria-label={`Open ${thread.company_name} issuer dossier`} title="Open issuer dossier"
-                        style={{ color: 'var(--accent-primary)', display: 'inline-flex', padding: '6px', borderRadius: '6px' }}>
-                        <ExternalLink size={15} aria-hidden="true" />
+                        style={{ color: 'var(--accent-primary)', display: 'inline-flex', padding: '4px', borderRadius: '4px' }}>
+                        <ExternalLink size={14} aria-hidden="true" />
                       </a>
                     </div>
                     {expandedThread === thread.thread_id && <div id={`thread-${thread.thread_id}`}><ThreadConversation threadId={thread.thread_id} /></div>}

@@ -96,10 +96,10 @@ interface Props {
 }
 
 const inputStyle: React.CSSProperties = {
-  padding: '8px 11px',
+  padding: '8px 10px',
   background: 'var(--input-bg)',
   border: '1px solid var(--input-border)',
-  borderRadius: '12px',
+  borderRadius: '4px',
   color: 'var(--text-primary)',
   fontSize: '0.78rem',
   outline: 'none',
@@ -119,10 +119,10 @@ const chipStyle: React.CSSProperties = {
   display: 'inline-flex',
   alignItems: 'center',
   gap: '4px',
-  padding: '2px 8px',
-  borderRadius: '999px',
-  background: 'var(--surface-subtle)',
-  border: '1px solid rgba(179,31,126,0.2)',
+  padding: '3px 7px',
+  borderRadius: '4px',
+  background: 'var(--surface-accent)',
+  border: '1px solid var(--border-color)',
   color: 'var(--accent-primary)',
   fontSize: '0.71rem',
   fontWeight: 500,
@@ -139,15 +139,15 @@ const selectStyle: React.CSSProperties = {
 };
 
 const pillBtnStyle = (active: boolean): React.CSSProperties => ({
-  padding: '3px 9px',
-  borderRadius: '999px',
-  border: `1px solid ${active ? 'rgba(179,31,126,0.36)' : 'var(--border-color)'}`,
-  background: active ? 'rgba(179,31,126,0.1)' : 'var(--surface-panel)',
+  padding: '4px 9px',
+  borderRadius: '4px',
+  border: `1px solid ${active ? 'var(--accent-primary)' : 'var(--border-color)'}`,
+  background: active ? 'var(--surface-accent)' : 'var(--surface-panel)',
   color: active ? 'var(--accent-primary)' : 'var(--text-secondary)',
   cursor: 'pointer',
   fontSize: '0.73rem',
   fontWeight: active ? 600 : 400,
-  transition: 'all 0.12s',
+  transition: 'background-color 0.12s, border-color 0.12s, color 0.12s',
 });
 
 function CollapsibleSection({ title, defaultOpen = false, children }: { title: string; defaultOpen?: boolean; children: React.ReactNode }) {
@@ -239,19 +239,19 @@ export default function SearchFilterBar({ config, filters, onChange, onSearch, l
         onClick={() => setExpanded(!expanded)}
         style={{
           display: 'flex', alignItems: 'center', gap: '6px',
-          padding: '6px 12px', borderRadius: '8px',
+          padding: '6px 10px', borderRadius: '4px',
           border: '1px solid var(--border-color)',
           background: expanded ? 'var(--surface-subtle)' : 'var(--surface-panel)',
           color: expanded ? 'var(--accent-primary)' : 'var(--text-secondary)',
           cursor: 'pointer', fontSize: '0.78rem', fontWeight: 500,
-          transition: 'all 0.15s',
+          transition: 'background-color 0.15s, border-color 0.15s, color 0.15s',
           marginBottom: expanded ? '10px' : '0',
         }}
       >
         <Filter size={14} />
         Advanced Filters
         {activeCount > 0 && (
-          <span style={{ background: 'var(--accent-primary)', color: 'white', borderRadius: '10px', padding: '0 6px', fontSize: '0.7rem', fontWeight: 700, minWidth: '18px', textAlign: 'center' }}>
+          <span style={{ background: 'var(--accent-primary)', color: 'white', borderRadius: '999px', padding: '0 6px', fontSize: '0.7rem', fontWeight: 700, minWidth: '18px', textAlign: 'center' }}>
             {activeCount}
           </span>
         )}
@@ -288,7 +288,7 @@ export default function SearchFilterBar({ config, filters, onChange, onSearch, l
         <div id={filterPanelId} style={{
           background: 'var(--surface-panel)',
           border: '1px solid var(--border-color)',
-          borderRadius: '12px',
+          borderRadius: '6px',
           padding: '14px 16px',
           display: 'flex',
           flexDirection: 'column',
@@ -500,7 +500,7 @@ export default function SearchFilterBar({ config, filters, onChange, onSearch, l
               {activeCount === 0 && <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem' }}>No filters applied</span>}
             </div>
             <button type="button" onClick={onSearch} disabled={loading} style={{
-              padding: '8px 18px', background: 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))', color: 'white', border: 'none', borderRadius: '999px',
+              padding: '8px 18px', background: 'var(--accent-primary)', color: 'white', border: '1px solid var(--accent-primary)', borderRadius: '4px',
               cursor: 'pointer', fontSize: '0.78rem', fontWeight: 600, whiteSpace: 'nowrap', marginLeft: '12px',
             }}>
               Apply & Search
