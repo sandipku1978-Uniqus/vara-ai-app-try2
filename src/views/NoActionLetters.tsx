@@ -98,7 +98,7 @@ export default function NoActionLetters() {
           <DataTable columns={columns} data={items} pageSize={25} />
         </>
       ) : (
-        <div style={{ textAlign: 'center', padding: '48px', color: 'var(--text-muted)' }}>No official SEC staff responses matched this search.</div>
+        <div style={{ textAlign: 'center', padding: '48px', color: 'var(--text-muted)' }}>No official SEC staff responses matched. This index covers requestor names, subjects, and divisions — try a company or firm name (e.g. UBS), or a division like Corporation Finance. Topic phrases are not part of the official index.</div>
       )}
     </div>
   );
