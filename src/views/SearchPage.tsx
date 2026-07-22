@@ -431,6 +431,13 @@ export default function SearchPage() {
 
   const activeSessionIdRef = useRef<string | null>(null);
   const pendingRefinementKeysRef = useRef<Map<string, string>>(new Map());
+  // Latest-request-wins: every submission gets a monotonic run id per research
+  // session and its own AbortController. A superseded or closed run's async
+  // completions are ignored and its in-flight fetches are cancelled, so a slow
+  // earlier search can never overwrite a newer run's results, route, or error.
+  const runCounterRef = useRef(0);
+  const activeRunBySessionRef = useRef<Map<string, number>>(new Map());
+  const abortBySessionRef = useRef<Map<string, AbortController>>(new Map());
   const sessionsRef = useRef<ResearchSearchSession[]>(sessions);
   const handleSearchRef = useRef<((searchQuery?: string, overrideFilters?: SearchFilters, overrideMode?: ResearchSearchMode, options?: { preferredSessionId?: string; replaceUrl?: boolean }) => Promise<void>) | null>(null);
 
@@ -682,6 +689,17 @@ export default function SearchPage() {
         ? activeSession.id
         : createResearchSessionId());
 
+    // Supersede any in-flight run for this session: abort its fetches and mark
+    // it stale so its late callbacks below become no-ops.
+    const runId = (runCounterRef.current += 1);
+    abortBySessionRef.current.get(targetSessionId)?.abort();
+    const runAbort = new AbortController();
+    abortBySessionRef.current.set(targetSessionId, runAbort);
+    activeRunBySessionRef.current.set(targetSessionId, runId);
+    const isCurrentRun = () => activeRunBySessionRef.current.get(targetSessionId) === runId;
+    const guardedDegraded = (reason: string) => { if (isCurrentRun()) setDegradedNotice(reason); };
+    const guardedCoverage: typeof captureCandidateCoverage = coverage => { if (isCurrentRun()) captureCandidateCoverage(coverage); };
+
     try {
       const effectiveQuery = interpreted.query || trimmed;
       const effectiveFilters = interpreted.filters;
@@ -737,9 +755,14 @@ export default function SearchPage() {
         // Boolean/proximity results are never displayed before the expression
         // has been checked against the actual filing text.
         deferTextValidation: shouldRunBackgroundRefinement && resolvedSearch.mode !== 'boolean',
-        onDegraded: setDegradedNotice,
-        onCoverage: captureCandidateCoverage,
+        onDegraded: guardedDegraded,
+        onCoverage: guardedCoverage,
+        signal: runAbort.signal,
       });
+
+      // A newer search (or a session close) superseded this run while it was
+      // in flight — drop its results rather than overwrite the current view.
+      if (!isCurrentRun()) return;
 
       setResults(initialMatches);
       setLastResolvedSearch(resolvedSearch);
@@ -796,11 +819,12 @@ export default function SearchPage() {
               hydrateTextSignals: true,
               deferTextValidation: false,
               preferFastCandidateCollection: true,
-              onDegraded: setDegradedNotice,
-              onCoverage: captureCandidateCoverage,
+              onDegraded: guardedDegraded,
+              onCoverage: guardedCoverage,
+              signal: runAbort.signal,
             });
 
-            if (pendingRefinementKeysRef.current.get(targetSessionId) !== refinementKey) {
+            if (!isCurrentRun() || pendingRefinementKeysRef.current.get(targetSessionId) !== refinementKey) {
               return;
             }
 
@@ -846,14 +870,15 @@ export default function SearchPage() {
             useEnrichedSearch: RESEARCH_SEARCH_USES_ENRICHED_RESULTS,
             hydrateTextSignals: fullHydrateSignals,
             deferTextValidation: false,
-            onDegraded: setDegradedNotice,
-            onCoverage: captureCandidateCoverage,
+            onDegraded: guardedDegraded,
+            onCoverage: guardedCoverage,
+            signal: runAbort.signal,
             onProgress: (progressResults) => {
               const now = Date.now();
               if (now - lastProgressUpdate < 800) return;
               lastProgressUpdate = now;
 
-              if (pendingRefinementKeysRef.current.get(targetSessionId) !== refinementKey) return;
+              if (!isCurrentRun() || pendingRefinementKeysRef.current.get(targetSessionId) !== refinementKey) return;
 
               const currentSession = sessionsRef.current.find(s => s.id === targetSessionId);
               const progressSession = buildResearchSession(
@@ -878,7 +903,7 @@ export default function SearchPage() {
             },
           });
 
-          if (pendingRefinementKeysRef.current.get(targetSessionId) !== refinementKey) {
+          if (!isCurrentRun() || pendingRefinementKeysRef.current.get(targetSessionId) !== refinementKey) {
             return;
           }
 
@@ -910,7 +935,7 @@ export default function SearchPage() {
         } catch (refinementError) {
           console.error('Background research refinement failed:', refinementError);
 
-          if (pendingRefinementKeysRef.current.get(targetSessionId) !== refinementKey) {
+          if (!isCurrentRun() || pendingRefinementKeysRef.current.get(targetSessionId) !== refinementKey) {
             return;
           }
 
@@ -946,6 +971,8 @@ export default function SearchPage() {
       return;
     } catch (error) {
       console.error('Research search failed:', error);
+      // A superseded/aborted run's failure must not clobber the current view.
+      if (!isCurrentRun()) return;
       setResults([]);
       pendingRefinementKeysRef.current.delete(targetSessionId);
       const failedSession = buildResearchSession(
@@ -1132,6 +1159,10 @@ export default function SearchPage() {
 
   const closeSession = useCallback((sessionId: string) => {
     pendingRefinementKeysRef.current.delete(sessionId);
+    // Cancel any in-flight run for the closed session so it can't resurrect it.
+    abortBySessionRef.current.get(sessionId)?.abort();
+    abortBySessionRef.current.delete(sessionId);
+    activeRunBySessionRef.current.delete(sessionId);
     setSessions(prev => {
       const next = prev.filter(item => item.id !== sessionId);
       const nextActive =

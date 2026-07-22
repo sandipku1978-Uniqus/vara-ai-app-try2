@@ -106,6 +106,9 @@ interface ExecuteSearchOptions {
   onProgress?: (results: FilingResearchResult[]) => void;
   onDegraded?: (reason: string) => void;
   onCoverage?: (coverage: SearchCandidateCoverage) => void;
+  /** Cancels the run cooperatively (latest-request-wins). When aborted, the
+   *  executor stops issuing new EDGAR pages and filing-text fetches. */
+  signal?: AbortSignal;
 }
 
 export type EntityScopeMode = 'conservative' | 'aggressive' | 'off';
@@ -1204,6 +1207,7 @@ export async function executeFilingResearchSearch({
   onProgress,
   onDegraded,
   onCoverage,
+  signal,
 }: ExecuteSearchOptions): Promise<FilingResearchResult[]> {
   let query = rawQuery;
   let filters = rawFilters;
@@ -1347,6 +1351,7 @@ export async function executeFilingResearchSearch({
         : Math.min(Math.max(displayLimit + 40, 200), 500);
 
     for (const [queryIndex, candidateQuery] of filteredServerQueries.entries()) {
+      if (signal?.aborted) break;
       try {
         const batch = await searchEdgarFilings(
           candidateQuery,
@@ -1438,6 +1443,7 @@ export async function executeFilingResearchSearch({
       budgetExhausted = true;
       break;
     }
+    if (signal?.aborted) break; // superseded by a newer run — stop issuing pages
 
     let queryBatchHits: EdgarSearchHit[];
     pageRequests += 1;
@@ -1483,6 +1489,7 @@ export async function executeFilingResearchSearch({
     // Validate each candidate in this wave (fetch text, check auditor/boolean/section)
     for (let index = 0; index < waveCandidates.length && filteredResults.length < displayLimit && Date.now() - waveStartTime < maxWaveTimeMs; index += batchSize) {
       if (docAttempts >= MAX_DOC_ATTEMPTS) { budgetExhausted = true; break; }
+      if (signal?.aborted) break;
       const chunk = waveCandidates.slice(index, Math.min(index + batchSize, waveCandidates.length));
 
       await Promise.all(

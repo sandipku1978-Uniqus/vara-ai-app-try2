@@ -128,4 +128,34 @@ describe('Boolean OR-branch coverage', () => {
     // And the run is honestly disclosed as a bounded partial.
     expect(onDegraded).toHaveBeenCalledWith(expect.stringMatching(/request budget/i));
   });
+
+  it('honors an already-aborted signal without issuing any EDGAR page', async () => {
+    mocks.search.mockImplementation(async () => [hit('D1')]);
+    const controller = new AbortController();
+    controller.abort();
+    await executeFilingResearchSearch({
+      query: 'alpha',
+      filters: { ...defaultSearchFilters },
+      mode: 'boolean',
+      limit: 50,
+      signal: controller.signal,
+    });
+    expect(mocks.search).not.toHaveBeenCalled();
+  });
+
+  it('stops fetching filing text once the run is aborted mid-flight', async () => {
+    const many = Array.from({ length: 50 }, (_, i) => hit(`D${i}`));
+    const controller = new AbortController();
+    // Abort as the first EDGAR page resolves — before any text validation runs.
+    mocks.search.mockImplementation(async () => { controller.abort(); return many; });
+    mocks.fetchText.mockImplementation(async () => 'alpha present');
+    await executeFilingResearchSearch({
+      query: 'alpha',
+      filters: { ...defaultSearchFilters },
+      mode: 'boolean',
+      limit: 50,
+      signal: controller.signal,
+    });
+    expect(mocks.fetchText).not.toHaveBeenCalled();
+  });
 });
