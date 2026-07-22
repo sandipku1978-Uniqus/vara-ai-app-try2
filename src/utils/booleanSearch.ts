@@ -67,10 +67,23 @@ function normalizeTokenValue(value: string): string {
   return normalizeMatchText(value);
 }
 
-// Bare terms match complete normalized tokens only — no morphological stemming.
-// Broad prefix/suffix expansion produced surprising, non-deterministic matches
-// (audit→auditory, lease→leasehold, modification→"modific"). Documented
-// equivalents live in TERM_EQUIVALENTS; everything else is exact-token.
+// Documented, symmetric singular/plural stem. Applied to BOTH the query term and
+// the filing token, so "lease"≡"leases", "filing"≡"filings", "weakness"≡
+// "weaknesses", "company"≡"companies". It deliberately does NOT do broad
+// prefix/suffix stemming, so "audit"≠"auditory" and "risk"≠"brisk" still hold.
+// Known limitation: x/z/ch/sh plurals (tax→taxes, box→boxes) are not linked.
+function singularStem(token: string): string {
+  if (token.length <= 3) return token;
+  if (token.endsWith('ies') && token.length > 4) return `${token.slice(0, -3)}y`;
+  if (token.endsWith('sses')) return token.slice(0, -2); // weaknesses→weakness, classes→class
+  if (token.endsWith('ss')) return token;                // weakness, class (already singular)
+  if (token.endsWith('s')) return token.slice(0, -1);    // filings→filing, leases→lease
+  return token;
+}
+
+// Bare terms match complete normalized tokens (with singular/plural equivalence).
+// Documented equivalents live in TERM_EQUIVALENTS; there is no broad prefix
+// stemming.
 function buildTermMatchVariants(value: string): string[] {
   const normalized = normalizeTokenValue(value);
   return normalized ? [normalized] : [];
@@ -87,7 +100,9 @@ function getEquivalentSearchValues(value: string): string[] {
 }
 
 function tokenMatchesTerm(actualToken: string, value: string): boolean {
-  return buildTermMatchVariants(value).some(variant => actualToken === variant);
+  return buildTermMatchVariants(value).some(variant =>
+    actualToken === variant || singularStem(actualToken) === singularStem(variant)
+  );
 }
 
 function tokenize(query: string): Token[] {
@@ -398,12 +413,17 @@ function findPhraseSpans(index: TextIndex, normalizedPhrase: string): Array<{ st
   const phraseTokens = normalizedPhrase.split(' ').filter(Boolean);
   if (phraseTokens.length === 0) return [];
 
+  // Token-boundary phrase match with per-token singular/plural equivalence, so
+  // "material weakness" matches "material weaknesses" but never spans a boundary.
   const spans: Array<{ start: number; end: number }> = [];
   for (let i = 0; i <= index.tokens.length - phraseTokens.length; i += 1) {
-    const slice = index.tokens.slice(i, i + phraseTokens.length);
-    if (slice.join(' ') === normalizedPhrase) {
-      spans.push({ start: i, end: i + phraseTokens.length - 1 });
+    let matched = true;
+    for (let j = 0; j < phraseTokens.length; j += 1) {
+      const a = index.tokens[i + j];
+      const b = phraseTokens[j];
+      if (a !== b && singularStem(a) !== singularStem(b)) { matched = false; break; }
     }
+    if (matched) spans.push({ start: i, end: i + phraseTokens.length - 1 });
   }
   return spans;
 }

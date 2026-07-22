@@ -211,12 +211,13 @@ describe('booleanSearch', () => {
       expect(booleanQueryMatches('REVENUE', 'total Revenue increased')).toBe(true);
     });
 
-    it('matches complete tokens only — no morphological stemming', () => {
-      // Strict token matching: "filing" matches "filing", not "filings" or "filed".
+    it('matches complete tokens with singular/plural equivalence, no broad stemming', () => {
       expect(booleanQueryMatches('filing', 'The annual filing was submitted')).toBe(true);
-      expect(booleanQueryMatches('filing', 'The company filed several filings')).toBe(false);
-      // And no surprising prefix matches.
+      expect(booleanQueryMatches('filing', 'The company made several filings')).toBe(true); // plural
+      expect(booleanQueryMatches('weakness', 'we noted material weaknesses')).toBe(true);   // -sses plural
+      // But no surprising prefix/substring matches.
       expect(booleanQueryMatches('audit', 'an auditory signal')).toBe(false);
+      expect(booleanQueryMatches('filing', 'the company filed a report')).toBe(false); // "filed" is not a plural
     });
 
     it('returns false for empty query', () => {

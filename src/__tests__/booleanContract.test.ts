@@ -16,6 +16,12 @@ describe('Boolean matching contract', () => {
     { query: '"net income"', text: 'planet income increased', expected: false },
     { query: 'risk', text: 'brisk demand', expected: false },
     { query: 'audit', text: 'auditory signal', expected: false },
+    // Singular/plural equivalence (symmetric), but not broad stemming.
+    { query: 'lease', text: 'several operating leases', expected: true },
+    { query: 'weaknesses', text: 'a material weakness', expected: true },
+    { query: 'company', text: 'the companies reported', expected: true },
+    { query: '"material weakness"', text: 'two material weaknesses were noted', expected: true },
+    { query: 'filing', text: 'the company filed a report', expected: false },
   ];
 
   for (const { query, text, expected } of cases) {
