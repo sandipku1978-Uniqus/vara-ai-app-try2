@@ -55,6 +55,11 @@ export interface FilingResearchResult {
   headquarters: string;
   fileNumber: string;
   auditor: string;
+  // Authoritative auditor of record from the PCAOB Form AP facet store (2017→).
+  // When present it drives both the auditor filter and the displayed firm;
+  // `auditor` (detected in the filing text) is the fallback where Form AP has no
+  // coverage. Kept distinct so the filter and the label can never disagree.
+  registeredAuditor?: string;
   acceleratedStatus: string;
 }
 
@@ -836,7 +841,12 @@ function matchesSignalFilters(result: FilingResearchResult, filters: SearchFilte
   }
 
   if (filters.accountant.trim()) {
-    if (!matchesAuditorSelection(result.auditor, filters.accountant)) {
+    // Authoritative PCAOB Form AP auditor wins; the auditor detected in the
+    // filing text is only a fallback where Form AP has no coverage. This is why
+    // a KPMG filter no longer surfaces a filing whose auditor of record is a
+    // different firm (the ENZON 8-K / EisnerAmper case).
+    const effectiveAuditor = result.registeredAuditor?.trim() || result.auditor;
+    if (!matchesAuditorSelection(effectiveAuditor, filters.accountant)) {
       return false;
     }
   }
@@ -971,7 +981,10 @@ export async function enrichResultsFromFacetStore(
     for (const result of results) {
       const info = companies[String(Number(result.cik))];
       if (!info) continue;
-      if (info.auditor) result.auditor = info.auditor;
+      if (info.auditor) {
+        result.registeredAuditor = info.auditor;
+        result.auditor = info.auditor;
+      }
       if (info.sic && !result.sic) result.sic = info.sic;
       if (info.sic_description) result.sicDescription = info.sic_description;
       if (info.tickers?.length && (!result.tickers || result.tickers.length === 0)) result.tickers = info.tickers;
@@ -982,6 +995,33 @@ export async function enrichResultsFromFacetStore(
     // facet store unreachable — display falls back to whatever EFTS provided
   }
   return results;
+}
+
+// Populate ONLY the authoritative Form AP auditor (not the display fields), so
+// the wave's auditor filter can decide on the auditor of record before the
+// final display enrichment runs. Batched by CIK; a facet-store miss leaves
+// registeredAuditor undefined and the filter falls back to text detection.
+async function hydrateRegisteredAuditors(results: FilingResearchResult[]): Promise<void> {
+  const ciks = Array.from(new Set(
+    results
+      .filter(result => result.registeredAuditor === undefined)
+      .map(result => Number(result.cik))
+      .filter(value => Number.isFinite(value) && value > 0)
+  ));
+  if (ciks.length === 0) return;
+
+  try {
+    const response = await fetch(`/api/enrich?ciks=${ciks.slice(0, 200).join(',')}`);
+    if (!response.ok) return;
+    const payload = await response.json() as { companies?: Record<string, { auditor?: string }> };
+    const companies = payload.companies ?? {};
+    for (const result of results) {
+      const info = companies[String(Number(result.cik))];
+      if (info?.auditor) result.registeredAuditor = info.auditor;
+    }
+  } catch {
+    // facet store unreachable — auditor filter falls back to text detection
+  }
 }
 
 async function hydrateCompanyMetadata(result: FilingResearchResult): Promise<FilingResearchResult> {
@@ -1401,6 +1441,9 @@ export async function executeFilingResearchSearch({
           signalMap.set(getSignalCacheKey(result), signal);
         })
       );
+      // Resolve the authoritative auditor of record before the auditor filter
+      // runs, so the firm the filter matches on is the one that gets displayed.
+      if (filters.accountant.trim()) await hydrateRegisteredAuditors(chunk);
       validationExamined += chunk.length;
 
       for (const result of chunk) {
