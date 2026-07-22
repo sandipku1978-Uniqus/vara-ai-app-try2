@@ -1521,7 +1521,7 @@ export async function fetchFilingText(cik: string, accessionNumber: string, prim
       try {
         let lastResponse: Response | null = null;
         for (let attempt = 0; attempt < 2; attempt += 1) {
-          const response = await fetch(buildSecProxyUrl(`Archives/edgar/data/${cik}/${cleanAccession}/${primaryDocument}`), {
+          const response = await fetch(buildSecProxyUrl(`Archives/edgar/data/${cik}/${cleanAccession}/${primaryDocument}`, { trunc: '1' }), {
             headers: getHeaders()
           });
           lastResponse = response;

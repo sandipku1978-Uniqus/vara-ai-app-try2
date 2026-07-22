@@ -1380,6 +1380,11 @@ export async function executeFilingResearchSearch({
   let validationExamined = 0;
   let validationTimedOut = false;
   let completedQueryVariants = 0;
+  // Candidates that matched upstream but whose text could not be fetched for
+  // local Boolean re-validation (oversized beyond the truncation cap, or a
+  // non-HTML primary document such as a PDF). Surfaced so the exclusion is
+  // never silent.
+  let unvalidatedFetchFailures = 0;
 
   const wavePerQueryLimit = fastCandidateCollection ? Math.min(perQueryResultLimit, 140) : perQueryResultLimit;
   const waveQueryVariants = fastCandidateCollection ? filteredServerQueries.slice(0, 2) : filteredServerQueries;
@@ -1450,7 +1455,13 @@ export async function executeFilingResearchSearch({
         const filingText = signalMap.get(getSignalCacheKey(result))?.text || '';
 
         if (needsTextFiltering && mode === 'boolean' && parsedBooleanQuery.expression) {
-          if (!filingText || !booleanQueryMatches(query, filingText)) continue;
+          if (!filingText) {
+            // Distinguish "couldn't fetch the text" from "fetched, didn't match"
+            // so the former can be reported rather than silently dropped.
+            unvalidatedFetchFailures += 1;
+            continue;
+          }
+          if (!booleanQueryMatches(query, filingText)) continue;
         }
 
         if (needsTextFiltering && !matchesSignalFilters(result, filters, filingText)) continue;
@@ -1503,6 +1514,10 @@ export async function executeFilingResearchSearch({
   });
   if (validationTimedOut) {
     onDegraded?.('Filing-text validation reached its time limit; only a partial candidate window was verified.');
+  } else if (unvalidatedFetchFailures > 0) {
+    onDegraded?.(
+      `${unvalidatedFetchFailures} matching candidate ${unvalidatedFetchFailures === 1 ? 'filing was' : 'filings were'} excluded because the document text could not be retrieved for Boolean re-validation (oversized or non-HTML primary document such as a PDF).`
+    );
   }
 
   if (needsCompanyMetadata) {

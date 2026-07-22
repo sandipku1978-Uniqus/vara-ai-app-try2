@@ -252,10 +252,16 @@ export async function readResponseWithLimit(
   response: Response,
   maxBytes: number,
   requestSignal?: AbortSignal,
-  timeoutMs = 12_000
+  timeoutMs = 12_000,
+  // When true, an oversized body is truncated to maxBytes and returned instead
+  // of throwing 413. Used for filing-text validation, where the first maxBytes
+  // is enough to run Boolean/keyword matching — far better than dropping the
+  // whole filing. The preview lane leaves this false so it never shows a
+  // silently clipped document.
+  truncate = false
 ): Promise<Uint8Array> {
   const contentLength = Number(response.headers.get('content-length'));
-  if (Number.isFinite(contentLength) && contentLength > maxBytes) {
+  if (!truncate && Number.isFinite(contentLength) && contentLength > maxBytes) {
     throw new SecUpstreamError('SEC response exceeded the size limit.', 413);
   }
   if (!response.body) return new Uint8Array();
@@ -280,11 +286,20 @@ export async function readResponseWithLimit(
       if (cancellation === 'request') throw new SecUpstreamError('Request cancelled.', 499);
       if (cancellation === 'timeout') throw new SecUpstreamError('SEC response body timed out.', 504);
       if (done) break;
-      total += value.byteLength;
-      if (total > maxBytes) {
+      if (total + value.byteLength > maxBytes) {
+        if (truncate) {
+          const remaining = maxBytes - total;
+          if (remaining > 0) {
+            chunks.push(value.subarray(0, remaining));
+            total += remaining;
+          }
+          await reader.cancel();
+          break;
+        }
         await reader.cancel();
         throw new SecUpstreamError('SEC response exceeded the size limit.', 413);
       }
+      total += value.byteLength;
       chunks.push(value);
     }
   } catch (error) {

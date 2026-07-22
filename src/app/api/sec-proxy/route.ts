@@ -39,9 +39,13 @@ export async function GET(request: Request) {
   }
 
   const upstream = rawUpstream as SecUpstream;
+  // Callers doing text validation pass trunc=1 so an oversized filing is
+  // clipped to the byte cap and still validated, rather than 413-dropped.
+  const truncateOversized = requestUrl.searchParams.get('trunc') === '1';
   const proxyParams = new URLSearchParams(requestUrl.searchParams);
   proxyParams.delete('upstream');
   proxyParams.delete('path');
+  proxyParams.delete('trunc');
 
   try {
     const targetUrl = buildSecTargetUrl(upstream, rawPath, proxyParams);
@@ -61,7 +65,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'SEC upstream request failed.' }, { status });
     }
 
-    const bytes = await readResponseWithLimit(upstreamResponse, MAX_RESPONSE_BYTES, request.signal);
+    const bytes = await readResponseWithLimit(upstreamResponse, MAX_RESPONSE_BYTES, request.signal, 12_000, truncateOversized);
     const contentType = (upstreamResponse.headers.get('content-type') || '').toLowerCase();
     if (contentType.includes('text/html') || contentType.includes('application/xhtml+xml')) {
       const html = new TextDecoder('utf-8').decode(bytes);
