@@ -1402,6 +1402,15 @@ export async function executeFilingResearchSearch({
   const progressInterval = 15;
   const waveStartTime = Date.now();
   const maxWaveTimeMs = 45_000; // Stop after 45 seconds to avoid endless validation
+  // Per-run request budgets that stay well under the /api/sec-proxy limit (180
+  // requests / user / 5 min) so a single Boolean run can never self-inflict a
+  // 429 or starve filing previews. When a budget is hit the run stops and is
+  // reported partial rather than pretending the corpus was exhausted.
+  const MAX_PAGE_REQUESTS = 60;
+  const MAX_DOC_ATTEMPTS = 120;
+  let pageRequests = 0;
+  let docAttempts = 0;
+  let budgetExhausted = false;
   let validationExamined = 0;
   let validationTimedOut = false;
   let completedQueryVariants = 0;
@@ -1425,8 +1434,13 @@ export async function executeFilingResearchSearch({
       validationTimedOut = true;
       break;
     }
+    if (pageRequests >= MAX_PAGE_REQUESTS || docAttempts >= MAX_DOC_ATTEMPTS) {
+      budgetExhausted = true;
+      break;
+    }
 
     let queryBatchHits: EdgarSearchHit[];
+    pageRequests += 1;
     try {
       queryBatchHits = await searchEdgarFilings(
         candidateQuery,
@@ -1468,6 +1482,7 @@ export async function executeFilingResearchSearch({
 
     // Validate each candidate in this wave (fetch text, check auditor/boolean/section)
     for (let index = 0; index < waveCandidates.length && filteredResults.length < displayLimit && Date.now() - waveStartTime < maxWaveTimeMs; index += batchSize) {
+      if (docAttempts >= MAX_DOC_ATTEMPTS) { budgetExhausted = true; break; }
       const chunk = waveCandidates.slice(index, Math.min(index + batchSize, waveCandidates.length));
 
       await Promise.all(
@@ -1480,6 +1495,7 @@ export async function executeFilingResearchSearch({
       // runs, so the firm the filter matches on is the one that gets displayed.
       if (filters.accountant.trim()) await hydrateRegisteredAuditors(chunk);
       validationExamined += chunk.length;
+      docAttempts += chunk.length;
 
       for (const result of chunk) {
         const filingText = signalMap.get(getSignalCacheKey(result))?.text || '';
@@ -1513,6 +1529,7 @@ export async function executeFilingResearchSearch({
       validationTimedOut = true;
       break;
     }
+    if (budgetExhausted) break;
 
     completedQueryVariants += 1;
 
@@ -1533,6 +1550,7 @@ export async function executeFilingResearchSearch({
   const collectionComplete = upstreamCoverage?.complete ?? true;
   const validationComplete = (
     !validationTimedOut &&
+    !budgetExhausted &&
     completedQueryVariants === waveQueryVariants.length &&
     collectionComplete &&
     validationExamined >= hitMap.size
@@ -1544,6 +1562,8 @@ export async function executeFilingResearchSearch({
   });
   if (validationTimedOut) {
     onDegraded?.('Filing-text validation reached its time limit; only a partial candidate window was verified.');
+  } else if (budgetExhausted) {
+    onDegraded?.(`This search reached its per-run request budget (${MAX_PAGE_REQUESTS} pages / ${MAX_DOC_ATTEMPTS} documents); results are a verified partial window, not the full corpus. Narrow the query, dates, or forms to validate more.`);
   } else if (unvalidatedFetchFailures > 0) {
     onDegraded?.(
       `${unvalidatedFetchFailures} matching candidate ${unvalidatedFetchFailures === 1 ? 'filing was' : 'filings were'} excluded because the document text could not be retrieved for Boolean re-validation (oversized or non-HTML primary document such as a PDF).`

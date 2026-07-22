@@ -109,4 +109,23 @@ describe('Boolean OR-branch coverage', () => {
     const queried = mocks.search.mock.calls.map(c => String(c[0]).toLowerCase());
     expect(queried).toContain('beta');
   });
+
+  it('stops at the per-run document budget and reports the run as partial', async () => {
+    // One branch returns far more candidates than the 120-document cap.
+    const many = Array.from({ length: 300 }, (_, i) => hit(`B${i}`));
+    mocks.search.mockImplementation(async () => many);
+    mocks.fetchText.mockImplementation(async () => 'alpha present');
+    const onDegraded = vi.fn();
+    await executeFilingResearchSearch({
+      query: 'alpha',
+      filters: { ...defaultSearchFilters },
+      mode: 'boolean',
+      limit: 500,
+      onDegraded,
+    });
+    // Never exceeds the 120 document-attempt budget.
+    expect(mocks.fetchText.mock.calls.length).toBeLessThanOrEqual(120);
+    // And the run is honestly disclosed as a bounded partial.
+    expect(onDegraded).toHaveBeenCalledWith(expect.stringMatching(/request budget/i));
+  });
 });
