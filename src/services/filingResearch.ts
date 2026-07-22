@@ -1233,6 +1233,16 @@ export async function executeFilingResearchSearch({
       filters = { ...filters, accountant: filters.accountant.trim() || canonical };
       query = residual;
     }
+
+    // Service-boundary validation: an invalid Boolean expression must never
+    // reach EDGAR as a literal string (that is how "revenue AND" silently ran a
+    // wrong search from non-view callers). The views surface the message; here
+    // we hard-stop with zero network calls. A residual-empty auditor-only query
+    // is valid and continues as a firm-scoped browse.
+    const boolText = (query || filters.keyword).trim();
+    if (boolText && !parseBooleanQuery(boolText).expression) {
+      return [];
+    }
   }
 
   const serverQuery = buildServerQuery(query || filters.keyword, filters, mode);

@@ -154,10 +154,13 @@ describe('Boolean search — 20 scenarios', () => {
     record('18 precedence AND-before-OR');
   });
 
-  it('19 · case-insensitive + stemming', () => {
-    expect(booleanQueryMatches('MATERIAL weaknesses', DOC_MW_KPMG)).toBe(true);
-    expect(booleanQueryMatches('recognized', DOC_LEASE)).toBe(true); // "recognized"
-    record('19 case + stemming');
+  it('19 · case-insensitive, strict complete-token matching', () => {
+    // Case-insensitive, but no morphological stemming: exact tokens only.
+    expect(booleanQueryMatches('MATERIAL weakness', DOC_MW_KPMG)).toBe(true);
+    expect(booleanQueryMatches('recognized', DOC_LEASE)).toBe(true);
+    // The plural is NOT the singular under strict matching.
+    expect(booleanQueryMatches('weaknesses', DOC_MW_KPMG)).toBe(false);
+    record('19 case + strict tokens');
   });
 
   it('20 · inline auditor field — extraction + authoritative match semantics', () => {

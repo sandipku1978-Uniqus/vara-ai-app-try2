@@ -96,9 +96,10 @@ describe('booleanSearch', () => {
       expect(result.expression).toEqual({ type: 'PHRASE', value: 'risk factors' });
     });
 
-    it('handles unclosed quote gracefully', () => {
+    it('rejects an unclosed quote instead of auto-closing it', () => {
       const result = parseBooleanQuery('"material weakness');
-      expect(result.expression).not.toBeNull();
+      expect(result.expression).toBeNull();
+      expect(result.error).toMatch(/quot/i);
     });
 
     it('parses multiple OR operators', () => {
@@ -139,16 +140,20 @@ describe('booleanSearch', () => {
       expect(looksLikeBooleanQuery('risk NEAR/3 factor')).toBe(true);
     });
 
-    it('returns true for quoted phrases', () => {
-      expect(looksLikeBooleanQuery('"risk factors"')).toBe(true);
+    it('does NOT auto-switch on quotes or parentheses alone', () => {
+      // Contract: quotes/parentheses alone do not silently change the selected
+      // mode — only uppercase operators, proximity, or the auditor: token do.
+      expect(looksLikeBooleanQuery('"risk factors"')).toBe(false);
+      expect(looksLikeBooleanQuery('(revenue)')).toBe(false);
     });
 
-    it('returns true for parentheses', () => {
-      expect(looksLikeBooleanQuery('(revenue)')).toBe(true);
+    it('returns true for an auditor: field token', () => {
+      expect(looksLikeBooleanQuery('material weakness auditor:KPMG')).toBe(true);
     });
 
-    it('returns false for plain text', () => {
+    it('does NOT auto-switch on lowercase prose', () => {
       expect(looksLikeBooleanQuery('revenue growth analysis')).toBe(false);
+      expect(looksLikeBooleanQuery('increases and decreases in revenue')).toBe(false);
     });
 
     it('returns false for empty string', () => {
@@ -206,8 +211,12 @@ describe('booleanSearch', () => {
       expect(booleanQueryMatches('REVENUE', 'total Revenue increased')).toBe(true);
     });
 
-    it('handles stemming for plurals', () => {
-      expect(booleanQueryMatches('filing', 'The company filed several filings with the SEC')).toBe(true);
+    it('matches complete tokens only — no morphological stemming', () => {
+      // Strict token matching: "filing" matches "filing", not "filings" or "filed".
+      expect(booleanQueryMatches('filing', 'The annual filing was submitted')).toBe(true);
+      expect(booleanQueryMatches('filing', 'The company filed several filings')).toBe(false);
+      // And no surprising prefix matches.
+      expect(booleanQueryMatches('audit', 'an auditory signal')).toBe(false);
     });
 
     it('returns false for empty query', () => {

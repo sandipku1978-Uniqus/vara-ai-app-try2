@@ -27,7 +27,7 @@ describe('boolean proximity with more than two operands', () => {
     // "lease" and "modification" never appear adjacently here, but "modification"
     // sits right next to "ASC". Old greedy-merge behavior required the literal
     // phrase "lease modification" and wrongly returned false.
-    const doc = 'Leases are common in our industry. Separately, ASC 842 modification guidance applies.';
+    const doc = 'A lease is common in our industry. Separately, ASC 842 modification guidance applies.';
     expect(booleanQueryMatches('lease modification w/5 asc', doc)).toBe(true);
   });
 
@@ -63,9 +63,8 @@ describe('describeBooleanQueryIssue', () => {
     expect(describeBooleanQueryIssue('(revenue AND growth')).toMatch(/parenthes/i);
   });
 
-  it('tolerates an unclosed quote by treating the rest as a phrase', () => {
-    // The tokenizer closes a dangling quote at end-of-input, so this still runs.
-    expect(describeBooleanQueryIssue('"lease modification')).toBeNull();
+  it('rejects an unclosed quote', () => {
+    expect(describeBooleanQueryIssue('"lease modification')).toMatch(/quot/i);
   });
 
   it('flags a negation-only query', () => {

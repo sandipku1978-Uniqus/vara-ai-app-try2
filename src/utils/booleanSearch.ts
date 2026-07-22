@@ -36,7 +36,6 @@ interface TextIndex {
   tokens: string[];
 }
 
-const BOOLEAN_SYNTAX_RE = /\b(?:AND|OR|NOT)\b|(?:W|WITHIN|NEAR)\/\d+|["()]|\b(?:auditor|accountant|auditfirm|audited[_-]?by)\s*:/i;
 // Intelligize-style field token: audit firm as part of the Boolean query, e.g.
 //   "material weakness" AND auditor:Deloitte      auditor:"Ernst & Young"
 // Multi-word firm names must be quoted; short forms (Deloitte, KPMG, PwC, EY,
@@ -50,44 +49,31 @@ function normalizeWhitespace(value: string): string {
   return value.replace(/\s+/g, ' ').trim();
 }
 
-function normalizeTokenValue(value: string): string {
+// Shared, symmetric normalization for both query terms and filing text. Dotted
+// initialisms collapse ("U.S." → "us", "e.g." → "eg") so periods don't split an
+// acronym into single-letter tokens; everything else non-alphanumeric becomes a
+// token boundary. Applying the SAME transform to both sides is what makes
+// punctuation match symmetrically ("U.S. GAAP" ≡ "US GAAP").
+function normalizeMatchText(value: string): string {
   return normalizeWhitespace(
     value
       .toLowerCase()
-      .replace(/[^a-z0-9]+/gi, ' ')
+      .replace(/\b([a-z])\./g, '$1')
+      .replace(/[^a-z0-9]+/g, ' ')
   );
 }
 
+function normalizeTokenValue(value: string): string {
+  return normalizeMatchText(value);
+}
+
+// Bare terms match complete normalized tokens only — no morphological stemming.
+// Broad prefix/suffix expansion produced surprising, non-deterministic matches
+// (audit→auditory, lease→leasehold, modification→"modific"). Documented
+// equivalents live in TERM_EQUIVALENTS; everything else is exact-token.
 function buildTermMatchVariants(value: string): string[] {
   const normalized = normalizeTokenValue(value);
-  if (!normalized || normalized.includes(' ')) {
-    return normalized ? [normalized] : [];
-  }
-
-  const variants = new Set<string>([normalized]);
-
-  const add = (candidate: string) => {
-    const clean = normalizeTokenValue(candidate);
-    if (clean) {
-      variants.add(clean);
-    }
-  };
-
-  if (normalized.length >= 5) {
-    if (normalized.endsWith('s')) add(normalized.slice(0, -1));
-    if (normalized.endsWith('es')) add(normalized.slice(0, -2));
-    if (normalized.endsWith('ed')) add(normalized.slice(0, -2));
-    if (normalized.endsWith('ing')) {
-      add(normalized.slice(0, -3));
-      add(`${normalized.slice(0, -3)}e`);
-    }
-    // NOTE: no "-ation" → root expansion. English "-ation" nominalizations
-    // (modification→modify, application→apply) don't reduce by stripping the
-    // suffix, so it only manufactured non-words ("modific", "modificed") that
-    // never match. The prefix rule in tokenMatchesTerm already links inflections.
-  }
-
-  return Array.from(variants).filter(Boolean);
+  return normalized ? [normalized] : [];
 }
 
 function getEquivalentSearchValues(value: string): string[] {
@@ -101,14 +87,7 @@ function getEquivalentSearchValues(value: string): string[] {
 }
 
 function tokenMatchesTerm(actualToken: string, value: string): boolean {
-  const variants = buildTermMatchVariants(value);
-  return variants.some(variant => {
-    if (actualToken === variant) {
-      return true;
-    }
-
-    return variant.length >= 5 && actualToken.startsWith(variant) && actualToken.length - variant.length <= 4;
-  });
+  return buildTermMatchVariants(value).some(variant => actualToken === variant);
 }
 
 function tokenize(query: string): Token[] {
@@ -283,6 +262,12 @@ export function parseBooleanQuery(query: string): ParsedBooleanQuery {
     return { expression: null };
   }
 
+  // Reject an unmatched quote instead of letting the tokenizer auto-close it at
+  // end of input — a silent auto-close turns a typo into a wrong phrase search.
+  if ((trimmed.match(/"/g)?.length ?? 0) % 2 === 1) {
+    return { expression: null, error: 'Unbalanced quotation mark — close the phrase with a matching ".' };
+  }
+
   try {
     // Proximity (w/#) is a binary operator that binds its immediate single
     // left and right operands only; any additional adjacent terms fall through
@@ -308,7 +293,14 @@ export function parseBooleanQuery(query: string): ParsedBooleanQuery {
 }
 
 export function looksLikeBooleanQuery(query: string): boolean {
-  return BOOLEAN_SYNTAX_RE.test(query);
+  // Auto-switch Filing Research → Boolean only on high-confidence signals:
+  // UPPERCASE operators, a proximity operator, or an auditor: field token.
+  // Lowercase prose ("increases and decreases"), quotes, or parentheses alone
+  // must NOT silently change the mode the user selected.
+  if (/\b(?:AND|OR|NOT)\b/.test(query)) return true;
+  if (/\b(?:W|WITHIN|NEAR|w|within|near)\/\d+/.test(query)) return true;
+  if (/\b(?:auditor|accountant|auditfirm|audited[_-]?by)\s*:/i.test(query)) return true;
+  return false;
 }
 
 /**
@@ -337,6 +329,19 @@ export function extractAuditorFilterToken(query: string): { auditor: string; res
  * back to a literal-string EDGAR search (which quietly returns wrong results).
  */
 export function describeBooleanQueryIssue(query: string): string | null {
+  // The auditor: token is lifted into a structured AND filter, so it only has
+  // sound meaning in AND-composition. Reject only when the token itself is the
+  // operand of an OR, or is directly negated — an OR/NOT elsewhere in the query
+  // (e.g. "NOT goodwill AND auditor:PwC") is fine.
+  const AUD = 'auditor|accountant|auditfirm|audited[_-]?by';
+  if (
+    new RegExp(`\\bOR\\s+(?:${AUD})\\s*:`, 'i').test(query) ||
+    new RegExp(`(?:${AUD})\\s*:\\s*(?:"[^"]*"|\\S+)\\s+OR\\b`, 'i').test(query) ||
+    new RegExp(`\\bNOT\\s+(?:${AUD})\\s*:`, 'i').test(query)
+  ) {
+    return 'The auditor: filter can only be combined with AND. For OR/NOT logic on the audit firm, use the Advanced Filters auditor control.';
+  }
+
   // An `auditor:` token is applied as a filter, not evaluated against filing
   // text, so validate only the residual expression. An auditor-only query
   // (residual empty, firm present) is valid and runs as a firm-scoped browse.
@@ -370,13 +375,8 @@ export function describeBooleanQueryIssue(query: string): string | null {
 }
 
 function createTextIndex(text: string): TextIndex {
-  const normalizedText = normalizeWhitespace(text.toLowerCase());
-  const tokens = normalizedText
-    .replace(/[^a-z0-9]+/gi, ' ')
-    .split(' ')
-    .map(token => token.trim())
-    .filter(Boolean);
-
+  const normalizedText = normalizeMatchText(text);
+  const tokens = normalizedText.split(' ').map(token => token.trim()).filter(Boolean);
   return { normalizedText, tokens };
 }
 
@@ -386,16 +386,6 @@ function buildSnippetFromSpan(index: TextIndex, start: number, end: number, cont
   const excerpt = index.tokens.slice(snippetStart, snippetEnd).join(' ').trim();
   if (!excerpt) return '';
   return `${snippetStart > 0 ? '... ' : ''}${excerpt}${snippetEnd < index.tokens.length ? ' ...' : ''}`;
-}
-
-function includesToken(tokens: string[], value: string): boolean {
-  return tokens.some(token => tokenMatchesTerm(token, value));
-}
-
-function includesPhrase(normalizedText: string, value: string): boolean {
-  const normalized = normalizeTokenValue(value);
-  if (!normalized) return false;
-  return normalizedText.includes(normalized);
 }
 
 function findPhraseSpans(index: TextIndex, normalizedPhrase: string): Array<{ start: number; end: number }> {
@@ -542,9 +532,11 @@ function extractPositiveSnippet(index: TextIndex, expression: BooleanSearchNode)
 function evaluate(node: BooleanSearchNode, index: TextIndex): boolean {
   switch (node.type) {
     case 'TERM':
-      return includesToken(index.tokens, node.value);
     case 'PHRASE':
-      return includesPhrase(index.normalizedText, node.value);
+      // Token-boundary matching for both bare terms and quoted phrases —
+      // never a raw substring. "net income" must not match "planet income",
+      // and a punctuation term ("non-GAAP", "R&D") matches its token sequence.
+      return findOperandSpans(node, index).length > 0;
     case 'PROX':
       return matchesProximity(node, index);
     case 'NOT':
