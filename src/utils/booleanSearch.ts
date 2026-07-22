@@ -371,6 +371,12 @@ export function describeBooleanQueryIssue(query: string): string | null {
     return 'Add at least one term that is not negated — a NOT-only query has nothing to match against.';
   }
 
+  // Complexity cap: too many OR branches would force us to approximate the logic
+  // rather than retrieve each disjunct honestly. Reject instead.
+  if (planBooleanBranches(trimmed).truncated) {
+    return 'This query has too many OR branches to evaluate exactly — narrow it or split it into separate searches.';
+  }
+
   return null;
 }
 
@@ -608,6 +614,82 @@ function collectPositiveTerms(node: BooleanSearchNode, negated = false, bucket =
     default:
       return bucket;
   }
+}
+
+/**
+ * Plans independent retrieval branches from the positive structure of a Boolean
+ * query. Each branch is a conjunction (AND) of positive operands expressed as an
+ * EDGAR full-text query; OR produces separate branches so every disjunct gets
+ * its own retrieval lane. NOT operands never anchor retrieval.
+ *
+ *   "A OR B"          → ["A", "B"]
+ *   "(A OR B) AND C"  → ["A C", "B C"]
+ *   "A AND B"         → ["A B"]
+ *   "A AND NOT B"     → ["A"]
+ *
+ * `truncated` is set when the branch count exceeds `maxBranches` (the complexity
+ * cap) so the caller can reject rather than silently approximate the logic.
+ */
+export function planBooleanBranches(query: string, maxBranches = 16): { branches: string[]; truncated: boolean } {
+  const parsed = parseBooleanQuery(query);
+  if (!parsed.expression) return { branches: [], truncated: false };
+
+  const positiveTerms = (node: BooleanSearchNode): string[] => {
+    switch (node.type) {
+      case 'TERM':
+      case 'PHRASE':
+        return [node.value];
+      case 'PROX':
+        return [...positiveTerms(node.left), ...positiveTerms(node.right)];
+      case 'NOT':
+        return [];
+      case 'AND':
+      case 'OR':
+        return [...positiveTerms(node.left), ...positiveTerms(node.right)];
+      default:
+        return [];
+    }
+  };
+
+  const branchSets = (node: BooleanSearchNode): string[][] => {
+    switch (node.type) {
+      case 'TERM':
+      case 'PHRASE':
+        return [[node.value]];
+      case 'PROX':
+        return [positiveTerms(node)];
+      case 'NOT':
+        return [[]];
+      case 'AND': {
+        const out: string[][] = [];
+        for (const left of branchSets(node.left)) {
+          for (const right of branchSets(node.right)) {
+            out.push([...left, ...right]);
+          }
+        }
+        return out;
+      }
+      case 'OR':
+        return [...branchSets(node.left), ...branchSets(node.right)];
+      default:
+        return [[]];
+    }
+  };
+
+  const seen = new Set<string>();
+  const branches: string[] = [];
+  for (const set of branchSets(parsed.expression)) {
+    const branchQuery = Array.from(new Set(set.filter(Boolean)))
+      .map(formatCandidateQueryTerm)
+      .filter(Boolean)
+      .join(' ');
+    const key = normalizeWhitespace(branchQuery).toLowerCase();
+    if (!branchQuery || seen.has(key)) continue;
+    if (branches.length >= maxBranches) return { branches, truncated: true };
+    seen.add(key);
+    branches.push(branchQuery);
+  }
+  return { branches, truncated: false };
 }
 
 export function buildCandidateQueryFromBoolean(query: string): string {

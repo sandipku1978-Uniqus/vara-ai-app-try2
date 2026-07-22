@@ -25,6 +25,7 @@ import {
   extractBooleanMatchSnippet,
   extractAuditorFilterToken,
   parseBooleanQuery,
+  planBooleanBranches,
 } from '../utils/booleanSearch';
 
 export type ResearchSearchMode = 'semantic' | 'boolean';
@@ -422,15 +423,15 @@ function buildServerQuery(rawQuery: string, filters: SearchFilters, mode: Resear
   return combined;
 }
 
-// Boolean candidate queries, auditor-aware. Without an audit-firm filter this
-// is just the Boolean term candidates. With one, it narrows EDGAR candidates by
-// the firm name (essential for an auditor-only search, which has no text terms),
-// then falls back to the Boolean-only candidates for recall — the auditor is
-// still enforced by the text-signal post-filter either way.
-function buildBooleanServerQueries(query: string, filters: SearchFilters): string[] {
-  const base = buildBooleanCandidateQueries(query);
+// Branch-aware Boolean candidate queries. Independent OR branches come FIRST and
+// are counted as `requiredBranches`: the executor must attempt each one before
+// the display limit can end retrieval, so a rare second OR disjunct is never
+// skipped just because a broad first branch already filled the visible rows.
+// Auditor-combined and recall-fallback candidates follow as best-effort fill;
+// the auditor is enforced either way by the text-signal post-filter.
+function buildBooleanServerQueries(query: string, filters: SearchFilters): { queries: string[]; requiredBranches: number } {
+  const { branches } = planBooleanBranches(query);
   const auditorTerms = buildAuditorSearchTerms(filters.accountant);
-  if (auditorTerms.length === 0) return base;
 
   const out: string[] = [];
   const push = (value: string) => {
@@ -440,16 +441,24 @@ function buildBooleanServerQueries(query: string, filters: SearchFilters): strin
     }
   };
 
-  if (base.length === 0) {
-    // Auditor-only Boolean search — fetch candidates by the firm name itself.
+  if (branches.length === 0) {
+    // No positive text branches (auditor-only search) — fetch by firm name.
     for (const term of auditorTerms.slice(0, 4)) push(term);
-    return out;
+    return { queries: out, requiredBranches: out.length };
   }
 
-  const primary = base[0];
-  for (const term of auditorTerms.slice(0, 3)) push(`${primary} ${term}`);
-  for (const candidate of base) push(candidate);
-  return out;
+  // Every OR branch is a required retrieval lane.
+  for (const branch of branches) push(branch);
+  const requiredBranches = out.length;
+
+  // Precision boost: pair each branch with the auditor name when one is set.
+  if (auditorTerms.length > 0) {
+    for (const branch of branches) push(`${branch} ${auditorTerms[0]}`);
+  }
+  // Recall fallback: legacy flat candidates catch documented equivalents.
+  for (const candidate of buildBooleanCandidateQueries(query)) push(candidate);
+
+  return { queries: out, requiredBranches };
 }
 
 function buildSemanticCandidateQueries(serverQuery: string, filters: SearchFilters): string[] {
@@ -1278,7 +1287,13 @@ export async function executeFilingResearchSearch({
     if (!shouldHydrateSignals) onCoverage?.(upstreamCoverageState.value);
   };
 
-  const booleanServerQueries = mode === 'boolean' ? buildBooleanServerQueries(query || filters.keyword, filters).slice(0, 6) : [];
+  const booleanPlan = mode === 'boolean'
+    ? buildBooleanServerQueries(query || filters.keyword, filters)
+    : { queries: [] as string[], requiredBranches: 0 };
+  // Keep every required OR branch plus a few recall extras (bounded by the
+  // 16-branch complexity cap).
+  const booleanServerQueries = booleanPlan.queries.slice(0, Math.max(booleanPlan.requiredBranches, 6));
+  const requiredBooleanBranches = Math.min(booleanPlan.requiredBranches, booleanServerQueries.length);
   const semanticServerQueries = mode === 'semantic' ? buildSemanticCandidateQueries(serverQuery, filters) : [];
 
   const serverQueries =
@@ -1288,7 +1303,7 @@ export async function executeFilingResearchSearch({
 
   const candidateServerQueries = (
     fastCandidateCollection
-      ? serverQueries.slice(0, mode === 'boolean' ? 3 : semanticAuditorSearch ? 2 : 3)
+      ? serverQueries.slice(0, mode === 'boolean' ? Math.max(requiredBooleanBranches, 3) : semanticAuditorSearch ? 2 : 3)
       : serverQueries
   ).filter(Boolean);
   // Empty-query browse is intentional for form/date/SIC and other filter-only
@@ -1397,10 +1412,15 @@ export async function executeFilingResearchSearch({
   let unvalidatedFetchFailures = 0;
 
   const wavePerQueryLimit = fastCandidateCollection ? Math.min(perQueryResultLimit, 140) : perQueryResultLimit;
-  const waveQueryVariants = fastCandidateCollection ? filteredServerQueries.slice(0, 2) : filteredServerQueries;
+  const waveQueryVariants = fastCandidateCollection
+    ? filteredServerQueries.slice(0, Math.max(requiredBooleanBranches, 2))
+    : filteredServerQueries;
 
   for (const [queryIndex, candidateQuery] of waveQueryVariants.entries()) {
-    if (filteredResults.length >= displayLimit) break;
+    // The display limit may NOT end retrieval until every required OR branch has
+    // been attempted — otherwise a broad first branch that fills the visible
+    // rows would hide a rare second disjunct (the mezzanine-OR-temporary bug).
+    if (filteredResults.length >= displayLimit && queryIndex >= requiredBooleanBranches) break;
     if (Date.now() - waveStartTime > maxWaveTimeMs) {
       validationTimedOut = true;
       break;
