@@ -56,7 +56,8 @@ import {
 import { buildHighlightTerms, interpretSearchPrompt } from '../services/searchAssist';
 import { buildResearchEmptyResultMessage } from '../services/searchCoverage';
 import { generateSearchTrendReport, SEARCH_TREND_AI_FALLBACK } from '../services/searchTrendReport';
-import { looksLikeBooleanQuery, describeBooleanQueryIssue } from '../utils/booleanSearch';
+import { looksLikeBooleanQuery, describeBooleanQueryIssue, extractAuditorFilterToken } from '../utils/booleanSearch';
+import { canonicalizeAuditorInput } from '../services/auditors';
 import { canUseInstantEnrichedSearch } from '../services/filingResearch';
 import { BRAND } from '../config/brand';
 import './SearchPage.css';
@@ -627,12 +628,32 @@ export default function SearchPage() {
       return;
     }
 
-    // Boolean mode runs the query verbatim against filing text. If it does not
-    // parse (dangling operator, unbalanced quote/paren) or is negation-only, a
-    // literal EDGAR search silently returns misleading results — surface the
-    // problem instead so the user can correct the syntax.
     if (effectiveMode === 'boolean') {
-      const booleanIssue = describeBooleanQueryIssue(interpreted.query || trimmed);
+      // Promote an inline auditor:<firm> token to the structured auditor filter
+      // so it renders as a chip and the query box holds only the residual
+      // expression — same "lift a constraint out of the text" model the
+      // semantic interpreter uses for "audited by Deloitte".
+      const { auditor, residual } = extractAuditorFilterToken(interpreted.query);
+      if (auditor) {
+        const canonical = canonicalizeAuditorInput(auditor) || auditor;
+        interpreted.query = residual;
+        interpreted.filters = {
+          ...interpreted.filters,
+          accountant: interpreted.filters.accountant.trim() || canonical,
+        };
+        nextFilters = interpreted.filters;
+        if (!interpreted.appliedHints.some(hint => hint.startsWith('Audit firm:'))) {
+          interpreted.appliedHints = [...interpreted.appliedHints, `Audit firm: ${canonical}`];
+        }
+        setQuery(residual);
+        setFilters(interpreted.filters);
+      }
+
+      // Boolean mode runs the query verbatim against filing text. If it does not
+      // parse (dangling operator, unbalanced quote/paren) or is negation-only, a
+      // literal EDGAR search silently returns misleading results — surface the
+      // problem instead so the user can correct the syntax.
+      const booleanIssue = describeBooleanQueryIssue(interpreted.query);
       if (booleanIssue) {
         setSearched(true);
         setErrorMsg(booleanIssue);
