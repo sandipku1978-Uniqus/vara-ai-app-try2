@@ -41,59 +41,6 @@ const TERM_EQUIVALENTS: Record<string, string[]> = {
   asr: ['accelerated share repurchase', 'accelerated stock repurchase'],
 };
 
-function isTextToken(token?: Token): token is Extract<Token, { type: 'TERM' | 'PHRASE' }> {
-  return Boolean(token && (token.type === 'TERM' || token.type === 'PHRASE'));
-}
-
-function mergeAdjacentTermsForProximity(tokens: Token[]): Token[] {
-  const merged = [...tokens];
-  let index = 0;
-
-  while (index < merged.length) {
-    if (merged[index].type !== 'PROX') {
-      index += 1;
-      continue;
-    }
-
-    let leftStart = index - 1;
-    while (leftStart >= 0 && isTextToken(merged[leftStart])) {
-      leftStart -= 1;
-    }
-    leftStart += 1;
-    const leftEnd = index - 1;
-    if (leftEnd - leftStart >= 1) {
-      merged.splice(leftStart, leftEnd - leftStart + 1, {
-        type: 'PHRASE',
-        value: merged
-          .slice(leftStart, leftEnd + 1)
-          .map(token => (token as Extract<Token, { type: 'TERM' | 'PHRASE' }>).value)
-          .join(' '),
-      });
-      index = leftStart + 1;
-    }
-
-    let rightEnd = index + 1;
-    while (rightEnd < merged.length && isTextToken(merged[rightEnd])) {
-      rightEnd += 1;
-    }
-    rightEnd -= 1;
-    const rightStart = index + 1;
-    if (rightEnd - rightStart >= 1) {
-      merged.splice(rightStart, rightEnd - rightStart + 1, {
-        type: 'PHRASE',
-        value: merged
-          .slice(rightStart, rightEnd + 1)
-          .map(token => (token as Extract<Token, { type: 'TERM' | 'PHRASE' }>).value)
-          .join(' '),
-      });
-    }
-
-    index += 1;
-  }
-
-  return merged;
-}
-
 function normalizeWhitespace(value: string): string {
   return value.replace(/\s+/g, ' ').trim();
 }
@@ -129,13 +76,10 @@ function buildTermMatchVariants(value: string): string[] {
       add(normalized.slice(0, -3));
       add(`${normalized.slice(0, -3)}e`);
     }
-    if (normalized.endsWith('ation') && normalized.length > 8) {
-      const root = normalized.slice(0, -5);
-      add(root);
-      add(`${root}ed`);
-      add(`${root}ing`);
-      add(`${root}s`);
-    }
+    // NOTE: no "-ation" → root expansion. English "-ation" nominalizations
+    // (modification→modify, application→apply) don't reduce by stripping the
+    // suffix, so it only manufactured non-words ("modific", "modificed") that
+    // never match. The prefix rule in tokenMatchesTerm already links inflections.
   }
 
   return Array.from(variants).filter(Boolean);
@@ -335,7 +279,12 @@ export function parseBooleanQuery(query: string): ParsedBooleanQuery {
   }
 
   try {
-    const state: ParserState = { tokens: mergeAdjacentTermsForProximity(tokenize(trimmed)), index: 0 };
+    // Proximity (w/#) is a binary operator that binds its immediate single
+    // left and right operands only; any additional adjacent terms fall through
+    // to implicit AND. "lease w/5 modification accounting" therefore parses as
+    // (lease w/5 modification) AND accounting — not a forced adjacent phrase.
+    // Multi-word proximity operands are still available by quoting them.
+    const state: ParserState = { tokens: tokenize(trimmed), index: 0 };
     if (state.tokens.length === 0) {
       return { expression: null };
     }
@@ -355,6 +304,39 @@ export function parseBooleanQuery(query: string): ParsedBooleanQuery {
 
 export function looksLikeBooleanQuery(query: string): boolean {
   return BOOLEAN_SYNTAX_RE.test(query);
+}
+
+/**
+ * Returns a user-facing problem with a Boolean query, or null when it is
+ * well-formed and searchable. Callers surface this instead of silently falling
+ * back to a literal-string EDGAR search (which quietly returns wrong results).
+ */
+export function describeBooleanQueryIssue(query: string): string | null {
+  const trimmed = normalizeWhitespace(query);
+  if (!trimmed) return null;
+
+  const parsed = parseBooleanQuery(trimmed);
+  if (!parsed.expression) {
+    if (/^"[^"]*$/.test(trimmed) || (trimmed.match(/"/g)?.length ?? 0) % 2 === 1) {
+      return 'Unbalanced quotation mark — close the phrase with a matching ".';
+    }
+    if (/\b(AND|OR|NOT)$/i.test(trimmed) || /\/\d+\s*$/.test(trimmed)) {
+      return 'The query ends with an operator — add a term after AND, OR, NOT, or w/#.';
+    }
+    if ((trimmed.match(/\(/g)?.length ?? 0) !== (trimmed.match(/\)/g)?.length ?? 0)) {
+      return 'Unbalanced parentheses — check that every ( has a matching ).';
+    }
+    return parsed.error || 'This Boolean query could not be parsed. Check the operators and grouping.';
+  }
+
+  // A query made only of NOT terms has nothing to fetch from EDGAR (there is no
+  // "every filing that lacks X" endpoint), so it cannot be run as-is.
+  const positives = collectPositiveTerms(parsed.expression);
+  if (positives.size === 0) {
+    return 'Add at least one term that is not negated — a NOT-only query has nothing to match against.';
+  }
+
+  return null;
 }
 
 function createTextIndex(text: string): TextIndex {

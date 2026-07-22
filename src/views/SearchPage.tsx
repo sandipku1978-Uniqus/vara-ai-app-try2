@@ -56,7 +56,7 @@ import {
 import { buildHighlightTerms, interpretSearchPrompt } from '../services/searchAssist';
 import { buildResearchEmptyResultMessage } from '../services/searchCoverage';
 import { generateSearchTrendReport, SEARCH_TREND_AI_FALLBACK } from '../services/searchTrendReport';
-import { looksLikeBooleanQuery } from '../utils/booleanSearch';
+import { looksLikeBooleanQuery, describeBooleanQueryIssue } from '../utils/booleanSearch';
 import { canUseInstantEnrichedSearch } from '../services/filingResearch';
 import { BRAND } from '../config/brand';
 import './SearchPage.css';
@@ -624,6 +624,19 @@ export default function SearchPage() {
 
     if (!hasResearchSearchCriteria(trimmed, interpreted.filters)) {
       return;
+    }
+
+    // Boolean mode runs the query verbatim against filing text. If it does not
+    // parse (dangling operator, unbalanced quote/paren) or is negation-only, a
+    // literal EDGAR search silently returns misleading results — surface the
+    // problem instead so the user can correct the syntax.
+    if (effectiveMode === 'boolean') {
+      const booleanIssue = describeBooleanQueryIssue(interpreted.query || trimmed);
+      if (booleanIssue) {
+        setSearched(true);
+        setErrorMsg(booleanIssue);
+        return;
+      }
     }
 
     setLoading(true);

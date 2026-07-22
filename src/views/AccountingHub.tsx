@@ -12,6 +12,7 @@ import ResponsibleAIBanner from '../components/ResponsibleAIBanner';
 import { renderMarkdown } from '../utils/markdownRenderer';
 import { useApp } from '../context/AppState';
 import { hasResearchSearchCriteria } from '../services/researchSessions';
+import { describeBooleanQueryIssue } from '../utils/booleanSearch';
 import { scopedStorageKey } from '../services/storageNamespace';
 import {
   FASB_CODIFICATION_URL,
@@ -177,6 +178,15 @@ export default function AccountingHub() {
     overrideMode = researchMode
   ) => {
     if (!hasResearchSearchCriteria(nextQuery, overrideFilters)) return;
+
+    if (overrideMode === 'boolean') {
+      const booleanIssue = describeBooleanQueryIssue(nextQuery);
+      if (booleanIssue) {
+        setResearchResults([]);
+        setResearchError(booleanIssue);
+        return;
+      }
+    }
 
     setResearchLoading(true);
     setResearchError('');
