@@ -23,6 +23,7 @@ import {
   buildCandidateQueryFromBoolean,
   booleanQueryMatches,
   extractBooleanMatchSnippet,
+  extractAuditorFilterToken,
   parseBooleanQuery,
 } from '../utils/booleanSearch';
 
@@ -414,6 +415,36 @@ function buildServerQuery(rawQuery: string, filters: SearchFilters, mode: Resear
   }
 
   return combined;
+}
+
+// Boolean candidate queries, auditor-aware. Without an audit-firm filter this
+// is just the Boolean term candidates. With one, it narrows EDGAR candidates by
+// the firm name (essential for an auditor-only search, which has no text terms),
+// then falls back to the Boolean-only candidates for recall — the auditor is
+// still enforced by the text-signal post-filter either way.
+function buildBooleanServerQueries(query: string, filters: SearchFilters): string[] {
+  const base = buildBooleanCandidateQueries(query);
+  const auditorTerms = buildAuditorSearchTerms(filters.accountant);
+  if (auditorTerms.length === 0) return base;
+
+  const out: string[] = [];
+  const push = (value: string) => {
+    const trimmed = value.replace(/\s+/g, ' ').trim();
+    if (trimmed && !out.some(item => normalizeLooseText(item) === normalizeLooseText(trimmed))) {
+      out.push(trimmed);
+    }
+  };
+
+  if (base.length === 0) {
+    // Auditor-only Boolean search — fetch candidates by the firm name itself.
+    for (const term of auditorTerms.slice(0, 4)) push(term);
+    return out;
+  }
+
+  const primary = base[0];
+  for (const term of auditorTerms.slice(0, 3)) push(`${primary} ${term}`);
+  for (const candidate of base) push(candidate);
+  return out;
 }
 
 function buildSemanticCandidateQueries(serverQuery: string, filters: SearchFilters): string[] {
@@ -1084,7 +1115,10 @@ function requiresTextFiltering(
 ): boolean {
   if (mode === 'boolean') {
     const parsed = parseBooleanQuery(rawQuery);
-    return Boolean(parsed.expression);
+    if (parsed.expression) return true;
+    // An auditor-only Boolean search ("auditor:KPMG") has no text expression but
+    // still needs signal hydration to confirm the firm on each candidate.
+    return filters.accountant.trim().length > 0 || filters.acceleratedStatus.length > 0;
   }
 
   if (filters.sectionKeywords.trim()) {
@@ -1148,6 +1182,19 @@ export async function executeFilingResearchSearch({
     }
   }
 
+  // Intelligize-style inline audit-firm field: "material weakness" AND
+  // auditor:Deloitte (or a bare auditor:KPMG). Lift the firm out of the Boolean
+  // query into the structured auditor filter — the existing signal post-filter
+  // then enforces it — and search only the residual expression as text.
+  if (mode === 'boolean') {
+    const { auditor, residual } = extractAuditorFilterToken(query || filters.keyword);
+    if (auditor) {
+      const canonical = canonicalizeAuditorInput(auditor) || auditor;
+      filters = { ...filters, accountant: filters.accountant.trim() || canonical };
+      query = residual;
+    }
+  }
+
   const serverQuery = buildServerQuery(query || filters.keyword, filters, mode);
   const formTypes = normalizeFormTypes(filters, defaultForms);
   const formScope = parseFormScope(formTypes);
@@ -1181,7 +1228,7 @@ export async function executeFilingResearchSearch({
     if (!shouldHydrateSignals) onCoverage?.(upstreamCoverageState.value);
   };
 
-  const booleanServerQueries = mode === 'boolean' ? buildBooleanCandidateQueries(query || filters.keyword).slice(0, 5) : [];
+  const booleanServerQueries = mode === 'boolean' ? buildBooleanServerQueries(query || filters.keyword, filters).slice(0, 6) : [];
   const semanticServerQueries = mode === 'semantic' ? buildSemanticCandidateQueries(serverQuery, filters) : [];
 
   const serverQueries =

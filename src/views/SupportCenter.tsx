@@ -95,6 +95,7 @@ const GUIDE_SECTIONS: GuideSection[] = [
     steps: [
       'Use Filing Research mode to turn supported plain-language constraints into a deterministic SEC search. It is not conceptual or vector retrieval.',
       'Switch to Boolean mode when you need exact-match results. Use AND, OR, NOT, "quoted phrases", and proximity operators like w/5 or near/10.',
+      'Scope Boolean results to a specific audit firm inline with auditor:<firm> — e.g. "material weakness" AND auditor:KPMG, or auditor:"Ernst & Young" on its own. It combines with the rest of the expression and with the Auditor filter in Advanced Filters.',
       'Each search opens in a new tab within your research session, so you can compare multiple queries side by side.',
       'Generate a trend report after a search to get an AI-powered summary of what the result set shows.',
       'Save an alert if you plan to rerun the same search regularly — it will appear on your Dashboard for quick re-execution.',
@@ -309,7 +310,7 @@ const FAQS: FaqItem[] = [
   },
   {
     question: 'What is the difference between Filing Research and Boolean search?',
-    answer: 'Filing Research mode extracts supported constraints from plain-language input and runs a deterministic SEC search; it is not conceptual retrieval. Boolean mode supports AND, OR, NOT, quoted phrases, and proximity operators like w/5 or near/10.',
+    answer: 'Filing Research mode extracts supported constraints from plain-language input and runs a deterministic SEC search; it is not conceptual retrieval. Boolean mode supports AND, OR, NOT, quoted phrases, proximity operators like w/5 or near/10, and an audit-firm field — auditor:Deloitte (or auditor:"Ernst & Young") — to scope results to a specific accounting firm.',
   },
   {
     question: 'How do the search filters work?',

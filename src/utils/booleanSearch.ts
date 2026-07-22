@@ -36,7 +36,12 @@ interface TextIndex {
   tokens: string[];
 }
 
-const BOOLEAN_SYNTAX_RE = /\b(?:AND|OR|NOT)\b|(?:W|WITHIN|NEAR)\/\d+|["()]/i;
+const BOOLEAN_SYNTAX_RE = /\b(?:AND|OR|NOT)\b|(?:W|WITHIN|NEAR)\/\d+|["()]|\b(?:auditor|accountant|auditfirm|audited[_-]?by)\s*:/i;
+// Intelligize-style field token: audit firm as part of the Boolean query, e.g.
+//   "material weakness" AND auditor:Deloitte      auditor:"Ernst & Young"
+// Multi-word firm names must be quoted; short forms (Deloitte, KPMG, PwC, EY,
+// BDO) can be bare. Aliases: auditor:, accountant:, auditfirm:, audited_by:.
+const AUDITOR_FIELD_RE = /\b(?:auditor|accountant|auditfirm|audited[_-]?by)\s*:\s*(?:"([^"]*)"|(\S+))/i;
 const TERM_EQUIVALENTS: Record<string, string[]> = {
   asr: ['accelerated share repurchase', 'accelerated stock repurchase'],
 };
@@ -307,12 +312,36 @@ export function looksLikeBooleanQuery(query: string): boolean {
 }
 
 /**
+ * Pulls an `auditor:` field token out of a Boolean query and returns the raw
+ * firm value plus the residual query with that token (and the AND/OR connective
+ * that joined it) removed. The caller canonicalizes the firm and applies it as
+ * the auditor filter, so it becomes a first-class part of the Boolean search.
+ */
+export function extractAuditorFilterToken(query: string): { auditor: string; residual: string } {
+  const match = query.match(AUDITOR_FIELD_RE);
+  if (!match || match.index == null) {
+    return { auditor: '', residual: normalizeWhitespace(query) };
+  }
+  const auditor = normalizeWhitespace(match[1] ?? match[2] ?? '');
+  const residual = normalizeWhitespace(`${query.slice(0, match.index)} ${query.slice(match.index + match[0].length)}`)
+    // Drop a binary connective left dangling by the removed token
+    // ("weakness AND auditor:EY" → "weakness", "auditor:EY OR lease" → "lease").
+    .replace(/^\s*(?:AND|OR)\b\s*/i, '')
+    .replace(/\s*\b(?:AND|OR)\b\s*$/i, '');
+  return { auditor, residual: normalizeWhitespace(residual) };
+}
+
+/**
  * Returns a user-facing problem with a Boolean query, or null when it is
  * well-formed and searchable. Callers surface this instead of silently falling
  * back to a literal-string EDGAR search (which quietly returns wrong results).
  */
 export function describeBooleanQueryIssue(query: string): string | null {
-  const trimmed = normalizeWhitespace(query);
+  // An `auditor:` token is applied as a filter, not evaluated against filing
+  // text, so validate only the residual expression. An auditor-only query
+  // (residual empty, firm present) is valid and runs as a firm-scoped browse.
+  const { auditor, residual } = extractAuditorFilterToken(query);
+  const trimmed = normalizeWhitespace(residual);
   if (!trimmed) return null;
 
   const parsed = parseBooleanQuery(trimmed);
@@ -330,9 +359,10 @@ export function describeBooleanQueryIssue(query: string): string | null {
   }
 
   // A query made only of NOT terms has nothing to fetch from EDGAR (there is no
-  // "every filing that lacks X" endpoint), so it cannot be run as-is.
+  // "every filing that lacks X" endpoint), so it cannot be run as-is — unless an
+  // auditor token supplies the positive anchor to fetch against.
   const positives = collectPositiveTerms(parsed.expression);
-  if (positives.size === 0) {
+  if (positives.size === 0 && !auditor) {
     return 'Add at least one term that is not negated — a NOT-only query has nothing to match against.';
   }
 

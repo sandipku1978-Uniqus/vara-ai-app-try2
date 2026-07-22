@@ -4,6 +4,8 @@ import {
   booleanQueryMatches,
   buildBooleanCandidateQueries,
   describeBooleanQueryIssue,
+  extractAuditorFilterToken,
+  looksLikeBooleanQuery,
 } from '../utils/booleanSearch';
 
 describe('boolean proximity with more than two operands', () => {
@@ -72,5 +74,54 @@ describe('describeBooleanQueryIssue', () => {
 
   it('ignores an empty query (nothing to run)', () => {
     expect(describeBooleanQueryIssue('   ')).toBeNull();
+  });
+
+  it('accepts an auditor-only query as valid (no residual expression needed)', () => {
+    expect(describeBooleanQueryIssue('auditor:KPMG')).toBeNull();
+  });
+
+  it('accepts a negation combined with an auditor anchor', () => {
+    expect(describeBooleanQueryIssue('NOT goodwill AND auditor:PwC')).toBeNull();
+  });
+});
+
+describe('inline auditor field token', () => {
+  it('extracts a bare firm and leaves the residual expression clean', () => {
+    const { auditor, residual } = extractAuditorFilterToken('"material weakness" AND auditor:Deloitte');
+    expect(auditor).toBe('Deloitte');
+    expect(residual).toBe('"material weakness"');
+  });
+
+  it('supports a quoted multi-word firm', () => {
+    const { auditor, residual } = extractAuditorFilterToken('lease AND auditor:"Ernst & Young"');
+    expect(auditor).toBe('Ernst & Young');
+    expect(residual).toBe('lease');
+  });
+
+  it('handles the token at the front of the query', () => {
+    const { auditor, residual } = extractAuditorFilterToken('auditor:KPMG OR restructuring');
+    expect(auditor).toBe('KPMG');
+    expect(residual).toBe('restructuring');
+  });
+
+  it('returns an empty residual for an auditor-only query', () => {
+    const { auditor, residual } = extractAuditorFilterToken('auditor:PwC');
+    expect(auditor).toBe('PwC');
+    expect(residual).toBe('');
+  });
+
+  it('accepts accountant: and audited_by: aliases', () => {
+    expect(extractAuditorFilterToken('accountant:BDO').auditor).toBe('BDO');
+    expect(extractAuditorFilterToken('audited_by:Deloitte').auditor).toBe('Deloitte');
+  });
+
+  it('is a no-op when no field token is present', () => {
+    const { auditor, residual } = extractAuditorFilterToken('lease AND modification');
+    expect(auditor).toBe('');
+    expect(residual).toBe('lease AND modification');
+  });
+
+  it('auto-detects the auditor field as Boolean syntax', () => {
+    expect(looksLikeBooleanQuery('auditor:Deloitte')).toBe(true);
   });
 });

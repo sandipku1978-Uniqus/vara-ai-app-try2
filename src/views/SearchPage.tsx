@@ -77,6 +77,7 @@ const SAMPLE_SEARCHES = [
   'ASC 842 adoption w/10 lease',
   'ASR w/5 derivative',
   'Temporary equity in last 3 years in 10-Q / 10-K audited by Deloitte',
+  '"material weakness" AND auditor:KPMG',
   '"material weakness" AND cybersecurity',
   'I am trying to search for companies that had bifurcated derivatives in accelerated share repurchase agreements in last 5 years',
 ];
@@ -1429,7 +1430,7 @@ export default function SearchPage() {
                   placeholder={
                     searchMode === 'semantic'
                       ? 'Describe the issue you want to research...'
-                      : 'Example: "car parking" w/10 installation'
+                      : 'AND OR NOT w/5 · "phrase" · auditor:Deloitte — e.g. "material weakness" AND auditor:KPMG'
                   }
                   value={query}
                   onChange={event => {
