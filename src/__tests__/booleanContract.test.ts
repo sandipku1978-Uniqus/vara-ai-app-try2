@@ -45,3 +45,20 @@ describe('auditor: token is AND-only', () => {
     expect(describeBooleanQueryIssue('lease AND NOT auditor:KPMG')).toMatch(/only be combined with AND/i);
   });
 });
+
+describe('proximity operand forms (plan §4 "Complex proximity")', () => {
+  it('accepts term/phrase operands', () => {
+    expect(describeBooleanQueryIssue('material w/5 weakness')).toBeNull();
+    expect(describeBooleanQueryIssue('"internal control" w/5 weakness')).toBeNull();
+  });
+
+  it('rejects a grouped operand instead of returning a silent zero', () => {
+    // "(a OR b) w/5 c" parses cleanly but can never match, because span lookup
+    // is only defined for terms and phrases — it must not look authoritative.
+    expect(describeBooleanQueryIssue('(lease OR rent) w/5 modification')).toMatch(/proximity/i);
+  });
+
+  it('rejects chained proximity', () => {
+    expect(describeBooleanQueryIssue('a w/5 b w/5 c')).not.toBeNull();
+  });
+});

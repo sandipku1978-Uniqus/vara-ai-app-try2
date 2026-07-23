@@ -173,3 +173,34 @@ describe('Boolean OR-branch coverage', () => {
     expect(mocks.fetchText).not.toHaveBeenCalled();
   });
 });
+
+describe('deterministic ordering', () => {
+  it('returns identical IDs and order across runs with randomised arrival timing', async () => {
+    const docs = ['D1', 'D3', 'D5'];
+    const runOnce = async () => {
+      // Vary per-call latency so promise completion order differs between runs.
+      mocks.search.mockImplementation(async () => {
+        await new Promise(r => setTimeout(r, Math.floor(Math.random() * 12)));
+        return docs.map(hit);
+      });
+      mocks.fetchText.mockImplementation(async (cik: string) => {
+        await new Promise(r => setTimeout(r, Math.floor(Math.random() * 12)));
+        const id = docs.find(d => d.slice(1) === String(cik).replace(/^0+/, ''));
+        return id ? TEXT[id] : '';
+      });
+      const res = await executeFilingResearchSearch({
+        query: 'alpha',
+        filters: { ...defaultSearchFilters },
+        mode: 'boolean',
+        limit: 50,
+      });
+      return res.map(r => `${r.accessionNumber}:${r.primaryDocument}`).join('|');
+    };
+
+    const baseline = await runOnce();
+    expect(baseline.length).toBeGreaterThan(0);
+    for (let i = 0; i < 6; i += 1) {
+      expect(await runOnce()).toBe(baseline);
+    }
+  });
+});

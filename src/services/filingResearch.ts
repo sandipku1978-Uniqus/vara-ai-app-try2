@@ -749,10 +749,17 @@ function sortResearchResults(results: FilingResearchResult[], preferRelevance: b
   return results.sort((a, b) => {
     const byRelevance = (b.relevanceScore ?? b.score) - (a.relevanceScore ?? a.score);
     const byDate = b.fileDate.localeCompare(a.fileDate);
-    if (preferRelevance) {
-      return byRelevance !== 0 ? byRelevance : byDate;
-    }
-    return byDate !== 0 ? byDate : byRelevance;
+    const primary = preferRelevance
+      ? (byRelevance !== 0 ? byRelevance : byDate)
+      : (byDate !== 0 ? byDate : byRelevance);
+    if (primary !== 0) return primary;
+    // Stable, content-derived tie-break. Without it equal-ranked rows keep
+    // whatever order retrieval happened to produce, so the same query could
+    // return the same filings in a different order between runs.
+    return (
+      a.accessionNumber.localeCompare(b.accessionNumber) ||
+      a.primaryDocument.localeCompare(b.primaryDocument)
+    );
   });
 }
 

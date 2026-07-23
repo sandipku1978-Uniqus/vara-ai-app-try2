@@ -329,6 +329,23 @@ export function looksLikeBooleanQuery(query: string): boolean {
   return false;
 }
 
+/** True when any proximity node has an operand that is not a term or phrase. */
+function hasUnsupportedProximity(node: BooleanSearchNode): boolean {
+  switch (node.type) {
+    case 'PROX': {
+      const simple = (side: BooleanSearchNode) => side.type === 'TERM' || side.type === 'PHRASE';
+      return !simple(node.left) || !simple(node.right);
+    }
+    case 'NOT':
+      return hasUnsupportedProximity(node.child);
+    case 'AND':
+    case 'OR':
+      return hasUnsupportedProximity(node.left) || hasUnsupportedProximity(node.right);
+    default:
+      return false;
+  }
+}
+
 /**
  * Pulls an `auditor:` field token out of a Boolean query and returns the raw
  * firm value plus the residual query with that token (and the AND/OR connective
@@ -387,6 +404,14 @@ export function describeBooleanQueryIssue(query: string): string | null {
       return 'Unbalanced parentheses — check that every ( has a matching ).';
     }
     return parsed.error || 'This Boolean query could not be parsed. Check the operators and grouping.';
+  }
+
+  // Proximity operands must each be a single term or quoted phrase. A grouped
+  // operand — "(a OR b) w/5 c" — parses cleanly but can never match, because
+  // span lookup is only defined for terms and phrases. Left alone it returns a
+  // silent, authoritative-looking zero, so reject it with a specific message.
+  if (hasUnsupportedProximity(parsed.expression)) {
+    return 'Proximity (w/#, near/#) works between two single terms or quoted phrases — not around a group. Try: "internal control" w/5 weakness.';
   }
 
   // A query made only of NOT terms has nothing to fetch from EDGAR (there is no
