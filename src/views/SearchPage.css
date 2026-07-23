@@ -1043,6 +1043,16 @@
   font-size: 0.78rem;
 }
 
+/* Exhibit provenance: the row is the parent filing, this names the exhibit the
+   Boolean expression actually matched in. Deliberately quieter than the form and
+   match-reason chips so it reads as supporting evidence, not a second heading. */
+.research-hit-card .match-provenance {
+  margin-top: 4px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
 .research-hit-card .form,
 .research-hit-card .match-reason,
 .selected-match-label {

@@ -53,18 +53,22 @@ test.describe('Boolean search behaviour', () => {
 
   test('malformed syntax reports inline and performs no retrieval', async ({ page }) => {
     const stats = await openBooleanWorkbench(page);
+    // Scope the assertion to this submission so unrelated page startup traffic
+    // can never make it pass or fail for the wrong reason.
+    const before = stats.eftsQueries.length;
     await runQuery(page, 'mezzanine AND');
 
     await expect(page.getByText(/ends with an operator/i)).toBeVisible();
-    expect(stats.eftsQueries, 'invalid syntax must not reach EDGAR').toEqual([]);
+    expect(stats.eftsQueries.length - before, 'invalid syntax must not reach EDGAR').toBe(0);
   });
 
   test('a NOT-only query is rejected without retrieval', async ({ page }) => {
     const stats = await openBooleanWorkbench(page);
+    const before = stats.eftsQueries.length;
     await runQuery(page, 'NOT mezzanine');
 
     await expect(page.getByText(/not negated/i)).toBeVisible();
-    expect(stats.eftsQueries).toEqual([]);
+    expect(stats.eftsQueries.length - before, 'a NOT-only query must not reach EDGAR').toBe(0);
   });
 
   test('an identical repeat returns the same filings', async ({ page }) => {

@@ -62,6 +62,15 @@ export interface FilingResearchResult {
   // coverage. Kept distinct so the filter and the label can never disagree.
   registeredAuditor?: string;
   acceleratedStatus: string;
+  /** Set when the Boolean expression matched inside an exhibit rather than the
+   *  parent document. The row represents the parent filing; these identify the
+   *  exhibit that actually carried the match. */
+  matchedDocumentName?: string;
+  matchedDocumentType?: string;
+  matchedDocumentUrl?: string;
+  /** How many distinct documents in this accession matched (>1 when several
+   *  exhibits hit and were rolled up into this single row). */
+  matchedDocumentCount?: number;
 }
 
 interface FilingSignal {
@@ -874,6 +883,56 @@ function matchesSignalFilters(result: FilingResearchResult, filters: SearchFilte
   return true;
 }
 
+/**
+ * Collapses per-document Boolean matches into one row per filing.
+ *
+ * EFTS returns every matching document of an accession as its own hit, so an
+ * 8-K whose text appears in three exhibits would otherwise read as three
+ * duplicate rows. A parent-document match wins the row; when only exhibits
+ * matched, the exhibit that matched becomes the row's evidence and is labelled
+ * as such. Input order is preserved so the caller's ranking still decides
+ * position.
+ */
+function rollUpExhibitMatches(results: FilingResearchResult[]): FilingResearchResult[] {
+  const byFiling = new Map<string, FilingResearchResult>();
+  const matchedDocs = new Map<string, Set<string>>();
+
+  for (const result of results) {
+    const key = `${result.cik}:${result.accessionNumber}`;
+    const docs = matchedDocs.get(key) || new Set<string>();
+    docs.add(result.primaryDocument || result.documentType);
+    matchedDocs.set(key, docs);
+
+    const existing = byFiling.get(key);
+    if (!existing) {
+      byFiling.set(key, result);
+      continue;
+    }
+
+    // A parent-document match is a better representative than an exhibit one.
+    if (isExhibitDocumentType(existing.documentType) && !isExhibitDocumentType(result.documentType)) {
+      byFiling.set(key, result);
+    }
+  }
+
+  return Array.from(byFiling.entries()).map(([key, result]) => {
+    const count = matchedDocs.get(key)?.size ?? 1;
+    if (!isExhibitDocumentType(result.documentType)) {
+      return count > 1 ? { ...result, matchedDocumentCount: count } : result;
+    }
+
+    // Exhibit-only match: present it as the parent filing, with the exhibit
+    // named as the evidence that actually carried the match.
+    return {
+      ...result,
+      matchedDocumentName: result.primaryDocument,
+      matchedDocumentType: result.documentType,
+      matchedDocumentUrl: buildFilingUrl(result.cik, result.accessionNumber, result.primaryDocument),
+      matchedDocumentCount: count,
+    };
+  });
+}
+
 function applyMetadataMatchFallback(results: FilingResearchResult[]): FilingResearchResult[] {
   return results.map(result => ({
     ...result,
@@ -1269,7 +1328,13 @@ export async function executeFilingResearchSearch({
   // Search does): EFTS returns each matching document of a filing as its own
   // hit, so one 8-K/A could surface five EX-99.x rows that read as duplicates
   // and crowd out distinct filings in the main research results.
-  const excludeExhibits = !includeExhibits;
+  //
+  // Boolean mode is the exception: a disclosure that lives only in EX-99.1 was
+  // being discarded before it could be validated, hiding a real match entirely.
+  // There we admit exhibits as candidates and instead roll successful matches up
+  // to one row per accession (see rollUpExhibitMatches), which removes the
+  // duplicate-row problem without losing the exhibit-only evidence.
+  const excludeExhibits = !includeExhibits && mode !== 'boolean';
   const preferRelevance = Boolean((query || filters.keyword).trim() || filters.sectionKeywords.trim());
   const semanticAuditorSearch = mode === 'semantic' && Boolean(filters.accountant.trim());
   const needsCompanyMetadata = requiresCompanyMetadata(filters);
@@ -1549,7 +1614,12 @@ export async function executeFilingResearchSearch({
 
   if (filteredResults.length === 0 && lastSearchError) throw lastSearchError;
 
-  const finalResults = sortResearchResults(filteredResults, preferRelevance).slice(0, displayLimit);
+  // Collapse per-document matches to one row per filing before ranking, so an
+  // accession whose match lives in several exhibits occupies a single row.
+  const rolledUp = mode === 'boolean' && !includeExhibits
+    ? rollUpExhibitMatches(filteredResults)
+    : filteredResults;
+  const finalResults = sortResearchResults(rolledUp, preferRelevance).slice(0, displayLimit);
   await enrichResultsFromFacetStore(finalResults);
 
   const upstreamCoverage = upstreamCoverageState.value;

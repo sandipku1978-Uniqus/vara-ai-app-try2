@@ -1724,6 +1724,16 @@ export default function SearchPage() {
                         <span>{result.sicDescription || result.sic || 'Industry unavailable'}</span>
                       </div>
                       <div className="match-reason">{result.matchReason || 'Preliminary match — open the filing to confirm context'}</div>
+                      {result.matchedDocumentType && (
+                        // The row is the parent filing; name the exhibit that
+                        // actually carried the match so the evidence is traceable.
+                        <div className="match-provenance">
+                          Matched in {result.matchedDocumentType}
+                          {result.matchedDocumentCount && result.matchedDocumentCount > 1
+                            ? ` (+${result.matchedDocumentCount - 1} more exhibit${result.matchedDocumentCount - 1 === 1 ? '' : 's'})`
+                            : ''}
+                        </div>
+                      )}
                       <div className="snippet">
                         {renderHighlightedText(result.matchSnippet || result.description || 'Matched on filing metadata.', previewHighlightTerms)}
                       </div>
