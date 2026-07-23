@@ -94,15 +94,18 @@ const GUIDE_SECTIONS: GuideSection[] = [
     summary: 'Master the full workflow: assisted filing search, Boolean search, research sessions with tabs, result insights, and saved alerts.',
     steps: [
       'Use Filing Research mode to turn supported plain-language constraints into a deterministic SEC search. It is not conceptual or vector retrieval.',
-      'Switch to Boolean mode when you need exact-match results. Use AND, OR, NOT, "quoted phrases", and proximity operators like w/5 or near/10.',
-      'Scope Boolean results to a specific audit firm inline with auditor:<firm> — e.g. "material weakness" AND auditor:KPMG, or auditor:"Ernst & Young" on its own. It combines with the rest of the expression and with the Auditor filter in Advanced Filters.',
+      'Switch to Boolean mode when you need exact-match results. Use AND, OR, NOT, "quoted phrases", and proximity operators like w/5 or near/10. Your mode choice is authoritative — lowercase prose containing "and" or "or" will not silently switch modes.',
+      'Precedence is NOT, then proximity, then AND (explicit or implied by a space), then OR. Use parentheses to override it: (impairment OR restructuring) AND lease.',
+      'Bare terms match whole words, case-insensitively, with singular/plural equivalence — lease also matches leases, and weakness also matches weaknesses. There is no broader stemming, so audit does not match auditory. Quoted phrases match a contiguous run of whole words, so "net income" does not match "planet income". Punctuation is normalised both ways, so 10-K, non-GAAP, R&D and U.S. GAAP all match their spaced forms.',
+      'Scope Boolean results to a specific audit firm inline with auditor:<firm> — e.g. "material weakness" AND auditor:KPMG, or auditor:"Ernst & Young" on its own (quote multi-word firms). The field applies to the whole search, so it is only allowed in AND context; auditor: inside an OR or NOT group is rejected. It combines with the Auditor filter in Advanced Filters, and the firm shown is the PCAOB Form AP auditor of record.',
       'Each search opens in a new tab within your research session, so you can compare multiple queries side by side.',
       'Generate a trend report after a search to get an AI-powered summary of what the result set shows.',
       'Save an alert if you plan to rerun the same search regularly — it will appear on your Dashboard for quick re-execution.',
     ],
     notes: [
       'Saved alerts and annotations are browser-local. They help with repeat research but are not shared across devices.',
-      'If a Boolean search returns nothing, check for typos in quoted phrases and try widening the date window first.',
+      'Boolean results are verified matches within a bounded candidate window, not a claim about the whole EDGAR corpus. If a run hits its time or request budget, or a filing could not be retrieved for validation, the results are labelled partial — read a zero in that state as "no verified matches among the candidates checked", not "nothing exists".',
+      'If a Boolean search returns nothing, check for typos in quoted phrases and try widening the date window first. Invalid syntax (a dangling AND/OR, unbalanced parentheses or quotes, or a NOT-only query) is reported inline and runs no search at all.',
       'Research sessions are saved in the current browser and can be restored there; they are not shared across devices.',
     ],
     links: [
@@ -310,7 +313,7 @@ const FAQS: FaqItem[] = [
   },
   {
     question: 'What is the difference between Filing Research and Boolean search?',
-    answer: 'Filing Research mode extracts supported constraints from plain-language input and runs a deterministic SEC search; it is not conceptual retrieval. Boolean mode supports AND, OR, NOT, quoted phrases, proximity operators like w/5 or near/10, and an audit-firm field — auditor:Deloitte (or auditor:"Ernst & Young") — to scope results to a specific accounting firm.',
+    answer: 'Filing Research mode extracts supported constraints from plain-language input and runs a deterministic SEC search; it is not conceptual retrieval. Boolean mode supports AND, OR, NOT, quoted phrases, proximity operators like w/5 or near/10, and an audit-firm field — auditor:Deloitte (or auditor:"Ernst & Young") — to scope results to a specific accounting firm. Boolean matching is exact: whole-word terms with singular/plural equivalence, phrases bounded to whole words, and every OR branch retrieved independently so a rare second branch is never hidden by a common first one.',
   },
   {
     question: 'How do the search filters work?',
