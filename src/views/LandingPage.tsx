@@ -358,7 +358,9 @@ export default function LandingPage() {
               // A placeholder is not an accessible name — label the field so
               // screen readers announce it (mobile a11y contract).
               aria-label="Search filings, risk factors, clauses, or rule topics"
-              placeholder="Search filings, risk factors, clauses, rule topics, or S-1 names..."
+              /* Short enough to render whole in the hero field — the longer copy
+                 was being clipped mid-phrase ("...clauses, rule"). */
+              placeholder="Search filings, risk factors, or clauses..."
               value={query}
               onChange={event => setQuery(event.target.value)}
             />
