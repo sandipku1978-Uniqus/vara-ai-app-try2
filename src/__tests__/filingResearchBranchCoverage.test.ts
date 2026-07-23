@@ -129,6 +129,20 @@ describe('Boolean OR-branch coverage', () => {
     expect(onDegraded).toHaveBeenCalledWith(expect.stringMatching(/request budget/i));
   });
 
+  it('applies an explicit issuer CIK as structured scope in Boolean mode', async () => {
+    mocks.search.mockImplementation(async () => [hit('D1')]);
+    mocks.fetchText.mockImplementation(async () => 'alpha present');
+    await executeFilingResearchSearch({
+      query: 'alpha',
+      filters: { ...defaultSearchFilters, entityCik: '0000320193' },
+      mode: 'boolean',
+      limit: 50,
+    });
+    // The CIK reaches retrieval as scope rather than being re-resolved from text.
+    const options = mocks.search.mock.calls[0]?.[6] as { entityCik?: string } | undefined;
+    expect(options?.entityCik).toBe('0000320193');
+  });
+
   it('honors an already-aborted signal without issuing any EDGAR page', async () => {
     mocks.search.mockImplementation(async () => [hit('D1')]);
     const controller = new AbortController();

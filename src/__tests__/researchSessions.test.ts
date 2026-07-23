@@ -18,6 +18,7 @@ const makeFilters = () => ({
   dateFrom: '',
   dateTo: '',
   entityName: '',
+  entityCik: '',
   formTypes: [] as string[],
   sectionKeywords: '',
   sicCode: '',

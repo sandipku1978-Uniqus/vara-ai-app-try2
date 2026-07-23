@@ -11,6 +11,11 @@ export interface SearchFilters {
   dateFrom: string;
   dateTo: string;
   entityName: string;
+  /** Structured issuer scope. Set when a company is picked from the lookup, so
+   *  retrieval filters by CIK instead of re-resolving the display name (or, in
+   *  Boolean mode, treating a typed ticker as filing text). Optional so older
+   *  persisted sessions and a rollback build stay valid. */
+  entityCik?: string;
   formTypes: string[];
   sectionKeywords: string;
   sicCode: string;
@@ -30,6 +35,7 @@ export const defaultSearchFilters: SearchFilters = {
   dateFrom: '',
   dateTo: '',
   entityName: '',
+  entityCik: '',
   formTypes: [],
   sectionKeywords: '',
   sicCode: '',
@@ -213,7 +219,7 @@ export default function SearchFilterBar({ config, filters, onChange, onSearch, l
 
   // Build all active chips for the bottom bar
   const chips: { label: string; clear: () => void }[] = [];
-  if (filters.entityName) chips.push({ label: `Entity: ${filters.entityName}`, clear: () => onChange({ ...filters, entityName: '' }) });
+  if (filters.entityName) chips.push({ label: `Entity: ${filters.entityName}`, clear: () => onChange({ ...filters, entityName: '', entityCik: '' }) });
   if (filters.dateFrom) chips.push({ label: `From: ${filters.dateFrom}`, clear: () => onChange({ ...filters, dateFrom: '' }) });
   if (filters.dateTo) chips.push({ label: `To: ${filters.dateTo}`, clear: () => onChange({ ...filters, dateTo: '' }) });
   filters.formTypes.forEach(ft => chips.push({ label: ft, clear: () => toggleList('formTypes', ft) }));
@@ -302,7 +308,7 @@ export default function SearchFilterBar({ config, filters, onChange, onSearch, l
                 <CompanyLookupField
                   id={`${fieldId}-entity`}
                   value={filters.entityName}
-                  onChange={value => onChange({ ...filters, entityName: value })}
+                  onChange={(value, cik) => onChange({ ...filters, entityName: value, entityCik: cik })}
                   placeholder="Type company or ticker"
                 />
               </div>

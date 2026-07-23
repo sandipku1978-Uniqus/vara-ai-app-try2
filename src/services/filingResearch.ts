@@ -1212,8 +1212,11 @@ export async function executeFilingResearchSearch({
   let query = rawQuery;
   let filters = rawFilters;
   // Resolved issuer CIK — EFTS filters reliably by CIK where entity-name
-  // strings with punctuation ("Organon & Co.") silently mismatch.
-  let entityCik = '';
+  // strings with punctuation ("Organon & Co.") silently mismatch. An explicit
+  // CIK from the issuer picker is authoritative and needs no re-resolution;
+  // this also makes issuer scope work in Boolean mode, where free text is
+  // deliberately treated as filing text rather than a company name.
+  let entityCik = (rawFilters.entityCik || '').trim();
 
   // Entity scoping ("apple 10-K", "OGN climate", "Organon exhibit"): company
   // text must become an issuer scope, not a relevance term — full-text
@@ -1223,6 +1226,7 @@ export async function executeFilingResearchSearch({
   if (
     mode !== 'boolean' &&
     entityScope !== 'off' &&
+    !entityCik &&
     !filters.entityName.trim() &&
     !filters.sectionKeywords.trim() &&
     (query || filters.keyword).trim()

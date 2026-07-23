@@ -7,7 +7,10 @@ import { loadCompanyDirectory } from '../../services/agentEvidence';
 interface CompanyLookupFieldProps {
   id?: string;
   value: string;
-  onChange: (value: string) => void;
+  /** Emits the display value together with the issuer's CIK — non-empty only
+   *  when the user picked a suggestion, '' when they typed freely or cleared.
+   *  Both travel in one call so the caller can apply them atomically. */
+  onChange: (value: string, cik: string) => void;
   placeholder?: string;
 }
 
@@ -120,7 +123,8 @@ export default function CompanyLookupField({
   }, [options, value]);
 
   function chooseOption(option: CompanyOption) {
-    onChange(option.title);
+    // Picking a suggestion is a structured issuer selection, so carry its CIK.
+    onChange(option.title, option.cik);
     setOpen(false);
     setActiveIndex(-1);
     inputRef.current?.focus();
@@ -135,7 +139,8 @@ export default function CompanyLookupField({
           ref={inputRef}
           value={value}
           onChange={event => {
-            onChange(event.target.value);
+            // Free-typing invalidates any previously selected issuer identity.
+            onChange(event.target.value, '');
             setOpen(true);
             setActiveIndex(0);
           }}
@@ -171,7 +176,7 @@ export default function CompanyLookupField({
             type="button"
             aria-label="Clear company or entity"
             onClick={() => {
-              onChange('');
+              onChange('', '');
               setOpen(false);
               setActiveIndex(-1);
               inputRef.current?.focus();

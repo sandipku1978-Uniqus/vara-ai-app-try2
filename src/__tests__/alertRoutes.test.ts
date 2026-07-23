@@ -9,6 +9,7 @@ function filters() {
     dateFrom: '2024-01-01',
     dateTo: '2026-07-19',
     entityName: 'Apple Inc.',
+    entityCik: '',
     formTypes: [] as string[],
     sectionKeywords: 'risk factors',
     sicCode: '3571',
