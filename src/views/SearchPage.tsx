@@ -1492,6 +1492,9 @@ export default function SearchPage() {
                   onFocus={() => setSuggestionsOpen(true)}
                   onBlur={() => window.setTimeout(() => setSuggestionsOpen(false), 150)}
                   role="combobox"
+                  // A placeholder is not an accessible name; label the field
+                  // explicitly so screen readers (and tests) can identify it.
+                  aria-label={searchMode === 'semantic' ? 'Search filings' : 'Boolean search query'}
                   aria-controls="workbench-company-listbox"
                   aria-autocomplete="list"
                   aria-expanded={suggestionsOpen && querySuggestions.length > 0}

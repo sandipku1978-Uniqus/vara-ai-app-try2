@@ -18,7 +18,8 @@
     "ingest:auditors": "tsx data-pipeline/load-auditors.ts",
     "ingest:letters": "tsx data-pipeline/ingest-letters.ts",
     "ingest:letter-text": "tsx data-pipeline/fetch-letter-text.ts",
-    "enrich:companies": "tsx data-pipeline/enrich-companies.ts"
+    "enrich:companies": "tsx data-pipeline/enrich-companies.ts",
+    "test:ui:boolean": "playwright test tests/e2e/boolean-search.spec.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.112.3",
