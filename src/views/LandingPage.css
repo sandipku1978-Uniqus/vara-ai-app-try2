@@ -444,14 +444,52 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 2px;
   min-height: 27px;
-  padding: 4px 3px;
+  padding: 4px 5px;
   border: 1px solid transparent;
   border-radius: 2px;
-  font-size: 0.54rem;
-  font-weight: 650;
-  line-height: 1.15;
-  text-align: center;
+}
+
+/* One step of the three-step disclosure-depth scale. */
+.landing-matrix-step {
+  width: 4px;
+  height: 10px;
+  border-radius: 1px;
+  background: var(--border-color);
+}
+
+.landing-matrix-step.is-on {
+  background: currentColor;
+}
+
+.landing-matrix-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 9px;
+  margin: 9px 0 0;
+  color: var(--text-muted);
+  font-size: 0.55rem;
+  font-weight: 600;
+}
+
+.landing-matrix-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* Slightly smaller swatches so all three keys sit on one line. */
+.landing-matrix-legend .landing-matrix-step {
+  width: 3px;
+  height: 8px;
+}
+
+.landing-matrix-legend .landing-matrix-cell {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: none;
 }
 
 .landing-matrix-cell--strong {

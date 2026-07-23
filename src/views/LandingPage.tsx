@@ -155,6 +155,17 @@ const workflowSteps = [
   },
 ] as const;
 
+// Disclosure depth rendered as a three-step scale. The panel is too narrow to
+// print "Expanded"/"Standard"/"Emerging" without clipping, so the word travels
+// as the cell's accessible name and title while the bars carry the comparison.
+const BENCHMARK_LEVELS: Record<string, number> = { strong: 3, medium: 2, light: 1 };
+
+const BENCHMARK_LEGEND = [
+  { label: 'Expanded', tone: 'strong' },
+  { label: 'Standard', tone: 'medium' },
+  { label: 'Emerging', tone: 'light' },
+] as const;
+
 const marqueeModules = [
   'Research Workbench',
   'Benchmarking Matrix',
@@ -192,6 +203,8 @@ function LandingSignalCanvas() {
       detail: 'Deal documents ready for AI clause extraction and transactional screening.',
     },
   ] as const;
+
+  const benchmarkPeers = ['AAPL', 'MSFT', 'NVDA'] as const;
 
   const benchmarkRows = [
     {
@@ -268,9 +281,7 @@ function LandingSignalCanvas() {
       <div className="landing-signal-card landing-signal-card--matrix">
         <p className="landing-signal-card__eyebrow">Illustrative Benchmark Matrix</p>
         <div className="landing-matrix-head">
-          <span>AAPL</span>
-          <span>MSFT</span>
-          <span>NVDA</span>
+          {benchmarkPeers.map(peer => <span key={peer}>{peer}</span>)}
         </div>
 
         <div className="landing-matrix-grid">
@@ -279,17 +290,43 @@ function LandingSignalCanvas() {
               <span className="landing-matrix-topic">{row.topic}</span>
               <div className="landing-matrix-peer-grid">
                 {row.peers.map((peer, peerIndex) => (
+                  // A three-step density scale rather than the word itself: at
+                  // this panel width the labels could not render without
+                  // clipping. The word remains the accessible name, so meaning
+                  // is unchanged for screen readers and on hover.
                   <span
                     key={`${row.topic}-${peerIndex}`}
                     className={`landing-matrix-cell landing-matrix-cell--${peer.tone}`}
+                    role="img"
+                    aria-label={`${row.topic}, ${benchmarkPeers[peerIndex]}: ${peer.label}`}
+                    title={peer.label}
                   >
-                    {peer.label}
+                    {[0, 1, 2].map(step => (
+                      <i
+                        key={step}
+                        aria-hidden="true"
+                        className={`landing-matrix-step${step < BENCHMARK_LEVELS[peer.tone] ? ' is-on' : ''}`}
+                      />
+                    ))}
                   </span>
                 ))}
               </div>
             </div>
           ))}
         </div>
+
+        <p className="landing-matrix-legend">
+          {BENCHMARK_LEGEND.map(item => (
+            <span key={item.label} className="landing-matrix-legend-item">
+              <span className={`landing-matrix-cell landing-matrix-cell--${item.tone}`} aria-hidden="true">
+                {[0, 1, 2].map(step => (
+                  <i key={step} className={`landing-matrix-step${step < BENCHMARK_LEVELS[item.tone] ? ' is-on' : ''}`} />
+                ))}
+              </span>
+              {item.label}
+            </span>
+          ))}
+        </p>
       </div>
 
       <div className="landing-signal-card landing-signal-card--pulse">
