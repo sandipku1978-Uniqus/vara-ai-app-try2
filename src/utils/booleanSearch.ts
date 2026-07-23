@@ -1,3 +1,14 @@
+/**
+ * Boolean engine version. Bump when matching or retrieval semantics change in a
+ * way that legitimately changes which filings a saved search recalls. Persisted
+ * (optionally) on saved alerts and research sessions so a migrated run can be
+ * re-baselined instead of reporting long-known filings as brand new.
+ *
+ * v2 — token-bounded phrases, symmetric punctuation, singular/plural
+ *      equivalence, independent OR-branch retrieval, per-run request budgets.
+ */
+export const BOOLEAN_ENGINE_VERSION = 2;
+
 type Token =
   | { type: 'LPAREN' }
   | { type: 'RPAREN' }

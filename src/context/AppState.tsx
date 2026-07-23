@@ -61,6 +61,11 @@ export interface SavedAlert {
   lastSeenAccessions: string[];
   latestNewAccessions: string[];
   latestResultCount: number;
+  /** Boolean engine that produced lastSeenAccessions. Absent on alerts saved
+   *  before versioning; the first check under a newer engine re-baselines
+   *  instead of reporting the recall difference as new filings. Optional so a
+   *  rollback build ignores it safely. */
+  engineVersion?: number;
 }
 
 export type ThemeMode = 'light' | 'dark';

@@ -1,6 +1,7 @@
 import type { SearchFilters } from '../components/filters/SearchFilterBar';
 import type { FilingResearchResult, ResearchSearchMode } from './filingResearch';
 import { scopedStorageKey } from './storageNamespace';
+import { BOOLEAN_ENGINE_VERSION } from '../utils/booleanSearch';
 
 export interface ResolvedResearchSearch {
   query: string;
@@ -23,6 +24,9 @@ export interface ResearchSearchSession {
   selectedResultId: string | null;
   createdAt: string;
   updatedAt: string;
+  /** Boolean engine that produced `results`. Absent on sessions stored before
+   *  versioning. Optional so a rollback build ignores it safely. */
+  engineVersion?: number;
 }
 
 const STORAGE_KEY = 'vara.research.sessions.v1';
@@ -201,6 +205,30 @@ function sanitizeSession(session: ResearchSearchSession): ResearchSearchSession 
   };
 }
 
+/**
+ * A restored Boolean session whose rows were produced by an older engine would
+ * show results the current engine would not return. Keep the query, filters and
+ * tab, but drop the stale rows and ask for an explicit rerun — deliberately no
+ * auto-rerun, so restoring a workspace never silently spends SEC request budget.
+ */
+function retireStaleBooleanResults(session: ResearchSearchSession): ResearchSearchSession {
+  const isStaleBoolean =
+    session.mode === 'boolean' &&
+    session.searched &&
+    session.results.length > 0 &&
+    (session.engineVersion ?? 1) !== BOOLEAN_ENGINE_VERSION;
+
+  if (!isStaleBoolean) return session;
+
+  return {
+    ...session,
+    results: [],
+    selectedResultId: null,
+    isRefining: false,
+    errorMsg: 'Boolean search was upgraded since this tab was saved. Run the search again to refresh these results.',
+  };
+}
+
 export function loadResearchSessions(): ResearchSearchSession[] {
   if (typeof window === 'undefined') return [];
   try {
@@ -210,7 +238,10 @@ export function loadResearchSessions(): ResearchSearchSession[] {
     if (!raw) return [];
     const parsed = JSON.parse(raw) as ResearchSearchSession[];
     if (!Array.isArray(parsed)) return [];
-    return parsed.map(sanitizeSession).slice(0, MAX_SESSIONS);
+    return parsed
+      .map(sanitizeSession)
+      .map(retireStaleBooleanResults)
+      .slice(0, MAX_SESSIONS);
   } catch {
     return [];
   }
@@ -223,7 +254,14 @@ export function saveResearchSessions(sessions: ResearchSearchSession[]): void {
     if (!storageKey) return;
     window.sessionStorage.setItem(
       storageKey,
-      JSON.stringify(sessions.slice(0, MAX_SESSIONS).map(sanitizeSession))
+      JSON.stringify(
+        sessions
+          .slice(0, MAX_SESSIONS)
+          .map(sanitizeSession)
+          // Stamp the engine that produced these rows so a later build can tell
+          // whether they are still valid.
+          .map(session => ({ ...session, engineVersion: BOOLEAN_ENGINE_VERSION }))
+      )
     );
   } catch {
     // Ignore storage quota or serialization errors.

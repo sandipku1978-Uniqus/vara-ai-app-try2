@@ -13,6 +13,7 @@ import { defaultSearchFilters } from '../components/filters/SearchFilterBar';
 import CompanySearchInput from '../components/filters/CompanySearchInput';
 import { describeForm } from '../lib/formLabels';
 import { buildResearchRouteParams } from '../services/researchSessions';
+import { BOOLEAN_ENGINE_VERSION } from '../utils/booleanSearch';
 import { buildWatchlistAnalytics } from '../services/dashboardAnalytics';
 import { buildSavedAlertRouteParams } from '../services/alertRoutes';
 import './Dashboard.css';
@@ -136,13 +137,22 @@ export default function Dashboard() {
       });
 
       const accessions = results.map(result => result.accessionNumber);
-      const latestNewAccessions = accessions.filter(accession => !alert.lastSeenAccessions.includes(accession));
+      // The v2 Boolean engine legitimately recalls a different set than the one
+      // that produced lastSeenAccessions (independent OR branches, plural and
+      // punctuation matching, token-bounded phrases). Treat the first check
+      // after a version change as a re-baseline so long-known filings are not
+      // announced as new; genuine new filings surface from the next check on.
+      const isReBaseline = (alert.engineVersion ?? 1) !== BOOLEAN_ENGINE_VERSION;
+      const latestNewAccessions = isReBaseline
+        ? []
+        : accessions.filter(accession => !alert.lastSeenAccessions.includes(accession));
 
       updateSavedAlert(alert.id, {
         lastCheckedAt: new Date().toISOString(),
         lastSeenAccessions: accessions,
         latestNewAccessions,
         latestResultCount: results.length,
+        engineVersion: BOOLEAN_ENGINE_VERSION,
       });
     } catch (error) {
       console.error('Alert check failed:', error);
@@ -163,7 +173,14 @@ export default function Dashboard() {
 
     if (staleAlerts.length === 0) return;
 
-    void Promise.all(staleAlerts.slice(0, 3).map(alert => checkAlert(alert.id)));
+    // Sequential, not Promise.all: each Boolean run now carries its own request
+    // budget (60 pages / 120 documents), so three concurrent broad searches on
+    // Dashboard load could exceed the /api/sec-proxy limit and self-inflict 429s.
+    void (async () => {
+      for (const alert of staleAlerts.slice(0, 3)) {
+        await checkAlert(alert.id);
+      }
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [savedAlerts.length]);
 
