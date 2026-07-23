@@ -200,7 +200,8 @@ describe('deterministic ordering', () => {
 
     const baseline = await runOnce();
     expect(baseline.length).toBeGreaterThan(0);
-    for (let i = 0; i < 6; i += 1) {
+    // Plan §12 gate: twenty randomised-latency runs return identical IDs/order.
+    for (let i = 0; i < 20; i += 1) {
       expect(await runOnce()).toBe(baseline);
     }
   });
