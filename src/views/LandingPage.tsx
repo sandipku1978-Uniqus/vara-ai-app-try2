@@ -355,6 +355,9 @@ export default function LandingPage() {
             <Search className="landing-search__icon" size={18} />
             <input
               type="text"
+              // A placeholder is not an accessible name — label the field so
+              // screen readers announce it (mobile a11y contract).
+              aria-label="Search filings, risk factors, clauses, or rule topics"
               placeholder="Search filings, risk factors, clauses, rule topics, or S-1 names..."
               value={query}
               onChange={event => setQuery(event.target.value)}
