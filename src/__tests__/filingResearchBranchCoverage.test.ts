@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({ search: vi.fn(), fetchText: vi.fn() }));
 vi.mock('../services/secApi', () => ({
   searchEdgarFilings: mocks.search,
   fetchFilingText: mocks.fetchText,
+  fetchFilingTextOutcome: async (...a: unknown[]) => { const t = await mocks.fetchText(...a); return t ? { ok: true, text: t } : { ok: false, kind: "upstream", retryable: true }; },
   isEnrichedSearchEnabled: () => false,
   fetchCompanySubmissions: async () => null,
   resolveCompanyInput: async () => null,
@@ -202,5 +203,45 @@ describe('deterministic ordering', () => {
     for (let i = 0; i < 6; i += 1) {
       expect(await runOnce()).toBe(baseline);
     }
+  });
+});
+
+describe('structured filter family semantics', () => {
+  // Distinct CIKs/accessions: the filing-signal cache is module-level and keyed
+  // by cik+accession, so reusing D1/D3 here would replay signals cached by the
+  // earlier tests (whose fixture text carries no filer status).
+  function filerHit(n: number) {
+    return {
+      _id: `FAM${n}:doc.htm`,
+      _score: 1,
+      _source: {
+        display_names: [`Filer Co ${n}`],
+        file_date: '2026-05-0' + n,
+        file_type: '10-K',
+        adsh: `0000009${n}9-26-00009${n}`,
+        ciks: [`00000009${n}9`],
+      },
+    };
+  }
+
+  it('combines values inside one filter family with OR, not AND', async () => {
+    // "Large accelerated filer" and "Accelerated filer" are mutually exclusive
+    // statuses. Under the old AND-within-family rule, selecting both could only
+    // ever return zero filings.
+    mocks.search.mockImplementation(async () => [filerHit(1), filerHit(2)]);
+    mocks.fetchText.mockImplementation(async (cik: string) =>
+      String(cik).endsWith('919')
+        ? 'alpha appears here. Large accelerated filer.'
+        : 'alpha appears here. Accelerated filer.'
+    );
+
+    const results = await executeFilingResearchSearch({
+      query: 'alpha',
+      filters: { ...defaultSearchFilters, acceleratedStatus: ['LAF', 'AF'] },
+      mode: 'boolean',
+      limit: 50,
+    });
+
+    expect(results.length).toBeGreaterThan(0);
   });
 });

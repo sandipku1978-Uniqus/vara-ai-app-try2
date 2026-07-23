@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({ search: vi.fn(), fetchText: vi.fn() }));
 vi.mock('../services/secApi', () => ({
   searchEdgarFilings: mocks.search,
   fetchFilingText: mocks.fetchText,
+  fetchFilingTextOutcome: async (...a: unknown[]) => { const t = await mocks.fetchText(...a); return t ? { ok: true, text: t } : { ok: false, kind: "upstream", retryable: true }; },
   isEnrichedSearchEnabled: () => false,
   fetchCompanySubmissions: async () => null,
   resolveCompanyInput: async () => null,

@@ -2,6 +2,8 @@ import type { SearchFilters } from '../components/filters/SearchFilterBar';
 import {
   fetchCompanySubmissions,
   fetchFilingText,
+  fetchFilingTextOutcome,
+  type FilingTextOutcome,
   isEnrichedSearchEnabled,
   resolveCompanyInput,
   searchEdgarFilings,
@@ -23,12 +25,26 @@ import {
   buildCandidateQueryFromBoolean,
   booleanQueryMatches,
   extractBooleanMatchSnippet,
-  extractAuditorFilterToken,
+  compileBooleanQuery,
   parseBooleanQuery,
   planBooleanBranches,
 } from '../utils/booleanSearch';
 
 export type ResearchSearchMode = 'semantic' | 'boolean';
+
+/**
+ * Why a Boolean run stopped. Only 'exhausted' is compatible with complete
+ * coverage — every other value means the result set is a bounded partial.
+ */
+export type BooleanStopReason =
+  | 'exhausted'
+  | 'candidate-cap'
+  | 'request-budget'
+  | 'deadline'
+  | 'rate-limit'
+  | 'fetch-failure'
+  | 'unknown-upstream'
+  | 'cancelled';
 
 export interface FilingResearchResult {
   id: string;
@@ -77,6 +93,8 @@ interface FilingSignal {
   text: string;
   auditor: string;
   acceleratedStatus: string;
+  /** Why the text was unavailable, when it was. Absent on success. */
+  failure?: Extract<FilingTextOutcome, { ok: false }>['kind'];
 }
 
 interface CompanyResearchMetadata {
@@ -589,7 +607,9 @@ async function getFilingSignal(
       cacheKey,
       (async () => {
         try {
-          const text = await fetchFilingText(cik, accessionNumber, primaryDocument);
+          const outcome = await fetchFilingTextOutcome(cik, accessionNumber, primaryDocument);
+          const text = outcome.ok ? outcome.text : '';
+          const failure = outcome.ok ? undefined : outcome.kind;
           let parentText = '';
           let auditor = canonicalizeAuditorInput(detectAuditor(text));
           let acceleratedStatus = detectAcceleratedStatus(text);
@@ -610,16 +630,21 @@ async function getFilingSignal(
             }
           }
 
+          const resolvedText = text || parentText;
+          // Only report a failure when we genuinely ended up with no text; a
+          // parent-document fallback that succeeded is not a failure.
+          if (!resolvedText && failure) filingSignalCache.delete(cacheKey);
           return {
-            text: text || parentText,
+            text: resolvedText,
             auditor,
             acceleratedStatus,
+            failure: resolvedText ? undefined : failure,
           };
         } catch {
           // Filing text fetch failed (rate limit, network error, etc.)
           // Remove from cache so a future attempt can retry.
           filingSignalCache.delete(cacheKey);
-          return { text: '', auditor: '', acceleratedStatus: '' };
+          return { text: '', auditor: '', acceleratedStatus: '', failure: 'upstream' };
         }
       })()
     );
@@ -770,7 +795,11 @@ function matchesFilerKeys(selected: string[], result: FilingResearchResult): boo
   const description = normalize(result.description);
   const formType = normalize(result.formType);
 
-  return selected.every(key => {
+  // Values inside one inclusive filter family combine with OR (different
+  // families still combine with AND). This used to require EVERY selected
+  // status, so picking two mutually exclusive ones — "Large accelerated filer"
+  // and "Accelerated filer" — could only ever return zero.
+  return selected.some(key => {
     switch (key) {
       case 'LAF':
         return signal.includes('large accelerated filer');
@@ -793,7 +822,9 @@ function matchesFilerKeys(selected: string[], result: FilingResearchResult): boo
       case 'BDC':
         return sicDescription.includes('business development') || description.includes('business development company');
       default:
-        return true;
+        // Under OR semantics an unrecognised key must not vacuously match every
+        // filing the way it harmlessly could under the previous AND semantics.
+        return false;
     }
   });
 }
@@ -1310,21 +1341,19 @@ export async function executeFilingResearchSearch({
   // query into the structured auditor filter — the existing signal post-filter
   // then enforces it — and search only the residual expression as text.
   if (mode === 'boolean') {
-    const { auditor, residual } = extractAuditorFilterToken(query || filters.keyword);
-    if (auditor) {
-      const canonical = canonicalizeAuditorInput(auditor) || auditor;
-      filters = { ...filters, accountant: filters.accountant.trim() || canonical };
-      query = residual;
-    }
+    // One compile path shared with the views, saved-alert checks and the
+    // Accounting Hub. Compiling here is what stops an invalid expression from
+    // reaching EDGAR as a literal string (how "revenue AND" silently ran a wrong
+    // search from non-view callers) — the views surface the message, this
+    // hard-stops with zero network calls. It also catches the cases a bare parse
+    // misses: grouped proximity, negation-only, and over-complex OR fan-out.
+    const compiled = compileBooleanQuery(query || filters.keyword);
+    if (!compiled.ok) return [];
 
-    // Service-boundary validation: an invalid Boolean expression must never
-    // reach EDGAR as a literal string (that is how "revenue AND" silently ran a
-    // wrong search from non-view callers). The views surface the message; here
-    // we hard-stop with zero network calls. A residual-empty auditor-only query
-    // is valid and continues as a firm-scoped browse.
-    const boolText = (query || filters.keyword).trim();
-    if (boolText && !parseBooleanQuery(boolText).expression) {
-      return [];
+    if (compiled.auditor) {
+      const canonical = canonicalizeAuditorInput(compiled.auditor) || compiled.auditor;
+      filters = { ...filters, accountant: filters.accountant.trim() || canonical };
+      query = compiled.residual;
     }
   }
 
@@ -1476,7 +1505,9 @@ export async function executeFilingResearchSearch({
   // ── Wave-based collect + validate (text-filtered deep refinement) ──
   const signalMap = new Map<string, FilingSignal>();
   const filteredResults: FilingResearchResult[] = [];
-  const batchSize = 6;
+  // Filing-text concurrency. Four keeps burst pressure on /api/sec-proxy low
+  // enough to leave headroom for filing previews while still validating quickly.
+  const batchSize = 4;
   const parsedBooleanQuery = mode === 'boolean' ? parseBooleanQuery(query) : { expression: null };
   const progressCallback = onProgress;
   let lastProgressCount = 0;
@@ -1500,6 +1531,9 @@ export async function executeFilingResearchSearch({
   // non-HTML primary document such as a PDF). Surfaced so the exclusion is
   // never silent.
   let unvalidatedFetchFailures = 0;
+  // Failure reasons behind those exclusions, so the notice can name the actual
+  // cause (rate limit vs unreadable document) instead of guessing.
+  const fetchFailureKinds = new Map<string, number>();
 
   const wavePerQueryLimit = fastCandidateCollection ? Math.min(perQueryResultLimit, 140) : perQueryResultLimit;
   const waveQueryVariants = fastCandidateCollection
@@ -1588,6 +1622,8 @@ export async function executeFilingResearchSearch({
             // Distinguish "couldn't fetch the text" from "fetched, didn't match"
             // so the former can be reported rather than silently dropped.
             unvalidatedFetchFailures += 1;
+            const kind = signalMap.get(getSignalCacheKey(result))?.failure;
+            if (kind) fetchFailureKinds.set(kind, (fetchFailureKinds.get(kind) ?? 0) + 1);
             continue;
           }
           if (!booleanQueryMatches(query, filingText)) continue;
@@ -1648,13 +1684,29 @@ export async function executeFilingResearchSearch({
     upstreamTotal,
     complete: validationComplete,
   });
-  if (validationTimedOut) {
+  // One typed stop reason for the whole run. `exhausted` is the only value that
+  // can accompany complete coverage; every other value means partial.
+  const stopReason: BooleanStopReason =
+    signal?.aborted ? 'cancelled'
+    : validationTimedOut ? 'deadline'
+    : budgetExhausted ? 'request-budget'
+    : fetchFailureKinds.has('rate-limit') ? 'rate-limit'
+    : unvalidatedFetchFailures > 0 ? 'fetch-failure'
+    : !collectionComplete ? 'unknown-upstream'
+    : validationComplete ? 'exhausted'
+    : 'candidate-cap';
+
+  if (stopReason === 'deadline') {
     onDegraded?.('Filing-text validation reached its time limit; only a partial candidate window was verified.');
-  } else if (budgetExhausted) {
+  } else if (stopReason === 'request-budget') {
     onDegraded?.(`This search reached its per-run request budget (${MAX_PAGE_REQUESTS} pages / ${MAX_DOC_ATTEMPTS} documents); results are a verified partial window, not the full corpus. Narrow the query, dates, or forms to validate more.`);
-  } else if (unvalidatedFetchFailures > 0) {
+  } else if (stopReason === 'rate-limit') {
+    onDegraded?.(`SEC EDGAR rate-limited ${fetchFailureKinds.get('rate-limit')} document ${fetchFailureKinds.get('rate-limit') === 1 ? 'request' : 'requests'}; those filings could not be re-validated and are excluded. Retry shortly for a fuller window.`);
+  } else if (stopReason === 'fetch-failure') {
+    const unreadable = (fetchFailureKinds.get('unsupported') ?? 0) + (fetchFailureKinds.get('not-found') ?? 0);
     onDegraded?.(
-      `${unvalidatedFetchFailures} matching candidate ${unvalidatedFetchFailures === 1 ? 'filing was' : 'filings were'} excluded because the document text could not be retrieved for Boolean re-validation (oversized or non-HTML primary document such as a PDF).`
+      `${unvalidatedFetchFailures} matching candidate ${unvalidatedFetchFailures === 1 ? 'filing was' : 'filings were'} excluded because the document text could not be retrieved for Boolean re-validation` +
+      (unreadable > 0 ? ' (non-HTML primary document such as a scanned PDF or image).' : ' (upstream fetch failure).')
     );
   }
 

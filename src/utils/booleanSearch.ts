@@ -371,39 +371,75 @@ export function extractAuditorFilterToken(query: string): { auditor: string; res
  * well-formed and searchable. Callers surface this instead of silently falling
  * back to a literal-string EDGAR search (which quietly returns wrong results).
  */
-export function describeBooleanQueryIssue(query: string): string | null {
+export type BooleanIssueCode =
+  | 'auditor-composition'
+  | 'unbalanced-quote'
+  | 'dangling-operator'
+  | 'unbalanced-paren'
+  | 'parse'
+  | 'unsupported-proximity'
+  | 'negative-only'
+  | 'too-complex';
+
+export type BooleanCompileResult =
+  | {
+      ok: true;
+      /** Null for an auditor-only query, which is a valid firm-scoped browse. */
+      ast: BooleanSearchNode | null;
+      /** Positive retrieval lanes, one per OR disjunct. */
+      branches: string[];
+      /** Firm lifted out of an `auditor:` token, or ''. */
+      auditor: string;
+      /** The expression with any `auditor:` token removed. */
+      residual: string;
+    }
+  | { ok: false; code: BooleanIssueCode; message: string };
+
+/**
+ * The single place a Boolean query is tokenized, parsed, validated and planned.
+ * Views, the filing-research service, saved-alert checks and the Accounting Hub
+ * all go through this, so syntax rules can never drift between call paths.
+ */
+export function compileBooleanQuery(raw: string): BooleanCompileResult {
+  const fail = (code: BooleanIssueCode, message: string): BooleanCompileResult => ({ ok: false, code, message });
+
   // The auditor: token is lifted into a structured AND filter, so it only has
   // sound meaning in AND-composition. Reject only when the token itself is the
   // operand of an OR, or is directly negated — an OR/NOT elsewhere in the query
   // (e.g. "NOT goodwill AND auditor:PwC") is fine.
   const AUD = 'auditor|accountant|auditfirm|audited[_-]?by';
   if (
-    new RegExp(`\\bOR\\s+(?:${AUD})\\s*:`, 'i').test(query) ||
-    new RegExp(`(?:${AUD})\\s*:\\s*(?:"[^"]*"|\\S+)\\s+OR\\b`, 'i').test(query) ||
-    new RegExp(`\\bNOT\\s+(?:${AUD})\\s*:`, 'i').test(query)
+    new RegExp(`\\bOR\\s+(?:${AUD})\\s*:`, 'i').test(raw) ||
+    new RegExp(`(?:${AUD})\\s*:\\s*(?:"[^"]*"|\\S+)\\s+OR\\b`, 'i').test(raw) ||
+    new RegExp(`\\bNOT\\s+(?:${AUD})\\s*:`, 'i').test(raw)
   ) {
-    return 'The auditor: filter can only be combined with AND. For OR/NOT logic on the audit firm, use the Advanced Filters auditor control.';
+    return fail('auditor-composition', 'The auditor: filter can only be combined with AND. For OR/NOT logic on the audit firm, use the Advanced Filters auditor control.');
   }
 
-  // An `auditor:` token is applied as a filter, not evaluated against filing
-  // text, so validate only the residual expression. An auditor-only query
-  // (residual empty, firm present) is valid and runs as a firm-scoped browse.
-  const { auditor, residual } = extractAuditorFilterToken(query);
+  const { auditor, residual } = extractAuditorFilterToken(raw);
   const trimmed = normalizeWhitespace(residual);
-  if (!trimmed) return null;
+  if (!trimmed) {
+    // Empty query, or auditor-only: valid, nothing to evaluate against text.
+    return { ok: true, ast: null, branches: [], auditor, residual: trimmed };
+  }
 
   const parsed = parseBooleanQuery(trimmed);
   if (!parsed.expression) {
     if (/^"[^"]*$/.test(trimmed) || (trimmed.match(/"/g)?.length ?? 0) % 2 === 1) {
-      return 'Unbalanced quotation mark — close the phrase with a matching ".';
+      return fail('unbalanced-quote', 'Unbalanced quotation mark — close the phrase with a matching ".');
     }
     if (/\b(AND|OR|NOT)$/i.test(trimmed) || /\/\d+\s*$/.test(trimmed)) {
-      return 'The query ends with an operator — add a term after AND, OR, NOT, or w/#.';
+      return fail('dangling-operator', 'The query ends with an operator — add a term after AND, OR, NOT, or w/#.');
     }
     if ((trimmed.match(/\(/g)?.length ?? 0) !== (trimmed.match(/\)/g)?.length ?? 0)) {
-      return 'Unbalanced parentheses — check that every ( has a matching ).';
+      return fail('unbalanced-paren', 'Unbalanced parentheses — check that every ( has a matching ).');
     }
-    return parsed.error || 'This Boolean query could not be parsed. Check the operators and grouping.';
+    // Chained proximity ("a w/5 b w/5 c") fails to parse with a generic error;
+    // give the same specific guidance as the grouped-operand case.
+    if ((trimmed.match(/\b(?:w|within|near)\/\d+/gi)?.length ?? 0) >= 2) {
+      return fail('unsupported-proximity', 'Proximity (w/#, near/#) joins exactly two terms or quoted phrases — chain it into "a w/5 b" AND "b w/5 c", or quote a phrase.');
+    }
+    return fail('parse', parsed.error || 'This Boolean query could not be parsed. Check the operators and grouping.');
   }
 
   // Proximity operands must each be a single term or quoted phrase. A grouped
@@ -411,24 +447,30 @@ export function describeBooleanQueryIssue(query: string): string | null {
   // span lookup is only defined for terms and phrases. Left alone it returns a
   // silent, authoritative-looking zero, so reject it with a specific message.
   if (hasUnsupportedProximity(parsed.expression)) {
-    return 'Proximity (w/#, near/#) works between two single terms or quoted phrases — not around a group. Try: "internal control" w/5 weakness.';
+    return fail('unsupported-proximity', 'Proximity (w/#, near/#) works between two single terms or quoted phrases — not around a group. Try: "internal control" w/5 weakness.');
   }
 
   // A query made only of NOT terms has nothing to fetch from EDGAR (there is no
   // "every filing that lacks X" endpoint), so it cannot be run as-is — unless an
   // auditor token supplies the positive anchor to fetch against.
-  const positives = collectPositiveTerms(parsed.expression);
-  if (positives.size === 0 && !auditor) {
-    return 'Add at least one term that is not negated — a NOT-only query has nothing to match against.';
+  if (collectPositiveTerms(parsed.expression).size === 0 && !auditor) {
+    return fail('negative-only', 'Add at least one term that is not negated — a NOT-only query has nothing to match against.');
   }
 
   // Complexity cap: too many OR branches would force us to approximate the logic
   // rather than retrieve each disjunct honestly. Reject instead.
-  if (planBooleanBranches(trimmed).truncated) {
-    return 'This query has too many OR branches to evaluate exactly — narrow it or split it into separate searches.';
+  const plan = planBooleanBranches(trimmed);
+  if (plan.truncated) {
+    return fail('too-complex', 'This query has too many OR branches to evaluate exactly — narrow it or split it into separate searches.');
   }
 
-  return null;
+  return { ok: true, ast: parsed.expression, branches: plan.branches, auditor, residual: trimmed };
+}
+
+/** Message-only view of {@link compileBooleanQuery}, for inline field errors. */
+export function describeBooleanQueryIssue(query: string): string | null {
+  const result = compileBooleanQuery(query);
+  return result.ok ? null : result.message;
 }
 
 function createTextIndex(text: string): TextIndex {

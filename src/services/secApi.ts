@@ -149,7 +149,10 @@ export function extractDocumentTextFromHtml(html: string): string {
 // Cache of all tickers loaded from SEC
 let _tickerCache: Record<string, string> | null = null;
 let _tickerCachePromise: Promise<Record<string, string>> | null = null;
-const filingTextCache = new Map<string, Promise<string>>();
+// Only SUCCESSFUL fetches are cached. Caching a failure would turn a transient
+// 429 or an unreadable document into a permanent "this filing has no text",
+// which downstream reads as a legitimate non-match.
+const filingTextCache = new Map<string, Promise<FilingTextOutcome>>();
 
 /**
  * Load the full SEC ticker-to-CIK mapping (company_tickers.json).
@@ -1512,42 +1515,98 @@ export async function fetchFilingIndex(accessionNumber: string): Promise<FilingD
  * Fetch the text content of an SEC filing document via proxy (for AI analysis).
  * Returns raw text extracted from the HTML filing.
  */
-export async function fetchFilingText(cik: string, accessionNumber: string, primaryDocument: string): Promise<string> {
+/**
+ * Why a filing's text could not be read. Distinguishing these is what stops a
+ * transport failure from being scored as "fetched fine, didn't match".
+ */
+export type FilingTextOutcome =
+  | { ok: true; text: string }
+  | {
+      ok: false;
+      kind: 'not-found' | 'unsupported' | 'rate-limit' | 'timeout' | 'upstream' | 'cancelled';
+      status?: number;
+      retryable: boolean;
+    };
+
+function classifyFilingTextStatus(status: number): Extract<FilingTextOutcome, { ok: false }> {
+  if (status === 404) return { ok: false, kind: 'not-found', status, retryable: false };
+  if (status === 400 || status === 415) return { ok: false, kind: 'unsupported', status, retryable: false };
+  if (status === 429) return { ok: false, kind: 'rate-limit', status, retryable: true };
+  if (status === 504 || status === 408) return { ok: false, kind: 'timeout', status, retryable: true };
+  return { ok: false, kind: 'upstream', status, retryable: status === 403 || status >= 500 };
+}
+
+/**
+ * Typed filing-text fetch. Successful reads are cached; failures never are, and
+ * a failure is never flattened into empty text. Retries once for transient
+ * upstream errors, honouring Retry-After for a 429 when it is short enough to be
+ * worth waiting for. 400/404/415 are terminal.
+ */
+export async function fetchFilingTextOutcome(
+  cik: string,
+  accessionNumber: string,
+  primaryDocument: string,
+  options: { signal?: AbortSignal } = {}
+): Promise<FilingTextOutcome> {
   const cleanAccession = accessionNumber.replace(/-/g, '');
   const cacheKey = `${cik}:${cleanAccession}:${primaryDocument}`;
 
-  if (!filingTextCache.has(cacheKey)) {
-    filingTextCache.set(cacheKey, (async () => {
+  const cached = filingTextCache.get(cacheKey);
+  if (cached) return cached;
+
+  const pending = (async (): Promise<FilingTextOutcome> => {
+    let last: Extract<FilingTextOutcome, { ok: false }> = { ok: false, kind: 'upstream', retryable: true };
+
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      if (options.signal?.aborted) return { ok: false, kind: 'cancelled', retryable: false };
+
+      let response: Response;
       try {
-        let lastResponse: Response | null = null;
-        for (let attempt = 0; attempt < 2; attempt += 1) {
-          const response = await fetch(buildSecProxyUrl(`Archives/edgar/data/${cik}/${cleanAccession}/${primaryDocument}`, { trunc: '1' }), {
-            headers: getHeaders()
-          });
-          lastResponse = response;
-          if (response.ok) {
-            const html = await response.text();
-            return extractDocumentTextFromHtml(html);
-          }
-
-          if ((response.status === 403 || response.status === 429 || response.status >= 500) && attempt === 0) {
-            await delay(500);
-            continue;
-          }
-
-          throw new Error(`Filing fetch Error: ${response.status} ${response.statusText}`);
-        }
-
-        throw new Error(`Filing fetch Error: ${lastResponse?.status || 0} ${lastResponse?.statusText || 'Unknown error'}`);
+        response = await fetch(
+          buildSecProxyUrl(`Archives/edgar/data/${cik}/${cleanAccession}/${primaryDocument}`, { trunc: '1' }),
+          { headers: getHeaders(), signal: options.signal }
+        );
       } catch (error) {
-        console.error('Failed to fetch filing text:', error);
-        filingTextCache.delete(cacheKey);
-        return '';
+        if (options.signal?.aborted || (error as Error)?.name === 'AbortError') {
+          return { ok: false, kind: 'cancelled', retryable: false };
+        }
+        last = { ok: false, kind: 'upstream', retryable: true };
+        if (attempt === 0) { await delay(500); continue; }
+        return last;
       }
-    })());
-  }
 
-  return filingTextCache.get(cacheKey)!;
+      if (response.ok) {
+        return { ok: true, text: extractDocumentTextFromHtml(await response.text()) };
+      }
+
+      last = classifyFilingTextStatus(response.status);
+      if (!last.retryable || attempt === 1) return last;
+
+      // Wait out a 429 only when the server asks for a short, affordable pause.
+      const retryAfter = Number(response.headers.get('retry-after'));
+      const waitMs = Number.isFinite(retryAfter) && retryAfter > 0 ? retryAfter * 1000 : 500;
+      if (waitMs > 2000) return last;
+      await delay(waitMs);
+    }
+
+    return last;
+  })();
+
+  // Hold the in-flight promise so concurrent callers share one request, then
+  // keep it only if it succeeded.
+  filingTextCache.set(cacheKey, pending);
+  const outcome = await pending;
+  if (!outcome.ok) filingTextCache.delete(cacheKey);
+  return outcome;
+}
+
+/**
+ * String-returning wrapper for callers that only render text (filing preview,
+ * detail pages) and have no use for the failure reason.
+ */
+export async function fetchFilingText(cik: string, accessionNumber: string, primaryDocument: string): Promise<string> {
+  const outcome = await fetchFilingTextOutcome(cik, accessionNumber, primaryDocument);
+  return outcome.ok ? outcome.text : '';
 }
 
 /**

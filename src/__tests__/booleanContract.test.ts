@@ -10,6 +10,7 @@ describe('Boolean matching contract', () => {
     { query: 'non-GAAP', text: 'non GAAP measure', expected: true },
     { query: 'R&D', text: 'R & D expenditures', expected: true },
     { query: 'U.S. GAAP', text: 'US GAAP', expected: true },
+    { query: 'ASC-842', text: 'adopted ASC 842 in fiscal 2026', expected: true },
     { query: '"management\'s assessment"', text: 'management’s assessment concluded', expected: true },
     { query: '"management\'s assessment"', text: "management's assessment concluded", expected: true },
     { query: '"net income"', text: 'net-income increased', expected: true },
@@ -58,7 +59,7 @@ describe('proximity operand forms (plan §4 "Complex proximity")', () => {
     expect(describeBooleanQueryIssue('(lease OR rent) w/5 modification')).toMatch(/proximity/i);
   });
 
-  it('rejects chained proximity', () => {
-    expect(describeBooleanQueryIssue('a w/5 b w/5 c')).not.toBeNull();
+  it('rejects chained proximity with specific guidance, not a generic parse error', () => {
+    expect(describeBooleanQueryIssue('a w/5 b w/5 c')).toMatch(/proximity/i);
   });
 });

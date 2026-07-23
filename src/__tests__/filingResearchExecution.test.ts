@@ -14,6 +14,7 @@ vi.mock('../services/secApi', async importOriginal => {
     ...actual,
     searchEdgarFilings: secMocks.searchEdgarFilings,
     fetchFilingText: secMocks.fetchFilingText,
+    fetchFilingTextOutcome: async (...a: unknown[]) => { const t = await secMocks.fetchFilingText(...a); return t ? { ok: true, text: t } : { ok: false, kind: "upstream", retryable: true }; },
     fetchCompanySubmissions: secMocks.fetchCompanySubmissions,
     resolveCompanyEntity: vi.fn().mockResolvedValue(null),
     isEnrichedSearchEnabled: vi.fn().mockReturnValue(false),
