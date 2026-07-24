@@ -599,7 +599,8 @@ async function getFilingSignal(
   cik: string,
   accessionNumber: string,
   primaryDocument: string,
-  filingPrimaryDocument: string
+  filingPrimaryDocument: string,
+  abortSignal?: AbortSignal
 ): Promise<FilingSignal> {
   const cacheKey = `${cik}:${accessionNumber}:${primaryDocument}:${filingPrimaryDocument}`;
   if (!filingSignalCache.has(cacheKey)) {
@@ -607,7 +608,10 @@ async function getFilingSignal(
       cacheKey,
       (async () => {
         try {
-          const outcome = await fetchFilingTextOutcome(cik, accessionNumber, primaryDocument);
+          // The abort signal cancels the underlying fetch; a cancelled outcome
+          // is never cached (failure path deletes the cache entry below), so a
+          // later run retries cleanly.
+          const outcome = await fetchFilingTextOutcome(cik, accessionNumber, primaryDocument, { signal: abortSignal });
           const text = outcome.ok ? outcome.text : '';
           const failure = outcome.ok ? undefined : outcome.kind;
           let parentText = '';
@@ -1184,16 +1188,17 @@ async function hydrateLightweightMetadata(results: FilingResearchResult[]): Prom
   });
 }
 
-async function hydrateResultSignals(result: FilingResearchResult): Promise<FilingSignal> {
-  const signal = await getFilingSignal(
+async function hydrateResultSignals(result: FilingResearchResult, abortSignal?: AbortSignal): Promise<FilingSignal> {
+  const filingSignal = await getFilingSignal(
     result.cik,
     result.accessionNumber,
     result.primaryDocument,
-    result.filingPrimaryDocument
+    result.filingPrimaryDocument,
+    abortSignal
   );
-  result.auditor = signal.auditor;
-  result.acceleratedStatus = signal.acceleratedStatus;
-  return signal;
+  result.auditor = filingSignal.auditor;
+  result.acceleratedStatus = filingSignal.acceleratedStatus;
+  return filingSignal;
 }
 
 function shouldUseEnrichedSearch(useEnrichedSearch: boolean): boolean {
@@ -1465,7 +1470,11 @@ export async function executeFilingResearchSearch({
           filters.dateTo || undefined,
           filters.entityName || undefined,
           fastCandidateCollection ? Math.min(perQueryResultLimit, 140) : perQueryResultLimit,
-          { ...buildEnrichedSearchParams(filters, useEnrichedSearch && !includeExhibits, onDegraded, captureUpstreamCoverage), entityCik: entityCik || undefined }
+          {
+            ...buildEnrichedSearchParams(filters, useEnrichedSearch && !includeExhibits, onDegraded, captureUpstreamCoverage),
+            entityCik: entityCik || undefined,
+            signal,
+          }
         );
 
         const queryPriority = filteredServerQueries.length - queryIndex;
@@ -1556,16 +1565,26 @@ export async function executeFilingResearchSearch({
     if (signal?.aborted) break; // superseded by a newer run — stop issuing pages
 
     let queryBatchHits: EdgarSearchHit[];
-    pageRequests += 1;
     try {
+      // The page budget counts ACTUAL upstream HTTP pages via onUpstreamPage —
+      // one searchEdgarFilings call may issue many EFTS pages (page size is
+      // ~10 hits), so counting calls understated real request volume by up to
+      // 50x (readiness finding F-07). The result cap is also clamped to the
+      // remaining page budget so a single call cannot blow through it.
+      const remainingPages = Math.max(0, MAX_PAGE_REQUESTS - pageRequests);
       queryBatchHits = await searchEdgarFilings(
         candidateQuery,
         formTypes,
         filters.dateFrom || undefined,
         filters.dateTo || undefined,
         filters.entityName || undefined,
-        wavePerQueryLimit,
-        { ...buildEnrichedSearchParams(filters, useEnrichedSearch && !includeExhibits, onDegraded, captureUpstreamCoverage), entityCik: entityCik || undefined }
+        Math.min(wavePerQueryLimit, remainingPages * 10),
+        {
+          ...buildEnrichedSearchParams(filters, useEnrichedSearch && !includeExhibits, onDegraded, captureUpstreamCoverage),
+          entityCik: entityCik || undefined,
+          onUpstreamPage: () => { pageRequests += 1; },
+          signal,
+        }
       );
     } catch (error) {
       lastSearchError = error instanceof Error ? error : new Error('EDGAR search failed');
@@ -1596,16 +1615,28 @@ export async function executeFilingResearchSearch({
     // examined for this validation pass.
     validationExamined += Math.max(0, newHits.length - waveCandidates.length);
 
-    // Validate each candidate in this wave (fetch text, check auditor/boolean/section)
-    for (let index = 0; index < waveCandidates.length && filteredResults.length < displayLimit && Date.now() - waveStartTime < maxWaveTimeMs; index += batchSize) {
+    // Validate each candidate in this wave (fetch text, check auditor/boolean/section).
+    // A required OR branch keeps its validation allowance even after earlier
+    // branches filled the visible rows — otherwise a saturated broad branch
+    // records the rare branch as "requested" while none of its exclusive
+    // candidates can ever enter the result set (readiness finding F-06). The
+    // doc-attempt and wall-clock budgets still bound the extra work.
+    const isRequiredBooleanBranch = mode === 'boolean' && queryIndex < requiredBooleanBranches;
+    for (
+      let index = 0;
+      index < waveCandidates.length &&
+      (filteredResults.length < displayLimit || isRequiredBooleanBranch) &&
+      Date.now() - waveStartTime < maxWaveTimeMs;
+      index += batchSize
+    ) {
       if (docAttempts >= MAX_DOC_ATTEMPTS) { budgetExhausted = true; break; }
       if (signal?.aborted) break;
       const chunk = waveCandidates.slice(index, Math.min(index + batchSize, waveCandidates.length));
 
       await Promise.all(
         chunk.map(async result => {
-          const signal = await hydrateResultSignals(result);
-          signalMap.set(getSignalCacheKey(result), signal);
+          const signalData = await hydrateResultSignals(result, signal);
+          signalMap.set(getSignalCacheKey(result), signalData);
         })
       );
       // Resolve the authoritative auditor of record before the auditor filter
@@ -1671,10 +1702,16 @@ export async function executeFilingResearchSearch({
     upstreamCoverage?.examined ?? 0,
     hitMap.size
   );
-  const collectionComplete = upstreamCoverage?.complete ?? true;
+  // Unknown upstream coverage is PARTIAL, never assumed complete — both retrieval
+  // lanes report coverage on success, so absence means something went wrong or
+  // was skipped (readiness finding F-07). Fetch failures and cancellation also
+  // forfeit completeness: an unvalidated candidate is not a validated nonmatch.
+  const collectionComplete = upstreamCoverage?.complete ?? false;
   const validationComplete = (
     !validationTimedOut &&
     !budgetExhausted &&
+    !signal?.aborted &&
+    unvalidatedFetchFailures === 0 &&
     completedQueryVariants === waveQueryVariants.length &&
     collectionComplete &&
     validationExamined >= hitMap.size

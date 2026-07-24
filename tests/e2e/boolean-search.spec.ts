@@ -62,6 +62,18 @@ test.describe('Boolean search behaviour', () => {
     expect(stats.eftsQueries.length - before, 'invalid syntax must not reach EDGAR').toBe(0);
   });
 
+  test('auditor: inside OR is rejected before any extraction can rewrite it (F-05)', async ({ page }) => {
+    const stats = await openBooleanWorkbench(page);
+    const before = stats.eftsQueries.length;
+    await runQuery(page, 'mezzanine OR auditor:KPMG');
+
+    // The complete expression must be validated BEFORE the auditor token is
+    // lifted out — otherwise this becomes "mezzanine + global KPMG filter",
+    // a silent AND. The user sees the AND-only rule, and nothing is fetched.
+    await expect(page.getByText(/only be combined with AND/i)).toBeVisible();
+    expect(stats.eftsQueries.length - before, 'rewritten query must not reach EDGAR').toBe(0);
+  });
+
   test('a NOT-only query is rejected without retrieval', async ({ page }) => {
     const stats = await openBooleanWorkbench(page);
     const before = stats.eftsQueries.length;

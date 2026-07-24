@@ -636,6 +636,18 @@ export default function SearchPage() {
     }
 
     if (effectiveMode === 'boolean') {
+      // Validate the COMPLETE expression before any structured-field extraction.
+      // Extraction strips the auditor token and its connective, so running the
+      // guard on the residual would let "lease OR auditor:KPMG" be silently
+      // rewritten to lease-AND-KPMG — the exact meaning change the AND-only
+      // rule exists to reject (readiness finding F-05).
+      const originalIssue = describeBooleanQueryIssue(interpreted.query);
+      if (originalIssue) {
+        setSearched(true);
+        setErrorMsg(originalIssue);
+        return;
+      }
+
       // Promote an inline auditor:<firm> token to the structured auditor filter
       // so it renders as a chip and the query box holds only the residual
       // expression — same "lift a constraint out of the text" model the
@@ -697,8 +709,21 @@ export default function SearchPage() {
     abortBySessionRef.current.set(targetSessionId, runAbort);
     activeRunBySessionRef.current.set(targetSessionId, runId);
     const isCurrentRun = () => activeRunBySessionRef.current.get(targetSessionId) === runId;
-    const guardedDegraded = (reason: string) => { if (isCurrentRun()) setDegradedNotice(reason); };
-    const guardedCoverage: typeof captureCandidateCoverage = coverage => { if (isCurrentRun()) captureCandidateCoverage(coverage); };
+    // Globally visible state (notices, coverage, results panel) may only be
+    // written by the current run of the session the user is actually LOOKING
+    // at — a background tab's still-current run must not overwrite the visible
+    // search's status (readiness finding F-08). Until the new session's first
+    // upsert lands, the submitting tab is still the visible one, so the run it
+    // just launched counts as visible from the moment of submission.
+    const visibleAtSubmit = activeSessionIdRef.current;
+    let sessionUpserted = false;
+    const isVisibleRun = () =>
+      isCurrentRun() &&
+      (sessionUpserted
+        ? activeSessionIdRef.current === targetSessionId
+        : activeSessionIdRef.current === visibleAtSubmit || activeSessionIdRef.current === targetSessionId);
+    const guardedDegraded = (reason: string) => { if (isVisibleRun()) setDegradedNotice(reason); };
+    const guardedCoverage: typeof captureCandidateCoverage = coverage => { if (isVisibleRun()) captureCandidateCoverage(coverage); };
 
     try {
       const effectiveQuery = interpreted.query || trimmed;
@@ -764,8 +789,13 @@ export default function SearchPage() {
       // in flight — drop its results rather than overwrite the current view.
       if (!isCurrentRun()) return;
 
-      setResults(initialMatches);
-      setLastResolvedSearch(resolvedSearch);
+      // Store the session regardless (its tab shows it later), but only touch
+      // the globally visible results panel when this run's tab is the one on
+      // screen (readiness finding F-08).
+      if (isVisibleRun()) {
+        setResults(initialMatches);
+        setLastResolvedSearch(resolvedSearch);
+      }
 
       const initialSession = buildResearchSession(
         targetSessionId,
@@ -786,6 +816,7 @@ export default function SearchPage() {
       );
 
       upsertSession(initialSession, { replaceUrl: options.replaceUrl });
+      sessionUpserted = true;
       syncActiveSearchContext(initialSession);
 
       if (initialMatches.length > 0) {
@@ -973,7 +1004,7 @@ export default function SearchPage() {
       console.error('Research search failed:', error);
       // A superseded/aborted run's failure must not clobber the current view.
       if (!isCurrentRun()) return;
-      setResults([]);
+      if (isVisibleRun()) setResults([]);
       pendingRefinementKeysRef.current.delete(targetSessionId);
       const failedSession = buildResearchSession(
         targetSessionId,

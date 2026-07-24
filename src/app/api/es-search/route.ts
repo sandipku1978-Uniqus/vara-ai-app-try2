@@ -418,6 +418,17 @@ export async function GET(request: Request) {
               },
             }
           : {
+              // Canonical schema for every response path — the client reads
+              // candidateCoverage; without it, missing coverage used to default
+              // to complete (readiness finding F-07). `complete` here means the
+              // full upstream result set has been delivered through this page
+              // contract, not merely that this page was full.
+              candidateCoverage: {
+                examined: from + page.length,
+                upstreamTotal: efts.total,
+                complete: !efts.interrupted && efts.relation === 'eq' && from + page.length >= efts.total,
+              },
+              // Compatibility alias for older clients; remove after one release.
               pageCoverage: {
                 requestedFrom: from,
                 requestedSize: size,

@@ -1192,6 +1192,12 @@ export interface EnrichedSearchParams {
   useEnrichedSearch?: boolean;
   onDegraded?: (reason: string) => void;
   onCoverage?: (coverage: SearchCandidateCoverage) => void;
+  /** Fired once per actual upstream HTTP page request (EFTS page or enriched
+   *  call), so callers can budget real request counts rather than call counts
+   *  (readiness finding F-07). */
+  onUpstreamPage?: () => void;
+  /** Cooperative cancellation: stops pagination and aborts in-flight fetches. */
+  signal?: AbortSignal;
   /** Resolved issuer CIK. EFTS text searches filter reliably by `ciks`;
    *  entityName strings with punctuation ("Organon & Co.") mismatch. */
   entityCik?: string;
@@ -1239,13 +1245,15 @@ async function searchViaEnrichedSearch(
   const pageSize = Math.min(maxResults, 100);
 
   for (let offset = 0; offset < maxResults && results.length < maxResults && (totalRelation === 'gte' || offset < totalHits);) {
+    if (extended.signal?.aborted) break;
     const requestedPageSize = Math.min(pageSize, maxResults - results.length);
     params.set('from', String(offset));
     params.set('size', String(requestedPageSize));
 
     let response: Response | null = null;
     for (let attempt = 0; attempt < 3; attempt += 1) {
-      response = await fetch(`/api/es-search?${params.toString()}`);
+      extended.onUpstreamPage?.();
+      response = await fetch(`/api/es-search?${params.toString()}`, { signal: extended.signal });
       if (response.ok) break;
       if ((response.status === 429 || response.status >= 500) && attempt < 2) {
         await delay(250 * (2 ** attempt));
@@ -1365,9 +1373,12 @@ export async function searchEdgarFilings(
           let pageHits: EdgarSearchHit[] = [];
           let totalForPage = Number.POSITIVE_INFINITY;
 
+          if (extended.signal?.aborted) break;
           for (let attempt = 0; attempt < 2; attempt += 1) {
+            extended.onUpstreamPage?.();
             const response = await fetch(buildSecEftsUrl('LATEST/search-index', params), {
-              headers: getHeaders()
+              headers: getHeaders(),
+              signal: extended.signal,
             });
             lastResponse = response;
             if (response.ok) {

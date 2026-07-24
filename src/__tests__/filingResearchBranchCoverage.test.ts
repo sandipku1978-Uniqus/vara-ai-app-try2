@@ -111,6 +111,41 @@ describe('Boolean OR-branch coverage', () => {
     expect(queried).toContain('beta');
   });
 
+  it('a saturated broad branch cannot hide a branch-exclusive match (F-06)', async () => {
+    // Branch 1 (alpha) saturates the display limit before branch 2 (beta) is
+    // validated. Querying beta is not enough — its exclusive document must be
+    // able to ENTER the result set. The rare doc matches BOTH terms, so it
+    // outscores every single-term bulk doc (~93 points) and deterministically
+    // ranks first once it is allowed to validate at all.
+    const bulk = Array.from({ length: 40 }, (_, i) => hit(`A${i}`));
+    const rare = {
+      _id: 'RARE:doc.htm',
+      _score: 1,
+      _source: {
+        display_names: ['Rare Branch Co'],
+        file_date: '2026-06-30',
+        file_type: '10-K',
+        adsh: '0000000777-26-000777',
+        ciks: ['0000000777'],
+      },
+    };
+    mocks.search.mockImplementation(async (query: string) => {
+      const q = String(query).toLowerCase();
+      if (q === 'alpha') return bulk;
+      if (q === 'beta') return [rare];
+      return [];
+    });
+    mocks.fetchText.mockImplementation(async (cik: string) =>
+      String(cik).replace(/^0+/, '') === '777' ? 'alpha beta both present here' : 'alpha appears here'
+    );
+
+    const results = await executeFilingResearchSearch({
+      query: 'alpha OR beta', filters: { ...defaultSearchFilters }, mode: 'boolean', limit: 5,
+    });
+
+    expect(results.map(r => r.cik.replace(/^0+/, ''))).toContain('777');
+  });
+
   it('stops at the per-run document budget and reports the run as partial', async () => {
     // One branch returns far more candidates than the 120-document cap.
     const many = Array.from({ length: 300 }, (_, i) => hit(`B${i}`));
