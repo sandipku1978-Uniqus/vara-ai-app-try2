@@ -196,9 +196,9 @@ async function auditRoute(page: Page, contract: RouteContract): Promise<RouteAud
   const issues: string[] = [];
   if (dom.mainCount !== 1) issues.push(`Expected one main landmark; found ${dom.mainCount}.`);
   if (dom.h1Count !== 1) issues.push(`Expected one H1; found ${dom.h1Count}.`);
-  if (dom.unnamedControls.length) issues.push(`${dom.unnamedControls.length} visible interactive control(s) have no accessible name.`);
+  if (dom.unnamedControls.length) issues.push(`${dom.unnamedControls.length} visible interactive control(s) have no accessible name: ${JSON.stringify(dom.unnamedControls.slice(0, 4))}`);
   if (dom.duplicateIds.length) issues.push(`${dom.duplicateIds.length} duplicate DOM id(s) found.`);
-  if (dom.invalidAriaReferences.length) issues.push(`${dom.invalidAriaReferences.length} ARIA ID reference(s) do not resolve.`);
+  if (dom.invalidAriaReferences.length) issues.push(`${dom.invalidAriaReferences.length} ARIA ID reference(s) do not resolve: ${JSON.stringify(dom.invalidAriaReferences.slice(0, 6))}`);
   if (dom.horizontalOverflowPixels > 2) issues.push(`Document overflows horizontally by ${dom.horizontalOverflowPixels}px.`);
   if (runtime.consoleErrors.length) issues.push(`${runtime.consoleErrors.length} console error(s) observed.`);
   if (runtime.pageErrors.length) issues.push(`${runtime.pageErrors.length} uncaught page error(s) observed.`);

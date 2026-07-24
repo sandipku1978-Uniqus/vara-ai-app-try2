@@ -161,7 +161,7 @@ function CollapsibleSection({ title, defaultOpen = false, children }: { title: s
   const contentId = useId();
   return (
     <div style={{ borderBottom: '1px solid var(--border-color)', paddingBottom: open ? '12px' : '0' }}>
-      <button type="button" aria-expanded={open} aria-controls={contentId} onClick={() => setOpen(!open)} style={{
+      <button type="button" aria-expanded={open} aria-controls={open ? contentId : undefined} onClick={() => setOpen(!open)} style={{
         display: 'flex', alignItems: 'center', gap: '6px', width: '100%',
         background: 'none', border: 'none', cursor: 'pointer', padding: '8px 0',
         color: 'var(--text-primary)', fontSize: '0.78rem', fontWeight: 600, textAlign: 'left',
@@ -241,7 +241,7 @@ export default function SearchFilterBar({ config, filters, onChange, onSearch, l
       <button
         type="button"
         aria-expanded={expanded}
-        aria-controls={filterPanelId}
+        aria-controls={expanded ? filterPanelId : undefined}
         onClick={() => setExpanded(!expanded)}
         style={{
           display: 'flex', alignItems: 'center', gap: '6px',

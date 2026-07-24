@@ -5,7 +5,9 @@ export default function manifest(): MetadataRoute.Manifest {
     name: 'Uniqus Research Center',
     short_name: 'Uniqus Research',
     description: 'SEC filing research, comparison, and monitoring workspaces.',
-    start_url: '/dashboard',
+    // A signed-out install must land somewhere useful; the app shell redirects
+    // signed-in users onward (readiness finding F-11).
+    start_url: '/',
     display: 'standalone',
     background_color: '#FBF6F9',
     theme_color: '#B31F7E',

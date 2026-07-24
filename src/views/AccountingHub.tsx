@@ -388,7 +388,7 @@ Write a concise memo with:
           </div>
         </aside>
 
-        <main className="hub-main glass-card">
+        <section className="hub-main glass-card">
           {activeTab === 'research' && (
             <div className="tab-pane fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
               <div className="pane-header" style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}>
@@ -724,7 +724,7 @@ Write a concise memo with:
               <ResponsibleAIBanner />
             </div>
           )}
-        </main>
+        </section>
       </div>
     </div>
   );

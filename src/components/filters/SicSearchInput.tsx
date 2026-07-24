@@ -108,7 +108,7 @@ export default function SicSearchInput({ value, onChange, ariaLabel }: SicSearch
         placeholder="Industry — try biotech, software, banks... or a SIC code (3571)"
         aria-label={ariaLabel || 'Industry SIC code or name'}
         role="combobox"
-        aria-controls={listboxId}
+        aria-controls={open && suggestions.length > 0 && !(isCode && suggestions.length === 1 && resolved) ? listboxId : undefined}
         aria-autocomplete="list"
         aria-expanded={open && suggestions.length > 0}
         style={{

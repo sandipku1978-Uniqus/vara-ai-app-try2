@@ -125,7 +125,7 @@ export default function AuditorLookupField({
           role="combobox"
           aria-autocomplete="list"
           aria-expanded={open}
-          aria-controls={listboxId}
+          aria-controls={open ? listboxId : undefined}
           aria-activedescendant={open && activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined}
           aria-label="Accountant or auditor"
           onBlur={() => {

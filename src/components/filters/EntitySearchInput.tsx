@@ -70,7 +70,7 @@ export default function EntitySearchInput({
         placeholder={placeholder}
         aria-label={ariaLabel}
         role="combobox"
-        aria-controls={listboxId}
+        aria-controls={open && suggestions.length > 0 ? listboxId : undefined}
         aria-autocomplete="list"
         aria-expanded={open && suggestions.length > 0}
         style={{

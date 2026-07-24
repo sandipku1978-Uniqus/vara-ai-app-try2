@@ -154,7 +154,7 @@ export default function CompanySearchInput({ onSelect, placeholder = 'Search tic
           role="combobox"
           aria-autocomplete="list"
           aria-expanded={showDropdown}
-          aria-controls={listboxId}
+          aria-controls={showDropdown && results.length > 0 ? listboxId : undefined}
           aria-activedescendant={showDropdown && activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined}
           aria-label={placeholder}
           placeholder={placeholder}

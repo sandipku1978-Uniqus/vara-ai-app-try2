@@ -58,9 +58,9 @@ export default function DesignGalleryPage() {
     <div className="el-scope el-gallery" style={{ minHeight: '100vh', padding: 'var(--el-space-8)' }}>
       <div style={{ maxWidth: '1180px', margin: '0 auto' }}>
         <header style={{ marginBottom: 'var(--el-space-8)', borderBottom: '1px solid var(--el-rule-strong)', paddingBottom: 'var(--el-space-4)' }}>
-          <div style={{ fontSize: 'var(--el-text-xl)', fontWeight: 700, letterSpacing: '-0.01em' }}>
+          <h1 style={{ fontSize: 'var(--el-text-xl)', fontWeight: 700, letterSpacing: '-0.01em', margin: 0 }}>
             Evidence Ledger — component gallery
-          </div>
+          </h1>
           <div style={{ color: 'var(--el-ink-secondary)', marginTop: 'var(--el-space-1)' }}>
             Phase 1 foundations. Color carries state; the serif voice is reserved for source documents; rules replace shadows.
           </div>
@@ -69,7 +69,7 @@ export default function DesignGalleryPage() {
         <Section title="Command bar" note="52px, single query surface. Focus ring is the only plum on an idle screen.">
           <div className="el-query-bar">
             <span aria-hidden style={{ color: 'var(--el-ink-faint)' }}>⌕</span>
-            <input placeholder="Search companies, filings, topics, or standards… (⌘K)" readOnly />
+            <input aria-label="Search companies, filings, topics, or standards" placeholder="Search companies, filings, topics, or standards… (⌘K)" readOnly />
             <span className="el-badge el-badge-neutral">All sources</span>
           </div>
         </Section>

@@ -780,7 +780,7 @@ export default function IPOCenter() {
               id="ipo-tab-pipeline"
               role="tab"
               aria-selected={activeTab === 'pipeline'}
-              aria-controls="ipo-panel-pipeline"
+              aria-controls={activeTab === 'pipeline' ? 'ipo-panel-pipeline' : undefined}
               tabIndex={activeTab === 'pipeline' ? 0 : -1}
               className={`nav-btn ${activeTab === 'pipeline' ? 'active' : ''}`}
               onClick={() => setActiveTab('pipeline')}
@@ -793,7 +793,7 @@ export default function IPOCenter() {
               id="ipo-tab-benchmarking"
               role="tab"
               aria-selected={activeTab === 'benchmarking'}
-              aria-controls="ipo-panel-benchmarking"
+              aria-controls={activeTab === 'benchmarking' ? 'ipo-panel-benchmarking' : undefined}
               tabIndex={activeTab === 'benchmarking' ? 0 : -1}
               className={`nav-btn ${activeTab === 'benchmarking' ? 'active' : ''}`}
               onClick={() => setActiveTab('benchmarking')}
@@ -806,7 +806,7 @@ export default function IPOCenter() {
               id="ipo-tab-drafting"
               role="tab"
               aria-selected={activeTab === 'drafting'}
-              aria-controls="ipo-panel-drafting"
+              aria-controls={activeTab === 'drafting' ? 'ipo-panel-drafting' : undefined}
               tabIndex={activeTab === 'drafting' ? 0 : -1}
               className={`nav-btn ${activeTab === 'drafting' ? 'active' : ''}`}
               onClick={() => setActiveTab('drafting')}
@@ -841,7 +841,7 @@ export default function IPOCenter() {
           </div>
         </aside>
 
-        <main className="ipo-main glass-card">
+        <section className="ipo-main glass-card">
           {activeTab === 'pipeline' && (
             <div id="ipo-panel-pipeline" className="tab-pane fade-in" role="tabpanel" aria-labelledby="ipo-tab-pipeline">
               <div className="pane-header">
@@ -998,7 +998,7 @@ export default function IPOCenter() {
               )}
             </div>
           )}
-        </main>
+        </section>
       </div>
     </div>
   );

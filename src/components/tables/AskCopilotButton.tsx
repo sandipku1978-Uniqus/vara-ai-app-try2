@@ -32,7 +32,7 @@ export default function AskCopilotButton({ prompt, compact = false, label }: Ask
         type="button"
         aria-label={`Ask Copilot: ${prompt}`}
         aria-expanded={isChatOpen}
-        aria-controls="urc-copilot-panel"
+        aria-controls={isChatOpen ? 'urc-copilot-panel' : undefined}
         title={`Ask Copilot: ${prompt.slice(0, 80)}...`}
         style={{
           display: 'inline-flex', alignItems: 'center', gap: '3px',
@@ -52,7 +52,7 @@ export default function AskCopilotButton({ prompt, compact = false, label }: Ask
       type="button"
       aria-label={`${label || 'Analyze'} with Copilot: ${prompt}`}
       aria-expanded={isChatOpen}
-      aria-controls="urc-copilot-panel"
+      aria-controls={isChatOpen ? "urc-copilot-panel" : undefined}
       style={{
         display: 'inline-flex', alignItems: 'center', gap: '4px',
         background: 'var(--surface-accent)', border: '1px solid var(--border-color)',

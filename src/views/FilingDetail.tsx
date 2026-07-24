@@ -1092,20 +1092,23 @@ export default function FilingDetail() {
 
   if (!isValidFilingId) {
     return (
-      <main className="filing-invalid-state" role="alert">
+      <section className="filing-invalid-state" role="alert">
         <AlertCircle size={32} aria-hidden="true" />
         <h1>Invalid filing link</h1>
         <p>The filing address is incomplete. Expected a CIK, accession number, and document name.</p>
         <button type="button" onClick={() => navigate.push('/search')} className="primary-btn">
           Back to Search
         </button>
-      </main>
+      </section>
     );
   }
 
   return (
     <div className="filing-detail-container">
       {/* Top action bar */}
+      {/* The page is toolbar-centric with no visual title; assistive tech still
+          needs exactly one H1 naming the document (readiness finding F-10). */}
+      <h1 className="sr-only">SEC filing viewer — CIK {cik}, accession {formattedAccession}</h1>
       <div className="filing-header-bar glass-card">
         <div className="header-left">
           <button
@@ -1290,7 +1293,7 @@ export default function FilingDetail() {
                 id="filing-sidebar-tab-toc"
                 role="tab"
                 aria-selected={activeTab === 'toc'}
-                aria-controls="filing-sidebar-panel-toc"
+                aria-controls={activeTab === 'toc' ? 'filing-sidebar-panel-toc' : undefined}
                 tabIndex={activeTab === 'toc' ? 0 : -1}
                 className={activeTab === 'toc' ? 'active' : ''}
                 onClick={() => setActiveTab('toc')}
@@ -1303,7 +1306,7 @@ export default function FilingDetail() {
                 id="filing-sidebar-tab-metadata"
                 role="tab"
                 aria-selected={activeTab === 'metadata'}
-                aria-controls="filing-sidebar-panel-metadata"
+                aria-controls={activeTab === 'metadata' ? 'filing-sidebar-panel-metadata' : undefined}
                 tabIndex={activeTab === 'metadata' ? 0 : -1}
                 className={activeTab === 'metadata' ? 'active' : ''}
                 onClick={() => setActiveTab('metadata')}
@@ -1316,7 +1319,7 @@ export default function FilingDetail() {
                 id="filing-sidebar-tab-tools"
                 role="tab"
                 aria-selected={activeTab === 'tools'}
-                aria-controls="filing-sidebar-panel-tools"
+                aria-controls={activeTab === 'tools' ? 'filing-sidebar-panel-tools' : undefined}
                 tabIndex={activeTab === 'tools' ? 0 : -1}
                 className={activeTab === 'tools' ? 'active' : ''}
                 onClick={() => setActiveTab('tools')}

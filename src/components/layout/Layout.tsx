@@ -53,6 +53,10 @@ function SidebarNavItem({
 export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen: boolean; onMobileClose: () => void }) {
   const location = usePathname();
   const isLanding = location === '/';
+  // Signed-out visitors (public Support page) must not be routed into the auth
+  // wall by the logo — home for them is the public landing (readiness F-11).
+  const { isSignedIn } = useUser();
+  const homeHref = isSignedIn ? '/dashboard' : '/';
   const { themeMode, isSidebarCollapsed, toggleSidebarCollapsed } = useApp();
   const brandTone = themeMode === 'dark' ? 'light' : 'dark';
   const asideRef = useRef<HTMLElement>(null);
@@ -120,7 +124,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen: boolean; on
       )}
       <div className="sidebar-logo">
         {/* The logo links home, as users expect. */}
-        <Link href="/dashboard" className="sidebar-logo-link" aria-label={`${BRAND.productName} — go to dashboard`} onClick={onMobileClose}>
+        <Link href={homeHref} className="sidebar-logo-link" aria-label={`${BRAND.productName} — go to ${isSignedIn ? 'dashboard' : 'home'}`} onClick={onMobileClose}>
           {visuallyCollapsed ? (
             <div className="sidebar-brand-mark-shell" title={BRAND.parentName}>
               <URCBrandMark size={28} tone={brandTone} className="sidebar-brand-mark" />
@@ -294,6 +298,8 @@ export function Navbar({ mobileNavOpen, onMobileNavToggle, menuButtonRef }: { mo
 
 function Breadcrumbs() {
   const location = usePathname();
+  // Same public-visitor rule as the sidebar logo (readiness F-11).
+  const { isSignedIn } = useUser();
   if (!location || location === '/') return null;
 
   let trail: Array<{ label: string; href?: string }>;
@@ -310,7 +316,7 @@ function Breadcrumbs() {
 
   return (
     <nav aria-label="Breadcrumb" style={{ padding: '10px 24px 0', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-      <Link href="/dashboard" style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Home</Link>
+      <Link href={isSignedIn ? '/dashboard' : '/'} style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>Home</Link>
       {trail.map((crumb, index) => (
         <span key={crumb.label}>
           <span style={{ margin: '0 6px' }}>/</span>

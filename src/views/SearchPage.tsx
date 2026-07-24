@@ -1526,7 +1526,7 @@ export default function SearchPage() {
                   // A placeholder is not an accessible name; label the field
                   // explicitly so screen readers (and tests) can identify it.
                   aria-label={searchMode === 'semantic' ? 'Search filings' : 'Boolean search query'}
-                  aria-controls="workbench-company-listbox"
+                  aria-controls={suggestionsOpen && querySuggestions.length > 0 ? 'workbench-company-listbox' : undefined}
                   aria-autocomplete="list"
                   aria-expanded={suggestionsOpen && querySuggestions.length > 0}
                 />

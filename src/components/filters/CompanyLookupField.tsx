@@ -165,7 +165,7 @@ export default function CompanyLookupField({
           role="combobox"
           aria-autocomplete="list"
           aria-expanded={open}
-          aria-controls={listboxId}
+          aria-controls={open ? listboxId : undefined}
           aria-activedescendant={open && activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined}
           aria-label="Company or entity"
           placeholder={placeholder}

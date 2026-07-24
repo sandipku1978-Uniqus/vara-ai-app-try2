@@ -402,6 +402,7 @@ export default function SupportCenter() {
           <Search className="support-search-icon" size={20} />
           <input
             type="text"
+            aria-label="Search the guide, workflows, and FAQ"
             value={query}
             onChange={event => setQuery(event.target.value)}
             placeholder="Search the guide, workflows, and FAQ..."
@@ -474,7 +475,7 @@ export default function SupportCenter() {
           </div>
         </aside>
 
-        <main className="guide-main">
+        <section className="guide-main">
           {noResults ? (
             <div className="guide-section glass-card">
               <h2>No guide matches</h2>
@@ -539,7 +540,7 @@ export default function SupportCenter() {
               )}
             </>
           )}
-        </main>
+        </section>
       </div>
     </div>
   );

@@ -320,7 +320,7 @@ export default function MAResearch() {
           </div>
         </aside>
 
-        <main className="ma-main glass-card" style={{ overflow: 'auto' }}>
+        <section className="ma-main glass-card" style={{ overflow: 'auto' }}>
           {activeTab === 'screener' && (
             <div className="tab-pane fade-in">
               <div className="ma-pane-header">
@@ -585,7 +585,7 @@ export default function MAResearch() {
               )}
             </div>
           )}
-        </main>
+        </section>
       </div>
     </div>
   );

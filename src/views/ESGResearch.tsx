@@ -397,7 +397,7 @@ ${evidence.text}`, { throwOnError: true });
           </div>
         </aside>
 
-        <main className="esg-main glass-card">
+        <section className="esg-main glass-card">
           {activeTab === 'frameworks' && (
             <div className="tab-pane fade-in">
               <div className="pane-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
@@ -678,7 +678,7 @@ ${evidence.text}`, { throwOnError: true });
               </div>
             </div>
           )}
-        </main>
+        </section>
       </div>
     </div>
   );

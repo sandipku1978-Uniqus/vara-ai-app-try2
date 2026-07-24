@@ -104,7 +104,7 @@ export default async function CompanyPage({
   const primaryTicker = data!.tickers?.[0] || null;
 
   return (
-    <main style={{ width: '100%', maxWidth: 1000, margin: '0 auto', padding: '40px 24px', color: 'var(--text-primary)' }}>
+    <section style={{ width: '100%', maxWidth: 1000, margin: '0 auto', padding: '40px 24px', color: 'var(--text-primary)' }}>
       <nav aria-label="Breadcrumb" style={{ fontSize: 13, color: 'var(--text-muted)', margin: '0 0 16px' }}>
         <Link href="/dashboard" style={{ color: 'var(--text-secondary)' }}>Home</Link>
         <span> / </span>
@@ -164,6 +164,6 @@ export default async function CompanyPage({
           Filings: SEC EDGAR · Auditor: PCAOB Form AP · Financials: XBRL company facts. Powered by Uniqus Research Center.
         </p>
       </footer>
-    </main>
+    </section>
   );
 }

@@ -332,7 +332,7 @@ export default function BoardProfiles() {
           </div>
         </aside>
 
-        <main className="board-main glass-card" style={{ overflow: 'auto' }}>
+        <section className="board-main glass-card" style={{ overflow: 'auto' }}>
           {!companyData && !isLoading && (
             <div role="status" style={{ padding: '28px', textAlign: 'center', color: 'var(--text-muted)' }}>
               <p>Ticker "{currentTicker}" not found in SEC EDGAR. Try any public company ticker (e.g., AAPL, MSFT, GOOGL).</p>
@@ -566,7 +566,7 @@ export default function BoardProfiles() {
               </div>
             </div>
           )}
-        </main>
+        </section>
       </div>
     </div>
   );
