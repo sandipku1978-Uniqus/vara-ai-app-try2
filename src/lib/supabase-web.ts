@@ -33,12 +33,23 @@ export function getWebSupabase(): SupabaseClient | null {
   const key = webKey || serviceKey;
   if (!url || !key) return null;
 
-  if (webKey && isProductionDeployment() && jwtRole(webKey) !== 'urc_web') {
-    console.error('URC_SUPABASE_WEB_KEY must be a JWT for the restricted urc_web role.');
+  // This Supabase project signs tokens with non-exportable asymmetric keys, so
+  // a custom urc_web JWT cannot be minted. The supported least-privilege web
+  // identity is the publishable/anon key (new `sb_publishable_...` format or a
+  // legacy anon JWT); migration 003 grants that role exactly the read surface.
+  // Anything carrying service authority is rejected outright.
+  const isPublishable = webKey.startsWith('sb_publishable_');
+  const role = isPublishable ? 'anon' : jwtRole(webKey);
+  if (webKey && (role === 'service_role' || webKey.startsWith('sb_secret_'))) {
+    console.error('[supabase-web] URC_SUPABASE_WEB_KEY carries service authority — refusing to use it for web routes.');
+    return null;
+  }
+  if (webKey && isProductionDeployment() && !isPublishable && role !== 'anon' && role !== 'urc_web') {
+    console.error('[supabase-web] URC_SUPABASE_WEB_KEY must be the publishable/anon key (or a urc_web JWT).');
     return null;
   }
   if (!webKey && isProductionDeployment()) {
-    console.warn('[supabase-web] URC_SUPABASE_WEB_KEY not set — web routes are using the service key. Mint a urc_web JWT to activate least-privilege.');
+    console.warn('[supabase-web] URC_SUPABASE_WEB_KEY not set — web routes are using the service key. Set it to the publishable key to activate least-privilege.');
   }
 
   webClient = createClient(url, key, { auth: { persistSession: false } });

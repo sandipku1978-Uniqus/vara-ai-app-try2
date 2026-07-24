@@ -55,6 +55,27 @@ describe('restricted Supabase web client', () => {
     );
   });
 
+  it('accepts the publishable key and a legacy anon JWT in production', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    vi.stubEnv('VERCEL_ENV', 'production');
+    vi.stubEnv('URC_SUPABASE_WEB_KEY', 'sb_publishable_abc123');
+    let mod = await import('../lib/supabase-web');
+    expect(mod.getWebSupabase()).toEqual({ kind: 'restricted-client' });
+
+    vi.resetModules();
+    vi.stubEnv('URC_SUPABASE_WEB_KEY', unsignedRoleToken('anon'));
+    mod = await import('../lib/supabase-web');
+    expect(mod.getWebSupabase()).toEqual({ kind: 'restricted-client' });
+  });
+
+  it('rejects sb_secret keys in any environment', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    vi.stubEnv('VERCEL_ENV', 'production');
+    vi.stubEnv('URC_SUPABASE_WEB_KEY', 'sb_secret_abc123');
+    const { getWebSupabase } = await import('../lib/supabase-web');
+    expect(getWebSupabase()).toBeNull();
+  });
+
   it('allows the documented service-key fallback outside production', async () => {
     vi.stubEnv('NODE_ENV', 'test');
     vi.stubEnv('VERCEL_ENV', 'preview');
