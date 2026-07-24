@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import Link from 'next/link';
 import styles from '../components/layout/RouteState.module.css';
+import { reportClientError } from '../services/errorReporter';
 
 export default function GlobalError({
   error,
@@ -19,6 +20,11 @@ export default function GlobalError({
     // flag prevents a reload loop if the failure is real.
     const isStaleChunk = /ChunkLoadError|Loading chunk|dynamically imported module|Importing a module script failed/i
       .test(`${error.name} ${error.message}`);
+
+    // Report real failures only: a stale-chunk reload is expected deploy
+    // behaviour, not a defect, and logging it would bury the genuine errors.
+    if (!isStaleChunk) reportClientError(error);
+
     if (isStaleChunk && typeof window !== 'undefined') {
       const reloadFlag = 'urc.chunk-reload';
       const lastReload = Number(window.sessionStorage.getItem(reloadFlag) || 0);
