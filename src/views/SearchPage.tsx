@@ -53,11 +53,10 @@ import {
   saveResearchSessions,
   type ResearchSearchSession,
 } from '../services/researchSessions';
-import { buildHighlightTerms, interpretSearchPrompt } from '../services/searchAssist';
+import { buildHighlightTerms } from '../services/searchAssist';
 import { buildResearchEmptyResultMessage } from '../services/searchCoverage';
 import { generateSearchTrendReport, SEARCH_TREND_AI_FALLBACK } from '../services/searchTrendReport';
-import { looksLikeBooleanQuery, describeBooleanQueryIssue, extractAuditorFilterToken } from '../utils/booleanSearch';
-import { canonicalizeAuditorInput } from '../services/auditors';
+import { planResearchSearch } from '../services/researchSearchPlan';
 import { canUseInstantEnrichedSearch } from '../services/filingResearch';
 import { BRAND } from '../config/brand';
 import './SearchPage.css';
@@ -68,7 +67,6 @@ import { useMemoTray } from '../hooks/useMemoTray';
 // Amendments included for every core form: EFTS matches form types exactly, so
 // omitting 10-K/A etc. hides restatements — often the most material filings.
 const DEFAULT_FORM_SCOPE = '10-K,10-K/A,10-Q,10-Q/A,8-K,8-K/A,DEF 14A,20-F,20-F/A,6-K,S-1,S-1/A';
-const LEGACY_DEFAULT_FORM_SCOPE = ['10-K', '10-Q'];
 const RESEARCH_RESULT_LIMIT = 500;
 const INITIAL_RESEARCH_RESULT_LIMIT = 80;
 const INITIAL_BOOLEAN_RESULT_LIMIT = 40;
@@ -128,39 +126,6 @@ function buildAlertName(query: string, filters: SearchFilters): string {
   if (filters.entityName.trim()) return `${filters.entityName.trim()} research`;
   if (filters.sicCode.trim()) return `SIC ${filters.sicCode.trim()} trend`;
   return 'Custom research alert';
-}
-
-function queryMentionsFormScope(value: string): boolean {
-  return /\b(?:10[\s-]?k|10[\s-]?q|8[\s-]?k(?:\/a)?|6[\s-]?k|20[\s-]?f|def[\s-]?14a|s[\s-]?1)\b/i.test(value);
-}
-
-function hasOnlyLegacyDefaultFormScope(filters: SearchFilters): boolean {
-  const normalizedForms = [...filters.formTypes].map(form => form.trim().toUpperCase()).sort();
-  const isLegacyDefault =
-    normalizedForms.length === LEGACY_DEFAULT_FORM_SCOPE.length &&
-    normalizedForms.every((form, index) => form === LEGACY_DEFAULT_FORM_SCOPE[index]);
-
-  if (!isLegacyDefault) {
-    return false;
-  }
-
-  return !(
-    filters.keyword.trim() ||
-    filters.dateFrom.trim() ||
-    filters.dateTo.trim() ||
-    filters.entityName.trim() ||
-    filters.sectionKeywords.trim() ||
-    filters.sicCode.trim() ||
-    filters.stateOfInc.trim() ||
-    filters.headquarters.trim() ||
-    filters.accountant.trim() ||
-    filters.accessionNumber.trim() ||
-    filters.fileNumber.trim() ||
-    filters.fiscalYearEnd.trim() ||
-    filters.accountingFramework.trim() ||
-    filters.exchange.length > 0 ||
-    filters.acceleratedStatus.length > 0
-  );
 }
 
 function shouldHydrateSearchSignals(mode: ResearchSearchMode, filters: SearchFilters): boolean {
@@ -599,85 +564,28 @@ export default function SearchPage() {
     overrideMode = searchMode,
     options: { preferredSessionId?: string; replaceUrl?: boolean } = {}
   ) => {
-    const trimmed = searchQuery.trim();
-    let nextFilters = cloneSearchFilters(overrideFilters);
-    const autoScopeHints: string[] = [];
+    // Query interpretation (form-scope defaulting, mode detection, Boolean
+    // validation, inline-field promotion) is pure and lives in
+    // services/researchSearchPlan so it can be tested without rendering a page.
+    const plan = planResearchSearch(searchQuery, overrideFilters, overrideMode);
 
-    if (hasOnlyLegacyDefaultFormScope(nextFilters) && !queryMentionsFormScope(trimmed)) {
-      nextFilters = {
-        ...nextFilters,
-        formTypes: [],
-      };
-      autoScopeHints.push('Form scope: all core filings');
-    }
-
-    const effectiveMode: ResearchSearchMode =
-      overrideMode === 'semantic' && looksLikeBooleanQuery(trimmed)
-        ? 'boolean'
-        : overrideMode;
-    const interpreted =
-      effectiveMode === 'semantic' && trimmed
-        ? interpretSearchPrompt(trimmed, nextFilters)
-        : {
-            query: trimmed,
-            filters: nextFilters,
-            appliedHints:
-              effectiveMode !== overrideMode
-                ? ['Detected Boolean / proximity syntax']
-                : [] as string[],
-          };
-
-    if (autoScopeHints.length > 0) {
-      interpreted.appliedHints = [...autoScopeHints, ...interpreted.appliedHints];
-    }
-
-    if (!hasResearchSearchCriteria(trimmed, interpreted.filters)) {
+    if (plan.status === 'empty') return;
+    if (plan.status === 'rejected') {
+      // Invalid syntax must issue zero retrieval requests.
+      setSearched(true);
+      setErrorMsg(plan.message);
       return;
     }
 
-    if (effectiveMode === 'boolean') {
-      // Validate the COMPLETE expression before any structured-field extraction.
-      // Extraction strips the auditor token and its connective, so running the
-      // guard on the residual would let "lease OR auditor:KPMG" be silently
-      // rewritten to lease-AND-KPMG — the exact meaning change the AND-only
-      // rule exists to reject (readiness finding F-05).
-      const originalIssue = describeBooleanQueryIssue(interpreted.query);
-      if (originalIssue) {
-        setSearched(true);
-        setErrorMsg(originalIssue);
-        return;
-      }
+    const { trimmed, mode: effectiveMode } = plan;
+    const nextFilters = plan.filters;
+    const interpreted = { query: plan.query, filters: plan.filters, appliedHints: plan.appliedHints };
 
-      // Promote an inline auditor:<firm> token to the structured auditor filter
-      // so it renders as a chip and the query box holds only the residual
-      // expression — same "lift a constraint out of the text" model the
-      // semantic interpreter uses for "audited by Deloitte".
-      const { auditor, residual } = extractAuditorFilterToken(interpreted.query);
-      if (auditor) {
-        const canonical = canonicalizeAuditorInput(auditor) || auditor;
-        interpreted.query = residual;
-        interpreted.filters = {
-          ...interpreted.filters,
-          accountant: interpreted.filters.accountant.trim() || canonical,
-        };
-        nextFilters = interpreted.filters;
-        if (!interpreted.appliedHints.some(hint => hint.startsWith('Audit firm:'))) {
-          interpreted.appliedHints = [...interpreted.appliedHints, `Audit firm: ${canonical}`];
-        }
-        setQuery(residual);
-        setFilters(interpreted.filters);
-      }
-
-      // Boolean mode runs the query verbatim against filing text. If it does not
-      // parse (dangling operator, unbalanced quote/paren) or is negation-only, a
-      // literal EDGAR search silently returns misleading results — surface the
-      // problem instead so the user can correct the syntax.
-      const booleanIssue = describeBooleanQueryIssue(interpreted.query);
-      if (booleanIssue) {
-        setSearched(true);
-        setErrorMsg(booleanIssue);
-        return;
-      }
+    // Mirror a promoted auditor:<firm> token into the visible query box and
+    // filter chips, so the UI shows the constraint it is actually applying.
+    if (plan.promotedAuditor) {
+      setQuery(plan.promotedAuditor.residualQuery);
+      setFilters(plan.filters);
     }
 
     setLoading(true);
