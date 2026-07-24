@@ -6,7 +6,16 @@ const [MEZZ_ONLY, TEMP_ONLY, BOTH] = FILINGS;
 async function openBooleanWorkbench(page: Page): Promise<FixtureStats> {
   const stats = await installBooleanFixtures(page);
   await page.goto('/search', { waitUntil: 'domcontentloaded' });
-  await page.getByRole('button', { name: 'Boolean / Proximity' }).click();
+  // On slow runners the toggle can render before hydration attaches its
+  // handler, so a single click lands on an inert button and the mode never
+  // switches (CI failed every journey twice this way — first as an Expand
+  // timeout, then as the Boolean input never appearing). Re-click until the
+  // Boolean-mode input actually exists; each attempt gets a short wait.
+  await expect(async () => {
+    await page.getByRole('button', { name: 'Boolean / Proximity' }).click();
+    await expect(page.getByRole('combobox', { name: 'Boolean search query' }))
+      .toBeVisible({ timeout: 2_000 });
+  }).toPass({ timeout: 30_000 });
   return stats;
 }
 
