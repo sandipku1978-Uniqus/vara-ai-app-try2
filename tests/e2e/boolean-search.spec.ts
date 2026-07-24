@@ -12,11 +12,17 @@ async function openBooleanWorkbench(page: Page): Promise<FixtureStats> {
 
 async function runQuery(page: Page, query: string) {
   const input = page.getByRole('combobox', { name: 'Boolean search query' });
-  // A completed search collapses the query panel, so reopen it before re-running.
-  if (!(await input.isVisible().catch(() => false))) {
-    await page.getByRole('button', { name: 'Expand', exact: true }).click();
-    await expect(input).toBeVisible();
+  // A completed search collapses the query panel; reopen it when collapsed.
+  // Only the Expand probe may be a one-shot check — probing the input itself
+  // races the Boolean-mode re-render on slow runners (the input exists but
+  // still carries the semantic-mode label for a frame), which sent CI down the
+  // Expand branch on a fresh, uncollapsed page and timed out all six journeys.
+  const expand = page.getByRole('button', { name: 'Expand', exact: true });
+  if (await expand.isVisible().catch(() => false)) {
+    await expand.click();
   }
+  // Auto-waits for the mode-switch render to commit.
+  await expect(input).toBeVisible();
   await input.fill(query);
   await page.getByRole('button', { name: 'Search', exact: true }).click();
 }
