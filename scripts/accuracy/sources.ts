@@ -142,3 +142,41 @@ export async function fetchFilingHtml(
     `https://www.sec.gov/Archives/edgar/data/${Number(cik)}/${accession}/${document}`
   );
 }
+
+/**
+ * The auditor as the registrant itself tagged it.
+ *
+ * `dei:AuditorName` and `dei:AuditorFirmId` have been required iXBRL tags on
+ * annual reports since 2021, so this is the filing's own structured
+ * declaration — ground truth that is completely independent of the name
+ * matching our detector performs on prose, and needs no hand-maintained
+ * per-issuer fixture.
+ *
+ * Reads the RAW html: text extraction strips the tags this depends on.
+ */
+export function auditorFromIxbrl(html: string): { name: string | null; firmId: string | null } {
+  const grab = (tag: string): string | null => {
+    const patterns = [
+      new RegExp(`name=["']dei:${tag}["'][^>]*>([\\s\\S]{0,200}?)</ix:nonNumeric>`, 'i'),
+      new RegExp(`<ix:nonNumeric[^>]*name=["']dei:${tag}["'][^>]*>([\\s\\S]{0,200}?)<`, 'i'),
+    ];
+    for (const pattern of patterns) {
+      const match = html.match(pattern);
+      if (!match) continue;
+      const value = match[1]
+        .replace(/<[^>]*>/g, '')
+        // Filings use numeric entities freely: SPG tags "Ernst&#160;& Young&#160;LLP".
+        // Leaving those raw made a correct detection look like a mismatch.
+        .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
+        .replace(/&#(\d+);/g, (_, dec) => String.fromCodePoint(Number(dec)))
+        .replace(/&nbsp;/gi, ' ')
+        .replace(/&amp;/gi, '&')
+        .replace(/\s+/g, ' ')
+        .trim();
+      if (value) return value;
+    }
+    return null;
+  };
+
+  return { name: grab('AuditorName'), firmId: grab('AuditorFirmId') };
+}

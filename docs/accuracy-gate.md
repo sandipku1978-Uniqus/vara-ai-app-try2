@@ -31,7 +31,17 @@ the previous run produced uninvestigated 502s.
 | `xbrl` | `companyconcept` API | scale and sign errors in reported financials |
 | `boolean` | live EDGAR corpus | union/intersection/phrase relationships; invalid syntax reaching EDGAR |
 | `equivalence` | real 10-K text | the server pre-screen's safety claim, on real filings rather than synthetic strings |
-| `disclosure` | real 10-K text | topic locator returning off-topic passages; wrong auditor of record |
+| `disclosure` | real 10-K text + the filing's own `dei:AuditorName` | topic locator returning off-topic passages; wrong auditor of record |
+
+The `disclosure` corpus is **32 issuers across 20 sectors** (`ACCURACY_DISCLOSURE_SAMPLE`
+to trim it). Sector spread is the point: filing style varies far more by industry than by
+size, and both defects reported from the product so far were disclosure-extraction bugs
+that a large-cap tech corpus would not have caught.
+
+Auditor ground truth is the filing's own `dei:AuditorName` iXBRL tag — required on annual
+reports since 2021 — so the check compares our prose detector against the registrant's
+structured declaration. Two independent readings of the same document, and no fixture to
+go stale.
 
 The `equivalence` suite exists specifically because the pre-screen's correctness argument
 ("server and browser reach identical verdicts") was only ever demonstrated on synthetic
@@ -79,6 +89,66 @@ The lookup needs its own route, `/api/company-cik`. EDGAR answers in Atom and
 digits behind — including the registrant's phone number — that cannot be told apart from
 a CIK. Parsing happens server-side on the raw response rather than by loosening the
 sanitizer for every caller.
+
+## Run — 2026-07-25, after widening across sectors
+
+| Suite | Score |
+|---|---|
+| entity | 64/64 — 100% |
+| filing-entity | 58/58 — 100% |
+| xbrl | 20/20 — 100% |
+| boolean | 5/5 — 100% |
+| equivalence | 8/8 — 100% |
+| disclosure | 141/159 — 88.7% |
+| **Total** | **296/314 — 94.3%** |
+
+Widening the corpus from 8 issuers to 32 across 20 sectors took the gate from 125 to 314
+checks and surfaced four defects, two of them user-facing.
+
+### Fixed — auditor attributed to the wrong firm
+
+Detection scanned the first 60,000 characters, then the last 40,000, for bare firm names
+and returned the first entry in the catalogue that matched anywhere. Two real failures:
+
+- **NextEra** was attributed to **RSM**, because the filing writes "rate stabilization
+  mechanism (RSM)" in its rate-agreement discussion at ~31k. The real auditor, Deloitte,
+  sits past 260k — outside the window.
+- **Home Depot** was attributed to **EY**, because the signed report (`/s/ KPMG LLP`) is
+  at 189k, in the unscanned middle, while a **director's biography** mentioning Ernst &
+  Young at 315k fell inside the tail.
+
+Detection is now anchored to the audit report itself, in precision order: the `/s/`
+signature, then the tenure sentence ("We have served as the Company's auditor since"),
+then the report heading — each with a bounded window. Within a window the *earliest*
+firm wins, rather than the first entry in the catalogue, so the answer no longer depends
+on how the catalogue happens to be ordered. Documents with no anchor at all fall back to
+a whole-document scan.
+
+### Fixed — policy notes passed over for tables
+
+Two independent scoring bugs in `locateTopicPassage`, both found on Apple's lease note:
+
+- A single digit-ratio threshold vetoed genuine policy prose. Real notes embed maturity
+  and rate tables, so `"Note 8 – Leases"` scored 0.127 and was rejected while the bare
+  table header `"Leases Total"` scored 0.118 and was accepted — despite carrying no lease
+  vocabulary at all. Vocabulary is now the positive evidence and the digit ratio only a
+  veto for weak candidates: two or more distinct topic terms is prose no table produces.
+- Heading specificity was a proxy for line length, so `"Note 8 – Leases"` (13 chars → 47)
+  lost to `"Leases Total"` (12 chars → 48) **by one point, for carrying its note number**.
+  A leading note or item designator is now stripped before scoring, so a numbered note
+  compares on its subject.
+
+### Open — revenue recognition retrieval, 13 issuers
+
+The largest remaining cluster, and the broader form of a defect reported from the product.
+The locator returns *a* passage for revenue recognition but not the ASC 606 policy prose,
+across every sector tested: PGR, MET, PLD, AMT, SPG, JNJ, NEE, WMT, COST, TGT, DE, HON.
+
+Part of this is genuine: insurers recognise premiums under ASC 944 and REITs recognise
+rental income under ASC 842, so "performance obligation" may legitimately be absent from
+their revenue notes, and the expectation may be wrong rather than the locator. Retail and
+industrial filers are ASC 606 and should carry it. Needs its own pass — separating a
+wrong expectation from a wrong passage requires reading the filings.
 
 ### Why `filing-entity` is property-based
 

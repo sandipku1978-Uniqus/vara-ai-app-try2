@@ -17,6 +17,7 @@
 
 import { writeFileSync } from 'node:fs';
 import {
+  auditorFromIxbrl,
   eftsSearch,
   fetchCompanyConcept,
   fetchFilingHtml,
@@ -353,9 +354,15 @@ async function suiteMatcherEquivalence() {
 
 // ── Suite: topic retrieval + auditor attribution ────────────────────────────
 async function suiteDisclosure() {
-  process.stdout.write('\nDisclosure retrieval — topic locator + auditor of record\n');
+  const sampleSize = Number(process.env.ACCURACY_DISCLOSURE_SAMPLE || ISSUERS.length);
+  const sample = ISSUERS.slice(0, sampleSize);
+  const sectors = [...new Set(sample.map(i => i.sector))];
+  process.stdout.write(
+    `\nDisclosure retrieval — topic locator + auditor, ${sample.length} issuers across ` +
+    `${sectors.length} sectors (${sectors.join(', ')})\n`
+  );
 
-  for (const issuer of ISSUERS.slice(0, 4)) {
+  for (const issuer of sample) {
     const filing = await latestFiling(issuer.cik, '10-K');
     if (!filing) { skip('disclosure', `${issuer.ticker} 10-K`, 'no 10-K'); continue; }
     const html = await fetchFilingHtml(issuer.cik, filing.accession, filing.document);
@@ -370,25 +377,35 @@ async function suiteDisclosure() {
       const passage = locateTopicPassage(text, topic);
       const found = passage.matchKind !== 'none';
       const lower = passage.text.toLowerCase();
-      const onTopic = found && topicCase.mustContain.some(term => lower.includes(term));
+      const hit = topicCase.mustContain.find(term => lower.includes(term));
 
       record(
         'disclosure',
-        `${issuer.ticker} → ${topic.label} passage is on-topic`,
-        onTopic,
+        `${issuer.ticker} (${issuer.sector}) → ${topic.label} passage is on-topic`,
+        found && Boolean(hit),
         found
-          ? `matched by ${passage.matchKind}, ${passage.text.length} chars, missing ${topicCase.mustContain.join('/')}`
+          ? `matched by ${passage.matchKind}, ${passage.text.length} chars, none of ${topicCase.mustContain.join(' / ')}`
           : 'no passage located'
       );
     }
 
+    // Ground truth is the filing's own dei:AuditorName tag, so this compares
+    // our prose detector against the registrant's structured declaration —
+    // two independent readings of the same document.
+    const declared = auditorFromIxbrl(html);
+    if (!declared.name) {
+      skip('disclosure', `${issuer.ticker} auditor`, 'filing carries no dei:AuditorName tag');
+      continue;
+    }
+
     const detected = canonicalizeAuditorInput(detectAuditorInText(text) || '');
-    const expected = canonicalizeAuditorInput(issuer.auditor);
+    const expected = canonicalizeAuditorInput(declared.name);
     record(
       'disclosure',
-      `${issuer.ticker} auditor of record is ${issuer.auditor}`,
+      `${issuer.ticker} auditor matches the filing's own tag (${declared.name})`,
       Boolean(detected) && detected === expected,
-      `detected "${detected || 'nothing'}", expected "${expected}"`
+      `detected "${detected || 'nothing'}", filing declares "${expected}"` +
+      (declared.firmId ? ` (PCAOB ${declared.firmId})` : '')
     );
   }
 }
