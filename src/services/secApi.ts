@@ -1614,6 +1614,76 @@ export async function fetchFilingTextOutcome(
   return outcome;
 }
 
+/**
+ * Vocabulary that only appears where the financial statement notes are.
+ * Deliberately excludes terms MD&A also uses ("fair value", "accrued"), which
+ * is what separates a 10-K carrying its notes from one that incorporates them.
+ */
+const STATEMENT_NOTE_MARKERS = [
+  'deferred tax',
+  'significant accounting policies',
+  'accumulated depreciation',
+  'basis of presentation',
+];
+
+/** True when a document carries the financial statement notes themselves. */
+export function containsFinancialStatementNotes(text: string): boolean {
+  if (!text) return false;
+  const lower = text.toLowerCase();
+  return STATEMENT_NOTE_MARKERS.filter(marker => lower.includes(marker)).length >= 2;
+}
+
+/**
+ * Text of the document that actually holds an annual report's accounting
+ * policies, following the exhibit when the 10-K body does not.
+ *
+ * Some registrants — Progressive is the clearest — file a 10-K that carries no
+ * notes at all and incorporates the financial statements by reference from
+ * Exhibit 13, the glossy annual report. Reading only the primary document
+ * leaves those issuers with no disclosure to show: every policy lookup returns
+ * nothing, which reads as "this company discloses nothing" rather than "we
+ * looked in the wrong file".
+ *
+ * Falls back to the primary document's own text whenever the exhibit cannot be
+ * identified or read, so this can only add coverage, never remove it.
+ */
+export async function fetchAnnualDisclosureText(
+  cik: string,
+  accessionNumber: string,
+  primaryDocument: string
+): Promise<string> {
+  const primaryText = await fetchFilingText(cik, accessionNumber, primaryDocument);
+  if (containsFinancialStatementNotes(primaryText)) return primaryText;
+
+  const cleanAccession = accessionNumber.replace(/-/g, '');
+  try {
+    const response = await fetch(
+      buildSecProxyUrl(`Archives/edgar/data/${Number(cik)}/${cleanAccession}/index.json`),
+      { headers: getHeaders() }
+    );
+    if (!response.ok) return primaryText;
+
+    const listing = await response.json() as { directory?: { item?: Array<{ name?: string; size?: string }> } };
+    const candidates = (listing.directory?.item || [])
+      .filter(item => {
+        const name = item.name || '';
+        // R<n>.htm are the XBRL viewer's per-section renderings, not documents.
+        return /\.htm$/i.test(name) && !/^R\d+\.htm$/i.test(name) && name !== primaryDocument;
+      })
+      .sort((a, b) => Number(b.size || 0) - Number(a.size || 0));
+
+    // The statements exhibit is substantial; try only the largest few.
+    for (const candidate of candidates.slice(0, 3)) {
+      const text = await fetchFilingText(cik, accessionNumber, candidate.name || '');
+      if (containsFinancialStatementNotes(text)) return text;
+    }
+  } catch {
+    // Index unreadable — the primary document is still the best answer.
+  }
+
+  return primaryText;
+}
+
 export interface BooleanPrescreenCandidate {
   cik: string;
   accession: string;
