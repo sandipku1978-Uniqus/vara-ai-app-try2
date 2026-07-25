@@ -17,6 +17,7 @@ import { loadSicDirectoryIndex } from '../services/referenceData';
 import SectionMatrix, { type MatrixCell } from '../components/tables/SectionMatrix';
 import { useApp } from '../context/AppState';
 import TopicPassage from '../components/research/TopicPassage';
+import { splitIntoParagraphs } from '../lib/filingText';
 import {
   DISCLOSURE_TOPICS,
   distinctiveTerms,
@@ -1657,7 +1658,12 @@ Keep it crisp and practical.`;
                       distinctive={topicDistinctive[ticker]}
                     />
                   ) : text ? (
-                    <p style={{ fontSize: '0.85rem', lineHeight: 1.7, color: 'var(--text-primary)' }}>{text}</p>
+                    // Section text is a source document too: same reading voice
+                    // and paragraph structure as topic passages. Rendering it as
+                    // one <p> produced an unbroken wall nothing could be read out of.
+                    <div className="section-prose">
+                      {splitIntoParagraphs(text).map((para, i) => <p key={i}>{para}</p>)}
+                    </div>
                   ) : (
                     <p style={{ color: 'var(--text-muted)', fontStyle: 'italic' }}>No data available.</p>
                   )}

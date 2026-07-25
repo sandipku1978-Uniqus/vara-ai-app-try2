@@ -36,7 +36,10 @@ export const DISCLOSURE_TOPICS: DisclosureTopic[] = [
     id: 'revenue-recognition',
     label: 'Revenue recognition policy',
     asc: 'ASC 606',
-    headings: ['revenue recognition', 'revenue from contracts with customers', 'revenue'],
+    // Most specific first. A bare 'revenue' is kept LAST because some issuers
+    // (Apple) title the policy note exactly that — the confirmation step below
+    // is what rejects the identically-titled income-statement line item.
+    headings: ['revenue recognition', 'revenue from contracts with customers', 'revenue recognition policy', 'revenue'],
     terms: [
       'performance obligation', 'transaction price', 'contract with customer', 'variable consideration',
       'standalone selling price', 'over time', 'point in time', 'contract asset', 'contract liability',
@@ -230,30 +233,47 @@ export function locateTopicPassage(text: string, topic: DisclosureTopic, passage
     const normalizedLine = normalize(line);
     if (!normalizedLine) continue;
 
-    for (const heading of topic.headings) {
+    for (const [rank, heading] of topic.headings.entries()) {
       const normalizedHeading = normalize(heading);
       if (!normalizedHeading || !normalizedLine.includes(normalizedHeading)) continue;
-      // An exact heading beats one that merely contains the phrase.
-      const score = normalizedLine === normalizedHeading ? 100 : 60 - Math.min(normalizedLine.length, 50);
-      headingCandidates.push({ offset: lineStart, heading: line.trim(), score });
+      // An exact heading beats one that merely contains the phrase, and an
+      // earlier (more specific) heading beats a later generic one — so
+      // "Revenue Recognition" is tried before a bare "Revenue".
+      const exactness = normalizedLine === normalizedHeading ? 100 : 60 - Math.min(normalizedLine.length, 50);
+      headingCandidates.push({ offset: lineStart, heading: line.trim(), score: exactness + (topic.headings.length - rank) * 10 });
       break;
     }
   }
 
+  // A heading alone is not proof. "Revenue" titles both the accounting policy
+  // and the income-statement line item, and the line item returns a column of
+  // numbers. So each candidate is CONFIRMED by reading what follows it: the
+  // passage must actually use the topic's vocabulary. Candidates are tried
+  // strongest-first and the first confirmed one wins.
   if (headingCandidates.length > 0) {
-    // Prefer the strongest heading; ties go to the later one, which is the
-    // disclosure rather than a cross-reference in an earlier summary.
     headingCandidates.sort((a, b) => b.score - a.score || b.offset - a.offset);
-    const best = headingCandidates[0];
-    const passage = text.slice(best.offset, best.offset + passageChars).trim();
-    return {
-      text: passage,
-      matchKind: 'heading',
-      heading: best.heading,
-      matchReason: `Found under the heading “${best.heading}”.`,
-      matchedTerms: presentTerms(passage, normalizedTerms, topic.terms),
-      offset: best.offset,
-    };
+
+    for (const candidate of headingCandidates) {
+      const passage = text.slice(candidate.offset, candidate.offset + passageChars).trim();
+      const matchedTerms = presentTerms(passage, normalizedTerms, topic.terms);
+      // Prose, not a table: a numeric block under a matching heading is the
+      // financial statement, not the policy.
+      const digitRatio = (passage.match(/\d/g)?.length ?? 0) / Math.max(passage.length, 1);
+      const readsLikePolicy = matchedTerms.length > 0 && digitRatio < 0.12;
+
+      if (readsLikePolicy) {
+        return {
+          text: passage,
+          matchKind: 'heading',
+          heading: candidate.heading,
+          matchReason: `Found under the heading “${candidate.heading}”.`,
+          matchedTerms,
+          offset: candidate.offset,
+        };
+      }
+    }
+    // Every heading was a false positive (a table or an index entry); fall
+    // through to density rather than returning something that merely looked right.
   }
 
   // ── Density pass ──
@@ -297,8 +317,14 @@ export function locateTopicPassage(text: string, topic: DisclosureTopic, passage
     };
   }
 
+  // Snap to a line/sentence boundary: a raw offset starts the passage
+  // mid-word, which reads as broken.
+  const snapWindow = text.slice(bestOffset, bestOffset + 400);
+  const snapAt = Math.max(snapWindow.indexOf('\n'), snapWindow.search(/(?<=[.!?])\s+(?=[A-Z])/));
+  const snappedOffset = snapAt > 0 && snapAt < 300 ? bestOffset + snapAt : bestOffset;
+
   return {
-    text: text.slice(bestOffset, bestOffset + windowSize).trim(),
+    text: text.slice(snappedOffset, snappedOffset + windowSize).trim(),
     matchKind: 'density',
     matchReason: `No matching heading; selected the passage with the highest concentration of ${topic.label.toLowerCase()} terms.`,
     matchedTerms: bestTerms,

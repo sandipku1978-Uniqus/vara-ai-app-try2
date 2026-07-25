@@ -120,6 +120,20 @@ export async function installBooleanFixtures(page: Page): Promise<FixtureStats> 
     });
   });
 
+  // Extracted filing text now comes from the cached endpoint rather than the
+  // raw-HTML proxy, so the suite must intercept it or Boolean validation would
+  // reach the live SEC corpus.
+  await page.route('**/api/filing-text**', async (route: Route) => {
+    const url = new URL(route.request().url());
+    const document = url.searchParams.get('document') || '';
+    const filing = FILINGS.find(f => document.includes(f.document));
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ ok: true, text: filing ? filing.text : '', cached: false }),
+    });
+  });
+
   // Filing documents + company directory, both served through the SEC proxy
   await page.route('**/api/sec-proxy**', async (route: Route) => {
     const url = new URL(route.request().url());

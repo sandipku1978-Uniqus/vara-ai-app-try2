@@ -1,5 +1,6 @@
 'use client';
 
+import { splitIntoParagraphs } from '../../lib/filingText';
 import type { TopicPassage as TopicPassageData } from '../../services/disclosureTopics';
 
 /**
@@ -68,9 +69,13 @@ export default function TopicPassage({ passage, distinctive = [], onCite }: Prop
         </div>
       )}
 
-      {/* Serif reading voice: this is source document text, not UI chrome. */}
+      {/* Serif reading voice: this is source document text, not UI chrome.
+          Paragraphed, because filings often carry no structural breaks and a
+          single block is unreadable. */}
       <blockquote className="topic-passage__text">
-        {highlightTerms(passage.text, passage.matchedTerms)}
+        {splitIntoParagraphs(passage.text).map((para, index) => (
+          <p key={index}>{highlightTerms(para, passage.matchedTerms)}</p>
+        ))}
       </blockquote>
 
       {onCite && (

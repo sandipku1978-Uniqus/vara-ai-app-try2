@@ -6,13 +6,18 @@ import { fetchFilingTextOutcome } from '../services/secApi';
  * text", must never be cached as filing content, and terminal statuses must not
  * be retried.
  */
-function respond(status: number, body = '<html><body><p>hello</p></body></html>') {
+/**
+ * The client now calls /api/filing-text, which returns ALREADY-EXTRACTED text
+ * as JSON (served from the shared cache when warm) rather than raw filing HTML.
+ */
+function respond(status: number, text = 'hello') {
   return {
     ok: status >= 200 && status < 300,
     status,
     statusText: String(status),
     headers: { get: () => null },
-    text: async () => body,
+    json: async () => ({ ok: true, text }),
+    text: async () => text,
   };
 }
 

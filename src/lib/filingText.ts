@@ -88,6 +88,40 @@ export function extractTextFromNode(root: MinimalNode): string {
   return normalizeFilingWhitespace(parts.join(''));
 }
 
+/**
+ * Break extracted filing text into readable paragraphs.
+ *
+ * Filing HTML frequently marks paragraphs with styling rather than structure,
+ * so extraction can yield a single unbroken block — which is how a 20,000
+ * character Item 1A became a wall nothing could be read out of. Real breaks are
+ * used where they exist; anything still oversized is split at sentence
+ * boundaries so the reader gets paragraphs instead of a slab.
+ */
+export function splitIntoParagraphs(text: string, maxChars = 700): string[] {
+  const blocks = text.split(/\n\s*\n/).map(block => block.replace(/\s*\n\s*/g, ' ').trim()).filter(Boolean);
+
+  const paragraphs: string[] = [];
+  for (const block of blocks) {
+    if (block.length <= maxChars) {
+      paragraphs.push(block);
+      continue;
+    }
+    // Split after sentence-ending punctuation, keeping the punctuation.
+    const sentences = block.split(/(?<=[.!?])\s+(?=[A-Z(“"])/);
+    let current = '';
+    for (const sentence of sentences) {
+      if (current && (current.length + sentence.length) > maxChars) {
+        paragraphs.push(current.trim());
+        current = '';
+      }
+      current += (current ? ' ' : '') + sentence;
+    }
+    if (current.trim()) paragraphs.push(current.trim());
+  }
+
+  return paragraphs;
+}
+
 /** Whitespace normalization, kept identical to the original implementation. */
 export function normalizeFilingWhitespace(text: string): string {
   return text

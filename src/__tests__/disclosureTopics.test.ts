@@ -166,3 +166,56 @@ describe('distinctiveTerms', () => {
     expect(result.B).toEqual([]);
   });
 });
+
+describe('heading matches are confirmed, not trusted (reported: MSFT showed income-statement numbers)', () => {
+  const revenueTopic = findDisclosureTopic('revenue-recognition')!;
+
+  it('does not return the income-statement line item titled "Revenue"', () => {
+    // Reproduces the reported defect: a bare "Revenue" heading over a numeric
+    // block was returned as the revenue recognition POLICY.
+    const text = [
+      'x'.repeat(5000),
+      'Revenue',
+      '$ 281,724 $ 245,122 $ 198,270',
+      '$ 52,229 $ 46,078 $ 39,240',
+      '$ 12,441 $ 10,887 $ 9,222',
+      'x'.repeat(500),
+      'Revenue Recognition',
+      'Revenue is recognized when a performance obligation is satisfied by transferring control.',
+      'The transaction price is allocated to each performance obligation using standalone selling price.',
+    ].join('\n');
+
+    const passage = locateTopicPassage(text, revenueTopic);
+    expect(passage.text).toContain('performance obligation');
+    expect(passage.text).not.toContain('281,724');
+  });
+
+  it('falls through to density when every heading is a numeric table', () => {
+    const text = [
+      'x'.repeat(5000),
+      'Revenue Recognition',
+      '$ 1,234 $ 5,678 $ 9,012 $ 3,456 $ 7,890 $ 2,345 $ 6,789 $ 1,111 $ 2,222 $ 3,333',
+      'x'.repeat(400),
+      'We recognize amounts when each performance obligation is satisfied and the transaction price',
+      'has been allocated using standalone selling price for variable consideration.',
+    ].join('\n');
+
+    const passage = locateTopicPassage(text, revenueTopic);
+    // Whatever route it takes, the passage must carry the POLICY language —
+    // that is what the reader came for.
+    expect(passage.text).toContain('performance obligation');
+  });
+
+  it('rejects a heading whose passage is purely numeric', () => {
+    // A table with no policy prose anywhere near it must not be returned as a
+    // confident heading match.
+    const text = [
+      'x'.repeat(5000),
+      'Revenue Recognition',
+      Array.from({ length: 60 }, (_, i) => `$ ${i}23,456 $ ${i}78,901`).join('\n'),
+    ].join('\n');
+
+    const passage = locateTopicPassage(text, revenueTopic);
+    expect(passage.matchKind).not.toBe('heading');
+  });
+});

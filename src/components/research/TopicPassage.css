@@ -105,3 +105,28 @@
   font-style: italic;
   line-height: 1.5;
 }
+
+/* Paragraphs inside a passage: readable rhythm, not a slab. */
+.topic-passage__text p {
+  margin: 0 0 0.85em;
+}
+
+.topic-passage__text p:last-child {
+  margin-bottom: 0;
+}
+
+/* Section (Item-level) text gets the same document treatment as topic
+   passages — it is the same kind of evidence and was previously rendered as a
+   single unbroken paragraph. */
+.section-prose {
+  font-family: var(--font-serif, Georgia, 'Times New Roman', serif);
+  font-size: 0.92rem;
+  line-height: 1.65;
+  color: var(--text-primary);
+  max-height: 520px;
+  overflow-y: auto;
+}
+
+.section-prose p {
+  margin: 0 0 0.85em;
+}

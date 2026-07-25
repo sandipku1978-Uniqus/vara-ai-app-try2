@@ -55,3 +55,31 @@ export function getWebSupabase(): SupabaseClient | null {
   webClient = createClient(url, key, { auth: { persistSession: false } });
   return webClient;
 }
+
+/**
+ * Cache-writer client — the ONLY other use of service authority in this file,
+ * kept here deliberately.
+ *
+ * The web role reads through the least-privilege anon/publishable key and
+ * cannot write. Populating the shared filing-text cache does need write
+ * authority, and the migrationSecurity guardrail requires that service-role
+ * credentials be readable from exactly one audited module — so this lives
+ * beside getWebSupabase rather than in a file of its own.
+ *
+ * Writes must stay privileged: cached filing text drives Boolean matching, so
+ * an anon-writable cache would let anyone poison what every user matches on.
+ */
+let cacheWriterClient: SupabaseClient | null = null;
+
+export function getCacheWriterSupabase(): SupabaseClient | null {
+  if (cacheWriterClient) return cacheWriterClient;
+
+  const url = process.env.URC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.URC_SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+  // A missing key is not an error: the cache is an accelerator, so callers fall
+  // back to fetching from SEC rather than failing the request.
+  if (!url || !serviceKey) return null;
+
+  cacheWriterClient = createClient(url, serviceKey, { auth: { persistSession: false } });
+  return cacheWriterClient;
+}

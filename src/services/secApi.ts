@@ -1556,10 +1556,11 @@ export async function fetchFilingTextOutcome(
 
       let response: Response;
       try {
-        response = await fetch(
-          buildSecProxyUrl(`Archives/edgar/data/${cik}/${cleanAccession}/${primaryDocument}`, { trunc: '1' }),
-          { headers: getHeaders(), signal: options.signal }
-        );
+        // Shared cache first: /api/filing-text returns already-extracted text,
+        // so a filing any user has opened before costs SEC nothing and crosses
+        // the wire without its markup.
+        const params = new URLSearchParams({ cik, accession: cleanAccession, document: primaryDocument });
+        response = await fetch(`/api/filing-text?${params.toString()}`, { signal: options.signal });
       } catch (error) {
         if (options.signal?.aborted || (error as Error)?.name === 'AbortError') {
           return { ok: false, kind: 'cancelled', retryable: false };
@@ -1570,7 +1571,10 @@ export async function fetchFilingTextOutcome(
       }
 
       if (response.ok) {
-        return { ok: true, text: extractDocumentTextFromHtml(await response.text()) };
+        // The endpoint returns extracted text; extraction is identical to the
+        // browser path (see filingTextEquivalence), so results cannot drift.
+        const payload = await response.json() as { ok?: boolean; text?: string };
+        return { ok: true, text: payload.text || '' };
       }
 
       last = classifyFilingTextStatus(response.status);
