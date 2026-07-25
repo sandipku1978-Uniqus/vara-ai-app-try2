@@ -16,6 +16,15 @@ import SicSearchInput from '../components/filters/SicSearchInput';
 import { loadSicDirectoryIndex } from '../services/referenceData';
 import SectionMatrix, { type MatrixCell } from '../components/tables/SectionMatrix';
 import { useApp } from '../context/AppState';
+import TopicPassage from '../components/research/TopicPassage';
+import {
+  DISCLOSURE_TOPICS,
+  distinctiveTerms,
+  findDisclosureTopic,
+  locateTopicPassage,
+  type TopicPassage as TopicPassageData,
+} from '../services/disclosureTopics';
+import '../components/research/TopicPassage.css';
 import './Benchmarking.css';
 
 const CHART_COLORS = ['#B31F7E', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444', '#EC4899', '#06B6D4', '#84CC16', '#F97316', '#6366F1'];
@@ -187,6 +196,14 @@ export default function Benchmarking() {
   // Multi-year per ticker: { AAPL: [2024, 2023], MSFT: [2024] }
   const [selectedYearsPerTicker, setSelectedYearsPerTicker] = useState<Record<string, number[]>>({});
   const [selectedSection, setSelectedSection] = useState('Item 1A. Risk Factors');
+  // One control drives both comparison units: "topic:<id>" locates a policy
+  // wherever it sits (a note, an Item, anywhere), "section:<label>" keeps the
+  // original Item-scoped extraction.
+  const [comparisonTarget, setComparisonTarget] = useState('topic:revenue-recognition');
+  const activeTopic = comparisonTarget.startsWith('topic:')
+    ? findDisclosureTopic(comparisonTarget.slice('topic:'.length))
+    : undefined;
+
   const [viewMode, setViewMode] = useState<'financials' | 'text-diff' | 'audit-matrix'>('financials');
   const [commonSize, setCommonSize] = useState(false);
   const [matrixFormType, setMatrixFormType] = useState<string>('10-K');
@@ -207,6 +224,19 @@ export default function Benchmarking() {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingFacts, setLoadingFacts] = useState(false);
   const [companyTexts, setCompanyTexts] = useState<Record<string, string>>({});
+
+  // Locating a passage is pure text work over already-fetched documents, so it
+  // is derived rather than re-fetched when the topic changes.
+  const topicPassages = useMemo(() => {
+    const result: Record<string, TopicPassageData> = {};
+    if (!activeTopic) return result;
+    for (const ticker of selectedTickers) {
+      result[ticker] = locateTopicPassage(companyTexts[ticker] || '', activeTopic);
+    }
+    return result;
+  }, [activeTopic, selectedTickers, companyTexts]);
+
+  const topicDistinctive = useMemo(() => distinctiveTerms(topicPassages), [topicPassages]);
   const [loadingTexts, setLoadingTexts] = useState(false);
 
   const [aiAnalysis, setAiAnalysis] = useState('');
@@ -575,6 +605,14 @@ export default function Benchmarking() {
           const resp = await fetch(buildSecProxyUrl(`Archives/edgar/data/${data.cik}/${cleanAccession}/${primaryDoc}`));
           const html = await resp.text();
 
+          // Topic mode searches the whole document, because a policy note is
+          // not bounded by any Item. Section mode keeps the original
+          // anchor-bounded extraction.
+          if (activeTopic) {
+            texts[ticker] = extractDocumentTextFromHtml(html);
+            continue;
+          }
+
           // Structured extraction first: anchors/headings bound the section
           // precisely. Fall back to positional search only when the document
           // has no parseable structure.
@@ -610,7 +648,7 @@ export default function Benchmarking() {
       setLoadingTexts(false);
     }
     if (Object.keys(companiesData).length > 0) loadTexts();
-  }, [selectedSection, selectedTickers, viewMode]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedSection, activeTopic, selectedTickers, viewMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const removeTicker = (ticker: string) => {
     setSelectedTickers(prev => prev.filter(t => t !== ticker));
@@ -980,9 +1018,26 @@ Keep it crisp and practical.`;
       <div className="benchmark-controls glass-card">
         {viewMode === 'text-diff' && (
           <div className="control-group">
-            <label>Compare Section:</label>
-            <select value={selectedSection} onChange={e => setSelectedSection(e.target.value)} className="select-input">
-              {ALL_SECTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+            <label>Compare:</label>
+            <select
+              value={comparisonTarget}
+              onChange={e => setComparisonTarget(e.target.value)}
+              className="select-input"
+              aria-label="Disclosure topic or filing section to compare"
+            >
+              {/* Topics first: an accountant asks "how do peers treat revenue
+                  recognition?" far more often than "show me all of Item 1A" —
+                  and a policy note has no Item of its own to select. */}
+              <optgroup label="Accounting policy & topic">
+                {DISCLOSURE_TOPICS.map(topic => (
+                  <option key={topic.id} value={`topic:${topic.id}`}>
+                    {topic.label}{topic.asc ? ` (${topic.asc})` : ''}
+                  </option>
+                ))}
+              </optgroup>
+              <optgroup label="Filing section">
+                {ALL_SECTIONS.map(s => <option key={s} value={`section:${s}`}>{s}</option>)}
+              </optgroup>
             </select>
           </div>
         )}
@@ -1116,7 +1171,9 @@ Keep it crisp and practical.`;
         <DisclosureMatrix 
           className="mb-4"
           tickers={selectedTickers}
-          section={selectedSection}
+          // Reflect whatever is actually being compared — showing the stale
+          // Item label while a policy topic is selected misstates the analysis.
+          section={activeTopic ? activeTopic.label : selectedSection}
           filingContexts={selectedTickers.map(t => ({
              ticker: t,
              companyName: companiesData[t]?.name || t,
@@ -1594,6 +1651,11 @@ Keep it crisp and practical.`;
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--text-muted)' }}>
                       <Loader2 size={16} className="spinner" /> Fetching live filing text...
                     </div>
+                  ) : activeTopic && text ? (
+                    <TopicPassage
+                      passage={topicPassages[ticker]}
+                      distinctive={topicDistinctive[ticker]}
+                    />
                   ) : text ? (
                     <p style={{ fontSize: '0.85rem', lineHeight: 1.7, color: 'var(--text-primary)' }}>{text}</p>
                   ) : (

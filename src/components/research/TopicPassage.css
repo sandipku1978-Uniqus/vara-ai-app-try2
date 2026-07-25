@@ -1,0 +1,107 @@
+/* Topic passage: source-document treatment, not UI chrome.
+   The serif voice is reserved for filing text (Evidence Ledger §typography);
+   the previous monospace column made prose actively hard to read. */
+
+.topic-passage {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.topic-passage__provenance {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.topic-passage__badge {
+  align-self: flex-start;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* A heading match is strong evidence; density is a weaker inference and is
+   coloured to say so rather than presenting both as equally certain. */
+.topic-passage__badge--heading {
+  background: color-mix(in srgb, var(--status-success) 14%, transparent);
+  color: var(--status-success);
+}
+
+.topic-passage__badge--density {
+  background: color-mix(in srgb, var(--status-warning) 16%, transparent);
+  color: var(--status-warning);
+}
+
+.topic-passage__reason {
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  line-height: 1.45;
+  margin: 0;
+}
+
+.topic-passage__distinctive {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.topic-passage__distinctive-label {
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.topic-passage__chip {
+  padding: 2px 8px;
+  border: 1px solid color-mix(in srgb, var(--accent-primary) 30%, var(--border-color));
+  border-radius: 999px;
+  background: var(--surface-accent);
+  color: var(--accent-primary);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.topic-passage__text {
+  margin: 0;
+  padding: 0 0 0 14px;
+  border-left: 2px solid var(--border-color);
+  color: var(--text-primary);
+  font-family: var(--font-serif, Georgia, 'Times New Roman', serif);
+  font-size: 0.92rem;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  /* Long disclosures stay scannable instead of pushing the page down. */
+  max-height: 460px;
+  overflow-y: auto;
+}
+
+.topic-passage__text .topic-term {
+  padding: 0 2px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--accent-primary) 18%, transparent);
+  color: inherit;
+  font-weight: 600;
+}
+
+.topic-passage__cite {
+  align-self: flex-start;
+  font-size: 0.76rem;
+  padding: 5px 10px;
+}
+
+.topic-passage--absent .topic-passage__absent-help {
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  font-style: italic;
+  line-height: 1.5;
+}
