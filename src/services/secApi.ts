@@ -1,6 +1,8 @@
 // Utility for fetching real SEC EDGAR data
 // SEC EDGAR requires a descriptive User-Agent string
 
+import { extractTextFromNode } from '../lib/filingText';
+
 const USER_AGENT = process.env.NEXT_PUBLIC_EDGAR_USER_AGENT || 'Uniqus Research Center contact@uniqus.com';
 interface CachedEdgarSearch {
   hits: EdgarSearchHit[];
@@ -112,38 +114,19 @@ export function buildSecEftsUrl(path: string, params?: Record<string, string | n
   return buildProxyUrl('efts', path, params);
 }
 
+/**
+ * Extract readable filing text from SEC HTML.
+ *
+ * Browser-only path: uses the platform parser, then the SHARED walker in
+ * lib/filingText so this produces byte-identical output to the server-side
+ * extractor (which parses with linkedom). The walker replaced an `innerText`
+ * read that could not run outside a browser \u2014 see lib/filingText for why
+ * `textContent` is not a safe substitute.
+ */
 export function extractDocumentTextFromHtml(html: string): string {
-  const parser = new DOMParser();
-  const doc = parser.parseFromString(html, 'text/html');
-  const body = doc.body;
-  if (!body) return '';
-
-  const clone = body.cloneNode(true) as HTMLElement;
-  
-  // Remove invisible and structural nodes
-  clone.querySelectorAll('script, style, noscript, template').forEach(node => node.remove());
-  clone.querySelectorAll('ix\\:header, ix\\:hidden, xbrli\\:context, xbrli\\:unit').forEach(node => node.remove());
-
-  // Unwrap inline XBRL elements so innerText treats the text continuously
-  clone.querySelectorAll('ix\\:nonnumeric, ix\\:nonfraction, ix\\:continuation').forEach(node => {
-    const parent = node.parentNode;
-    if (parent) {
-      while (node.firstChild) {
-        parent.insertBefore(node.firstChild, node);
-      }
-      parent.removeChild(node);
-    }
-  });
-
-  const text = clone.innerText || clone.textContent || '';
-  return text
-    .replace(/\r/g, '\n')
-    .replace(/\u00a0/g, ' ')
-    .replace(/[ \t]+\n/g, '\n')
-    .replace(/\n[ \t]+/g, '\n')
-    .replace(/[ \t]{2,}/g, ' ')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  if (!doc.body) return '';
+  return extractTextFromNode(doc.body as unknown as Parameters<typeof extractTextFromNode>[0]);
 }
 
 // Cache of all tickers loaded from SEC
