@@ -90,6 +90,47 @@ digits behind — including the registrant's phone number — that cannot be tol
 a CIK. Parsing happens server-side on the raw response rather than by loosening the
 sanitizer for every caller.
 
+## Topic retrieval reads the registrant's own XBRL tagging
+
+Locating a disclosure by scanning extracted prose has to cope with every
+drafting convention there is, and each convention arrives as its own bug:
+maturity tables titled "Leases", policies folded into a run-in paragraph with
+no heading, insurers under ASC 944, REITs under ASC 842, income-statement line
+items titled "Revenue". Widening the corpus to 32 issuers turned up roughly one
+new shape per four issuers, which does not converge.
+
+Every modern annual report ships `FilingSummary.xml`: an index of every note and
+accounting-policy block, generated from the iXBRL the registrant tagged. Each
+entry points at a small `R*.htm` holding exactly that block. Reading the block
+the registrant tagged makes boundaries exact and drafting conventions
+irrelevant — the registrant already said where their revenue policy is.
+
+`src/services/filingStructure.ts` implements it. Priority order:
+
+1. **A note whose title leads with the topic** — that block *is* the disclosure,
+   so it is read from the top rather than searched within.
+2. **The combined `(Policies)` block** — covers many topics, so it is searched.
+3. **A note that merely mentions the topic** — last. Microsoft has no revenue
+   note, and "UNEARNED REVENUE" (the deferred-revenue table) was outranking the
+   policies block that actually holds its revenue policy.
+
+Then the prose locator over the whole filing, unchanged, for anything untagged —
+pre-2019 filings, some foreign private issuers, exhibits.
+
+Two extraction details that each cost real accuracy:
+
+- EDGAR wraps R-files in an SGML `<DOCUMENT>` envelope, so a DOM parser finds no
+  `<body>` and every block extracts as an empty string.
+- R-files carry a generated header (`v3.25.3` / block name / `12 Months Ended` /
+  date / `… [Abstract]`) and a trailing run of XBRL element documentation
+  (`- Definition / + References / + Details / Name: us-gaap_…`). On Microsoft's
+  policies block the footer is 30KB of taxonomy boilerplate, and the locator
+  returned it as the accounting policy.
+
+Three passage strategies were measured against the corpus before settling on the
+simplest: reading the tagged block from the top scored **151**, hunting the
+densest window inside it **148**, skipping a leading table **148**.
+
 ## Run — 2026-07-25, after widening across sectors
 
 | Suite | Score |
@@ -204,17 +245,41 @@ what they are: revenue recognition policies. One caution learned here — a gene
 `lease income` heading was tried and reverted, because it collided with the lease topic
 and matched Target's `"Sublease income (c)"` table row as its revenue note.
 
-### Open — Microsoft lease policy (1 check)
+### Fixed — Microsoft lease policy, and the whole class it belonged to
 
-The bare heading `"Leases"` at offset 264,564 titles a maturity table whose column
-captions ("Operating Leases", "Finance Leases") are enough to confirm it, and the only
-other `right-of-use` text in the filing is the balance-sheet line item
-`"Operating lease right-of-use assets 24,823"`. Scanning forward within the note does not
-reach policy prose, so the passage returned is a schedule.
+The bare heading `"Leases"` at offset 264,564 titles a maturity table, and Microsoft's
+actual lease policy is a run-in paragraph at ~221,400 under no lease heading at all —
+the nearest heading is "Property and Equipment". No amount of threshold tuning reaches
+it, because the heading pass has nothing to find.
 
-Deliberately not fixed by further threshold tuning — the remaining cases are ones where
-the policy sits *before* its table under a caption the heading pass does not see, which
-needs a different approach (note-boundary detection) rather than another cutoff.
+This was the case that prompted moving topic retrieval onto the registrant's own XBRL
+tagging rather than continuing to fix filings one at a time. Microsoft tags its lease
+note; reading that block answers the question without any heading heuristics. See
+"Topic retrieval reads the registrant's own XBRL tagging" above.
+
+## Run — 2026-07-25, after moving topic retrieval onto XBRL blocks
+
+| Suite | Score |
+|---|---|
+| entity | 64/64 — 100% |
+| filing-entity | 58/58 — 100% |
+| xbrl | 20/20 — 100% |
+| boolean | 5/5 — 100% |
+| equivalence | 8/8 — 100% |
+| disclosure | 156/159 — 98.1% |
+| **Total** | **311/314 — 99.0%** |
+
+Disclosure went 88.7% → 98.1% with no issuer-specific rules added. The three remaining
+failures share one shape: the correct block resolves and the passage window does not
+reach the expected vocabulary inside it.
+
+One case is worth recording because the score moved the wrong way for the right reason.
+Microsoft's revenue check previously passed against "UNEARNED REVENUE" — a
+deferred-revenue table that happens to mention "Remaining Performance Obligation".
+Demoting incidental name matches sent it to the policies block that genuinely holds the
+policy, and the check then failed on window position. The score dropped by one while the
+answer improved: the gate measures vocabulary, not whether a reader would accept the
+passage.
 
 ### Why `filing-entity` is property-based
 

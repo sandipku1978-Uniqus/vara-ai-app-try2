@@ -31,6 +31,11 @@ import { BOOLEAN_CASES, ISSUERS, TOPIC_CASES, XBRL_CONCEPTS } from './cases';
 import { compileBooleanQuery, booleanQueryMatches } from '../../src/utils/booleanSearch';
 import { extractDocumentTextFromHtmlServer } from '../../src/lib/filingTextServer';
 import { findDisclosureTopic, locateTopicPassage } from '../../src/services/disclosureTopics';
+import {
+  locateTopicInBlocks,
+  parseFilingSummary,
+  stripSgmlEnvelope,
+} from '../../src/services/filingStructure';
 import { detectAuditorInText, canonicalizeAuditorInput } from '../../src/services/auditors';
 import { rankCompanyMatches } from '../../src/services/companyLookup';
 import { COMPANY_BRAND_ALIASES } from '../../src/services/secApi';
@@ -374,11 +379,33 @@ async function suiteDisclosure() {
     const text = extractDocumentTextFromHtmlServer(html);
     if (!text || text.length < 5_000) { skip('disclosure', `${issuer.ticker} 10-K`, 'thin extraction'); continue; }
 
+    // The registrant's own note index, when the filing carries iXBRL tagging.
+    const reports = parseFilingSummary(
+      await secText(`https://www.sec.gov/Archives/edgar/data/${Number(issuer.cik)}/${filing.accession}/FilingSummary.xml`) || ''
+    );
+    const blockText = new Map<string, string>();
+    const loadBlock = async (file: string): Promise<string> => {
+      if (!blockText.has(file)) {
+        const raw = await secText(
+          `https://www.sec.gov/Archives/edgar/data/${Number(issuer.cik)}/${filing.accession}/${file}`
+        );
+        blockText.set(file, raw ? extractDocumentTextFromHtmlServer(stripSgmlEnvelope(raw)) : '');
+      }
+      return blockText.get(file) || '';
+    };
+
     for (const topicCase of TOPIC_CASES) {
       const topic = findDisclosureTopic(topicCase.topicId);
       if (!topic) { skip('disclosure', topicCase.topicId, 'topic not in catalogue'); continue; }
 
-      const passage = locateTopicPassage(text, topic);
+      // Tagged blocks first; the prose locator over the whole filing is the
+      // fallback for anything the registrant did not tag.
+      const block = reports.length
+        ? await locateTopicInBlocks({ reports, topic, loadBlock, locate: locateTopicPassage })
+        : null;
+      const passage = block?.passage ?? locateTopicPassage(text, topic);
+      const source = block ? `block “${block.blockName}”` : 'full document';
+
       const found = passage.matchKind !== 'none';
       const lower = passage.text.toLowerCase();
       const hit = topicCase.mustContain.find(term => lower.includes(term));
@@ -388,8 +415,8 @@ async function suiteDisclosure() {
         `${issuer.ticker} (${issuer.sector}) → ${topic.label} passage is on-topic`,
         found && Boolean(hit),
         found
-          ? `matched by ${passage.matchKind}, ${passage.text.length} chars, none of ${topicCase.mustContain.join(' / ')}`
-          : 'no passage located'
+          ? `${source}, matched by ${passage.matchKind}, ${passage.text.length} chars, none of ${topicCase.mustContain.join(' / ')}`
+          : `${source}, no passage located`
       );
     }
 
