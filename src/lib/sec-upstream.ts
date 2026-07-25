@@ -9,7 +9,9 @@ const UPSTREAM_ORIGINS: Record<SecUpstream, string> = {
 };
 
 const QUERY_KEYS: Record<SecUpstream, Set<string>> = {
-  proxy: new Set(['action', 'CIK', 'type', 'dateb', 'owner', 'count', 'output', 'search']),
+  // 'ticker' is browse-edgar's own lookup key. It is needed to re-resolve a
+  // ticker whose directory entry points at a non-filing successor entity.
+  proxy: new Set(['action', 'CIK', 'ticker', 'type', 'dateb', 'owner', 'count', 'output', 'search']),
   data: new Set(),
   efts: new Set(['q', 'forms', 'dateRange', 'startdt', 'enddt', 'entityName', 'ciks', 'from', 'size']),
 };

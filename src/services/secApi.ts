@@ -56,7 +56,7 @@ export const CIK_MAP: Record<string, string> = {
   'NVDA': '0001045810'
 };
 
-const getHeaders = () => ({
+export const getHeaders = () => ({
   'User-Agent': USER_AGENT,
   'Accept-Encoding': 'gzip, deflate'
 });
@@ -351,16 +351,26 @@ export function aliasTickerFor(text: string): string | null {
  * through this so name tolerance is the default, not per-page behavior.
  */
 export async function resolveCompanyInput(
-  text: string
+  text: string,
+  options: { verifyFilingHistory?: boolean } = {}
 ): Promise<CompanyDirectoryEntry | null> {
   const trimmed = text.trim();
   if (!trimmed) return null;
   await loadTickerMap();
   if (!_companyDirectory) return null;
   const direct = matchCompanyEntry(_companyDirectory, trimmed);
-  if (direct) return direct;
-  const alias = aliasTickerFor(trimmed);
-  return alias ? matchCompanyEntry(_companyDirectory, alias) : null;
+  const alias = direct ? null : aliasTickerFor(trimmed);
+  const entry = direct || (alias ? matchCompanyEntry(_companyDirectory, alias) : null);
+  if (!entry) return null;
+
+  // Opt-in because it costs a submissions read: worth it where a CIK with no
+  // filings renders an empty screen (issuer-scoped search, dossier), wasteful
+  // on the speculative prefix probes that run per keystroke.
+  if (!options.verifyFilingHistory) return entry;
+
+  const { resolveFilingEntityCik } = await import('./filingEntity');
+  const filingCik = await resolveFilingEntityCik(entry.ticker, entry.cik);
+  return filingCik === entry.cik ? entry : { ...entry, cik: filingCik };
 }
 
 /**
@@ -428,7 +438,9 @@ export function resolvePrimaryDocumentPath(cik: string, accessionNumber: string)
  * exact; anything else resolves through the company directory and brand aliases.
  */
 export async function lookupCIKFlexible(input: string): Promise<string | null> {
-  const resolved = await resolveCompanyInput(input);
+  // Callers here go straight on to fetch filings for the CIK, so a successor
+  // entity with no filing history would render an empty issuer.
+  const resolved = await resolveCompanyInput(input, { verifyFilingHistory: true });
   if (resolved) return resolved.cik.padStart(10, '0');
   return lookupCIK(input);
 }
