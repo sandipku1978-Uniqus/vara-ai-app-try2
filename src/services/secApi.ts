@@ -1598,6 +1598,66 @@ export async function fetchFilingTextOutcome(
   return outcome;
 }
 
+export interface BooleanPrescreenCandidate {
+  cik: string;
+  accession: string;
+  document: string;
+}
+
+/**
+ * Server-side verdict for one candidate. `matched: false` is only meaningful
+ * when `validated` is true; an unvalidated candidate is simply unknown.
+ */
+export interface BooleanPrescreenVerdict extends BooleanPrescreenCandidate {
+  matched: boolean;
+  validated: boolean;
+}
+
+/**
+ * Ask the server which candidates satisfy a Boolean expression, so the browser
+ * only downloads the documents that survive.
+ *
+ * The server evaluates with the same matcher over the same cached text, so a
+ * `matched: false, validated: true` verdict is exactly the verdict this browser
+ * would have reached — it just costs no bytes to reach it. Anything the server
+ * could not decide is returned unvalidated and must fall through to the local
+ * path, never be scored as a non-match.
+ *
+ * Returns null on any failure; the caller then behaves as if the pre-screen did
+ * not exist.
+ */
+export async function prescreenBooleanCandidates(
+  query: string,
+  candidates: BooleanPrescreenCandidate[],
+  options: { signal?: AbortSignal; timeoutMs?: number } = {}
+): Promise<BooleanPrescreenVerdict[] | null> {
+  if (!query.trim() || candidates.length === 0) return null;
+
+  // A slow pre-screen must never hold up the wave it was meant to speed up.
+  const timeout = new AbortController();
+  const timer = setTimeout(() => timeout.abort(), options.timeoutMs ?? 20_000);
+  const onOuterAbort = () => timeout.abort();
+  options.signal?.addEventListener('abort', onOuterAbort);
+
+  try {
+    const response = await fetch('/api/boolean-validate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, candidates }),
+      signal: timeout.signal,
+    });
+    if (!response.ok) return null;
+
+    const payload = await response.json() as { ok?: boolean; verdicts?: BooleanPrescreenVerdict[] };
+    return payload.ok && Array.isArray(payload.verdicts) ? payload.verdicts : null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+    options.signal?.removeEventListener('abort', onOuterAbort);
+  }
+}
+
 /**
  * String-returning wrapper for callers that only render text (filing preview,
  * detail pages) and have no use for the failure reason.

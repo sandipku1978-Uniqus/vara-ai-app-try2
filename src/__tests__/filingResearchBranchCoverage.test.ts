@@ -13,6 +13,10 @@ vi.mock('../services/secApi', () => ({
   isEnrichedSearchEnabled: () => false,
   fetchCompanySubmissions: async () => null,
   resolveCompanyInput: async () => null,
+  // null = pre-screen unavailable. Branch-fairness, budget and coverage
+  // guarantees must hold on the local path alone, so these cases keep testing
+  // it directly; the pre-screen has its own suites.
+  prescreenBooleanCandidates: async () => null,
 }));
 vi.mock('../services/referenceData', () => ({
   loadSicDirectoryIndex: async () => ({}),

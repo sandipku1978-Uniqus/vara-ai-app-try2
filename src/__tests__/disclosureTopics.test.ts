@@ -4,6 +4,7 @@ import {
   distinctiveTerms,
   findDisclosureTopic,
   locateTopicPassage,
+  resolveComparisonTarget,
   topicFromFreeText,
 } from '../services/disclosureTopics';
 
@@ -164,6 +165,50 @@ describe('distinctiveTerms', () => {
     const result = distinctiveTerms({ A: shared, B: { ...shared } });
     expect(result.A).toEqual([]);
     expect(result.B).toEqual([]);
+  });
+});
+
+describe('resolveComparisonTarget (reported: picking Item 2 still compared Item 1A)', () => {
+  const FALLBACK = 'Item 1A. Risk Factors';
+
+  it('makes the chosen section the section that gets compared', () => {
+    // The reported bug exactly: the control read "Item 2. Properties" while the
+    // heading and both columns stayed on the default Item 1A.
+    const resolved = resolveComparisonTarget('section:Item 2. Properties', FALLBACK);
+
+    expect(resolved.section).toBe('Item 2. Properties');
+    expect(resolved.label).toBe('Item 2. Properties');
+    expect(resolved.topic).toBeUndefined();
+  });
+
+  it('labels a topic by its own name, not by the fallback section', () => {
+    const resolved = resolveComparisonTarget('topic:revenue-recognition', FALLBACK);
+    expect(resolved.topic?.id).toBe('revenue-recognition');
+    expect(resolved.label).toBe(resolved.topic!.label);
+    expect(resolved.label).not.toBe(FALLBACK);
+  });
+
+  it('never turns an unknown topic id into an unrelated Item comparison', () => {
+    const resolved = resolveComparisonTarget('topic:not-a-real-topic', FALLBACK);
+    expect(resolved.topic).toBeUndefined();
+    expect(resolved.label).toBe(FALLBACK);
+  });
+
+  it('accepts a bare label, so older persisted values still resolve', () => {
+    expect(resolveComparisonTarget('Item 7. Management Discussion', FALLBACK).section)
+      .toBe('Item 7. Management Discussion');
+  });
+
+  it('falls back rather than comparing an empty section', () => {
+    expect(resolveComparisonTarget('section:   ', FALLBACK).section).toBe(FALLBACK);
+  });
+
+  it('resolves every curated topic the dropdown can emit', () => {
+    for (const topic of DISCLOSURE_TOPICS) {
+      const resolved = resolveComparisonTarget(`topic:${topic.id}`, FALLBACK);
+      expect(resolved.topic, `${topic.id} must resolve`).toBeDefined();
+      expect(resolved.label).toBe(topic.label);
+    }
   });
 });
 

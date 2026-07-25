@@ -1,4 +1,5 @@
 import type { Page, Route } from '@playwright/test';
+import { booleanQueryMatches } from '../../src/utils/booleanSearch';
 
 /**
  * Deterministic Boolean corpus. Chosen to reproduce the audit's headline defect:
@@ -31,6 +32,14 @@ export const FILINGS: FixtureFiling[] = [
     cik: '1000003', company: 'Both Holdings Ltd', accession: '0001000003-26-000003',
     document: 'f3.htm', form: '10-K', filed: '2026-02-12',
     text: 'Amounts shown as mezzanine equity are presented as temporary equity in the notes.',
+  },
+  {
+    // Carries both phrase tokens but never adjacently, so EFTS returns it and
+    // exact-phrase matching must reject it. This is the candidate the server
+    // pre-screen exists to discard before the browser pays to download it.
+    cik: '1000004', company: 'Near Miss Partners', accession: '0001000004-26-000004',
+    document: 'f4.htm', form: '10-K', filed: '2026-02-13',
+    text: 'Equity classified as mezzanine in prior years is now presented as permanent equity.',
   },
 ];
 
@@ -81,6 +90,10 @@ function eftsHit(filing: FixtureFiling) {
 export interface FixtureStats {
   /** Every EFTS query string the app issued, in order. */
   eftsQueries: string[];
+  /** Documents the browser actually downloaded — what the pre-screen reduces. */
+  documentFetches: string[];
+  /** How many candidates each server pre-screen call was asked to decide. */
+  prescreenBatches: number[];
 }
 
 /**
@@ -89,7 +102,40 @@ export interface FixtureStats {
  * assert that invalid syntax performs zero retrieval.
  */
 export async function installBooleanFixtures(page: Page): Promise<FixtureStats> {
-  const stats: FixtureStats = { eftsQueries: [] };
+  const stats: FixtureStats = { eftsQueries: [], documentFetches: [], prescreenBatches: [] };
+
+  // Server-side Boolean pre-screen. Stubbed with the REAL matcher, because the
+  // whole safety argument for the pre-screen is that server and browser reach
+  // identical verdicts — a hand-rolled stub here would test a fiction.
+  await page.route('**/api/boolean-validate', async (route: Route) => {
+    const body = JSON.parse(route.request().postData() || '{}') as {
+      query?: string;
+      candidates?: Array<{ cik: string; accession: string; document: string }>;
+    };
+    const candidates = body.candidates ?? [];
+    stats.prescreenBatches.push(candidates.length);
+
+    const verdicts = candidates.map(candidate => {
+      const filing = FILINGS.find(f => f.document === candidate.document);
+      // No fixture text = the server could not read it; undecided, not a miss.
+      if (!filing) return { ...candidate, matched: false, validated: false };
+      return { ...candidate, matched: booleanQueryMatches(body.query || '', filing.text), validated: true };
+    });
+
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        ok: true,
+        verdicts,
+        summary: {
+          requested: candidates.length,
+          validated: verdicts.filter(v => v.validated).length,
+          matched: verdicts.filter(v => v.matched).length,
+        },
+      }),
+    });
+  });
 
   // EDGAR full-text search
   await page.route('**/api/sec-efts**', async (route: Route) => {
@@ -126,6 +172,7 @@ export async function installBooleanFixtures(page: Page): Promise<FixtureStats> 
   await page.route('**/api/filing-text**', async (route: Route) => {
     const url = new URL(route.request().url());
     const document = url.searchParams.get('document') || '';
+    stats.documentFetches.push(document);
     const filing = FILINGS.find(f => document.includes(f.document));
     await route.fulfill({
       status: 200,

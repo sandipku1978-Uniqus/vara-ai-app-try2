@@ -9,6 +9,9 @@ vi.mock('../services/secApi', () => ({
   isEnrichedSearchEnabled: () => false,
   fetchCompanySubmissions: async () => null,
   resolveCompanyInput: async () => null,
+  // null = pre-screen unavailable, so these cases exercise the local validation
+  // path exactly as they did before it existed.
+  prescreenBooleanCandidates: async () => null,
 }));
 vi.mock('../services/referenceData', () => ({
   loadSicDirectoryIndex: async () => ({}),

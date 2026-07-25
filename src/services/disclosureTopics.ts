@@ -157,6 +157,40 @@ export function findDisclosureTopic(id: string): DisclosureTopic | undefined {
   return DISCLOSURE_TOPICS.find(topic => topic.id === id);
 }
 
+/** What a single comparison-target value means to every consumer of it. */
+export interface ResolvedComparisonTarget {
+  /** Set when the target names a curated policy topic. */
+  topic?: DisclosureTopic;
+  /** Item-scoped extraction still needs a section, topic or not. */
+  section: string;
+  /** What the reader is comparing — the string to put on screen. */
+  label: string;
+}
+
+/**
+ * Resolve the comparison selector's value into everything derived from it.
+ *
+ * Exists so the selector cannot disagree with what is extracted and labelled:
+ * these were once two independent states, and the dropdown wrote only one of
+ * them, which pinned extraction and headings to whatever the other happened to
+ * be initialised with.
+ *
+ * Accepts `topic:<id>`, `section:<label>`, and — for older persisted values — a
+ * bare section label.
+ */
+export function resolveComparisonTarget(value: string, defaultSection: string): ResolvedComparisonTarget {
+  if (value.startsWith('topic:')) {
+    const topic = findDisclosureTopic(value.slice('topic:'.length));
+    // An unknown id must not silently become an unrelated Item comparison.
+    if (topic) return { topic, section: defaultSection, label: topic.label };
+    return { section: defaultSection, label: defaultSection };
+  }
+
+  const section = value.startsWith('section:') ? value.slice('section:'.length) : value;
+  const resolved = section.trim() || defaultSection;
+  return { section: resolved, label: resolved };
+}
+
 /**
  * Free text becomes an ad-hoc topic so the feature is not limited to the
  * curated list — "climate transition risk" should work as typed.

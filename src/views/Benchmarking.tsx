@@ -21,7 +21,7 @@ import { splitIntoParagraphs } from '../lib/filingText';
 import {
   DISCLOSURE_TOPICS,
   distinctiveTerms,
-  findDisclosureTopic,
+  resolveComparisonTarget,
   locateTopicPassage,
   type TopicPassage as TopicPassageData,
 } from '../services/disclosureTopics';
@@ -61,6 +61,9 @@ const ALL_SECTIONS = [
   'Item 15. Exhibits and Financial Statement Schedules',
   'Signatures',
 ];
+
+/** Section used when the comparison target is a topic rather than an Item. */
+const DEFAULT_COMPARE_SECTION = 'Item 1A. Risk Factors';
 
 const SECTION_LISTS: Record<string, string[]> = {
   '10-K': ALL_SECTIONS,
@@ -196,14 +199,20 @@ export default function Benchmarking() {
   const [selectedTickers, setSelectedTickers] = useState<string[]>(['AAPL', 'MSFT']);
   // Multi-year per ticker: { AAPL: [2024, 2023], MSFT: [2024] }
   const [selectedYearsPerTicker, setSelectedYearsPerTicker] = useState<Record<string, number[]>>({});
-  const [selectedSection, setSelectedSection] = useState('Item 1A. Risk Factors');
   // One control drives both comparison units: "topic:<id>" locates a policy
   // wherever it sits (a note, an Item, anywhere), "section:<label>" keeps the
   // original Item-scoped extraction.
+  //
+  // This is the SINGLE source of truth. selectedSection below is derived from
+  // it, never stored separately: while they were two states the dropdown only
+  // wrote comparisonTarget, so choosing "Item 2. Properties" left extraction,
+  // the matrix heading and the AI prompt all pinned to the initial Item 1A.
   const [comparisonTarget, setComparisonTarget] = useState('topic:revenue-recognition');
-  const activeTopic = comparisonTarget.startsWith('topic:')
-    ? findDisclosureTopic(comparisonTarget.slice('topic:'.length))
-    : undefined;
+  const {
+    topic: activeTopic,
+    section: selectedSection,
+    label: comparisonLabel,
+  } = resolveComparisonTarget(comparisonTarget, DEFAULT_COMPARE_SECTION);
 
   const [viewMode, setViewMode] = useState<'financials' | 'text-diff' | 'audit-matrix'>('financials');
   const [commonSize, setCommonSize] = useState(false);
@@ -276,7 +285,9 @@ export default function Benchmarking() {
       setViewMode(pendingCompareIntent.viewMode);
     }
     if (pendingCompareIntent.selectedSection) {
-      setSelectedSection(pendingCompareIntent.selectedSection);
+      // Route the intent through the same control the dropdown writes to, so a
+      // deep link and a manual pick cannot land the view in different states.
+      setComparisonTarget(`section:${pendingCompareIntent.selectedSection}`);
     }
     if (pendingCompareIntent.message) {
       setPeerDiscoveryMessage(pendingCompareIntent.message);
@@ -673,7 +684,7 @@ export default function Benchmarking() {
         prompt = `Act as a senior accounting research analyst. Compare the following financial data across companies and fiscal years. Highlight key trends, year-over-year changes, and cross-company differences in margins, leverage, and cash flow quality:\n\n${parts}\n\nProvide a concise 3-paragraph analysis.`;
       } else {
         // Text compare fallback just in case
-        prompt = `Act as an SEC compliance expert. Compare the following "${selectedSection}" disclosure excerpts:\n\n${columns.map(col => `${colTicker(col)}: (text here)`).join('\n\n')}\n\nProvide 3 concise paragraphs.`;
+        prompt = `Act as an SEC compliance expert. Compare the following "${comparisonLabel}" disclosure excerpts:\n\n${columns.map(col => `${colTicker(col)}: (text here)`).join('\n\n')}\n\nProvide 3 concise paragraphs.`;
       }
       const response = await aiSummarize(prompt, { throwOnError: true });
       if (!response.trim()) throw new Error('The AI service returned an empty comparison.');
@@ -961,7 +972,9 @@ Keep it crisp and practical.`;
           <div>
             <h3 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '1rem' }}>Peer Cohort Builder</h3>
             <p style={{ margin: '6px 0 0', color: 'var(--text-muted)', fontSize: '0.84rem', maxWidth: '760px' }}>
-              Build a focused peer set by SIC code, then generate a short memo on how the cohort stacks up. This is meant to replace the manual industry-code gathering step with something much closer to a usable peer workbench.
+              {/* The second half explained the feature's rationale to ourselves,
+                  not the task to the reader. */}
+              Build a peer set by SIC code, then generate a short memo on how the cohort stacks up.
             </p>
           </div>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -1018,7 +1031,7 @@ Keep it crisp and practical.`;
       {/* ===== COHORT SELECTOR ===== */}
       <div className="benchmark-controls glass-card">
         {viewMode === 'text-diff' && (
-          <div className="control-group">
+          <div className="control-group compare-target">
             <label>Compare:</label>
             <select
               value={comparisonTarget}
@@ -1043,8 +1056,12 @@ Keep it crisp and practical.`;
           </div>
         )}
 
-        <div className="control-group comparison-selector" style={{ flex: 1 }}>
-          <label>Compare Cohort — add years per company to compare across fiscal years:</label>
+        {/* Sizing lives in the stylesheet — an inline flex here outranked it and
+            kept the cohort builder squeezed onto the Compare row. */}
+        <div className="control-group comparison-selector">
+          {/* Was a full sentence set in uppercase with letter-spacing, which
+              wrapped to two lines and read as a banner rather than a label. */}
+          <label>Companies &amp; fiscal years</label>
           <div className="active-selectors" style={{ flexWrap: 'wrap', gap: '8px' }}>
             {selectedTickers.map(ticker => {
               const years = availableYears[ticker] || [];
@@ -1174,7 +1191,7 @@ Keep it crisp and practical.`;
           tickers={selectedTickers}
           // Reflect whatever is actually being compared — showing the stale
           // Item label while a policy topic is selected misstates the analysis.
-          section={activeTopic ? activeTopic.label : selectedSection}
+          section={comparisonLabel}
           filingContexts={selectedTickers.map(t => ({
              ticker: t,
              companyName: companiesData[t]?.name || t,

@@ -5,6 +5,7 @@ import {
   fetchFilingTextOutcome,
   type FilingTextOutcome,
   isEnrichedSearchEnabled,
+  prescreenBooleanCandidates,
   resolveCompanyInput,
   searchEdgarFilings,
   type EdgarSearchHit,
@@ -1529,6 +1530,12 @@ export async function executeFilingResearchSearch({
   // reported partial rather than pretending the corpus was exhausted.
   const MAX_PAGE_REQUESTS = 60;
   const MAX_DOC_ATTEMPTS = 120;
+  // Server pre-screen sizing. The chunk matches the route's own per-request cap;
+  // the wave cap bounds how long verdict-gathering can delay the fetches it is
+  // meant to make cheaper, and the reserve keeps 15s of every wave for them.
+  const PRESCREEN_CHUNK = 40;
+  const PRESCREEN_MAX_PER_WAVE = 120;
+  const PRESCREEN_MIN_WAVE_RESERVE = 15_000;
   let pageRequests = 0;
   let docAttempts = 0;
   let budgetExhausted = false;
@@ -1614,6 +1621,64 @@ export async function executeFilingResearchSearch({
     // Candidates rejected by deterministic metadata filters have still been
     // examined for this validation pass.
     validationExamined += Math.max(0, newHits.length - waveCandidates.length);
+
+    // ── Server-side pre-screen ──
+    // Ask the API which candidates satisfy the expression before the browser
+    // spends a document download on each one. The server runs the SAME matcher
+    // over the SAME cached text, so a validated non-match is exactly the verdict
+    // the loop below would have reached — it just costs no bytes to reach it.
+    //
+    // This is why it raises recall rather than merely saving bandwidth: rejects
+    // never touch docAttempts, so the 120-document budget stops being spent on
+    // filings that were only ever going to be discarded.
+    //
+    // Two invariants keep it a strict optimisation: an unvalidated verdict is
+    // NOT a non-match and falls through to the local path unchanged, and any
+    // failure — offline, 4xx, slow — skips the pre-screen entirely.
+    if (mode === 'boolean' && needsTextFiltering && parsedBooleanQuery.expression && waveCandidates.length > 0) {
+      const prescreenKey = (cik: string, accession: string, document: string) =>
+        `${cik}:${accession.replace(/-/g, '')}:${document}`;
+      const rejectedByServer = new Set<string>();
+
+      for (
+        let cursor = 0;
+        cursor < Math.min(waveCandidates.length, PRESCREEN_MAX_PER_WAVE) && !signal?.aborted;
+        cursor += PRESCREEN_CHUNK
+      ) {
+        // Never spend the wave budget the pre-screen exists to protect: stop
+        // once the remaining time is worth more as fetches than as verdicts.
+        const remainingWaveMs = maxWaveTimeMs - (Date.now() - waveStartTime);
+        if (remainingWaveMs < PRESCREEN_MIN_WAVE_RESERVE) break;
+
+        const verdicts = await prescreenBooleanCandidates(
+          query,
+          waveCandidates.slice(cursor, cursor + PRESCREEN_CHUNK).map(result => ({
+            cik: result.cik,
+            accession: result.accessionNumber.replace(/-/g, ''),
+            document: result.primaryDocument,
+          })),
+          { signal, timeoutMs: Math.min(20_000, remainingWaveMs - PRESCREEN_MIN_WAVE_RESERVE + 5_000) }
+        );
+        // No verdicts means the pre-screen is unavailable; behave as if it never existed.
+        if (!verdicts) break;
+
+        for (const verdict of verdicts) {
+          if (verdict.validated && !verdict.matched) {
+            rejectedByServer.add(prescreenKey(verdict.cik, verdict.accession, verdict.document));
+          }
+        }
+      }
+
+      if (rejectedByServer.size > 0) {
+        const beforePrescreen = waveCandidates.length;
+        waveCandidates = waveCandidates.filter(
+          result => !rejectedByServer.has(prescreenKey(result.cik, result.accessionNumber, result.primaryDocument))
+        );
+        // Server-rejected candidates were genuinely examined — coverage counts
+        // them, the document budget does not.
+        validationExamined += beforePrescreen - waveCandidates.length;
+      }
+    }
 
     // Validate each candidate in this wave (fetch text, check auditor/boolean/section).
     // A required OR branch keeps its validation allowance even after earlier
