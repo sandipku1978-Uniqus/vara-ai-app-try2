@@ -328,12 +328,16 @@ export function computeCompanySuggestions(
  * Alphabet Inc.). Alias targets are re-validated against the live directory
  * at resolve time, so a delisting can never leave a dangling redirect.
  */
-const COMPANY_BRAND_ALIASES: Record<string, string> = {
+export const COMPANY_BRAND_ALIASES: Record<string, string> = {
   GOOGLE: 'GOOGL',
   YOUTUBE: 'GOOGL',
   FACEBOOK: 'META',
   INSTAGRAM: 'META',
   WHATSAPP: 'META',
+  // Registered as SPACE EXPLORATION TECHNOLOGIES CORP. Being private, it sits
+  // near the bottom of SEC's size-ordered directory, so the name people
+  // actually type has to reach it directly.
+  SPACEX: 'SPCX',
 };
 
 export function aliasTickerFor(text: string): string | null {

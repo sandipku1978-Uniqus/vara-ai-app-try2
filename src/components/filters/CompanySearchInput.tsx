@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback, useId } from 'react';
 import { Search, X, Loader2 } from 'lucide-react';
-import { aliasTickerFor, buildSecProxyUrl, loadTickerMap } from '../../services/secApi';
+import { aliasTickerFor, buildSecProxyUrl, COMPANY_BRAND_ALIASES, loadTickerMap } from '../../services/secApi';
+import { rankCompanyMatches } from '../../services/companyLookup';
 import './CompanySearchInput.css';
 
 interface CompanySearchInputProps {
@@ -77,39 +78,17 @@ export default function CompanySearchInput({ onSelect, placeholder = 'Search tic
       setShowDropdown(false);
       return;
     }
-    const upper = q.toUpperCase().trim();
-    const matches: { ticker: string; cik: string; title?: string }[] = [];
+    // Ranked by match quality rather than map-iteration order, and with no
+    // early break — collecting the first N hits is what buried a company whose
+    // name begins with the query behind mid-word matches.
+    const matches = rankCompanyMatches(q, {
+      tickerMap,
+      titleMap,
+      aliasTicker: aliasTickerFor(q.toUpperCase().trim()),
+      aliasMap: COMPANY_BRAND_ALIASES,
+    });
 
-    // Exact ticker match first
-    if (tickerMap[upper]) {
-      matches.push({ ticker: upper, cik: tickerMap[upper], title: titleMap[upper] });
-    }
-
-    // Household brand → registrant ("google" files as Alphabet Inc.)
-    const aliasTicker = aliasTickerFor(upper);
-    if (aliasTicker && tickerMap[aliasTicker] && !matches.find(m => m.ticker === aliasTicker)) {
-      matches.push({ ticker: aliasTicker, cik: tickerMap[aliasTicker], title: titleMap[aliasTicker] });
-    }
-
-    // Prefix ticker matches
-    for (const [ticker, cik] of Object.entries(tickerMap)) {
-      if (ticker.startsWith(upper) && ticker !== upper) {
-        matches.push({ ticker, cik, title: titleMap[ticker] });
-      }
-      if (matches.length >= 20) break;
-    }
-
-    // Title matches if few results
-    if (matches.length < 10) {
-      for (const [ticker, title] of Object.entries(titleMap)) {
-        if (title?.toUpperCase().includes(upper) && !matches.find(m => m.ticker === ticker)) {
-          matches.push({ ticker, cik: tickerMap[ticker], title });
-        }
-        if (matches.length >= 20) break;
-      }
-    }
-
-    setResults(matches.slice(0, 15));
+    setResults(matches);
     setShowDropdown(matches.length > 0);
     setActiveIndex(matches.length > 0 ? 0 : -1);
   }, [tickerMap, titleMap, onTextChange]);
