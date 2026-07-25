@@ -99,8 +99,8 @@ sanitizer for every caller.
 | xbrl | 20/20 — 100% |
 | boolean | 5/5 — 100% |
 | equivalence | 8/8 — 100% |
-| disclosure | 141/159 — 88.7% |
-| **Total** | **296/314 — 94.3%** |
+| disclosure | 154/159 — 96.9% |
+| **Total** | **309/314 — 98.4%** |
 
 Widening the corpus from 8 issuers to 32 across 20 sectors took the gate from 125 to 314
 checks and surfaced four defects, two of them user-facing.
@@ -138,17 +138,57 @@ Two independent scoring bugs in `locateTopicPassage`, both found on Apple's leas
   A leading note or item designator is now stripped before scoring, so a numbered note
   compares on its subject.
 
-### Open — revenue recognition retrieval, 13 issuers
+### Fixed — revenue recognition retrieval, 13 issuers → 1
 
-The largest remaining cluster, and the broader form of a defect reported from the product.
-The locator returns *a* passage for revenue recognition but not the ASC 606 policy prose,
-across every sector tested: PGR, MET, PLD, AMT, SPG, JNJ, NEE, WMT, COST, TGT, DE, HON.
+Reading the filings separated three different problems hiding behind one symptom.
 
-Part of this is genuine: insurers recognise premiums under ASC 944 and REITs recognise
-rental income under ASC 842, so "performance obligation" may legitimately be absent from
-their revenue notes, and the expectation may be wrong rather than the locator. Retail and
-industrial filers are ASC 606 and should carry it. Needs its own pass — separating a
-wrong expectation from a wrong passage requires reading the filings.
+**A heading names a subject; a table row carries data.** `looksLikeHeading` accepted any
+line under 90 characters that did not end in punctuation, so financial-statement line
+items qualified. American Tower matched an MD&A row `"Revenue $ — $ 911.2 (100) %"` over
+its real revenue note, and Honeywell matched `"Deferred revenue (175) (244)"` out of a
+deferred-tax table. Currency, percentages, parenthesised negatives and grouped figures now
+disqualify a line — after stripping any note designator, so `"5. REVENUE RECOGNITION"`
+still reads as a heading.
+
+**A run-in heading ends with a period.** Filings write `"Revenue Recognition."` as a
+heading, and rejecting every line ending in `.` sent Prologis to a density match in the
+MD&A. Only *sentences* are excluded now, on word count.
+
+**The vocabulary was ASC 606 jargon.** A plainly-worded retail note — "revenue is
+recognized at the point of sale, net of returns" — matched none of the topic's terms, so
+Walmart, Costco and Target failed confirmation on a correctly-located heading and fell
+through to density somewhere in the MD&A. The topic now also carries how filings outside
+software and industrials actually word the policy.
+
+**The heading locates the note; the policy is not always at its top.** Deere, Honeywell
+and Simon Property all open their revenue note with a disaggregation table, putting the
+recognition policy 5,000–8,000 characters past the heading — outside the passage window.
+A confirmed heading now scans the note for its densest passage, so the reader gets the
+policy rather than a table of numbers.
+
+The gate's own expectation was also too narrow, and that was corrected: a note saying
+"recognizes revenue when control transfers" is the revenue policy whether or not it says
+"performance obligation". The bare phrase "revenue recognition" is deliberately *not*
+accepted, since any passage under a "Revenue Recognition" heading would satisfy it
+without containing a policy.
+
+### Open — financial statements incorporated by reference (3 checks)
+
+Progressive fails all three topic checks with "no passage located", and it is not a
+locator problem: its 10-K primary document contains no notes at all. `deferred tax`,
+`right-of-use` and `performance obligation` are absent from the whole document, which
+instead says "incorporated by reference" and "Exhibit 13" — the financial statements ship
+as the glossy annual report exhibit.
+
+This is a product gap, not a test gap. Any issuer that incorporates its financials by
+reference has no disclosure for benchmarking to show. Fixing it means following the
+Exhibit 13 link when the primary document carries no notes — the same shape as the
+parent-document fallback already used for exhibit search.
+
+### Open — two individual cases
+
+MSFT lease policy and SPG revenue policy each land on a plausible heading whose passage
+lacks the expected vocabulary. Both need a read of the filing to classify.
 
 ### Why `filing-entity` is property-based
 

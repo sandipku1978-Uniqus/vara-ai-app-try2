@@ -168,6 +168,99 @@ describe('distinctiveTerms', () => {
   });
 });
 
+describe('a heading names a subject; a table row carries data', () => {
+  const revenueTopic = findDisclosureTopic('revenue-recognition')!;
+  const leaseTopic = findDisclosureTopic('leases')!;
+
+  it('does not treat an MD&A comparison row as the revenue heading (American Tower)', () => {
+    const text = [
+      'x'.repeat(5000),
+      'Revenue $ — $ 911.2 (100) %',
+      'Cost of operations — (473.8) (100)',
+      'Depreciation, amortization and accretion — (204.1) (100)',
+      'y'.repeat(3000),
+      'Revenue Recognition',
+      'Our revenue is derived from leasing space; we recognize revenue when control of the promised service transfers.',
+      'The transaction price is allocated to each performance obligation.',
+    ].join('\n');
+
+    const passage = locateTopicPassage(text, revenueTopic);
+    expect(passage.text).toContain('performance obligation');
+    expect(passage.text).not.toContain('911.2');
+  });
+
+  it('does not treat a deferred-tax table line as the revenue heading (Honeywell)', () => {
+    const text = [
+      'x'.repeat(5000),
+      'Deferred revenue (175) (244)',
+      'Pension (1,339) (1,481)',
+      'y'.repeat(3000),
+      'Revenue Recognition',
+      'We recognize revenue when the customer obtains control, using the transaction price allocated.',
+    ].join('\n');
+
+    expect(locateTopicPassage(text, revenueTopic).text).toContain('transaction price');
+  });
+
+  it('accepts a run-in heading that ends with a period (Prologis)', () => {
+    // "Revenue Recognition." was rejected outright for its trailing period,
+    // which sent the locator to a density match in the MD&A.
+    const text = [
+      'x'.repeat(5000),
+      'Revenue Recognition.',
+      'We recognize revenue from rentals when the tenant takes control of the space.',
+      'The transaction price is allocated across each performance obligation.',
+    ].join('\n');
+
+    const passage = locateTopicPassage(text, revenueTopic);
+    expect(passage.matchKind).toBe('heading');
+    expect(passage.text).toContain('recognize revenue');
+  });
+
+  it('still rejects a full sentence that happens to mention the topic', () => {
+    const text = [
+      'x'.repeat(5000),
+      'The Company recognizes revenue when a customer obtains control of the promised good or service.',
+      'y'.repeat(2000),
+    ].join('\n');
+
+    // A sentence is not a heading, so this can only be a density match.
+    expect(locateTopicPassage(text, revenueTopic).matchKind).not.toBe('heading');
+  });
+
+  it('keeps a numbered note heading (Deere, NextEra)', () => {
+    const text = [
+      'x'.repeat(5000),
+      '5. REVENUE RECOGNITION',
+      'We recognize revenue when control of the promised good transfers to the customer.',
+    ].join('\n');
+
+    const passage = locateTopicPassage(text, revenueTopic);
+    expect(passage.matchKind).toBe('heading');
+    expect(passage.heading).toBe('5. REVENUE RECOGNITION');
+  });
+
+  it('prefers the policy note over a maturity table, despite the note number (Apple)', () => {
+    // "Note 8 – Leases" (13 chars) lost to "Leases Total" (12 chars) because
+    // heading specificity was scored on line length.
+    const text = [
+      'x'.repeat(5000),
+      'Note 8 – Leases',
+      'The Company has operating lease arrangements. Right-of-use assets are recognised for the lease term,',
+      'measured using the incremental borrowing rate. Lease liability balances follow.',
+      'z'.repeat(1200),
+      'Leases Total',
+      '2026 $ 1,967 $ 563 $ 2,530',
+      '2027 1,988 73 2,061',
+      '2028 1,848 51 1,899',
+    ].join('\n');
+
+    const passage = locateTopicPassage(text, leaseTopic);
+    expect(passage.heading).toBe('Note 8 – Leases');
+    expect(passage.text).toContain('operating lease');
+  });
+});
+
 describe('resolveComparisonTarget (reported: picking Item 2 still compared Item 1A)', () => {
   const FALLBACK = 'Item 1A. Risk Factors';
 
