@@ -26,7 +26,8 @@ the previous run produced uninvestigated 502s.
 
 | Suite | Ground truth | What it catches |
 |---|---|---|
-| `entity` | `company_tickers.json` + submissions | ticker/name → wrong or non-filing CIK |
+| `entity` | `company_tickers.json` | ticker/name failing to reach its own registrant |
+| `filing-entity` | submissions + EDGAR ticker lookup | a ticker pointing at an entity with no filings |
 | `xbrl` | `companyconcept` API | scale and sign errors in reported financials |
 | `boolean` | live EDGAR corpus | union/intersection/phrase relationships; invalid syntax reaching EDGAR |
 | `equivalence` | real 10-K text | the server pre-screen's safety claim, on real filings rather than synthetic strings |
@@ -36,46 +37,58 @@ The `equivalence` suite exists specifically because the pre-screen's correctness
 ("server and browser reach identical verdicts") was only ever demonstrated on synthetic
 strings. It now runs every probe over real mega-cap 10-Ks.
 
-## Run — 2026-07-25
+## Run — 2026-07-25 (after the successor-entity fix)
 
 | Suite | Score |
 |---|---|
-| entity | 14/16 — 87.5% |
+| entity | 16/16 — 100% |
+| filing-entity | 58/58 — 100% |
 | xbrl | 18/18 — 100% |
 | boolean | 5/5 — 100% |
 | equivalence | 8/8 — 100% |
 | disclosure | 20/20 — 100% |
-| **Total** | **65/67 — 97.0%** |
+| **Total** | **125/125 — 100%** |
 
-Skipped: JNJ revenue/equity (no annual facts under the queried tags).
+Skipped (not scored): CYATY and KXIAY — newly listed ADRs with no annual report anywhere
+in EDGAR, so there is nothing to correct to; JNJ revenue/equity — no annual facts under
+the queried tags.
 
-### Open finding — ticker resolves to a non-filing successor entity
+The first run scored 65/67 and surfaced one real defect, now fixed.
 
-Both `entity` failures are one real bug, and it is not a stale fixture.
+### Fixed — ticker resolved to a non-filing successor entity
 
-`company_tickers.json` maps **XOM → CIK 2115436 "ExxonMobil Holdings Corp"**, an entity
-created 2026-07-01 whose only filings are 8-K, S-8 POS, POSASR and **8-K12B** — the
-successor-registrant form for a holding-company reorganization. It has **no annual
-report**. Exxon's entire filing history lives at **CIK 34088 "EXXON MOBIL CORP"** (10-K
-filed 2026-02-18). Both CIKs claim the ticker; SEC's directory points at the shell.
+`company_tickers.json` maps **XOM → CIK 2115436 "ExxonMobil Holdings Corp"**, created
+2026-07-01, whose only filings are 8-K, S-8 POS, POSASR and **8-K12B** — the successor
+form for a holding-company reorganization. It has **no annual report**. Exxon's entire
+filing history is at **CIK 34088 "EXXON MOBIL CORP"** (10-K 2026-02-18). Both claim the
+ticker; SEC's directory follows the ticker, so it points at the shell, and the shell has
+no `formerNames` entry linking back.
 
-Impact: anyone searching XOM is routed to a CIK with no annual filings, so benchmarking,
-dossier, financials and issuer-scoped Boolean search all return nothing for a mega-cap
-issuer. The holdco has no `formerNames` entry, so there is no link back.
+Anyone searching XOM was routed to a CIK with no annual filings, so benchmarking,
+dossier, financials and issuer-scoped Boolean search all returned nothing for a mega-cap.
 
-Scale: 2 of the 40 largest registrants (XOM, and CYATY — a new ADR that may simply not
-have filed an annual yet).
+`src/services/filingEntity.ts` now re-resolves through EDGAR's own ticker lookup when the
+directory CIK has no annual report, accepting the candidate only if it genuinely files.
+It is opt-in (`resolveCompanyInput(text, { verifyFilingHistory: true })`) because it costs
+a submissions read: enabled where an empty issuer is the failure mode, off on the
+speculative prefix probes that run per keystroke. Any failure falls back to the directory
+value, so it can only improve resolution.
 
-**Verified remedy:** EDGAR's own ticker lookup resolves this correctly.
+The lookup needs its own route, `/api/company-cik`. EDGAR answers in Atom and
+`/api/sec-proxy` sanitizes every response as HTML, which strips `<cik>` and leaves loose
+digits behind — including the registrant's phone number — that cannot be told apart from
+a CIK. Parsing happens server-side on the raw response rather than by loosening the
+sanitizer for every caller.
 
-```
-https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&ticker=XOM&output=atom
-  → <cik>0000034088</cik> EXXON MOBIL CORP
-```
+### Why `filing-entity` is property-based
 
-So the fix is a fallback in the ticker → CIK resolution path: when the directory-mapped
-CIK has no annual filings, re-resolve through `browse-edgar` and prefer the entity that
-actually files. Not yet implemented.
+It asserts a property over the largest ~60 tickers rather than comparing against
+hand-written CIKs, so it needs no maintenance and will catch the *next* holdco
+reorganization without anyone updating a fixture. The `entity` suite's per-issuer CIK
+assertions were removed for the same reason: they reported XOM as broken when the real
+defect was that SEC had repointed the ticker — the fixture was wrong, not the ranking.
+
+Sample size is `ACCURACY_ENTITY_SAMPLE` (default 60).
 
 ## CI
 

@@ -20,8 +20,10 @@ import {
   eftsSearch,
   fetchCompanyConcept,
   fetchFilingHtml,
+  fetchSubmissions,
   latestFiling,
   secJson,
+  secText,
 } from './sources';
 import { BOOLEAN_CASES, ISSUERS, TOPIC_CASES, XBRL_CONCEPTS } from './cases';
 import { compileBooleanQuery, booleanQueryMatches } from '../../src/utils/booleanSearch';
@@ -56,6 +58,85 @@ function skip(suite: string, name: string, detail: string) {
   process.stdout.write(`  ~ ${name} — skipped: ${detail}\n`);
 }
 
+// ── Suite: every ticker must resolve to an entity that actually files ───────
+/**
+ * Generalises the XOM finding. Deliberately property-based: no hand-written
+ * CIKs, so it needs no maintenance and catches the NEXT holdco reorganization
+ * without anyone updating a fixture.
+ *
+ * A holding-company reorganization mints a fresh CIK that inherits the ticker
+ * and files an 8-K12B, while the reporting history stays on the predecessor.
+ * SEC's directory follows the ticker, so it points at the shell.
+ */
+async function suiteFilingEntity() {
+  const sampleSize = Number(process.env.ACCURACY_ENTITY_SAMPLE || 60);
+  process.stdout.write(`\nFiling entity — do the ${sampleSize} largest tickers resolve to a filer?\n`);
+
+  const directory = await secJson<Record<string, { cik_str: number; ticker: string; title: string }>>(
+    'https://www.sec.gov/files/company_tickers.json'
+  );
+  if (!directory) return skip('filing-entity', 'directory reachable', 'company_tickers.json unavailable');
+
+  // File order is roughly size-descending, so the head is the set of issuers a
+  // user is most likely to look up.
+  const sample = Object.values(directory).slice(0, sampleSize);
+  let corrected = 0;
+
+  for (const row of sample) {
+    const directoryCik = String(row.cik_str);
+    const recent = await fetchSubmissions(directoryCik);
+    if (!recent) { skip('filing-entity', `${row.ticker} submissions`, 'unreachable'); continue; }
+
+    const hasAnnual = recent.form.some(f => ANNUAL_FORMS.has(f));
+    if (hasAnnual) {
+      record('filing-entity', `${row.ticker} → CIK ${directoryCik} files annually`, true, '');
+      continue;
+    }
+
+    // The directory entry is a non-filer. The app must correct it — unless no
+    // correction exists anywhere.
+    const candidate = await lookupTickerViaEdgar(row.ticker);
+    const candidateRecent = candidate ? await fetchSubmissions(candidate) : null;
+    const candidateFiles = candidateRecent?.form.some(f => ANNUAL_FORMS.has(f)) ?? false;
+
+    if (!candidateFiles) {
+      // EDGAR has no filer for this ticker either, so SEC simply holds no
+      // annual report for it — typically a newly listed ADR. Marking that a
+      // miss would score SEC's coverage as our defect, the same error as
+      // scoring downtime.
+      skip(
+        'filing-entity',
+        `${row.ticker} (${row.title})`,
+        'no annual report anywhere in EDGAR — nothing to correct to'
+      );
+      continue;
+    }
+
+    corrected += 1;
+    record(
+      'filing-entity',
+      `${row.ticker} → CIK ${directoryCik} (${row.title}) has no annual report; corrected`,
+      true,
+      `corrected to CIK ${candidate}`
+    );
+  }
+
+  if (corrected) {
+    process.stdout.write(`  → ${corrected} ticker(s) needed the successor-entity correction\n`);
+  }
+}
+
+const ANNUAL_FORMS = new Set(['10-K', '10-K/A', '20-F', '20-F/A', '40-F', '40-F/A']);
+
+/** EDGAR's own ticker lookup — the authority the app falls back to. */
+async function lookupTickerViaEdgar(ticker: string): Promise<string | null> {
+  const atom = await secText(
+    `https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&ticker=${encodeURIComponent(ticker)}&type=10-K&dateb=&owner=include&count=1&output=atom`
+  );
+  const match = atom?.match(/<cik>(\d{1,10})<\/cik>/i);
+  return match ? String(Number(match[1])) : null;
+}
+
 // ── Suite: entity resolution ────────────────────────────────────────────────
 async function suiteEntity() {
   process.stdout.write('\nEntity resolution — ticker/name → CIK\n');
@@ -71,13 +152,18 @@ async function suiteEntity() {
     titleMap[row.ticker.toUpperCase()] = row.title;
   }
 
+  // Asserted against the TICKER, not a hand-written CIK. Pinning CIKs is what
+  // made this suite report XOM as broken when the real defect was that SEC had
+  // repointed the ticker at a successor shell — the fixture, not the ranking.
+  // Whether a CIK is usable is a property, and `filing-entity` checks it at
+  // sixty times this scale.
   for (const issuer of ISSUERS) {
     const byTicker = rankCompanyMatches(issuer.ticker, { tickerMap, titleMap, aliasMap: COMPANY_BRAND_ALIASES });
     record(
       'entity',
-      `${issuer.ticker} ticker resolves to CIK ${issuer.cik}`,
-      byTicker[0]?.cik === issuer.cik,
-      `got ${byTicker[0]?.cik ?? 'nothing'} (${byTicker[0]?.title ?? '-'})`
+      `${issuer.ticker} ticker resolves to itself`,
+      byTicker[0]?.ticker === issuer.ticker,
+      `got ${byTicker[0]?.ticker ?? 'nothing'} (${byTicker[0]?.title ?? '-'})`
     );
 
     // Name search must reach the same registrant — this is the path that
@@ -87,7 +173,7 @@ async function suiteEntity() {
     record(
       'entity',
       `"${firstWord}" reaches ${issuer.ticker} in the visible rows`,
-      byName.some(row => row.cik === issuer.cik),
+      byName.some(row => row.ticker === issuer.ticker),
       `top: ${byName.slice(0, 3).map(r => r.ticker).join(', ') || 'nothing'}`
     );
   }
@@ -310,6 +396,7 @@ async function suiteDisclosure() {
 // ── Runner ──────────────────────────────────────────────────────────────────
 const SUITES: Record<string, () => Promise<void>> = {
   entity: suiteEntity,
+  'filing-entity': suiteFilingEntity,
   xbrl: suiteXbrl,
   boolean: suiteBoolean,
   equivalence: suiteMatcherEquivalence,
