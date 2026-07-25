@@ -229,6 +229,15 @@ function normalize(value: string): string {
   return value.toLowerCase().replace(NORMALIZE_RE, ' ').replace(/\s+/g, ' ').trim();
 }
 
+/**
+ * Drop a leading note or item designator so a heading compares on its subject.
+ * "note 8 leases" → "leases"; "item 1a risk factors" → "risk factors".
+ * Already-bare headings are returned unchanged.
+ */
+function stripNoteDesignator(normalized: string): string {
+  return normalized.replace(/^(?:note|item)?\s*\d{1,2}[a-z]?\s+/, '').trim() || normalized;
+}
+
 /** A heading is short, title-ish, and not a sentence. */
 function looksLikeHeading(line: string): boolean {
   const trimmed = line.trim();
@@ -267,13 +276,20 @@ export function locateTopicPassage(text: string, topic: DisclosureTopic, passage
     const normalizedLine = normalize(line);
     if (!normalizedLine) continue;
 
+    // "Note 8 – Leases" is the same heading as "Leases". Scoring it with the
+    // note number attached made specificity a proxy for line length, and a
+    // one-character difference decided real cases: Apple's "Note 8 – Leases"
+    // (13 chars → 47) lost to the maturity-table header "Leases Total"
+    // (12 chars → 48), so the policy note was passed over for a table.
+    const headingCore = stripNoteDesignator(normalizedLine);
+
     for (const [rank, heading] of topic.headings.entries()) {
       const normalizedHeading = normalize(heading);
       if (!normalizedHeading || !normalizedLine.includes(normalizedHeading)) continue;
       // An exact heading beats one that merely contains the phrase, and an
       // earlier (more specific) heading beats a later generic one — so
       // "Revenue Recognition" is tried before a bare "Revenue".
-      const exactness = normalizedLine === normalizedHeading ? 100 : 60 - Math.min(normalizedLine.length, 50);
+      const exactness = headingCore === normalizedHeading ? 100 : 60 - Math.min(headingCore.length, 50);
       headingCandidates.push({ offset: lineStart, heading: line.trim(), score: exactness + (topic.headings.length - rank) * 10 });
       break;
     }
@@ -290,10 +306,20 @@ export function locateTopicPassage(text: string, topic: DisclosureTopic, passage
     for (const candidate of headingCandidates) {
       const passage = text.slice(candidate.offset, candidate.offset + passageChars).trim();
       const matchedTerms = presentTerms(passage, normalizedTerms, topic.terms);
-      // Prose, not a table: a numeric block under a matching heading is the
-      // financial statement, not the policy.
       const digitRatio = (passage.match(/\d/g)?.length ?? 0) / Math.max(passage.length, 1);
-      const readsLikePolicy = matchedTerms.length > 0 && digitRatio < 0.12;
+
+      // Vocabulary is the positive evidence; the digit ratio is only a veto
+      // for weak candidates. A real policy note routinely embeds a maturity or
+      // rate table, so a single hard threshold rejected the genuine article:
+      // Apple's "Note 8 – Leases" scored 0.127 and lost to a bare "Leases
+      // Total" table header at 0.118, which carried no lease vocabulary at all.
+      //
+      // Two or more distinct topic terms is prose no table produces. One term
+      // still has to look like prose. Anything overwhelmingly numeric is a
+      // statement or a schedule whatever it says.
+      const readsLikePolicy =
+        digitRatio < 0.30 &&
+        (matchedTerms.length >= 2 || (matchedTerms.length === 1 && digitRatio < 0.12));
 
       if (readsLikePolicy) {
         return {

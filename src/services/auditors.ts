@@ -209,24 +209,67 @@ export function matchesAuditorSelection(resultAuditor: string, filterValue: stri
   return normalize(resultAuditor).includes(normalize(filterValue));
 }
 
+/**
+ * Earliest firm mentioned in `chunk`, or ''.
+ *
+ * Position, not list order: returning the first AUDITOR_OPTIONS entry that
+ * matched anywhere made the answer depend on how the catalogue happens to be
+ * ordered rather than on what the document says.
+ */
 function matchAuditorInChunk(chunk: string): string {
+  let best = '';
+  let bestIndex = Infinity;
+
   for (const option of AUDITOR_OPTIONS) {
-    if (option.patterns.some(pattern => pattern.test(chunk))) {
-      return option.label;
+    for (const pattern of option.patterns) {
+      // Patterns are shared module state; a lastIndex left over from a global
+      // match would silently skip the start of the next chunk.
+      const search = new RegExp(pattern.source, pattern.flags.replace(/[gy]/g, ''));
+      const found = search.exec(chunk);
+      if (found && found.index < bestIndex) {
+        bestIndex = found.index;
+        best = option.label;
+      }
     }
   }
-  return '';
+  return best;
 }
+
+/**
+ * Text that only appears in an auditor's own report, in precision order.
+ *
+ * Anchoring is what makes this reliable. Scanning slices of a 10-K for bare
+ * firm names attributes whatever it happens to land on: NextEra's auditor came
+ * back as "RSM" because the filing writes "rate stabilization mechanism (RSM)"
+ * in its rate-agreement discussion, and Home Depot's came back as EY because
+ * the real report (`/s/ KPMG LLP`, mid-document) fell outside the scanned
+ * window while a director's biography mentioning Ernst & Young fell inside it.
+ */
+const AUDIT_REPORT_ANCHORS: Array<{ pattern: RegExp; before: number; after: number }> = [
+  // The signature line itself — the firm is the signatory.
+  { pattern: /\/s\/\s*/gi, before: 0, after: 120 },
+  // Every PCAOB report closes with tenure, immediately after the signature.
+  { pattern: /we have served as (?:the|our)[^.]{0,80}auditor since/gi, before: 1_200, after: 200 },
+  // Some filers (utilities especially) carry neither, but do carry the heading.
+  { pattern: /report of independent registered public accounting firm/gi, before: 1_500, after: 8_000 },
+];
 
 export function detectAuditorInText(text: string): string {
   if (!text.trim()) return '';
 
-  const head = text.slice(0, 60000);
-  const tail = text.length > 80000 ? text.slice(-40000) : '';
+  for (const anchor of AUDIT_REPORT_ANCHORS) {
+    const pattern = new RegExp(anchor.pattern.source, anchor.pattern.flags.includes('g')
+      ? anchor.pattern.flags
+      : `${anchor.pattern.flags}g`);
+    for (const match of text.matchAll(pattern)) {
+      const start = Math.max(0, (match.index ?? 0) - anchor.before);
+      const end = (match.index ?? 0) + match[0].length + anchor.after;
+      const firm = matchAuditorInChunk(text.slice(start, end));
+      if (firm) return firm;
+    }
+  }
 
-  return (
-    matchAuditorInChunk(head) ||
-    matchAuditorInChunk(tail) ||
-    matchAuditorInChunk(text)
-  );
+  // No audit report found — an exhibit, a fragment, or a pre-2000 filing.
+  // Fall back to the whole document rather than reporting nothing.
+  return matchAuditorInChunk(text);
 }
