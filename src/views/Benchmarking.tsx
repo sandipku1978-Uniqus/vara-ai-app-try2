@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Download, X, ArrowRightLeft, Loader2, Sparkles, LayoutGrid, Type, DollarSign, TrendingUp, TrendingDown, Users } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell, RadarChart, PolarGrid, PolarAngleAxis, Radar, Legend } from 'recharts';
-import { fetchCompanySubmissions, fetchCompanySubmissionsBatch, fetchCompanyFacts, extractComparableFinancials, getAvailableYears, formatFinancialValue, CIK_MAP, SecSubmission, FinancialMetric, CompanyFacts, lookupCIK, extractCompanyMetadata, loadTickerMap, buildSecProxyUrl, extractDocumentTextFromHtml } from '../services/secApi';
+import { fetchCompanySubmissions, fetchCompanySubmissionsBatch, fetchCompanyFacts, extractComparableFinancials, getAvailableYears, formatFinancialValue, CIK_MAP, SecSubmission, FinancialMetric, CompanyFacts, lookupCIK, extractCompanyMetadata, loadTickerMap, buildSecProxyUrl, extractDocumentTextFromHtml, fetchAnnualDisclosureText } from '../services/secApi';
 import { aiSummarize } from '../services/aiApi';
 import { generateMemoDocx, generateMemoPdf } from '../services/docExport';
 import { buildCsvRows } from '../utils/csv';
@@ -614,16 +614,19 @@ export default function Benchmarking() {
         const primaryDoc = data.filings.recent.primaryDocument[recentIdx];
         const cleanAccession = accession.replace(/-/g, '');
         try {
-          const resp = await fetch(buildSecProxyUrl(`Archives/edgar/data/${data.cik}/${cleanAccession}/${primaryDoc}`));
-          const html = await resp.text();
-
           // Topic mode searches the whole document, because a policy note is
-          // not bounded by any Item. Section mode keeps the original
-          // anchor-bounded extraction.
+          // not bounded by any Item — and it follows the statements exhibit
+          // when the 10-K body incorporates the financials by reference
+          // (Progressive files no notes at all in its 10-K). Section mode keeps
+          // the original anchor-bounded extraction, since Items only ever live
+          // in the 10-K body itself.
           if (activeTopic) {
-            texts[ticker] = extractDocumentTextFromHtml(html);
+            texts[ticker] = await fetchAnnualDisclosureText(String(data.cik), cleanAccession, primaryDoc);
             continue;
           }
+
+          const resp = await fetch(buildSecProxyUrl(`Archives/edgar/data/${data.cik}/${cleanAccession}/${primaryDoc}`));
+          const html = await resp.text();
 
           // Structured extraction first: anchors/headings bound the section
           // precisely. Fall back to positional search only when the document

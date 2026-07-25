@@ -99,8 +99,8 @@ sanitizer for every caller.
 | xbrl | 20/20 — 100% |
 | boolean | 5/5 — 100% |
 | equivalence | 8/8 — 100% |
-| disclosure | 154/159 — 96.9% |
-| **Total** | **309/314 — 98.4%** |
+| disclosure | 158/159 — 99.4% |
+| **Total** | **313/314 — 99.7%** |
 
 Widening the corpus from 8 issuers to 32 across 20 sectors took the gate from 125 to 314
 checks and surfaced four defects, two of them user-facing.
@@ -172,23 +172,49 @@ The gate's own expectation was also too narrow, and that was corrected: a note s
 accepted, since any passage under a "Revenue Recognition" heading would satisfy it
 without containing a policy.
 
-### Open — financial statements incorporated by reference (3 checks)
+### Fixed — financial statements incorporated by reference
 
-Progressive fails all three topic checks with "no passage located", and it is not a
-locator problem: its 10-K primary document contains no notes at all. `deferred tax`,
-`right-of-use` and `performance obligation` are absent from the whole document, which
-instead says "incorporated by reference" and "Exhibit 13" — the financial statements ship
-as the glossy annual report exhibit.
+Progressive's 10-K primary document contains no notes at all: `deferred tax`,
+`right-of-use` and `performance obligation` are absent from the whole file, which instead
+says "incorporated by reference" and "Exhibit 13". Its financial statements ship as the
+glossy annual report exhibit — 3.4 MB of `pgr-20251231_d2.htm` against a 1.3 MB 10-K.
 
-This is a product gap, not a test gap. Any issuer that incorporates its financials by
-reference has no disclosure for benchmarking to show. Fixing it means following the
-Exhibit 13 link when the primary document carries no notes — the same shape as the
-parent-document fallback already used for exhibit search.
+Reading only the primary document left those issuers with nothing to show, which reads as
+"this company discloses nothing" rather than "we looked in the wrong file".
 
-### Open — two individual cases
+`fetchAnnualDisclosureText` now follows the exhibit when the 10-K body carries no notes,
+detected by `containsFinancialStatementNotes` — a predicate deliberately built on
+notes-only vocabulary (`deferred tax`, `significant accounting policies`,
+`accumulated depreciation`, `basis of presentation`) rather than terms MD&A also uses.
+The separation is clean: Progressive's 10-K scores 0 of those markers, its exhibit 2, and
+every ordinary filing 3 or more. Falls back to the primary document whenever the exhibit
+cannot be identified or read, so it can only add coverage.
 
-MSFT lease policy and SPG revenue policy each land on a plausible heading whose passage
-lacks the expected vocabulary. Both need a read of the filing to classify.
+### Fixed — revenue recognition is not only ASC 606
+
+An insurer earns premiums under ASC 944 and a REIT recognises rents as lessor under
+ASC 842, and their notes are titled and worded accordingly. The topic knew only ASC 606,
+so an accountant benchmarking revenue policy across an insurance or property peer group
+got MD&A prose instead of the policy that governs them — Progressive's "insurance
+premiums written are earned into income on a pro rata basis" and Simon Property's "we
+accrue fixed lease income on a straight-line basis" were both unreachable.
+
+The topic now carries those headings and that vocabulary, and the gate accepts them as
+what they are: revenue recognition policies. One caution learned here — a generic
+`lease income` heading was tried and reverted, because it collided with the lease topic
+and matched Target's `"Sublease income (c)"` table row as its revenue note.
+
+### Open — Microsoft lease policy (1 check)
+
+The bare heading `"Leases"` at offset 264,564 titles a maturity table whose column
+captions ("Operating Leases", "Finance Leases") are enough to confirm it, and the only
+other `right-of-use` text in the filing is the balance-sheet line item
+`"Operating lease right-of-use assets 24,823"`. Scanning forward within the note does not
+reach policy prose, so the passage returned is a schedule.
+
+Deliberately not fixed by further threshold tuning — the remaining cases are ones where
+the policy sits *before* its table under a caption the heading pass does not see, which
+needs a different approach (note-boundary detection) rather than another cutoff.
 
 ### Why `filing-entity` is property-based
 

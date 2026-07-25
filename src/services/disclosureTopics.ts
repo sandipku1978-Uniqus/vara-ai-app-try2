@@ -39,7 +39,19 @@ export const DISCLOSURE_TOPICS: DisclosureTopic[] = [
     // Most specific first. A bare 'revenue' is kept LAST because some issuers
     // (Apple) title the policy note exactly that — the confirmation step below
     // is what rejects the identically-titled income-statement line item.
-    headings: ['revenue recognition', 'revenue from contracts with customers', 'revenue recognition policy', 'revenue'],
+    // Revenue recognition is not only ASC 606. An insurer earns premiums under
+    // ASC 944 and a REIT recognises rents as lessor under ASC 842, and those
+    // notes are titled accordingly — so an accountant benchmarking revenue
+    // policy across an insurance or property peer group got MD&A noise instead
+    // of the policy that governs them.
+    headings: [
+      'revenue recognition', 'revenue from contracts with customers', 'revenue recognition policy',
+      // Only headings that unambiguously title a revenue policy. A generic
+      // "lease income" belongs to the lease topic and collided here: Target's
+      // "Sublease income (c)" table row was matched as its revenue note.
+      'insurance premiums and receivables', 'insurance premiums', 'premiums earned',
+      'revenue',
+    ],
     terms: [
       'performance obligation', 'transaction price', 'contract with customer', 'variable consideration',
       'standalone selling price', 'over time', 'point in time', 'contract asset', 'contract liability',
@@ -53,6 +65,12 @@ export const DISCLOSURE_TOPICS: DisclosureTopic[] = [
       'revenue is recognized', 'recognizes revenue', 'recognize revenue',
       'control of the promised', 'point of sale', 'sales returns', 'net of returns',
       'when control', 'revenue recognition',
+      // ASC 944 (insurers) and ASC 842 lessors state the same policy in their
+      // own terms: "premiums written are earned into income on a pro rata
+      // basis", "we accrue fixed lease income on a straight-line basis".
+      'premiums are earned', 'premiums written are earned', 'earned into income',
+      'unearned premium', 'pro rata basis over the period',
+      'as a lessor', 'lease income', 'straight-line basis', 'minimum rent',
     ],
   },
   {
@@ -369,6 +387,9 @@ export function locateTopicPassage(text: string, topic: DisclosureTopic, passage
   // strongest-first and the first confirmed one wins.
   if (headingCandidates.length > 0) {
     headingCandidates.sort((a, b) => b.score - a.score || b.offset - a.offset);
+    let bestPassage: TopicPassage | undefined;
+    let bestQuality = -1;
+    let bestDigits = 1;
 
     for (const candidate of headingCandidates) {
       const passage = text.slice(candidate.offset, candidate.offset + passageChars).trim();
@@ -403,15 +424,31 @@ export function locateTopicPassage(text: string, topic: DisclosureTopic, passage
         const shift = best.offset > 0 ? best.offset : 0;
         const refined = shift > 0 ? text.slice(candidate.offset + shift, candidate.offset + shift + passageChars).trim() : passage;
 
-        return {
-          text: refined,
-          matchKind: 'heading',
-          heading: candidate.heading,
-          matchReason: `Found under the heading “${candidate.heading}”.`,
-          matchedTerms: shift > 0 ? best.terms : matchedTerms,
-          offset: candidate.offset + shift,
-        };
+        // Several headings can look plausible. Rather than taking the first,
+        // keep the most policy-like: richest topic vocabulary, then least
+        // numeric. Microsoft's bare "Leases" heads a maturity table whose
+        // column captions ("Operating Leases", "Finance Leases") are enough to
+        // confirm it, so first-match returned a schedule of numbers while the
+        // real lease policy sat under another heading entirely.
+        const refinedDigits = (refined.match(/\d/g)?.length ?? 0) / Math.max(refined.length, 1);
+        const terms = shift > 0 ? best.terms : matchedTerms;
+        const quality = terms.filter(term => term.includes(' ')).length * 2 + terms.length;
+
+        if (quality > bestQuality || (quality === bestQuality && refinedDigits < bestDigits)) {
+          bestQuality = quality;
+          bestDigits = refinedDigits;
+          bestPassage = {
+            text: refined,
+            matchKind: 'heading',
+            heading: candidate.heading,
+            matchReason: `Found under the heading “${candidate.heading}”.`,
+            matchedTerms: terms,
+            offset: candidate.offset + shift,
+          };
+        }
       }
+
+      if (bestPassage) return bestPassage;
     }
     // Every heading was a false positive (a table or an index entry); fall
     // through to density rather than returning something that merely looked right.

@@ -20,6 +20,7 @@ import {
   auditorFromIxbrl,
   eftsSearch,
   fetchCompanyConcept,
+  fetchDisclosureHtml,
   fetchFilingHtml,
   fetchSubmissions,
   latestFiling,
@@ -365,8 +366,11 @@ async function suiteDisclosure() {
   for (const issuer of sample) {
     const filing = await latestFiling(issuer.cik, '10-K');
     if (!filing) { skip('disclosure', `${issuer.ticker} 10-K`, 'no 10-K'); continue; }
-    const html = await fetchFilingHtml(issuer.cik, filing.accession, filing.document);
-    if (!html) { skip('disclosure', `${issuer.ticker} 10-K`, 'fetch failed'); continue; }
+    // Follows the statements exhibit when the 10-K body incorporates the
+    // financials by reference, exactly as the product does.
+    const resolved = await fetchDisclosureHtml(issuer.cik, filing.accession, filing.document);
+    if (!resolved) { skip('disclosure', `${issuer.ticker} 10-K`, 'fetch failed'); continue; }
+    const { html } = resolved;
     const text = extractDocumentTextFromHtmlServer(html);
     if (!text || text.length < 5_000) { skip('disclosure', `${issuer.ticker} 10-K`, 'thin extraction'); continue; }
 

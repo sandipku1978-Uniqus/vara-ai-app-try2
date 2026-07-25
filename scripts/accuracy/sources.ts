@@ -6,6 +6,9 @@
  * app against itself would prove nothing.
  */
 
+import { extractDocumentTextFromHtmlServer } from '../../src/lib/filingTextServer';
+import { containsFinancialStatementNotes } from '../../src/services/secApi';
+
 const USER_AGENT =
   process.env.SEC_USER_AGENT ||
   process.env.NEXT_PUBLIC_EDGAR_USER_AGENT ||
@@ -141,6 +144,46 @@ export async function fetchFilingHtml(
   return secText(
     `https://www.sec.gov/Archives/edgar/data/${Number(cik)}/${accession}/${document}`
   );
+}
+
+/**
+ * The document that actually holds the accounting policies, following the
+ * statements exhibit when the 10-K body incorporates them by reference.
+ *
+ * Mirrors `fetchAnnualDisclosureText` in the product, using the same
+ * `containsFinancialStatementNotes` predicate, so the gate measures the
+ * document a reader would actually be shown rather than a stricter one.
+ */
+export async function fetchDisclosureHtml(
+  cik: string,
+  accession: string,
+  primaryDocument: string
+): Promise<{ html: string; document: string } | null> {
+  const primary = await fetchFilingHtml(cik, accession, primaryDocument);
+  if (!primary) return null;
+  if (containsFinancialStatementNotes(extractDocumentTextFromHtmlServer(primary))) {
+    return { html: primary, document: primaryDocument };
+  }
+
+  const listing = await secJson<{ directory?: { item?: Array<{ name?: string; size?: string }> } }>(
+    `https://www.sec.gov/Archives/edgar/data/${Number(cik)}/${accession}/index.json`
+  );
+  const candidates = (listing?.directory?.item || [])
+    .filter(item => {
+      const name = item.name || '';
+      return /\.htm$/i.test(name) && !/^R\d+\.htm$/i.test(name) && name !== primaryDocument;
+    })
+    .sort((a, b) => Number(b.size || 0) - Number(a.size || 0))
+    .slice(0, 3);
+
+  for (const candidate of candidates) {
+    const html = await fetchFilingHtml(cik, accession, candidate.name || '');
+    if (html && containsFinancialStatementNotes(extractDocumentTextFromHtmlServer(html))) {
+      return { html, document: candidate.name || '' };
+    }
+  }
+
+  return { html: primary, document: primaryDocument };
 }
 
 /**

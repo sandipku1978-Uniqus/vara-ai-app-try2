@@ -154,6 +154,13 @@ export const TOPIC_CASES = [
       'performance obligation', 'transaction price', 'variable consideration',
       'revenue is recognized', 'recognizes revenue', 'recognize revenue',
       'control of the promised', 'point of sale',
+      // ASC 944 and ASC 842 lessors state a revenue policy in their own terms.
+      // Insisting on ASC 606 wording would mark Progressive's "premiums written
+      // are earned into income on a pro rata basis" and Simon Property's "we
+      // accrue fixed lease income on a straight-line basis" as failures, when
+      // each is precisely the revenue recognition policy that governs them.
+      'premiums are earned', 'premiums written are earned', 'earned into income',
+      'as a lessor', 'straight-line basis',
     ],
   },
   { topicId: 'stock-compensation', mustContain: ['fair value', 'grant date', 'vest'] },
