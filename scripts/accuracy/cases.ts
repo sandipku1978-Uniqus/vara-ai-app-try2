@@ -141,8 +141,21 @@ export const BOOLEAN_CASES: BooleanCase[] = [
  * 10-K. If the locator cannot find these, it cannot find anything.
  */
 export const TOPIC_CASES = [
-  // ASC 606 language, present in every operating registrant's revenue note.
-  { topicId: 'revenue-recognition', mustContain: ['performance obligation', 'transaction price'] },
+  // Demanding ASC 606 jargon marked correct retrievals wrong: a plainly-worded
+  // retail note ("revenue is recognized at the point of sale") is the revenue
+  // policy whether or not it says "performance obligation". What the check has
+  // to prove is that the passage states a RECOGNITION policy — so the bare
+  // phrase "revenue recognition" is deliberately not accepted here, since a
+  // passage sitting under a "Revenue Recognition" heading would satisfy it
+  // without containing any policy at all.
+  {
+    topicId: 'revenue-recognition',
+    mustContain: [
+      'performance obligation', 'transaction price', 'variable consideration',
+      'revenue is recognized', 'recognizes revenue', 'recognize revenue',
+      'control of the promised', 'point of sale',
+    ],
+  },
   { topicId: 'stock-compensation', mustContain: ['fair value', 'grant date', 'vest'] },
   { topicId: 'income-taxes', mustContain: ['deferred tax', 'valuation allowance', 'unrecognized tax'] },
   // 'lease' alone is trivially satisfied by any passage the locator returns

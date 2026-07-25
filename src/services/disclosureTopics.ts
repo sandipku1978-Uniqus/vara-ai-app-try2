@@ -44,6 +44,15 @@ export const DISCLOSURE_TOPICS: DisclosureTopic[] = [
       'performance obligation', 'transaction price', 'contract with customer', 'variable consideration',
       'standalone selling price', 'over time', 'point in time', 'contract asset', 'contract liability',
       'deferred revenue', 'asc 606', 'topic 606',
+      // How filings outside software and industrials actually word the policy.
+      // The list above is ASC 606 jargon, and a plainly-written retail note
+      // ("revenue is recognized at the point of sale, net of returns") matched
+      // none of it — so Walmart, Costco and Target failed confirmation on a
+      // correctly-located "Revenue Recognition" heading and fell through to a
+      // density match somewhere in the MD&A.
+      'revenue is recognized', 'recognizes revenue', 'recognize revenue',
+      'control of the promised', 'point of sale', 'sales returns', 'net of returns',
+      'when control', 'revenue recognition',
     ],
   },
   {
@@ -229,6 +238,41 @@ function normalize(value: string): string {
   return value.toLowerCase().replace(NORMALIZE_RE, ' ').replace(/\s+/g, ' ').trim();
 }
 
+/** How far into a note to look for its policy prose before giving up. */
+const NOTE_SCAN_CHARS = 14_000;
+
+/**
+ * Highest-scoring window of `windowSize` in `region`, by topic vocabulary.
+ * Multi-word terms count for more because they are far more diagnostic than
+ * a single word like "revenue". Ties keep the earliest window, so a passage
+ * never drifts later than it needs to.
+ */
+function densestWindow(
+  region: string,
+  normalizedTerms: string[],
+  originalTerms: string[],
+  windowSize: number
+): { offset: number; score: number; terms: string[] } {
+  const step = Math.max(1, Math.floor(windowSize / 3));
+  let best = { offset: -1, score: 0, terms: [] as string[] };
+
+  for (let start = 0; start < region.length; start += step) {
+    const window = normalize(region.slice(start, start + windowSize));
+    if (!window) continue;
+
+    let score = 0;
+    const found: string[] = [];
+    normalizedTerms.forEach((term, index) => {
+      if (!term || !window.includes(term)) return;
+      score += term.includes(' ') ? 3 : 1;
+      found.push(originalTerms[index]);
+    });
+
+    if (score > best.score) best = { offset: start, score, terms: found };
+  }
+  return best;
+}
+
 /**
  * Drop a leading note or item designator so a heading compares on its subject.
  * "note 8 leases" → "leases"; "item 1a risk factors" → "risk factors".
@@ -242,8 +286,31 @@ function stripNoteDesignator(normalized: string): string {
 function looksLikeHeading(line: string): boolean {
   const trimmed = line.trim();
   if (!trimmed || trimmed.length > 90) return false;
-  if (/[.;]$/.test(trimmed) && !/\b(policy|policies)\b/i.test(trimmed)) return false;
-  return true;
+  // A trailing period does not disqualify a title — filings write "Revenue
+  // Recognition." as a run-in note heading, and rejecting it outright sent
+  // Prologis to a density match in the MD&A. Sentences are what to exclude,
+  // and a sentence is longer than a heading.
+  if (
+    /[.;]$/.test(trimmed)
+    && trimmed.split(/\s+/).length > 6
+    && !/\b(policy|policies)\b/i.test(trimmed)
+  ) return false;
+
+  // A heading names a subject; a table row carries data. Statement line items
+  // are short and unpunctuated too, so length alone let them through and they
+  // won: American Tower matched an MD&A row "Revenue $ — $ 911.2 (100) %" over
+  // its real revenue note, and Honeywell matched "Deferred revenue (175) (244)"
+  // out of a deferred-tax table.
+  //
+  // The note designator is stripped first so "5. REVENUE RECOGNITION" and
+  // "2. Revenue from Contracts with Customers" still read as headings.
+  const subject = trimmed.replace(/^(?:note|item)?\s*\d{1,2}[a-z]?[.)\s–—-]+/i, '');
+  if (/[$%]/.test(subject)) return false;                     // "Revenue $ — $ 911.2"
+  if (/\(\s*[\d,.]+\s*\)/.test(subject)) return false;        // "(175)" — a negative figure
+  if (/\d[\d,]{2,}/.test(subject)) return false;              // "605,756", "911.2"
+
+  const digits = subject.match(/\d/g)?.length ?? 0;
+  return digits === 0 || digits / subject.length <= 0.15;
 }
 
 /**
@@ -322,13 +389,27 @@ export function locateTopicPassage(text: string, topic: DisclosureTopic, passage
         (matchedTerms.length >= 2 || (matchedTerms.length === 1 && digitRatio < 0.12));
 
       if (readsLikePolicy) {
+        // The heading locates the NOTE; the policy prose is not always at the
+        // top of it. Deere, Honeywell and Simon Property all open their revenue
+        // note with a disaggregation table, putting the recognition policy
+        // 5,000–8,000 characters past the heading — outside the passage window,
+        // so a correctly-located note still read as a table of numbers.
+        const best = densestWindow(
+          text.slice(candidate.offset, candidate.offset + NOTE_SCAN_CHARS),
+          normalizedTerms,
+          topic.terms,
+          passageChars,
+        );
+        const shift = best.offset > 0 ? best.offset : 0;
+        const refined = shift > 0 ? text.slice(candidate.offset + shift, candidate.offset + shift + passageChars).trim() : passage;
+
         return {
-          text: passage,
+          text: refined,
           matchKind: 'heading',
           heading: candidate.heading,
           matchReason: `Found under the heading “${candidate.heading}”.`,
-          matchedTerms,
-          offset: candidate.offset,
+          matchedTerms: shift > 0 ? best.terms : matchedTerms,
+          offset: candidate.offset + shift,
         };
       }
     }
