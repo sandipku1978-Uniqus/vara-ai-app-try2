@@ -22,6 +22,15 @@ import {
   DISCLOSURE_TOPICS,
   distinctiveTerms,
   resolveComparisonTarget,
+} from '../services/disclosureTopics';
+import {
+  filingBlockPath,
+  filingSummaryPath,
+  locateTopicInBlocks,
+  parseFilingSummary,
+  stripSgmlEnvelope,
+} from '../services/filingStructure';
+import {
   locateTopicPassage,
   type TopicPassage as TopicPassageData,
 } from '../services/disclosureTopics';
@@ -234,6 +243,8 @@ export default function Benchmarking() {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingFacts, setLoadingFacts] = useState(false);
   const [companyTexts, setCompanyTexts] = useState<Record<string, string>>({});
+  // Topic passages taken straight from the registrant's tagged XBRL blocks.
+  const [topicBlockPassages, setTopicBlockPassages] = useState<Record<string, TopicPassageData>>({});
 
   // Locating a passage is pure text work over already-fetched documents, so it
   // is derived rather than re-fetched when the topic changes.
@@ -241,10 +252,13 @@ export default function Benchmarking() {
     const result: Record<string, TopicPassageData> = {};
     if (!activeTopic) return result;
     for (const ticker of selectedTickers) {
-      result[ticker] = locateTopicPassage(companyTexts[ticker] || '', activeTopic);
+      // Tagged block first; the prose locator is the fallback for filings
+      // that carry no iXBRL structure (pre-2019, some foreign issuers).
+      result[ticker] = topicBlockPassages[ticker]
+        ?? locateTopicPassage(companyTexts[ticker] || '', activeTopic);
     }
     return result;
-  }, [activeTopic, selectedTickers, companyTexts]);
+  }, [activeTopic, selectedTickers, companyTexts, topicBlockPassages]);
 
   const topicDistinctive = useMemo(() => distinctiveTerms(topicPassages), [topicPassages]);
   const [loadingTexts, setLoadingTexts] = useState(false);
@@ -591,6 +605,8 @@ export default function Benchmarking() {
       if (selectedTickers.length === 0) return;
       setLoadingTexts(true);
       const texts: Record<string, string> = {};
+      // Passages resolved from the registrant's tagged blocks, keyed by ticker.
+      const blocks: Record<string, TopicPassageData> = {};
       for (const ticker of selectedTickers) {
         const data = companiesData[ticker];
         if (!data) continue;
@@ -621,6 +637,30 @@ export default function Benchmarking() {
           // the original anchor-bounded extraction, since Items only ever live
           // in the 10-K body itself.
           if (activeTopic) {
+            // The registrant's own iXBRL note index, when the filing has one.
+            // Reading the block they tagged for this topic beats searching the
+            // document for it: boundaries are exact and industry drafting
+            // conventions stop mattering.
+            const block = await locateTopicInBlocks({
+              reports: parseFilingSummary(
+                await fetch(buildSecProxyUrl(
+                  filingSummaryPath(String(data.cik), cleanAccession)
+                )).then(r => (r.ok ? r.text() : '')).catch(() => '')
+              ),
+              topic: activeTopic,
+              loadBlock: async file => {
+                const resp = await fetch(buildSecProxyUrl(
+                  filingBlockPath(String(data.cik), cleanAccession, file)
+                ));
+                if (!resp.ok) return '';
+                return extractDocumentTextFromHtml(stripSgmlEnvelope(await resp.text()));
+              },
+              locate: locateTopicPassage,
+            }).catch(() => null);
+
+            if (block) blocks[ticker] = block.passage;
+            // Full text is still fetched: it backs the untagged fallback and
+            // the distinctive-vocabulary comparison across peers.
             texts[ticker] = await fetchAnnualDisclosureText(String(data.cik), cleanAccession, primaryDoc);
             continue;
           }
@@ -660,6 +700,7 @@ export default function Benchmarking() {
         }
       }
       setCompanyTexts(texts);
+      setTopicBlockPassages(blocks);
       setLoadingTexts(false);
     }
     if (Object.keys(companiesData).length > 0) loadTexts();
