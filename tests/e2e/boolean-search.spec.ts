@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { FILINGS, installBooleanFixtures, type FixtureStats } from './boolean-fixtures';
 
-const [MEZZ_ONLY, TEMP_ONLY, BOTH] = FILINGS;
+const [MEZZ_ONLY, TEMP_ONLY, BOTH, NEAR_MISS] = FILINGS;
 
 async function openBooleanWorkbench(page: Page): Promise<FixtureStats> {
   const stats = await installBooleanFixtures(page);
@@ -96,6 +96,23 @@ test.describe('Boolean search behaviour', () => {
 
     await expect(page.getByText(/not negated/i)).toBeVisible();
     expect(stats.eftsQueries.length - before, 'a NOT-only query must not reach EDGAR').toBe(0);
+  });
+
+  test('the server pre-screen drops non-matches before the browser downloads them', async ({ page }) => {
+    const stats = await openBooleanWorkbench(page);
+    // NEAR_MISS carries both phrase tokens but never adjacently, so EDGAR
+    // returns it and exact-phrase matching must reject it.
+    await runQuery(page, '"mezzanine equity"');
+
+    await expect(anyMention(page, MEZZ_ONLY.company).first()).toBeVisible({ timeout: 30_000 });
+    await expect(anyMention(page, NEAR_MISS.company)).toHaveCount(0);
+
+    expect(stats.prescreenBatches.length, 'the pre-screen must actually run').toBeGreaterThan(0);
+    // The point of the whole phase: a rejected candidate costs zero bytes.
+    expect(
+      stats.documentFetches.some(doc => doc.includes(NEAR_MISS.document)),
+      'a server-rejected filing must never be downloaded by the browser'
+    ).toBe(false);
   });
 
   test('an identical repeat returns the same filings', async ({ page }) => {

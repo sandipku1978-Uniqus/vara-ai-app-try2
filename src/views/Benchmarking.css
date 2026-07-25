@@ -47,8 +47,36 @@
   padding: 10px 14px;
   display: flex;
   flex-wrap: wrap;
-  align-items: flex-end;
+  /* Top-aligned, not bottom-aligned: the Compare control is ~56px tall and sat
+     in the same row as the ~153px cohort builder, so flex-end pushed it to the
+     bottom and left ~97px of dead space above it. */
+  align-items: flex-start;
   gap: 14px;
+}
+
+/*
+ * Text Redline reading controls. "What am I reading" (Compare) and "how do I
+ * read it" (the highlight legend) share the first row; "whose filings" (the
+ * cohort) gets its own row below. Ordering is done here rather than by moving
+ * JSX so the markup keeps its logical grouping.
+ */
+.benchmark-controls .compare-target {
+  order: 1;
+  flex: 1 1 320px;
+  max-width: 560px;
+}
+
+.benchmark-controls .compare-target .select-input {
+  width: 100%;
+}
+
+.benchmark-controls .legend-group {
+  order: 2;
+  margin-left: auto;
+}
+
+.benchmark-controls .comparison-selector {
+  order: 3;
 }
 
 .control-group {
@@ -82,7 +110,9 @@
 }
 
 .comparison-selector {
-  flex: 1;
+  /* Full-width row of its own: the badge list wraps, so sharing a row with a
+     short control is what created the ragged empty quadrant. */
+  flex: 1 1 100%;
 }
 
 .active-selectors {
@@ -205,7 +235,12 @@
 
 .column-body {
   padding: 13px;
-  overflow-y: auto;
+  /*
+   * Only the innermost element scrolls the document. This wrapper used to be
+   * overflow-y: auto as well, which stacked a second scroll region around the
+   * prose so the wheel did different things a few pixels apart.
+   */
+  overflow-y: visible;
   flex: 1;
   line-height: 1.62;
 }

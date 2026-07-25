@@ -79,9 +79,11 @@
   font-size: 0.92rem;
   line-height: 1.65;
   white-space: pre-wrap;
-  /* Long disclosures stay scannable instead of pushing the page down. */
-  max-height: 460px;
+  /* Long disclosures stay scannable instead of pushing the page down, but the
+     window scales with the screen — see .section-prose below. */
+  max-height: clamp(320px, calc(100vh - 300px), 1100px);
   overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .topic-passage__text .topic-term {
@@ -123,8 +125,17 @@
   font-size: 0.92rem;
   line-height: 1.65;
   color: var(--text-primary);
-  max-height: 520px;
+  /*
+   * The reading window scales with the screen instead of a fixed 520px. An
+   * Item 1A runs ~19,000px tall, so a fixed box showed under 3% of it at a
+   * time while the bottom third of a 950px viewport sat empty. Clamped so it
+   * stays usable on laptops and does not become an unreadable measure on very
+   * tall displays.
+   */
+  max-height: clamp(360px, calc(100vh - 260px), 1200px);
   overflow-y: auto;
+  /* Keep a scrolled column from dragging the page along at either end. */
+  overscroll-behavior: contain;
 }
 
 .section-prose p {

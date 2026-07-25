@@ -158,34 +158,36 @@ export function DisclosureMatrix({ tickers, section, filingType = '10-K', classN
         </div>
       </div>
       
-      <div className={styles.body}>
-        {loading ? (
-          <div className={styles.loading} role="status">
-            <Loader2 size={32} className={styles.spinner} aria-hidden="true" />
-            <p>Analyzing disclosures for {tickers.length} companies...</p>
-            <p className={styles.loadingHint}>This may take 10–15 seconds for complex comparisons.</p>
-          </div>
-        ) : error ? (
-          <div className={styles.errorCard} role="alert">
-            <AlertCircle size={20} className={styles.errorIcon} aria-hidden="true" />
-            <div>
-              <h4>Comparison failed</h4>
-              <p>{error}</p>
+      {/*
+        Nothing is rendered until there is something to say. The idle state used
+        to be a ~190px dashed panel reading "Ready to compare X — click Generate",
+        which restated the heading directly above it and the button beside it,
+        and pushed the filing text this page exists to show below the fold.
+      */}
+      {(loading || error || analysis) && (
+        <div className={styles.body}>
+          {loading ? (
+            <div className={styles.loading} role="status">
+              <Loader2 size={32} className={styles.spinner} aria-hidden="true" />
+              <p>Analyzing disclosures for {tickers.length} companies...</p>
+              <p className={styles.loadingHint}>This may take 10–15 seconds for complex comparisons.</p>
             </div>
-          </div>
-        ) : analysis ? (
-          <div 
-            className={`md-content ${styles.analysis}`}
-            dangerouslySetInnerHTML={{ __html: renderMarkdown(analysis) }} 
-          />
-        ) : (
-          <div className={styles.emptyState}>
-            <Columns size={48} className={styles.emptyIcon} aria-hidden="true" />
-            <p className={styles.emptyTitle}>Ready to compare {section}</p>
-            <p>Click Generate to build an AI-powered comparison matrix.</p>
-          </div>
-        )}
-      </div>
+          ) : error ? (
+            <div className={styles.errorCard} role="alert">
+              <AlertCircle size={20} className={styles.errorIcon} aria-hidden="true" />
+              <div>
+                <h4>Comparison failed</h4>
+                <p>{error}</p>
+              </div>
+            </div>
+          ) : analysis ? (
+            <div
+              className={`md-content ${styles.analysis}`}
+              dangerouslySetInnerHTML={{ __html: renderMarkdown(analysis) }}
+            />
+          ) : null}
+        </div>
+      )}
     </section>
   );
 }
