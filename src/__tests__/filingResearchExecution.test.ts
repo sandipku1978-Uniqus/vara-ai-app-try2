@@ -100,7 +100,7 @@ describe('executeFilingResearchSearch Boolean validation', () => {
     });
 
     expect(results).toEqual([]);
-    expect(onCoverage).toHaveBeenLastCalledWith({ examined: 1, upstreamTotal: 900, complete: false });
+    expect(onCoverage).toHaveBeenLastCalledWith({ examined: 1, upstreamTotal: 900, complete: false, upstreamTotalIsFloor: false });
   });
 
   it('marks a filing-text validation deadline as degraded and incomplete', async () => {
@@ -127,7 +127,7 @@ describe('executeFilingResearchSearch Boolean validation', () => {
       });
 
       expect(results).toEqual([]);
-      expect(onCoverage).toHaveBeenLastCalledWith({ examined: 0, upstreamTotal: 900, complete: false });
+      expect(onCoverage).toHaveBeenLastCalledWith({ examined: 0, upstreamTotal: 900, complete: false, upstreamTotalIsFloor: false });
       expect(onDegraded).toHaveBeenCalledWith(expect.stringContaining('time limit'));
       expect(secMocks.fetchFilingText).not.toHaveBeenCalled();
     } finally {

@@ -96,6 +96,7 @@ describe('/api/es-search paging and coverage contract', () => {
       examined: 250,
       upstreamTotal: 250,
       complete: true,
+      upstreamTotalIsFloor: false,
     });
   });
 
@@ -129,7 +130,7 @@ describe('/api/es-search paging and coverage contract', () => {
     expect(response.status).toBe(200);
     expect(body.hits.hits).toHaveLength(20);
     expect(body.hits.hits[0]._id).toBe('sparse-300');
-    expect(body.meta.candidateCoverage).toEqual({ examined: 500, upstreamTotal: 500, complete: true });
+    expect(body.meta.candidateCoverage).toEqual({ examined: 500, upstreamTotal: 500, complete: true, upstreamTotalIsFloor: false });
   });
 
   it('fetches a no-facet page beyond candidate 1,000 directly from the requested offset', async () => {
@@ -218,7 +219,7 @@ describe('/api/es-search paging and coverage contract', () => {
 
     expect(response.status).toBe(200);
     expect(vi.mocked(fetch)).toHaveBeenCalledTimes(100);
-    expect(body.meta.candidateCoverage).toEqual({ examined: 100, upstreamTotal: 5_000, complete: false });
+    expect(body.meta.candidateCoverage).toEqual({ examined: 100, upstreamTotal: 5_000, complete: false, upstreamTotalIsFloor: false });
     expect(body.hits.total).toEqual({ value: 100, relation: 'gte' });
   });
 });

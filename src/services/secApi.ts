@@ -1174,7 +1174,7 @@ export interface EdgarSearchResult {
     total: { value: number; relation?: 'eq' | 'gte' };
   };
   meta?: {
-    candidateCoverage?: { examined: number; upstreamTotal: number; complete: boolean };
+    candidateCoverage?: { examined: number; upstreamTotal: number; complete: boolean; upstreamTotalIsFloor?: boolean };
   };
 }
 
@@ -1182,6 +1182,13 @@ export interface SearchCandidateCoverage {
   examined: number;
   upstreamTotal: number;
   complete: boolean;
+  /**
+   * True when upstreamTotal is a floor, not an exact count. EDGAR EFTS stops
+   * counting at 10,000 (hits.total.relation === 'gte'), so a broad phrase's
+   * true corpus size is "at least" this number — display it as "≥ N", never
+   * as an exact total.
+   */
+  upstreamTotalIsFloor?: boolean;
 }
 
 export interface EnrichedSearchParams {
@@ -1273,6 +1280,8 @@ async function searchViaEnrichedSearch(
             examined: Math.max(aggregateCoverage.examined, coverage.examined),
             upstreamTotal: Math.max(aggregateCoverage.upstreamTotal, coverage.upstreamTotal),
             complete: aggregateCoverage.complete && coverage.complete,
+            upstreamTotalIsFloor:
+              Boolean(aggregateCoverage.upstreamTotalIsFloor) || Boolean(coverage.upstreamTotalIsFloor),
           }
         : coverage;
       extended.onCoverage?.(aggregateCoverage);
@@ -1449,6 +1458,7 @@ export async function searchEdgarFilings(
             examined: results.length,
             upstreamTotal,
             complete,
+            upstreamTotalIsFloor: totalRelation === 'gte',
           },
         };
       } catch (error) {

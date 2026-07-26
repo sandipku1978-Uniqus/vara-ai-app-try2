@@ -173,7 +173,7 @@ describe('secApi', () => {
       const hits = await searchEdgarFilings('controls', '10-K', '2023-01-01', '2026-03-22', '', 5, { onCoverage });
 
       expect(hits).toHaveLength(5);
-      expect(onCoverage).toHaveBeenCalledWith({ examined: 5, upstreamTotal: 5_000, complete: false });
+      expect(onCoverage).toHaveBeenCalledWith({ examined: 5, upstreamTotal: 5_000, complete: false, upstreamTotalIsFloor: false });
     });
 
     it('reports an exhausted zero-hit plain-EFTS search as complete', async () => {
@@ -186,7 +186,7 @@ describe('secApi', () => {
       const { searchEdgarFilings } = await import('../services/secApi');
       await searchEdgarFilings('no-such-disclosure', '10-K', '2023-01-01', '2026-03-22', '', 10, { onCoverage });
 
-      expect(onCoverage).toHaveBeenCalledWith({ examined: 0, upstreamTotal: 0, complete: true });
+      expect(onCoverage).toHaveBeenCalledWith({ examined: 0, upstreamTotal: 0, complete: true, upstreamTotalIsFloor: false });
     });
 
     const enrichedHit = {
