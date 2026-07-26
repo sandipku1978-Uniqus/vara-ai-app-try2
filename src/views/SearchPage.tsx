@@ -55,6 +55,7 @@ import {
 } from '../services/researchSessions';
 import { buildHighlightTerms } from '../services/searchAssist';
 import { buildResearchEmptyResultMessage } from '../services/searchCoverage';
+import SearchScopeBanner from '../components/research/SearchScopeBanner';
 import { generateSearchTrendReport, SEARCH_TREND_AI_FALLBACK } from '../services/searchTrendReport';
 import { planResearchSearch } from '../services/researchSearchPlan';
 import { canUseInstantEnrichedSearch } from '../services/filingResearch';
@@ -1622,6 +1623,14 @@ export default function SearchPage() {
               </div>
             ) : displayResults.length > 0 ? (
               <>
+                {/* The denominator. Without it a bounded result set and an
+                    exhaustive one look identical to the reader. */}
+                <SearchScopeBanner
+                  forms={activeResolvedSearch.filters.formTypes}
+                  dateFrom={activeResolvedSearch.filters.dateFrom || undefined}
+                  dateTo={activeResolvedSearch.filters.dateTo || undefined}
+                  shown={displayResults.length}
+                />
                 {isRefiningResults && (
                   <div className="research-refining-banner">
                     <Loader2 size={14} className="spinner" />
