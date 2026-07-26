@@ -32,6 +32,36 @@ export interface ParsedBooleanQuery {
   error?: string;
 }
 
+/**
+ * The phrase safe to delegate to EDGAR full-text search, when the WHOLE query
+ * is a single quoted phrase — otherwise null.
+ *
+ * EFTS indexes every filing. We can only open a bounded number per run within
+ * the wall-clock budget, so re-checking each candidate locally converts an
+ * exhaustive upstream match into a ~45-second sample of it: `"material
+ * weakness"` has hundreds of thousands of hits and returned 11.
+ *
+ * Verified against the live index before trusting it: `"material weakness"`
+ * reports ≥10,000 hits while the reversed `"weakness material"` reports 414,
+ * so EFTS quoted phrases really are exact adjacent-phrase matches rather than
+ * bags of words.
+ *
+ * Deliberately narrow. AND/OR/NOT/proximity keep local validation, because
+ * delegating correctness to an index we do not control is only defensible
+ * where the semantics have actually been demonstrated.
+ *
+ * Known narrowing: our matcher treats singular and plural as equivalent and
+ * EFTS does not, so delegating can miss plural variants. It returns fewer
+ * filings than local validation would, never different ones.
+ */
+export function eftsDelegablePhrase(expression: BooleanSearchNode | null): string | null {
+  if (!expression || expression.type !== 'PHRASE') return null;
+  const phrase = expression.value.trim();
+  // A single quoted word gains nothing from phrase semantics, and is more
+  // often a stray quote than an intent to search a phrase.
+  return phrase.includes(' ') ? phrase : null;
+}
+
 export interface BooleanMatchSnippet {
   excerpt: string;
   distance: number | null;

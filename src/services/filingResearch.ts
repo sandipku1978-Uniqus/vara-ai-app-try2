@@ -27,6 +27,7 @@ import {
   booleanQueryMatches,
   extractBooleanMatchSnippet,
   compileBooleanQuery,
+  eftsDelegablePhrase,
   parseBooleanQuery,
   planBooleanBranches,
 } from '../utils/booleanSearch';
@@ -357,7 +358,8 @@ function annotateResultMatchContext(
   rawQuery: string,
   filters: SearchFilters,
   mode: ResearchSearchMode,
-  filingText: string
+  filingText: string,
+  upstreamTextMatch = false
 ): FilingResearchResult {
   const terms = buildSearchTerms(rawQuery, mode, filters.sectionKeywords);
   let proximityDistance: number | null = null;
@@ -383,7 +385,12 @@ function annotateResultMatchContext(
         : `Matched within ${proximityDistance} words`
       : matchSnippet
         ? 'Matched filing text'
-        : 'Matched filing metadata';
+        : upstreamTextMatch
+          // Genuinely a text match — performed by SEC's full-text index over
+          // the whole filing rather than by us over a fetched copy. Labelled
+          // distinctly so the reader knows which engine vouched for it.
+          ? 'Matched by SEC full-text index'
+          : 'Matched filing metadata';
   result.relevanceScore = computeRelevanceScore(result, rawQuery, filters, mode, filingText, terms, proximityDistance);
 
   return result;
@@ -474,8 +481,20 @@ function buildServerQuery(rawQuery: string, filters: SearchFilters, mode: Resear
 // skipped just because a broad first branch already filled the visible rows.
 // Auditor-combined and recall-fallback candidates follow as best-effort fill;
 // the auditor is enforced either way by the text-signal post-filter.
-function buildBooleanServerQueries(query: string, filters: SearchFilters): { queries: string[]; requiredBranches: number } {
+function buildBooleanServerQueries(
+  query: string,
+  filters: SearchFilters,
+  delegated = false
+): { queries: string[]; requiredBranches: number } {
   const { branches } = planBooleanBranches(query);
+  // Delegated phrase: EDGAR's verdict IS the result, so only the exact phrase
+  // may be issued. The broadening lanes below exist to hand local validation a
+  // wide pool to filter — with no validation step they would put filings that
+  // merely contain the words somewhere into the results as phrase matches.
+  if (delegated) {
+    const phrase = query.replace(/\s+/g, ' ').trim();
+    return { queries: [phrase], requiredBranches: 1 };
+  }
   const auditorTerms = buildAuditorSearchTerms(filters.accountant);
 
   const out: string[] = [];
@@ -1284,7 +1303,19 @@ function requiresTextFiltering(
 ): boolean {
   if (mode === 'boolean') {
     const parsed = parseBooleanQuery(rawQuery);
-    if (parsed.expression) return true;
+    if (parsed.expression) {
+      // A bare quoted phrase is matched exactly by EDGAR full-text search, so
+      // re-opening each candidate to confirm what the index already proved
+      // only spends the wall-clock budget that caps recall. Any structured
+      // filter still needs the document, so it keeps local validation.
+      const delegable =
+        eftsDelegablePhrase(parsed.expression) &&
+        !filters.accountant.trim() &&
+        filters.acceleratedStatus.length === 0 &&
+        !filters.sectionKeywords.trim() &&
+        !filters.accountingFramework.trim();
+      return !delegable;
+    }
     // An auditor-only Boolean search ("auditor:KPMG") has no text expression but
     // still needs signal hydration to confirm the firm on each candidate.
     return filters.accountant.trim().length > 0 || filters.acceleratedStatus.length > 0;
@@ -1416,8 +1447,14 @@ export async function executeFilingResearchSearch({
     if (!shouldHydrateSignals) onCoverage?.(upstreamCoverageState.value);
   };
 
+  const parsedBooleanQuery = mode === 'boolean' ? parseBooleanQuery(query) : { expression: null };
+  // True when EDGAR's index already proved the phrase and we deliberately skip
+  // re-opening documents (see requiresTextFiltering).
+  const delegatedToEfts =
+    mode === 'boolean' && !needsTextFiltering && Boolean(eftsDelegablePhrase(parsedBooleanQuery.expression));
+
   const booleanPlan = mode === 'boolean'
-    ? buildBooleanServerQueries(query || filters.keyword, filters)
+    ? buildBooleanServerQueries(query || filters.keyword, filters, delegatedToEfts)
     : { queries: [] as string[], requiredBranches: 0 };
   // Keep every required OR branch plus a few recall extras (bounded by the
   // 16-branch complexity cap).
@@ -1532,7 +1569,6 @@ export async function executeFilingResearchSearch({
   // Filing-text concurrency. Four keeps burst pressure on /api/sec-proxy low
   // enough to leave headroom for filing previews while still validating quickly.
   const batchSize = 4;
-  const parsedBooleanQuery = mode === 'boolean' ? parseBooleanQuery(query) : { expression: null };
   const progressCallback = onProgress;
   let lastProgressCount = 0;
   const progressInterval = 15;
@@ -1542,7 +1578,10 @@ export async function executeFilingResearchSearch({
   // requests / user / 5 min) so a single Boolean run can never self-inflict a
   // 429 or starve filing previews. When a budget is hit the run stops and is
   // reported partial rather than pretending the corpus was exhausted.
-  const MAX_PAGE_REQUESTS = 60;
+  // A delegated phrase opens no documents, so the only cost is EFTS paging —
+  // a different host from the document proxy, and far cheaper per request.
+  // Holding such a run to the document-era budget capped recall for no reason.
+  const MAX_PAGE_REQUESTS = delegatedToEfts ? 240 : 60;
   const MAX_DOC_ATTEMPTS = 120;
   // Server pre-screen sizing. The chunk matches the route's own per-request cap;
   // the wave cap bounds how long verdict-gathering can delay the fetches it is
@@ -1712,17 +1751,23 @@ export async function executeFilingResearchSearch({
       if (signal?.aborted) break;
       const chunk = waveCandidates.slice(index, Math.min(index + batchSize, waveCandidates.length));
 
-      await Promise.all(
-        chunk.map(async result => {
-          const signalData = await hydrateResultSignals(result, signal);
-          signalMap.set(getSignalCacheKey(result), signalData);
-        })
-      );
+      // Only open documents when something actually reads them. A delegated
+      // phrase is already proved by EDGAR's index over the whole filing, so
+      // fetching each one confirms nothing and spends the budget that caps
+      // recall — this loop used to hydrate unconditionally.
+      if (shouldHydrateSignals) {
+        await Promise.all(
+          chunk.map(async result => {
+            const signalData = await hydrateResultSignals(result, signal);
+            signalMap.set(getSignalCacheKey(result), signalData);
+          })
+        );
+        docAttempts += chunk.length;
+      }
       // Resolve the authoritative auditor of record before the auditor filter
       // runs, so the firm the filter matches on is the one that gets displayed.
       if (filters.accountant.trim()) await hydrateRegisteredAuditors(chunk);
       validationExamined += chunk.length;
-      docAttempts += chunk.length;
 
       for (const result of chunk) {
         const filingText = signalMap.get(getSignalCacheKey(result))?.text || '';
@@ -1741,7 +1786,11 @@ export async function executeFilingResearchSearch({
 
         if (needsTextFiltering && !matchesSignalFilters(result, filters, filingText)) continue;
 
-        filteredResults.push(annotateResultMatchContext(result, query, filters, mode, filingText));
+        // With a delegated phrase there is no fetched text to snippet from —
+        // the match was proved upstream, and the label must say so.
+        filteredResults.push(
+          annotateResultMatchContext(result, query, filters, mode, filingText, delegatedToEfts)
+        );
       }
 
       if (progressCallback && filteredResults.length >= lastProgressCount + progressInterval) {

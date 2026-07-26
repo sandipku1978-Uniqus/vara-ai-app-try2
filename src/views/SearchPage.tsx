@@ -1684,7 +1684,12 @@ export default function SearchPage() {
                         {(() => {
                           const textValidated = Boolean(result.matchReason && !/metadata/i.test(result.matchReason));
                           const badgeClass = textValidated ? 'el-badge-verified' : result.matchReason ? 'el-badge-neutral' : 'el-badge-review';
-                          const badgeLabel = textValidated ? 'Text validated' : result.matchReason ? 'Metadata' : 'Preliminary';
+                          // Which engine vouched for the match matters: SEC's
+                          // index read the whole filing, we read a fetched copy.
+                          const upstreamMatch = /full-text index/i.test(result.matchReason || '');
+                          const badgeLabel = upstreamMatch
+                            ? 'SEC index'
+                            : textValidated ? 'Text validated' : result.matchReason ? 'Metadata' : 'Preliminary';
                           return <span className={`el-badge ${badgeClass}`}>{badgeLabel}</span>;
                         })()}
                         <span className="form">{formatResultFormLabel(result)}</span>
