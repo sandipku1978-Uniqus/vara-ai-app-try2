@@ -98,17 +98,33 @@ test.describe('Boolean search behaviour', () => {
     expect(stats.eftsQueries.length - before, 'a NOT-only query must not reach EDGAR').toBe(0);
   });
 
-  test('the server pre-screen drops non-matches before the browser downloads them', async ({ page }) => {
+  test('a bare phrase is answered by the SEC index without opening any document', async ({ page }) => {
     const stats = await openBooleanWorkbench(page);
-    // NEAR_MISS carries both phrase tokens but never adjacently, so EDGAR
-    // returns it and exact-phrase matching must reject it.
+    // EDGAR matches quoted phrases exactly, so re-reading each candidate to
+    // confirm what the index already proved only spends the budget that caps
+    // recall. NEAR_MISS carries both tokens but never adjacently, so the index
+    // itself excludes it.
     await runQuery(page, '"mezzanine equity"');
 
     await expect(anyMention(page, MEZZ_ONLY.company).first()).toBeVisible({ timeout: 30_000 });
     await expect(anyMention(page, NEAR_MISS.company)).toHaveCount(0);
 
+    expect(
+      stats.documentFetches,
+      'a delegated phrase must not cost a single document fetch'
+    ).toHaveLength(0);
+  });
+
+  test('the server pre-screen drops non-matches before the browser downloads them', async ({ page }) => {
+    const stats = await openBooleanWorkbench(page);
+    // AND is not delegated — it still validates locally, which is what the
+    // pre-screen exists to make cheap.
+    await runQuery(page, 'mezzanine AND temporary');
+
+    await expect(anyMention(page, BOTH.company).first()).toBeVisible({ timeout: 30_000 });
+
     expect(stats.prescreenBatches.length, 'the pre-screen must actually run').toBeGreaterThan(0);
-    // The point of the whole phase: a rejected candidate costs zero bytes.
+    // The point of that phase: a server-rejected candidate costs zero bytes.
     expect(
       stats.documentFetches.some(doc => doc.includes(NEAR_MISS.document)),
       'a server-rejected filing must never be downloaded by the browser'

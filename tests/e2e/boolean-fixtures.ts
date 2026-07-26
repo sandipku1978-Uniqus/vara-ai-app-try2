@@ -53,23 +53,36 @@ function tokenize(query: string): string[] {
     .filter(Boolean);
 }
 
-/** Mirrors EFTS semantics: space = AND of terms, explicit OR = union. */
+/**
+ * Mirrors EFTS semantics: space = AND of terms, explicit OR = union, and a
+ * QUOTED STRING IS AN EXACT ADJACENT PHRASE.
+ *
+ * Phrase support is not cosmetic here. The executor now delegates a bare
+ * quoted phrase to EDGAR rather than re-reading each document, so this stub
+ * stands in for the index that decides the result. Verified against the live
+ * index before relying on it: "material weakness" reports ≥10,000 hits while
+ * the reversed "weakness material" reports 414.
+ */
 function matchesEfts(query: string, filing: FixtureFiling): boolean {
   const haystack = filing.text.toLowerCase();
   const trimmed = query.trim();
   if (!trimmed) return true;
 
-  if (/\bOR\b/i.test(trimmed)) {
-    return trimmed
-      .split(/\bOR\b/i)
-      .some(branch => {
-        const tokens = tokenize(branch);
-        return tokens.length > 0 && tokens.every(t => haystack.includes(t));
-      });
-  }
+  const matchesBranch = (branch: string): boolean => {
+    // Quoted segments must appear verbatim, words adjacent and in order.
+    const phrases = [...branch.matchAll(/"([^"]+)"/g)].map(m => m[1].trim().toLowerCase());
+    if (phrases.some(phrase => phrase && !haystack.includes(phrase))) return false;
 
-  const tokens = tokenize(trimmed);
-  return tokens.length > 0 && tokens.every(t => haystack.includes(t));
+    const rest = branch.replace(/"[^"]*"/g, ' ');
+    const tokens = tokenize(rest);
+    if (tokens.some(token => !haystack.includes(token))) return false;
+    return phrases.length > 0 || tokens.length > 0;
+  };
+
+  if (/\bOR\b/i.test(trimmed)) {
+    return trimmed.split(/\bOR\b/i).some(matchesBranch);
+  }
+  return matchesBranch(trimmed);
 }
 
 function eftsHit(filing: FixtureFiling) {
