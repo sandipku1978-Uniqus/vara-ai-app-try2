@@ -21,6 +21,7 @@ import {
 } from './auditors';
 import { loadSicDirectoryIndex } from './referenceData';
 import { deriveSectionPath, extractItemSection } from '../utils/sectionPath';
+import { resolveSectionScope } from '../utils/sectionTaxonomy';
 import {
   buildReferenceSearchTerms,
   parseAccountingReference,
@@ -1893,12 +1894,20 @@ export async function executeFilingResearchSearch({
 
       for (const result of chunk) {
         const filingText = signalMap.get(getSignalCacheKey(result))?.text || '';
-        // "Item 1A contains X": the expression and section keywords are
-        // evaluated INSIDE the named section's slice. A filing without the
-        // section yields an empty slice and never matches — scoping must
-        // never silently widen back to the whole document.
+        // "Item 1A contains X" / "risk factors contains X": the expression
+        // and section keywords are evaluated INSIDE the named section's
+        // slice. Concept names resolve through the cross-form taxonomy using
+        // THIS candidate's form — Risk Factors is Item 1A on a 10-K but
+        // Part II Item 1A on a 10-Q. A filing without the section (or a form
+        // the concept is not mapped for) yields an empty slice and never
+        // matches — scoping must never silently widen back to the whole
+        // document or slice at a guessed location.
         const sectionScope = (filters.sectionScope || '').trim();
-        const scopedText = sectionScope && filingText ? extractItemSection(filingText, sectionScope) : filingText;
+        let scopedText = filingText;
+        if (sectionScope && filingText) {
+          const resolved = resolveSectionScope(sectionScope, result.formType);
+          scopedText = resolved ? extractItemSection(filingText, resolved.item, resolved.options) : '';
+        }
 
         if (needsTextFiltering && mode === 'boolean' && parsedBooleanQuery.expression) {
           if (!filingText) {

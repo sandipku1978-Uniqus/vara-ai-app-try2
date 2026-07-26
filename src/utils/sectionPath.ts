@@ -96,32 +96,85 @@ export function normalizeItemNumber(raw: string): string {
 }
 
 /**
+ * Where "Part I" / "Part II" begin in the normalized text — needed because a
+ * 10-Q reuses item numbers across parts (Part I Item 2 is MD&A, Part II
+ * Item 2 is Unregistered Sales). Cross-references ("in part ii, item 1")
+ * are excluded the same way item cross-references are. The LAST occurrence
+ * of each part marker wins: the table of contents lists both parts first.
+ */
+const PART_RE = /(?:^| )part (i{1,3}|iv)(?= |$)/g;
+
+function findPartStart(normalizedText: string, part: 1 | 2): number {
+  const roman = part === 1 ? 'i' : 'ii';
+  let found = -1;
+  PART_RE.lastIndex = 0;
+  for (let hit = PART_RE.exec(normalizedText); hit; hit = PART_RE.exec(normalizedText)) {
+    if (hit[1] !== roman) continue;
+    const before = normalizedText.slice(0, hit.index).trimEnd().split(' ');
+    const wordBefore = before[before.length - 1] || '';
+    if (REFERRING_WORDS.has(wordBefore)) continue;
+    found = hit.index;
+  }
+  return found;
+}
+
+export interface SectionSliceOptions {
+  /** Restrict the search to a filing part (10-Q reuses item numbers). */
+  part?: 1 | 2;
+}
+
+/**
  * The slice of a filing's text that belongs to one Item section, in
  * engine-normalized form — from the section's own heading to the next Item
  * heading (or end of document). Returns '' when the filing has no such
  * section, so "Item 1A contains X" can never silently fall back to matching
  * the whole document.
  *
- * A filing usually mentions each Item twice: once in the table of contents
- * and once as the real body heading. The LAST occurrence is the body — the
- * TOC precedes it — so the slice starts there.
+ * A filing usually mentions each Item several times — table of contents,
+ * body heading, sometimes a running header. Among the candidate occurrences
+ * the one with the LONGEST following slice is the body: TOC entries are one
+ * line apart, real sections run for pages. (Position alone is not enough —
+ * "last occurrence" breaks the moment an item number repeats across parts.)
  */
-export function extractItemSection(filingText: string, itemNumber: string): string {
+export function extractItemSection(
+  filingText: string,
+  itemNumber: string,
+  options: SectionSliceOptions = {}
+): string {
   const target = normalizeItemNumber(itemNumber);
   if (!filingText || !target) return '';
 
   const normalizedText = normalizeForMatch(filingText);
   const headings = findItemHeadings(normalizedText);
 
-  let start: ItemHeading | null = null;
-  for (const heading of headings) {
-    if (heading.number === target) start = heading;
+  // Part scoping: only occurrences at or after the requested part's own
+  // heading count. A part-2 request in a filing with no Part II marker
+  // yields nothing rather than a guess from the wrong part.
+  let rangeStart = 0;
+  let rangeEnd = normalizedText.length;
+  if (options.part) {
+    const partStart = findPartStart(normalizedText, options.part);
+    if (partStart < 0) return '';
+    rangeStart = partStart;
+    if (options.part === 1) {
+      const nextPart = findPartStart(normalizedText, 2);
+      if (nextPart > partStart) rangeEnd = nextPart;
+    }
   }
-  if (!start) return '';
 
-  const startIndex: number = start.index;
-  const next = headings.find(heading => heading.index > startIndex);
-  return normalizedText.slice(startIndex, next ? next.index : undefined).trim();
+  const inRange = headings.filter(h => h.index >= rangeStart && h.index < rangeEnd);
+  let best: { start: number; end: number } | null = null;
+  for (const heading of inRange) {
+    if (heading.number !== target) continue;
+    const next = inRange.find(h => h.index > heading.index);
+    const end = next ? next.index : rangeEnd;
+    if (!best || end - heading.index > best.end - best.start) {
+      best = { start: heading.index, end };
+    }
+  }
+  if (!best) return '';
+
+  return normalizedText.slice(best.start, best.end).trim();
 }
 
 function formatItemNumber(raw: string): string {

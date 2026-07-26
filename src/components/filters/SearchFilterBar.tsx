@@ -5,6 +5,7 @@ import { Filter, X, ChevronDown, ChevronUp, ChevronRight } from 'lucide-react';
 import CompanyLookupField from './CompanyLookupField';
 import SicLookupField from './SicLookupField';
 import AuditorLookupField from './AuditorLookupField';
+import { describeSectionScope } from '../../utils/sectionTaxonomy';
 
 export interface SearchFilters {
   keyword: string;
@@ -253,7 +254,7 @@ export default function SearchFilterBar({ config, filters, onChange, onSearch, l
   if (filters.fiscalYearEnd) chips.push({ label: `FYE: ${FY_LABELS[filters.fiscalYearEnd] || filters.fiscalYearEnd}`, clear: () => onChange({ ...filters, fiscalYearEnd: '' }) });
   if (filters.accountingFramework) chips.push({ label: `Framework: ${filters.accountingFramework}`, clear: () => onChange({ ...filters, accountingFramework: '' }) });
   if (filters.ascReference) chips.push({ label: `Cites: ${filters.ascReference}`, clear: () => onChange({ ...filters, ascReference: '' }) });
-  if (filters.sectionScope) chips.push({ label: `In Item ${filters.sectionScope.toUpperCase()}`, clear: () => onChange({ ...filters, sectionScope: '' }) });
+  if (filters.sectionScope) chips.push({ label: `In: ${describeSectionScope(filters.sectionScope)}`, clear: () => onChange({ ...filters, sectionScope: '' }) });
 
   return (
     <div style={{ marginBottom: '16px' }}>
@@ -376,9 +377,9 @@ export default function SearchFilterBar({ config, filters, onChange, onSearch, l
             )}
             {config.showSectionKeywords && (
               <div style={{ minWidth: '140px', flex: '1 1 140px' }}>
-                <label htmlFor={`${fieldId}-item`} style={labelStyle}>In Section (Item)</label>
+                <label htmlFor={`${fieldId}-item`} style={labelStyle}>In Section</label>
                 <input id={`${fieldId}-item`} value={filters.sectionScope || ''} onChange={e => onChange({ ...filters, sectionScope: e.target.value })}
-                  placeholder="e.g. 1A, 7, 9A" style={{ ...inputStyle, width: '100%' }} />
+                  placeholder="e.g. 1A, 7 — or risk factors, MD&A" style={{ ...inputStyle, width: '100%' }} />
               </div>
             )}
           </div>
