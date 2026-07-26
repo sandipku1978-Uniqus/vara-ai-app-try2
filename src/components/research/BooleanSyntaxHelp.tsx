@@ -31,6 +31,7 @@ const SUPPORTED: Operator[] = [
   { token: '" "', example: '"material weakness"', meaning: 'Exact phrase, words adjacent and in order' },
   { token: '( )', example: 'lease AND (842 OR 840)', meaning: 'Groups operators' },
   { token: 'W/n', example: 'goodwill W/5 impairment', meaning: 'Within n words, either order' },
+  { token: '#', example: '"goodwill impairment" W/10 $#', meaning: 'Any number; $# a currency amount, %# a percentage' },
   { token: 'auditor:', example: '"material weakness" AND auditor:KPMG', meaning: 'Audit firm of record (PCAOB Form AP)' },
 ];
 
@@ -39,7 +40,6 @@ const UNSUPPORTED: Operator[] = [
   { token: 'P/n', example: 'convertible P/3 notes', meaning: 'Ordered proximity — use W/n instead' },
   { token: '*', example: 'crypto*', meaning: 'Trailing wildcard — spell the variants, or use OR' },
   { token: '?', example: 'wom?n', meaning: 'Single-character wildcard' },
-  { token: '#', example: 'impairment W/10 $#', meaning: 'Any number or currency amount' },
 ];
 
 export interface BooleanSyntaxHelpProps {
