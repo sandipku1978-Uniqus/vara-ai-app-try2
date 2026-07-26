@@ -1714,6 +1714,14 @@ export default function SearchPage() {
                         <span>{result.sicDescription || result.sic || 'Industry unavailable'}</span>
                       </div>
                       <div className="match-reason">{result.matchReason || 'Preliminary match — open the filing to confirm context'}</div>
+                      {result.matchSectionPath && (
+                        // Intelligize-style section breadcrumb: where in the
+                        // filing the validated match lives, read from the same
+                        // text the Boolean engine matched against.
+                        <div className="match-provenance" title="Section derived from the validated filing text">
+                          {result.matchSectionPath}
+                        </div>
+                      )}
                       {result.matchedDocumentType && (
                         // The row is the parent filing; name the exhibit that
                         // actually carried the match so the evidence is traceable.
@@ -1823,7 +1831,10 @@ export default function SearchPage() {
                 </div>
 
                 <div className="research-selected-snippet">
-                  <div className="selected-match-label">{selectedResult.matchReason || 'Matched filing text'}</div>
+                  <div className="selected-match-label">
+                    {selectedResult.matchReason || 'Matched filing text'}
+                    {selectedResult.matchSectionPath ? ` — ${selectedResult.matchSectionPath}` : ''}
+                  </div>
                   <div>{renderHighlightedText(selectedResult.matchSnippet || selectedResult.description || 'Matched on filing metadata.', previewHighlightTerms)}</div>
                 </div>
 

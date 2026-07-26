@@ -119,6 +119,16 @@ function normalizeMatchText(value: string): string {
   return (lowered.match(MATCH_TOKEN_RE) || []).join(' ');
 }
 
+/**
+ * The engine's own text normalization, exported for consumers that need to
+ * locate engine-produced artifacts (match snippets are joins of normalized
+ * tokens) inside the filing text. Using anything else drifts the moment
+ * tokenization changes.
+ */
+export function normalizeForMatch(value: string): string {
+  return normalizeMatchText(value);
+}
+
 // Numeric-token classes for the # operators. `any` accepts decorated numbers
 // too: a filing that writes "$206.6" has still disclosed *a number*.
 const CURRENCY_TOKEN_RE = /^[$£¥€]\d+(?:\.\d+)?$/;
