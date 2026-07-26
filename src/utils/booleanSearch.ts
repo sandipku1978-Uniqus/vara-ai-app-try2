@@ -9,8 +9,10 @@
  * v3 — numeric operators (#, $#, %#) and number-aware tokenization: currency
  *      amounts ($206.6), percentages (5.2%) and decimals survive as single
  *      tokens instead of splitting at the symbol.
+ * v4 — ordered proximity (P/n, PRE/n) and wildcard terms (crypto*, wom?n).
+ *      "P/3" and terms containing * or ? previously matched as literal text.
  */
-export const BOOLEAN_ENGINE_VERSION = 3;
+export const BOOLEAN_ENGINE_VERSION = 4;
 
 /** Which class of numeric token a # operator matches. */
 export type NumberUnit = 'any' | 'currency' | 'percent';
@@ -21,7 +23,7 @@ type Token =
   | { type: 'AND' }
   | { type: 'OR' }
   | { type: 'NOT' }
-  | { type: 'PROX'; distance: number }
+  | { type: 'PROX'; distance: number; ordered: boolean }
   | { type: 'NUMBER'; unit: NumberUnit }
   | { type: 'TERM'; value: string }
   | { type: 'PHRASE'; value: string };
@@ -30,7 +32,9 @@ export type BooleanSearchNode =
   | { type: 'TERM'; value: string }
   | { type: 'PHRASE'; value: string }
   | { type: 'NUMBER'; unit: NumberUnit }
-  | { type: 'PROX'; distance: number; left: BooleanSearchNode; right: BooleanSearchNode }
+  /** Single-word pattern: * = any run of characters, ? = exactly one. */
+  | { type: 'WILDCARD'; pattern: string }
+  | { type: 'PROX'; distance: number; ordered?: boolean; left: BooleanSearchNode; right: BooleanSearchNode }
   | { type: 'NOT'; child: BooleanSearchNode }
   | { type: 'AND'; left: BooleanSearchNode; right: BooleanSearchNode }
   | { type: 'OR'; left: BooleanSearchNode; right: BooleanSearchNode };
@@ -236,6 +240,9 @@ function tokenize(query: string): Token[] {
 
     const upper = value.toUpperCase();
     const proxMatch = value.match(/^(?:W|WITHIN|NEAR)\/(\d+)$/i);
+    // Ordered proximity: "convertible P/3 notes" — convertible must PRECEDE
+    // notes by at most 3 words. W/n remains order-agnostic.
+    const orderedProxMatch = value.match(/^(?:P|PRE)\/(\d+)$/i);
     // Intelligize-style numeric operands: # any number, $# (£# ¥# €#) a
     // currency amount, %# a percentage. "goodwill impairment" W/10 $# finds
     // every filing that QUANTIFIES a goodwill impairment.
@@ -248,7 +255,9 @@ function tokenize(query: string): Token[] {
     } else if (upper === 'NOT') {
       tokens.push({ type: 'NOT' });
     } else if (proxMatch) {
-      tokens.push({ type: 'PROX', distance: Number(proxMatch[1]) });
+      tokens.push({ type: 'PROX', distance: Number(proxMatch[1]), ordered: false });
+    } else if (orderedProxMatch) {
+      tokens.push({ type: 'PROX', distance: Number(orderedProxMatch[1]), ordered: true });
     } else if (numberMatch) {
       tokens.push({
         type: 'NUMBER',
@@ -301,6 +310,16 @@ function parsePrimary(state: ParserState): BooleanSearchNode {
   }
 
   if (token.type === 'TERM') {
+    // Wildcards make the term a single-word pattern rather than a literal.
+    // Bounded deliberately: at least two literal characters (a bare "*" would
+    // match every token) and one word only (phrases keep exact semantics).
+    if (/[*?]/.test(token.value)) {
+      const pattern = token.value.toLowerCase().replace(/[^a-z0-9*?]/g, '');
+      if ((pattern.match(/[a-z0-9]/g) || []).length < 2) {
+        throw new Error('A wildcard needs at least two literal characters — e.g. crypto* or wom?n.');
+      }
+      return { type: 'WILDCARD', pattern };
+    }
     return { type: 'TERM', value: token.value };
   }
 
@@ -321,7 +340,7 @@ function parseProximity(state: ParserState): BooleanSearchNode {
   if (token?.type === 'PROX') {
     consume(state);
     const right = parsePrimary(state);
-    left = { type: 'PROX', distance: token.distance, left, right };
+    left = { type: 'PROX', distance: token.distance, ordered: token.ordered, left, right };
   }
   return left;
 }
@@ -414,9 +433,13 @@ export function looksLikeBooleanQuery(query: string): boolean {
   // Lowercase prose ("increases and decreases"), quotes, or parentheses alone
   // must NOT silently change the mode the user selected.
   if (/\b(?:AND|OR|NOT)\b/.test(query)) return true;
-  if (/\b(?:W|WITHIN|NEAR|w|within|near)\/\d+/.test(query)) return true;
+  if (/\b(?:W|WITHIN|NEAR|P|PRE|w|within|near|p|pre)\/\d+/.test(query)) return true;
   if (/\b(?:auditor|accountant|auditfirm|audited[_-]?by)\s*:/i.test(query)) return true;
   if (/(?:^|\s)[$£¥€%]?#(?=\s|$)/.test(query)) return true;
+  // Wildcards: a trailing * on a word, or ? INSIDE a word ("wom?n"). A
+  // sentence-ending "?" must never flip the mode the user chose.
+  if (/[a-z0-9]\*(?=\s|$)/i.test(query)) return true;
+  if (/[a-z0-9]\?[a-z0-9]/i.test(query)) return true;
   return false;
 }
 
@@ -436,12 +459,28 @@ function containsNumberOperand(node: BooleanSearchNode): boolean {
   }
 }
 
+/** True when any operand anywhere in the expression is a wildcard pattern. */
+function containsWildcardOperand(node: BooleanSearchNode): boolean {
+  switch (node.type) {
+    case 'WILDCARD':
+      return true;
+    case 'NOT':
+      return containsWildcardOperand(node.child);
+    case 'PROX':
+    case 'AND':
+    case 'OR':
+      return containsWildcardOperand(node.left) || containsWildcardOperand(node.right);
+    default:
+      return false;
+  }
+}
+
 /** True when any proximity node has an operand that is not a term or phrase. */
 function hasUnsupportedProximity(node: BooleanSearchNode): boolean {
   switch (node.type) {
     case 'PROX': {
       const simple = (side: BooleanSearchNode) =>
-        side.type === 'TERM' || side.type === 'PHRASE' || side.type === 'NUMBER';
+        side.type === 'TERM' || side.type === 'PHRASE' || side.type === 'NUMBER' || side.type === 'WILDCARD';
       return !simple(node.left) || !simple(node.right);
     }
     case 'NOT':
@@ -488,6 +527,7 @@ export type BooleanIssueCode =
   | 'unsupported-proximity'
   | 'negative-only'
   | 'numeric-only'
+  | 'wildcard-only'
   | 'too-complex';
 
 export type BooleanCompileResult =
@@ -545,8 +585,8 @@ export function compileBooleanQuery(raw: string): BooleanCompileResult {
     }
     // Chained proximity ("a w/5 b w/5 c") fails to parse with a generic error;
     // give the same specific guidance as the grouped-operand case.
-    if ((trimmed.match(/\b(?:w|within|near)\/\d+/gi)?.length ?? 0) >= 2) {
-      return fail('unsupported-proximity', 'Proximity (w/#, near/#) joins exactly two terms or quoted phrases — chain it into "a w/5 b" AND "b w/5 c", or quote a phrase.');
+    if ((trimmed.match(/\b(?:w|within|near|p|pre)\/\d+/gi)?.length ?? 0) >= 2) {
+      return fail('unsupported-proximity', 'Proximity (w/#, p/#, near/#) joins exactly two terms or quoted phrases — chain it into "a w/5 b" AND "b w/5 c", or quote a phrase.');
     }
     return fail('parse', parsed.error || 'This Boolean query could not be parsed. Check the operators and grouping.');
   }
@@ -556,7 +596,7 @@ export function compileBooleanQuery(raw: string): BooleanCompileResult {
   // span lookup is only defined for terms and phrases. Left alone it returns a
   // silent, authoritative-looking zero, so reject it with a specific message.
   if (hasUnsupportedProximity(parsed.expression)) {
-    return fail('unsupported-proximity', 'Proximity (w/#, near/#) works between two single terms or quoted phrases — not around a group. Try: "internal control" w/5 weakness.');
+    return fail('unsupported-proximity', 'Proximity (w/#, p/#, near/#) works between two single terms or quoted phrases — not around a group. Try: "internal control" w/5 weakness.');
   }
 
   // A query made only of NOT terms has nothing to fetch from EDGAR (there is no
@@ -567,6 +607,12 @@ export function compileBooleanQuery(raw: string): BooleanCompileResult {
   if (collectPositiveTerms(parsed.expression).size === 0 && !auditor) {
     if (containsNumberOperand(parsed.expression)) {
       return fail('numeric-only', 'The numeric operator matches values, not filings — anchor it to a term or phrase, e.g. "goodwill impairment" w/10 $#.');
+    }
+    if (containsWildcardOperand(parsed.expression)) {
+      // EDGAR full-text search has no wildcard support, so a wildcard can
+      // verify candidates but cannot fetch them. Requiring a concrete anchor
+      // states the limit instead of running a search that silently misses.
+      return fail('wildcard-only', 'Wildcards validate against filing text but cannot retrieve from EDGAR — combine with a concrete term or phrase, e.g. crypto* AND blockchain.');
     }
     return fail('negative-only', 'Add at least one term that is not negated — a NOT-only query has nothing to match against.');
   }
@@ -657,7 +703,35 @@ function findOperandSpans(node: BooleanSearchNode, index: TextIndex): Array<{ st
       .filter((value): value is { start: number; end: number } => value !== null);
   }
 
+  if (node.type === 'WILDCARD') {
+    const matcher = compileWildcard(node.pattern);
+    return index.tokens
+      .map((token, position) =>
+        matcher.test(token) || matcher.test(stripNumericDecoration(token))
+          ? { start: position, end: position }
+          : null
+      )
+      .filter((value): value is { start: number; end: number } => value !== null);
+  }
+
   return [];
+}
+
+// Wildcard patterns compile to anchored token-level regexes: * spans any run
+// of token characters (including none), ? exactly one. No stemming — the
+// pattern is the contract.
+const wildcardCache = new Map<string, RegExp>();
+function compileWildcard(pattern: string): RegExp {
+  let compiled = wildcardCache.get(pattern);
+  if (!compiled) {
+    const source = pattern
+      .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+      .replace(/\*/g, '[a-z0-9]*')
+      .replace(/\?/g, '[a-z0-9]');
+    compiled = new RegExp(`^${source}$`);
+    wildcardCache.set(pattern, compiled);
+  }
+  return compiled;
 }
 
 function matchesProximity(node: Extract<BooleanSearchNode, { type: 'PROX' }>, index: TextIndex): boolean {
@@ -670,6 +744,9 @@ function matchesProximity(node: Extract<BooleanSearchNode, { type: 'PROX' }>, in
 
   for (const left of leftSpans) {
     for (const right of rightSpans) {
+      // Ordered proximity (P/n): the left operand must PRECEDE the right;
+      // a reversed or overlapping pair never satisfies it.
+      if (node.ordered && left.end >= right.start) continue;
       const gap =
         left.end < right.start
           ? right.start - left.end - 1
@@ -696,6 +773,7 @@ function findBestProximitySpan(
 
     for (const left of leftSpans) {
       for (const right of rightSpans) {
+        if (node.ordered && left.end >= right.start) continue;
         const gap =
           left.end < right.start
             ? right.start - left.end - 1
@@ -760,11 +838,13 @@ function evaluate(node: BooleanSearchNode, index: TextIndex): boolean {
     case 'TERM':
     case 'PHRASE':
     case 'NUMBER':
+    case 'WILDCARD':
       // Token-boundary matching for both bare terms and quoted phrases —
       // never a raw substring. "net income" must not match "planet income",
       // and a punctuation term ("non-GAAP", "R&D") matches its token sequence.
       // NUMBER matches any token of its numeric class; alone it is nearly
-      // always true and only becomes selective inside W/n.
+      // always true and only becomes selective inside W/n. WILDCARD matches
+      // whole tokens against its anchored pattern.
       return findOperandSpans(node, index).length > 0;
     case 'PROX':
       return matchesProximity(node, index);

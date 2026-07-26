@@ -29,7 +29,13 @@ describe('BooleanSyntaxHelp', () => {
     for (const operator of BOOLEAN_UNSUPPORTED) {
       expect(screen.getByText(operator.token)).toBeTruthy();
     }
-    expect(screen.getByText(/ignored rather than matched/i)).toBeTruthy();
+    // The warning section exists exactly when there is something to warn
+    // about — as of engine v4 the list is empty and the section is absent.
+    if (BOOLEAN_UNSUPPORTED.length > 0) {
+      expect(screen.getByText(/ignored rather than matched/i)).toBeTruthy();
+    } else {
+      expect(screen.queryByText(/ignored rather than matched/i)).toBeNull();
+    }
   });
 
   it('closes on Escape', () => {
