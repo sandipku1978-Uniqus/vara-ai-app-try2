@@ -21,6 +21,12 @@ import {
 } from './auditors';
 import { loadSicDirectoryIndex } from './referenceData';
 import { deriveSectionPath } from '../utils/sectionPath';
+import {
+  buildReferenceSearchTerms,
+  parseAccountingReference,
+  referenceBooleanExpression,
+  textCitesReference,
+} from '../utils/accountingReference';
 import { parseSearchHit } from '../hooks/useEdgarSearch';
 import {
   buildBooleanCandidateQueries,
@@ -384,6 +390,22 @@ function annotateResultMatchContext(
     matchSnippet = buildKeywordSnippet(filingText, terms);
   }
 
+  // Citation filter: when the query itself produced no snippet (or there is
+  // no query at all), the citation IS the evidence — show where the filing
+  // cites the standard, and label the row as text-validated rather than
+  // letting it fall through to the metadata label it did not earn.
+  let citationReason = '';
+  if ((filters.ascReference || '').trim() && filingText) {
+    const reference = parseAccountingReference(filters.ascReference || '');
+    if (reference) {
+      citationReason = `Cites ${reference.label} (text validated)`;
+      if (!matchSnippet) {
+        const citationSnippet = extractBooleanMatchSnippet(referenceBooleanExpression(reference), filingText);
+        if (citationSnippet) matchSnippet = citationSnippet.excerpt;
+      }
+    }
+  }
+
   result.matchSnippet = matchSnippet;
   // Where in the filing the match lives (Item 9A · Controls and Procedures),
   // derived from the text already fetched for validation. Delegated matches
@@ -394,7 +416,9 @@ function annotateResultMatchContext(
       ? proximityDistance === 0
         ? 'Matched adjacent proximity terms'
         : `Matched within ${proximityDistance} words`
-      : matchSnippet
+      : citationReason && !rawQuery.trim()
+        ? citationReason
+        : matchSnippet
         ? 'Matched filing text'
         : upstreamTextMatch
           // Genuinely a text match — performed by SEC's full-text index over
@@ -507,6 +531,8 @@ function buildBooleanServerQueries(
     return { queries: [phrase], requiredBranches: 1 };
   }
   const auditorTerms = buildAuditorSearchTerms(filters.accountant);
+  const ascReference = parseAccountingReference(filters.ascReference || '');
+  const referenceTerms = ascReference ? buildReferenceSearchTerms(ascReference) : [];
 
   const out: string[] = [];
   const push = (value: string) => {
@@ -517,8 +543,10 @@ function buildBooleanServerQueries(
   };
 
   if (branches.length === 0) {
-    // No positive text branches (auditor-only search) — fetch by firm name.
+    // No positive text branches (auditor-only or citation-only search) —
+    // fetch by firm name / citation spellings; validation enforces the rest.
     for (const term of auditorTerms.slice(0, 4)) push(term);
+    for (const term of referenceTerms) push(term);
     return { queries: out, requiredBranches: out.length };
   }
 
@@ -529,6 +557,11 @@ function buildBooleanServerQueries(
   // Precision boost: pair each branch with the auditor name when one is set.
   if (auditorTerms.length > 0) {
     for (const branch of branches) push(`${branch} ${auditorTerms[0]}`);
+  }
+  // Citation filter: candidates that pair the branch with the citation are
+  // far more likely to survive validation than the branch alone.
+  if (referenceTerms.length > 0) {
+    for (const branch of branches) push(`${branch} ${referenceTerms[0]}`);
   }
   // Recall fallback: legacy flat candidates catch documented equivalents.
   for (const candidate of buildBooleanCandidateQueries(query)) push(candidate);
@@ -541,6 +574,8 @@ function buildSemanticCandidateQueries(serverQuery: string, filters: SearchFilte
   const queries: string[] = [];
   const auditorTerms = buildAuditorSearchTerms(filters.accountant);
   const sectionKeywords = filters.sectionKeywords.trim();
+  const ascReference = parseAccountingReference(filters.ascReference || '');
+  const referenceTerms = ascReference ? buildReferenceSearchTerms(ascReference) : [];
 
   function pushQuery(value: string) {
     const trimmed = value.replace(/\s+/g, ' ').trim();
@@ -564,6 +599,14 @@ function buildSemanticCandidateQueries(serverQuery: string, filters: SearchFilte
 
   if (baseQuery && sectionKeywords) {
     pushQuery(`${baseQuery} ${sectionKeywords}`);
+  }
+
+  // Citation-anchored lanes: paired with the query when there is one, or as
+  // standalone lanes for a citation-only search ("every filing citing ASC
+  // 842") — validation then enforces the citation on each candidate.
+  if (referenceTerms.length > 0) {
+    if (baseQuery) pushQuery(`${baseQuery} ${referenceTerms[0]}`);
+    else for (const term of referenceTerms) pushQuery(term);
   }
 
   pushQuery(baseQuery);
@@ -948,6 +991,17 @@ function matchesSignalFilters(result: FilingResearchResult, filters: SearchFilte
     return false;
   }
 
+  // ASC/ASU citation filter: the filing must cite the standard in ANY of its
+  // accepted spellings (ASC 842 / ASC Topic 842 / Topic 842; ASU 2023-07 /
+  // ASU No. 2023-07 / Accounting Standards Update ...). Unparseable input
+  // matches nothing rather than silently matching everything.
+  if ((filters.ascReference || '').trim()) {
+    const reference = parseAccountingReference(filters.ascReference || '');
+    if (!reference || !textCitesReference(reference, filingText)) {
+      return false;
+    }
+  }
+
   if (filters.accountant.trim()) {
     // Authoritative PCAOB Form AP auditor wins; the auditor detected in the
     // filing text is only a fallback where Form AP has no coverage. This is why
@@ -1324,12 +1378,17 @@ function requiresTextFiltering(
         !filters.accountant.trim() &&
         filters.acceleratedStatus.length === 0 &&
         !filters.sectionKeywords.trim() &&
-        !filters.accountingFramework.trim();
+        !filters.accountingFramework.trim() &&
+        !(filters.ascReference || '').trim();
       return !delegable;
     }
     // An auditor-only Boolean search ("auditor:KPMG") has no text expression but
     // still needs signal hydration to confirm the firm on each candidate.
-    return filters.accountant.trim().length > 0 || filters.acceleratedStatus.length > 0;
+    return (
+      filters.accountant.trim().length > 0 ||
+      filters.acceleratedStatus.length > 0 ||
+      (filters.ascReference || '').trim().length > 0
+    );
   }
 
   if (filters.sectionKeywords.trim()) {
@@ -1337,6 +1396,10 @@ function requiresTextFiltering(
   }
 
   if (filters.accountingFramework.trim()) {
+    return true;
+  }
+
+  if ((filters.ascReference || '').trim()) {
     return true;
   }
 
