@@ -11,6 +11,7 @@ import {
   ChevronRight,
   ChevronUp,
   ExternalLink,
+  Download,
   FileText,
   Filter,
   Hash,
@@ -56,6 +57,7 @@ import {
 } from '../services/researchSessions';
 import { buildHighlightTerms } from '../services/searchAssist';
 import { buildResearchEmptyResultMessage, buildResultsHeadline, formatUpstreamTotal, mergeCandidateCoverage } from '../services/searchCoverage';
+import { exportResultsWorkbook } from '../services/resultExport';
 import SearchScopeBanner from '../components/research/SearchScopeBanner';
 import ActiveQueryChips from '../components/research/ActiveQueryChips';
 import BooleanSyntaxHelp, { BooleanSyntaxHelpTrigger } from '../components/research/BooleanSyntaxHelp';
@@ -518,6 +520,32 @@ export default function SearchPage() {
       return '';
     }
   }, [activeSession?.updatedAt]);
+
+  const handleExportResults = useCallback(() => {
+    // Export what is on screen, in the current sort — the workbook's Coverage
+    // sheet records the query as executed and the corpus total so a partial
+    // window can never masquerade as the full answer once detached.
+    const search = lastResolvedSearch;
+    const activeFilters = search?.filters;
+    const filterSummary: string[] = [];
+    if (activeFilters) {
+      if (activeFilters.entityName.trim()) filterSummary.push(`Issuer: ${activeFilters.entityName}`);
+      if (activeFilters.formTypes.length > 0) filterSummary.push(`Forms: ${activeFilters.formTypes.join(', ')}`);
+      if (activeFilters.dateFrom || activeFilters.dateTo) filterSummary.push(`Dates: ${activeFilters.dateFrom || 'earliest'} – ${activeFilters.dateTo || 'latest'}`);
+      if (activeFilters.accountant.trim()) filterSummary.push(`Auditor: ${activeFilters.accountant}`);
+      if (activeFilters.sicCode.trim()) filterSummary.push(`SIC: ${activeFilters.sicCode}`);
+      if (activeFilters.sectionKeywords.trim()) filterSummary.push(`Section keywords: ${activeFilters.sectionKeywords}`);
+      if ((activeFilters.ascReference || '').trim()) filterSummary.push(`Cites: ${activeFilters.ascReference}`);
+      if ((activeFilters.sectionScope || '').trim()) filterSummary.push(`In Item: ${activeFilters.sectionScope}`);
+      if (activeFilters.accountingFramework.trim()) filterSummary.push(`Framework: ${activeFilters.accountingFramework}`);
+    }
+    void exportResultsWorkbook(displayResults, {
+      query: search?.query || query,
+      mode: search?.mode || searchMode,
+      coverage: candidateCoverage,
+      filterSummary,
+    });
+  }, [lastResolvedSearch, displayResults, query, searchMode, candidateCoverage]);
 
   const collapseResearchControls = useCallback(() => {
     setIsRailCollapsed(true);
@@ -1647,6 +1675,20 @@ export default function SearchPage() {
                     </button>
                   ))}
                 </div>
+              )}
+              {displayResults.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleExportResults}
+                  title="Download this result set as a workbook: results, extracted issuer list, and coverage"
+                  style={{
+                    padding: '4px 10px', borderRadius: '6px', fontSize: '0.72rem', cursor: 'pointer',
+                    border: '1px solid var(--input-border)', background: 'var(--surface-panel)',
+                    color: 'var(--text-secondary)', display: 'inline-flex', alignItems: 'center', gap: '5px',
+                  }}
+                >
+                  <Download size={12} aria-hidden="true" /> Export .xlsx
+                </button>
               )}
               <div className="pane-hint">Select a filing to preview it here, then open the full workspace only when you need the full toolset.</div>
             </div>
