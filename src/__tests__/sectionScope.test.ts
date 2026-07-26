@@ -48,6 +48,26 @@ describe('extractItemSection', () => {
     expect(slice).toContain('supply chain concentration');
   });
 
+  it('is not fragmented by running page headers repeating the same item', () => {
+    // Many filers print "Item 1A" atop every page of the section. Those
+    // repeats must not end the slice — only the next DIFFERENT item does.
+    const withRunningHeaders = [
+      'Item 1A. Risk Factors',
+      'Competition may reduce margins across our segments.',
+      'Item 1A.',
+      'Supply chain concentration is a further material risk to operations.',
+      'Item 1A.',
+      'Cyberattacks could disrupt our services and harm our reputation badly.',
+      'Item 1B. Unresolved Staff Comments',
+      'None.',
+    ].join('\n');
+    const slice = extractItemSection(withRunningHeaders, '1A');
+    expect(slice).toContain('competition may reduce');
+    expect(slice).toContain('supply chain concentration');
+    expect(slice).toContain('cyberattacks could disrupt');
+    expect(slice).not.toContain('unresolved staff');
+  });
+
   it('returns empty for a section the filing does not have', () => {
     expect(extractItemSection(TEN_K, '1C')).toBe('');
     expect(extractItemSection('no items here at all', '1A')).toBe('');

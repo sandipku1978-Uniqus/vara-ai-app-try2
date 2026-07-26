@@ -166,7 +166,13 @@ export function extractItemSection(
   let best: { start: number; end: number } | null = null;
   for (const heading of inRange) {
     if (heading.number !== target) continue;
-    const next = inRange.find(h => h.index > heading.index);
+    // A repeated heading for the SAME item never ends its own section — many
+    // filers print "Item 1A" as a running page header throughout the section,
+    // which otherwise fragments it into page-sized slices (observed live:
+    // Microsoft's Risk Factors measured as ~880 of ~15,000 tokens, and the
+    // year-over-year comparison diffed two different fragments). The slice
+    // runs to the next DIFFERENT item.
+    const next = inRange.find(h => h.index > heading.index && h.number !== target);
     const end = next ? next.index : rangeEnd;
     if (!best || end - heading.index > best.end - best.start) {
       best = { start: heading.index, end };

@@ -17,6 +17,7 @@ import { loadSicDirectoryIndex } from '../services/referenceData';
 import SectionMatrix, { type MatrixCell } from '../components/tables/SectionMatrix';
 import { useApp } from '../context/AppState';
 import TopicPassage from '../components/research/TopicPassage';
+import YoYChangeMatrix from '../components/research/YoYChangeMatrix';
 import { splitIntoParagraphs } from '../lib/filingText';
 import {
   DISCLOSURE_TOPICS,
@@ -223,7 +224,7 @@ export default function Benchmarking() {
     label: comparisonLabel,
   } = resolveComparisonTarget(comparisonTarget, DEFAULT_COMPARE_SECTION);
 
-  const [viewMode, setViewMode] = useState<'financials' | 'text-diff' | 'audit-matrix'>('financials');
+  const [viewMode, setViewMode] = useState<'financials' | 'text-diff' | 'audit-matrix' | 'yoy-changes'>('financials');
   const [commonSize, setCommonSize] = useState(false);
   const [matrixFormType, setMatrixFormType] = useState<string>('10-K');
   const [matrixData, setMatrixData] = useState<Record<string, Record<string, MatrixCell>>>({});
@@ -1001,11 +1002,14 @@ Keep it crisp and practical.`;
             <button className={`toggle-view-btn ${viewMode === 'audit-matrix' ? 'active' : ''}`} onClick={() => setViewMode('audit-matrix')}>
               <LayoutGrid size={16} /> Audit Matrix
             </button>
+            <button className={`toggle-view-btn ${viewMode === 'yoy-changes' ? 'active' : ''}`} onClick={() => setViewMode('yoy-changes')}>
+              <Type size={16} /> YoY Changes
+            </button>
           </div>
           {/* Export produces a CSV only for the two data views; Text Redline
               exports through the disclosure-matrix's own DOCX/PDF actions, so
               the CSV button would be a silent no-op there. */}
-          {viewMode !== 'text-diff' && (
+          {viewMode !== 'text-diff' && viewMode !== 'yoy-changes' && (
             <button className="icon-btn" title="Export as CSV" onClick={handleCsvExport}><Download size={18} /> Export</button>
           )}
         </div>
@@ -1743,6 +1747,10 @@ Keep it crisp and practical.`;
       )}
 
       {/* ===== AUDIT MATRIX VIEW ===== */}
+      {viewMode === 'yoy-changes' && (
+        <YoYChangeMatrix tickers={selectedTickers} companiesData={companiesData} />
+      )}
+
       {viewMode === 'audit-matrix' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div className="glass-card" style={{ padding: '16px', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>

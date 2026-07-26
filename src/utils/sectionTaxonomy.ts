@@ -89,6 +89,10 @@ const CONCEPTS: SectionConcept[] = [
   },
 ];
 
+/** The concepts, for consumers that iterate them (YoY change matrix). */
+export const SECTION_CONCEPT_LIST: Array<{ key: string; label: string }> =
+  CONCEPTS.map(concept => ({ key: concept.key, label: concept.label }));
+
 function conceptFor(input: string): SectionConcept | null {
   const needle = input.trim().toLowerCase().replace(/\s+/g, ' ');
   if (!needle) return null;

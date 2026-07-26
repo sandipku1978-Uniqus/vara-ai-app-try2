@@ -44,7 +44,7 @@ export interface SearchSurfaceContext {
 export interface CompareSurfaceContext {
   tickers: string[];
   sicCode: string;
-  viewMode: 'financials' | 'text-diff' | 'audit-matrix';
+  viewMode: 'financials' | 'text-diff' | 'audit-matrix' | 'yoy-changes';
   selectedSection: string;
   updatedAt: string;
 }
