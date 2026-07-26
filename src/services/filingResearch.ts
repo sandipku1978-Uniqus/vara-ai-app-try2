@@ -20,6 +20,7 @@ import {
   matchesAuditorSelection,
 } from './auditors';
 import { loadSicDirectoryIndex } from './referenceData';
+import { deriveSectionPath } from '../utils/sectionPath';
 import { parseSearchHit } from '../hooks/useEdgarSearch';
 import {
   buildBooleanCandidateQueries,
@@ -60,6 +61,12 @@ export interface FilingResearchResult {
   filingPrimaryDocument: string;
   description: string;
   matchSnippet: string;
+  /**
+   * Section breadcrumb for the match ("Item 9A · Controls and Procedures"),
+   * derived from validated filing text; absent for metadata and delegated
+   * matches, where no fetched text can vouch for a location.
+   */
+  matchSectionPath?: string;
   matchReason: string;
   score: number;
   relevanceScore: number;
@@ -378,6 +385,10 @@ function annotateResultMatchContext(
   }
 
   result.matchSnippet = matchSnippet;
+  // Where in the filing the match lives (Item 9A · Controls and Procedures),
+  // derived from the text already fetched for validation. Delegated matches
+  // carry no text, so they carry no breadcrumb — never a guess.
+  result.matchSectionPath = matchSnippet && filingText ? deriveSectionPath(filingText, matchSnippet) : '';
   result.matchReason =
     proximityDistance != null
       ? proximityDistance === 0
