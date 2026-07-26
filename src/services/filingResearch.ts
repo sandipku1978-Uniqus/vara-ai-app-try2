@@ -1909,6 +1909,42 @@ export async function executeFilingResearchSearch({
   return hydrateLightweightMetadata(finalResults);
 }
 
+/**
+ * Union of two independently verified result windows for the same query.
+ *
+ * A Boolean run validates every row it returns — locally against fetched text,
+ * or via EDGAR's own index for a delegated phrase. When the deep-refinement
+ * pass stops early (deadline, request budget) having verified FEWER rows than
+ * the initial pass already put on screen, replacing the baseline discards
+ * verified hits the user is looking at; observed live as 9 visible filings
+ * becoming 0 when a refinement timed out. Both windows are verified subsets of
+ * the same corpus for the same query, so their union is verified too.
+ *
+ * Refined rows lead (fresher annotations win duplicates); baseline-only rows
+ * follow. One row per filing, keyed by accession — the two passes can surface
+ * the same filing through different matched documents.
+ *
+ * Boolean mode only: a semantic initial pass may be shown before text
+ * validation, and its refinement exists precisely to REMOVE rows — merging the
+ * baseline back would defeat it.
+ */
+export function mergeVerifiedResultWindows(
+  refined: FilingResearchResult[],
+  baseline: FilingResearchResult[],
+  limit: number
+): FilingResearchResult[] {
+  const keyOf = (row: FilingResearchResult) => row.accessionNumber || row.id;
+  const seen = new Set(refined.map(keyOf));
+  const merged = [...refined];
+  for (const row of baseline) {
+    const key = keyOf(row);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    merged.push(row);
+  }
+  return merged.slice(0, Math.max(limit, 0));
+}
+
 export async function buildSearchTrendSummary(
   results: FilingResearchResult[],
   query: string,

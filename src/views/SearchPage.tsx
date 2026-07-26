@@ -26,6 +26,7 @@ import { clearDocumentHighlights, highlightDocumentSearchTerms } from '../servic
 import {
   buildSearchTrendSummary,
   executeFilingResearchSearch,
+  mergeVerifiedResultWindows,
   type FilingResearchResult,
   type ResearchSearchMode,
 } from '../services/filingResearch';
@@ -853,19 +854,26 @@ export default function SearchPage() {
 
           const currentSession = sessionsRef.current.find(session => session.id === targetSessionId);
 
+          // A refinement that stopped early with less than the initial pass
+          // already verified must not clobber it — in Boolean mode both
+          // windows are verified, so keep their union.
+          const settledMatches = effectiveMode === 'boolean'
+            ? mergeVerifiedResultWindows(refinedMatches, baselineSession.results, RESEARCH_RESULT_LIMIT)
+            : refinedMatches;
+
           const refinedSession = buildResearchSession(
             targetSessionId,
             trimmed,
             effectiveMode,
             nextFilters,
-            refinedMatches,
+            settledMatches,
             interpreted.appliedHints,
             resolvedSearch,
             createdAt,
             {
               selectedResultId: currentSession?.selectedResultId || baselineSession.selectedResultId,
               errorMsg:
-                refinedMatches.length === 0
+                settledMatches.length === 0
                   ? 'No filings matched that search. Try widening the date range, removing an auditor filter, or broadening the Boolean expression.'
                   : '',
             }
