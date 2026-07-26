@@ -612,7 +612,7 @@ export function AIQnAPanel() {
             }
 
             runtime.compareTickers = Array.from(new Set(tickers)).slice(0, 10);
-            const viewMode = String(action.input.viewMode || 'financials') as 'financials' | 'text-diff' | 'audit-matrix';
+            const viewMode = String(action.input.viewMode || 'financials') as 'financials' | 'text-diff' | 'audit-matrix' | 'yoy-changes';
             const selectedSection = String(action.input.selectedSection || 'Item 1A. Risk Factors');
             const sicCode = String(action.input.sicCode || runtime.searchFilters.sicCode || app.activeCompareContext?.sicCode || '');
 

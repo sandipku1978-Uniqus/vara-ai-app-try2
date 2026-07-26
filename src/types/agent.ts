@@ -125,7 +125,7 @@ export interface AgentContextSnapshot {
   compare: {
     tickers: string[];
     sicCode: string;
-    viewMode: 'financials' | 'text-diff' | 'audit-matrix';
+    viewMode: 'financials' | 'text-diff' | 'audit-matrix' | 'yoy-changes';
     selectedSection: string;
   } | null;
   conversation: AgentConversationTurn[];
@@ -145,7 +145,7 @@ export interface PendingCompareIntent {
   id: string;
   tickers: string[];
   sicCode?: string;
-  viewMode?: 'financials' | 'text-diff' | 'audit-matrix';
+  viewMode?: 'financials' | 'text-diff' | 'audit-matrix' | 'yoy-changes';
   selectedSection?: string;
   message?: string;
 }
