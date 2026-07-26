@@ -66,6 +66,64 @@ const REFERRING_WORDS = new Set(['see', 'refer', 'in', 'under', 'to', 'of', 'per
 
 const ITEM_RE = /(?:^| )item (\d{1,2}(?:\.\d{2})?[abc]?)(?= |$)/g;
 
+interface ItemHeading {
+  number: string;
+  index: number;
+}
+
+/**
+ * Every Item heading in engine-normalized text, in document order, with
+ * cross-references ("see Item 1A", "in Part II, Item 5") excluded. Shared by
+ * the breadcrumb deriver and the section slicer so the two can never disagree
+ * about where a section starts.
+ */
+function findItemHeadings(normalizedText: string): ItemHeading[] {
+  const headings: ItemHeading[] = [];
+  ITEM_RE.lastIndex = 0;
+  for (let hit = ITEM_RE.exec(normalizedText); hit; hit = ITEM_RE.exec(normalizedText)) {
+    const before = normalizedText.slice(0, hit.index).trimEnd().split(' ');
+    const wordBefore = before[before.length - 1] || '';
+    if (REFERRING_WORDS.has(wordBefore)) continue;
+    headings.push({ number: hit[1], index: hit.index });
+  }
+  return headings;
+}
+
+/** "Item 1A" / "1a" / "9A" / "2.02" → the normalized heading number, or ''. */
+export function normalizeItemNumber(raw: string): string {
+  const match = raw.trim().toLowerCase().match(/^(?:item\s*)?(\d{1,2}(?:\.\d{2})?[abc]?)$/);
+  return match ? match[1] : '';
+}
+
+/**
+ * The slice of a filing's text that belongs to one Item section, in
+ * engine-normalized form — from the section's own heading to the next Item
+ * heading (or end of document). Returns '' when the filing has no such
+ * section, so "Item 1A contains X" can never silently fall back to matching
+ * the whole document.
+ *
+ * A filing usually mentions each Item twice: once in the table of contents
+ * and once as the real body heading. The LAST occurrence is the body — the
+ * TOC precedes it — so the slice starts there.
+ */
+export function extractItemSection(filingText: string, itemNumber: string): string {
+  const target = normalizeItemNumber(itemNumber);
+  if (!filingText || !target) return '';
+
+  const normalizedText = normalizeForMatch(filingText);
+  const headings = findItemHeadings(normalizedText);
+
+  let start: ItemHeading | null = null;
+  for (const heading of headings) {
+    if (heading.number === target) start = heading;
+  }
+  if (!start) return '';
+
+  const startIndex: number = start.index;
+  const next = headings.find(heading => heading.index > startIndex);
+  return normalizedText.slice(startIndex, next ? next.index : undefined).trim();
+}
+
 function formatItemNumber(raw: string): string {
   // "9a" → "9A"; "2.02" stays as-is.
   return raw.replace(/([a-c])$/, letter => letter.toUpperCase());
@@ -102,15 +160,7 @@ export function deriveSectionPath(filingText: string, matchSnippet: string): str
   // the snippet's midpoint. Headings in the trailing half (the section that
   // starts right after the matched sentence) stay excluded.
   const prefix = normalizedText.slice(0, matchOffset + Math.floor(core.length / 2));
-  let heading: { number: string; index: number } | null = null;
-
-  ITEM_RE.lastIndex = 0;
-  for (let hit = ITEM_RE.exec(prefix); hit; hit = ITEM_RE.exec(prefix)) {
-    const before = prefix.slice(0, hit.index).trimEnd().split(' ');
-    const wordBefore = before[before.length - 1] || '';
-    if (REFERRING_WORDS.has(wordBefore)) continue;
-    heading = { number: hit[1], index: hit.index };
-  }
+  const heading = findItemHeadings(prefix).pop() ?? null;
   if (!heading) return '';
 
   const itemLabel = `Item ${formatItemNumber(heading.number)}`;

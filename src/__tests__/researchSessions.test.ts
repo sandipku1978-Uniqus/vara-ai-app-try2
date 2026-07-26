@@ -32,6 +32,7 @@ const makeFilters = () => ({
   fiscalYearEnd: '',
   accountingFramework: '',
   ascReference: '',
+  sectionScope: '',
 });
 
 const makeSession = (overrides: Partial<ResearchSearchSession> = {}): ResearchSearchSession => ({
