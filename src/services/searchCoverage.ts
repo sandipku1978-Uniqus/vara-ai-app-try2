@@ -7,6 +7,25 @@ export interface CandidateCoverageNotice {
 }
 
 /**
+ * Merge two coverage reports for the same logical search: widest examination,
+ * largest known total, complete only when both were, floor when either was.
+ * Shared by the page-level accumulator and the per-run snapshot so the two
+ * can never disagree.
+ */
+export function mergeCandidateCoverage(
+  current: CandidateCoverageNotice | null,
+  incoming: CandidateCoverageNotice
+): CandidateCoverageNotice {
+  if (!current) return incoming;
+  return {
+    examined: Math.max(current.examined, incoming.examined),
+    upstreamTotal: Math.max(current.upstreamTotal, incoming.upstreamTotal),
+    complete: current.complete && incoming.complete,
+    upstreamTotalIsFloor: Boolean(current.upstreamTotalIsFloor) || Boolean(incoming.upstreamTotalIsFloor),
+  };
+}
+
+/**
  * The corpus total as a display string: exact ("2,340") when upstream counted
  * it exactly, a floor ("10,000+") when upstream stopped counting. Never
  * presents a floor as an exact number.

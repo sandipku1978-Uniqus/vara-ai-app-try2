@@ -3,6 +3,7 @@ import {
   buildResearchEmptyResultMessage,
   buildResultsHeadline,
   formatUpstreamTotal,
+  mergeCandidateCoverage,
 } from '../services/searchCoverage';
 
 describe('search empty-result trust state', () => {
@@ -53,6 +54,15 @@ describe('corpus total display', () => {
   it('falls back to the plain shown count when upstream reported nothing larger', () => {
     expect(buildResultsHeadline(12, { examined: 12, upstreamTotal: 12, complete: true }, 500)).toBe('12 filings');
     expect(buildResultsHeadline(12, null, 500)).toBe('12 filings');
+  });
+
+  it('merges coverage widest-wins, complete only when both, floor when either', () => {
+    const merged = mergeCandidateCoverage(
+      { examined: 100, upstreamTotal: 500, complete: true },
+      { examined: 40, upstreamTotal: 10_000, complete: false, upstreamTotalIsFloor: true }
+    );
+    expect(merged).toEqual({ examined: 100, upstreamTotal: 10_000, complete: false, upstreamTotalIsFloor: true });
+    expect(mergeCandidateCoverage(null, merged)).toEqual(merged);
   });
 
   it('caps the shown label at the display limit', () => {
