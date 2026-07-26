@@ -1,7 +1,7 @@
 // Utility for fetching real SEC EDGAR data
 // SEC EDGAR requires a descriptive User-Agent string
 
-import { extractTextFromNode } from '../lib/filingText';
+import { extractTextFromNode, stripSgmlEnvelope } from '../lib/filingText';
 
 const USER_AGENT = process.env.NEXT_PUBLIC_EDGAR_USER_AGENT || 'Uniqus Research Center contact@uniqus.com';
 interface CachedEdgarSearch {
@@ -124,7 +124,9 @@ export function buildSecEftsUrl(path: string, params?: Record<string, string | n
  * `textContent` is not a safe substitute.
  */
 export function extractDocumentTextFromHtml(html: string): string {
-  const doc = new DOMParser().parseFromString(html, 'text/html');
+  // Browsers parse an SGML <DOCUMENT> envelope leniently where linkedom finds
+  // no <body> at all; both sides strip it so output stays byte-identical.
+  const doc = new DOMParser().parseFromString(stripSgmlEnvelope(html), 'text/html');
   if (!doc.body) return '';
   return extractTextFromNode(doc.body as unknown as Parameters<typeof extractTextFromNode>[0]);
 }
