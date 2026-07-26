@@ -1452,6 +1452,14 @@ export async function executeFilingResearchSearch({
   // re-opening documents (see requiresTextFiltering).
   const delegatedToEfts =
     mode === 'boolean' && !needsTextFiltering && Boolean(eftsDelegablePhrase(parsedBooleanQuery.expression));
+  // Whether the wave loop opens each candidate document. A delegated phrase is
+  // already proved by EDGAR's index and nothing downstream reads the text, but
+  // callers still pass hydrateTextSignals=true for every Boolean run — left
+  // ungated, those no-op fetches spend the 120-document budget and cap recall
+  // at ~120 candidates regardless of collection depth (measured: 498 collected,
+  // 120 examined, 110 shown). Same trap as keying depth off needsTextFiltering:
+  // any flag used as a proxy for "reads documents" inverts under delegation.
+  const hydratePerDocumentSignals = shouldHydrateSignals && !delegatedToEfts;
 
   const booleanPlan = mode === 'boolean'
     ? buildBooleanServerQueries(query || filters.keyword, filters, delegatedToEfts)
@@ -1506,10 +1514,10 @@ export async function executeFilingResearchSearch({
       : delegatedToEfts || needsTextFiltering
         ? Math.max(displayLimit, 500)
         : Math.min(Math.max(displayLimit, 140), 300);
-  // Collecting deeper than 500 was measured and made no difference: 2,000
-  // candidates produced the same rows as 500, so a constraint downstream of
-  // collection is binding. Left at 500 rather than spending four times the
-  // upstream requests for nothing.
+  // Depth is bounded by what can be shown: display caps at 500, and for a
+  // delegated run every upstream hit is a finished row. (An earlier "2,000
+  // candidates produced the same rows as 500" measurement was an artifact of
+  // the document budget capping validation at 120 — see hydratePerDocumentSignals.)
 
   const hitMap = new Map<string, { hit: EdgarSearchHit; queryPriority: number; score: number }>();
   let lastSearchError: Error | null = null;
@@ -1765,8 +1773,10 @@ export async function executeFilingResearchSearch({
       // Only open documents when something actually reads them. A delegated
       // phrase is already proved by EDGAR's index over the whole filing, so
       // fetching each one confirms nothing and spends the budget that caps
-      // recall — this loop used to hydrate unconditionally.
-      if (shouldHydrateSignals) {
+      // recall — this loop used to hydrate whenever the CALLER asked for
+      // signals, which every Boolean run does (that was the 110-filing recall
+      // ceiling).
+      if (hydratePerDocumentSignals) {
         await Promise.all(
           chunk.map(async result => {
             const signalData = await hydrateResultSignals(result, signal);
@@ -1809,7 +1819,10 @@ export async function executeFilingResearchSearch({
         progressCallback(sortResearchResults([...filteredResults], preferRelevance).slice(0, displayLimit));
       }
 
-      if (index + batchSize < waveCandidates.length && filteredResults.length < displayLimit) {
+      // Pacing exists to protect /api/sec-proxy from fetch bursts. A wave that
+      // opened no documents has nothing to pace — sleeping 150ms per 4
+      // candidates would add ~19s of idle time to a 500-candidate delegated run.
+      if (hydratePerDocumentSignals && index + batchSize < waveCandidates.length && filteredResults.length < displayLimit) {
         await delay(150);
       }
     }
