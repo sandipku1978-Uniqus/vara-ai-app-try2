@@ -27,6 +27,12 @@ export interface ResearchSearchSession {
   /** Boolean engine that produced `results`. Absent on sessions stored before
    *  versioning. Optional so a rollback build ignores it safely. */
   engineVersion?: number;
+  /**
+   * Candidate-coverage snapshot from the run that produced `results`, so a
+   * restored tab keeps its corpus answer ("10,000+ filings match") instead of
+   * silently degrading to the shown count. Absent on older stored sessions.
+   */
+  coverage?: { examined: number; upstreamTotal: number; complete: boolean; upstreamTotalIsFloor?: boolean } | null;
 }
 
 const STORAGE_KEY = 'vara.research.sessions.v1';

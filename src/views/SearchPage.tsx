@@ -55,7 +55,7 @@ import {
   type ResearchSearchSession,
 } from '../services/researchSessions';
 import { buildHighlightTerms } from '../services/searchAssist';
-import { buildResearchEmptyResultMessage, buildResultsHeadline, formatUpstreamTotal } from '../services/searchCoverage';
+import { buildResearchEmptyResultMessage, buildResultsHeadline, formatUpstreamTotal, mergeCandidateCoverage } from '../services/searchCoverage';
 import SearchScopeBanner from '../components/research/SearchScopeBanner';
 import ActiveQueryChips from '../components/research/ActiveQueryChips';
 import BooleanSyntaxHelp, { BooleanSyntaxHelpTrigger } from '../components/research/BooleanSyntaxHelp';
@@ -149,7 +149,12 @@ function buildResearchSession(
   interpretation: string[],
   resolvedSearch: { query: string; mode: ResearchSearchMode; filters: SearchFilters },
   createdAt: string,
-  options: { isRefining?: boolean; errorMsg?: string; selectedResultId?: string | null } = {}
+  options: {
+    isRefining?: boolean;
+    errorMsg?: string;
+    selectedResultId?: string | null;
+    coverage?: SearchCandidateCoverage | null;
+  } = {}
 ): ResearchSearchSession {
   const selectedResultId =
     options.selectedResultId && results.some(result => result.id === options.selectedResultId)
@@ -171,6 +176,7 @@ function buildResearchSession(
     selectedResultId,
     createdAt,
     updatedAt: new Date().toISOString(),
+    coverage: options.coverage ?? null,
   };
 }
 
@@ -385,16 +391,12 @@ export default function SearchPage() {
   const [isInsightsExpanded, setIsInsightsExpanded] = useState(false);
   const [degradedNotice, setDegradedNotice] = useState('');
   const [candidateCoverage, setCandidateCoverage] = useState<SearchCandidateCoverage | null>(null);
+  // Which session's coverage snapshot the state currently reflects — guards
+  // the activation effect from clobbering a live run's fresher accumulator.
+  const coverageRestoredForSessionRef = useRef<string | null>(null);
 
   const captureCandidateCoverage = useCallback((coverage: SearchCandidateCoverage) => {
-    setCandidateCoverage(current => current
-      ? {
-          examined: Math.max(current.examined, coverage.examined),
-          upstreamTotal: Math.max(current.upstreamTotal, coverage.upstreamTotal),
-          complete: current.complete && coverage.complete,
-          upstreamTotalIsFloor: Boolean(current.upstreamTotalIsFloor) || Boolean(coverage.upstreamTotalIsFloor),
-        }
-      : coverage);
+    setCandidateCoverage(current => mergeCandidateCoverage(current, coverage));
   }, []);
 
   const previewFrameRef = useRef<HTMLIFrameElement>(null);
@@ -638,7 +640,14 @@ export default function SearchPage() {
         ? activeSessionIdRef.current === targetSessionId
         : activeSessionIdRef.current === visibleAtSubmit || activeSessionIdRef.current === targetSessionId);
     const guardedDegraded = (reason: string) => { if (isVisibleRun()) setDegradedNotice(reason); };
-    const guardedCoverage: typeof captureCandidateCoverage = coverage => { if (isVisibleRun()) captureCandidateCoverage(coverage); };
+    // The run's own coverage, kept independently of the globally visible
+    // accumulator so it can be stored on the session it belongs to — a
+    // restored or re-activated tab then keeps its corpus answer.
+    let runCoverage: SearchCandidateCoverage | null = null;
+    const guardedCoverage: typeof captureCandidateCoverage = coverage => {
+      runCoverage = mergeCandidateCoverage(runCoverage, coverage);
+      if (isVisibleRun()) captureCandidateCoverage(coverage);
+    };
 
     try {
       const effectiveQuery = interpreted.query || trimmed;
@@ -723,6 +732,7 @@ export default function SearchPage() {
         createdAt,
         {
           isRefining: shouldRunBackgroundRefinement,
+          coverage: runCoverage,
           errorMsg:
             initialMatches.length === 0 && !shouldRunBackgroundRefinement
               ? 'No filings matched that search. Try widening the date range, removing an auditor filter, or broadening the Boolean expression.'
@@ -786,6 +796,7 @@ export default function SearchPage() {
               createdAt,
               {
                 isRefining: shouldRunDeepRefinement,
+                coverage: runCoverage,
                 selectedResultId: currentSession?.selectedResultId || baselineSession.selectedResultId,
                 errorMsg:
                   visibleAuditorMatches.length === 0 && !shouldRunDeepRefinement
@@ -838,6 +849,7 @@ export default function SearchPage() {
                 createdAt,
                 {
                   isRefining: true,
+                  coverage: runCoverage,
                   selectedResultId: currentSession?.selectedResultId || baselineSession.selectedResultId,
                 }
               );
@@ -872,6 +884,7 @@ export default function SearchPage() {
             resolvedSearch,
             createdAt,
             {
+              coverage: runCoverage,
               selectedResultId: currentSession?.selectedResultId || baselineSession.selectedResultId,
               errorMsg:
                 settledMatches.length === 0
@@ -905,6 +918,7 @@ export default function SearchPage() {
             createdAt,
             {
               isRefining: false,
+              coverage: runCoverage,
               selectedResultId: currentSession?.selectedResultId || baselineSession.selectedResultId,
               errorMsg:
                 baselineSession.results.length === 0
@@ -942,6 +956,7 @@ export default function SearchPage() {
         },
         activeSession?.id === targetSessionId ? activeSession.createdAt : new Date().toISOString(),
         {
+          coverage: runCoverage,
           errorMsg: 'Research search failed. Check the SEC proxy path or try a narrower query.',
         }
       );
@@ -969,10 +984,18 @@ export default function SearchPage() {
 
   useEffect(() => {
     if (!activeSession) {
+      coverageRestoredForSessionRef.current = null;
       return;
     }
 
     activeSessionIdRef.current = activeSession.id;
+    // Restore the session's coverage snapshot only when SWITCHING sessions.
+    // This effect also fires on every upsert of the same session during a
+    // live run, where the page accumulator is fresher than the snapshot.
+    if (coverageRestoredForSessionRef.current !== activeSession.id) {
+      coverageRestoredForSessionRef.current = activeSession.id;
+      setCandidateCoverage(activeSession.coverage ?? null);
+    }
     setQuery(activeSession.query);
     setSearchMode(activeSession.mode);
     setFilters(cloneSearchFilters(activeSession.filters));
