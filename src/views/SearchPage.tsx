@@ -56,6 +56,8 @@ import {
 import { buildHighlightTerms } from '../services/searchAssist';
 import { buildResearchEmptyResultMessage } from '../services/searchCoverage';
 import SearchScopeBanner from '../components/research/SearchScopeBanner';
+import ActiveQueryChips from '../components/research/ActiveQueryChips';
+import BooleanSyntaxHelp, { BooleanSyntaxHelpTrigger } from '../components/research/BooleanSyntaxHelp';
 import { generateSearchTrendReport, SEARCH_TREND_AI_FALLBACK } from '../services/searchTrendReport';
 import { planResearchSearch } from '../services/researchSearchPlan';
 import { canUseInstantEnrichedSearch } from '../services/filingResearch';
@@ -350,6 +352,7 @@ export default function SearchPage() {
   const [companyDirectory, setCompanyDirectory] = useState<CompanyDirectoryEntry[]>([]);
   const [querySuggestions, setQuerySuggestions] = useState<CompanyDirectoryEntry[]>([]);
   const [suggestionsOpen, setSuggestionsOpen] = useState(false);
+  const [syntaxHelpOpen, setSyntaxHelpOpen] = useState(false);
   const [searchMode, setSearchMode] = useState<ResearchSearchMode>(initialRouteSearch?.mode || 'semantic');
   const [filters, setFilters] = useState<SearchFilters>(() =>
     cloneSearchFilters(initialRouteSearch?.filters || defaultSearchFilters)
@@ -1422,7 +1425,9 @@ export default function SearchPage() {
                   placeholder={
                     searchMode === 'semantic'
                       ? 'Describe the issue you want to research...'
-                      : 'AND OR NOT w/5 · "phrase" · auditor:Deloitte — e.g. "material weakness" AND auditor:KPMG'
+                      // The full operator set lives in the syntax popover; a
+                      // placeholder vanishes the moment you type.
+                      : 'e.g. "material weakness" AND auditor:KPMG'
                   }
                   value={query}
                   onChange={event => {
@@ -1439,9 +1444,18 @@ export default function SearchPage() {
                   aria-autocomplete="list"
                   aria-expanded={suggestionsOpen && querySuggestions.length > 0}
                 />
+                {searchMode === 'boolean' && (
+                  <BooleanSyntaxHelpTrigger
+                    expanded={syntaxHelpOpen}
+                    onClick={() => setSyntaxHelpOpen(open => !open)}
+                  />
+                )}
                 <button type="submit" className="primary-btn" disabled={loading}>
                   {loading ? <Loader2 size={16} className="spinner" /> : 'Search'}
                 </button>
+                {searchMode === 'boolean' && (
+                  <BooleanSyntaxHelp open={syntaxHelpOpen} onClose={() => setSyntaxHelpOpen(false)} />
+                )}
                 {suggestionsOpen && querySuggestions.length > 0 && (
                   <div role="listbox" id="workbench-company-listbox" aria-label="Company suggestions" style={{
                     position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 30,
@@ -1623,6 +1637,17 @@ export default function SearchPage() {
               </div>
             ) : displayResults.length > 0 ? (
               <>
+                {/* What actually ran, before what it returned — a rewrite the
+                    engine made silently is otherwise undetectable. */}
+                <ActiveQueryChips
+                  mode={activeResolvedSearch.mode === 'boolean' ? 'boolean' : 'semantic'}
+                  query={activeResolvedSearch.query}
+                  entityName={activeResolvedSearch.filters.entityName || undefined}
+                  auditor={activeResolvedSearch.filters.accountant || undefined}
+                  forms={activeResolvedSearch.filters.formTypes}
+                  dateFrom={activeResolvedSearch.filters.dateFrom || undefined}
+                  dateTo={activeResolvedSearch.filters.dateTo || undefined}
+                />
                 {/* The denominator. Without it a bounded result set and an
                     exhaustive one look identical to the reader. */}
                 <SearchScopeBanner

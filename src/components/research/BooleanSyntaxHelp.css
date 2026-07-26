@@ -1,0 +1,116 @@
+/* Syntax reference anchored under the query field. Reference material, so it
+   stays quiet and lets the examples carry the weight. */
+.bool-help__trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.bool-help__trigger:hover,
+.bool-help__trigger[aria-expanded='true'] {
+  color: var(--accent-primary);
+  background: color-mix(in srgb, var(--accent-primary) 12%, transparent);
+}
+
+.bool-help {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 6px);
+  right: 0;
+  width: min(560px, calc(100vw - 32px));
+  max-height: min(70vh, 560px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 14px 16px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-elevated);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 22%);
+  text-align: left;
+}
+
+.bool-help__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.bool-help__head h3 {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-primary);
+}
+
+.bool-help__head button {
+  display: inline-flex;
+  padding: 3px;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.bool-help__head button:hover { color: var(--text-primary); }
+
+.bool-help__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+
+.bool-help__table th {
+  padding: 0 8px 5px 0;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.bool-help__table td {
+  padding: 6px 8px 6px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--border-color) 45%, transparent);
+  color: var(--text-secondary);
+  vertical-align: top;
+}
+
+.bool-help__table code {
+  color: var(--accent-primary);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Examples are what people copy, so they read as query text, not prose. */
+.bool-help__eg {
+  color: var(--text-primary);
+  font-family: var(--font-mono, ui-monospace, monospace);
+  font-size: 0.74rem;
+}
+
+.bool-help__table--muted code,
+.bool-help__table--muted .bool-help__eg {
+  color: var(--text-muted);
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+}
+
+.bool-help__note {
+  margin: 12px 0 4px;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+@media (max-width: 720px) {
+  .bool-help { right: auto; left: 0; }
+}
