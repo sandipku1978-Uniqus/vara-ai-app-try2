@@ -20,7 +20,7 @@ import {
   matchesAuditorSelection,
 } from './auditors';
 import { loadSicDirectoryIndex } from './referenceData';
-import { deriveSectionPath } from '../utils/sectionPath';
+import { deriveSectionPath, extractItemSection } from '../utils/sectionPath';
 import {
   buildReferenceSearchTerms,
   parseAccountingReference,
@@ -986,8 +986,23 @@ function requiresCompanyMetadata(filters: SearchFilters): boolean {
   return needsCompanyFields;
 }
 
-function matchesSignalFilters(result: FilingResearchResult, filters: SearchFilters, filingText: string): boolean {
-  if (filters.sectionKeywords.trim() && !matchesSectionKeywords(filingText, filters.sectionKeywords)) {
+function matchesSignalFilters(
+  result: FilingResearchResult,
+  filters: SearchFilters,
+  filingText: string,
+  // Section-scoped slice when an Item scope is set; text-level predicates that
+  // the scope should narrow read this one. Whole-document predicates
+  // (framework, citation) stay on filingText — a filing cites ASC 842 in the
+  // notes even when the query is scoped to Item 1A.
+  scopedText: string = filingText
+): boolean {
+  if (filters.sectionKeywords.trim() && !matchesSectionKeywords(scopedText, filters.sectionKeywords)) {
+    return false;
+  }
+
+  // An Item scope with no other text predicate is still a real filter:
+  // "has an Item 1C section at all". An empty slice fails it.
+  if ((filters.sectionScope || '').trim() && !scopedText) {
     return false;
   }
 
@@ -1379,7 +1394,8 @@ function requiresTextFiltering(
         filters.acceleratedStatus.length === 0 &&
         !filters.sectionKeywords.trim() &&
         !filters.accountingFramework.trim() &&
-        !(filters.ascReference || '').trim();
+        !(filters.ascReference || '').trim() &&
+        !(filters.sectionScope || '').trim();
       return !delegable;
     }
     // An auditor-only Boolean search ("auditor:KPMG") has no text expression but
@@ -1387,7 +1403,8 @@ function requiresTextFiltering(
     return (
       filters.accountant.trim().length > 0 ||
       filters.acceleratedStatus.length > 0 ||
-      (filters.ascReference || '').trim().length > 0
+      (filters.ascReference || '').trim().length > 0 ||
+      (filters.sectionScope || '').trim().length > 0
     );
   }
 
@@ -1400,6 +1417,10 @@ function requiresTextFiltering(
   }
 
   if ((filters.ascReference || '').trim()) {
+    return true;
+  }
+
+  if ((filters.sectionScope || '').trim()) {
     return true;
   }
 
@@ -1783,7 +1804,11 @@ export async function executeFilingResearchSearch({
     // Two invariants keep it a strict optimisation: an unvalidated verdict is
     // NOT a non-match and falls through to the local path unchanged, and any
     // failure — offline, 4xx, slow — skips the pre-screen entirely.
-    if (mode === 'boolean' && needsTextFiltering && parsedBooleanQuery.expression && waveCandidates.length > 0) {
+    // The server pre-screen evaluates the expression over the WHOLE document.
+    // Under an Item scope that verdict is not transferable: a NOT operand can
+    // fail on the full text yet hold inside the section, so a full-text
+    // non-match must not reject a section-scoped candidate.
+    if (mode === 'boolean' && needsTextFiltering && parsedBooleanQuery.expression && waveCandidates.length > 0 && !(filters.sectionScope || '').trim()) {
       const prescreenKey = (cik: string, accession: string, document: string) =>
         `${cik}:${accession.replace(/-/g, '')}:${document}`;
       const rejectedByServer = new Set<string>();
@@ -1868,6 +1893,12 @@ export async function executeFilingResearchSearch({
 
       for (const result of chunk) {
         const filingText = signalMap.get(getSignalCacheKey(result))?.text || '';
+        // "Item 1A contains X": the expression and section keywords are
+        // evaluated INSIDE the named section's slice. A filing without the
+        // section yields an empty slice and never matches — scoping must
+        // never silently widen back to the whole document.
+        const sectionScope = (filters.sectionScope || '').trim();
+        const scopedText = sectionScope && filingText ? extractItemSection(filingText, sectionScope) : filingText;
 
         if (needsTextFiltering && mode === 'boolean' && parsedBooleanQuery.expression) {
           if (!filingText) {
@@ -1878,15 +1909,17 @@ export async function executeFilingResearchSearch({
             if (kind) fetchFailureKinds.set(kind, (fetchFailureKinds.get(kind) ?? 0) + 1);
             continue;
           }
-          if (!booleanQueryMatches(query, filingText)) continue;
+          if (!scopedText || !booleanQueryMatches(query, scopedText)) continue;
         }
 
-        if (needsTextFiltering && !matchesSignalFilters(result, filters, filingText)) continue;
+        if (needsTextFiltering && !matchesSignalFilters(result, filters, filingText, scopedText)) continue;
 
         // With a delegated phrase there is no fetched text to snippet from —
-        // the match was proved upstream, and the label must say so.
+        // the match was proved upstream, and the label must say so. A scoped
+        // match snippets from the section slice, so the excerpt (and its
+        // breadcrumb) come from where the match actually was allowed to live.
         filteredResults.push(
-          annotateResultMatchContext(result, query, filters, mode, filingText, delegatedToEfts)
+          annotateResultMatchContext(result, query, filters, mode, scopedText, delegatedToEfts)
         );
       }
 
