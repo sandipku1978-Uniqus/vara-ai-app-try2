@@ -6,8 +6,14 @@
  *
  * v2 — token-bounded phrases, symmetric punctuation, singular/plural
  *      equivalence, independent OR-branch retrieval, per-run request budgets.
+ * v3 — numeric operators (#, $#, %#) and number-aware tokenization: currency
+ *      amounts ($206.6), percentages (5.2%) and decimals survive as single
+ *      tokens instead of splitting at the symbol.
  */
-export const BOOLEAN_ENGINE_VERSION = 2;
+export const BOOLEAN_ENGINE_VERSION = 3;
+
+/** Which class of numeric token a # operator matches. */
+export type NumberUnit = 'any' | 'currency' | 'percent';
 
 type Token =
   | { type: 'LPAREN' }
@@ -16,12 +22,14 @@ type Token =
   | { type: 'OR' }
   | { type: 'NOT' }
   | { type: 'PROX'; distance: number }
+  | { type: 'NUMBER'; unit: NumberUnit }
   | { type: 'TERM'; value: string }
   | { type: 'PHRASE'; value: string };
 
 export type BooleanSearchNode =
   | { type: 'TERM'; value: string }
   | { type: 'PHRASE'; value: string }
+  | { type: 'NUMBER'; unit: NumberUnit }
   | { type: 'PROX'; distance: number; left: BooleanSearchNode; right: BooleanSearchNode }
   | { type: 'NOT'; child: BooleanSearchNode }
   | { type: 'AND'; left: BooleanSearchNode; right: BooleanSearchNode }
@@ -95,12 +103,41 @@ function normalizeWhitespace(value: string): string {
 // acronym into single-letter tokens; everything else non-alphanumeric becomes a
 // token boundary. Applying the SAME transform to both sides is what makes
 // punctuation match symmetrically ("U.S. GAAP" ≡ "US GAAP").
+//
+// Numbers are the exception to "symbols split": a currency prefix ($ £ ¥ €),
+// a percent suffix, and a decimal point INSIDE a number stay attached, so
+// "$206.6" and "5.2%" survive as single tokens the numeric operators can
+// classify. Thousands separators are removed ("1,234" ≡ "1234"). Mixed
+// alphanumerics ("3m", "10k") tokenize exactly as before.
+const MATCH_TOKEN_RE = /[$£¥€]\d+(?:\.\d+)?%?|(?<![a-z0-9])\d+(?:\.\d+)?%?(?![a-z0-9])|[a-z0-9]+/g;
+
 function normalizeMatchText(value: string): string {
-  return normalizeWhitespace(
-    value
-      .toLowerCase()
-      .replace(/\b([a-z])\./g, '$1')
-      .replace(/[^a-z0-9]+/g, ' ')
+  const lowered = value
+    .toLowerCase()
+    .replace(/\b([a-z])\./g, '$1')
+    .replace(/(\d),(?=\d)/g, '$1');
+  return (lowered.match(MATCH_TOKEN_RE) || []).join(' ');
+}
+
+// Numeric-token classes for the # operators. `any` accepts decorated numbers
+// too: a filing that writes "$206.6" has still disclosed *a number*.
+const CURRENCY_TOKEN_RE = /^[$£¥€]\d+(?:\.\d+)?$/;
+const PERCENT_TOKEN_RE = /^\d+(?:\.\d+)?%$/;
+const ANY_NUMBER_TOKEN_RE = /^[$£¥€]?\d+(?:\.\d+)?%?$/;
+
+// Comparison form for term/phrase matching: the currency/percent decoration
+// belongs to the numeric operators, not to term equality — a query for "5"
+// must keep matching a filing's "5%" exactly as it did when symbols were
+// token boundaries.
+function stripNumericDecoration(token: string): string {
+  return token.replace(/^[$£¥€]/, '').replace(/%$/, '');
+}
+
+function tokensEquivalent(a: string, b: string): boolean {
+  return (
+    a === b ||
+    singularStem(a) === singularStem(b) ||
+    stripNumericDecoration(a) === stripNumericDecoration(b)
   );
 }
 
@@ -141,9 +178,7 @@ function getEquivalentSearchValues(value: string): string[] {
 }
 
 function tokenMatchesTerm(actualToken: string, value: string): boolean {
-  return buildTermMatchVariants(value).some(variant =>
-    actualToken === variant || singularStem(actualToken) === singularStem(variant)
-  );
+  return buildTermMatchVariants(value).some(variant => tokensEquivalent(actualToken, variant));
 }
 
 function tokenize(query: string): Token[] {
@@ -191,6 +226,10 @@ function tokenize(query: string): Token[] {
 
     const upper = value.toUpperCase();
     const proxMatch = value.match(/^(?:W|WITHIN|NEAR)\/(\d+)$/i);
+    // Intelligize-style numeric operands: # any number, $# (£# ¥# €#) a
+    // currency amount, %# a percentage. "goodwill impairment" W/10 $# finds
+    // every filing that QUANTIFIES a goodwill impairment.
+    const numberMatch = value.match(/^([$£¥€%])?#$/);
 
     if (upper === 'AND') {
       tokens.push({ type: 'AND' });
@@ -200,6 +239,11 @@ function tokenize(query: string): Token[] {
       tokens.push({ type: 'NOT' });
     } else if (proxMatch) {
       tokens.push({ type: 'PROX', distance: Number(proxMatch[1]) });
+    } else if (numberMatch) {
+      tokens.push({
+        type: 'NUMBER',
+        unit: numberMatch[1] === '%' ? 'percent' : numberMatch[1] ? 'currency' : 'any',
+      });
     } else {
       tokens.push({ type: 'TERM', value: normalizeWhitespace(value) });
     }
@@ -226,6 +270,7 @@ function isPrimaryStart(token?: Token): boolean {
       (token.type === 'LPAREN' ||
         token.type === 'TERM' ||
         token.type === 'PHRASE' ||
+        token.type === 'NUMBER' ||
         token.type === 'NOT')
   );
 }
@@ -251,6 +296,10 @@ function parsePrimary(state: ParserState): BooleanSearchNode {
 
   if (token.type === 'PHRASE') {
     return { type: 'PHRASE', value: token.value };
+  }
+
+  if (token.type === 'NUMBER') {
+    return { type: 'NUMBER', unit: token.unit };
   }
 
   throw new Error('Expected a search term.');
@@ -350,20 +399,39 @@ export function parseBooleanQuery(query: string): ParsedBooleanQuery {
 
 export function looksLikeBooleanQuery(query: string): boolean {
   // Auto-switch Filing Research → Boolean only on high-confidence signals:
-  // UPPERCASE operators, a proximity operator, or an auditor: field token.
+  // UPPERCASE operators, a proximity operator, an auditor: field token, or a
+  // numeric operand (#, $#, %#) — none of these occur in natural prose.
   // Lowercase prose ("increases and decreases"), quotes, or parentheses alone
   // must NOT silently change the mode the user selected.
   if (/\b(?:AND|OR|NOT)\b/.test(query)) return true;
   if (/\b(?:W|WITHIN|NEAR|w|within|near)\/\d+/.test(query)) return true;
   if (/\b(?:auditor|accountant|auditfirm|audited[_-]?by)\s*:/i.test(query)) return true;
+  if (/(?:^|\s)[$£¥€%]?#(?=\s|$)/.test(query)) return true;
   return false;
+}
+
+/** True when any operand anywhere in the expression is a numeric (#) operator. */
+function containsNumberOperand(node: BooleanSearchNode): boolean {
+  switch (node.type) {
+    case 'NUMBER':
+      return true;
+    case 'NOT':
+      return containsNumberOperand(node.child);
+    case 'PROX':
+    case 'AND':
+    case 'OR':
+      return containsNumberOperand(node.left) || containsNumberOperand(node.right);
+    default:
+      return false;
+  }
 }
 
 /** True when any proximity node has an operand that is not a term or phrase. */
 function hasUnsupportedProximity(node: BooleanSearchNode): boolean {
   switch (node.type) {
     case 'PROX': {
-      const simple = (side: BooleanSearchNode) => side.type === 'TERM' || side.type === 'PHRASE';
+      const simple = (side: BooleanSearchNode) =>
+        side.type === 'TERM' || side.type === 'PHRASE' || side.type === 'NUMBER';
       return !simple(node.left) || !simple(node.right);
     }
     case 'NOT':
@@ -409,6 +477,7 @@ export type BooleanIssueCode =
   | 'parse'
   | 'unsupported-proximity'
   | 'negative-only'
+  | 'numeric-only'
   | 'too-complex';
 
 export type BooleanCompileResult =
@@ -482,8 +551,13 @@ export function compileBooleanQuery(raw: string): BooleanCompileResult {
 
   // A query made only of NOT terms has nothing to fetch from EDGAR (there is no
   // "every filing that lacks X" endpoint), so it cannot be run as-is — unless an
-  // auditor token supplies the positive anchor to fetch against.
+  // auditor token supplies the positive anchor to fetch against. The numeric
+  // operators are in the same position: # matches a CLASS of token, so it can
+  // validate candidates but can never retrieve them.
   if (collectPositiveTerms(parsed.expression).size === 0 && !auditor) {
+    if (containsNumberOperand(parsed.expression)) {
+      return fail('numeric-only', 'The numeric operator matches values, not filings — anchor it to a term or phrase, e.g. "goodwill impairment" w/10 $#.');
+    }
     return fail('negative-only', 'Add at least one term that is not negated — a NOT-only query has nothing to match against.');
   }
 
@@ -527,9 +601,7 @@ function findPhraseSpans(index: TextIndex, normalizedPhrase: string): Array<{ st
   for (let i = 0; i <= index.tokens.length - phraseTokens.length; i += 1) {
     let matched = true;
     for (let j = 0; j < phraseTokens.length; j += 1) {
-      const a = index.tokens[i + j];
-      const b = phraseTokens[j];
-      if (a !== b && singularStem(a) !== singularStem(b)) { matched = false; break; }
+      if (!tokensEquivalent(index.tokens[i + j], phraseTokens[j])) { matched = false; break; }
     }
     if (matched) spans.push({ start: i, end: i + phraseTokens.length - 1 });
   }
@@ -563,6 +635,16 @@ function findOperandSpans(node: BooleanSearchNode, index: TextIndex): Array<{ st
   if (node.type === 'PHRASE') {
     const normalized = normalizeTokenValue(node.value);
     return normalized ? findPhraseSpans(index, normalized) : [];
+  }
+
+  if (node.type === 'NUMBER') {
+    const matcher =
+      node.unit === 'currency' ? CURRENCY_TOKEN_RE
+      : node.unit === 'percent' ? PERCENT_TOKEN_RE
+      : ANY_NUMBER_TOKEN_RE;
+    return index.tokens
+      .map((token, position) => (matcher.test(token) ? { start: position, end: position } : null))
+      .filter((value): value is { start: number; end: number } => value !== null);
   }
 
   return [];
@@ -667,9 +749,12 @@ function evaluate(node: BooleanSearchNode, index: TextIndex): boolean {
   switch (node.type) {
     case 'TERM':
     case 'PHRASE':
+    case 'NUMBER':
       // Token-boundary matching for both bare terms and quoted phrases —
       // never a raw substring. "net income" must not match "planet income",
       // and a punctuation term ("non-GAAP", "R&D") matches its token sequence.
+      // NUMBER matches any token of its numeric class; alone it is nearly
+      // always true and only becomes selective inside W/n.
       return findOperandSpans(node, index).length > 0;
     case 'PROX':
       return matchesProximity(node, index);
