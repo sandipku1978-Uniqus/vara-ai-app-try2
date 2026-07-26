@@ -54,7 +54,7 @@ import {
   type ResearchSearchSession,
 } from '../services/researchSessions';
 import { buildHighlightTerms } from '../services/searchAssist';
-import { buildResearchEmptyResultMessage } from '../services/searchCoverage';
+import { buildResearchEmptyResultMessage, buildResultsHeadline, formatUpstreamTotal } from '../services/searchCoverage';
 import SearchScopeBanner from '../components/research/SearchScopeBanner';
 import ActiveQueryChips from '../components/research/ActiveQueryChips';
 import BooleanSyntaxHelp, { BooleanSyntaxHelpTrigger } from '../components/research/BooleanSyntaxHelp';
@@ -391,6 +391,7 @@ export default function SearchPage() {
           examined: Math.max(current.examined, coverage.examined),
           upstreamTotal: Math.max(current.upstreamTotal, coverage.upstreamTotal),
           complete: current.complete && coverage.complete,
+          upstreamTotalIsFloor: Boolean(current.upstreamTotalIsFloor) || Boolean(coverage.upstreamTotalIsFloor),
         }
       : coverage);
   }, []);
@@ -1592,7 +1593,10 @@ export default function SearchPage() {
             <div className="pane-header">
               <div>
                 <div className="eyebrow">Search hits</div>
-                <h2>{displayResults.length > 0 ? `${displayResults.length >= RESEARCH_RESULT_LIMIT ? `${RESEARCH_RESULT_LIMIT}+` : displayResults.length} filings` : 'No results yet'}</h2>
+                {/* Lead with the corpus answer ("how many filers disclosed X?"),
+                    then how many of those are validated below — a bounded shown
+                    count must never read as the size of the corpus. */}
+                <h2>{displayResults.length > 0 ? buildResultsHeadline(displayResults.length, candidateCoverage, RESEARCH_RESULT_LIMIT) : 'No results yet'}</h2>
               </div>
               {displayResults.length > 1 && (
                 <div style={{ display: 'flex', gap: '6px' }}>
@@ -1622,7 +1626,7 @@ export default function SearchPage() {
             {!loading && (candidateCoverage || pagedDisplayResults.length > 0) && (
               <div role="status" style={{ padding: '7px 12px', color: 'var(--text-muted)', fontSize: '0.7rem', borderBottom: '1px solid var(--input-border)' }}>
                 {candidateCoverage
-                  ? `Candidate coverage: examined ${candidateCoverage.examined.toLocaleString()} of ${candidateCoverage.upstreamTotal.toLocaleString()} upstream candidates (${candidateCoverage.complete ? 'complete' : 'partial candidate window'}). `
+                  ? `Candidate coverage: examined ${candidateCoverage.examined.toLocaleString()} of ${formatUpstreamTotal(candidateCoverage)} upstream candidates (${candidateCoverage.complete ? 'complete' : 'partial candidate window'}). `
                   : ''}
                 {pagedDisplayResults.length > 0
                   ? `SIC metadata is available for ${pagedDisplayResults.filter(result => Boolean(result.sic.trim())).length}/${pagedDisplayResults.length} results on this page; official EDGAR submissions supply missing candidate metadata where available.`

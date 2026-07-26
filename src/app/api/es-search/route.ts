@@ -415,6 +415,7 @@ export async function GET(request: Request) {
                 examined: efts.hits.length,
                 upstreamTotal: efts.total,
                 complete: candidateComplete,
+                upstreamTotalIsFloor: efts.relation === 'gte',
               },
             }
           : {
@@ -427,6 +428,7 @@ export async function GET(request: Request) {
                 examined: from + page.length,
                 upstreamTotal: efts.total,
                 complete: !efts.interrupted && efts.relation === 'eq' && from + page.length >= efts.total,
+                upstreamTotalIsFloor: efts.relation === 'gte',
               },
               // Compatibility alias for older clients; remove after one release.
               pageCoverage: {

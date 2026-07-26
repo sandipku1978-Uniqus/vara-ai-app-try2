@@ -1438,6 +1438,8 @@ export async function executeFilingResearchSearch({
           examined: Math.max(upstreamCoverageState.value.examined, coverage.examined),
           upstreamTotal: Math.max(upstreamCoverageState.value.upstreamTotal, coverage.upstreamTotal),
           complete: upstreamCoverageState.value.complete && coverage.complete,
+          upstreamTotalIsFloor:
+            Boolean(upstreamCoverageState.value.upstreamTotalIsFloor) || Boolean(coverage.upstreamTotalIsFloor),
         }
       : coverage;
 
@@ -1872,6 +1874,7 @@ export async function executeFilingResearchSearch({
     examined: Math.min(validationExamined, upstreamTotal),
     upstreamTotal,
     complete: validationComplete,
+    upstreamTotalIsFloor: Boolean(upstreamCoverage?.upstreamTotalIsFloor),
   });
   // One typed stop reason for the whole run. `exhausted` is the only value that
   // can accompany complete coverage; every other value means partial.
