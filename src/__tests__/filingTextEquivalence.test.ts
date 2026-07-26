@@ -56,6 +56,32 @@ describe('filing-text extraction is identical in browser and server', () => {
     });
   }
 
+  it('extracts SGML-enveloped archive documents instead of returning empty', () => {
+    // Pre-~2015 EDGAR documents (and all R-files) are served inside an SGML
+    // <DOCUMENT><TEXT> wrapper. linkedom finds no <body> in the envelope, so
+    // the server extractor returned '' — every Boolean validation against
+    // such a document silently read as "no text" and the filing was dropped.
+    const wrapped = [
+      '<DOCUMENT>',
+      '<TYPE>EX-99.1',
+      '<SEQUENCE>3',
+      '<FILENAME>d621267dex991.htm',
+      '<DESCRIPTION>EX-99.1',
+      '<TEXT>',
+      '<HTML><HEAD><TITLE>EX-99.1</TITLE></HEAD>',
+      '<BODY BGCOLOR="WHITE"><P>goodwill impairment charge of $206.6 million</P></BODY></HTML>',
+      '</TEXT>',
+      '</DOCUMENT>',
+    ].join('\n');
+
+    const serverText = extractDocumentTextFromHtmlServer(wrapped);
+    expect(serverText).toContain('goodwill impairment charge of $206.6 million');
+    // Parity: the lenient browser parser and the strict server parser must
+    // still produce byte-identical output for the wrapped form.
+    expect(serverText).toBe(extractDocumentTextFromHtml(wrapped));
+    expect(booleanQueryMatches('"goodwill impairment" W/10 $#', serverText)).toBe(true);
+  });
+
   it('never merges tokens across block boundaries (the textContent hazard)', () => {
     const html = '<html><body><p>material</p><p>weakness</p></body></html>';
     const text = extractDocumentTextFromHtmlServer(html);

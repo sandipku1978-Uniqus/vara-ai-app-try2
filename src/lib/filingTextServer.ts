@@ -12,11 +12,16 @@
  */
 
 import { parseHTML } from 'linkedom';
-import { extractTextFromNode } from './filingText';
+import { extractTextFromNode, stripSgmlEnvelope } from './filingText';
 
 export function extractDocumentTextFromHtmlServer(html: string): string {
   if (!html || !html.trim()) return '';
   try {
+    // Pre-~2015 archive documents (and all R-files) arrive inside an SGML
+    // <DOCUMENT> envelope; linkedom finds no <body> in it and extraction
+    // returned '' — which downstream treated as "document has no text" and
+    // silently excluded the filing from Boolean validation.
+    html = stripSgmlEnvelope(html);
     // Empty or badly malformed input can yield a result with no document at
     // all, so this is a guarded read rather than a destructure. A filing we
     // cannot parse must return empty text, never throw into the caller's

@@ -28,15 +28,10 @@ export interface FilingReport {
   file: string;
 }
 
-/**
- * EDGAR serves R-files wrapped in an SGML <DOCUMENT> envelope, so a DOM parser
- * sees <DOCUMENT> as the root and finds no <body> — the block extracts as an
- * empty string. Cut to the real markup first.
- */
-export function stripSgmlEnvelope(html: string): string {
-  const start = html.search(/<html[\s>]/i);
-  return start >= 0 ? html.slice(start) : html;
-}
+// Moved to lib/filingText so BOTH shared text extractors apply it at the
+// source (the server extractor returned '' for every SGML-wrapped document,
+// which read downstream as a validated no-text). Re-exported for callers.
+export { stripSgmlEnvelope } from '../lib/filingText';
 
 /**
  * Remove the R-file's rendering header so the reader sees the disclosure.

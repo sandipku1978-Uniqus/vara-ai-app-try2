@@ -13,6 +13,21 @@
  * environments produce identical output by construction instead of by luck.
  */
 
+/**
+ * EDGAR serves many archive documents — R-files, and most pre-~2015 filings
+ * and exhibits — wrapped in an SGML <DOCUMENT><TEXT> envelope with the real
+ * <HTML> inside. A strict parser (linkedom) sees <DOCUMENT> as the root and
+ * finds no <body>, so the document extracts as an EMPTY string and every
+ * Boolean validation against it silently reads as "no text". Cut to the real
+ * markup first. (Browsers parse the envelope leniently, which is exactly the
+ * server/client divergence this shared module exists to prevent — both sides
+ * strip.)
+ */
+export function stripSgmlEnvelope(html: string): string {
+  const start = html.search(/<html[\s>]/i);
+  return start >= 0 ? html.slice(start) : html;
+}
+
 /** Elements whose boundaries must become line breaks, or tokens merge across them. */
 const BLOCK_TAGS = new Set([
   'address', 'article', 'aside', 'blockquote', 'body', 'caption', 'dd', 'div', 'dl', 'dt',
