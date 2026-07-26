@@ -22,6 +22,7 @@ function filters() {
     fileNumber: '001-36743',
     fiscalYearEnd: '0930',
     accountingFramework: 'US GAAP',
+    ascReference: 'ASC 842',
   };
 }
 
@@ -69,6 +70,7 @@ describe('saved-alert route contract', () => {
       fileNumber: '',
       fiscalYearEnd: '',
       accountingFramework: '',
+      ascReference: '',
       dateFrom: '2026-01-01',
       dateTo: '2026-07-19',
       sicCode: '3571',

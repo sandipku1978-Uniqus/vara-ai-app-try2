@@ -28,6 +28,13 @@ export interface SearchFilters {
   fileNumber: string;
   fiscalYearEnd: string;
   accountingFramework: string;
+  /**
+   * ASC topic or ASU number the filing must cite (e.g. "ASC 842",
+   * "ASU 2023-07"). Text-validated across every citation spelling filings
+   * use — ASC Topic 842, Topic 842, ASU No. 2023-07. Optional so older
+   * persisted sessions and a rollback build stay valid.
+   */
+  ascReference?: string;
 }
 
 export const defaultSearchFilters: SearchFilters = {
@@ -48,6 +55,7 @@ export const defaultSearchFilters: SearchFilters = {
   fileNumber: '',
   fiscalYearEnd: '',
   accountingFramework: '',
+  ascReference: '',
 };
 
 export interface SearchFilterBarConfig {
@@ -211,7 +219,8 @@ export default function SearchFilterBar({ config, filters, onChange, onSearch, l
     (filters.accessionNumber ? 1 : 0) +
     (filters.fileNumber ? 1 : 0) +
     (filters.fiscalYearEnd ? 1 : 0) +
-    (filters.accountingFramework ? 1 : 0);
+    (filters.accountingFramework ? 1 : 0) +
+    (filters.ascReference ? 1 : 0);
 
   const handleClear = () => {
     onChange({ ...defaultSearchFilters, keyword: filters.keyword });
@@ -234,6 +243,7 @@ export default function SearchFilterBar({ config, filters, onChange, onSearch, l
   if (filters.fileNumber) chips.push({ label: `File#: ${filters.fileNumber}`, clear: () => onChange({ ...filters, fileNumber: '' }) });
   if (filters.fiscalYearEnd) chips.push({ label: `FYE: ${FY_LABELS[filters.fiscalYearEnd] || filters.fiscalYearEnd}`, clear: () => onChange({ ...filters, fiscalYearEnd: '' }) });
   if (filters.accountingFramework) chips.push({ label: `Framework: ${filters.accountingFramework}`, clear: () => onChange({ ...filters, accountingFramework: '' }) });
+  if (filters.ascReference) chips.push({ label: `Cites: ${filters.ascReference}`, clear: () => onChange({ ...filters, ascReference: '' }) });
 
   return (
     <div style={{ marginBottom: '16px' }}>
@@ -345,6 +355,13 @@ export default function SearchFilterBar({ config, filters, onChange, onSearch, l
                 <label htmlFor={`${fieldId}-section`} style={labelStyle}>Keywords in Section</label>
                 <input id={`${fieldId}-section`} value={filters.sectionKeywords} onChange={e => onChange({ ...filters, sectionKeywords: e.target.value })}
                   placeholder="e.g. risk factors, MD&A" style={{ ...inputStyle, width: '100%' }} />
+              </div>
+            )}
+            {config.showSectionKeywords && (
+              <div style={{ minWidth: '180px', flex: '1 1 180px' }}>
+                <label htmlFor={`${fieldId}-asc`} style={labelStyle}>Cites Standard (ASC / ASU)</label>
+                <input id={`${fieldId}-asc`} value={filters.ascReference || ''} onChange={e => onChange({ ...filters, ascReference: e.target.value })}
+                  placeholder="e.g. ASC 842 or ASU 2023-07" style={{ ...inputStyle, width: '100%' }} />
               </div>
             )}
           </div>

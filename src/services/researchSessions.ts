@@ -53,6 +53,7 @@ const ROUTE_FILTER_KEYS: Array<[keyof SearchFilters, string]> = [
   ['fileNumber', 'file'],
   ['fiscalYearEnd', 'fye'],
   ['accountingFramework', 'framework'],
+  ['ascReference', 'cites'],
 ];
 
 const ROUTE_ARRAY_FILTER_KEYS: Array<[keyof SearchFilters, string]> = [
