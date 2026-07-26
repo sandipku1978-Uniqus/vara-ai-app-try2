@@ -163,6 +163,19 @@ export async function resolveEntityScope(
   const words = trimmed.split(/\s+/);
   if (words.length < 2) return { entityName: '', cik: '', query: trimmed };
 
+  // A quoted phrase is atomic — never harvest an issuer out of the middle of
+  // one. Splitting on whitespace alone turned `"material weakness"` into the
+  // tokens `"material` / `weakness"`, resolved the first to Material Resource
+  // Acquisition Corp. (MTRL), and searched the fragment `weakness"` inside that
+  // single shell company: one result for a phrase that matches half a million
+  // filings. Entity extraction may only consume tokens BEFORE the first quote,
+  // so `Apple "material weakness"` still scopes to Apple.
+  const firstQuote = trimmed.indexOf('"');
+  const quotedFrom = firstQuote === -1
+    ? words.length
+    : trimmed.slice(0, firstQuote).trim().split(/\s+/).filter(Boolean).length;
+  if (quotedFrom === 0) return { entityName: '', cik: '', query: trimmed };
+
   // Standard citation, not a company: a short all-caps token followed by a
   // number is an accounting/reporting standard (ASC 842, ASU 2023-09,
   // IFRS 16, SFAS 141). "ASC" is also a real ticker (Ardmore Shipping), so
@@ -171,8 +184,9 @@ export async function resolveEntityScope(
     return { entityName: '', cik: '', query: trimmed };
   }
 
-  // Longest leading multi-word company name ("sun pharma advanced 8-K")
-  for (let take = Math.min(4, words.length - 1); take >= 2; take--) {
+  // Longest leading multi-word company name ("sun pharma advanced 8-K"),
+  // bounded so it can never reach into a quoted phrase.
+  for (let take = Math.min(4, words.length - 1, quotedFrom); take >= 2; take--) {
     const lead = await resolveCompanyInput(words.slice(0, take).join(' '), { verifyFilingHistory: true });
     if (lead) {
       return { entityName: lead.title, cik: lead.cik, query: words.slice(take).join(' ') };

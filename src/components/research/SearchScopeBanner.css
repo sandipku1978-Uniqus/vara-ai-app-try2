@@ -1,0 +1,44 @@
+/* Scope line + the shape of the corpus under it. Quiet by design: this is
+   context for the result list, not a headline competing with it. */
+.search-scope {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0 0 8px;
+  padding: 7px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--surface-subtle);
+}
+
+.search-scope__line {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+.search-scope__line strong {
+  color: var(--text-primary);
+  font-variant-numeric: tabular-nums;
+}
+
+/* One bar per year, oldest to newest — fifteen years of coverage at a glance. */
+.search-scope__years {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 22px;
+  margin-left: auto;
+}
+
+.search-scope__bar {
+  width: 5px;
+  min-height: 2px;
+  border-radius: 1px;
+  background: color-mix(in srgb, var(--accent-primary) 55%, transparent);
+}
+
+@media (max-width: 720px) {
+  /* The sentence carries the meaning; the sparkline is the first thing to go. */
+  .search-scope__years { display: none; }
+}
