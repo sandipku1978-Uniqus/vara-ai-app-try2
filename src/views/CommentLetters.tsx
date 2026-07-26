@@ -688,7 +688,7 @@ export default function CommentLetters() {
                       </div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.73rem', color: 'var(--text-secondary)' }}>
                         <span style={{ color: 'var(--status-warning)' }}>{thread.uploads} Staff</span>
-                        <span style={{ color: 'var(--status-success)' }}>{thread.corresps} responses</span>
+                        <span style={{ color: 'var(--status-success)' }}>{thread.corresps} response{thread.corresps === 1 ? '' : 's'}</span>
                         <span>{thread.first_letter} → {thread.last_letter}</span>
                         </div>
                       </button>

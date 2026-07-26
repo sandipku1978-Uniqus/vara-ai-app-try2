@@ -480,12 +480,13 @@ export default function SearchPage() {
 
   const metrics = useMemo(() => {
     const companies = new Set(displayResults.map(result => result.entityName)).size;
+    // Only known firms count — "Top auditor: Unknown" is noise, and pre-2017
+    // filings legitimately have no Form AP record. The chip hides instead.
     const auditors = displayResults.reduce<Record<string, number>>((acc, result) => {
-      const key = result.auditor || 'Unknown';
-      acc[key] = (acc[key] || 0) + 1;
+      if (result.auditor) acc[result.auditor] = (acc[result.auditor] || 0) + 1;
       return acc;
     }, {});
-    const topAuditor = Object.entries(auditors).sort((a, b) => b[1] - a[1])[0]?.[0] || 'Unknown';
+    const topAuditor = Object.entries(auditors).sort((a, b) => b[1] - a[1])[0]?.[0] || '';
     const forms = displayResults.reduce<Record<string, number>>((acc, result) => {
       acc[result.formType] = (acc[result.formType] || 0) + 1;
       return acc;
@@ -1542,10 +1543,12 @@ export default function SearchPage() {
                         <span className="label">Top form</span>
                         <strong>{metrics.topForm}</strong>
                       </span>
-                      <span className="research-context-chip">
-                        <span className="label">Top auditor</span>
-                        <strong>{metrics.topAuditor}</strong>
-                      </span>
+                      {metrics.topAuditor && (
+                        <span className="research-context-chip">
+                          <span className="label">Top auditor</span>
+                          <strong>{metrics.topAuditor}</strong>
+                        </span>
+                      )}
                       {lastUpdatedLabel && (
                         <span className="research-context-chip">
                           <span className="label">Updated</span>

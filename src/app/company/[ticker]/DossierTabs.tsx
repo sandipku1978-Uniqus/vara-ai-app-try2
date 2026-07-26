@@ -17,6 +17,7 @@ import {
   formatFinancialValue,
   type FinancialMetric,
 } from '../../../services/secApi';
+import { describeForm } from '../../../lib/formLabels';
 
 interface RecentFilings {
   accessionNumber: string[];
@@ -40,6 +41,21 @@ const cardStyle: React.CSSProperties = {
   border: '1px solid var(--border-color)',
   borderRadius: 6,
 };
+
+// EDGAR's primaryDocDescription is often just "FORM 4" — duplicating the Form
+// column — or missing entirely ("-" for Form 144). Prefer the plain-English
+// label in those cases so the Description column actually describes.
+function describeFilingRow(form: string, docDescription: string | undefined): string {
+  const description = (docDescription || '').trim();
+  const formUpper = (form || '').toUpperCase();
+  const redundant =
+    !description ||
+    description === '-' ||
+    description.toUpperCase() === formUpper ||
+    description.toUpperCase() === `FORM ${formUpper}`;
+  if (!redundant) return description;
+  return describeForm(form) || description || '-';
+}
 
 const KEY_METRICS: Array<{ key: string; label: string }> = [
   { key: 'Revenues', label: 'Revenue' },
@@ -144,7 +160,7 @@ export default function DossierTabs({
                         {recentFilings.form[i]}
                       </span>
                     </td>
-                    <td style={{ padding: '10px 16px', borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}>{recentFilings.primaryDocDescription[i] || '-'}</td>
+                    <td style={{ padding: '10px 16px', borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}>{describeFilingRow(recentFilings.form[i], recentFilings.primaryDocDescription[i])}</td>
                     <td style={{ padding: '10px 16px', borderBottom: '1px solid var(--border-color)' }}>
                       <a href={url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-primary)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                         View <ExternalLink size={12} aria-hidden="true" />

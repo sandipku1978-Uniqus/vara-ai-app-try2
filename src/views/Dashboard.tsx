@@ -267,7 +267,9 @@ export default function Dashboard() {
               >
                 <span className="rank">#{idx + 1}</span>
                 <span className="topic">
-                  {item.form}
+                  {/* A bare numeric form code ("4", "144") reads as a count
+                      beside "90 filings" — name it as a form. */}
+                  {/^\d+$/.test(item.form) ? `Form ${item.form}` : item.form}
                   {describeForm(item.form) && (
                     <span style={{ color: 'var(--text-muted)', fontWeight: 400, fontSize: '0.78rem' }}>
                       {' '}· {describeForm(item.form)}
