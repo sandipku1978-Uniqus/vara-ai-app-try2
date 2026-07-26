@@ -109,10 +109,16 @@ test.describe('Boolean search behaviour', () => {
     await expect(anyMention(page, MEZZ_ONLY.company).first()).toBeVisible({ timeout: 30_000 });
     await expect(anyMention(page, NEAR_MISS.company)).toHaveCount(0);
 
+    // Opening a filing the reader is looking at is fine — the preview pane
+    // does that. What must not happen is opening one to DECIDE whether it
+    // matched, which is the cost delegation removes. NEAR_MISS is the probe:
+    // only a validation pass would ever need to read it.
     expect(
-      stats.documentFetches,
-      'a delegated phrase must not cost a single document fetch'
-    ).toHaveLength(0);
+      stats.documentFetches.some(doc => doc.includes(NEAR_MISS.document)),
+      'a delegated phrase must not open a filing to decide whether it matched'
+    ).toBe(false);
+    // And the count must stay at preview scale rather than candidate scale.
+    expect(stats.documentFetches.length).toBeLessThanOrEqual(2);
   });
 
   test('the server pre-screen drops non-matches before the browser downloads them', async ({ page }) => {

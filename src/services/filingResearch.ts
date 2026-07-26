@@ -1493,12 +1493,23 @@ export async function executeFilingResearchSearch({
   // being uncapped — the loop only stops when displayLimit is reached or all
   // query variants are exhausted.
 
+  // How deep to page per query variant.
+  //
+  // This used to key off needsTextFiltering as a proxy for "collect widely",
+  // which inverted the moment a phrase could be delegated: with no local
+  // validation the flag flips false and the depth silently dropped 500 -> 300,
+  // even though a delegated run needs MORE depth, not less — every upstream
+  // hit is a finished result rather than a candidate to be filtered.
   const perQueryResultLimit =
     fastCandidateCollection
       ? Math.min(Math.max(displayLimit, 80), 140)
-      : needsTextFiltering
-        ? 500
+      : delegatedToEfts || needsTextFiltering
+        ? Math.max(displayLimit, 500)
         : Math.min(Math.max(displayLimit, 140), 300);
+  // Collecting deeper than 500 was measured and made no difference: 2,000
+  // candidates produced the same rows as 500, so a constraint downstream of
+  // collection is binding. Left at 500 rather than spending four times the
+  // upstream requests for nothing.
 
   const hitMap = new Map<string, { hit: EdgarSearchHit; queryPriority: number; score: number }>();
   let lastSearchError: Error | null = null;

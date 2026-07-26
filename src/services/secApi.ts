@@ -1286,8 +1286,19 @@ async function searchViaEnrichedSearch(
     }
 
     if (pageHits.length === 0) break;
-    offset += pageHits.length;
-    if (pageHits.length < requestedPageSize) break;
+    // Advance by what was ASKED for, not what came back. /api/es-search filters
+    // each upstream window (form scope, enrichment) before returning, so a full
+    // window routinely yields a short page — striding by the short count would
+    // re-request candidates already seen.
+    offset += requestedPageSize;
+
+    // A short page means "some of that window was filtered out", NOT "upstream
+    // is exhausted". Treating the two as the same stopped collection at the
+    // first partially-filtered window and capped a 500,000-hit phrase at ~110
+    // filings. Only an empty page, the reported total, or the EFTS window ends
+    // it — and a 'gte' total is a floor, so it can never end it early.
+    if (totalRelation !== 'gte' && offset >= totalHits) break;
+    if (offset >= EFTS_MAX_WINDOW) break;
     if (offset < maxResults) await delay(50);
   }
 
