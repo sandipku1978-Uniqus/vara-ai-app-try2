@@ -31,16 +31,19 @@ const SUPPORTED: Operator[] = [
   { token: '" "', example: '"material weakness"', meaning: 'Exact phrase, words adjacent and in order' },
   { token: '( )', example: 'lease AND (842 OR 840)', meaning: 'Groups operators' },
   { token: 'W/n', example: 'goodwill W/5 impairment', meaning: 'Within n words, either order' },
+  { token: 'P/n', example: 'convertible P/3 notes', meaning: 'Within n words, first term preceding' },
   { token: '#', example: '"goodwill impairment" W/10 $#', meaning: 'Any number; $# a currency amount, %# a percentage' },
+  { token: '*', example: 'crypto* AND blockchain', meaning: 'Any characters in one word — validates text; needs a concrete companion term for retrieval' },
+  { token: '?', example: 'wom?n AND board', meaning: 'Exactly one character — same retrieval note as *' },
   { token: 'auditor:', example: '"material weakness" AND auditor:KPMG', meaning: 'Audit firm of record (PCAOB Form AP)' },
 ];
 
-/** Named so nobody assumes silence means support. */
-const UNSUPPORTED: Operator[] = [
-  { token: 'P/n', example: 'convertible P/3 notes', meaning: 'Ordered proximity — use W/n instead' },
-  { token: '*', example: 'crypto*', meaning: 'Trailing wildcard — spell the variants, or use OR' },
-  { token: '?', example: 'wom?n', meaning: 'Single-character wildcard' },
-];
+/**
+ * Named so nobody assumes silence means support. Empty as of engine v4 —
+ * every operator a researcher brings from Intelligize now parses — and the
+ * section renders only when something lands back in this list.
+ */
+const UNSUPPORTED: Operator[] = [];
 
 export interface BooleanSyntaxHelpProps {
   open: boolean;
@@ -107,19 +110,23 @@ export default function BooleanSyntaxHelp({ open, onClose }: BooleanSyntaxHelpPr
         </tbody>
       </table>
 
-      <p className="bool-help__note">Not supported — these are ignored rather than matched:</p>
-      <table className="bool-help__table bool-help__table--muted">
-        <caption className="sr-only">Operators this engine does not support</caption>
-        <tbody>
-          {UNSUPPORTED.map(op => (
-            <tr key={op.token}>
-              <td><code>{op.token}</code></td>
-              <td className="bool-help__eg">{op.example}</td>
-              <td>{op.meaning}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      {UNSUPPORTED.length > 0 && (
+        <>
+          <p className="bool-help__note">Not supported — these are ignored rather than matched:</p>
+          <table className="bool-help__table bool-help__table--muted">
+            <caption className="sr-only">Operators this engine does not support</caption>
+            <tbody>
+              {UNSUPPORTED.map(op => (
+                <tr key={op.token}>
+                  <td><code>{op.token}</code></td>
+                  <td className="bool-help__eg">{op.example}</td>
+                  <td>{op.meaning}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
+      )}
 
       <p className="bool-help__note">
         Operators must be uppercase. A phrase in quotes is never split to look up a company.
