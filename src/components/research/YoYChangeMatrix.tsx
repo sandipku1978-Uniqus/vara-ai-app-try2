@@ -282,7 +282,7 @@ export default function YoYChangeMatrix({
                         <span style={{ display: 'block', fontSize: '0.68rem', fontWeight: 400, color: 'var(--text-muted)' }}>
                           {change.bucket === 'new' || change.bucket === 'deleted'
                             ? `${Math.max(change.currentTokens, change.priorTokens).toLocaleString()} tokens`
-                            : `${Math.round(change.changedRatio * 100)}% of tokens`}
+                            : `${Math.round(change.changedRatio * 100)}% of tokens${change.changedPassages > 0 ? ` · ${change.changedPassages} passage${change.changedPassages === 1 ? '' : 's'}` : ''}`}
                         </span>
                       </button>
                     </td>

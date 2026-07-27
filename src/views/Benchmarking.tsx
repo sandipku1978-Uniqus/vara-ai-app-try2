@@ -18,6 +18,7 @@ import SectionMatrix, { type MatrixCell } from '../components/tables/SectionMatr
 import { useApp } from '../context/AppState';
 import TopicPassage from '../components/research/TopicPassage';
 import YoYChangeMatrix from '../components/research/YoYChangeMatrix';
+import { deletePeerSet, listPeerSets, savePeerSet, type SavedPeerSet } from '../services/peerSets';
 import { splitIntoParagraphs } from '../lib/filingText';
 import {
   DISCLOSURE_TOPICS,
@@ -207,6 +208,9 @@ export default function Benchmarking() {
   const tableHeaderText = 'var(--text-primary)';
   const tableMutedText = 'var(--text-muted)';
   const [selectedTickers, setSelectedTickers] = useState<string[]>(['AAPL', 'MSFT']);
+  const [savedPeerSets, setSavedPeerSets] = useState<SavedPeerSet[]>([]);
+  const [peerSetName, setPeerSetName] = useState('');
+  useEffect(() => { setSavedPeerSets(listPeerSets()); }, []);
   // Multi-year per ticker: { AAPL: [2024, 2023], MSFT: [2024] }
   const [selectedYearsPerTicker, setSelectedYearsPerTicker] = useState<Record<string, number[]>>({});
   // One control drives both comparison units: "topic:<id>" locates a policy
@@ -1218,6 +1222,43 @@ Keep it crisp and practical.`;
               {columns.length} column{columns.length !== 1 ? 's' : ''}: {columns.map(col => `${colTicker(col)} FY${colYear(col)}`).join(' · ')}
             </div>
           )}
+
+          {/* Saved peer sets: one named list of tickers serves every view. */}
+          <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap', fontSize: '0.75rem' }}>
+            {savedPeerSets.map(set => (
+              <span key={set.name} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', border: '1px solid var(--border-color)', borderRadius: '999px', padding: '2px 4px 2px 10px', background: 'var(--surface-subtle)' }}>
+                <button
+                  type="button"
+                  onClick={() => setSelectedTickers(set.tickers.slice(0, 20))}
+                  title={set.tickers.join(', ')}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '0.75rem', padding: 0 }}
+                >
+                  {set.name} ({set.tickers.length})
+                </button>
+                <button type="button" onClick={() => setSavedPeerSets(deletePeerSet(set.name))} aria-label={`Delete saved set ${set.name}`}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', padding: '0 4px' }}>×</button>
+              </span>
+            ))}
+            {selectedTickers.length > 0 && (
+              <>
+                <input
+                  value={peerSetName}
+                  onChange={e => setPeerSetName(e.target.value)}
+                  placeholder="Save this set as…"
+                  aria-label="Name for saved peer set"
+                  style={{ fontSize: '0.75rem', padding: '3px 8px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--surface-panel)', color: 'var(--text-primary)', width: '140px' }}
+                />
+                <button
+                  type="button"
+                  disabled={!peerSetName.trim()}
+                  onClick={() => { setSavedPeerSets(savePeerSet(peerSetName, selectedTickers)); setPeerSetName(''); }}
+                  style={{ fontSize: '0.75rem', padding: '3px 10px', borderRadius: '6px', border: '1px solid var(--border-color)', background: 'var(--surface-subtle)', color: 'var(--text-secondary)', cursor: 'pointer' }}
+                >
+                  Save set
+                </button>
+              </>
+            )}
+          </div>
         </div>
 
         {viewMode === 'text-diff' && (
