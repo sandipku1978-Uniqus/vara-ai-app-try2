@@ -59,6 +59,8 @@ import { buildHighlightTerms } from '../services/searchAssist';
 import { buildResearchEmptyResultMessage, buildResultsHeadline, formatUpstreamTotal, mergeCandidateCoverage } from '../services/searchCoverage';
 import { exportResultsWorkbook } from '../services/resultExport';
 import { RESEARCH_LIBRARY } from '../config/researchLibrary';
+import { countExactMatches } from '../services/exactCount';
+import { compileBooleanQuery } from '../utils/booleanSearch';
 import SearchScopeBanner from '../components/research/SearchScopeBanner';
 import ActiveQueryChips from '../components/research/ActiveQueryChips';
 import BooleanSyntaxHelp, { BooleanSyntaxHelpTrigger } from '../components/research/BooleanSyntaxHelp';
@@ -580,6 +582,57 @@ export default function SearchPage() {
       setRouteForSession(session, Boolean(options.replaceUrl));
     }
   }, [setRouteForSession]);
+
+  const [exactCountProgress, setExactCountProgress] = useState<string | null>(null);
+
+  // Exact counting sums date-sliced EFTS totals, which is only coherent when
+  // the search ran as a SINGLE retrieval lane — multi-lane coverage totals
+  // are maxima across lanes, and summing slices per lane would double-count.
+  const canCountExactly = useMemo(() => {
+    if (!candidateCoverage?.upstreamTotalIsFloor) return false;
+    const search = lastResolvedSearch;
+    if (!search || search.mode !== 'boolean') return false;
+    const compiled = compileBooleanQuery(search.query);
+    return compiled.ok && compiled.branches.length === 1 && !compiled.auditor;
+  }, [candidateCoverage, lastResolvedSearch]);
+
+  const handleCountExactly = useCallback(async () => {
+    const search = lastResolvedSearch;
+    if (!search) return;
+    setExactCountProgress('2001');
+    // A retry that succeeds must not leave the previous attempt's failure
+    // notice on screen beside an exact number.
+    setDegradedNotice(current => (current.startsWith('Exact counting failed') ? '' : current));
+    try {
+      const activeFilters = search.filters;
+      const result = await countExactMatches({
+        query: search.query,
+        forms: activeFilters.formTypes.length > 0 ? activeFilters.formTypes.join(',') : DEFAULT_FORM_SCOPE,
+        dateFrom: activeFilters.dateFrom || undefined,
+        dateTo: activeFilters.dateTo || undefined,
+        entityName: activeFilters.entityName || undefined,
+        entityCik: activeFilters.entityCik || undefined,
+      }, { onProgress: label => setExactCountProgress(label) });
+
+      const upgrade = (coverage: SearchCandidateCoverage): SearchCandidateCoverage => ({
+        ...coverage,
+        upstreamTotal: Math.max(result.total, coverage.examined),
+        upstreamTotalIsFloor: result.floor,
+      });
+      setCandidateCoverage(current => (current ? upgrade(current) : current));
+      // Keep the upgraded number across tab switches and reloads.
+      const session = sessionsRef.current.find(s => s.id === activeSessionIdRef.current);
+      if (session?.coverage) {
+        upsertSession({ ...session, coverage: upgrade(session.coverage) }, { syncRoute: false });
+      }
+    } catch (error) {
+      console.error('Exact count failed:', error);
+      setDegradedNotice('Exact counting failed part-way; the corpus total remains a floor.');
+    } finally {
+      setExactCountProgress(null);
+    }
+  }, [lastResolvedSearch, upsertSession]);
+
 
   const syncActiveSearchContext = useCallback((session: ResearchSearchSession | null) => {
     if (!session) {
@@ -1745,6 +1798,19 @@ export default function SearchPage() {
                 {candidateCoverage
                   ? `Candidate coverage: examined ${candidateCoverage.examined.toLocaleString()} of ${formatUpstreamTotal(candidateCoverage)} upstream candidates (${candidateCoverage.complete ? 'complete' : 'partial candidate window'}). `
                   : ''}
+                {canCountExactly && (
+                  // EDGAR stops counting one query at 10,000; counts of date
+                  // slices are exact and sum. ~26 cheap requests on demand.
+                  <button
+                    type="button"
+                    onClick={handleCountExactly}
+                    disabled={exactCountProgress !== null}
+                    style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: 'var(--accent-soft)', fontSize: '0.7rem', textDecoration: 'underline' }}
+                  >
+                    {exactCountProgress !== null ? `Counting ${exactCountProgress}…` : 'Count exactly'}
+                  </button>
+                )}
+                {' '}
                 {pagedDisplayResults.length > 0
                   ? `SIC metadata is available for ${pagedDisplayResults.filter(result => Boolean(result.sic.trim())).length}/${pagedDisplayResults.length} results on this page; official EDGAR submissions supply missing candidate metadata where available.`
                   : ''}
