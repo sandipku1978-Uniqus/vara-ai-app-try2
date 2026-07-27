@@ -20,8 +20,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { fetchFilingText, type SecSubmission } from '../../services/secApi';
-import { extractItemSection } from '../../utils/sectionPath';
-import { resolveSectionScope, SECTION_CONCEPT_LIST } from '../../utils/sectionTaxonomy';
+import { extractResolvedSection, resolveSectionScope, SECTION_CONCEPT_LIST } from '../../utils/sectionTaxonomy';
 import { CHANGE_BUCKET_LABELS, computeSectionChange, type SectionChange } from '../../utils/sectionDiff';
 import { TextDiffViewer } from './TextDiffViewer';
 
@@ -76,7 +75,7 @@ function sliceConcepts(filingText: string): Record<string, string> {
   for (const concept of SECTION_CONCEPT_LIST) {
     const resolved = resolveSectionScope(concept.key, '10-K');
     if (!resolved) continue;
-    slices[concept.key] = extractItemSection(filingText, resolved.item, resolved.options);
+    slices[concept.key] = extractResolvedSection(filingText, resolved);
   }
   return slices;
 }

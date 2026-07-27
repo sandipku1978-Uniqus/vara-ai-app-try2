@@ -124,6 +124,85 @@ export interface SectionSliceOptions {
 }
 
 /**
+ * Heading-based slicing for documents without item numbers (registration
+ * statements: S-1, F-1, 424B prospectuses). Sections are bounded by a fixed
+ * vocabulary of prospectus headings rather than "Item N".
+ *
+ * Precision comes from three rules working together:
+ * - an occurrence preceded by a referring word ("see Risk Factors", "under
+ *   Business") is prose, not a heading;
+ * - a slice ends at the next occurrence of ANY vocabulary heading (other
+ *   than the target itself — prospectuses repeat running heads too);
+ * - among surviving occurrences the LONGEST slice is the body, since table
+ *   of contents entries sit one line apart.
+ *
+ * The phrase "risk factors" also appears mid-sentence constantly; those
+ * occurrences produce short or referring-word-guarded slices and lose to the
+ * real section. Returns '' when no occurrence survives — never a guess.
+ */
+export function extractHeadingSection(
+  filingText: string,
+  targetAliases: string[],
+  boundaryVocabulary: string[]
+): string {
+  if (!filingText || targetAliases.length === 0) return '';
+  const normalizedText = normalizeForMatch(filingText);
+  if (!normalizedText) return '';
+
+  const targets = targetAliases.map(alias => normalizeForMatch(alias)).filter(Boolean);
+  const boundaries = boundaryVocabulary
+    .map(heading => normalizeForMatch(heading))
+    .filter(heading => heading && !targets.includes(heading));
+
+  const wordBefore = (index: number): string => {
+    const before = normalizedText.slice(0, index).trimEnd().split(' ');
+    return before[before.length - 1] || '';
+  };
+
+  const findOccurrences = (phrase: string, stopWords: Set<string>): number[] => {
+    const indices: number[] = [];
+    let cursor = normalizedText.indexOf(phrase);
+    while (cursor !== -1) {
+      // Token boundaries: the phrase must not be the tail/head of a longer token.
+      const beforeChar = cursor === 0 ? ' ' : normalizedText[cursor - 1];
+      const afterChar = normalizedText[cursor + phrase.length] ?? ' ';
+      if (beforeChar === ' ' && (afterChar === ' ' || afterChar === '') && !stopWords.has(wordBefore(cursor))) {
+        indices.push(cursor);
+      }
+      cursor = normalizedText.indexOf(phrase, cursor + phrase.length);
+    }
+    return indices;
+  };
+
+  // Guard asymmetry, on purpose. A prose "the use of proceeds" accepted as a
+  // BOUNDARY truncates the target section early — the bad failure — so
+  // boundaries also stop on determiners and possessives. Over-guarding a
+  // real boundary merely lets the slice overshoot into the next section,
+  // which is coarse but never loses target content. Targets keep the lighter
+  // cross-reference guard: their false negatives lose whole sections.
+  const boundaryStops = new Set([
+    ...REFERRING_WORDS,
+    'the', 'a', 'an', 'our', 'its', 'their', 'this', 'that', 'such', 'any',
+    'with', 'from', 'regarding', 'about', 'on', 'for', 'as', 'or',
+  ]);
+
+  const boundaryStarts = boundaries
+    .flatMap(phrase => findOccurrences(phrase, boundaryStops))
+    .sort((a, b) => a - b);
+
+  let best: { start: number; end: number } | null = null;
+  for (const target of targets) {
+    for (const start of findOccurrences(target, REFERRING_WORDS)) {
+      const end = boundaryStarts.find(index => index > start) ?? normalizedText.length;
+      if (!best || end - start > best.end - best.start) best = { start, end };
+    }
+  }
+  if (!best) return '';
+
+  return normalizedText.slice(best.start, best.end).trim();
+}
+
+/**
  * The slice of a filing's text that belongs to one Item section, in
  * engine-normalized form — from the section's own heading to the next Item
  * heading (or end of document). Returns '' when the filing has no such

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { describeSectionScope, formFamily, resolveSectionScope } from '../utils/sectionTaxonomy';
+import { describeSectionScope, extractResolvedSection, formFamily, resolveSectionScope } from '../utils/sectionTaxonomy';
 import { extractItemSection } from '../utils/sectionPath';
 
 /**
@@ -16,27 +16,28 @@ describe('formFamily', () => {
     expect(formFamily('10-Q/A')).toBe('10-Q');
     expect(formFamily('20-F')).toBe('20-F');
     expect(formFamily('8-K')).toBeNull();
-    expect(formFamily('S-1')).toBeNull();
+    expect(formFamily('S-1')).toBe('S-1');
   });
 });
 
 describe('resolveSectionScope', () => {
   it('resolves a concept per form family', () => {
-    expect(resolveSectionScope('risk factors', '10-K')).toEqual({ item: '1a', options: {}, label: 'Risk Factors' });
-    expect(resolveSectionScope('risk factors', '10-Q')).toEqual({ item: '1a', options: { part: 2 }, label: 'Risk Factors' });
-    expect(resolveSectionScope('MD&A', '10-K')).toEqual({ item: '7', options: {}, label: 'MD&A' });
-    expect(resolveSectionScope('MD&A', '10-Q/A')).toEqual({ item: '2', options: { part: 1 }, label: 'MD&A' });
-    expect(resolveSectionScope('mdna', '20-F')).toEqual({ item: '5', options: {}, label: 'MD&A' });
+    expect(resolveSectionScope('risk factors', '10-K')).toEqual({ kind: 'item', item: '1a', options: {}, label: 'Risk Factors' });
+    expect(resolveSectionScope('risk factors', '10-Q')).toEqual({ kind: 'item', item: '1a', options: { part: 2 }, label: 'Risk Factors' });
+    expect(resolveSectionScope('MD&A', '10-K')).toEqual({ kind: 'item', item: '7', options: {}, label: 'MD&A' });
+    expect(resolveSectionScope('MD&A', '10-Q/A')).toEqual({ kind: 'item', item: '2', options: { part: 1 }, label: 'MD&A' });
+    expect(resolveSectionScope('mdna', '20-F')).toEqual({ kind: 'item', item: '5', options: {}, label: 'MD&A' });
   });
 
   it('passes explicit item numbers through to any form', () => {
-    expect(resolveSectionScope('9A', '10-K')).toEqual({ item: '9a', options: {}, label: 'Item 9A' });
-    expect(resolveSectionScope('2.02', '8-K')).toEqual({ item: '2.02', options: {}, label: 'Item 2.02' });
+    expect(resolveSectionScope('9A', '10-K')).toEqual({ kind: 'item', item: '9a', options: {}, label: 'Item 9A' });
+    expect(resolveSectionScope('2.02', '8-K')).toEqual({ kind: 'item', item: '2.02', options: {}, label: 'Item 2.02' });
   });
 
   it('returns null for unmapped forms and unknown concepts — never a guess', () => {
     expect(resolveSectionScope('business', '10-Q')).toBeNull();
-    expect(resolveSectionScope('risk factors', 'S-1')).toBeNull();
+    // risk factors on an S-1 now resolves as a HEADING scope (see headingSlicing tests).
+    expect(resolveSectionScope('controls', 'S-1')).toBeNull();
     expect(resolveSectionScope('prospectus summary', '10-K')).toBeNull();
   });
 
@@ -67,14 +68,14 @@ describe('part-aware slicing on a 10-Q', () => {
 
   it('MD&A resolves to Part I Item 2, not Unregistered Sales', () => {
     const resolved = resolveSectionScope('MD&A', '10-Q')!;
-    const slice = extractItemSection(TEN_Q, resolved.item, resolved.options);
+    const slice = extractResolvedSection(TEN_Q, resolved);
     expect(slice).toContain('revenue increased');
     expect(slice).not.toContain('repurchased shares');
   });
 
   it('Legal Proceedings resolves to Part II Item 1, not Financial Statements', () => {
     const resolved = resolveSectionScope('legal proceedings', '10-Q')!;
-    const slice = extractItemSection(TEN_Q, resolved.item, resolved.options);
+    const slice = extractResolvedSection(TEN_Q, resolved);
     expect(slice).toContain('supplier dispute');
     expect(slice).not.toContain('balance sheets');
   });
