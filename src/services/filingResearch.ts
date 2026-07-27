@@ -20,8 +20,8 @@ import {
   matchesAuditorSelection,
 } from './auditors';
 import { loadSicDirectoryIndex } from './referenceData';
-import { deriveSectionPath, extractItemSection } from '../utils/sectionPath';
-import { resolveSectionScope } from '../utils/sectionTaxonomy';
+import { deriveSectionPath } from '../utils/sectionPath';
+import { extractResolvedSection, resolveSectionScope } from '../utils/sectionTaxonomy';
 import {
   buildReferenceSearchTerms,
   parseAccountingReference,
@@ -1906,7 +1906,7 @@ export async function executeFilingResearchSearch({
         let scopedText = filingText;
         if (sectionScope && filingText) {
           const resolved = resolveSectionScope(sectionScope, result.formType);
-          scopedText = resolved ? extractItemSection(filingText, resolved.item, resolved.options) : '';
+          scopedText = resolved ? extractResolvedSection(filingText, resolved) : '';
         }
 
         if (needsTextFiltering && mode === 'boolean' && parsedBooleanQuery.expression) {
