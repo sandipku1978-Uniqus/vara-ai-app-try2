@@ -58,6 +58,7 @@ import {
 import { buildHighlightTerms } from '../services/searchAssist';
 import { buildResearchEmptyResultMessage, buildResultsHeadline, formatUpstreamTotal, mergeCandidateCoverage } from '../services/searchCoverage';
 import { exportResultsWorkbook } from '../services/resultExport';
+import { RESEARCH_LIBRARY } from '../config/researchLibrary';
 import SearchScopeBanner from '../components/research/SearchScopeBanner';
 import ActiveQueryChips from '../components/research/ActiveQueryChips';
 import BooleanSyntaxHelp, { BooleanSyntaxHelpTrigger } from '../components/research/BooleanSyntaxHelp';
@@ -396,6 +397,7 @@ export default function SearchPage() {
   // Which session's coverage snapshot the state currently reflects — guards
   // the activation effect from clobbering a live run's fresher accumulator.
   const coverageRestoredForSessionRef = useRef<string | null>(null);
+  const [libraryOpen, setLibraryOpen] = useState(false);
 
   const captureCandidateCoverage = useCallback((coverage: SearchCandidateCoverage) => {
     setCandidateCoverage(current => mergeCandidateCoverage(current, coverage));
@@ -1396,6 +1398,45 @@ export default function SearchPage() {
               >
                 {sample}
               </button>
+            ))}
+          </div>
+
+          {/* Curated research library: categorized saved searches, each a
+              runnable request that also demonstrates an engine capability
+              (numeric operands, section scoping, standards citations). */}
+          <div className="research-sample-block" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '4px' }}>
+            <button
+              type="button"
+              className="sample-pill"
+              aria-expanded={libraryOpen}
+              onClick={() => setLibraryOpen(open => !open)}
+              style={{ fontWeight: 600 }}
+            >
+              {libraryOpen ? '▾' : '▸'} Research Library
+            </button>
+            {libraryOpen && RESEARCH_LIBRARY.map(category => (
+              <div key={category.name} style={{ display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px' }}>
+                <div style={{ fontSize: '0.62rem', letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', padding: '0 2px' }}>
+                  {category.name}
+                </div>
+                {category.entries.map(entry => (
+                  <button
+                    key={entry.title}
+                    type="button"
+                    className="sample-pill"
+                    title={`${entry.hint}\n${entry.query}`}
+                    onClick={() => {
+                      const nextFilters = { ...defaultSearchFilters, ...entry.filters };
+                      setSearchMode(entry.mode);
+                      setFilters(nextFilters);
+                      setQuery(entry.query);
+                      void handleSearch(entry.query, nextFilters, entry.mode);
+                    }}
+                  >
+                    {entry.title}
+                  </button>
+                ))}
+              </div>
             ))}
           </div>
 
