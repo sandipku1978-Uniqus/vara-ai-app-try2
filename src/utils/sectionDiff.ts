@@ -32,12 +32,22 @@ export interface SectionChange {
    * 100%, never more.
    */
   changedRatio: number;
+  /**
+   * How many distinct places the section changed — contiguous runs of
+   * added/removed tokens, with changes separated by fewer than
+   * PASSAGE_GAP_TOKENS unchanged tokens counted as one passage. The honest
+   * form of "count of changed subsections": derived from the diff itself,
+   * with no pretence of knowing the filer's subsection names.
+   */
+  changedPassages: number;
 }
 
 /** Bucket thresholds on the changed ratio. Deliberately plain numbers. */
 const MAJOR_THRESHOLD = 0.25;
 const MODERATE_THRESHOLD = 0.10;
 const MINOR_THRESHOLD = 0.02;
+/** Unchanged tokens between two edits before they count as separate passages. */
+const PASSAGE_GAP_TOKENS = 30;
 
 function tokensOf(text: string): string[] {
   const normalized = normalizeForMatch(text || '');
@@ -49,13 +59,13 @@ export function computeSectionChange(priorText: string, currentText: string): Se
   const current = tokensOf(currentText);
 
   if (prior.length === 0 && current.length === 0) {
-    return { bucket: 'unchanged', addedTokens: 0, removedTokens: 0, priorTokens: 0, currentTokens: 0, changedRatio: 0 };
+    return { bucket: 'unchanged', addedTokens: 0, removedTokens: 0, priorTokens: 0, currentTokens: 0, changedRatio: 0, changedPassages: 0 };
   }
   if (prior.length === 0) {
-    return { bucket: 'new', addedTokens: current.length, removedTokens: 0, priorTokens: 0, currentTokens: current.length, changedRatio: 1 };
+    return { bucket: 'new', addedTokens: current.length, removedTokens: 0, priorTokens: 0, currentTokens: current.length, changedRatio: 1, changedPassages: 1 };
   }
   if (current.length === 0) {
-    return { bucket: 'deleted', addedTokens: 0, removedTokens: prior.length, priorTokens: prior.length, currentTokens: 0, changedRatio: 1 };
+    return { bucket: 'deleted', addedTokens: 0, removedTokens: prior.length, priorTokens: prior.length, currentTokens: 0, changedRatio: 1, changedPassages: 1 };
   }
 
   // Word-mode diff: join tokens with newlines and let dmp's lines-to-chars
@@ -71,9 +81,21 @@ export function computeSectionChange(priorText: string, currentText: string): Se
 
   let added = 0;
   let removed = 0;
+  let changedPassages = 0;
+  let inPassage = false;
   for (const [operation, chunk] of diffs) {
+    if (operation === 0) {
+      // A long-enough run of unchanged tokens closes the current passage;
+      // a short gap keeps adjacent edits counted as one place.
+      if (chunk.length >= PASSAGE_GAP_TOKENS) inPassage = false;
+      continue;
+    }
     if (operation === 1) added += chunk.length;
-    else if (operation === -1) removed += chunk.length;
+    else removed += chunk.length;
+    if (!inPassage) {
+      changedPassages += 1;
+      inPassage = true;
+    }
   }
 
   const changedRatio = Math.min(1, (added + removed) / (prior.length + current.length));
@@ -90,6 +112,7 @@ export function computeSectionChange(priorText: string, currentText: string): Se
     priorTokens: prior.length,
     currentTokens: current.length,
     changedRatio,
+    changedPassages,
   };
 }
 
