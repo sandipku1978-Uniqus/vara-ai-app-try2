@@ -377,72 +377,8 @@ export async function planAgentRun(prompt: string, context: AgentContextSnapshot
   }
 }
 
-export async function generateAgentAnswer(
-  evidence: AgentEvidencePacket,
-  context: AgentContextSnapshot
-): Promise<string> {
-  try {
-    const evidenceJson = JSON.stringify(
-      {
-        title: evidence.title,
-        summary: evidence.summary,
-        findings: evidence.findings,
-        citations: evidence.citations.slice(0, 12).map(citation => ({
-          title: citation.title,
-          subtitle: citation.subtitle,
-          sectionLabel: citation.sectionLabel,
-          excerpt: citation.excerpt,
-        })),
-        followUps: evidence.followUps,
-        notes: evidence.notes,
-      },
-      null,
-      2
-    );
-
-    const contextJson = JSON.stringify(
-      {
-        pagePath: context.pagePath,
-        pageLabel: context.pageLabel,
-        accountingFramework: context.search?.filters?.accountingFramework || null,
-      },
-      null,
-      2
-    );
-
-    const prompt = buildAgentAnswerPrompt(
-      evidenceJson,
-      contextJson,
-      context.search?.filters?.accountingFramework
-    );
-
-    const builtMessages: Array<{ role: 'user' | 'assistant'; content: string }> = [];
-
-    // Inject history to maintain multi-turn preservation!
-    if (context.conversation && context.conversation.length > 0) {
-      context.conversation.forEach(turn => {
-        if (turn.prompt) {
-          builtMessages.push({ role: 'user', content: turn.prompt });
-        }
-        if (turn.answer) {
-          builtMessages.push({ role: 'assistant', content: turn.answer });
-        }
-      });
-    }
-
-    // Finally append the current generated system augmented prompt as the final user message
-    builtMessages.push({ role: 'user', content: prompt });
-
-    const text = await callClaude(prompt, { maxTokens: 4096, messages: builtMessages });
-    return text || fallbackEvidenceAnswer(evidence);
-  } catch (error) {
-    console.error('Claude agent answer error:', error);
-    return fallbackEvidenceAnswer(evidence);
-  }
-}
-
 /**
- * Streaming variant of generateAgentAnswer — delivers tokens incrementally via onChunk callback.
+ * Generate the agent answer, delivering tokens incrementally via onChunk callback.
  */
 export async function generateAgentAnswerStreaming(
   evidence: AgentEvidencePacket,
