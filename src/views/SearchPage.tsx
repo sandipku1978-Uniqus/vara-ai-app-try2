@@ -37,11 +37,13 @@ import {
   isPlaceholderPrimaryDocument,
   resolvePrimaryDocumentPath,
   computeCompanySuggestions,
+  fetchCompanySubmissions,
   getCompanyDirectory,
   type CompanyDirectoryEntry,
   type SearchCandidateCoverage,
 
 } from '../services/secApi';
+import { buildIssuerFreshnessNotice, type IssuerFreshnessNotice } from '../services/issuerFreshness';
 import {
   buildSearchSignature,
   buildResearchRouteParams,
@@ -584,6 +586,39 @@ export default function SearchPage() {
   }, [setRouteForSession]);
 
   const [exactCountProgress, setExactCountProgress] = useState<string | null>(null);
+  const [issuerFreshness, setIssuerFreshness] = useState<IssuerFreshnessNotice | null>(null);
+
+  // Issuer-scoped searches: when the issuer has filed since the newest result
+  // on screen (any form — usually ownership paperwork outside the research
+  // scope), say so instead of letting a correct result read as staleness.
+  //
+  // The issuer is derived from the RESULTS, not the page filters: a typed
+  // "GOOGL" is resolved to an issuer inside the search service, so the page's
+  // own filter state never learns the CIK — but every returned row carries
+  // it. One CIK across all shown results = an issuer-scoped view, however
+  // the scoping happened.
+  const scopedIssuer = useMemo(() => {
+    if (displayResults.length === 0) return null;
+    const ciks = new Set(displayResults.map(result => result.cik).filter(Boolean));
+    if (ciks.size !== 1) return null;
+    const newestShownDate = displayResults.reduce((max, result) => (result.fileDate > max ? result.fileDate : max), '');
+    return { cik: [...ciks][0], name: displayResults[0].entityName, newestShownDate };
+  }, [displayResults]);
+  useEffect(() => {
+    if (!scopedIssuer || !scopedIssuer.newestShownDate) {
+      setIssuerFreshness(null);
+      return;
+    }
+    let cancelled = false;
+    void fetchCompanySubmissions(scopedIssuer.cik)
+      .then(submission => {
+        if (cancelled) return;
+        const label = scopedIssuer.name || submission?.name || 'This issuer';
+        setIssuerFreshness(buildIssuerFreshnessNotice(submission, scopedIssuer.newestShownDate, label));
+      })
+      .catch(() => { if (!cancelled) setIssuerFreshness(null); });
+    return () => { cancelled = true; };
+  }, [scopedIssuer]);
 
   // Exact counting sums date-sliced EFTS totals, which is only coherent when
   // the search ran as a SINGLE retrieval lane — multi-lane coverage totals
@@ -1854,6 +1889,20 @@ export default function SearchPage() {
                     <span>Auditor identification covers fiscal 2017+ (PCAOB Form AP); older or non-issuer filings may not show one.</span>
                     <button type="button" onClick={() => setAuditorNoticeDismissed(true)} aria-label="Dismiss auditor coverage notice"
                       style={{ background: 'none', border: 'none', color: 'var(--status-warning)', cursor: 'pointer', fontSize: '0.85rem', lineHeight: 1 }}>×</button>
+                  </div>
+                )}
+                {issuerFreshness && (
+                  // A correct-but-older newest result reads as staleness unless
+                  // the product says why: the issuer HAS filed since, outside
+                  // this search's scope (usually ownership forms).
+                  <div role="status" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', padding: '8px 12px', margin: '0 0 8px', borderRadius: '8px', background: 'color-mix(in srgb, var(--accent-primary) 8%, transparent)', border: '1px solid color-mix(in srgb, var(--accent-primary) 25%, transparent)', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                    <span>{issuerFreshness.message}</span>
+                    {issuerFreshness.insider && (
+                      <button type="button" onClick={() => navigate.push('/insiders')}
+                        style={{ whiteSpace: 'nowrap', background: 'none', border: '1px solid var(--input-border)', borderRadius: '6px', padding: '3px 10px', color: 'var(--accent-soft)', cursor: 'pointer', fontSize: '0.72rem' }}>
+                        Insider Trading
+                      </button>
+                    )}
                   </div>
                 )}
                 <div className="research-hit-scroll">
