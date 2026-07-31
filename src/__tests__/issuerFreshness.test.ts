@@ -35,6 +35,18 @@ describe('buildIssuerFreshnessNotice', () => {
     expect(notice!.message).toContain('Insider Trading');
   });
 
+  it('drops a trailing ticker parenthetical from the issuer name', () => {
+    // Result rows carry "Alphabet Inc. (GOOG, GOOGL, GOOGM, GOOGN)" — the
+    // possessive must read from the company name alone (seen in prod).
+    const notice = buildIssuerFreshnessNotice(
+      submission([['4', '2026-07-30'], ['10-Q', '2026-07-23']]),
+      '2026-07-23',
+      'Alphabet Inc. (GOOG, GOOGL, GOOGM, GOOGN)'
+    );
+    expect(notice!.message).toMatch(/^Alphabet Inc\.’s most recent/);
+    expect(notice!.message).not.toContain('GOOGN');
+  });
+
   it('suggests filter changes for a newer non-ownership filing', () => {
     const notice = buildIssuerFreshnessNotice(
       submission([['S-8', '2026-07-29'], ['10-Q', '2026-07-23']]),
