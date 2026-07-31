@@ -9,7 +9,6 @@ import {
   findLatestFiling,
   loadTickerMap,
   lookupCIK,
-  type SecSubmission,
 } from './secApi';
 import type {
   AgentCitation,
@@ -570,22 +569,4 @@ export function inferSurfaceFromPath(pathname: string): 'research' | 'accounting
   if (pathname.startsWith('/accounting')) return 'accounting';
   if (pathname.startsWith('/comment-letters')) return 'comment-letters';
   return 'research';
-}
-
-export function resolveSubmissionFilingLocator(
-  submissions: SecSubmission,
-  accessionNumber: string
-): FilingLocator | null {
-  const matchIndex = submissions.filings.recent.accessionNumber.findIndex(item => item === accessionNumber);
-  if (matchIndex === -1) return null;
-
-  return {
-    cik: submissions.cik.replace(/^0+/, ''),
-    accessionNumber,
-    filingDate: submissions.filings.recent.filingDate[matchIndex] || '',
-    formType: submissions.filings.recent.form[matchIndex] || '',
-    primaryDocument: submissions.filings.recent.primaryDocument[matchIndex] || '',
-    companyName: submissions.name,
-    ticker: submissions.tickers?.[0] || '',
-  };
 }

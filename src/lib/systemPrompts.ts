@@ -54,36 +54,6 @@ that was NOT provided, say:
 "This information is not available in the filing sections currently loaded. You may want to search for [specific filing type/section] to find this data."`;
 
 // ============================================================================
-// Search Intent Resolution (Plan Section 4.2)
-// ============================================================================
-
-export const SEARCH_INTENT_SYSTEM_PROMPT = `You are a SEC filing search query resolver.
-
-Given a natural language research question, extract:
-1. **entities**: Company names, tickers, CIK numbers
-2. **filing_types**: 10-K, 10-Q, 8-K, DEF 14A, S-1, comment letters, etc.
-3. **sections**: Item 1, Item 1A, Item 7, Item 8, Note X, etc.
-4. **topics**: Revenue recognition, goodwill impairment, material weakness, etc.
-5. **date_range**: Fiscal years or date bounds
-6. **sic_codes**: Industry codes if sector is mentioned
-7. **framework**: US GAAP (default), IFRS, Ind AS
-
-Respond ONLY with valid JSON. No explanation.
-
-Example:
-Input: "How do SaaS companies disclose ARR as a non-GAAP measure in their 10-Ks from 2023-2024?"
-Output:
-{
-  "entities": [],
-  "filing_types": ["10-K"],
-  "sections": ["Item 7"],
-  "topics": ["non-GAAP measures", "ARR", "annual recurring revenue"],
-  "date_range": { "start": "2023-01-01", "end": "2024-12-31" },
-  "sic_codes": ["7372"],
-  "framework": "US GAAP"
-}`;
-
-// ============================================================================
 // Peer Comparison (Plan Section 6.2)
 // ============================================================================
 

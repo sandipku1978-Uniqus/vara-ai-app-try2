@@ -35,12 +35,9 @@ function isDisabledEnvFlag(value: unknown): boolean {
  *  entity-resolved browses (empty text query) return nothing. The server
  *  route 503s gracefully when Supabase env is absent and the client falls
  *  back, so defaulting on is safe. Set either env var to "false" to opt out.
- *  The legacy NEXT_PUBLIC_USE_ELASTICSEARCH name still works. */
+ */
 export function isEnrichedSearchEnabled(): boolean {
-  return !(
-    isDisabledEnvFlag(process.env.NEXT_PUBLIC_USE_ENRICHED_SEARCH) ||
-    isDisabledEnvFlag(process.env.NEXT_PUBLIC_USE_ELASTICSEARCH)
-  );
+  return !isDisabledEnvFlag(process.env.NEXT_PUBLIC_USE_ENRICHED_SEARCH);
 }
 
 // Cache for CIKs to avoid redundant lookups if doing bulk mappings 
@@ -1910,21 +1907,6 @@ export function getInsiderFilings(
     }
   }
   return results;
-}
-
-/**
- * Search wrappers for specific form types.
- */
-export async function searchCommentLetters(query: string, dateFrom?: string, dateTo?: string, entityName?: string) {
-  return searchEdgarFilings(query, 'CORRESP,UPLOAD', dateFrom, dateTo, entityName);
-}
-
-export async function searchFormD(query: string, dateFrom?: string, dateTo?: string, entityName?: string) {
-  return searchEdgarFilings(query, 'D,D/A', dateFrom, dateTo, entityName);
-}
-
-export async function searchExhibits(query: string, exhibitTypes: string, dateFrom?: string, dateTo?: string, entityName?: string) {
-  return searchEdgarFilings(query, exhibitTypes, dateFrom, dateTo, entityName);
 }
 
 /**
