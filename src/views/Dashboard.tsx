@@ -128,13 +128,20 @@ export default function Dashboard() {
       return next;
     });
     try {
+      // A truncated run (budget, deadline, rate limit) must not rebaseline
+      // the alert: filings a partial window failed to see would be
+      // re-announced as "new" on the next healthy check — or worse, real
+      // new filings would be counted as seen without ever being announced.
+      let runCoverage: { complete: boolean } | null = null;
       const results = await executeFilingResearchSearch({
         query: alert.query,
         filters: alert.filters,
         mode: alert.mode,
         defaultForms: alert.defaultForms,
         limit: 20,
+        onCoverage: coverage => { runCoverage = coverage; },
       });
+      const runComplete = runCoverage !== null && (runCoverage as { complete: boolean }).complete;
 
       const accessions = results.map(result => result.accessionNumber);
       // The v2 Boolean engine legitimately recalls a different set than the one
@@ -149,7 +156,12 @@ export default function Dashboard() {
 
       updateSavedAlert(alert.id, {
         lastCheckedAt: new Date().toISOString(),
-        lastSeenAccessions: accessions,
+        // Only a COMPLETE run may replace the seen-set. A partial window
+        // still reports what it found, but the baseline stays intact so
+        // nothing it missed gets silently marked as seen.
+        lastSeenAccessions: runComplete
+          ? accessions
+          : Array.from(new Set([...alert.lastSeenAccessions, ...accessions])),
         latestNewAccessions,
         latestResultCount: results.length,
         engineVersion: BOOLEAN_ENGINE_VERSION,

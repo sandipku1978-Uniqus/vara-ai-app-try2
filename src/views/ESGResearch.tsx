@@ -423,7 +423,7 @@ ${evidence.text}`, { throwOnError: true });
                   <Activity className="text-green-400" size={24} />
                   <h3 style={{ margin: 0, fontSize: '1.1rem' }}>Cross-Framework Mapping</h3>
                 </div>
-                <p className="text-sm text-slate-400" style={{ marginBottom: '10px' }}>Click a metric to see how it maps across standards.</p>
+                <p className="text-sm text-slate-400" style={{ marginBottom: '10px' }}>Curated, static mapping of common metrics across SASB, GRI and ESRS — verify codes against the standard-setters before citing.</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   {Object.entries(mappingsData).map(([metric, codes]) => (
                     <button

@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     type: 'website',
   },
   twitter: {
-    card: 'summary_large_image',
+    card: 'summary',
     title: 'Uniqus Research Center - SEC Intelligence Platform',
     description: 'An SEC filing research workspace for legal, financial, and compliance professionals.',
   },

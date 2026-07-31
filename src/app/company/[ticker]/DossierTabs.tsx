@@ -148,6 +148,13 @@ export default function DossierTabs({
               </tr>
             </thead>
             <tbody>
+              {filingCount === 0 && (
+                <tr>
+                  <td colSpan={5} style={{ padding: '18px 16px', color: 'var(--text-muted)' }}>
+                    No recent submissions in this registrant&apos;s SEC feed.
+                  </td>
+                </tr>
+              )}
               {Array.from({ length: filingCount }).map((_, i) => {
                 const accession = recentFilings.accessionNumber[i]?.replace(/-/g, '');
                 const doc = recentFilings.primaryDocument[i];

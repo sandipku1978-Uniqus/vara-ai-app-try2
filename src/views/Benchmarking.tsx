@@ -246,6 +246,7 @@ export default function Benchmarking() {
   const [companiesFacts, setCompaniesFacts] = useState<Record<string, Record<string, FinancialMetric>>>({});
   const [availableYears, setAvailableYears] = useState<Record<string, number[]>>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [unavailablePeers, setUnavailablePeers] = useState<Record<string, string>>({});
   const [loadingFacts, setLoadingFacts] = useState(false);
   const [companyTexts, setCompanyTexts] = useState<Record<string, string>>({});
   // Topic passages taken straight from the registrant's tagged XBRL blocks.
@@ -344,15 +345,23 @@ export default function Benchmarking() {
     async function loadData() {
       setIsLoading(true);
       const newMap: Record<string, SecSubmission> = { ...companiesData };
+      const failures: Record<string, string> = {};
+      const recovered: string[] = [];
       for (const ticker of selectedTickers) {
         if (!newMap[ticker]) {
           const cik = CIK_MAP[ticker] || await lookupCIK(ticker);
-          if (cik) {
-            const data = await fetchCompanySubmissions(cik);
-            if (data) newMap[ticker] = data;
-          }
+          if (!cik) { failures[ticker] = 'ticker could not be resolved to a CIK'; continue; }
+          const data = await fetchCompanySubmissions(cik);
+          if (!data) { failures[ticker] = 'SEC submissions could not be loaded'; continue; }
+          newMap[ticker] = data;
+          recovered.push(ticker);
         }
       }
+      setUnavailablePeers(prev => {
+        const next = { ...prev, ...failures };
+        for (const t of recovered) delete next[t];
+        return next;
+      });
       setCompaniesData(newMap);
       setIsLoading(false);
     }
@@ -368,12 +377,15 @@ export default function Benchmarking() {
       const newFacts = { ...companiesFacts };
       const newSelYears = { ...selectedYearsPerTicker };
 
+      const factless: string[] = [];
       for (const ticker of selectedTickers) {
         if (!newRaw[ticker]) {
           const cik = CIK_MAP[ticker] || await lookupCIK(ticker);
-          if (cik) {
-            const facts = await fetchCompanyFacts(cik);
-            if (facts) {
+          if (!cik) continue; // already reported by the submissions loader
+          const facts = await fetchCompanyFacts(cik);
+          if (!facts) { factless.push(ticker); continue; }
+          {
+            {
               newRaw[ticker] = facts;
               const years = getAvailableYears(facts);
               newYears[ticker] = years;
@@ -387,6 +399,12 @@ export default function Benchmarking() {
         }
       }
 
+      setUnavailablePeers(prev => {
+        const next = { ...prev };
+        for (const t of factless) if (!next[t]) next[t] = 'no XBRL financial data is available from SEC EDGAR';
+        for (const t of selectedTickers) if (newRaw[t] && next[t]?.startsWith('no XBRL')) delete next[t];
+        return next;
+      });
       setCompaniesRawFacts(newRaw);
       setAvailableYears(newYears);
       setCompaniesFacts(newFacts);
@@ -1317,6 +1335,12 @@ Keep it crisp and practical.`;
         </div>
       )}
       
+      {selectedTickers.some(t => unavailablePeers[t]) && (
+        <div role="status" style={{ padding: '9px 12px', marginBottom: '10px', borderRadius: '8px', fontSize: '0.8rem', color: 'var(--text-secondary)', background: 'color-mix(in srgb, var(--status-warning) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--status-warning) 30%, transparent)' }}>
+          Some selected peers are missing from this comparison:{' '}
+          {selectedTickers.filter(t => unavailablePeers[t]).map(t => `${t} (${unavailablePeers[t]})`).join('; ')}. Figures and matrices below cover only the peers that loaded.
+        </div>
+      )}
       {viewMode === 'financials' && (
         <div className="financials-view" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {loadingFacts || isLoading ? (

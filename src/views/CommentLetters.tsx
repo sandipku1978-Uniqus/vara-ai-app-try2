@@ -657,6 +657,11 @@ export default function CommentLetters() {
                   )}
                 </div>
               )}
+              {threads.length === 0 && (
+                <div role="status" style={{ padding: '20px 16px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                  No review conversations to show{companyFilter.trim() ? ' for this company filter — try clearing it or picking the issuer from the suggestions' : ' yet; the corpus may still be loading'}.
+                </div>
+              )}
               {threads.map(thread => {
                 const days = Math.max(1, Math.round(
                   (Date.parse(thread.last_letter) - Date.parse(thread.first_letter)) / 86_400_000

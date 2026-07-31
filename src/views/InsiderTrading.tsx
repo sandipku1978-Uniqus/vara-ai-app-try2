@@ -22,6 +22,7 @@ export default function InsiderTrading() {
   const [filings, setFilings] = useState<InsiderFiling[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [skippedTickers, setSkippedTickers] = useState<string[]>([]);
 
   async function addCompany(ticker: string, cik: string) {
     if (companies.find(c => c.ticker === ticker)) return;
@@ -29,18 +30,19 @@ export default function InsiderTrading() {
   }
 
   useEffect(() => {
-    if (companies.length === 0) { setFilings([]); return; }
+    if (companies.length === 0) { setFilings([]); setSkippedTickers([]); return; }
     let cancelled = false;
     async function load() {
       setLoading(true);
       setError('');
       try {
         const allFilings: InsiderFiling[] = [];
+        const failed: string[] = [];
         for (const c of companies) {
           const cik = c.cik || await lookupCIK(c.ticker);
-          if (!cik) continue;
+          if (!cik) { failed.push(c.ticker); continue; }
           const sub = await fetchCompanySubmissions(cik);
-          if (!sub) continue;
+          if (!sub) { failed.push(c.ticker); continue; }
           const insider = getInsiderFilings(sub, ['3', '4', '5']);
           for (const f of insider) {
             allFilings.push({
@@ -53,6 +55,7 @@ export default function InsiderTrading() {
         if (!cancelled) {
           allFilings.sort((a, b) => b.filingDate.localeCompare(a.filingDate));
           setFilings(allFilings);
+        setSkippedTickers(failed);
         }
       } catch (err) {
         if (!cancelled) setError('Failed to load insider filings.');
@@ -92,13 +95,18 @@ export default function InsiderTrading() {
         <h1 style={{ fontSize: '1.35rem', fontWeight: 700, color: 'var(--text-primary)' }}>Insider Trading</h1>
       </div>
       <p style={{ color: 'var(--text-secondary)', marginBottom: '14px', fontSize: '0.86rem', lineHeight: 1.45 }}>
-        Forms 3, 4, and 5 insider ownership and transaction filings from SEC EDGAR.
+        Forms 3, 4, and 5 insider ownership and transaction filings from each company&apos;s recent SEC submissions window (roughly the last 1,000 filings per registrant — high-volume filers&apos; older insider forms roll out of it).
       </p>
 
       <div style={{ marginBottom: '12px', maxWidth: '400px' }}>
         <CompanySearchInput onSelect={addCompany} placeholder="Add company by ticker..." />
       </div>
 
+      {skippedTickers.length > 0 && filings.length > 0 && (
+        <div role="status" style={{ padding: '8px 12px', marginBottom: '10px', borderRadius: '8px', fontSize: '0.78rem', color: 'var(--text-secondary)', background: 'color-mix(in srgb, var(--status-warning) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--status-warning) 30%, transparent)' }}>
+          {skippedTickers.join(', ')} could not be loaded from SEC — the list below excludes {skippedTickers.length === 1 ? 'that company' : 'those companies'}.
+        </div>
+      )}
       {companies.length > 0 && (
         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '12px' }}>
           {companies.map(c => (
@@ -129,7 +137,11 @@ export default function InsiderTrading() {
           <DataTable columns={columns} data={filings} pageSize={25} />
         </>
       ) : companies.length > 0 ? (
-        <div style={{ textAlign: 'center', padding: '28px 16px', color: 'var(--text-muted)' }}>No insider filings found.</div>
+        <div style={{ textAlign: 'center', padding: '28px 16px', color: 'var(--text-muted)' }}>
+          {skippedTickers.length > 0
+            ? `No insider filings shown — ${skippedTickers.join(', ')} could not be loaded from SEC (retry by re-adding the ticker).`
+            : 'No insider filings found in the recent submissions window for these companies.'}
+        </div>
       ) : (
         <div style={{ textAlign: 'center', padding: '28px 16px', color: 'var(--text-muted)' }}>Add companies above to view insider trading filings.</div>
       )}

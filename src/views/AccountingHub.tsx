@@ -8,6 +8,7 @@ import DataTable, { type ColumnDef } from '../components/tables/DataTable';
 import SearchFilterBar, { defaultSearchFilters, type SearchFilters } from '../components/filters/SearchFilterBar';
 import { aiAscLookup, aiSummarize } from '../services/aiApi';
 import { buildSearchTrendSummary, executeFilingResearchSearch, type FilingResearchResult, type ResearchSearchMode } from '../services/filingResearch';
+import SearchIntegrityNotice, { useSearchIntegrity } from '../components/research/SearchIntegrityNotice';
 import ResponsibleAIBanner from '../components/ResponsibleAIBanner';
 import { renderMarkdown } from '../utils/markdownRenderer';
 import { useApp } from '../context/AppState';
@@ -84,6 +85,7 @@ export default function AccountingHub() {
   });
   const [researchResults, setResearchResults] = useState<FilingResearchResult[]>([]);
   const [researchLoading, setResearchLoading] = useState(false);
+  const integrity = useSearchIntegrity();
   const [researchMemo, setResearchMemo] = useState('');
   const [researchMemoLoading, setResearchMemoLoading] = useState(false);
   const [researchMemoError, setResearchMemoError] = useState('');
@@ -189,6 +191,7 @@ export default function AccountingHub() {
     }
 
     setResearchLoading(true);
+    integrity.reset();
     setResearchError('');
     setResearchMemo('');
     setAlertMessage('');
@@ -201,6 +204,7 @@ export default function AccountingHub() {
         defaultForms: RESEARCH_DEFAULT_FORMS,
         limit: 40,
         hydrateTextSignals: true,
+        ...integrity.callbacks,
       });
 
       setResearchResults(matches);
@@ -222,7 +226,7 @@ export default function AccountingHub() {
     } finally {
       setResearchLoading(false);
     }
-  }, [researchFilters, researchMode, researchQuery, setActiveSearchContext]);
+  }, [integrity, researchFilters, researchMode, researchQuery, setActiveSearchContext]);
 
   useEffect(() => {
     if (!pendingSearchIntent || pendingSearchIntent.surface !== 'accounting') return;
@@ -504,6 +508,8 @@ Write a concise memo with:
                   {alertMessage}
                 </div>
               )}
+
+              <SearchIntegrityNotice integrity={integrity} resultCount={researchResults.length} />
 
               {researchError && (
                 <div role="alert" style={{ padding: '10px 12px', borderRadius: '4px', border: '1px solid color-mix(in srgb, var(--status-error) 30%, transparent)', background: 'var(--status-error-bg)', color: 'var(--status-error)' }}>

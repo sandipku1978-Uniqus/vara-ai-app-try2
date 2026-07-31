@@ -10,6 +10,7 @@ import AskCopilotButton from '../components/tables/AskCopilotButton';
 import AIResultsSummary from '../components/tables/AIResultsSummary';
 import SearchFilterBar, { type SearchFilters, defaultSearchFilters } from '../components/filters/SearchFilterBar';
 import { executeFilingResearchSearch } from '../services/filingResearch';
+import SearchIntegrityNotice, { useSearchIntegrity } from '../components/research/SearchIntegrityNotice';
 
 interface FormDRow { entityName: string; fileDate: string; formType: string; cik: string; accessionNumber: string; primaryDocument: string; }
 
@@ -22,6 +23,7 @@ export default function ExemptOfferings() {
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   const [searchError, setSearchError] = useState('');
+  const integrity = useSearchIntegrity();
   const [recentItems, setRecentItems] = useState<FormDRow[]>([]);
   const [recentLoading, setRecentLoading] = useState(true);
   const [recentError, setRecentError] = useState('');
@@ -58,6 +60,7 @@ export default function ExemptOfferings() {
   async function handleSearch() {
     setLoading(true); setSearched(true);
     setSearchError('');
+    integrity.reset();
     try {
       const matches = await executeFilingResearchSearch({
         query: filters.keyword,
@@ -66,6 +69,7 @@ export default function ExemptOfferings() {
         limit: 50,
         // Users mostly type issuer names here — resolve lowercase too
         entityScope: 'aggressive',
+        ...integrity.callbacks,
       });
       setResults(matches.map(match => ({
         entityName: match.entityName,
@@ -153,11 +157,14 @@ export default function ExemptOfferings() {
             moduleLabel="exempt offerings"
             cacheKey={`exempt offerings:${filters.keyword}:${results.length}`}
           />
+          <SearchIntegrityNotice integrity={integrity} resultCount={results.length} />
           <ResultsToolbar data={results} columns={columns} label="exempt offerings" />
           <DataTable columns={columns} data={results} pageSize={25} />
         </>
       ) : searched ? (
-        <div style={{ textAlign: 'center', padding: '28px 16px', color: 'var(--text-muted)' }}>No Form D filings found. Form D filings carry almost no full text, so search works best by issuer — type a company name and pick it from the suggestions (e.g. Blue Owl Capital), rather than a generic keyword.</div>
+        <div style={{ textAlign: 'center', padding: '28px 16px', color: 'var(--text-muted)' }}>
+          <SearchIntegrityNotice integrity={integrity} resultCount={results.length} />
+          No Form D filings found. Form D filings carry almost no full text, so search works best by issuer — type a company name and pick it from the suggestions (e.g. Blue Owl Capital), rather than a generic keyword.</div>
       ) : (
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '10px' }}>

@@ -75,7 +75,7 @@ const GUIDE_SECTIONS: GuideSection[] = [
       'Open the Research Workbench from the sidebar or press the search bar on the Dashboard.',
       'Enter a keyword, company name, or disclosure topic in the main search field. Filing Research mode can extract supported company, form, date, and auditor constraints from plain-language input.',
       'Use form type, date range, SIC code, auditor, exchange, filer status, section keywords, and other available fields to narrow results before searching.',
-      'Toggle between Filing Research mode for assisted query preparation and Boolean mode for AND, OR, NOT, quoted phrases, and w/# proximity.',
+      'Toggle between Filing Research mode for assisted query preparation and Boolean mode for AND, OR, NOT, quoted phrases, w/# and p/# proximity, wildcards (crypto*, wom?n), numeric operands (#, $#, %#), and the auditor: field.',
       'Click any result row to open the filing in the Filing Detail viewer.',
     ],
     notes: [
@@ -94,7 +94,7 @@ const GUIDE_SECTIONS: GuideSection[] = [
     summary: 'Master the full workflow: assisted filing search, Boolean search, research sessions with tabs, result insights, and saved alerts.',
     steps: [
       'Use Filing Research mode to turn supported plain-language constraints into a deterministic SEC search. It is not conceptual or vector retrieval.',
-      'Switch to Boolean mode when you need exact-match results. Use AND, OR, NOT, "quoted phrases", and proximity operators like w/5 or near/10. Your mode choice is authoritative — lowercase prose containing "and" or "or" will not silently switch modes.',
+      'Switch to Boolean mode when you need exact-match results. Use AND, OR, NOT, "quoted phrases", proximity operators like w/5, near/10 or ordered p/3, single-word wildcards (crypto*, wom?n), and numeric operands (#, $#, %#). Your mode choice is authoritative — typed prose will not silently switch modes.',
       'Precedence is NOT, then proximity, then AND (explicit or implied by a space), then OR. Use parentheses to override it: (impairment OR restructuring) AND lease.',
       'Bare terms match whole words, case-insensitively, with singular/plural equivalence — lease also matches leases, and weakness also matches weaknesses. There is no broader stemming, so audit does not match auditory. Quoted phrases match a contiguous run of whole words, so "net income" does not match "planet income". Punctuation is normalised both ways, so 10-K, non-GAAP, R&D and U.S. GAAP all match their spaced forms.',
       'Scope Boolean results to a specific audit firm inline with auditor:<firm> — e.g. "material weakness" AND auditor:KPMG, or auditor:"Ernst & Young" on its own (quote multi-word firms). The field applies to the whole search, so it is only allowed in AND context; auditor: inside an OR or NOT group is rejected. It combines with the Auditor filter in Advanced Filters, and the firm shown is the PCAOB Form AP auditor of record.',

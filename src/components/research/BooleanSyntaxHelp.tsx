@@ -129,7 +129,7 @@ export default function BooleanSyntaxHelp({ open, onClose }: BooleanSyntaxHelpPr
       )}
 
       <p className="bool-help__note">
-        Operators must be uppercase. A phrase in quotes is never split to look up a company.
+        Operators work in either case inside Boolean mode; only UPPERCASE operators auto-switch a Filing Research query into Boolean mode. A phrase in quotes is never split to look up a company.
       </p>
     </div>
   );
