@@ -180,6 +180,11 @@ const marqueeModules = [
   'IPO Center',
   'M&A Research',
   'Exhibits & Agreements',
+  'Earnings Release Exhibits',
+  'Accounting Analytics',
+  'No-Action Letters',
+  'Exempt Offerings',
+  'ADV Registrations',
   'Support Center',
 ] as const;
 

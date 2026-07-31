@@ -10,6 +10,7 @@
  */
 
 import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
 import '../../styles/evidence-ledger.css';
 
 export const metadata: Metadata = {
@@ -54,9 +55,17 @@ function Section({ title, note, children }: { title: string; note?: string; chil
 }
 
 export default function DesignGalleryPage() {
+  // Internal design reference only. In production it would show any signed-in
+  // user fabricated filing rows carrying "verified" badges — the one thing
+  // this product must never do.
+  if (process.env.NODE_ENV === 'production') notFound();
+
   return (
     <div className="el-scope el-gallery" style={{ minHeight: '100vh', padding: 'var(--el-space-8)' }}>
       <div style={{ maxWidth: '1180px', margin: '0 auto' }}>
+        <div role="note" style={{ maxWidth: '1180px', margin: '0 auto var(--el-space-4)', padding: 'var(--el-space-2) var(--el-space-3)', border: '1px dashed var(--el-rule-strong)', color: 'var(--el-ink-secondary)', fontSize: 'var(--el-text-sm)' }}>
+          Design reference with STATIC SAMPLE DATA — the filings, excerpts and verification badges below are fabricated for component review and must not be cited.
+        </div>
         <header style={{ marginBottom: 'var(--el-space-8)', borderBottom: '1px solid var(--el-rule-strong)', paddingBottom: 'var(--el-space-4)' }}>
           <h1 style={{ fontSize: 'var(--el-text-xl)', fontWeight: 700, letterSpacing: '-0.01em', margin: 0 }}>
             Evidence Ledger — component gallery

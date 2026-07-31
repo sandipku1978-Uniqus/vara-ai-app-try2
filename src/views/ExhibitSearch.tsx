@@ -10,6 +10,7 @@ import AskCopilotButton from '../components/tables/AskCopilotButton';
 import AIResultsSummary from '../components/tables/AIResultsSummary';
 import SearchFilterBar, { type SearchFilters, defaultSearchFilters } from '../components/filters/SearchFilterBar';
 import { executeFilingResearchSearch, matchesDocumentTypePrefixes } from '../services/filingResearch';
+import SearchIntegrityNotice, { useSearchIntegrity } from '../components/research/SearchIntegrityNotice';
 
 interface ExhibitRow { entityName: string; fileDate: string; formType: string; documentType: string; cik: string; accessionNumber: string; primaryDocument: string; description: string; }
 
@@ -42,6 +43,7 @@ export default function ExhibitSearch() {
   const [searchError, setSearchError] = useState('');
   const [recentError, setRecentError] = useState('');
   const [recentReloadKey, setRecentReloadKey] = useState(0);
+  const integrity = useSearchIntegrity();
 
   useEffect(() => {
     let cancelled = false;
@@ -97,6 +99,7 @@ export default function ExhibitSearch() {
 
   async function handleSearch() {
     setLoading(true); setSearched(true); setSearchError('');
+    integrity.reset();
     try {
       const searchPass = (dateFrom?: string) => executeFilingResearchSearch({
         query: filters.keyword,
@@ -107,6 +110,7 @@ export default function ExhibitSearch() {
         // The exhibits box is predominantly a company filter ("Organon",
         // "sun pharma") — resolve lowercase names/tickers to issuer scope
         entityScope: 'aggressive',
+        ...integrity.callbacks,
       });
 
       // Recency-first collection: EFTS ranks by relevance, so a full-history
@@ -212,6 +216,7 @@ export default function ExhibitSearch() {
         showAccessionNumber: true, showFileNumber: true,
       }} filters={filters} onChange={setFilters} onSearch={handleSearch} loading={loading} />
 
+      {!loading && searched && <SearchIntegrityNotice integrity={integrity} resultCount={results.length} />}
       {loading ? (
         <div role="status" style={{ textAlign: 'center', padding: '28px 16px', color: 'var(--text-muted)' }}><Loader2 size={22} className="spinner" style={{ marginBottom: '6px' }} /><div>Searching exhibits...</div></div>
       ) : results.length > 0 ? (
@@ -228,7 +233,12 @@ export default function ExhibitSearch() {
         </>
       ) : searched ? (
         <div role={searchError ? 'alert' : undefined} style={{ textAlign: 'center', padding: '28px 16px', color: searchError ? 'var(--status-error)' : 'var(--text-muted)' }}>
-          <p>{searchError || 'No exhibit documents matched these criteria.'}</p>
+          {/* The type chips filter the COLLECTED window client-side. When the
+              search found documents but none carry the selected exhibit type,
+              blaming "these criteria" misattributes a chip miss to SEC. */}
+          <p>{searchError || (rawResults.length > 0 && selectedTypes.length > 0
+            ? `None of the ${rawResults.length} collected documents carry the selected exhibit type${selectedTypes.length === 1 ? '' : 's'} (${selectedTypes.join(', ')}). The chips filter collected results — clear them or refine the search to collect more.`
+            : 'No exhibit documents matched these criteria.')}</p>
           {searchError && <button type="button" className="secondary-btn" onClick={() => void handleSearch()}>Retry exhibit search</button>}
         </div>
       ) : (

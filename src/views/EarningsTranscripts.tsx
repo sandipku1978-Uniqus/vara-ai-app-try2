@@ -15,6 +15,7 @@ import {
   matchesDocumentTypePrefixes,
   partitionParentAndExhibitForms,
 } from '../services/filingResearch';
+import SearchIntegrityNotice, { useSearchIntegrity } from '../components/research/SearchIntegrityNotice';
 import { EARNINGS_SCOPE_DESCRIPTION, EARNINGS_SCOPE_LABEL, EARNINGS_SCOPE_LIMITATION } from '../config/earnings';
 
 interface EarningsRow { entityName: string; fileDate: string; formType: string; documentType: string; cik: string; accessionNumber: string; primaryDocument: string; description: string; }
@@ -30,6 +31,7 @@ export default function EarningsTranscripts() {
   const [recentItems, setRecentItems] = useState<EarningsRow[]>([]);
   const [recentLoading, setRecentLoading] = useState(true);
   const [searchError, setSearchError] = useState('');
+  const integrity = useSearchIntegrity();
   const [recentError, setRecentError] = useState('');
   const [recentReloadKey, setRecentReloadKey] = useState(0);
 
@@ -81,6 +83,7 @@ export default function EarningsTranscripts() {
 
   async function handleSearch() {
     setLoading(true); setSearched(true); setSearchError('');
+    integrity.reset();
     try {
       const { parentForms, exhibitTypes } = partitionParentAndExhibitForms(
         filters.formTypes,
@@ -104,6 +107,7 @@ export default function EarningsTranscripts() {
         limit: 250,
         includeExhibits: true,
         entityScope: 'aggressive',
+        ...integrity.callbacks,
       });
       setResults(matches
         .filter(match => matchesDocumentTypePrefixes(match.documentType, requestedExhibits))
@@ -187,11 +191,13 @@ export default function EarningsTranscripts() {
             moduleLabel="earnings releases"
             cacheKey={`earnings releases:${filters.keyword}:${results.length}`}
           />
+          <SearchIntegrityNotice integrity={integrity} resultCount={results.length} />
           <ResultsToolbar data={results} columns={columns} label="earnings releases" />
           <DataTable columns={columns} data={results} pageSize={25} />
         </>
       ) : searched ? (
         <div role={searchError ? 'alert' : undefined} style={{ textAlign: 'center', padding: '28px 16px', color: searchError ? 'var(--status-error)' : 'var(--text-muted)' }}>
+          <SearchIntegrityNotice integrity={integrity} resultCount={results.length} />
           <p>{searchError || 'No EX-99.1 earnings-release documents matched these criteria.'}</p>
           {searchError && <button type="button" className="secondary-btn" onClick={() => void handleSearch()}>Retry earnings-release search</button>}
         </div>

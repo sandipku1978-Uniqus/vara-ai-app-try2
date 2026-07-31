@@ -31,8 +31,8 @@ export const PRODUCT_ROUTES: ProductRoute[] = [
   { path: '/exempt-offerings', label: 'Exempt Offerings', group: 'Transactions', keywords: 'form d regulation d', palette: true },
   { path: '/adv-registrations', label: 'ADV Registrations', group: 'Transactions', keywords: 'investment adviser iard iapd', palette: true },
   { path: '/support', label: 'Support Center', group: 'More', keywords: 'help documentation', palette: true },
-  { path: '/privacy', label: 'Privacy', group: 'More', keywords: 'data privacy retention' },
-  { path: '/terms', label: 'Terms', group: 'More', keywords: 'terms use legal' },
+  { path: '/privacy', label: 'Privacy', group: 'More', keywords: 'data privacy retention', palette: true },
+  { path: '/terms', label: 'Terms', group: 'More', keywords: 'terms use legal', palette: true },
 ];
 
 export function findProductRoute(pathname: string): ProductRoute | null {
