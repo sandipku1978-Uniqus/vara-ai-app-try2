@@ -50,10 +50,10 @@ export async function GET(request: Request) {
       output: 'atom',
     });
     const target = buildSecTargetUrl('proxy', 'cgi-bin/browse-edgar', params);
-    const response = await fetchSecResponse(target, 'proxy', new AbortController().signal, USER_AGENT);
+    const response = await fetchSecResponse(target, 'proxy', request.signal, USER_AGENT);
     if (!response.ok) return NextResponse.json({ ok: true, cik: null });
 
-    const bytes = await readResponseWithLimit(response, MAX_ATOM_BYTES, new AbortController().signal);
+    const bytes = await readResponseWithLimit(response, MAX_ATOM_BYTES, request.signal);
     const atom = new TextDecoder().decode(bytes);
 
     const match = atom.match(/<cik>(\d{1,10})<\/cik>/i);

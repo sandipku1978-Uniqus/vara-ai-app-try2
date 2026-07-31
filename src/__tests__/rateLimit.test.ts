@@ -41,6 +41,23 @@ describe('AI spend reservations', () => {
     expect(overBudget).toMatchObject({ allowed: false, reason: 'budget' });
   });
 
+  it('refunds a denied reservation instead of pinning the user for the day', async () => {
+    const identity = { userId: `refund-test-${Date.now()}`, orgId: null };
+    expect((await reserveAiTokenBudget(identity, 150_000)).allowed).toBe(true);
+    // Denied — but the 60k attempt must not stay counted…
+    expect((await reserveAiTokenBudget(identity, 60_000)).allowed).toBe(false);
+    // …so a request that fits the remaining 50k headroom still succeeds.
+    expect((await reserveAiTokenBudget(identity, 40_000)).allowed).toBe(true);
+  });
+
+  it('enforces the deployment-wide daily ceiling on top of per-user budgets', async () => {
+    vi.stubEnv('AI_DAILY_TOKEN_BUDGET_GLOBAL', '1');
+    const identity = { userId: `global-test-${Date.now()}`, orgId: null };
+    // Well under the per-user budget, but the aggregate ceiling binds.
+    const result = await reserveAiTokenBudget(identity, 10_000);
+    expect(result).toMatchObject({ allowed: false, reason: 'budget' });
+  });
+
   it('falls back to in-memory controls in production when no KV store is configured (Option A)', async () => {
     vi.stubEnv('NODE_ENV', 'production');
     vi.stubEnv('VERCEL_ENV', 'production');

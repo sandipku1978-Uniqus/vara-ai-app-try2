@@ -53,10 +53,10 @@ export async function POST(request: Request) {
   let payload: Record<string, unknown>;
   try {
     const raw = await request.text();
-    if (raw.length > MAX_BODY_BYTES) return NextResponse.json({ ok: false }, { status: 413 });
+    if (raw.length > MAX_BODY_BYTES) return NextResponse.json({ ok: false, error: 'Report too large.' }, { status: 413 });
     payload = JSON.parse(raw) as Record<string, unknown>;
   } catch {
-    return NextResponse.json({ ok: false }, { status: 400 });
+    return NextResponse.json({ ok: false, error: 'Invalid report body.' }, { status: 400 });
   }
 
   const report = {

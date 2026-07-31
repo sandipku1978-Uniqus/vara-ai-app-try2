@@ -71,15 +71,24 @@ export async function GET(request: Request) {
     return NextResponse.json({ ok: false, error: 'Metadata layer unavailable.' }, { status: 503 });
   }
 
-  const { data, error } = await db.rpc('urc_filing_scope_stats', {
-    p_forms: forms.length > 0 ? forms : null,
-    p_start: start ?? null,
-    p_end: end ?? null,
-    p_cik: cik ? Number(cik) : null,
-  });
-
-  if (error) {
-    console.error(`[filing-scope] ${error.message}`);
+  // The RPC returns {data,error} for SQL failures, but a transport-level
+  // rejection (network, DNS) THROWS — unwrapped, that surfaces as a bare
+  // Next 500 outside both documented envelopes.
+  let data: unknown;
+  try {
+    const result = await db.rpc('urc_filing_scope_stats', {
+      p_forms: forms.length > 0 ? forms : null,
+      p_start: start ?? null,
+      p_end: end ?? null,
+      p_cik: cik ? Number(cik) : null,
+    });
+    if (result.error) {
+      console.error(`[filing-scope] ${result.error.message}`);
+      return NextResponse.json({ ok: false, error: 'Scope lookup failed.' }, { status: 502 });
+    }
+    data = result.data;
+  } catch (error) {
+    console.error('[filing-scope] transport failure:', error);
     return NextResponse.json({ ok: false, error: 'Scope lookup failed.' }, { status: 502 });
   }
 

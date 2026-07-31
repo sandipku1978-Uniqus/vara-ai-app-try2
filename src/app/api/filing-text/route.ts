@@ -24,6 +24,9 @@ import {
   SecUpstreamError,
 } from '../../../lib/sec-upstream';
 
+/** The platform default would kill this route mid-flight; see the in-route budgets. */
+export const maxDuration = 60;
+
 const USER_AGENT = process.env.NEXT_PUBLIC_EDGAR_USER_AGENT || 'Uniqus Research Center contact@uniqus.com';
 const MAX_DOCUMENT_BYTES = 25 * 1024 * 1024;
 /** Filing documents are immutable once filed, so a hit never needs revalidation. */
@@ -52,21 +55,27 @@ export async function GET(request: Request) {
   const cleanAccession = accession.replace(/-/g, '');
 
   // ── Cache read (least-privilege role) ──
+  // A cache-layer transport failure must degrade to a cache MISS (the SEC
+  // fetch below still serves the request), never to a bare 500.
   const db = getWebSupabase();
   if (db) {
-    const { data } = await db
-      .from(CACHE_TABLE)
-      .select('text')
-      .eq('cik', cik)
-      .eq('accession', cleanAccession)
-      .eq('document', document)
-      .maybeSingle();
+    try {
+      const { data } = await db
+        .from(CACHE_TABLE)
+        .select('text')
+        .eq('cik', cik)
+        .eq('accession', cleanAccession)
+        .eq('document', document)
+        .maybeSingle();
 
-    if (data?.text) {
-      return NextResponse.json(
-        { ok: true, text: data.text, cached: true },
-        { headers: { 'Cache-Control': 'private, max-age=3600' } },
-      );
+      if (data?.text) {
+        return NextResponse.json(
+          { ok: true, text: data.text, cached: true },
+          { headers: { 'Cache-Control': 'private, max-age=3600' } },
+        );
+      }
+    } catch (error) {
+      console.error('[filing-text] cache read failed; falling through to SEC:', error);
     }
   }
 

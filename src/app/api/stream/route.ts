@@ -14,6 +14,9 @@ import { validateChatRequest } from '../../../lib/ai-input';
 import { buildFrameworkContext } from '../../../lib/framework-context';
 import crypto from 'crypto';
 
+/** The platform default would kill this route mid-flight; see the in-route budgets. */
+export const maxDuration = 300;
+
 const anthropic = createAnthropicClient(process.env.ANTHROPIC_API_KEY || '');
 
 const CLAUDE_MODEL = process.env.ANTHROPIC_MODEL || 'claude-sonnet-5';

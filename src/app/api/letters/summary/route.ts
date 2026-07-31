@@ -30,6 +30,9 @@ import {
   type CommentLetterSummaryCoverage,
 } from '../../../../services/commentLetterSummary';
 
+/** The platform default would kill this route mid-flight; see the in-route budgets. */
+export const maxDuration = 300;
+
 const CLAUDE_MODEL = process.env.ANTHROPIC_MODEL || 'claude-sonnet-5';
 const THREAD_ID_PATTERN = /^[A-Za-z0-9:._-]{1,160}$/;
 

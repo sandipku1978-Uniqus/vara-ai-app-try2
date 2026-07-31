@@ -7,8 +7,21 @@
  * set serves them all.
  */
 
+import { scopedStorageKey } from './storageNamespace';
+
 const STORAGE_KEY = 'urc.benchmark.peersets.v1';
 const MAX_SETS = 20;
+
+/**
+ * Per-identity key, like every other research artifact (sessions, memo tray,
+ * alerts). Without this, two analysts sharing a machine saw and overwrote
+ * each other's named peer groups — and a saved set drives every Benchmarking
+ * view. Falls back to the raw key only when no identity scope exists yet
+ * (signed-out dev, tests).
+ */
+function storageKey(): string {
+  return scopedStorageKey(STORAGE_KEY) ?? STORAGE_KEY;
+}
 
 export interface SavedPeerSet {
   name: string;
@@ -19,7 +32,7 @@ export interface SavedPeerSet {
 function readAll(): SavedPeerSet[] {
   if (typeof window === 'undefined') return [];
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = window.localStorage.getItem(storageKey());
     const parsed = raw ? JSON.parse(raw) as SavedPeerSet[] : [];
     return Array.isArray(parsed)
       ? parsed.filter(set => set && typeof set.name === 'string' && Array.isArray(set.tickers))
@@ -32,7 +45,7 @@ function readAll(): SavedPeerSet[] {
 function writeAll(sets: SavedPeerSet[]): void {
   if (typeof window === 'undefined') return;
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(sets.slice(0, MAX_SETS)));
+    window.localStorage.setItem(storageKey(), JSON.stringify(sets.slice(0, MAX_SETS)));
   } catch {
     // Quota or privacy mode — saved sets are a convenience, never load-bearing.
   }

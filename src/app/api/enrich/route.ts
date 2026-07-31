@@ -43,6 +43,14 @@ export async function GET(request: Request) {
       db.from('urc_sec_companies').select('cik, sic, sic_description, tickers, exchanges, state_of_incorporation').in('cik', ciks),
     ]);
 
+    // A database outage must be visible, not returned as "every issuer has a
+    // blank auditor and SIC" — the client's degrade path exists for exactly
+    // this and only fires on a non-200.
+    if (auditorsResult.error || companiesResult.error) {
+      console.error('[enrich] read failed:', auditorsResult.error || companiesResult.error);
+      return NextResponse.json({ error: 'Enrichment store temporarily unavailable' }, { status: 503 });
+    }
+
     const result: Record<string, Record<string, unknown>> = {};
     for (const cik of ciks) result[String(cik)] = {};
     for (const row of auditorsResult.data ?? []) {
