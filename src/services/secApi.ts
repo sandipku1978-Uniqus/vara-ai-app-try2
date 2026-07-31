@@ -1264,7 +1264,13 @@ async function searchViaEnrichedSearch(
       response = await fetch(`/api/es-search?${params.toString()}`, { signal: extended.signal });
       if (response.ok) break;
       if ((response.status === 429 || response.status >= 500) && attempt < 2) {
-        await delay(250 * (2 ** attempt));
+        // A 429 from the facet lane means another user's search holds the
+        // deployment-wide EDGAR lease. The server says when to come back
+        // (Retry-After); waiting that long turns a hard failure into a short
+        // queue. Capped so an aborted tab never hangs on a long sleep.
+        const retryAfter = response.status === 429 ? Number(response.headers.get('Retry-After')) : 0;
+        const waitMs = retryAfter > 0 ? Math.min(retryAfter * 1000, 6_000) : 250 * (2 ** attempt);
+        await delay(waitMs);
         continue;
       }
       throw new Error(`Enriched search error: ${response.status}`);

@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { computeSectionChange } from '../utils/sectionDiff';
 import { deletePeerSet, listPeerSets, savePeerSet } from '../services/peerSets';
+import { buildStorageScope, setActiveBrowserStorageScope } from '../services/storageNamespace';
 
 /**
  * C4 deepening: changed-passage counts (subsection granularity without
@@ -70,5 +71,21 @@ describe('saved peer sets', () => {
     expect(listPeerSets()).toEqual([]);
     savePeerSet('Recovered', ['MSFT']);
     expect(listPeerSets()).toHaveLength(1);
+  });
+
+  it('isolates saved sets per signed-in identity', () => {
+    setActiveBrowserStorageScope(buildStorageScope('user_a', null));
+    savePeerSet('Analyst A peers', ['AAPL', 'MSFT']);
+    expect(listPeerSets()).toHaveLength(1);
+
+    // A different identity on the same machine sees nothing of A's.
+    setActiveBrowserStorageScope(buildStorageScope('user_b', null));
+    expect(listPeerSets()).toEqual([]);
+    savePeerSet('Analyst B peers', ['NVDA']);
+    expect(listPeerSets()).toHaveLength(1);
+
+    setActiveBrowserStorageScope(buildStorageScope('user_a', null));
+    expect(listPeerSets()[0].name).toBe('Analyst A peers');
+    setActiveBrowserStorageScope(null);
   });
 });

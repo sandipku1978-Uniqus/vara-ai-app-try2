@@ -13,6 +13,9 @@ import { requireApiAccess } from '../../../lib/api-auth';
 import { validateCompareRequest } from '../../../lib/ai-input';
 import crypto from 'crypto';
 
+/** The platform default would kill this route mid-flight; see the in-route budgets. */
+export const maxDuration = 180;
+
 
 const anthropic = createAnthropicClient(process.env.ANTHROPIC_API_KEY || '');
 

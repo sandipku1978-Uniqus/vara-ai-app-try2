@@ -1,8 +1,19 @@
 # Pending keys & decisions — the items only Sandip can close
 
-> Status as of 2026-07-27. Everything engineering-side for these is either
-> built or trivially wired once the credential/decision exists. Each item
-> lists exactly what to obtain, where to put it, and what turns on.
+> Status as of 2026-07-31 (post pre-release audit). Everything
+> engineering-side for these is either built or trivially wired once the
+> credential/decision exists. Each item lists exactly what to obtain, where
+> to put it, and what turns on.
+>
+> **The two starred items below are release-gating for multi-user use.**
+
+## 0. ★ Verify `URC_SUPABASE_WEB_KEY` is set in Vercel
+
+- Without it, every web-facing read route silently falls back to the
+  **service-role key** (RLS bypass) with only a console warning
+  (`src/lib/supabase-web.ts`). The least-privilege grants in migration 010
+  are then inert. Verify in Vercel → Env Vars; it should be the
+  `sb_publishable_...` key set 2026-07-24.
 
 ## 1. Voyage AI key — semantic retrieval for memo.AI
 
@@ -19,14 +30,18 @@
 - **Turns on**: saved-alert email delivery (alerts currently surface on the
   Dashboard only).
 
-## 3. Upstash / Vercel KV — durable rate limits
+## 3. ★ Vercel KV — verify before wider rollout (release-gating)
 
 - **Get**: the existing Vercel KV integration already provides
-  `KV_REST_API_URL` / `KV_REST_API_TOKEN`; confirm they are set in Vercel
-  (they were configured for AI budgets — if present, nothing to buy).
-- **Effect**: `src/lib/rate-limit.ts` already prefers KV and falls back to
-  in-memory per-instance limits with a one-time warning. Durable limits are
-  ON wherever KV env is present; nothing else to do.
+  `KV_REST_API_URL` / `KV_REST_API_TOKEN`; confirm they are set in Vercel.
+- **Why it gates the rollout**: without KV, EVERY protection is
+  per-serverless-instance, i.e. effectively unenforced under concurrency —
+  per-user rate limits, AI concurrency caps, the daily token budgets
+  (per-user AND the new deployment-wide `AI_DAILY_TOKEN_BUDGET_GLOBAL`),
+  the global EDGAR fair-access lease, the comment-letter generation lock —
+  and the AI response cache silently no-ops, so every call bills full price.
+- **Also set**: `AI_DAILY_TOKEN_BUDGET_GLOBAL` (deployment-wide daily token
+  ceiling; defaults to 8× the per-user budget if unset).
 
 ## 4. Custom domain — research.uniqus.com
 

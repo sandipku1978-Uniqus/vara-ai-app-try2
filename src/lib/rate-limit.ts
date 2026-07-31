@@ -68,6 +68,16 @@ function dailyTokenBudget(): number {
   return boundedPositiveInteger(process.env.AI_DAILY_TOKEN_BUDGET_PER_USER, DEFAULT_DAILY_TOKEN_BUDGET);
 }
 
+/**
+ * Deployment-wide daily AI ceiling. Per-user budgets scale linearly with
+ * headcount, so a wider rollout needs one aggregate number: default is
+ * 8× the per-user budget (2M tokens at defaults), tunable via
+ * AI_DAILY_TOKEN_BUDGET_GLOBAL.
+ */
+function globalDailyTokenBudget(): number {
+  return boundedPositiveInteger(process.env.AI_DAILY_TOKEN_BUDGET_GLOBAL, dailyTokenBudget() * 8);
+}
+
 function hasDistributedStore(): boolean {
   return Boolean(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
 }
@@ -206,8 +216,22 @@ export async function reserveAiTokenBudget(
   try {
     const day = new Date().toISOString().slice(0, 10);
     const budgetKey = `ai-budget:${opaqueKeyPart(identity.userId)}:${day}`;
+    const globalKey = `ai-budget:global:${day}`;
     const reserved = await incrementCounter(budgetKey, tokenCost, 26 * 60 * 60);
     if (reserved > dailyTokenBudget()) {
+      // A DENIED reservation must not stay counted: without the refund, a
+      // user who tripped the cap once was pinned for the whole day even
+      // though no model call was made.
+      await incrementCounter(budgetKey, -tokenCost, 26 * 60 * 60).catch(() => {});
+      return { allowed: false, retryAfterSeconds: secondsUntilWindowReset(24 * 60 * 60), reason: 'budget' };
+    }
+    // Deployment-wide daily ceiling: per-user budgets scale linearly with
+    // headcount (20 users × 250k = 5M tokens/day), so a wider rollout needs
+    // one aggregate number a finance owner can set.
+    const reservedGlobal = await incrementCounter(globalKey, tokenCost, 26 * 60 * 60);
+    if (reservedGlobal > globalDailyTokenBudget()) {
+      await incrementCounter(globalKey, -tokenCost, 26 * 60 * 60).catch(() => {});
+      await incrementCounter(budgetKey, -tokenCost, 26 * 60 * 60).catch(() => {});
       return { allowed: false, retryAfterSeconds: secondsUntilWindowReset(24 * 60 * 60), reason: 'budget' };
     }
     return { allowed: true, retryAfterSeconds: 0 };

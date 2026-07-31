@@ -31,6 +31,9 @@ import {
 import { getWebSupabase } from '../../../lib/supabase-web';
 import { buildSecTargetUrl, fetchSecResponse, readResponseWithLimit } from '../../../lib/sec-upstream';
 
+/** The platform default would kill this route mid-flight; see the in-route budgets. */
+export const maxDuration = 60;
+
 const USER_AGENT =
   process.env.NEXT_PUBLIC_EDGAR_USER_AGENT || 'Uniqus Research Center contact@uniqus.com';
 
@@ -351,6 +354,22 @@ export async function GET(request: Request) {
         db.from('urc_current_auditors').select('issuer_cik, firm_canonical').in('issuer_cik', allCiks),
         db.from('urc_sec_companies').select('cik, sic, sic_description, tickers').in('cik', allCiks),
       ]);
+      // A facet search whose enrichment read failed must NOT proceed: the
+      // auditor/SIC post-filter below would then drop every hit and report
+      // an authoritative-looking zero. A database outage is a 503, never a
+      // silent empty result set.
+      if (facetsApplied && (auditorsResult.error || companiesResult.error)) {
+        console.error('[es-search] facet enrichment read failed:', auditorsResult.error || companiesResult.error);
+        return NextResponse.json(
+          { error: 'The facet store is temporarily unavailable; auditor and SIC filters cannot be applied. Retry shortly.' },
+          { status: 503 }
+        );
+      }
+      if (auditorsResult.error || companiesResult.error) {
+        // Enrichment is cosmetic when no facet depends on it — degrade the
+        // labels, never the result set, but say so in the log.
+        console.error('[es-search] enrichment read failed (labels degraded):', auditorsResult.error || companiesResult.error);
+      }
       for (const row of auditorsResult.data ?? []) {
         auditorByCik.set(Number(row.issuer_cik), String(row.firm_canonical));
       }

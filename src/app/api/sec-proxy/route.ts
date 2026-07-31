@@ -12,6 +12,9 @@ import {
   type SecUpstream,
 } from '../../../lib/sec-upstream';
 
+/** The platform default would kill this route mid-flight; see the in-route budgets. */
+export const maxDuration = 60;
+
 const USER_AGENT = process.env.NEXT_PUBLIC_EDGAR_USER_AGENT || 'Uniqus Research Center contact@uniqus.com';
 const MAX_RESPONSE_BYTES = 25 * 1024 * 1024;
 

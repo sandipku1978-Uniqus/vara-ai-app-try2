@@ -1,15 +1,14 @@
 /**
  * GET /api/stats — data-layer coverage/freshness for the UI trust chips
  * (design-system §1.4: accountants won't cite what they can't source).
- * Cached for 10 minutes; counts are planner estimates so the query is instant.
+ * Counts are planner estimates so the query is instant. Always dynamic —
+ * auth() opts the route out of ISR, so a revalidate export would be inert.
  */
 
 import { NextResponse } from 'next/server';
 import { requireApiAccess } from '../../../lib/api-auth';
 import { checkResourceRateLimit, rateLimitResponse } from '../../../lib/rate-limit';
 import { getWebSupabase } from '../../../lib/supabase-web';
-
-export const revalidate = 600;
 
 export async function GET(request: Request) {
   const access = await requireApiAccess();

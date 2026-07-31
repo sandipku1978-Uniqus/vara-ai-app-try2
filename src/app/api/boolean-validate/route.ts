@@ -67,7 +67,14 @@ function sanitize(value: unknown): Candidate | null {
   return { cik, accession, document };
 }
 
-/** Cache first; fetch and store on a miss. Returns '' when unavailable. */
+/**
+ * Cache first; fetch and store on a miss. Returns '' when unavailable.
+ *
+ * Deliberately does NOT thread the client's abort signal into the SEC fetch:
+ * a candidate fetched here is written to the shared urc_filing_text cache,
+ * so finishing an in-flight document after the caller disconnects warms the
+ * cache for every future user rather than wasting the SEC request.
+ */
 async function loadText(candidate: Candidate): Promise<string> {
   const db = getWebSupabase();
   if (db) {
