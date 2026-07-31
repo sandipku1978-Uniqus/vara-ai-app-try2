@@ -43,6 +43,11 @@ export function buildIssuerFreshnessNotice(
   const filed = recent.filingDate?.[0] || '';
   if (!form || !filed || filed <= newestShownDate) return null;
 
+  // Result rows carry the ticker list in the display name — "Alphabet Inc.
+  // (GOOG, GOOGL, …)" — which reads badly in a possessive. The company name
+  // alone is the subject.
+  const cleanIssuer = issuerLabel.replace(/\s*\([^)]*\)\s*$/, '').trim() || issuerLabel;
+
   const label = describeForm(form);
   const formPhrase = label ? `Form ${form} (${label})` : `Form ${form}`;
   const insider = INSIDER_FORMS.has(form.toUpperCase());
@@ -51,7 +56,7 @@ export function buildIssuerFreshnessNotice(
     : 'Adjust Form Types or date filters to include it.';
 
   return {
-    message: `${issuerLabel}’s most recent EDGAR filing is a ${formPhrase} filed ${filed}, outside this search’s scope. ${destination}`,
+    message: `${cleanIssuer}’s most recent EDGAR filing is a ${formPhrase} filed ${filed}, outside this search’s scope. ${destination}`,
     insider,
   };
 }
