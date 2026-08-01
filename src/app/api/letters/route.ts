@@ -13,6 +13,7 @@ import { NextResponse } from 'next/server';
 import { requireApiAccess } from '../../../lib/api-auth';
 import { isValidIsoDate, parseBoundedInteger, parseCik } from '../../../lib/api-query';
 import { checkResourceRateLimit, rateLimitResponse } from '../../../lib/rate-limit';
+import { dbErrorResponse, newCorrelationId } from '../../../lib/db-observability';
 import { getWebSupabase } from '../../../lib/supabase-web';
 
 function withoutTotalCount(row: Record<string, unknown>): Record<string, unknown> {
@@ -58,10 +59,12 @@ export async function GET(request: Request) {
   const rate = await checkResourceRateLimit(request, access.identity, { operation: 'letters' });
   if (!rate.allowed) return rateLimitResponse(rate);
 
+  const correlationId = newCorrelationId();
+  const startedAt = Date.now();
   try {
     if (threadId) {
       const { data, error } = await db.rpc('urc_thread_detail', { p_thread_id: threadId });
-      if (error) throw new Error(error.message);
+      if (error) return dbErrorResponse({ route: 'letters', rpc: 'urc_thread_detail', error, correlationId, startedAt });
       return NextResponse.json({ thread: threadId, letters: data ?? [] });
     }
 
@@ -75,7 +78,7 @@ export async function GET(request: Request) {
         p_offset: from,
         p_company: company,
       });
-      if (error) throw new Error(error.message);
+      if (error) return dbErrorResponse({ route: 'letters', rpc: 'urc_search_letters', error, correlationId, startedAt });
       const rows = (data ?? []) as Array<Record<string, unknown>>;
       return NextResponse.json({
         total: rows.length > 0 ? Number(rows[0].total_count) : 0,
@@ -86,14 +89,14 @@ export async function GET(request: Request) {
     const { data, error } = await db.rpc('urc_recent_threads', {
       p_limit: size, p_offset: from, p_company: company, p_cik: cikParam,
     });
-    if (error) throw new Error(error.message);
+    if (error) return dbErrorResponse({ route: 'letters', rpc: 'urc_recent_threads', error, correlationId, startedAt });
     const rows = (data ?? []) as Array<Record<string, unknown>>;
     return NextResponse.json({
       total: rows.length > 0 ? Number(rows[0].total_count) : 0,
       threads: rows.map(withoutTotalCount),
     });
   } catch (error) {
-    console.error('[letters] query failed:', error);
-    return NextResponse.json({ error: 'Letter query failed' }, { status: 502 });
+    console.error(`[letters] query failed (correlationId=${correlationId}):`, error);
+    return NextResponse.json({ error: 'Letter query failed', errorClass: 'unexpected', correlationId }, { status: 502 });
   }
 }

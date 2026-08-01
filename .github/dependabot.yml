@@ -1,0 +1,23 @@
+# Dependency update automation (remediation handoff WP6).
+# Production-dependency security updates are the priority; grouped weekly
+# batches keep PR noise low enough to actually review.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      production-security:
+        applies-to: security-updates
+        dependency-type: production
+      minor-and-patch:
+        applies-to: version-updates
+        update-types: ["minor", "patch"]
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday

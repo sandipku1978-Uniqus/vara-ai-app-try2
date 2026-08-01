@@ -9,6 +9,7 @@ import { NextResponse } from 'next/server';
 import { requireApiAccess } from '../../../lib/api-auth';
 import { checkResourceRateLimit, rateLimitResponse } from '../../../lib/rate-limit';
 import { getWebSupabase } from '../../../lib/supabase-web';
+import { dbErrorResponse, newCorrelationId } from '../../../lib/db-observability';
 
 export async function GET(request: Request) {
   const access = await requireApiAccess();
@@ -18,9 +19,11 @@ export async function GET(request: Request) {
   const rate = await checkResourceRateLimit(request, access.identity, { operation: 'stats' });
   if (!rate.allowed) return rateLimitResponse(rate);
 
+  const correlationId = newCorrelationId();
+  const startedAt = Date.now();
   try {
     const { data, error } = await db.rpc('urc_data_stats');
-    if (error) throw new Error(error.message);
+    if (error) return dbErrorResponse({ route: 'stats', rpc: 'urc_data_stats', error, correlationId, startedAt });
     const row = Array.isArray(data) ? data[0] : data;
     return NextResponse.json({
       filings: { count: Number(row?.filings_estimate ?? 0), through: row?.filings_through ?? null, source: 'SEC EDGAR master index' },
