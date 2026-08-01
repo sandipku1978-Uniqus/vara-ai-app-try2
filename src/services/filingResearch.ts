@@ -39,6 +39,7 @@ import {
   eftsDelegablePhrase,
   parseBooleanQuery,
   planBooleanBranches,
+  type BooleanSearchNode,
 } from '../utils/booleanSearch';
 
 export type ResearchSearchMode = 'semantic' | 'boolean';
@@ -1484,50 +1485,43 @@ export async function executeFilingResearchSearch({
     }
   }
 
-  // Intelligize-style inline audit-firm field: "material weakness" AND
-  // auditor:Deloitte (or a bare auditor:KPMG). Lift the firm out of the Boolean
-  // query into the structured auditor filter — the existing signal post-filter
-  // then enforces it — and search only the residual expression as text.
-  if (mode === 'boolean') {
-    // One compile path shared with the views, saved-alert checks and the
-    // Accounting Hub. Compiling here is what stops an invalid expression from
-    // reaching EDGAR as a literal string (how "revenue AND" silently ran a wrong
-    // search from non-view callers) — the views surface the message, this
-    // hard-stops with zero network calls. It also catches the cases a bare parse
-    // misses: grouped proximity, negation-only, and over-complex OR fan-out.
-    const compiled = compileBooleanQuery(query || filters.keyword);
-    if (!compiled.ok) return [];
+  // ── Plan compilation (WP7 stage: compileSearchPlan) ──
+  // Everything derivable from the request alone — residual query, lifted
+  // auditor, retrieval lanes, budgets and mode flags — is computed in one pure
+  // step. A null plan means the Boolean expression was invalid: zero network
+  // calls, empty result (the views surface the message via the same compiler).
+  const plan = compileSearchPlan({
+    query,
+    filters,
+    mode,
+    defaultForms,
+    limit,
+    includeExhibits,
+    deferTextValidation,
+    preferFastCandidateCollection,
+    hydrateTextSignals,
+    useEnrichedSearch,
+  });
+  if (!plan) return [];
+  ({ query, filters } = plan);
+  const {
+    formTypes,
+    formScope,
+    excludeExhibits,
+    preferRelevance,
+    needsCompanyMetadata,
+    displayLimit,
+    fastCandidateCollection,
+    needsTextFiltering,
+    shouldHydrateSignals,
+    parsedBooleanQuery,
+    delegatedToEfts,
+    hydratePerDocumentSignals,
+    requiredBooleanBranches,
+    filteredServerQueries,
+    perQueryResultLimit,
+  } = plan;
 
-    if (compiled.auditor) {
-      const canonical = canonicalizeAuditorInput(compiled.auditor) || compiled.auditor;
-      filters = { ...filters, accountant: filters.accountant.trim() || canonical };
-      query = compiled.residual;
-    }
-  }
-
-  const serverQuery = buildServerQuery(query || filters.keyword, filters, mode);
-  const formTypes = normalizeFormTypes(filters, defaultForms);
-  const formScope = parseFormScope(formTypes);
-  // Exhibit sub-documents are excluded unless the caller opts in (Exhibit
-  // Search does): EFTS returns each matching document of a filing as its own
-  // hit, so one 8-K/A could surface five EX-99.x rows that read as duplicates
-  // and crowd out distinct filings in the main research results.
-  //
-  // Boolean mode is the exception: a disclosure that lives only in EX-99.1 was
-  // being discarded before it could be validated, hiding a real match entirely.
-  // There we admit exhibits as candidates and instead roll successful matches up
-  // to one row per accession (see rollUpExhibitMatches), which removes the
-  // duplicate-row problem without losing the exhibit-only evidence.
-  const excludeExhibits = !includeExhibits && mode !== 'boolean';
-  const preferRelevance = Boolean((query || filters.keyword).trim() || filters.sectionKeywords.trim());
-  const semanticAuditorSearch = mode === 'semantic' && Boolean(filters.accountant.trim());
-  const needsCompanyMetadata = requiresCompanyMetadata(filters);
-  const requestedLimit = Math.max(limit, 1);
-  const fastPass = deferTextValidation && mode !== 'boolean';
-  const fastCandidateCollection = deferTextValidation || preferFastCandidateCollection;
-  const displayLimit = Math.min(requestedLimit, 500);
-  const needsTextFiltering = requiresTextFiltering(filters, query, mode, useEnrichedSearch);
-  const shouldHydrateSignals = !fastPass && (hydrateTextSignals || needsTextFiltering);
   const upstreamCoverageState: { value: SearchCandidateCoverage | null } = { value: null };
   const captureUpstreamCoverage = (coverage: SearchCandidateCoverage) => {
     upstreamCoverageState.value = upstreamCoverageState.value
@@ -1545,78 +1539,6 @@ export async function executeFilingResearchSearch({
     // checked, otherwise a deadline can look like an authoritative full scan.
     if (!shouldHydrateSignals) onCoverage?.(upstreamCoverageState.value);
   };
-
-  const parsedBooleanQuery = mode === 'boolean' ? parseBooleanQuery(query) : { expression: null };
-  // True when EDGAR's index already proved the phrase and we deliberately skip
-  // re-opening documents (see requiresTextFiltering).
-  const delegatedToEfts =
-    mode === 'boolean' && !needsTextFiltering && Boolean(eftsDelegablePhrase(parsedBooleanQuery.expression));
-  // Whether the wave loop opens each candidate document. A delegated phrase is
-  // already proved by EDGAR's index and nothing downstream reads the text, but
-  // callers still pass hydrateTextSignals=true for every Boolean run — left
-  // ungated, those no-op fetches spend the 120-document budget and cap recall
-  // at ~120 candidates regardless of collection depth (measured: 498 collected,
-  // 120 examined, 110 shown). Same trap as keying depth off needsTextFiltering:
-  // any flag used as a proxy for "reads documents" inverts under delegation.
-  const hydratePerDocumentSignals = shouldHydrateSignals && !delegatedToEfts;
-
-  const booleanPlan = mode === 'boolean'
-    ? buildBooleanServerQueries(query || filters.keyword, filters, delegatedToEfts)
-    : { queries: [] as string[], requiredBranches: 0 };
-  // Keep every required OR branch plus a few recall extras (bounded by the
-  // 16-branch complexity cap).
-  const booleanServerQueries = booleanPlan.queries.slice(0, Math.max(booleanPlan.requiredBranches, 6));
-  const requiredBooleanBranches = Math.min(booleanPlan.requiredBranches, booleanServerQueries.length);
-  const semanticServerQueries = mode === 'semantic' ? buildSemanticCandidateQueries(serverQuery, filters) : [];
-
-  const serverQueries =
-    mode === 'boolean'
-      ? (booleanServerQueries.length > 0 ? booleanServerQueries : [serverQuery])
-      : (semanticServerQueries.length > 0 ? semanticServerQueries : [serverQuery]);
-
-  const candidateServerQueries = (
-    fastCandidateCollection
-      ? serverQueries.slice(0, mode === 'boolean' ? Math.max(requiredBooleanBranches, 3) : semanticAuditorSearch ? 2 : 3)
-      : serverQueries
-  ).filter(Boolean);
-  // Empty-query browse is intentional for form/date/SIC and other filter-only
-  // requests. Both EFTS and the enriched metadata route support that contract.
-  const filteredServerQueries = candidateServerQueries.length > 0 ? candidateServerQueries : [''];
-
-  // An issuer-scoped browse intentionally has NO text query ("OGN 10-K" →
-  // entity + cleared text). filter(Boolean) used to drop that empty query,
-  // so the fetch loop below never ran — instant zero results with no
-  // request. Keep one empty candidate: the enriched lane treats q='' as a
-  // facet browse and the legacy lane substitutes the quoted issuer name.
-  if (filteredServerQueries.length === 0 && filters.entityName.trim()) {
-    filteredServerQueries.push('');
-  }
-
-  // ── Collect-then-validate pipeline ──
-  // For text-filtered searches (auditor, boolean, section keywords) we use a
-  // wave-based strategy: collect a batch of candidates from EDGAR, validate them,
-  // and if we haven't filled displayLimit yet, collect more from the next query
-  // variant. This avoids fetching thousands of candidates up-front while still
-  // being uncapped — the loop only stops when displayLimit is reached or all
-  // query variants are exhausted.
-
-  // How deep to page per query variant.
-  //
-  // This used to key off needsTextFiltering as a proxy for "collect widely",
-  // which inverted the moment a phrase could be delegated: with no local
-  // validation the flag flips false and the depth silently dropped 500 -> 300,
-  // even though a delegated run needs MORE depth, not less — every upstream
-  // hit is a finished result rather than a candidate to be filtered.
-  const perQueryResultLimit =
-    fastCandidateCollection
-      ? Math.min(Math.max(displayLimit, 80), 140)
-      : delegatedToEfts || needsTextFiltering
-        ? Math.max(displayLimit, 500)
-        : Math.min(Math.max(displayLimit, 140), 300);
-  // Depth is bounded by what can be shown: display caps at 500, and for a
-  // delegated run every upstream hit is a finished row. (An earlier "2,000
-  // candidates produced the same rows as 500" measurement was an artifact of
-  // the document budget capping validation at 120 — see hydratePerDocumentSignals.)
 
   const hitMap = new Map<string, { hit: EdgarSearchHit; queryPriority: number; score: number }>();
   let lastSearchError: Error | null = null;
@@ -2061,6 +1983,192 @@ export async function executeFilingResearchSearch({
   }
 
   return hydrateLightweightMetadata(finalResults);
+}
+
+/** Everything the executor needs that is derivable from the request alone. */
+export interface SearchExecutionPlan {
+  /** Residual query after an auditor: token is lifted into the filters. */
+  query: string;
+  /** Filters with any lifted auditor canonicalized in. */
+  filters: SearchFilters;
+  serverQuery: string;
+  formTypes: string;
+  formScope: ReturnType<typeof parseFormScope>;
+  excludeExhibits: boolean;
+  preferRelevance: boolean;
+  semanticAuditorSearch: boolean;
+  needsCompanyMetadata: boolean;
+  displayLimit: number;
+  fastPass: boolean;
+  fastCandidateCollection: boolean;
+  needsTextFiltering: boolean;
+  shouldHydrateSignals: boolean;
+  parsedBooleanQuery: { expression: BooleanSearchNode | null };
+  delegatedToEfts: boolean;
+  hydratePerDocumentSignals: boolean;
+  requiredBooleanBranches: number;
+  filteredServerQueries: string[];
+  perQueryResultLimit: number;
+}
+
+/**
+ * Plan compiler (WP7 stage: compileSearchPlan). Pure — no network, no state.
+ * Returns null when a Boolean expression is invalid: the run must issue zero
+ * retrieval requests, and the views surface the message via the same compiler.
+ *
+ * The judgment calls in here are load-bearing and documented inline: exhibit
+ * admission is Boolean-only (roll-up removes the duplicate-row problem
+ * without losing exhibit-only evidence); delegation flags must never be
+ * proxied off needsTextFiltering (any flag used as a proxy for "reads
+ * documents" inverts under delegation — that was the 110-filing recall
+ * ceiling); and paging depth keys off what can actually be shown.
+ */
+export function compileSearchPlan(options: {
+  query: string;
+  filters: SearchFilters;
+  mode: ResearchSearchMode;
+  defaultForms: string;
+  limit: number;
+  includeExhibits: boolean;
+  deferTextValidation: boolean;
+  preferFastCandidateCollection: boolean;
+  hydrateTextSignals: boolean;
+  useEnrichedSearch: boolean;
+}): SearchExecutionPlan | null {
+  let { query, filters } = options;
+  const { mode, defaultForms, limit, includeExhibits, deferTextValidation, preferFastCandidateCollection, hydrateTextSignals, useEnrichedSearch } = options;
+
+  // Intelligize-style inline audit-firm field: "material weakness" AND
+  // auditor:Deloitte (or a bare auditor:KPMG). Lift the firm out of the Boolean
+  // query into the structured auditor filter — the existing signal post-filter
+  // then enforces it — and search only the residual expression as text.
+  if (mode === 'boolean') {
+    // One compile path shared with the views, saved-alert checks and the
+    // Accounting Hub. Compiling here is what stops an invalid expression from
+    // reaching EDGAR as a literal string (how "revenue AND" silently ran a wrong
+    // search from non-view callers) — the views surface the message, this
+    // hard-stops with zero network calls. It also catches the cases a bare parse
+    // misses: grouped proximity, negation-only, and over-complex OR fan-out.
+    const compiled = compileBooleanQuery(query || filters.keyword);
+    if (!compiled.ok) return null;
+
+    if (compiled.auditor) {
+      const canonical = canonicalizeAuditorInput(compiled.auditor) || compiled.auditor;
+      filters = { ...filters, accountant: filters.accountant.trim() || canonical };
+      query = compiled.residual;
+    }
+  }
+
+  const serverQuery = buildServerQuery(query || filters.keyword, filters, mode);
+  const formTypes = normalizeFormTypes(filters, defaultForms);
+  const formScope = parseFormScope(formTypes);
+  // Exhibit sub-documents are excluded unless the caller opts in (Exhibit
+  // Search does): EFTS returns each matching document of a filing as its own
+  // hit, so one 8-K/A could surface five EX-99.x rows that read as duplicates
+  // and crowd out distinct filings in the main research results.
+  //
+  // Boolean mode is the exception: a disclosure that lives only in EX-99.1 was
+  // being discarded before it could be validated, hiding a real match entirely.
+  // There we admit exhibits as candidates and instead roll successful matches up
+  // to one row per accession (see rollUpExhibitMatches), which removes the
+  // duplicate-row problem without losing the exhibit-only evidence.
+  const excludeExhibits = !includeExhibits && mode !== 'boolean';
+  const preferRelevance = Boolean((query || filters.keyword).trim() || filters.sectionKeywords.trim());
+  const semanticAuditorSearch = mode === 'semantic' && Boolean(filters.accountant.trim());
+  const needsCompanyMetadata = requiresCompanyMetadata(filters);
+  const requestedLimit = Math.max(limit, 1);
+  const fastPass = deferTextValidation && mode !== 'boolean';
+  const fastCandidateCollection = deferTextValidation || preferFastCandidateCollection;
+  const displayLimit = Math.min(requestedLimit, 500);
+  const needsTextFiltering = requiresTextFiltering(filters, query, mode, useEnrichedSearch);
+  const shouldHydrateSignals = !fastPass && (hydrateTextSignals || needsTextFiltering);
+
+  const parsedBooleanQuery = mode === 'boolean' ? parseBooleanQuery(query) : { expression: null };
+  // True when EDGAR's index already proved the phrase and we deliberately skip
+  // re-opening documents (see requiresTextFiltering).
+  const delegatedToEfts =
+    mode === 'boolean' && !needsTextFiltering && Boolean(eftsDelegablePhrase(parsedBooleanQuery.expression));
+  // Whether the wave loop opens each candidate document. A delegated phrase is
+  // already proved by EDGAR's index and nothing downstream reads the text, but
+  // callers still pass hydrateTextSignals=true for every Boolean run — left
+  // ungated, those no-op fetches spend the 120-document budget and cap recall
+  // at ~120 candidates regardless of collection depth (measured: 498 collected,
+  // 120 examined, 110 shown). Same trap as keying depth off needsTextFiltering:
+  // any flag used as a proxy for "reads documents" inverts under delegation.
+  const hydratePerDocumentSignals = shouldHydrateSignals && !delegatedToEfts;
+
+  const booleanPlan = mode === 'boolean'
+    ? buildBooleanServerQueries(query || filters.keyword, filters, delegatedToEfts)
+    : { queries: [] as string[], requiredBranches: 0 };
+  // Keep every required OR branch plus a few recall extras (bounded by the
+  // 16-branch complexity cap).
+  const booleanServerQueries = booleanPlan.queries.slice(0, Math.max(booleanPlan.requiredBranches, 6));
+  const requiredBooleanBranches = Math.min(booleanPlan.requiredBranches, booleanServerQueries.length);
+  const semanticServerQueries = mode === 'semantic' ? buildSemanticCandidateQueries(serverQuery, filters) : [];
+
+  const serverQueries =
+    mode === 'boolean'
+      ? (booleanServerQueries.length > 0 ? booleanServerQueries : [serverQuery])
+      : (semanticServerQueries.length > 0 ? semanticServerQueries : [serverQuery]);
+
+  const candidateServerQueries = (
+    fastCandidateCollection
+      ? serverQueries.slice(0, mode === 'boolean' ? Math.max(requiredBooleanBranches, 3) : semanticAuditorSearch ? 2 : 3)
+      : serverQueries
+  ).filter(Boolean);
+  // Empty-query browse is intentional for form/date/SIC and other filter-only
+  // requests. Both EFTS and the enriched metadata route support that contract.
+  const filteredServerQueries = candidateServerQueries.length > 0 ? candidateServerQueries : [''];
+
+  // An issuer-scoped browse intentionally has NO text query ("OGN 10-K" →
+  // entity + cleared text). filter(Boolean) used to drop that empty query,
+  // so the fetch loop below never ran — instant zero results with no
+  // request. Keep one empty candidate: the enriched lane treats q='' as a
+  // facet browse and the legacy lane substitutes the quoted issuer name.
+  if (filteredServerQueries.length === 0 && filters.entityName.trim()) {
+    filteredServerQueries.push('');
+  }
+
+  // How deep to page per query variant.
+  //
+  // This used to key off needsTextFiltering as a proxy for "collect widely",
+  // which inverted the moment a phrase could be delegated: with no local
+  // validation the flag flips false and the depth silently dropped 500 -> 300,
+  // even though a delegated run needs MORE depth, not less — every upstream
+  // hit is a finished result rather than a candidate to be filtered.
+  const perQueryResultLimit =
+    fastCandidateCollection
+      ? Math.min(Math.max(displayLimit, 80), 140)
+      : delegatedToEfts || needsTextFiltering
+        ? Math.max(displayLimit, 500)
+        : Math.min(Math.max(displayLimit, 140), 300);
+  // Depth is bounded by what can be shown: display caps at 500, and for a
+  // delegated run every upstream hit is a finished row. (An earlier "2,000
+  // candidates produced the same rows as 500" measurement was an artifact of
+  // the document budget capping validation at 120 — see hydratePerDocumentSignals.)
+
+  return {
+    query,
+    filters,
+    serverQuery,
+    formTypes,
+    formScope,
+    excludeExhibits,
+    preferRelevance,
+    semanticAuditorSearch,
+    needsCompanyMetadata,
+    displayLimit,
+    fastPass,
+    fastCandidateCollection,
+    needsTextFiltering,
+    shouldHydrateSignals,
+    parsedBooleanQuery,
+    delegatedToEfts,
+    hydratePerDocumentSignals,
+    requiredBooleanBranches,
+    filteredServerQueries,
+    perQueryResultLimit,
+  };
 }
 
 /** Inputs the coverage finalizer needs from a finished validation run. */
