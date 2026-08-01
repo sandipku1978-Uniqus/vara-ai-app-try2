@@ -216,7 +216,13 @@ async function auditRoute(page: Page, contract: RouteContract): Promise<RouteAud
 test.describe('semantic and interaction census', () => {
   test.describe.configure({ timeout: 75_000 });
 
-  for (const contract of ALL_ROUTE_CONTRACTS) {
+  const productionBuild = Boolean(process.env.QA_BASE_URL) || process.env.PW_PROD_BUILD === '1';
+  const censusContracts = ALL_ROUTE_CONTRACTS.filter(
+    // The design gallery 404s in every production build (fabricated sample
+    // data must never be served); there is nothing to census there.
+    contract => !(productionBuild && contract.path === '/design-gallery')
+  );
+  for (const contract of censusContracts) {
     test(`${contract.path} produces an actionable accessibility and UI audit`, async ({ page }, testInfo) => {
       test.skip(publicOnly && !contract.public, 'QA_PUBLIC_ONLY excludes authenticated product routes.');
       const audit = await auditRoute(page, contract);

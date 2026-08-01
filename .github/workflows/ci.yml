@@ -34,10 +34,11 @@ jobs:
   browser:
     # Deterministic Playwright acceptance: route smoke, neutral visitor,
     # Boolean journeys (SEC-facing calls are intercepted fixtures), and the
-    # semantic census. Release finding F-04: Vercel promoted revisions whose
-    # browser behaviour was never exercised in CI.
+    # semantic census — against the PRODUCTION build (PW_PROD_BUILD).
+    # Release finding F-04: Vercel promoted revisions whose browser behaviour
+    # was never exercised in CI.
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
@@ -52,6 +53,9 @@ jobs:
         env:
           CI: 'true'
           QA_OUTPUT_DIR: ${{ runner.temp }}/urc-playwright
+          # Release evidence exercises the production build, not next dev
+          # (handoff WP8): what CI proves must be what users get.
+          PW_PROD_BUILD: '1'
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         if: failure()
         with:
