@@ -7,65 +7,9 @@ import SicLookupField from './SicLookupField';
 import AuditorLookupField from './AuditorLookupField';
 import { describeSectionScope } from '../../utils/sectionTaxonomy';
 
-export interface SearchFilters {
-  keyword: string;
-  dateFrom: string;
-  dateTo: string;
-  entityName: string;
-  /** Structured issuer scope. Set when a company is picked from the lookup, so
-   *  retrieval filters by CIK instead of re-resolving the display name (or, in
-   *  Boolean mode, treating a typed ticker as filing text). Optional so older
-   *  persisted sessions and a rollback build stay valid. */
-  entityCik?: string;
-  formTypes: string[];
-  sectionKeywords: string;
-  sicCode: string;
-  stateOfInc: string;
-  headquarters: string;
-  exchange: string[];
-  acceleratedStatus: string[];
-  accountant: string;
-  accessionNumber: string;
-  fileNumber: string;
-  fiscalYearEnd: string;
-  accountingFramework: string;
-  /**
-   * ASC topic or ASU number the filing must cite (e.g. "ASC 842",
-   * "ASU 2023-07"). Text-validated across every citation spelling filings
-   * use — ASC Topic 842, Topic 842, ASU No. 2023-07. Optional so older
-   * persisted sessions and a rollback build stay valid.
-   */
-  ascReference?: string;
-  /**
-   * Item section the query must match INSIDE (e.g. "1A", "7", "9A") —
-   * "Item 1A contains X". Validation slices the filing at Item-heading
-   * boundaries and evaluates the expression within the slice; a filing
-   * without the section never matches. Optional for older sessions.
-   */
-  sectionScope?: string;
-}
-
-export const defaultSearchFilters: SearchFilters = {
-  keyword: '',
-  dateFrom: '',
-  dateTo: '',
-  entityName: '',
-  entityCik: '',
-  formTypes: [],
-  sectionKeywords: '',
-  sicCode: '',
-  stateOfInc: '',
-  headquarters: '',
-  exchange: [],
-  acceleratedStatus: [],
-  accountant: '',
-  accessionNumber: '',
-  fileNumber: '',
-  fiscalYearEnd: '',
-  accountingFramework: '',
-  ascReference: '',
-  sectionScope: '',
-};
+export type { SearchFilters } from '../../domain/searchFilters';
+export { defaultSearchFilters } from '../../domain/searchFilters';
+import { type SearchFilters, defaultSearchFilters } from '../../domain/searchFilters';
 
 export interface SearchFilterBarConfig {
   showEntityName?: boolean;

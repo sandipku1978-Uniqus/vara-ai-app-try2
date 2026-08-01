@@ -30,6 +30,7 @@ import {
 } from '../../../lib/rate-limit';
 import { getWebSupabase } from '../../../lib/supabase-web';
 import { buildSecTargetUrl, fetchSecResponse, readResponseWithLimit } from '../../../lib/sec-upstream';
+import { dbErrorResponse, newCorrelationId } from '../../../lib/db-observability';
 
 /** The platform default would kill this route mid-flight; see the in-route budgets. */
 export const maxDuration = 60;
@@ -228,6 +229,8 @@ export async function GET(request: Request) {
     }, { status: 422 });
   }
 
+  const correlationId = newCorrelationId();
+  const startedAt = Date.now();
   const db = getWebSupabase();
   if (!db) {
     return NextResponse.json(
@@ -275,7 +278,9 @@ export async function GET(request: Request) {
         // Exact issuer identity beats the name-ILIKE approximation (009)
         p_cik: cik ? Number(cik) : null,
       });
-      if (error) throw new Error(`urc_search_filings: ${error.message}`);
+      if (error) {
+        return dbErrorResponse({ route: 'es-search', rpc: 'urc_search_filings', error, correlationId, startedAt });
+      }
 
       const rows = (data ?? []) as Array<Record<string, unknown>>;
       const total = rows.length > 0 ? Number(rows[0].total_count) : 0;
