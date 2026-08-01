@@ -7,13 +7,26 @@
 >
 > **The two starred items below are release-gating for multi-user use.**
 
-## 0. ★ Verify `URC_SUPABASE_WEB_KEY` is set in Vercel
+## 0. ★ `URC_SUPABASE_WEB_KEY` — apply migration 014 FIRST, then set the key
 
-- Without it, every web-facing read route silently falls back to the
+- Without the key, every web-facing read route silently falls back to the
   **service-role key** (RLS bypass) with only a console warning
-  (`src/lib/supabase-web.ts`). The least-privilege grants in migration 010
-  are then inert. Verify in Vercel → Env Vars; it should be the
-  `sb_publishable_...` key set 2026-07-24.
+  (`src/lib/supabase-web.ts`).
+- **Do NOT just set the key**: the anon grant history has drifted
+  (010/011 revoked the core RPCs and base tables from `anon`; the later
+  repair never covered `urc_sec_filings` for invoker-rights
+  `urc_search_filings`). Setting the publishable key against today's live
+  grants would 42501 facet search and letters. The exact order is:
+  1. Run `db/migrations/014_web_read_contract.sql` in the Supabase SQL
+     editor (idempotent, forward-only), then reload the PostgREST schema
+     cache (Dashboard → API → Reload schema).
+  2. Run the verification probes at the bottom of that file **with the
+     publishable key** — reads succeed, writes fail with 42501.
+  3. Set `URC_SUPABASE_WEB_KEY` (the `sb_publishable_...` key) in Vercel
+     **Preview** first; exercise search/letters/stats on a preview deploy.
+  4. Set it in Production.
+  5. Tell Claude — the prepared fail-closed change (removes the service-key
+     fallback entirely) merges only after this key is live.
 
 ## 1. Voyage AI key — semantic retrieval for memo.AI
 

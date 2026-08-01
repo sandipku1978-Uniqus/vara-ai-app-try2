@@ -18,7 +18,7 @@ import {
   releaseAiConcurrency,
   reserveAiTokenBudget,
 } from '../../../../lib/rate-limit';
-import { getWebSupabase } from '../../../../lib/supabase-web';
+import { getCacheWriterSupabase, getWebSupabase } from '../../../../lib/supabase-web';
 import {
   buildCommentLetterSummaryPlan,
   COMMENT_LETTER_SUMMARY_GENERATION_BUDGET_MS,
@@ -295,15 +295,28 @@ export async function POST(request: Request) {
       if (!summary) throw new Error('empty generation');
 
       const generatedAt = new Date().toISOString();
-      const { error: upsertError } = await prepared.db.from('urc_thread_summaries').upsert({
-        thread_id: prepared.threadId,
-        summary,
-        letters_count: letters.length,
-        model: CLAUDE_MODEL,
-        generated_at: generatedAt,
-        input_coverage: summaryPlan.coverage,
-      }, { onConflict: 'thread_id' });
-      if (upsertError) throw new Error(upsertError.message);
+      // Cache writes are privileged (migration 014 makes the web identity
+      // read-only): summaries are shared across users, so an anon-writable
+      // cache would let any caller overwrite what everyone else reads. The
+      // writer being unavailable only skips caching — the caller still gets
+      // its freshly generated summary.
+      const summaryWriter = getCacheWriterSupabase();
+      if (summaryWriter) {
+        // Storing is best-effort: the caller already has its summary, and a
+        // cache write failure must never turn a successful generation into an
+        // error (same rule as the filing-text cache).
+        const { error: upsertError } = await summaryWriter.from('urc_thread_summaries').upsert({
+          thread_id: prepared.threadId,
+          summary,
+          letters_count: letters.length,
+          model: CLAUDE_MODEL,
+          generated_at: generatedAt,
+          input_coverage: summaryPlan.coverage,
+        }, { onConflict: 'thread_id' });
+        if (upsertError) console.error(`[letters/summary] cache write failed: ${upsertError.message}`);
+      } else {
+        console.warn('[letters/summary] cache writer unavailable; summary served uncached.');
+      }
 
       return NextResponse.json({
         thread: prepared.threadId,
