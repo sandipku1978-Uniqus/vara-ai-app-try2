@@ -18,25 +18,20 @@ function jwtRole(token: string): string | null {
  * Web request handlers must use the migration-defined `urc_web` Postgres role.
  * Service-role credentials remain valid only for offline ingestion jobs. Local
  * development may fall back so the existing Supabase stack remains runnable,
- * but production fails closed until URC_SUPABASE_WEB_KEY is provisioned.
+ * but production fails closed until URC_SUPABASE_WEB_KEY is provisioned —
+ * the service key is never a production read identity.
  */
 export function getWebSupabase(): SupabaseClient | null {
   if (webClient) return webClient;
 
   const url = process.env.URC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
   const webKey = process.env.URC_SUPABASE_WEB_KEY?.trim() || '';
-  // Option A (2026-07-20): until a urc_web-role JWT is provisioned,
-  // production may fall back to the service key — matching the pre-rollout
-  // posture — with a logged warning. Providing URC_SUPABASE_WEB_KEY
-  // activates least-privilege; an invalid web key still fails closed.
-  const serviceKey = process.env.URC_SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const key = webKey || serviceKey;
-  if (!url || !key) return null;
+  if (!url) return null;
 
   // This Supabase project signs tokens with non-exportable asymmetric keys, so
   // a custom urc_web JWT cannot be minted. The supported least-privilege web
   // identity is the publishable/anon key (new `sb_publishable_...` format or a
-  // legacy anon JWT); migration 003 grants that role exactly the read surface.
+  // legacy anon JWT); migration 014 grants that role exactly the read surface.
   // Anything carrying service authority is rejected outright.
   const isPublishable = webKey.startsWith('sb_publishable_');
   const role = isPublishable ? 'anon' : jwtRole(webKey);
@@ -48,8 +43,23 @@ export function getWebSupabase(): SupabaseClient | null {
     console.error('[supabase-web] URC_SUPABASE_WEB_KEY must be the publishable/anon key (or a urc_web JWT).');
     return null;
   }
-  if (!webKey && isProductionDeployment()) {
-    console.warn('[supabase-web] URC_SUPABASE_WEB_KEY not set — web routes are using the service key. Set it to the publishable key to activate least-privilege.');
+
+  // Production fails CLOSED without the restricted key (remediation WP2):
+  // web-facing reads must never escalate to service authority through a
+  // configuration gap. Routes return their typed 503s and the client lanes
+  // degrade to live EDGAR. Local development may still fall back so the
+  // Supabase stack stays runnable from .env.local alone — explicitly, loudly,
+  // and never on Vercel.
+  let key = webKey;
+  if (!webKey) {
+    if (isProductionDeployment()) {
+      console.error('[supabase-web] URC_SUPABASE_WEB_KEY not set — refusing service-key fallback; facet routes will 503. Apply db/migrations/014_web_read_contract.sql and set the publishable key (docs/pending-keys-checklist.md item 0).');
+      return null;
+    }
+    const serviceKey = process.env.URC_SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!serviceKey) return null;
+    console.warn('[supabase-web] local development fallback: using the service key because URC_SUPABASE_WEB_KEY is not set. Production fails closed instead.');
+    key = serviceKey;
   }
 
   webClient = createClient(url, key, { auth: { persistSession: false } });

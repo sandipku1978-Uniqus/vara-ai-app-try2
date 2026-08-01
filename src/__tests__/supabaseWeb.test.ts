@@ -23,21 +23,33 @@ describe('restricted Supabase web client', () => {
     vi.unstubAllEnvs();
   });
 
-  it('falls back to the service key with a warning, but rejects a non-urc_web web key (Option A)', async () => {
+  it('production FAILS CLOSED without the web key — the service client is never initialized (WP2)', async () => {
     vi.stubEnv('NODE_ENV', 'production');
     vi.stubEnv('VERCEL_ENV', 'production');
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {});
     const { getWebSupabase } = await import('../lib/supabase-web');
 
-    // No web key: production keeps working on the service key, loudly.
-    expect(getWebSupabase()).toEqual({ kind: 'restricted-client' });
-    expect(warn).toHaveBeenCalledWith(expect.stringContaining('URC_SUPABASE_WEB_KEY not set'));
+    // No web key: null (routes return their typed 503s), never the service key.
+    expect(getWebSupabase()).toBeNull();
+    expect(createClient).not.toHaveBeenCalled();
+    expect(error).toHaveBeenCalledWith(expect.stringContaining('refusing service-key fallback'));
 
-    // A provided-but-wrong web key still fails closed.
+    // A provided-but-wrong web key also fails closed.
     vi.resetModules();
     vi.stubEnv('URC_SUPABASE_WEB_KEY', unsignedRoleToken('service_role'));
     const reloaded = await import('../lib/supabase-web');
     expect(reloaded.getWebSupabase()).toBeNull();
+    expect(createClient).not.toHaveBeenCalled();
+  });
+
+  it('a Vercel preview build (NODE_ENV=production) fails closed the same way', async () => {
+    // Preview is where the restricted key gets proven before production —
+    // a silent service fallback there would make the probes meaningless.
+    vi.stubEnv('NODE_ENV', 'production');
+    vi.stubEnv('VERCEL_ENV', 'preview');
+    const { getWebSupabase } = await import('../lib/supabase-web');
+    expect(getWebSupabase()).toBeNull();
+    expect(createClient).not.toHaveBeenCalled();
   });
 
   it('constructs a production client only for a urc_web role token', async () => {
@@ -76,9 +88,10 @@ describe('restricted Supabase web client', () => {
     expect(getWebSupabase()).toBeNull();
   });
 
-  it('allows the documented service-key fallback outside production', async () => {
+  it('allows the documented service-key fallback for local development only, loudly', async () => {
     vi.stubEnv('NODE_ENV', 'test');
-    vi.stubEnv('VERCEL_ENV', 'preview');
+    vi.stubEnv('VERCEL_ENV', '');
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     const { getWebSupabase } = await import('../lib/supabase-web');
 
     expect(getWebSupabase()).toEqual({ kind: 'restricted-client' });
@@ -87,5 +100,6 @@ describe('restricted Supabase web client', () => {
       'local-service-key',
       { auth: { persistSession: false } }
     );
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('local development fallback'));
   });
 });
