@@ -11,6 +11,7 @@ import {
   type EdgarSearchHit,
   type EnrichedSearchParams,
   type SearchCandidateCoverage,
+  type BranchCoverageEntry,
   type SecSubmission,
 } from './secApi';
 import {
@@ -1700,6 +1701,19 @@ export async function executeFilingResearchSearch({
   // Holding such a run to the document-era budget capped recall for no reason.
   const MAX_PAGE_REQUESTS = delegatedToEfts ? 240 : 60;
   const MAX_DOC_ATTEMPTS = 120;
+  // Fair-share reservations (WP4). Budgets used to be first-come-first-served:
+  // a broad first OR branch could spend all 120 document attempts (or the wall
+  // clock) before a later required branch validated ANYTHING, so a rare
+  // exclusive disjunct was collected, counted — and then silently absent from
+  // results. Each still-unprocessed required branch now keeps a floor of
+  // documents, pages, and time reserved out of every earlier branch's spend.
+  const DOC_RESERVE_PER_BRANCH = Math.min(24, Math.floor(MAX_DOC_ATTEMPTS / Math.max(requiredBooleanBranches, 1)));
+  const PAGE_RESERVE_PER_BRANCH = 2;
+  const TIME_RESERVE_PER_BRANCH_MS = 6_000;
+  // Set when a required branch hit its fair-share document cap: the run is
+  // partial (request-budget) even though later branches still got their turn.
+  let branchDocBudgetTruncated = false;
+  const branchLedgers: BranchCoverageEntry[] = [];
   // Server pre-screen sizing. The chunk matches the route's own per-request cap;
   // the wave cap bounds how long verdict-gathering can delay the fetches it is
   // meant to make cheaper, and the reserve keeps 15s of every wave for them.
@@ -1741,6 +1755,24 @@ export async function executeFilingResearchSearch({
     }
     if (signal?.aborted) break; // superseded by a newer run — stop issuing pages
 
+    // Fair-share caps for THIS lane: leave each later required branch its
+    // reserved documents, pages, and validation time.
+    const laterRequiredBranches = Math.max(0, requiredBooleanBranches - queryIndex - 1);
+    const branchDocCap = MAX_DOC_ATTEMPTS - laterRequiredBranches * DOC_RESERVE_PER_BRANCH;
+    const branchTimeCapMs = maxWaveTimeMs - laterRequiredBranches * TIME_RESERVE_PER_BRANCH_MS;
+    const ledger: BranchCoverageEntry = {
+      branch: candidateQuery,
+      required: queryIndex < requiredBooleanBranches,
+      pages: 0,
+      candidatesSurfaced: 0,
+      candidatesNew: 0,
+      examined: 0,
+      matched: 0,
+      exhausted: false,
+    };
+    branchLedgers.push(ledger);
+    const branchResultStart = filteredResults.length;
+
     let queryBatchHits: EdgarSearchHit[];
     try {
       // The page budget counts ACTUAL upstream HTTP pages via onUpstreamPage —
@@ -1748,7 +1780,12 @@ export async function executeFilingResearchSearch({
       // ~10 hits), so counting calls understated real request volume by up to
       // 50x (readiness finding F-07). The result cap is also clamped to the
       // remaining page budget so a single call cannot blow through it.
-      const remainingPages = Math.max(0, MAX_PAGE_REQUESTS - pageRequests);
+      // A lane may not page later required branches out of their reserve —
+      // but a required lane always keeps at least its own reserve.
+      let remainingPages = Math.max(0, MAX_PAGE_REQUESTS - pageRequests - laterRequiredBranches * PAGE_RESERVE_PER_BRANCH);
+      if (ledger.required) {
+        remainingPages = Math.max(remainingPages, Math.min(PAGE_RESERVE_PER_BRANCH, MAX_PAGE_REQUESTS - pageRequests));
+      }
       queryBatchHits = await searchEdgarFilings(
         candidateQuery,
         formTypes,
@@ -1757,19 +1794,26 @@ export async function executeFilingResearchSearch({
         filters.entityName || undefined,
         Math.min(wavePerQueryLimit, remainingPages * 10),
         {
-          ...buildEnrichedSearchParams(filters, useEnrichedSearch && !includeExhibits, onDegraded, captureUpstreamCoverage),
+          ...buildEnrichedSearchParams(filters, useEnrichedSearch && !includeExhibits, onDegraded, (coverage: SearchCandidateCoverage) => {
+            ledger.collectionComplete = coverage.complete;
+            captureUpstreamCoverage(coverage);
+          }),
           entityCik: entityCik || undefined,
-          onUpstreamPage: () => { pageRequests += 1; },
+          onUpstreamPage: () => { pageRequests += 1; ledger.pages += 1; },
           signal,
         }
       );
     } catch (error) {
       lastSearchError = error instanceof Error ? error : new Error('EDGAR search failed');
+      ledger.incompleteReason = 'error';
       if (mode !== 'boolean') throw lastSearchError;
       continue;
     }
 
-    // Deduplicate against previously seen hits
+    // Deduplicate against previously seen hits — but record what this lane
+    // surfaced FIRST, so branch attribution survives the dedup (a hit shared
+    // with an earlier lane still counts as surfaced by this one).
+    ledger.candidatesSurfaced = queryBatchHits.length;
     const newHits: EdgarSearchHit[] = [];
     for (const hit of queryBatchHits) {
       if (!hitMap.has(hit._id)) {
@@ -1777,9 +1821,11 @@ export async function executeFilingResearchSearch({
         newHits.push(hit);
       }
     }
+    ledger.candidatesNew = newHits.length;
 
     if (newHits.length === 0) {
       completedQueryVariants += 1;
+      ledger.exhausted = ledger.collectionComplete !== false;
       if (mode === 'boolean') await delay(120);
       continue;
     }
@@ -1791,6 +1837,7 @@ export async function executeFilingResearchSearch({
     // Candidates rejected by deterministic metadata filters have still been
     // examined for this validation pass.
     validationExamined += Math.max(0, newHits.length - waveCandidates.length);
+    ledger.examined += Math.max(0, newHits.length - waveCandidates.length);
 
     // ── Server-side pre-screen ──
     // Ask the API which candidates satisfy the expression before the browser
@@ -1851,6 +1898,7 @@ export async function executeFilingResearchSearch({
         // Server-rejected candidates were genuinely examined — coverage counts
         // them, the document budget does not.
         validationExamined += beforePrescreen - waveCandidates.length;
+        ledger.examined += beforePrescreen - waveCandidates.length;
       }
     }
 
@@ -1865,10 +1913,18 @@ export async function executeFilingResearchSearch({
       let index = 0;
       index < waveCandidates.length &&
       (filteredResults.length < displayLimit || isRequiredBooleanBranch) &&
-      Date.now() - waveStartTime < maxWaveTimeMs;
+      Date.now() - waveStartTime < branchTimeCapMs;
       index += batchSize
     ) {
-      if (docAttempts >= MAX_DOC_ATTEMPTS) { budgetExhausted = true; break; }
+      // Stop at this lane's fair-share cap, not only the global cap: the
+      // difference is reserved for later required branches. Hitting the
+      // fair-share cap ends THIS lane but lets the loop continue.
+      if (docAttempts >= branchDocCap) {
+        if (branchDocCap >= MAX_DOC_ATTEMPTS) budgetExhausted = true;
+        else branchDocBudgetTruncated = true;
+        ledger.incompleteReason = 'doc-budget';
+        break;
+      }
       if (signal?.aborted) break;
       const chunk = waveCandidates.slice(index, Math.min(index + batchSize, waveCandidates.length));
 
@@ -1891,6 +1947,7 @@ export async function executeFilingResearchSearch({
       // runs, so the firm the filter matches on is the one that gets displayed.
       if (filters.accountant.trim()) await hydrateRegisteredAuditors(chunk);
       validationExamined += chunk.length;
+      ledger.examined += chunk.length;
 
       for (const result of chunk) {
         const filingText = signalMap.get(getSignalCacheKey(result))?.text || '';
@@ -1945,6 +2002,17 @@ export async function executeFilingResearchSearch({
       }
     }
 
+    // Finalize this lane's ledger before moving on.
+    ledger.matched = filteredResults.length - branchResultStart;
+    if (!ledger.incompleteReason) {
+      if (signal?.aborted) {
+        ledger.incompleteReason = 'cancelled';
+      } else if (ledger.examined < ledger.candidatesNew) {
+        ledger.incompleteReason = Date.now() - waveStartTime >= branchTimeCapMs ? 'deadline' : 'display-limit';
+      }
+    }
+    ledger.exhausted = !ledger.incompleteReason && ledger.examined >= ledger.candidatesNew && ledger.collectionComplete !== false;
+
     if (Date.now() - waveStartTime >= maxWaveTimeMs && validationExamined < hitMap.size) {
       validationTimedOut = true;
       break;
@@ -1955,6 +2023,10 @@ export async function executeFilingResearchSearch({
 
     if (mode === 'boolean' && queryIndex + 1 < filteredServerQueries.length) await delay(120);
   }
+
+  // A lane truncated at its fair-share cap means the run is partial for the
+  // same reason a global cap does — the budget, not the corpus, ended it.
+  if (branchDocBudgetTruncated) budgetExhausted = true;
 
   if (filteredResults.length === 0 && lastSearchError) throw lastSearchError;
 
@@ -1984,13 +2056,19 @@ export async function executeFilingResearchSearch({
     unvalidatedFetchFailures === 0 &&
     completedQueryVariants === waveQueryVariants.length &&
     collectionComplete &&
-    validationExamined >= hitMap.size
+    validationExamined >= hitMap.size &&
+    // Aggregate counters cannot prove PER-BRANCH exhaustion: a run can examine
+    // "everything it collected" while a required branch was never fully
+    // collected. Completeness is claimed only when every required lane's own
+    // ledger says exhausted.
+    branchLedgers.filter(entry => entry.required).every(entry => entry.exhausted)
   );
   onCoverage?.({
     examined: Math.min(validationExamined, upstreamTotal),
     upstreamTotal,
     complete: validationComplete,
     upstreamTotalIsFloor: Boolean(upstreamCoverage?.upstreamTotalIsFloor),
+    branches: branchLedgers.length > 0 ? branchLedgers : undefined,
   });
   // One typed stop reason for the whole run. `exhausted` is the only value that
   // can accompany complete coverage; every other value means partial.

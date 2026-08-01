@@ -25,6 +25,7 @@ vi.mock('../services/referenceData', () => ({
 
 import { executeFilingResearchSearch } from '../services/filingResearch';
 import { defaultSearchFilters } from '../components/filters/SearchFilterBar';
+import type { SearchCandidateCoverage } from '../services/secApi';
 
 const TEXT: Record<string, string> = {
   D1: 'alpha only appears here',
@@ -283,5 +284,137 @@ describe('structured filter family semantics', () => {
     });
 
     expect(results.length).toBeGreaterThan(0);
+  });
+});
+
+describe('fair branch retrieval and the per-branch coverage ledger (WP4)', () => {
+  // The handoff's critical starvation fixture: branch alpha exposes 300
+  // candidates, branch beta exposes ONE exclusive matching accession, and the
+  // run has a 120-document validation budget. Before fair-share reservations,
+  // alpha's validation spent the whole budget and broke the outer loop on
+  // budgetExhausted — beta's exclusive match was collected, counted, and then
+  // silently absent from results presented as the full expression.
+  const BETA_CIK = '0000000777';
+  const BETA_ACCESSION = '0000000777-26-000777';
+
+  function alphaHit(index: number) {
+    const serial = String(index).padStart(4, '0');
+    return {
+      _id: `S${serial}:doc.htm`,
+      _score: 1,
+      _source: {
+        display_names: [`Alpha Issuer ${serial}`],
+        file_date: '2026-01-01',
+        file_type: '10-K',
+        adsh: `0000550000-26-0${serial}`,
+        ciks: [`000055${serial}`],
+      },
+    };
+  }
+  const betaHit = {
+    _id: 'SBETA:doc.htm',
+    _score: 1,
+    _source: {
+      display_names: ['Beta Exclusive Issuer'],
+      file_date: '2026-06-30',
+      file_type: '10-K',
+      adsh: BETA_ACCESSION,
+      ciks: [BETA_CIK],
+    },
+  };
+
+  function mockStarvationCorpus(alphaCount: number) {
+    mocks.search.mockImplementation(async (query: string) => {
+      const q = String(query).toLowerCase();
+      if (q === 'beta') return [betaHit];
+      if (q === 'alpha') return Array.from({ length: alphaCount }, (_, i) => alphaHit(i));
+      return [];
+    });
+    mocks.fetchText.mockImplementation(async (cik: string) =>
+      String(cik).replace(/^0+/, '') === '777'
+        ? 'the beta disclosure appears here'
+        : 'the alpha disclosure appears here'
+    );
+  }
+
+  it('starvation fixture: the beta-exclusive accession survives a 300-candidate alpha branch', async () => {
+    mockStarvationCorpus(300);
+    let coverage: SearchCandidateCoverage | null = null;
+    const degraded: string[] = [];
+
+    const results = await executeFilingResearchSearch({
+      query: 'alpha OR beta',
+      filters: { ...defaultSearchFilters },
+      mode: 'boolean',
+      limit: 500,
+      hydrateTextSignals: true,
+      onCoverage: c => { coverage = c; },
+      onDegraded: message => { degraded.push(message); },
+    });
+
+    // The exclusive branch's match is in the result set.
+    expect(results.some(row => row.accessionNumber === BETA_ACCESSION)).toBe(true);
+
+    // Both required branches are ledgered truthfully: beta fully validated,
+    // alpha honestly partial at its fair-share document cap (120 global minus
+    // the 24-document reserve held for beta = 96).
+    const branches = coverage!.branches ?? [];
+    const alpha = branches.find(entry => entry.branch === 'alpha');
+    const beta = branches.find(entry => entry.branch === 'beta');
+    expect(alpha?.required).toBe(true);
+    expect(beta?.required).toBe(true);
+    expect(beta?.candidatesSurfaced).toBe(1);
+    expect(beta?.examined).toBe(1);
+    expect(beta?.matched).toBe(1);
+    expect(alpha?.incompleteReason).toBe('doc-budget');
+    expect(alpha?.exhausted).toBe(false);
+    expect(alpha?.examined).toBe(96);
+    expect(alpha?.candidatesNew).toBe(300);
+
+    // A truncated run never claims complete coverage, and says so out loud.
+    expect(coverage!.complete).toBe(false);
+    expect(degraded.some(message => /request budget/i.test(message))).toBe(true);
+  });
+
+  it('a run that validates every branch candidate ledgers both branches exhausted', async () => {
+    mockStarvationCorpus(5);
+    let coverage: SearchCandidateCoverage | null = null;
+
+    const results = await executeFilingResearchSearch({
+      query: 'alpha OR beta',
+      filters: { ...defaultSearchFilters },
+      mode: 'boolean',
+      limit: 500,
+      hydrateTextSignals: true,
+      onCoverage: c => { coverage = c; },
+    });
+
+    expect(results.length).toBe(6);
+    const branches = coverage!.branches ?? [];
+    for (const name of ['alpha', 'beta']) {
+      const entry = branches.find(candidate => candidate.branch === name);
+      expect(entry?.examined).toBe(entry?.candidatesNew);
+      expect(entry?.incompleteReason).toBeUndefined();
+      expect(entry?.exhausted).toBe(true);
+    }
+  });
+
+  it('aggregate completeness requires every required branch exhausted, not just aggregate counts', async () => {
+    mockStarvationCorpus(300);
+    let coverage: SearchCandidateCoverage | null = null;
+
+    await executeFilingResearchSearch({
+      query: 'alpha OR beta',
+      filters: { ...defaultSearchFilters },
+      mode: 'boolean',
+      limit: 500,
+      hydrateTextSignals: true,
+      onCoverage: c => { coverage = c; },
+    });
+
+    const required = (coverage!.branches ?? []).filter(entry => entry.required);
+    expect(required.length).toBeGreaterThanOrEqual(2);
+    expect(required.every(entry => entry.exhausted)).toBe(false);
+    expect(coverage!.complete).toBe(false);
   });
 });

@@ -1177,10 +1177,41 @@ export interface EdgarSearchResult {
   };
 }
 
+/**
+ * Per-retrieval-lane coverage ledger (WP4). One entry per candidate query the
+ * executor issued; `required` lanes are the independent OR branches of a
+ * Boolean expression, whose exhaustion is a precondition for complete
+ * coverage. Aggregate claims are derived from these entries plus the
+ * deduplicated candidate union — never from combining lane totals.
+ */
+export interface BranchCoverageEntry {
+  /** The candidate query issued for this lane. */
+  branch: string;
+  /** True for an independent OR branch that MUST be attempted and validated. */
+  required: boolean;
+  /** Upstream HTTP pages this lane consumed. */
+  pages: number;
+  /** Hits the lane's query returned (before global dedup). */
+  candidatesSurfaced: number;
+  /** Hits first surfaced by this lane (after global dedup). */
+  candidatesNew: number;
+  /** Of candidatesNew, how many reached a verdict (validated or rejected). */
+  examined: number;
+  /** Result rows this lane contributed. */
+  matched: number;
+  /** True when every candidate this lane surfaced reached a verdict. */
+  exhausted: boolean;
+  /** Upstream collection completeness for this lane, when reported. */
+  collectionComplete?: boolean;
+  incompleteReason?: 'doc-budget' | 'page-budget' | 'deadline' | 'error' | 'cancelled' | 'display-limit';
+}
+
 export interface SearchCandidateCoverage {
   examined: number;
   upstreamTotal: number;
   complete: boolean;
+  /** Per-lane ledger backing the aggregate claim (Boolean deep runs). */
+  branches?: BranchCoverageEntry[];
   /**
    * True when upstreamTotal is a floor, not an exact count. EDGAR EFTS stops
    * counting at 10,000 (hits.total.relation === 'gte'), so a broad phrase's
