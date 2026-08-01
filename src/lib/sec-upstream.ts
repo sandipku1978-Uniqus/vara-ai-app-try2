@@ -212,6 +212,31 @@ export function sanitizeSecHtml(html: string, documentUrl: URL): string {
   });
 }
 
+/**
+ * Gate between fetching an SEC document and extracting/caching its text.
+ *
+ * fetchSecResponse deliberately returns non-OK responses (some callers pass
+ * status through), so a text-extraction caller MUST reject them here first:
+ * SEC serves rate-threshold and error pages as prose HTML, and extracting one
+ * would write it into the shared urc_filing_text cache as the filing's
+ * permanent text — every later Boolean validation for that accession would
+ * run against the error page. The content-type check stops the same poisoning
+ * via binary documents (PDF/image primary documents decoded as mojibake).
+ * A missing content-type header is tolerated; a wrong one is not.
+ */
+const SEC_TEXT_DOCUMENT_TYPES = /^(?:text\/html|application\/xhtml\+xml|text\/plain|text\/xml|application\/xml)(?:;|$)/i;
+
+export function assertSecDocumentResponse(response: Response): void {
+  if (!response.ok) {
+    const status = response.status >= 400 && response.status <= 599 ? response.status : 502;
+    throw new SecUpstreamError('SEC upstream request failed.', status);
+  }
+  const contentType = (response.headers.get('content-type') || '').trim().toLowerCase();
+  if (contentType && !SEC_TEXT_DOCUMENT_TYPES.test(contentType)) {
+    throw new SecUpstreamError('SEC document is not a text document.', 415);
+  }
+}
+
 export async function fetchSecResponse(
   initialTarget: URL,
   upstream: SecUpstream,
