@@ -40,18 +40,29 @@ export default defineConfig({
   // QA_BASE_URL lets the suite inspect an already-running local, preview, or
   // production deployment. QA_STORAGE_STATE can supply an authenticated
   // browser state there; QA_PUBLIC_ONLY=1 limits runs to neutral-visitor pages.
-  // Without QA_BASE_URL, Playwright owns an isolated dev server and enables the
-  // repository's localhost-only authentication bypass.
+  // Without QA_BASE_URL, Playwright owns an isolated local server and enables
+  // the repository's localhost-only authentication bypass.
+  //
+  // PW_PROD_BUILD=1 serves that local server from `next build` + `next start`
+  // instead of the dev server (remediation handoff WP8: release evidence must
+  // exercise the production build — dev-mode rendering, compilation and error
+  // overlays differ from what users get). CI sets it; local iteration keeps
+  // the fast dev default.
   webServer: requestedBaseUrl
     ? undefined
     : {
-        command: `npm run dev -- --hostname 127.0.0.1 --port ${localPort}`,
+        command: process.env.PW_PROD_BUILD === '1'
+          ? `npm run build && npx next start --hostname 127.0.0.1 --port ${localPort}`
+          : `npm run dev -- --hostname 127.0.0.1 --port ${localPort}`,
         url: baseURL,
         reuseExistingServer: true,
-        timeout: 120_000,
+        timeout: process.env.PW_PROD_BUILD === '1' ? 420_000 : 120_000,
         env: {
           URC_E2E_BYPASS_AUTH: '1',
           NEXT_PUBLIC_SITE_URL: baseURL,
+          // `npm run build` pins NEXT_LOCAL_BUILD=1 (writes .next-build);
+          // `next start` must read the same distDir.
+          NEXT_LOCAL_BUILD: '1',
         },
       },
 });

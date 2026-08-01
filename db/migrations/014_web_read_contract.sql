@@ -138,16 +138,39 @@ alter default privileges in schema public revoke all on tables from public, anon
 alter default privileges in schema public revoke all on sequences from public, anon, authenticated;
 alter default privileges in schema public revoke execute on functions from public, anon, authenticated;
 
--- ── 6. Post-apply verification (run manually with the PUBLISHABLE key) ──────
--- Reads that must succeed:
---   select * from urc_search_filings(null,null,null,null,null,null,1,0,null);
---   select * from urc_search_letters('revenue',null,null,null,1,0,null);
---   select * from urc_recent_threads(1,0,null,null);
+-- ── 6. Post-apply verification ───────────────────────────────────────────────
+-- DO NOT run these in the same SQL-editor block as the migration: the editor
+-- wraps a run in one transaction, so an (expected!) probe failure would roll
+-- the whole migration back. The editor also runs as postgres, which BYPASSES
+-- grants — impersonate the web identity with `set local role anon` instead.
+--
+-- 6a. Grant sanity (plain admin session; expect true, true, false, true):
+--   select has_table_privilege('anon', 'public.urc_sec_filings', 'select'),
+--          has_table_privilege('anon', 'public.urc_filing_text', 'select'),
+--          has_table_privilege('anon', 'public.urc_thread_summaries', 'insert'),
+--          has_function_privilege('anon', 'public.urc_data_stats()', 'execute');
+--
+-- 6b. Reads as anon (one transaction; every statement must return rows):
+--   begin; set local role anon;
+--   select count(*) from urc_search_filings(null,null,null,null,null,null,1,0,null);
+--   select count(*) from urc_search_letters('revenue',null,null,null,1,0,null);
+--   select count(*) from urc_recent_threads(1,0,null,null);
 --   select * from urc_data_stats();
---   select * from urc_filing_scope_stats(null,null,null,null);
---   select text from urc_filing_text limit 1;
---   select * from urc_current_auditors limit 1;
--- Writes that must fail (42501):
---   insert into urc_thread_summaries (thread_id, summary) values ('probe','x');
+--   select count(*) from urc_filing_scope_stats(null,null,null,null);
+--   select 1 from urc_filing_text limit 1;
+--   select 1 from urc_current_auditors limit 1;
+--   rollback;
+--
+-- 6c. Writes as anon — run EACH block separately; "permission denied" IS the
+--     pass condition:
+--   begin; set local role anon;
+--   insert into urc_thread_summaries (thread_id, summary, letters_count) values ('probe','x',0);
+--   rollback;
+--
+--   begin; set local role anon;
 --   delete from urc_filing_text where cik = 'probe';
+--   rollback;
+--
+--   begin; set local role anon;
 --   select urc_refresh_current_auditors();
+--   rollback;
