@@ -7,7 +7,14 @@
 >
 > **The two starred items below are release-gating for multi-user use.**
 
-## 0. ★ `URC_SUPABASE_WEB_KEY` — apply migration 014 FIRST, then set the key
+## 0. ✅ DONE 2026-08-01 — `URC_SUPABASE_WEB_KEY` live; fail-closed merged (#41)
+
+Migration 014 applied and probed (anon reads pass, writes denied); key set in
+Vercel preview + production; PR #41 removed the service-key fallback. Web
+routes can no longer escalate to service authority under any configuration.
+The original procedure is kept below for audit history.
+
+### Original procedure (completed)
 
 - Without the key, every web-facing read route silently falls back to the
   **service-role key** (RLS bypass) with only a console warning
