@@ -29,6 +29,9 @@ jobs:
       URC_SUPABASE_URL: ${{ secrets.URC_SUPABASE_URL }}
       URC_SUPABASE_SERVICE_KEY: ${{ secrets.URC_SUPABASE_SERVICE_KEY }}
       URC_E2E_BYPASS_AUTH: '1'
+      # The local server reports the candidate revision via /api/version, so
+      # the consolidation step can prove the evidence describes THIS commit.
+      VERCEL_GIT_COMMIT_SHA: ${{ github.sha }}
       # npm run build pins NEXT_LOCAL_BUILD=1 (writes .next-build); next start
       # must read the same distDir.
       NEXT_LOCAL_BUILD: '1'
@@ -56,11 +59,41 @@ jobs:
         run: npx tsx scripts/ticker-coverage-test.ts --base http://localhost:3111 --out ticker-coverage-report.json
       - name: 1,000-point e2e performance suite
         run: npx tsx scripts/e2e-perf-test.ts --base http://localhost:3111 --out e2e-perf-report.json --min-pass 90
+      - name: Semantic accuracy gate (SEC-derived expectations)
+        run: npx tsx scripts/accuracy/gate.ts --json accuracy-report.json
+      - name: Consolidated release evidence (fail-closed)
+        # One verdict from separate dimensions — never averaged. Fails when any
+        # suite is missing, a critical semantic check was skipped, ticker
+        # resolution is below 100%, e2e is under its bar, or the tested server
+        # reports a different SHA than this run's candidate.
+        env:
+          EXPECTED_SHA: ${{ github.sha }}
+        run: >-
+          npx tsx scripts/accuracy/consolidate.ts
+          --base http://localhost:3111
+          --semantic accuracy-report.json
+          --tickers ticker-coverage-report.json
+          --e2e e2e-perf-report.json
+          --e2e-min-pass 90
+          --out release-evidence.json
+      - name: Upload evidence artifacts
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: release-evidence-${{ github.sha }}
+          path: |
+            release-evidence.json
+            accuracy-report.json
+            ticker-coverage-report.json
+            e2e-perf-report.json
       - name: Publish summary
         if: always()
         run: |
           {
             echo "## Accuracy gate"
+            echo '```json'
+            [ -f release-evidence.json ] && node -e "const r=require('./release-evidence.json');console.log(JSON.stringify({pass:r.pass,problems:r.problems,dimensions:r.dimensions,sha:r.provenance?.reported?.sha},null,1))" || echo '"release evidence missing"'
+            echo '```'
             echo '```json'
             [ -f ticker-coverage-report.json ] && node -e "const r=require('./ticker-coverage-report.json');console.log(JSON.stringify({tickers:r.tickers,pass:r.pass,fail:r.fail,emptyVerified:r.emptyVerified,latency:r.latency,failures:(r.failures||[]).slice(0,20)},null,1))" || echo '"ticker report missing"'
             echo '```'
