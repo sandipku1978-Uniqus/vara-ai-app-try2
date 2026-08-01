@@ -2038,42 +2038,106 @@ export async function executeFilingResearchSearch({
   const finalResults = sortResearchResults(rolledUp, preferRelevance).slice(0, displayLimit);
   await enrichResultsFromFacetStore(finalResults);
 
-  const upstreamCoverage = upstreamCoverageState.value;
+  const finalized = finalizeRunCoverage({
+    upstreamCoverage: upstreamCoverageState.value,
+    collectedCandidates: hitMap.size,
+    validationExamined,
+    validationTimedOut,
+    budgetExhausted,
+    aborted: Boolean(signal?.aborted),
+    unvalidatedFetchFailures,
+    fetchFailureKinds,
+    completedQueryVariants,
+    totalQueryVariants: waveQueryVariants.length,
+    branchLedgers,
+    maxPageRequests: MAX_PAGE_REQUESTS,
+    maxDocAttempts: MAX_DOC_ATTEMPTS,
+  });
+  onCoverage?.(finalized.coverage);
+  if (finalized.degradedMessage) onDegraded?.(finalized.degradedMessage);
+
+  if (needsCompanyMetadata) {
+    return finalResults;
+  }
+
+  return hydrateLightweightMetadata(finalResults);
+}
+
+/** Inputs the coverage finalizer needs from a finished validation run. */
+export interface RunCoverageInputs {
+  upstreamCoverage: SearchCandidateCoverage | null;
+  /** Deduplicated candidates collected across every lane (hitMap size). */
+  collectedCandidates: number;
+  validationExamined: number;
+  validationTimedOut: boolean;
+  budgetExhausted: boolean;
+  aborted: boolean;
+  unvalidatedFetchFailures: number;
+  fetchFailureKinds: ReadonlyMap<string, number>;
+  completedQueryVariants: number;
+  totalQueryVariants: number;
+  branchLedgers: readonly BranchCoverageEntry[];
+  maxPageRequests: number;
+  maxDocAttempts: number;
+}
+
+/**
+ * Coverage finalizer — the single place a run's honesty claims are computed
+ * (WP7 stage: buildCoverageLedger). Pure: same inputs, same verdict, no I/O.
+ *
+ * Unknown upstream coverage is PARTIAL, never assumed complete — both
+ * retrieval lanes report coverage on success, so absence means something went
+ * wrong or was skipped (readiness finding F-07). Fetch failures and
+ * cancellation also forfeit completeness: an unvalidated candidate is not a
+ * validated nonmatch. And aggregate counters cannot prove PER-BRANCH
+ * exhaustion — a run can examine "everything it collected" while a required
+ * branch was never fully collected — so completeness additionally requires
+ * every required lane's own ledger to say exhausted.
+ *
+ * `exhausted` is the only stop reason that can accompany complete coverage;
+ * every other value means partial, and the partial reasons that a user can
+ * act on carry a degraded message.
+ */
+export function finalizeRunCoverage(inputs: RunCoverageInputs): {
+  coverage: SearchCandidateCoverage;
+  stopReason: BooleanStopReason;
+  degradedMessage: string | null;
+} {
+  const {
+    upstreamCoverage,
+    collectedCandidates,
+    validationExamined,
+    validationTimedOut,
+    budgetExhausted,
+    aborted,
+    unvalidatedFetchFailures,
+    fetchFailureKinds,
+    completedQueryVariants,
+    totalQueryVariants,
+    branchLedgers,
+    maxPageRequests,
+    maxDocAttempts,
+  } = inputs;
+
   const upstreamTotal = Math.max(
     upstreamCoverage?.upstreamTotal ?? 0,
     upstreamCoverage?.examined ?? 0,
-    hitMap.size
+    collectedCandidates
   );
-  // Unknown upstream coverage is PARTIAL, never assumed complete — both retrieval
-  // lanes report coverage on success, so absence means something went wrong or
-  // was skipped (readiness finding F-07). Fetch failures and cancellation also
-  // forfeit completeness: an unvalidated candidate is not a validated nonmatch.
   const collectionComplete = upstreamCoverage?.complete ?? false;
   const validationComplete = (
     !validationTimedOut &&
     !budgetExhausted &&
-    !signal?.aborted &&
+    !aborted &&
     unvalidatedFetchFailures === 0 &&
-    completedQueryVariants === waveQueryVariants.length &&
+    completedQueryVariants === totalQueryVariants &&
     collectionComplete &&
-    validationExamined >= hitMap.size &&
-    // Aggregate counters cannot prove PER-BRANCH exhaustion: a run can examine
-    // "everything it collected" while a required branch was never fully
-    // collected. Completeness is claimed only when every required lane's own
-    // ledger says exhausted.
+    validationExamined >= collectedCandidates &&
     branchLedgers.filter(entry => entry.required).every(entry => entry.exhausted)
   );
-  onCoverage?.({
-    examined: Math.min(validationExamined, upstreamTotal),
-    upstreamTotal,
-    complete: validationComplete,
-    upstreamTotalIsFloor: Boolean(upstreamCoverage?.upstreamTotalIsFloor),
-    branches: branchLedgers.length > 0 ? branchLedgers : undefined,
-  });
-  // One typed stop reason for the whole run. `exhausted` is the only value that
-  // can accompany complete coverage; every other value means partial.
+
   const stopReason: BooleanStopReason =
-    signal?.aborted ? 'cancelled'
+    aborted ? 'cancelled'
     : validationTimedOut ? 'deadline'
     : budgetExhausted ? 'request-budget'
     : fetchFailureKinds.has('rate-limit') ? 'rate-limit'
@@ -2082,25 +2146,31 @@ export async function executeFilingResearchSearch({
     : validationComplete ? 'exhausted'
     : 'candidate-cap';
 
+  let degradedMessage: string | null = null;
   if (stopReason === 'deadline') {
-    onDegraded?.('Filing-text validation reached its time limit; only a partial candidate window was verified.');
+    degradedMessage = 'Filing-text validation reached its time limit; only a partial candidate window was verified.';
   } else if (stopReason === 'request-budget') {
-    onDegraded?.(`This search reached its per-run request budget (${MAX_PAGE_REQUESTS} pages / ${MAX_DOC_ATTEMPTS} documents); results are a verified partial window, not the full corpus. Narrow the query, dates, or forms to validate more.`);
+    degradedMessage = `This search reached its per-run request budget (${maxPageRequests} pages / ${maxDocAttempts} documents); results are a verified partial window, not the full corpus. Narrow the query, dates, or forms to validate more.`;
   } else if (stopReason === 'rate-limit') {
-    onDegraded?.(`SEC EDGAR rate-limited ${fetchFailureKinds.get('rate-limit')} document ${fetchFailureKinds.get('rate-limit') === 1 ? 'request' : 'requests'}; those filings could not be re-validated and are excluded. Retry shortly for a fuller window.`);
+    degradedMessage = `SEC EDGAR rate-limited ${fetchFailureKinds.get('rate-limit')} document ${fetchFailureKinds.get('rate-limit') === 1 ? 'request' : 'requests'}; those filings could not be re-validated and are excluded. Retry shortly for a fuller window.`;
   } else if (stopReason === 'fetch-failure') {
     const unreadable = (fetchFailureKinds.get('unsupported') ?? 0) + (fetchFailureKinds.get('not-found') ?? 0);
-    onDegraded?.(
+    degradedMessage =
       `${unvalidatedFetchFailures} matching candidate ${unvalidatedFetchFailures === 1 ? 'filing was' : 'filings were'} excluded because the document text could not be retrieved for Boolean re-validation` +
-      (unreadable > 0 ? ' (non-HTML primary document such as a scanned PDF or image).' : ' (upstream fetch failure).')
-    );
+      (unreadable > 0 ? ' (non-HTML primary document such as a scanned PDF or image).' : ' (upstream fetch failure).');
   }
 
-  if (needsCompanyMetadata) {
-    return finalResults;
-  }
-
-  return hydrateLightweightMetadata(finalResults);
+  return {
+    coverage: {
+      examined: Math.min(validationExamined, upstreamTotal),
+      upstreamTotal,
+      complete: validationComplete,
+      upstreamTotalIsFloor: Boolean(upstreamCoverage?.upstreamTotalIsFloor),
+      branches: branchLedgers.length > 0 ? [...branchLedgers] : undefined,
+    },
+    stopReason,
+    degradedMessage,
+  };
 }
 
 /**
