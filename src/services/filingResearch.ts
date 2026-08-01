@@ -1,4 +1,4 @@
-import type { SearchFilters } from '../components/filters/SearchFilterBar';
+import type { SearchFilters } from '../domain/searchFilters';
 import {
   fetchCompanySubmissions,
   fetchFilingText,

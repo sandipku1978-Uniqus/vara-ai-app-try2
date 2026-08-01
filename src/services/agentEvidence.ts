@@ -1,4 +1,4 @@
-import { defaultSearchFilters, type SearchFilters } from '../components/filters/SearchFilterBar';
+import { defaultSearchFilters, type SearchFilters } from '../domain/searchFilters';
 import {
   buildSecDocumentUrl,
   buildSecProxyUrl,

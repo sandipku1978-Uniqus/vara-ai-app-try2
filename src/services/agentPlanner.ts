@@ -1,4 +1,4 @@
-import { defaultSearchFilters, type SearchFilters } from '../components/filters/SearchFilterBar';
+import { defaultSearchFilters, type SearchFilters } from '../domain/searchFilters';
 import { canonicalizeAuditorInput, findAuditorMention } from './auditors';
 import type { AgentAction, AgentContextSnapshot, AgentPlan, AgentToolName } from '../types/agent';
 import type { ResearchSearchMode } from './filingResearch';
