@@ -86,9 +86,14 @@ describe('booleanSearch', () => {
       expect(result.error).toBeUndefined();
     });
 
-    it('handles double NOT', () => {
+    it('collapses double NOT to the positive operand (parity)', () => {
       const result = parseBooleanQuery('NOT NOT revenue');
-      expect(result.expression?.type).toBe('NOT');
+      expect(result.expression).toEqual({ type: 'TERM', value: 'revenue' });
+    });
+
+    it('collapses triple NOT to a single negation', () => {
+      const result = parseBooleanQuery('NOT NOT NOT revenue');
+      expect(result.expression).toEqual({ type: 'NOT', child: { type: 'TERM', value: 'revenue' } });
     });
 
     it('normalizes whitespace in phrases', () => {
