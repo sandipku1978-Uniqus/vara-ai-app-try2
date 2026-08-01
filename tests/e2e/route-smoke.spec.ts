@@ -48,7 +48,22 @@ test.describe('representative dynamic route smoke contracts', () => {
   }
 });
 
-test('the internal design gallery remains an explicit, auditable route', async ({ page }) => {
+test('the internal design gallery renders in dev and 404s in a production build', async ({ page }) => {
   test.skip(publicOnly, 'QA_PUBLIC_ONLY excludes the internal design gallery.');
+  // The gallery carries fabricated filings wearing "verified" badges, so a
+  // production build must never serve it (it calls notFound()). Any remote
+  // QA_BASE_URL target and any PW_PROD_BUILD-managed server are production
+  // builds; only the local dev server renders the gallery.
+  const productionBuild = Boolean(process.env.QA_BASE_URL) || process.env.PW_PROD_BUILD === '1';
+  if (productionBuild) {
+    // The safety property is CONTENT, not status code: Next serves a
+    // statically-generated notFound() as the not-found UI, sometimes with
+    // HTTP 200. What must never appear is the gallery itself — fabricated
+    // filings wearing "verified" badges.
+    await page.goto(INTERNAL_ROUTE_CONTRACT.path, { waitUntil: 'domcontentloaded' });
+    await expect(page.getByRole('heading', { name: 'Command bar' })).toHaveCount(0);
+    await expect(page.getByText('Organon & Co.')).toHaveCount(0);
+    return;
+  }
   await openContract(page, INTERNAL_ROUTE_CONTRACT);
 });
