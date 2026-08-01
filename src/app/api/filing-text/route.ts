@@ -18,6 +18,7 @@ import { checkResourceRateLimit, rateLimitResponse } from '../../../lib/rate-lim
 import { getCacheWriterSupabase, getWebSupabase } from '../../../lib/supabase-web';
 import { extractDocumentTextFromHtmlServer } from '../../../lib/filingTextServer';
 import {
+  assertSecDocumentResponse,
   buildSecTargetUrl,
   fetchSecResponse,
   readResponseWithLimit,
@@ -84,6 +85,9 @@ export async function GET(request: Request) {
   try {
     const target = buildSecTargetUrl('proxy', `Archives/edgar/data/${cik}/${cleanAccession}/${document}`, new URLSearchParams());
     const response = await fetchSecResponse(target, 'proxy', request.signal, USER_AGENT);
+    // An SEC error page or binary document must never be extracted or cached
+    // as filing text — the cache is shared and treated as immutable.
+    assertSecDocumentResponse(response);
     const bytes = await readResponseWithLimit(response, MAX_DOCUMENT_BYTES, request.signal);
     text = extractDocumentTextFromHtmlServer(new TextDecoder().decode(bytes));
   } catch (error) {

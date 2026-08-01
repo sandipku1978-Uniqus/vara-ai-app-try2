@@ -3,6 +3,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
   cacheText: new Map<string, string>(),
   fetchCalls: [] as string[],
+  fetchSec: vi.fn(),
 }));
 
 vi.mock('../lib/api-auth', () => ({
@@ -34,11 +35,15 @@ vi.mock('../lib/supabase-web', () => ({
 vi.mock('../lib/filingTextServer', () => ({
   extractDocumentTextFromHtmlServer: (html: string) => html,
 }));
-vi.mock('../lib/sec-upstream', () => ({
-  buildSecTargetUrl: (_u: string, path: string) => { mocks.fetchCalls.push(path); return new URL(`https://sec.gov/${path}`); },
-  fetchSecResponse: async () => ({ ok: true }),
-  readResponseWithLimit: async () => new TextEncoder().encode('the filing discloses a material weakness in controls'),
-}));
+vi.mock('../lib/sec-upstream', async importOriginal => {
+  const actual = await importOriginal<typeof import('../lib/sec-upstream')>();
+  return {
+    ...actual, // keeps the REAL assertSecDocumentResponse guard in the route path
+    buildSecTargetUrl: (_u: string, path: string) => { mocks.fetchCalls.push(path); return new URL(`https://sec.gov/${path}`); },
+    fetchSecResponse: mocks.fetchSec,
+    readResponseWithLimit: async () => new TextEncoder().encode('the filing discloses a material weakness in controls'),
+  };
+});
 
 import { POST } from '../app/api/boolean-validate/route';
 
@@ -51,6 +56,12 @@ const candidate = { cik: '320193', accession: '0000320193-24-000123', document: 
 beforeEach(() => {
   mocks.cacheText.clear();
   mocks.fetchCalls.length = 0;
+  mocks.fetchSec.mockReset();
+  mocks.fetchSec.mockImplementation(async () => ({
+    ok: true,
+    status: 200,
+    headers: new Headers({ 'content-type': 'text/html' }),
+  }));
 });
 
 describe('POST /api/boolean-validate', () => {
@@ -114,5 +125,33 @@ describe('POST /api/boolean-validate', () => {
     const res = await POST(post({ query: 'weakness', candidates: many }));
     const body = await res.json();
     expect(body.verdicts.length).toBeLessThanOrEqual(40);
+  });
+});
+
+describe('upstream failure injection (WP4/T13): error pages are never filing text', () => {
+  it.each([
+    ['403 rate-threshold page', { ok: false, status: 403, headers: new Headers({ 'content-type': 'text/html' }) }],
+    ['404 not found', { ok: false, status: 404, headers: new Headers({ 'content-type': 'text/html' }) }],
+    ['429 rate limited', { ok: false, status: 429, headers: new Headers({ 'content-type': 'text/html' }) }],
+    ['500 server error', { ok: false, status: 500, headers: new Headers({ 'content-type': 'text/html' }) }],
+    ['200 with a binary content type', { ok: true, status: 200, headers: new Headers({ 'content-type': 'application/pdf' }) }],
+  ])('%s yields an unvalidated verdict, never a non-match, and caches nothing', async (_label, response) => {
+    mocks.fetchSec.mockImplementation(async () => response);
+
+    const res = await POST(post({ query: '"material weakness"', candidates: [candidate] }));
+    const body = await res.json();
+
+    // Unvalidated — NOT a validated non-match: the matcher never saw prose.
+    expect(body.verdicts[0].validated).toBe(false);
+    expect(body.verdicts[0].matched).toBe(false);
+    // Nothing was written to the shared text cache.
+    expect(mocks.cacheText.size).toBe(0);
+  });
+
+  it('a clean fetch still validates and caches (guard is not over-broad)', async () => {
+    const res = await POST(post({ query: '"material weakness"', candidates: [candidate] }));
+    const body = await res.json();
+    expect(body.verdicts[0].validated).toBe(true);
+    expect(body.verdicts[0].matched).toBe(true);
   });
 });

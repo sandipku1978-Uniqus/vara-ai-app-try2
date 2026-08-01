@@ -21,6 +21,7 @@ import { getCacheWriterSupabase, getWebSupabase } from '../../../lib/supabase-we
 import { extractDocumentTextFromHtmlServer } from '../../../lib/filingTextServer';
 import { booleanQueryMatches, compileBooleanQuery, extractBooleanMatchSnippet } from '../../../utils/booleanSearch';
 import {
+  assertSecDocumentResponse,
   buildSecTargetUrl,
   fetchSecResponse,
   readResponseWithLimit,
@@ -95,6 +96,11 @@ async function loadText(candidate: Candidate): Promise<string> {
       new URLSearchParams(),
     );
     const response = await fetchSecResponse(target, 'proxy', new AbortController().signal, USER_AGENT);
+    // An error page or binary document is never filing text: extracting it
+    // would both cache-poison urc_filing_text AND hand the matcher prose that
+    // yields a false "validated non-match" verdict. Throwing lands in the
+    // catch below, which reports the candidate as unvalidated.
+    assertSecDocumentResponse(response);
     const bytes = await readResponseWithLimit(response, MAX_DOCUMENT_BYTES, new AbortController().signal);
     const text = extractDocumentTextFromHtmlServer(new TextDecoder().decode(bytes));
 
