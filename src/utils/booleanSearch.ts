@@ -417,12 +417,36 @@ export function parseBooleanQuery(query: string): ParsedBooleanQuery {
     if (state.index < state.tokens.length) {
       throw new Error('Unexpected token in query.');
     }
-    return { expression };
+    return { expression: simplifyDoubleNegation(expression) };
   } catch (error) {
     return {
       expression: null,
       error: error instanceof Error ? error.message : 'Unable to parse Boolean query.',
     };
+  }
+}
+
+/**
+ * Collapses NOT NOT x to x throughout the tree, so polarity is decided by
+ * parity. Every downstream consumer — positive-term collection, branch
+ * planning, snippet selection — assumes NOT marks a genuinely negative
+ * subtree; without this, "NOT NOT cyber" reads as having no positive terms
+ * and is wrongly rejected as a negative-only query.
+ */
+function simplifyDoubleNegation(node: BooleanSearchNode): BooleanSearchNode {
+  switch (node.type) {
+    case 'NOT': {
+      const child = simplifyDoubleNegation(node.child);
+      if (child.type === 'NOT') return child.child;
+      return { type: 'NOT', child };
+    }
+    case 'AND':
+    case 'OR':
+      return { type: node.type, left: simplifyDoubleNegation(node.left), right: simplifyDoubleNegation(node.right) };
+    case 'PROX':
+      return { ...node, left: simplifyDoubleNegation(node.left), right: simplifyDoubleNegation(node.right) };
+    default:
+      return node;
   }
 }
 
@@ -528,6 +552,7 @@ export type BooleanIssueCode =
   | 'negative-only'
   | 'numeric-only'
   | 'wildcard-only'
+  | 'unanchored-branch'
   | 'too-complex';
 
 export type BooleanCompileResult =
@@ -615,6 +640,23 @@ export function compileBooleanQuery(raw: string): BooleanCompileResult {
       return fail('wildcard-only', 'Wildcards validate against filing text but cannot retrieve from EDGAR — combine with a concrete term or phrase, e.g. crypto* AND blockchain.');
     }
     return fail('negative-only', 'Add at least one term that is not negated — a NOT-only query has nothing to match against.');
+  }
+
+  // Every OR branch must carry its own retrieval anchor — unless an auditor:
+  // token is present, in which case candidates come from the auditor facet and
+  // branches only validate. Mirrors the whole-query rule above, per branch.
+  if (!auditor) {
+    const unanchored = findUnanchoredBranch(parsed.expression);
+    if (unanchored) {
+      const branch = unanchored.label;
+      if (unanchored.reason === 'wildcard') {
+        return fail('unanchored-branch', `The OR branch “${branch}” cannot be retrieved: wildcards validate against filing text but cannot fetch from EDGAR. Anchor that branch with a concrete term, e.g. (${branch} AND blockchain).`);
+      }
+      if (unanchored.reason === 'numeric') {
+        return fail('unanchored-branch', `The OR branch “${branch}” cannot be retrieved: the numeric operator matches values, not filings. Anchor it inside the branch, e.g. ("goodwill impairment" w/10 ${branch}).`);
+      }
+      return fail('unanchored-branch', `The OR branch “${branch}” cannot be retrieved: there is no way to fetch “every filing that lacks a term” from EDGAR. Use NOT with AND instead, e.g. term AND ${branch}.`);
+    }
   }
 
   // Complexity cap: too many OR branches would force us to approximate the logic
@@ -908,7 +950,7 @@ function collectPositiveTerms(node: BooleanSearchNode, negated = false, bucket =
       }
       return bucket;
     case 'NOT':
-      return collectPositiveTerms(node.child, true, bucket);
+      return collectPositiveTerms(node.child, !negated, bucket);
     case 'AND':
     case 'OR':
       collectPositiveTerms(node.left, negated, bucket);
@@ -933,6 +975,108 @@ function collectPositiveTerms(node: BooleanSearchNode, negated = false, bucket =
  * `truncated` is set when the branch count exceeds `maxBranches` (the complexity
  * cap) so the caller can reject rather than silently approximate the logic.
  */
+type BranchAnchorLeaf = { anchor: boolean; reason?: 'negation' | 'wildcard' | 'numeric'; label: string };
+
+function numberUnitLabel(unit: NumberUnit): string {
+  return unit === 'currency' ? '$#' : unit === 'percent' ? '%#' : '#';
+}
+
+/** Compact source-like rendering of a node, for validation messages. */
+function renderNodeLabel(node: BooleanSearchNode): string {
+  switch (node.type) {
+    case 'TERM':
+      return node.value;
+    case 'PHRASE':
+      return `"${node.value}"`;
+    case 'WILDCARD':
+      return node.pattern;
+    case 'NUMBER':
+      return numberUnitLabel(node.unit);
+    case 'PROX':
+      return `${renderNodeLabel(node.left)} ${node.ordered ? 'p' : 'w'}/${node.distance} ${renderNodeLabel(node.right)}`;
+    case 'NOT':
+      return node.child.type === 'AND' || node.child.type === 'OR'
+        ? `NOT (${renderNodeLabel(node.child)})`
+        : `NOT ${renderNodeLabel(node.child)}`;
+    case 'AND':
+      return `${renderNodeLabel(node.left)} AND ${renderNodeLabel(node.right)}`;
+    case 'OR':
+      return `(${renderNodeLabel(node.left)} OR ${renderNodeLabel(node.right)})`;
+    default:
+      return '';
+  }
+}
+
+/**
+ * DNF-expands the expression exactly the way planBooleanBranches does and
+ * returns the first OR branch with no concrete positive term or phrase.
+ * Retrieval issues one EDGAR query per branch, so an unanchored branch is
+ * unfetchable: a NOT-only branch means "every filing lacking x" (no such
+ * endpoint), and wildcard/numeric operands validate text but cannot retrieve.
+ * Before this check, planBooleanBranches silently dropped such branches and
+ * the engine presented results as if the whole expression had been searched —
+ * "A OR NOT B" quietly became a search for just A. Never drop; reject.
+ */
+export function findUnanchoredBranch(
+  node: BooleanSearchNode,
+  maxBranches = 256
+): { label: string; reason: 'negation' | 'wildcard' | 'numeric' } | null {
+  const expand = (n: BooleanSearchNode): BranchAnchorLeaf[][] | null => {
+    switch (n.type) {
+      case 'TERM':
+      case 'PHRASE':
+        return [[{ anchor: true, label: renderNodeLabel(n) }]];
+      case 'WILDCARD':
+        return [[{ anchor: false, reason: 'wildcard', label: n.pattern }]];
+      case 'NUMBER':
+        return [[{ anchor: false, reason: 'numeric', label: numberUnitLabel(n.unit) }]];
+      case 'PROX': {
+        const left = expand(n.left);
+        const right = expand(n.right);
+        if (!left || !right) return null;
+        // Proximity operands are single leaves, so each side has one branch.
+        return [[...left[0], ...right[0]]];
+      }
+      case 'NOT':
+        // The whole subtree contributes nothing retrievable, whatever is inside.
+        return [[{ anchor: false, reason: 'negation', label: renderNodeLabel(n) }]];
+      case 'AND': {
+        const left = expand(n.left);
+        const right = expand(n.right);
+        if (!left || !right) return null;
+        const out: BranchAnchorLeaf[][] = [];
+        for (const l of left) {
+          for (const r of right) {
+            if (out.length >= maxBranches) return null; // too-complex check reports this
+            out.push([...l, ...r]);
+          }
+        }
+        return out;
+      }
+      case 'OR': {
+        const left = expand(n.left);
+        const right = expand(n.right);
+        if (!left || !right) return null;
+        if (left.length + right.length > maxBranches) return null;
+        return [...left, ...right];
+      }
+      default:
+        return [[{ anchor: true, label: '' }]];
+    }
+  };
+
+  const branches = expand(node);
+  if (!branches) return null;
+  for (const branch of branches) {
+    if (branch.some(leaf => leaf.anchor)) continue;
+    // Report the most actionable reason: a wildcard or numeric operand can be
+    // anchored in place; pure negation needs restructuring.
+    const leaf = branch.find(l => l.reason === 'wildcard') || branch.find(l => l.reason === 'numeric') || branch[0];
+    return { label: branch.map(l => l.label).join(' AND '), reason: leaf.reason || 'negation' };
+  }
+  return null;
+}
+
 export function planBooleanBranches(query: string, maxBranches = 16): { branches: string[]; truncated: boolean } {
   const parsed = parseBooleanQuery(query);
   if (!parsed.expression) return { branches: [], truncated: false };

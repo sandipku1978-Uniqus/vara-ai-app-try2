@@ -1,0 +1,44 @@
+{
+  "package": "uniqus-platform-remediation-handoff",
+  "preparedAt": "2026-07-31",
+  "repositoryBaseline": "d834032b0f103c50ab647ce4fc49bc67c89834a9",
+  "productionUrl": "https://uniqus-research.vercel.app",
+  "scope": [
+    "boolean-branch-correctness-and-coverage",
+    "auditor-topic-502-remediation",
+    "exact-sha-accuracy-and-release-proof",
+    "supabase-least-privilege",
+    "csp-and-security-automation",
+    "search-executor-decomposition",
+    "executable-ui-interaction-coverage"
+  ],
+  "files": [
+    {
+      "path": "README.md",
+      "sha256": "ea97322ec2a3706ea7b315da1ed3c67e097f01eb370adb80eca691e4684f4a53"
+    },
+    {
+      "path": "01_IMPLEMENTATION_PLAN.md",
+      "sha256": "0ad875a63aaf729e5e82f633b5efbdcff4e2ec5d8fc008f3210fa9ade5e969a1"
+    },
+    {
+      "path": "02_ACCEPTANCE_MATRIX.csv",
+      "sha256": "3b7b872ba0fda828d0bd8cf852a1bb77eb38cd051237c36f3ac45bb22ffc6e74"
+    },
+    {
+      "path": "03_EXACT_SHA_RELEASE_RUNBOOK.md",
+      "sha256": "d6e6dcf6a8d4c7cf87ec5c119ff3c6a868fb31b166c04a1690b88383f9cc38db"
+    },
+    {
+      "path": "04_BASELINE_EVIDENCE.md",
+      "sha256": "38300125b09d86bfe3896f8c3e550d6a996de0cfe53f94caea60a69a2de85535"
+    }
+  ],
+  "excluded": [
+    "credentials-and-environment-values",
+    "production-data-and-raw-private-logs",
+    "generated-next-env-change",
+    "historical-reports-that-target-earlier-revisions",
+    "application-source-code"
+  ]
+}
