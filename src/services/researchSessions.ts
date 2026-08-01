@@ -1,4 +1,4 @@
-import type { SearchFilters } from '../components/filters/SearchFilterBar';
+import type { SearchFilters } from '../domain/searchFilters';
 import type { FilingResearchResult, ResearchSearchMode } from './filingResearch';
 import { scopedStorageKey } from './storageNamespace';
 import { BOOLEAN_ENGINE_VERSION } from '../utils/booleanSearch';

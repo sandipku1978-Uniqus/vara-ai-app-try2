@@ -12,7 +12,7 @@
  * keeps the ordering rule below verifiable in isolation.
  */
 
-import type { SearchFilters } from '../components/filters/SearchFilterBar';
+import type { SearchFilters } from '../domain/searchFilters';
 import type { ResearchSearchMode } from './filingResearch';
 import { cloneSearchFilters, hasResearchSearchCriteria } from './researchSessions';
 import { interpretSearchPrompt } from './searchAssist';

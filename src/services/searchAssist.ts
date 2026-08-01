@@ -1,4 +1,4 @@
-import type { SearchFilters } from '../components/filters/SearchFilterBar';
+import type { SearchFilters } from '../domain/searchFilters';
 import type { ResearchSearchMode } from './filingResearch';
 import { canonicalizeAuditorInput, findAuditorMention, stripAuditorMentions } from './auditors';
 import { buildCandidateQueryFromBoolean } from '../utils/booleanSearch';
