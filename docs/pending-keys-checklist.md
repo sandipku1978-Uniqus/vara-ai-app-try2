@@ -50,7 +50,14 @@ The original procedure is kept below for audit history.
 - **Turns on**: saved-alert email delivery (alerts currently surface on the
   Dashboard only).
 
-## 3. ★ Vercel KV — verify before wider rollout (release-gating)
+## 3. ✅ DONE 2026-08-01 — Vercel KV live (Upstash for Redis installed)
+
+Upstash for Redis installed via the Vercel Marketplace and connected to
+vara-ai-app; `KV_REST_API_URL` / `KV_REST_API_TOKEN` confirmed present. From
+the next deployment, rate limits, AI concurrency caps, and both daily token
+budgets are enforced deployment-wide. Original rationale kept below.
+
+### Original item (completed)
 
 - **Get**: the existing Vercel KV integration already provides
   `KV_REST_API_URL` / `KV_REST_API_TOKEN`; confirm they are set in Vercel.
