@@ -43,8 +43,14 @@ export default function NoActionLetters() {
       header: 'Official response',
       render: row => (
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
-          <a href={row.url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-primary)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-            SEC.gov <ExternalLink size={12} />
+          <a
+            href={row.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`Open the SEC staff ${row.type} response "${row.title}" on SEC.gov`}
+            style={{ color: 'var(--accent-primary)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+          >
+            SEC.gov <ExternalLink size={12} aria-hidden="true" />
           </a>
           <AskCopilotButton compact prompt={`Analyze this SEC staff ${row.type} response: ${row.title}. Source: ${row.url}`} />
         </span>

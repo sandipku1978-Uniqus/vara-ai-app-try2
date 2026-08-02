@@ -78,7 +78,13 @@ export default function InsiderTrading() {
         const url = `https://www.sec.gov/Archives/edgar/data/${row.cik}/${accNum}/${row.primaryDocument}`;
         return (
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-            <a href={url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-primary)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`View Form ${row.form} insider filing for ${row.entityName}, filed ${row.filingDate}, on SEC.gov`}
+              style={{ color: 'var(--accent-primary)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+            >
               View <ExternalLink size={12} aria-hidden="true" />
             </a>
             <AskCopilotButton compact prompt={`Analyze Form ${row.form} insider filing for ${row.entityName} from ${row.filingDate}`} />

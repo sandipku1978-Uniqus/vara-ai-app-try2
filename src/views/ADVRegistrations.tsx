@@ -48,8 +48,14 @@ export default function ADVRegistrations() {
       key: 'url',
       header: 'Official Record',
       render: row => (
-        <a href={row.url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-primary)', display: 'inline-flex', gap: '4px', alignItems: 'center' }}>
-          IAPD <ExternalLink size={12} />
+        <a
+          href={row.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={`Open the IAPD record for ${row.name} on adviserinfo.sec.gov`}
+          style={{ color: 'var(--accent-primary)', display: 'inline-flex', gap: '4px', alignItems: 'center' }}
+        >
+          IAPD <ExternalLink size={12} aria-hidden="true" />
         </a>
       ),
     },

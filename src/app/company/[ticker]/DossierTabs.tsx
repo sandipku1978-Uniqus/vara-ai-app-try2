@@ -169,7 +169,16 @@ export default function DossierTabs({
                     </td>
                     <td style={{ padding: '10px 16px', borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}>{describeFilingRow(recentFilings.form[i], recentFilings.primaryDocDescription[i])}</td>
                     <td style={{ padding: '10px 16px', borderBottom: '1px solid var(--border-color)' }}>
-                      <a href={url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-primary)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                      <a
+                        href={url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        // Every row's link reads "View"; without the row named
+                        // here, a screen reader announces an undifferentiated
+                        // list of identical links (global.external-source-links).
+                        aria-label={`View ${recentFilings.form[i]} filed ${recentFilings.filingDate[i]} on SEC.gov`}
+                        style={{ color: 'var(--accent-primary)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                      >
                         View <ExternalLink size={12} aria-hidden="true" />
                       </a>
                     </td>
