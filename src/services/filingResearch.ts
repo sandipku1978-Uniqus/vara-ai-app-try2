@@ -1952,12 +1952,11 @@ export async function executeFilingResearchSearch({
 
   if (filteredResults.length === 0 && lastSearchError) throw lastSearchError;
 
-  // Collapse per-document matches to one row per filing before ranking, so an
-  // accession whose match lives in several exhibits occupies a single row.
-  const rolledUp = mode === 'boolean' && !includeExhibits
-    ? rollUpExhibitMatches(filteredResults)
-    : filteredResults;
-  const finalResults = sortResearchResults(rolledUp, preferRelevance).slice(0, displayLimit);
+  const finalResults = rankAndLimitResults(filteredResults, {
+    rollUpExhibits: mode === 'boolean' && !includeExhibits,
+    preferRelevance,
+    displayLimit,
+  });
   await enrichResultsFromFacetStore(finalResults);
 
   const finalized = finalizeRunCoverage({
@@ -1983,6 +1982,25 @@ export async function executeFilingResearchSearch({
   }
 
   return hydrateLightweightMetadata(finalResults);
+}
+
+/**
+ * Result finishing (WP7 stage: rankAndLimitResults). Pure — dedup shape,
+ * order, and cap only; enrichment and metadata hydration stay I/O stages in
+ * the executor.
+ *
+ * Roll-up collapses per-document matches to one row per filing BEFORE
+ * ranking, so an accession whose match lives in several exhibits occupies a
+ * single row — Boolean mode admits exhibit sub-documents as candidates
+ * precisely because this step later removes the duplicate-row problem
+ * without losing exhibit-only evidence.
+ */
+export function rankAndLimitResults(
+  results: FilingResearchResult[],
+  options: { rollUpExhibits: boolean; preferRelevance: boolean; displayLimit: number }
+): FilingResearchResult[] {
+  const rolledUp = options.rollUpExhibits ? rollUpExhibitMatches(results) : results;
+  return sortResearchResults(rolledUp, options.preferRelevance).slice(0, Math.max(options.displayLimit, 0));
 }
 
 /** Everything the executor needs that is derivable from the request alone. */
