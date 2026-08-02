@@ -1,6 +1,10 @@
 import { expect, test } from '@playwright/test';
 import { clerk, setupClerkTestingToken } from '@clerk/testing/playwright';
-import { isPublicPath } from '../../src/proxy';
+// PUBLIC_PAGE_PATHS, not isPublicPath from src/proxy: proxy.ts imports
+// next/server, which resolves under Next's bundler but NOT under Playwright's
+// loader — importing it makes the whole spec file fail to load, and Playwright
+// reports the far less obvious "No tests found". This module is plain data.
+import { PUBLIC_PAGE_PATHS } from '../../src/config/routes';
 
 /**
  * Archetype: global.authentication.
@@ -37,9 +41,10 @@ test.describe('critical action: global.authentication', () => {
     // Cheap, but it is the premise every other test here rests on: if the
     // protected routes below were public, the suite would pass while proving
     // nothing at all.
-    expect(isPublicPath(PROTECTED_ROUTE), `${PROTECTED_ROUTE} must be protected`).toBe(false);
-    expect(isPublicPath(DEEP_PROTECTED_ROUTE), `${DEEP_PROTECTED_ROUTE} must be protected`).toBe(false);
-    expect(isPublicPath('/privacy'), '/privacy must stay public').toBe(true);
+    const publicPaths: readonly string[] = PUBLIC_PAGE_PATHS;
+    expect(publicPaths.includes(PROTECTED_ROUTE), `${PROTECTED_ROUTE} must be protected`).toBe(false);
+    expect(publicPaths.includes(DEEP_PROTECTED_ROUTE), `${DEEP_PROTECTED_ROUTE} must be protected`).toBe(false);
+    expect(publicPaths.includes('/privacy'), '/privacy must stay public').toBe(true);
   });
 
   test('a signed-out visitor is sent to the identity surface with the intended return URL intact', async ({ page }) => {

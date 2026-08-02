@@ -59,8 +59,17 @@ export default defineConfig({
         timeout: process.env.PW_PROD_BUILD === '1' ? 420_000 : 120_000,
         env: {
           URC_E2E_BYPASS_AUTH: '1',
-          // Client-side counterpart (inlined at build): CI runners cannot
-          // reach the Clerk dev instance, so identity must hydrate locally.
+          // Client-side counterpart, inlined at build. This keeps identity
+          // hydrating instantly so the storageScope flip cannot reset state
+          // mid-test (the flake root cause diagnosed in #59).
+          //
+          // It used to say CI runners cannot reach the Clerk dev instance.
+          // That was wrong — measured from a runner, the frontend API answers
+          // 200 in 0.38s and api.clerk.com in 0.28s. CI simply never had a
+          // publishable key, so clerk-js never attempted to load and the
+          // symptom was misattributed. The real reason for the bypass here is
+          // determinism, not reachability; tests/e2e-auth/ exercises the
+          // genuine Clerk surface.
           NEXT_PUBLIC_URC_E2E_BYPASS_AUTH: '1',
           NEXT_PUBLIC_SITE_URL: baseURL,
           // `npm run build` pins NEXT_LOCAL_BUILD=1 (writes .next-build);
