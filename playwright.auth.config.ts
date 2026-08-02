@@ -38,7 +38,15 @@ loadEnv({ path: '.env.local', quiet: true });
  */
 
 const localPort = Number(process.env.QA_AUTH_PORT || 4318);
-const baseURL = `http://127.0.0.1:${localPort}`;
+// MUST be `localhost`, not 127.0.0.1. When a proxy.ts (middleware) is in
+// play, Next's router forwards the request to `localhost:PORT` — so binding
+// the server to 127.0.0.1 only means the forward resolves to ::1, finds
+// nothing listening, and the request hangs until it dies with "socket hang
+// up" / "Failed to proxy". The main suite never hit this because
+// URC_E2E_BYPASS_AUTH makes proxy.ts return next() before the router's proxy
+// hop happens; turning the bypass off is exactly what exposed it.
+const host = 'localhost';
+const baseURL = `http://${host}:${localPort}`;
 const artifactRoot = process.env.QA_OUTPUT_DIR || join(tmpdir(), 'urc-playwright-auth');
 const prodBuild = process.env.PW_PROD_BUILD === '1' || Boolean(process.env.CI);
 
@@ -89,8 +97,8 @@ export default defineConfig({
     // always built and run `next start`. Using the production build here also
     // restores the WP8 principle that what CI proves is what users get.
     command: prodBuild
-      ? `npm run build && npx next start --hostname 127.0.0.1 --port ${localPort}`
-      : `npx next dev --hostname 127.0.0.1 --port ${localPort}`,
+      ? `npm run build && npx next start --hostname ${host} --port ${localPort}`
+      : `npx next dev --hostname ${host} --port ${localPort}`,
     url: `${baseURL}/privacy`,
     reuseExistingServer: !process.env.CI,
     timeout: prodBuild ? 420_000 : 180_000,

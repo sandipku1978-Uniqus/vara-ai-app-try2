@@ -97,24 +97,6 @@ jobs:
             echo 'configured=true' >> "$GITHUB_OUTPUT"
           fi
       - if: steps.gate.outputs.configured == 'true'
-        name: Probe Clerk reachability from the runner
-        # playwright.config.ts has long claimed CI runners cannot reach the
-        # Clerk dev instance. That claim was never tested — CI had no
-        # publishable key, so clerk-js never tried to load. Now that a key is
-        # present the build reaches Clerk, and it hangs. This settles whether
-        # the cause is egress or something else. Non-fatal on purpose.
-        continue-on-error: true
-        run: |
-          fapi=$(node -e "const k=process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY||'';const b=k.split('_')[2]||'';process.stdout.write(Buffer.from(b,'base64').toString().replace(/\\\$$/,''))")
-          echo "Frontend API host: $fapi"
-          echo '--- FAPI /v1/environment (10s timeout) ---'
-          curl -sS -m 10 -o /dev/null -w 'status=%{http_code} time=%{time_total}s\n' \
-            "https://$fapi/v1/environment?__clerk_api_version=2021-02-05" || echo "FAPI UNREACHABLE (exit $?)"
-          echo '--- Backend API api.clerk.com (10s timeout) ---'
-          curl -sS -m 10 -o /dev/null -w 'status=%{http_code} time=%{time_total}s\n' \
-            -H "Authorization: Bearer $CLERK_SECRET_KEY" https://api.clerk.com/v1/jwks \
-            || echo "BACKEND API UNREACHABLE (exit $?)"
-      - if: steps.gate.outputs.configured == 'true'
         run: npx playwright install --with-deps chromium
       - if: steps.gate.outputs.configured == 'true'
         run: npx playwright test --config playwright.auth.config.ts
