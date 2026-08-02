@@ -1610,7 +1610,6 @@ export async function executeFilingResearchSearch({
   // enough to leave headroom for filing previews while still validating quickly.
   const batchSize = 4;
   const progressCallback = onProgress;
-  let lastProgressCount = 0;
   const progressInterval = 15;
   const waveStartTime = Date.now();
   const maxWaveTimeMs = 45_000; // Stop after 45 seconds to avoid endless validation
@@ -1632,9 +1631,6 @@ export async function executeFilingResearchSearch({
   const DOC_RESERVE_PER_BRANCH = Math.min(24, Math.floor(MAX_DOC_ATTEMPTS / Math.max(requiredBooleanBranches, 1)));
   const PAGE_RESERVE_PER_BRANCH = 2;
   const TIME_RESERVE_PER_BRANCH_MS = 6_000;
-  // Set when a required branch hit its fair-share document cap: the run is
-  // partial (request-budget) even though later branches still got their turn.
-  let branchDocBudgetTruncated = false;
   const branchLedgers: BranchCoverageEntry[] = [];
   // Server pre-screen sizing. The chunk matches the route's own per-request cap;
   // the wave cap bounds how long verdict-gathering can delay the fetches it is
@@ -1642,17 +1638,23 @@ export async function executeFilingResearchSearch({
   const PRESCREEN_CHUNK = 40;
   const PRESCREEN_MAX_PER_WAVE = 120;
   const PRESCREEN_MIN_WAVE_RESERVE = 15_000;
-  let pageRequests = 0;
-  let docAttempts = 0;
-  let budgetExhausted = false;
-  let validationExamined = 0;
-  let validationTimedOut = false;
-  let completedQueryVariants = 0;
-  // Candidates that matched upstream but whose text could not be fetched for
-  // local Boolean re-validation (oversized beyond the truncation cap, or a
-  // non-HTML primary document such as a PDF). Surfaced so the exclusion is
-  // never silent.
-  let unvalidatedFetchFailures = 0;
+  // Shared wave counters, boxed so the collect/validate stages can advance
+  // them. unvalidatedFetchFailures counts candidates that matched upstream
+  // but whose text could not be fetched for local re-validation — surfaced so
+  // the exclusion is never silent. branchDocBudgetTruncated is set when a
+  // required branch hit its fair-share document cap: the run is partial even
+  // though later branches still got their turn.
+  const run: WaveRunState = {
+    pageRequests: 0,
+    docAttempts: 0,
+    validationExamined: 0,
+    unvalidatedFetchFailures: 0,
+    completedQueryVariants: 0,
+    lastProgressCount: 0,
+    budgetExhausted: false,
+    validationTimedOut: false,
+    branchDocBudgetTruncated: false,
+  };
   // Failure reasons behind those exclusions, so the notice can name the actual
   // cause (rate limit vs unreadable document) instead of guessing.
   const fetchFailureKinds = new Map<string, number>();
@@ -1662,17 +1664,57 @@ export async function executeFilingResearchSearch({
     ? filteredServerQueries.slice(0, Math.max(requiredBooleanBranches, 2))
     : filteredServerQueries;
 
+  const waveContext: WaveStageContext = {
+    run,
+    hitMap,
+    signalMap,
+    filteredResults,
+    fetchFailureKinds,
+    query,
+    filters,
+    mode,
+    formTypes,
+    formScope,
+    excludeExhibits,
+    needsCompanyMetadata,
+    needsTextFiltering,
+    booleanExpression: parsedBooleanQuery.expression,
+    delegatedToEfts,
+    hydratePerDocumentSignals,
+    useEnrichedSearch,
+    includeExhibits,
+    entityCik,
+    preferRelevance,
+    displayLimit,
+    wavePerQueryLimit,
+    totalServerQueries: filteredServerQueries.length,
+    batchSize,
+    progressInterval,
+    waveStartTime,
+    maxWaveTimeMs,
+    MAX_PAGE_REQUESTS,
+    MAX_DOC_ATTEMPTS,
+    PAGE_RESERVE_PER_BRANCH,
+    PRESCREEN_CHUNK,
+    PRESCREEN_MAX_PER_WAVE,
+    PRESCREEN_MIN_WAVE_RESERVE,
+    signal,
+    onDegraded,
+    progressCallback,
+    captureUpstreamCoverage,
+  };
+
   for (const [queryIndex, candidateQuery] of waveQueryVariants.entries()) {
     // The display limit may NOT end retrieval until every required OR branch has
     // been attempted — otherwise a broad first branch that fills the visible
     // rows would hide a rare second disjunct (the mezzanine-OR-temporary bug).
     if (filteredResults.length >= displayLimit && queryIndex >= requiredBooleanBranches) break;
     if (Date.now() - waveStartTime > maxWaveTimeMs) {
-      validationTimedOut = true;
+      run.validationTimedOut = true;
       break;
     }
-    if (pageRequests >= MAX_PAGE_REQUESTS || docAttempts >= MAX_DOC_ATTEMPTS) {
-      budgetExhausted = true;
+    if (run.pageRequests >= MAX_PAGE_REQUESTS || run.docAttempts >= MAX_DOC_ATTEMPTS) {
+      run.budgetExhausted = true;
       break;
     }
     if (signal?.aborted) break; // superseded by a newer run — stop issuing pages
@@ -1680,8 +1722,6 @@ export async function executeFilingResearchSearch({
     // Fair-share caps for THIS lane: leave each later required branch its
     // reserved documents, pages, and validation time.
     const laterRequiredBranches = Math.max(0, requiredBooleanBranches - queryIndex - 1);
-    const branchDocCap = MAX_DOC_ATTEMPTS - laterRequiredBranches * DOC_RESERVE_PER_BRANCH;
-    const branchTimeCapMs = maxWaveTimeMs - laterRequiredBranches * TIME_RESERVE_PER_BRANCH_MS;
     const ledger: BranchCoverageEntry = {
       branch: candidateQuery,
       required: queryIndex < requiredBooleanBranches,
@@ -1693,262 +1733,42 @@ export async function executeFilingResearchSearch({
       exhausted: false,
     };
     branchLedgers.push(ledger);
-    const branchResultStart = filteredResults.length;
 
-    let queryBatchHits: EdgarSearchHit[];
-    try {
-      // The page budget counts ACTUAL upstream HTTP pages via onUpstreamPage —
-      // one searchEdgarFilings call may issue many EFTS pages (page size is
-      // ~10 hits), so counting calls understated real request volume by up to
-      // 50x (readiness finding F-07). The result cap is also clamped to the
-      // remaining page budget so a single call cannot blow through it.
-      // A lane may not page later required branches out of their reserve —
-      // but a required lane always keeps at least its own reserve.
-      let remainingPages = Math.max(0, MAX_PAGE_REQUESTS - pageRequests - laterRequiredBranches * PAGE_RESERVE_PER_BRANCH);
-      if (ledger.required) {
-        remainingPages = Math.max(remainingPages, Math.min(PAGE_RESERVE_PER_BRANCH, MAX_PAGE_REQUESTS - pageRequests));
-      }
-      queryBatchHits = await searchEdgarFilings(
-        candidateQuery,
-        formTypes,
-        filters.dateFrom || undefined,
-        filters.dateTo || undefined,
-        filters.entityName || undefined,
-        Math.min(wavePerQueryLimit, remainingPages * 10),
-        {
-          ...buildEnrichedSearchParams(filters, useEnrichedSearch && !includeExhibits, onDegraded, (coverage: SearchCandidateCoverage) => {
-            ledger.collectionComplete = coverage.complete;
-            captureUpstreamCoverage(coverage);
-          }),
-          entityCik: entityCik || undefined,
-          onUpstreamPage: () => { pageRequests += 1; ledger.pages += 1; },
-          signal,
-        }
-      );
-    } catch (error) {
-      lastSearchError = error instanceof Error ? error : new Error('EDGAR search failed');
-      ledger.incompleteReason = 'error';
+    const collected = await collectLaneCandidates(waveContext, {
+      candidateQuery,
+      queryIndex,
+      laterRequiredBranches,
+      ledger,
+    });
+    if (collected.status === 'error') {
+      lastSearchError = collected.error;
       if (mode !== 'boolean') throw lastSearchError;
       continue;
     }
+    if (collected.status === 'empty') continue;
 
-    // Deduplicate against previously seen hits — but record what this lane
-    // surfaced FIRST, so branch attribution survives the dedup (a hit shared
-    // with an earlier lane still counts as surfaced by this one).
-    ledger.candidatesSurfaced = queryBatchHits.length;
-    const newHits: EdgarSearchHit[] = [];
-    for (const hit of queryBatchHits) {
-      if (!hitMap.has(hit._id)) {
-        hitMap.set(hit._id, { hit, queryPriority: filteredServerQueries.length - queryIndex, score: hit._score });
-        newHits.push(hit);
-      }
-    }
-    ledger.candidatesNew = newHits.length;
+    await validateLaneCandidates(waveContext, {
+      ledger,
+      branchDocCap: MAX_DOC_ATTEMPTS - laterRequiredBranches * DOC_RESERVE_PER_BRANCH,
+      branchTimeCapMs: maxWaveTimeMs - laterRequiredBranches * TIME_RESERVE_PER_BRANCH_MS,
+      isRequiredBooleanBranch: mode === 'boolean' && queryIndex < requiredBooleanBranches,
+      branchResultStart: filteredResults.length,
+    }, collected.waveCandidates);
 
-    if (newHits.length === 0) {
-      completedQueryVariants += 1;
-      ledger.exhausted = ledger.collectionComplete !== false;
-      if (mode === 'boolean') await delay(120);
-      continue;
-    }
-
-    // Map, hydrate metadata, and filter this wave of candidates
-    let waveCandidates = uniqueById(newHits.map(mapSearchHit));
-    if (needsCompanyMetadata) waveCandidates = await hydrateCompanyMetadataBatch(waveCandidates);
-    waveCandidates = waveCandidates.filter(result => matchesBaseFilters(result, filters, formScope, excludeExhibits));
-    // Candidates rejected by deterministic metadata filters have still been
-    // examined for this validation pass.
-    validationExamined += Math.max(0, newHits.length - waveCandidates.length);
-    ledger.examined += Math.max(0, newHits.length - waveCandidates.length);
-
-    // ── Server-side pre-screen ──
-    // Ask the API which candidates satisfy the expression before the browser
-    // spends a document download on each one. The server runs the SAME matcher
-    // over the SAME cached text, so a validated non-match is exactly the verdict
-    // the loop below would have reached — it just costs no bytes to reach it.
-    //
-    // This is why it raises recall rather than merely saving bandwidth: rejects
-    // never touch docAttempts, so the 120-document budget stops being spent on
-    // filings that were only ever going to be discarded.
-    //
-    // Two invariants keep it a strict optimisation: an unvalidated verdict is
-    // NOT a non-match and falls through to the local path unchanged, and any
-    // failure — offline, 4xx, slow — skips the pre-screen entirely.
-    // The server pre-screen evaluates the expression over the WHOLE document.
-    // Under an Item scope that verdict is not transferable: a NOT operand can
-    // fail on the full text yet hold inside the section, so a full-text
-    // non-match must not reject a section-scoped candidate.
-    if (mode === 'boolean' && needsTextFiltering && parsedBooleanQuery.expression && waveCandidates.length > 0 && !(filters.sectionScope || '').trim()) {
-      const prescreenKey = (cik: string, accession: string, document: string) =>
-        `${cik}:${accession.replace(/-/g, '')}:${document}`;
-      const rejectedByServer = new Set<string>();
-
-      for (
-        let cursor = 0;
-        cursor < Math.min(waveCandidates.length, PRESCREEN_MAX_PER_WAVE) && !signal?.aborted;
-        cursor += PRESCREEN_CHUNK
-      ) {
-        // Never spend the wave budget the pre-screen exists to protect: stop
-        // once the remaining time is worth more as fetches than as verdicts.
-        const remainingWaveMs = maxWaveTimeMs - (Date.now() - waveStartTime);
-        if (remainingWaveMs < PRESCREEN_MIN_WAVE_RESERVE) break;
-
-        const verdicts = await prescreenBooleanCandidates(
-          query,
-          waveCandidates.slice(cursor, cursor + PRESCREEN_CHUNK).map(result => ({
-            cik: result.cik,
-            accession: result.accessionNumber.replace(/-/g, ''),
-            document: result.primaryDocument,
-          })),
-          { signal, timeoutMs: Math.min(20_000, remainingWaveMs - PRESCREEN_MIN_WAVE_RESERVE + 5_000) }
-        );
-        // No verdicts means the pre-screen is unavailable; behave as if it never existed.
-        if (!verdicts) break;
-
-        for (const verdict of verdicts) {
-          if (verdict.validated && !verdict.matched) {
-            rejectedByServer.add(prescreenKey(verdict.cik, verdict.accession, verdict.document));
-          }
-        }
-      }
-
-      if (rejectedByServer.size > 0) {
-        const beforePrescreen = waveCandidates.length;
-        waveCandidates = waveCandidates.filter(
-          result => !rejectedByServer.has(prescreenKey(result.cik, result.accessionNumber, result.primaryDocument))
-        );
-        // Server-rejected candidates were genuinely examined — coverage counts
-        // them, the document budget does not.
-        validationExamined += beforePrescreen - waveCandidates.length;
-        ledger.examined += beforePrescreen - waveCandidates.length;
-      }
-    }
-
-    // Validate each candidate in this wave (fetch text, check auditor/boolean/section).
-    // A required OR branch keeps its validation allowance even after earlier
-    // branches filled the visible rows — otherwise a saturated broad branch
-    // records the rare branch as "requested" while none of its exclusive
-    // candidates can ever enter the result set (readiness finding F-06). The
-    // doc-attempt and wall-clock budgets still bound the extra work.
-    const isRequiredBooleanBranch = mode === 'boolean' && queryIndex < requiredBooleanBranches;
-    for (
-      let index = 0;
-      index < waveCandidates.length &&
-      (filteredResults.length < displayLimit || isRequiredBooleanBranch) &&
-      Date.now() - waveStartTime < branchTimeCapMs;
-      index += batchSize
-    ) {
-      // Stop at this lane's fair-share cap, not only the global cap: the
-      // difference is reserved for later required branches. Hitting the
-      // fair-share cap ends THIS lane but lets the loop continue.
-      if (docAttempts >= branchDocCap) {
-        if (branchDocCap >= MAX_DOC_ATTEMPTS) budgetExhausted = true;
-        else branchDocBudgetTruncated = true;
-        ledger.incompleteReason = 'doc-budget';
-        break;
-      }
-      if (signal?.aborted) break;
-      const chunk = waveCandidates.slice(index, Math.min(index + batchSize, waveCandidates.length));
-
-      // Only open documents when something actually reads them. A delegated
-      // phrase is already proved by EDGAR's index over the whole filing, so
-      // fetching each one confirms nothing and spends the budget that caps
-      // recall — this loop used to hydrate whenever the CALLER asked for
-      // signals, which every Boolean run does (that was the 110-filing recall
-      // ceiling).
-      if (hydratePerDocumentSignals) {
-        await Promise.all(
-          chunk.map(async result => {
-            const signalData = await hydrateResultSignals(result, signal);
-            signalMap.set(getSignalCacheKey(result), signalData);
-          })
-        );
-        docAttempts += chunk.length;
-      }
-      // Resolve the authoritative auditor of record before the auditor filter
-      // runs, so the firm the filter matches on is the one that gets displayed.
-      if (filters.accountant.trim()) await hydrateRegisteredAuditors(chunk);
-      validationExamined += chunk.length;
-      ledger.examined += chunk.length;
-
-      for (const result of chunk) {
-        const filingText = signalMap.get(getSignalCacheKey(result))?.text || '';
-        // "Item 1A contains X" / "risk factors contains X": the expression
-        // and section keywords are evaluated INSIDE the named section's
-        // slice. Concept names resolve through the cross-form taxonomy using
-        // THIS candidate's form — Risk Factors is Item 1A on a 10-K but
-        // Part II Item 1A on a 10-Q. A filing without the section (or a form
-        // the concept is not mapped for) yields an empty slice and never
-        // matches — scoping must never silently widen back to the whole
-        // document or slice at a guessed location.
-        const sectionScope = (filters.sectionScope || '').trim();
-        let scopedText = filingText;
-        if (sectionScope && filingText) {
-          const resolved = resolveSectionScope(sectionScope, result.formType);
-          scopedText = resolved ? extractResolvedSection(filingText, resolved) : '';
-        }
-
-        if (needsTextFiltering && mode === 'boolean' && parsedBooleanQuery.expression) {
-          if (!filingText) {
-            // Distinguish "couldn't fetch the text" from "fetched, didn't match"
-            // so the former can be reported rather than silently dropped.
-            unvalidatedFetchFailures += 1;
-            const kind = signalMap.get(getSignalCacheKey(result))?.failure;
-            if (kind) fetchFailureKinds.set(kind, (fetchFailureKinds.get(kind) ?? 0) + 1);
-            continue;
-          }
-          if (!scopedText || !booleanQueryMatches(query, scopedText)) continue;
-        }
-
-        if (needsTextFiltering && !matchesSignalFilters(result, filters, filingText, scopedText)) continue;
-
-        // With a delegated phrase there is no fetched text to snippet from —
-        // the match was proved upstream, and the label must say so. A scoped
-        // match snippets from the section slice, so the excerpt (and its
-        // breadcrumb) come from where the match actually was allowed to live.
-        filteredResults.push(
-          annotateResultMatchContext(result, query, filters, mode, scopedText, delegatedToEfts)
-        );
-      }
-
-      if (progressCallback && filteredResults.length >= lastProgressCount + progressInterval) {
-        lastProgressCount = filteredResults.length;
-        progressCallback(sortResearchResults([...filteredResults], preferRelevance).slice(0, displayLimit));
-      }
-
-      // Pacing exists to protect /api/sec-proxy from fetch bursts. A wave that
-      // opened no documents has nothing to pace — sleeping 150ms per 4
-      // candidates would add ~19s of idle time to a 500-candidate delegated run.
-      if (hydratePerDocumentSignals && index + batchSize < waveCandidates.length && filteredResults.length < displayLimit) {
-        await delay(150);
-      }
-    }
-
-    // Finalize this lane's ledger before moving on.
-    ledger.matched = filteredResults.length - branchResultStart;
-    if (!ledger.incompleteReason) {
-      if (signal?.aborted) {
-        ledger.incompleteReason = 'cancelled';
-      } else if (ledger.examined < ledger.candidatesNew) {
-        ledger.incompleteReason = Date.now() - waveStartTime >= branchTimeCapMs ? 'deadline' : 'display-limit';
-      }
-    }
-    ledger.exhausted = !ledger.incompleteReason && ledger.examined >= ledger.candidatesNew && ledger.collectionComplete !== false;
-
-    if (Date.now() - waveStartTime >= maxWaveTimeMs && validationExamined < hitMap.size) {
-      validationTimedOut = true;
+    if (Date.now() - waveStartTime >= maxWaveTimeMs && run.validationExamined < hitMap.size) {
+      run.validationTimedOut = true;
       break;
     }
-    if (budgetExhausted) break;
+    if (run.budgetExhausted) break;
 
-    completedQueryVariants += 1;
+    run.completedQueryVariants += 1;
 
     if (mode === 'boolean' && queryIndex + 1 < filteredServerQueries.length) await delay(120);
   }
 
   // A lane truncated at its fair-share cap means the run is partial for the
   // same reason a global cap does — the budget, not the corpus, ended it.
-  if (branchDocBudgetTruncated) budgetExhausted = true;
+  if (run.branchDocBudgetTruncated) run.budgetExhausted = true;
 
   if (filteredResults.length === 0 && lastSearchError) throw lastSearchError;
 
@@ -1962,13 +1782,13 @@ export async function executeFilingResearchSearch({
   const finalized = finalizeRunCoverage({
     upstreamCoverage: upstreamCoverageState.value,
     collectedCandidates: hitMap.size,
-    validationExamined,
-    validationTimedOut,
-    budgetExhausted,
+    validationExamined: run.validationExamined,
+    validationTimedOut: run.validationTimedOut,
+    budgetExhausted: run.budgetExhausted,
     aborted: Boolean(signal?.aborted),
-    unvalidatedFetchFailures,
+    unvalidatedFetchFailures: run.unvalidatedFetchFailures,
     fetchFailureKinds,
-    completedQueryVariants,
+    completedQueryVariants: run.completedQueryVariants,
     totalQueryVariants: waveQueryVariants.length,
     branchLedgers,
     maxPageRequests: MAX_PAGE_REQUESTS,
@@ -2001,6 +1821,362 @@ export function rankAndLimitResults(
 ): FilingResearchResult[] {
   const rolledUp = options.rollUpExhibits ? rollUpExhibitMatches(results) : results;
   return sortResearchResults(rolledUp, options.preferRelevance).slice(0, Math.max(options.displayLimit, 0));
+}
+
+/**
+ * Shared mutable counters of one wave run. Boxed so the collect/validate
+ * stages can advance them; everything else in the context is read-only or a
+ * reference type.
+ */
+interface WaveRunState {
+  pageRequests: number;
+  docAttempts: number;
+  validationExamined: number;
+  unvalidatedFetchFailures: number;
+  completedQueryVariants: number;
+  lastProgressCount: number;
+  budgetExhausted: boolean;
+  validationTimedOut: boolean;
+  branchDocBudgetTruncated: boolean;
+}
+
+/** Everything the wave stages need, injected once per run (WP7). */
+interface WaveStageContext {
+  run: WaveRunState;
+  hitMap: Map<string, { hit: EdgarSearchHit; queryPriority: number; score: number }>;
+  signalMap: Map<string, FilingSignal>;
+  filteredResults: FilingResearchResult[];
+  fetchFailureKinds: Map<string, number>;
+  query: string;
+  filters: SearchFilters;
+  mode: ResearchSearchMode;
+  formTypes: string;
+  formScope: ReturnType<typeof parseFormScope>;
+  excludeExhibits: boolean;
+  needsCompanyMetadata: boolean;
+  needsTextFiltering: boolean;
+  booleanExpression: BooleanSearchNode | null;
+  delegatedToEfts: boolean;
+  hydratePerDocumentSignals: boolean;
+  useEnrichedSearch: boolean;
+  includeExhibits: boolean;
+  entityCik: string;
+  preferRelevance: boolean;
+  displayLimit: number;
+  wavePerQueryLimit: number;
+  totalServerQueries: number;
+  batchSize: number;
+  progressInterval: number;
+  waveStartTime: number;
+  maxWaveTimeMs: number;
+  MAX_PAGE_REQUESTS: number;
+  MAX_DOC_ATTEMPTS: number;
+  PAGE_RESERVE_PER_BRANCH: number;
+  PRESCREEN_CHUNK: number;
+  PRESCREEN_MAX_PER_WAVE: number;
+  PRESCREEN_MIN_WAVE_RESERVE: number;
+  signal?: AbortSignal;
+  onDegraded?: (message: string) => void;
+  progressCallback?: (results: FilingResearchResult[]) => void;
+  captureUpstreamCoverage: (coverage: SearchCandidateCoverage) => void;
+}
+
+interface WaveLane {
+  candidateQuery: string;
+  queryIndex: number;
+  laterRequiredBranches: number;
+  ledger: BranchCoverageEntry;
+}
+
+/**
+ * Candidate collection for one retrieval lane (WP7 stage: collectCandidates).
+ * Pages EDGAR within the lane's fair-share reserve, dedups against the run's
+ * hit map while recording branch attribution FIRST, hydrates metadata, and
+ * applies the deterministic base filters. Returns 'error' for the
+ * orchestrator to record (non-boolean callers rethrow there), 'empty' when
+ * the lane surfaced nothing new, else the wave candidates for validation.
+ */
+async function collectLaneCandidates(
+  context: WaveStageContext,
+  lane: WaveLane
+): Promise<
+  | { status: 'error'; error: Error }
+  | { status: 'empty' }
+  | { status: 'ok'; waveCandidates: FilingResearchResult[] }
+> {
+  const {
+    run, hitMap, filters, mode, formTypes, formScope, excludeExhibits, needsCompanyMetadata,
+    useEnrichedSearch, includeExhibits, entityCik, wavePerQueryLimit, totalServerQueries,
+    MAX_PAGE_REQUESTS, PAGE_RESERVE_PER_BRANCH, signal, onDegraded, captureUpstreamCoverage,
+  } = context;
+  const { candidateQuery, queryIndex, laterRequiredBranches, ledger } = lane;
+
+  let queryBatchHits: EdgarSearchHit[];
+  try {
+    // The page budget counts ACTUAL upstream HTTP pages via onUpstreamPage —
+    // one searchEdgarFilings call may issue many EFTS pages (page size is
+    // ~10 hits), so counting calls understated real request volume by up to
+    // 50x (readiness finding F-07). The result cap is also clamped to the
+    // remaining page budget so a single call cannot blow through it.
+    // A lane may not page later required branches out of their reserve —
+    // but a required lane always keeps at least its own reserve.
+    let remainingPages = Math.max(0, MAX_PAGE_REQUESTS - run.pageRequests - laterRequiredBranches * PAGE_RESERVE_PER_BRANCH);
+    if (ledger.required) {
+      remainingPages = Math.max(remainingPages, Math.min(PAGE_RESERVE_PER_BRANCH, MAX_PAGE_REQUESTS - run.pageRequests));
+    }
+    queryBatchHits = await searchEdgarFilings(
+      candidateQuery,
+      formTypes,
+      filters.dateFrom || undefined,
+      filters.dateTo || undefined,
+      filters.entityName || undefined,
+      Math.min(wavePerQueryLimit, remainingPages * 10),
+      {
+        ...buildEnrichedSearchParams(filters, useEnrichedSearch && !includeExhibits, onDegraded, (coverage: SearchCandidateCoverage) => {
+          ledger.collectionComplete = coverage.complete;
+          captureUpstreamCoverage(coverage);
+        }),
+        entityCik: entityCik || undefined,
+        onUpstreamPage: () => { run.pageRequests += 1; ledger.pages += 1; },
+        signal,
+      }
+    );
+  } catch (error) {
+    ledger.incompleteReason = 'error';
+    return { status: 'error', error: error instanceof Error ? error : new Error('EDGAR search failed') };
+  }
+
+  // Deduplicate against previously seen hits — but record what this lane
+  // surfaced FIRST, so branch attribution survives the dedup (a hit shared
+  // with an earlier lane still counts as surfaced by this one).
+  ledger.candidatesSurfaced = queryBatchHits.length;
+  const newHits: EdgarSearchHit[] = [];
+  for (const hit of queryBatchHits) {
+    if (!hitMap.has(hit._id)) {
+      hitMap.set(hit._id, { hit, queryPriority: totalServerQueries - queryIndex, score: hit._score });
+      newHits.push(hit);
+    }
+  }
+  ledger.candidatesNew = newHits.length;
+
+  if (newHits.length === 0) {
+    run.completedQueryVariants += 1;
+    ledger.exhausted = ledger.collectionComplete !== false;
+    if (mode === 'boolean') await delay(120);
+    return { status: 'empty' };
+  }
+
+  // Map, hydrate metadata, and filter this wave of candidates
+  let waveCandidates = uniqueById(newHits.map(mapSearchHit));
+  if (needsCompanyMetadata) waveCandidates = await hydrateCompanyMetadataBatch(waveCandidates);
+  waveCandidates = waveCandidates.filter(result => matchesBaseFilters(result, filters, formScope, excludeExhibits));
+  // Candidates rejected by deterministic metadata filters have still been
+  // examined for this validation pass.
+  run.validationExamined += Math.max(0, newHits.length - waveCandidates.length);
+  ledger.examined += Math.max(0, newHits.length - waveCandidates.length);
+
+  return { status: 'ok', waveCandidates };
+}
+
+/**
+ * Validation for one lane's collected candidates (WP7 stage:
+ * validateDocuments). Server pre-screen, per-chunk text hydration, section
+ * scoping, Boolean and signal filtering, result annotation, progress
+ * publication, and the lane's ledger finalization — bounded by the lane's
+ * fair-share document and time caps.
+ */
+async function validateLaneCandidates(
+  context: WaveStageContext,
+  lane: {
+    ledger: BranchCoverageEntry;
+    branchDocCap: number;
+    branchTimeCapMs: number;
+    isRequiredBooleanBranch: boolean;
+    branchResultStart: number;
+  },
+  waveCandidatesInput: FilingResearchResult[]
+): Promise<void> {
+  const {
+    run, signalMap, filteredResults, fetchFailureKinds, query, filters, mode, needsTextFiltering,
+    booleanExpression, delegatedToEfts, hydratePerDocumentSignals, preferRelevance, displayLimit,
+    batchSize, progressInterval, waveStartTime, maxWaveTimeMs, MAX_DOC_ATTEMPTS,
+    PRESCREEN_CHUNK, PRESCREEN_MAX_PER_WAVE, PRESCREEN_MIN_WAVE_RESERVE, signal, progressCallback,
+  } = context;
+  const { ledger, branchDocCap, branchTimeCapMs, isRequiredBooleanBranch, branchResultStart } = lane;
+  let waveCandidates = waveCandidatesInput;
+
+  // ── Server-side pre-screen ──
+  // Ask the API which candidates satisfy the expression before the browser
+  // spends a document download on each one. The server runs the SAME matcher
+  // over the SAME cached text, so a validated non-match is exactly the verdict
+  // the loop below would have reached — it just costs no bytes to reach it.
+  //
+  // This is why it raises recall rather than merely saving bandwidth: rejects
+  // never touch run.docAttempts, so the 120-document budget stops being spent on
+  // filings that were only ever going to be discarded.
+  //
+  // Two invariants keep it a strict optimisation: an unvalidated verdict is
+  // NOT a non-match and falls through to the local path unchanged, and any
+  // failure — offline, 4xx, slow — skips the pre-screen entirely.
+  // The server pre-screen evaluates the expression over the WHOLE document.
+  // Under an Item scope that verdict is not transferable: a NOT operand can
+  // fail on the full text yet hold inside the section, so a full-text
+  // non-match must not reject a section-scoped candidate.
+  if (mode === 'boolean' && needsTextFiltering && booleanExpression && waveCandidates.length > 0 && !(filters.sectionScope || '').trim()) {
+    const prescreenKey = (cik: string, accession: string, document: string) =>
+      `${cik}:${accession.replace(/-/g, '')}:${document}`;
+    const rejectedByServer = new Set<string>();
+
+    for (
+      let cursor = 0;
+      cursor < Math.min(waveCandidates.length, PRESCREEN_MAX_PER_WAVE) && !signal?.aborted;
+      cursor += PRESCREEN_CHUNK
+    ) {
+      // Never spend the wave budget the pre-screen exists to protect: stop
+      // once the remaining time is worth more as fetches than as verdicts.
+      const remainingWaveMs = maxWaveTimeMs - (Date.now() - waveStartTime);
+      if (remainingWaveMs < PRESCREEN_MIN_WAVE_RESERVE) break;
+
+      const verdicts = await prescreenBooleanCandidates(
+        query,
+        waveCandidates.slice(cursor, cursor + PRESCREEN_CHUNK).map(result => ({
+          cik: result.cik,
+          accession: result.accessionNumber.replace(/-/g, ''),
+          document: result.primaryDocument,
+        })),
+        { signal, timeoutMs: Math.min(20_000, remainingWaveMs - PRESCREEN_MIN_WAVE_RESERVE + 5_000) }
+      );
+      // No verdicts means the pre-screen is unavailable; behave as if it never existed.
+      if (!verdicts) break;
+
+      for (const verdict of verdicts) {
+        if (verdict.validated && !verdict.matched) {
+          rejectedByServer.add(prescreenKey(verdict.cik, verdict.accession, verdict.document));
+        }
+      }
+    }
+
+    if (rejectedByServer.size > 0) {
+      const beforePrescreen = waveCandidates.length;
+      waveCandidates = waveCandidates.filter(
+        result => !rejectedByServer.has(prescreenKey(result.cik, result.accessionNumber, result.primaryDocument))
+      );
+      // Server-rejected candidates were genuinely examined — coverage counts
+      // them, the document budget does not.
+      run.validationExamined += beforePrescreen - waveCandidates.length;
+      ledger.examined += beforePrescreen - waveCandidates.length;
+    }
+  }
+
+  // Validate each candidate in this wave (fetch text, check auditor/boolean/section).
+  // A required OR branch keeps its validation allowance even after earlier
+  // branches filled the visible rows — otherwise a saturated broad branch
+  // records the rare branch as "requested" while none of its exclusive
+  // candidates can ever enter the result set (readiness finding F-06). The
+  // doc-attempt and wall-clock budgets still bound the extra work.
+  for (
+    let index = 0;
+    index < waveCandidates.length &&
+    (filteredResults.length < displayLimit || isRequiredBooleanBranch) &&
+    Date.now() - waveStartTime < branchTimeCapMs;
+    index += batchSize
+  ) {
+    // Stop at this lane's fair-share cap, not only the global cap: the
+    // difference is reserved for later required branches. Hitting the
+    // fair-share cap ends THIS lane but lets the loop continue.
+    if (run.docAttempts >= branchDocCap) {
+      if (branchDocCap >= MAX_DOC_ATTEMPTS) run.budgetExhausted = true;
+      else run.branchDocBudgetTruncated = true;
+      ledger.incompleteReason = 'doc-budget';
+      break;
+    }
+    if (signal?.aborted) break;
+    const chunk = waveCandidates.slice(index, Math.min(index + batchSize, waveCandidates.length));
+
+    // Only open documents when something actually reads them. A delegated
+    // phrase is already proved by EDGAR's index over the whole filing, so
+    // fetching each one confirms nothing and spends the budget that caps
+    // recall — this loop used to hydrate whenever the CALLER asked for
+    // signals, which every Boolean run does (that was the 110-filing recall
+    // ceiling).
+    if (hydratePerDocumentSignals) {
+      await Promise.all(
+        chunk.map(async result => {
+          const signalData = await hydrateResultSignals(result, signal);
+          signalMap.set(getSignalCacheKey(result), signalData);
+        })
+      );
+      run.docAttempts += chunk.length;
+    }
+    // Resolve the authoritative auditor of record before the auditor filter
+    // runs, so the firm the filter matches on is the one that gets displayed.
+    if (filters.accountant.trim()) await hydrateRegisteredAuditors(chunk);
+    run.validationExamined += chunk.length;
+    ledger.examined += chunk.length;
+
+    for (const result of chunk) {
+      const filingText = signalMap.get(getSignalCacheKey(result))?.text || '';
+      // "Item 1A contains X" / "risk factors contains X": the expression
+      // and section keywords are evaluated INSIDE the named section's
+      // slice. Concept names resolve through the cross-form taxonomy using
+      // THIS candidate's form — Risk Factors is Item 1A on a 10-K but
+      // Part II Item 1A on a 10-Q. A filing without the section (or a form
+      // the concept is not mapped for) yields an empty slice and never
+      // matches — scoping must never silently widen back to the whole
+      // document or slice at a guessed location.
+      const sectionScope = (filters.sectionScope || '').trim();
+      let scopedText = filingText;
+      if (sectionScope && filingText) {
+        const resolved = resolveSectionScope(sectionScope, result.formType);
+        scopedText = resolved ? extractResolvedSection(filingText, resolved) : '';
+      }
+
+      if (needsTextFiltering && mode === 'boolean' && booleanExpression) {
+        if (!filingText) {
+          // Distinguish "couldn't fetch the text" from "fetched, didn't match"
+          // so the former can be reported rather than silently dropped.
+          run.unvalidatedFetchFailures += 1;
+          const kind = signalMap.get(getSignalCacheKey(result))?.failure;
+          if (kind) fetchFailureKinds.set(kind, (fetchFailureKinds.get(kind) ?? 0) + 1);
+          continue;
+        }
+        if (!scopedText || !booleanQueryMatches(query, scopedText)) continue;
+      }
+
+      if (needsTextFiltering && !matchesSignalFilters(result, filters, filingText, scopedText)) continue;
+
+      // With a delegated phrase there is no fetched text to snippet from —
+      // the match was proved upstream, and the label must say so. A scoped
+      // match snippets from the section slice, so the excerpt (and its
+      // breadcrumb) come from where the match actually was allowed to live.
+      filteredResults.push(
+        annotateResultMatchContext(result, query, filters, mode, scopedText, delegatedToEfts)
+      );
+    }
+
+    if (progressCallback && filteredResults.length >= run.lastProgressCount + progressInterval) {
+      run.lastProgressCount = filteredResults.length;
+      progressCallback(sortResearchResults([...filteredResults], preferRelevance).slice(0, displayLimit));
+    }
+
+    // Pacing exists to protect /api/sec-proxy from fetch bursts. A wave that
+    // opened no documents has nothing to pace — sleeping 150ms per 4
+    // candidates would add ~19s of idle time to a 500-candidate delegated run.
+    if (hydratePerDocumentSignals && index + batchSize < waveCandidates.length && filteredResults.length < displayLimit) {
+      await delay(150);
+    }
+  }
+
+  // Finalize this lane's ledger before moving on.
+  ledger.matched = filteredResults.length - branchResultStart;
+  if (!ledger.incompleteReason) {
+    if (signal?.aborted) {
+      ledger.incompleteReason = 'cancelled';
+    } else if (ledger.examined < ledger.candidatesNew) {
+      ledger.incompleteReason = Date.now() - waveStartTime >= branchTimeCapMs ? 'deadline' : 'display-limit';
+    }
+  }
+  ledger.exhausted = !ledger.incompleteReason && ledger.examined >= ledger.candidatesNew && ledger.collectionComplete !== false;
 }
 
 /** Everything the executor needs that is derivable from the request alone. */
