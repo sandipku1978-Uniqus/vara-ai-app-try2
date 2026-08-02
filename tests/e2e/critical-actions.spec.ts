@@ -163,6 +163,14 @@ test.describe('critical action: the alert journey (save, then check on the Dashb
     // Save the alert. The confirmation copy renders in the collapsible rail
     // (layout-dependent), so the journey's proof is the Dashboard card below.
     await page.getByRole('button', { name: 'Save Alert' }).click();
+    // Persistence is an effect: a hard navigation can outrun the localStorage
+    // write on a slow runner (CI failed exactly here while local runs passed).
+    // Wait for the persisted evidence itself before leaving the page.
+    await page.waitForFunction(() =>
+      Object.keys(window.localStorage).some(key =>
+        (window.localStorage.getItem(key) || '').includes('mezzanine OR temporary')
+      )
+    );
 
     // The Dashboard lists the saved alert with its current-match count.
     await page.goto('/dashboard');
