@@ -70,6 +70,18 @@ jobs:
           done
           echo "Server did not become ready" >&2
           exit 1
+
+      - name: Probe the web read path before the sweep
+        # A present-but-invalid URC_SUPABASE_WEB_KEY passes the secrets guard,
+        # then 503s all 10,412 probes at ~750ms each (observed 2026-08-02, run
+        # 30772616107, 13 wasted minutes). One request settles it up front.
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:3111/api/es-search?cik=0000320193&size=1")
+          if [ "$code" != "200" ]; then
+            echo "::error title=Web read path is broken::/api/es-search returned HTTP $code for a known CIK. If 503, URC_SUPABASE_WEB_KEY is present but not a usable key (must be the sb_publishable_… key or the legacy anon JWT — check for clipboard/paste mishaps). The sweep would fail on every probe; aborting now instead."
+            exit 1
+          fi
+          echo "Web read path OK (HTTP $code)."
       - name: Full ticker coverage sweep (100% required)
         run: npx tsx scripts/ticker-coverage-test.ts --base http://localhost:3111 --out ticker-coverage-report.json
       - name: 1,000-point e2e performance suite
