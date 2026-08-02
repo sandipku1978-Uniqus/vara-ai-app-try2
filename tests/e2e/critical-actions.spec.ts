@@ -13,8 +13,24 @@ import { FILINGS, installBooleanFixtures } from './boolean-fixtures';
 
 const BOTH = FILINGS[2]; // 'Both Holdings Ltd' — matches mezzanine AND temporary
 
+/**
+ * Interactions made before Clerk finishes loading are RESET when it does:
+ * the storage scope flips from null and per-identity state re-hydrates
+ * (AppState writes the settled scope to <html data-urc-identity-scope>).
+ * Every journey waits for that flip before touching the page — a fast CI
+ * runner otherwise types into an app that is about to forget everything.
+ */
+async function waitForIdentity(page: Page) {
+  await page.waitForFunction(
+    () => Boolean(document.documentElement.dataset.urcIdentityScope),
+    undefined,
+    { timeout: 30_000 }
+  );
+}
+
 async function runBooleanQuery(page: Page, query: string) {
   await page.goto('/search', { waitUntil: 'domcontentloaded' });
+  await waitForIdentity(page);
   // Same hydration-race guard as boolean-search.spec.ts: re-click the mode
   // toggle until the Boolean input actually exists.
   const input = page.getByRole('combobox', { name: 'Boolean search query' });
@@ -75,6 +91,7 @@ test.describe('critical action: open a filing from research results', () => {
     await installBooleanFixtures(page);
     await installFilingDetailFixtures(page);
     await page.goto(`/filing/${Number(BOTH.cik)}_${BOTH.accession}_${BOTH.document}`);
+    await waitForIdentity(page);
 
     const sourceLink = page.getByRole('link', { name: 'Open filing on SEC.gov' });
     await expect(sourceLink).toBeVisible({ timeout: 20_000 });
@@ -122,6 +139,7 @@ test.describe('critical action: comment-letter search', () => {
     });
 
     await page.goto('/comment-letters');
+    await waitForIdentity(page);
     const input = page.getByLabel('Search inside SEC comment letters');
     await input.fill('revenue recognition');
     await input.press('Enter');
@@ -140,10 +158,140 @@ test.describe('critical action: comment-letter search', () => {
     });
 
     await page.goto('/comment-letters');
+    await waitForIdentity(page);
     const input = page.getByLabel('Search inside SEC comment letters');
     await input.fill('revenue recognition');
     await input.press('Enter');
 
     await expect(page.getByText(/not authoritative/i).first()).toBeVisible({ timeout: 20_000 });
+  });
+});
+
+test.describe('critical action: the alert journey (save, then check on the Dashboard)', () => {
+  test('research-workbench.save-alert and dashboard.check-saved-alert round-trip', async ({ page }) => {
+    const stats = await installBooleanFixtures(page);
+    // The Dashboard check validates documents through /api/filing-text —
+    // unstubbed, that reaches real SEC and the poll below races a network
+    // round-trip per candidate.
+    await installFilingDetailFixtures(page);
+    await runBooleanQuery(page, 'mezzanine OR temporary');
+    await expect(page.getByText(BOTH.company).first()).toBeVisible({ timeout: 30_000 });
+
+    // A completed search collapses the query panel; Save Alert lives in the
+    // expanded branch, so reopen it first.
+    const expand = page.getByRole('button', { name: 'Expand', exact: true });
+    if (await expand.isVisible().catch(() => false)) {
+      await expand.click();
+    }
+    // Save the alert. The confirmation copy renders in the collapsible rail
+    // (layout-dependent), so the journey's proof is the Dashboard card below.
+    await page.getByRole('button', { name: 'Save Alert' }).click();
+
+    // Identity settled before the save (waitForIdentity), so the alert
+    // persists to the scoped key; a hard navigation now proves durability.
+    await page.waitForFunction(() =>
+      Object.keys(window.localStorage).some(key =>
+        (window.localStorage.getItem(key) || '').includes('mezzanine OR temporary')
+      )
+    );
+    await page.goto('/dashboard');
+    await waitForIdentity(page);
+    await expect(page.getByText('mezzanine OR temporary').first()).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText(/\d+ current match(es)? in scope/).first()).toBeVisible();
+
+    // Check Now reruns the saved search (through the same fixtures) and lands
+    // back on a truthful, non-error status line.
+    const queriesBeforeCheck = stats.eftsQueries.length;
+    await page.getByRole('button', { name: 'Check Now' }).click();
+    // The status line never disappears (it shows the saved count), so the
+    // proof that Check Now re-ran retrieval is the fixture request counter —
+    // polled, because the check is asynchronous.
+    await expect
+      .poll(() => stats.eftsQueries.length, { timeout: 30_000 })
+      .toBeGreaterThan(queriesBeforeCheck);
+    await expect(page.getByText(/current matches in scope|new filings? detected/).first()).toBeVisible();
+  });
+});
+
+test.describe('critical action: comment-letter AI summary generation', () => {
+  const THREAD_ID = 'thread-letterhaven-1';
+  const LETTER_ROW = {
+    accession: '0000000900-26-000900',
+    cik: 900,
+    company_name: 'Letterhaven Industries',
+    form: 'UPLOAD',
+    date_filed: '2026-03-04',
+    thread_id: THREAD_ID,
+    filename: 'letter1.txt',
+    headline: 'The Staff challenged revenue recognition.',
+    rank: 0.9,
+  };
+  const SUMMARY_TEXT = 'The Staff challenged principal-agent revenue recognition; resolved after two response rounds.';
+
+  test('comment-letters.generate-summary POSTs only on explicit click and renders labeled output', async ({ page }) => {
+    let generatePosts = 0;
+    await page.route('**/api/letters/summary**', async (route: Route) => {
+      if (route.request().method() === 'POST') {
+        generatePosts += 1;
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ thread: THREAD_ID, summary: SUMMARY_TEXT, model: 'claude-sonnet-5', generatedAt: '2026-08-01T12:00:00Z', coverage: null, cached: false }),
+        });
+        return;
+      }
+      await route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ error: 'none' }) });
+    });
+    await page.route('**/api/letters**', async (route: Route) => {
+      if (route.request().url().includes('/api/letters/summary')) return route.fallback();
+      const url = new URL(route.request().url());
+      if (url.searchParams.get('thread')) {
+        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ thread: THREAD_ID, letters: [LETTER_ROW] }) });
+        return;
+      }
+      if (url.searchParams.get('q')) {
+        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ total: 1, matches: [LETTER_ROW] }) });
+        return;
+      }
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ total: 0, threads: [] }) });
+    });
+
+    const searchInput = page.getByLabel('Search inside SEC comment letters');
+    const generateButton = page.getByRole('button', { name: 'Generate AI summary' });
+    const summaryOutput = page.getByText(SUMMARY_TEXT);
+
+    const searchAndExpand = async () => {
+      await searchInput.fill('revenue recognition');
+      await searchInput.press('Enter');
+      await expect(page.getByText(LETTER_ROW.company_name).first()).toBeVisible({ timeout: 10_000 });
+      await page.getByRole('button', { name: 'View conversation' }).click();
+    };
+
+    await page.goto('/comment-letters');
+    await waitForIdentity(page);
+    await searchAndExpand();
+
+    // The contract's first half: expanding a thread checks the cache with GET
+    // but never consumes AI capacity — no POST before an explicit click.
+    await expect(generateButton).toBeVisible({ timeout: 20_000 });
+    expect(generatePosts, 'expanding a thread must not consume AI capacity').toBe(0);
+
+    // Second half: an explicit click generates and renders labeled output.
+    // The app shell can remount once mid-test (observed under long suite runs
+    // with the Clerk dev instance; instrumentation showed NO page navigation),
+    // which resets this view to its pristine state. The archetype tolerates
+    // one remount by redoing search/expand — the contract being proven is
+    // explicit-POST-and-render, not shell stability.
+    await expect(async () => {
+      if (await summaryOutput.isVisible().catch(() => false)) return;
+      if (!(await generateButton.isVisible().catch(() => false))) {
+        await searchAndExpand();
+      }
+      await generateButton.click({ timeout: 3_000 });
+      await expect(summaryOutput).toBeVisible({ timeout: 5_000 });
+    }).toPass({ timeout: 45_000 });
+
+    await expect(page.getByText(/AI-generated/).first()).toBeVisible();
+    expect(generatePosts).toBeGreaterThanOrEqual(1);
   });
 });
