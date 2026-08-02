@@ -40,6 +40,14 @@ updates:
       # this entry -- minor/patch eslint updates still flow through today.
       - dependency-name: "eslint"
         update-types: ["version-update:semver-major"]
+      # @types/node must track the Node runtime CI actually uses (20 for the
+      # main jobs, 22 for the accuracy gate), not npm's latest. Dependabot
+      # proposed 26.x (#67, 2026-08-02), which types APIs the runners don't
+      # have and misses deprecations they enforce.
+      # UNBLOCK WHEN: the workflows' setup-node versions move to a new major —
+      # bump @types/node to that major in the same PR and delete this entry.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
