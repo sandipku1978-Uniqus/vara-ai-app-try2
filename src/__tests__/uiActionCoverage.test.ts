@@ -79,7 +79,7 @@ describe('UI action coverage traceability', () => {
     const automated = Object.values(UI_ACTION_COVERAGE).filter(evidence => evidence.kind === 'automated').length;
     // Raise this floor as archetype tests land; lowering it means coverage
     // regressed and must fail loudly.
-    expect(automated).toBeGreaterThanOrEqual(18);
+    expect(automated).toBeGreaterThanOrEqual(22);
     expect(allActionIds.length).toBe(Object.keys(UI_ACTION_COVERAGE).length);
   });
 });

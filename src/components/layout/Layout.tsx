@@ -41,6 +41,9 @@ function SidebarNavItem({
       href={to}
       title={isSidebarCollapsed ? label : undefined}
       aria-label={label}
+      // The `active` class paints the current destination; aria-current is what
+      // actually reports it. Without it the highlight exists only in pixels.
+      aria-current={isActive ? 'page' : undefined}
       className={`nav-item ${isActive ? 'active' : ''}`}
       onClick={onNavigate}
     >
@@ -323,7 +326,12 @@ function Breadcrumbs() {
           {crumb.href ? (
             <Link href={crumb.href} style={{ color: 'var(--text-secondary)', textDecoration: 'none' }}>{crumb.label}</Link>
           ) : (
-            <span style={{ color: index === trail.length - 1 ? 'var(--text-primary)' : undefined, fontWeight: index === trail.length - 1 ? 600 : 400 }}>
+            // Weight and colour say "you are here" to the eye; aria-current says
+            // it to everyone else.
+            <span
+              aria-current={index === trail.length - 1 ? 'page' : undefined}
+              style={{ color: index === trail.length - 1 ? 'var(--text-primary)' : undefined, fontWeight: index === trail.length - 1 ? 600 : 400 }}
+            >
               {crumb.label}
             </span>
           )}
