@@ -104,3 +104,59 @@ test.describe('critical action: global.authentication', () => {
     await expect(page).not.toHaveURL(new RegExp(`${PROTECTED_ROUTE}$`));
   });
 });
+
+/**
+ * These two live here rather than with the other support-center coverage for
+ * one reason: both contracts end in "requesting sign-in if required", and that
+ * clause is unobservable in the main suite because its webServer bypasses
+ * auth. This harness is the only place the requirement is real.
+ */
+test.describe('support-center routes that require sign-in', () => {
+  test('support-center.open-summary-route opens the product route, not a documentation placeholder', async ({ page }) => {
+    await setupClerkTestingToken({ page });
+    await page.goto('/support', { waitUntil: 'domcontentloaded' });
+
+    const card = page.getByRole('button', { name: /Benchmark peers/i });
+    await expect(card).toBeVisible({ timeout: 20_000 });
+    await card.click();
+
+    // /compare is protected, so a signed-out visitor is sent to sign in — but
+    // carrying /compare, which is what makes this "the corresponding working
+    // product route" rather than a documentation page.
+    await expect(page).not.toHaveURL(/\/support$/);
+    const target = new URL(page.url());
+    const carried = target.searchParams.get('redirect_url') || target.pathname;
+    expect(carried, `expected /compare to be the destination, got ${page.url()}`).toContain('/compare');
+  });
+
+  test('support-center.open-feature-route opens the exact route named by the link', async ({ page }) => {
+    await setupClerkTestingToken({ page });
+    await page.goto('/support', { waitUntil: 'domcontentloaded' });
+
+    const link = page.locator('a.platform-link').first();
+    await expect(link).toBeVisible({ timeout: 20_000 });
+    const href = (await link.getAttribute('href')) || '';
+    expect(href, 'the feature link must name a route').toMatch(/^\//);
+    await link.click();
+
+    // Wait for the navigation to actually settle before reading the URL.
+    // These links call router.push() from an onClick handler, so the address
+    // does not change synchronously with the click — reading page.url()
+    // immediately races the client-side navigation and sees /support.
+    await expect(page).not.toHaveURL(/\/support$/, { timeout: 20_000 });
+
+    // "The EXACT product route described by the link": a link that sends the
+    // reader somewhere adjacent is the failure this catches.
+    const landed = new URL(page.url());
+    const carried = landed.searchParams.get('redirect_url') || landed.pathname;
+    expect(carried, `link said ${href} but landed on ${page.url()}`).toContain(href);
+  });
+});
+
+/**
+ * STILL DEFERRED, with reasons: design-gallery.review-component-states and
+ * exercise-static-controls are left untouched on purpose. "Inspect components"
+ * is arguably not an action at all, but exercise-static-controls also asserts
+ * that PRODUCTION VISITORS CANNOT REACH the internal gallery — a real exposure
+ * claim that deserves its own test rather than being narrowed away in passing.
+ */

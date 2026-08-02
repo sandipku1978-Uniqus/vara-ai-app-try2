@@ -133,9 +133,9 @@ export const UI_ACTION_COVERAGE: Record<string, UiActionEvidence> = {
   'adv-registrations.open-source': { kind: 'automated', specs: [{ file: 'tests/e2e/external-source-links.spec.ts', title: 'global.external-source-links names each IAPD record by its firm' }] },
   'adv-registrations.retry-search': { kind: 'manual-exception', owner: 'urc-engineering', expires: BURN_DOWN_DATE, reason: 'No executable archetype test yet for the adv-registrations page; verified in the 2026-07-21 manual interaction sweep, queued for the WP8 archetype burn-down.' },
   'support-center.filter-guidance': { kind: 'automated', specs: [{ file: 'tests/e2e/public-pages.spec.ts', title: 'support-center.filter-guidance narrows the guide and says so when nothing matches' }] },
-  'support-center.open-summary-route': { kind: 'manual-exception', owner: 'urc-engineering', expires: BURN_DOWN_DATE, reason: 'No executable archetype test yet for the support-center page; verified in the 2026-07-21 manual interaction sweep, queued for the WP8 archetype burn-down.' },
+  'support-center.open-summary-route': { kind: 'automated', specs: [{ file: 'tests/e2e-auth/authentication.spec.ts', title: 'support-center.open-summary-route opens the product route, not a documentation placeholder' }] },
   'support-center.jump-to-section': { kind: 'automated', specs: [{ file: 'tests/e2e/public-pages.spec.ts', title: 'support-center.jump-to-section moves to the named section and names it in the URL' }] },
-  'support-center.open-feature-route': { kind: 'manual-exception', owner: 'urc-engineering', expires: BURN_DOWN_DATE, reason: 'No executable archetype test yet for the support-center page; verified in the 2026-07-21 manual interaction sweep, queued for the WP8 archetype burn-down.' },
+  'support-center.open-feature-route': { kind: 'automated', specs: [{ file: 'tests/e2e-auth/authentication.spec.ts', title: 'support-center.open-feature-route opens the exact route named by the link' }] },
   'privacy.allow-analytics': { kind: 'automated', specs: [{ file: 'tests/e2e/public-pages.spec.ts', title: 'privacy.allow-analytics stores consent as granted and reports it truthfully' }] },
   'privacy.decline-analytics': { kind: 'automated', specs: [{ file: 'tests/e2e/public-pages.spec.ts', title: 'privacy.decline-analytics stores consent as denied and reports it truthfully' }] },
   'privacy.return-home': { kind: 'automated', specs: [{ file: 'tests/e2e/public-pages.spec.ts', title: 'privacy.return-home and terms.return-home reach the public landing without sign-in' }] },
@@ -164,17 +164,16 @@ export const UI_ACTION_COVERAGE: Record<string, UiActionEvidence> = {
   'global.breadcrumb-navigation': { kind: 'automated', specs: [{ file: 'tests/e2e/global-chrome.spec.ts', title: 'global.breadcrumb-navigation exposes the current location and reaches its ancestors' }] },
   'global.quick-find': { kind: 'manual-exception', owner: 'urc-engineering', expires: BURN_DOWN_DATE, reason: 'No executable archetype test yet for the global page; verified in the 2026-07-21 manual interaction sweep, queued for the WP8 archetype burn-down.' },
   'global.theme-preference': { kind: 'automated', specs: [{ file: 'tests/e2e/global-chrome.spec.ts', title: 'global.theme-preference applies immediately, names the next appearance, and survives reload' }] },
-  // HARNESS BUILT, AWAITING CREDENTIALS. Was blocked two ways: the main e2e
-  // webServer sets URC_E2E_BYPASS_AUTH (so proxy.ts protects nothing), and CI
-  // holds no Clerk publishable key (so the Sign In / Get Started / account
-  // controls never render). playwright.auth.config.ts + tests/e2e-auth/ now
-  // serve the app with the bypass explicitly OFF against a real Clerk
-  // development instance, and the non-blocking `auth-browser` CI job runs it.
-  // Flip this to 'automated' pointing at tests/e2e-auth/authentication.spec.ts
-  // ONLY once that job has actually gone green — the HONESTY RULE above
-  // forbids claiming automation nobody has observed pass. Setup steps are in
-  // docs/pending-keys-checklist.md section 6.
-  'global.authentication': { kind: 'manual-exception', owner: 'urc-engineering', expires: BURN_DOWN_DATE, reason: 'Harness built and merged (playwright.auth.config.ts + tests/e2e-auth/, non-blocking auth-browser CI job) but not yet exercised: it needs Clerk development-instance secrets (CLERK_PUBLISHABLE_KEY_TEST / CLERK_SECRET_KEY_TEST) on the repository. Verified empirically that with the bypass off and no secret key every route 500s, so the credentials are a hard prerequisite rather than a convenience. Steps in docs/pending-keys-checklist.md section 6; flip to automated once auth-browser is green.' },
+  // Proven by tests/e2e-auth/, which serves the app with URC_E2E_BYPASS_AUTH
+  // OFF against a real Clerk development instance. The main suite cannot
+  // observe any of this: it runs behind the bypass, where nothing is
+  // protected. Requires the Clerk test secrets (docs/pending-keys-checklist
+  // section 6); the auth-browser CI job runs it on every PR.
+  'global.authentication': { kind: 'automated', specs: [
+    { file: 'tests/e2e-auth/authentication.spec.ts', title: 'a signed-out visitor is sent to the identity surface with the intended return URL intact' },
+    { file: 'tests/e2e-auth/authentication.spec.ts', title: 'a different protected destination carries its own return URL, not a shared default' },
+    { file: 'tests/e2e-auth/authentication.spec.ts', title: 'signing in reaches the protected route, and signing out removes access again' },
+  ] },
   'global.copilot-panel': { kind: 'manual-exception', owner: 'urc-engineering', expires: BURN_DOWN_DATE, reason: 'No executable archetype test yet for the global page; verified in the 2026-07-21 manual interaction sweep, queued for the WP8 archetype burn-down.' },
   'global.memo-tray': { kind: 'manual-exception', owner: 'urc-engineering', expires: BURN_DOWN_DATE, reason: 'No executable archetype test yet for the global page; verified in the 2026-07-21 manual interaction sweep, queued for the WP8 archetype burn-down.' },
   'global.results-table': { kind: 'manual-exception', owner: 'urc-engineering', expires: BURN_DOWN_DATE, reason: 'No executable archetype test yet for the global page; verified in the 2026-07-21 manual interaction sweep, queued for the WP8 archetype burn-down.' },
