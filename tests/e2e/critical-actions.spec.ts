@@ -13,8 +13,24 @@ import { FILINGS, installBooleanFixtures } from './boolean-fixtures';
 
 const BOTH = FILINGS[2]; // 'Both Holdings Ltd' — matches mezzanine AND temporary
 
+/**
+ * Interactions made before Clerk finishes loading are RESET when it does:
+ * the storage scope flips from null and per-identity state re-hydrates
+ * (AppState writes the settled scope to <html data-urc-identity-scope>).
+ * Every journey waits for that flip before touching the page — a fast CI
+ * runner otherwise types into an app that is about to forget everything.
+ */
+async function waitForIdentity(page: Page) {
+  await page.waitForFunction(
+    () => Boolean(document.documentElement.dataset.urcIdentityScope),
+    undefined,
+    { timeout: 30_000 }
+  );
+}
+
 async function runBooleanQuery(page: Page, query: string) {
   await page.goto('/search', { waitUntil: 'domcontentloaded' });
+  await waitForIdentity(page);
   // Same hydration-race guard as boolean-search.spec.ts: re-click the mode
   // toggle until the Boolean input actually exists.
   const input = page.getByRole('combobox', { name: 'Boolean search query' });
@@ -75,6 +91,7 @@ test.describe('critical action: open a filing from research results', () => {
     await installBooleanFixtures(page);
     await installFilingDetailFixtures(page);
     await page.goto(`/filing/${Number(BOTH.cik)}_${BOTH.accession}_${BOTH.document}`);
+    await waitForIdentity(page);
 
     const sourceLink = page.getByRole('link', { name: 'Open filing on SEC.gov' });
     await expect(sourceLink).toBeVisible({ timeout: 20_000 });
@@ -122,6 +139,7 @@ test.describe('critical action: comment-letter search', () => {
     });
 
     await page.goto('/comment-letters');
+    await waitForIdentity(page);
     const input = page.getByLabel('Search inside SEC comment letters');
     await input.fill('revenue recognition');
     await input.press('Enter');
@@ -140,6 +158,7 @@ test.describe('critical action: comment-letter search', () => {
     });
 
     await page.goto('/comment-letters');
+    await waitForIdentity(page);
     const input = page.getByLabel('Search inside SEC comment letters');
     await input.fill('revenue recognition');
     await input.press('Enter');
@@ -151,6 +170,10 @@ test.describe('critical action: comment-letter search', () => {
 test.describe('critical action: the alert journey (save, then check on the Dashboard)', () => {
   test('research-workbench.save-alert and dashboard.check-saved-alert round-trip', async ({ page }) => {
     const stats = await installBooleanFixtures(page);
+    // The Dashboard check validates documents through /api/filing-text —
+    // unstubbed, that reaches real SEC and the poll below races a network
+    // round-trip per candidate.
+    await installFilingDetailFixtures(page);
     await runBooleanQuery(page, 'mezzanine OR temporary');
     await expect(page.getByText(BOTH.company).first()).toBeVisible({ timeout: 30_000 });
 
@@ -163,17 +186,16 @@ test.describe('critical action: the alert journey (save, then check on the Dashb
     // Save the alert. The confirmation copy renders in the collapsible rail
     // (layout-dependent), so the journey's proof is the Dashboard card below.
     await page.getByRole('button', { name: 'Save Alert' }).click();
-    // Persistence is an effect: a hard navigation can outrun the localStorage
-    // write on a slow runner (CI failed exactly here while local runs passed).
-    // Wait for the persisted evidence itself before leaving the page.
+
+    // Identity settled before the save (waitForIdentity), so the alert
+    // persists to the scoped key; a hard navigation now proves durability.
     await page.waitForFunction(() =>
       Object.keys(window.localStorage).some(key =>
         (window.localStorage.getItem(key) || '').includes('mezzanine OR temporary')
       )
     );
-
-    // The Dashboard lists the saved alert with its current-match count.
     await page.goto('/dashboard');
+    await waitForIdentity(page);
     await expect(page.getByText('mezzanine OR temporary').first()).toBeVisible({ timeout: 20_000 });
     await expect(page.getByText(/\d+ current match(es)? in scope/).first()).toBeVisible();
 
@@ -181,8 +203,13 @@ test.describe('critical action: the alert journey (save, then check on the Dashb
     // back on a truthful, non-error status line.
     const queriesBeforeCheck = stats.eftsQueries.length;
     await page.getByRole('button', { name: 'Check Now' }).click();
-    await expect(page.getByText(/current matches in scope|new filings? detected/).first()).toBeVisible({ timeout: 30_000 });
-    expect(stats.eftsQueries.length, 'Check Now must actually re-run retrieval').toBeGreaterThan(queriesBeforeCheck);
+    // The status line never disappears (it shows the saved count), so the
+    // proof that Check Now re-ran retrieval is the fixture request counter —
+    // polled, because the check is asynchronous.
+    await expect
+      .poll(() => stats.eftsQueries.length, { timeout: 30_000 })
+      .toBeGreaterThan(queriesBeforeCheck);
+    await expect(page.getByText(/current matches in scope|new filings? detected/).first()).toBeVisible();
   });
 });
 
@@ -241,6 +268,7 @@ test.describe('critical action: comment-letter AI summary generation', () => {
     };
 
     await page.goto('/comment-letters');
+    await waitForIdentity(page);
     await searchAndExpand();
 
     // The contract's first half: expanding a thread checks the cache with GET

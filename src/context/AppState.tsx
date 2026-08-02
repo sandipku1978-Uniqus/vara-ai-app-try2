@@ -172,6 +172,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const { isLoaded: identityLoaded, userId, orgId } = useAuth();
   const storageScope = identityLoaded ? buildStorageScope(userId, orgId) : null;
   setActiveBrowserStorageScope(storageScope);
+  // Written to the DOM so automated journeys can wait for identity hydration
+  // before interacting: when Clerk finishes loading, this scope flips from
+  // null and per-identity state re-hydrates — interactions made before that
+  // flip are visibly reset, which reads as data loss in tests and to fast
+  // users alike.
+  useEffect(() => {
+    document.documentElement.dataset.urcIdentityScope = storageScope ?? '';
+  }, [storageScope]);
 
   const watchlistStorageKey = scopedStorageKey(WATCHLIST_STORAGE_KEY, storageScope);
   const alertsStorageKey = scopedStorageKey(ALERTS_STORAGE_KEY, storageScope);
