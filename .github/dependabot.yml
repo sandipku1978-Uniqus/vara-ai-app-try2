@@ -16,6 +16,30 @@ updates:
       minor-and-patch:
         applies-to: version-updates
         update-types: ["minor", "patch"]
+      # react and react-dom must move as a unit, and their @types with them.
+      # Ungrouped, dependabot proposed react-dom 19 while react stayed 18
+      # (#52): npm rejects that outright with ERESOLVE, because
+      # @types/react-dom@19 peer-requires @types/react@^19. A PR that can
+      # never go green is pure noise -- group them so a React 19 proposal at
+      # least installs and can be evaluated on its merits.
+      react:
+        applies-to: version-updates
+        patterns:
+          - "react"
+          - "react-dom"
+          - "@types/react"
+          - "@types/react-dom"
+    ignore:
+      # ESLint 10 removed the context.getFilename() API. eslint-config-next
+      # pulls eslint-plugin-react ^7.37.0, and 7.37.5 (the latest release)
+      # still calls it -- so `eslint .` dies loading react/display-name
+      # before it lints a single file (#51). eslint-plugin-react does not yet
+      # declare an ESLint 10 peer range at all.
+      # UNBLOCK WHEN: eslint-plugin-react ships a release whose peer range
+      # includes eslint 10 AND eslint-config-next depends on it. Then delete
+      # this entry -- minor/patch eslint updates still flow through today.
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: github-actions
     directory: "/"
     schedule:
