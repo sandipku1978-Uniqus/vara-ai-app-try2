@@ -23,5 +23,11 @@ export default defineConfig([
     'coverage/**',
     'node_modules/**',
     'next-env.d.ts',
+    // Claude Code worktrees are full checkouts (build output included) living
+    // under .claude/. The patterns above are root-relative, so they do not
+    // match the same directories one level down, and `npm run lint` fails with
+    // ENOENT on a worktree's build manifest whenever one exists. CI never sees
+    // this — it lints a fresh checkout — so it only ever breaks local runs.
+    '.claude/**',
   ]),
 ]);
