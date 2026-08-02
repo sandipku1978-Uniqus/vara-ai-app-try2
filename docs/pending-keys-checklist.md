@@ -83,3 +83,47 @@ budgets are enforced deployment-wide. Original rationale kept below.
   `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` / `CLERK_SECRET_KEY` (live keys) and
   `CLERK_RESEARCH_FEATURE` for entitlement gating; add legal copy + support
   contact (F-12) and the CSP report-only rollout (F-14) alongside.
+
+## 6. Clerk test credentials for the authentication e2e suite
+
+**Why**: `global.authentication` is the last critical action in the WP8
+coverage inventory still carrying a manual exception, and it is the root
+cause of two more (`support-center.open-summary-route` /
+`open-feature-route`, which both assert a route opens "requesting sign-in
+if required"). None of it is observable in the main Playwright suite,
+which runs behind `URC_E2E_BYPASS_AUTH` so that nothing is protected.
+
+The harness is already built and merged — `playwright.auth.config.ts`,
+`tests/e2e-auth/`, and the non-blocking `auth-browser` CI job. It skips
+with a notice until the secrets below exist, then runs on every PR.
+
+- **Do (1)**: in the Clerk dashboard, open the **development** instance
+  already in use (the same one issuing the `pk_test_…` key in
+  `.env.local`) and copy both keys from *API keys*.
+- **Do (2)**: add two GitHub repository secrets — Settings → Secrets and
+  variables → Actions:
+  - `CLERK_PUBLISHABLE_KEY_TEST` = `pk_test_…`
+  - `CLERK_SECRET_KEY_TEST` = `sk_test_…`
+- **Do (3), optional but recommended**: create one user in that instance
+  with a `+clerk_test` email — e.g. `urc-e2e+clerk_test@example.com` —
+  and add it as `CLERK_TEST_EMAIL`. This enables the sign-in/sign-out
+  round trip, which is the half of the contract that actually matters
+  (a sign-out that clears the chrome but leaves the session valid looks
+  correct to the user). Clerk's `+clerk_test` addresses need no real
+  inbox, and sign-in uses a backend-issued ticket, so **no password is
+  created, transmitted, or stored anywhere**.
+
+**Must be a development instance.** `@clerk/testing` refuses production
+secret keys by design, and testing tokens are a dev-instance feature.
+
+**To run locally**: put the same two values in `.env.local`
+(`CLERK_SECRET_KEY` is currently absent there) and run `npm run test:auth`.
+Without them the config fails fast with the exact variables it needs.
+
+**After the secrets land**: the `auth-browser` job goes from "skipped" to
+running. Once it is green, flip `global.authentication` in
+`src/__tests__/uiActionCoverage.ts` from `manual-exception` to
+`automated` pointing at `tests/e2e-auth/authentication.spec.ts`, and
+raise the ratchet floor. It is deliberately NOT flipped in advance —
+the coverage file's HONESTY RULE forbids claiming automation that has
+never been observed to pass.
