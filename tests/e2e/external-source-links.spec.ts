@@ -1,5 +1,6 @@
 import { expect, test, type Page, type Route } from '@playwright/test';
 import { FILINGS, installBooleanFixtures } from './boolean-fixtures';
+import { LITIGATION, NO_ACTION, RULEMAKING, installOfficialSourceFixtures } from './official-source-fixtures';
 
 /**
  * Critical-action archetype: global.external-source-links (WP8 burn-down).
@@ -54,6 +55,10 @@ async function collectExternalLinks(page: Page): Promise<ExternalLink[]> {
       .filter(a => {
         const href = a.getAttribute('href') || '';
         if (!/^https?:\/\//i.test(href)) return false;
+        // The Next.js dev-server badge injects its own nextjs.org anchor. It is
+        // absent from the production build CI runs (PW_PROD_BUILD), but it
+        // would otherwise fail these rules during local iteration.
+        if (/(^|\.)nextjs\.org$/i.test(new URL(href).hostname)) return false;
         try {
           return new URL(href).origin !== window.location.origin;
         } catch {
@@ -192,5 +197,30 @@ test.describe('critical action: external source links', () => {
     // Framework and policy sources are issued by many standard-setters, so the
     // host allowlist here is "an official https origin", not a single domain.
     assertSourceLinkContract(await collectExternalLinks(page), 'ESG research (frameworks)', /^https:\/\//);
+  });
+
+  /**
+   * The scraped-index surfaces. These parse real SEC HTML, so they need
+   * structure-faithful fixtures (see official-source-fixtures.ts) — a generic
+   * stub makes them render their honest "no parseable entries" failure state
+   * instead of rows, and the archetype would have nothing to check.
+   */
+  test('global.external-source-links names each scraped SEC index row by its document', async ({ page }) => {
+    await installOfficialSourceFixtures(page);
+
+    await page.goto('/regulation');
+    await waitForIdentity(page);
+    await expect(page.getByText(RULEMAKING[0].title).first()).toBeVisible({ timeout: 20_000 });
+    assertSourceLinkContract(await collectExternalLinks(page), 'securities regulation (SEC)', /sec\.gov/);
+
+    await page.goto('/no-action-letters');
+    await waitForIdentity(page);
+    await expect(page.getByText(NO_ACTION[0].title).first()).toBeVisible({ timeout: 20_000 });
+    assertSourceLinkContract(await collectExternalLinks(page), 'no-action letters (SEC)', /sec\.gov/);
+
+    await page.goto('/enforcement');
+    await waitForIdentity(page);
+    await expect(page.getByText(LITIGATION[0].title).first()).toBeVisible({ timeout: 20_000 });
+    assertSourceLinkContract(await collectExternalLinks(page), 'SEC enforcement (SEC)', /sec\.gov/);
   });
 });
