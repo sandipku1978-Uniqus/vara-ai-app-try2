@@ -185,7 +185,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen: boolean; on
   );
 }
 
-export function Navbar({ mobileNavOpen, onMobileNavToggle, menuButtonRef }: { mobileNavOpen: boolean; onMobileNavToggle: () => void; menuButtonRef: RefObject<HTMLButtonElement> }) {
+export function Navbar({ mobileNavOpen, onMobileNavToggle, menuButtonRef }: { mobileNavOpen: boolean; onMobileNavToggle: () => void; menuButtonRef: RefObject<HTMLButtonElement | null> }) {
   const location = usePathname();
   const isLanding = location === '/';
   const { setChatOpen, setCurrentPageContext, themeMode, toggleThemeMode } = useApp();
