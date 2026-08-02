@@ -1,6 +1,15 @@
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { defineConfig, devices } from '@playwright/test';
+import { config as loadEnv } from 'dotenv';
+
+// Next loads .env.local itself, but this config runs OUTSIDE Next, and both
+// the guard below and clerkSetup() read process.env directly. Without this,
+// `npm run test:auth` fails locally even when the keys are present, because
+// NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY only ever lived in the file. dotenv does
+// not overwrite variables that are already set, so CI's real environment
+// still wins.
+loadEnv({ path: '.env.local', quiet: true });
 
 /**
  * Authentication e2e — a SEPARATE harness from playwright.config.ts.
@@ -31,6 +40,7 @@ import { defineConfig, devices } from '@playwright/test';
 const localPort = Number(process.env.QA_AUTH_PORT || 4318);
 const baseURL = `http://127.0.0.1:${localPort}`;
 const artifactRoot = process.env.QA_OUTPUT_DIR || join(tmpdir(), 'urc-playwright-auth');
+const prodBuild = process.env.PW_PROD_BUILD === '1' || Boolean(process.env.CI);
 
 // Checked at CONFIG LOAD, before Playwright starts the web server. Without a
 // secret key the server 500s on every route, and Clerk's own "Missing
@@ -70,17 +80,32 @@ export default defineConfig({
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
-    command: `npx next dev --hostname 127.0.0.1 --port ${localPort}`,
+    // Production build in CI, dev server for local iteration.
+    //
+    // `next dev` DIES SILENTLY on a GitHub runner: the outer process starts,
+    // then every health check returns ECONNRESET ("Failed to proxy … socket
+    // hang up") with no Next banner and no error from the inner server, until
+    // the webServer timeout. The `browser` job never hit this because it has
+    // always built and run `next start`. Using the production build here also
+    // restores the WP8 principle that what CI proves is what users get.
+    command: prodBuild
+      ? `npm run build && npx next start --hostname 127.0.0.1 --port ${localPort}`
+      : `npx next dev --hostname 127.0.0.1 --port ${localPort}`,
     url: `${baseURL}/privacy`,
     reuseExistingServer: !process.env.CI,
-    timeout: 180_000,
+    timeout: prodBuild ? 420_000 : 180_000,
     env: {
       // Explicitly '0', not merely absent: .env.local sets this to '1', and
       // Next reads .env.local into process.env. Unsetting the shell variable
-      // is not enough to turn the bypass off.
+      // is not enough to turn the bypass off. This env applies to the BUILD
+      // as well as the server, which matters because the NEXT_PUBLIC_ flags
+      // are inlined at build time.
       URC_E2E_BYPASS_AUTH: '0',
       NEXT_PUBLIC_URC_E2E_BYPASS_AUTH: '0',
       NEXT_PUBLIC_SITE_URL: baseURL,
+      // `npm run build` pins NEXT_LOCAL_BUILD=1 (writes .next-build);
+      // `next start` must read the same distDir.
+      NEXT_LOCAL_BUILD: '1',
     },
   },
 });
