@@ -54,8 +54,14 @@ export default function SecRegulation() {
       header: 'Source',
       render: row => (
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-          <a href={row.url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-primary)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-            SEC.gov <ExternalLink size={12} />
+          <a
+            href={row.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`Open the official SEC ${row.type} "${row.title}" on SEC.gov`}
+            style={{ color: 'var(--accent-primary)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+          >
+            SEC.gov <ExternalLink size={12} aria-hidden="true" />
           </a>
           <AskCopilotButton compact prompt={`Analyze this official SEC ${row.type}: ${row.title}. Source: ${row.url}`} />
         </span>

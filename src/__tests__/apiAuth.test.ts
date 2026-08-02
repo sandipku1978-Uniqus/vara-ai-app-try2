@@ -10,7 +10,7 @@ vi.mock('@clerk/nextjs/server', () => ({
 }));
 
 import { requireApiAccess } from '../lib/api-auth';
-import { getClerkProductionConfigError } from '../lib/clerk-config';
+import { getClerkProductionConfigError, isLocalE2eBypass } from '../lib/clerk-config';
 import { config, isPublicPath } from '../proxy';
 import sitemap from '../app/sitemap';
 import robots from '../app/robots';
@@ -141,6 +141,34 @@ describe('protected API authorization matrix', () => {
     }
 
     expect(config.matcher).toEqual(['/((?!_next/static(?:/|$)|_next/image(?:/|$)).*)']);
+  });
+
+  /**
+   * isLocalE2eBypass gates FOUR security decisions — proxy.ts route
+   * protection, requireApiAccess, and two rate-limit paths — and each one
+   * opens fully when it returns true. The only thing keeping that switch out
+   * of a deployment is the VERCEL check, and nothing exercised it until now.
+   */
+  describe('the e2e authentication bypass', () => {
+    it('cannot activate on a Vercel deployment even if the flag is set', () => {
+      vi.stubEnv('VERCEL', '1');
+      vi.stubEnv('URC_E2E_BYPASS_AUTH', '1');
+      expect(isLocalE2eBypass()).toBe(false);
+    });
+
+    it('stays off locally unless the flag is exactly "1"', () => {
+      vi.stubEnv('VERCEL', '');
+      for (const value of ['', '0', 'true', 'yes', 'TRUE']) {
+        vi.stubEnv('URC_E2E_BYPASS_AUTH', value);
+        expect(isLocalE2eBypass(), `"${value}" must not enable the bypass`).toBe(false);
+      }
+    });
+
+    it('activates only for a local run that explicitly opts in', () => {
+      vi.stubEnv('VERCEL', '');
+      vi.stubEnv('URC_E2E_BYPASS_AUTH', '1');
+      expect(isLocalE2eBypass()).toBe(true);
+    });
   });
 
   it('advertises only public pages to crawlers', () => {

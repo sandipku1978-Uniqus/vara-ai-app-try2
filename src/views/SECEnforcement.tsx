@@ -63,7 +63,13 @@ export default function SECEnforcement() {
     {
       key: 'url', header: 'Link', render: (row) => (
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-          <a href={row.url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-primary)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+          <a
+            href={row.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`View SEC litigation release ${row.releaseNumber} (${row.title}) on SEC.gov`}
+            style={{ color: 'var(--accent-primary)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+          >
             View <ExternalLink size={12} aria-hidden="true" />
           </a>
           <AskCopilotButton compact prompt={`Analyze this SEC litigation release concerning a civil action: ${row.title} (Release ${row.releaseNumber}, dated ${row.date})`} />

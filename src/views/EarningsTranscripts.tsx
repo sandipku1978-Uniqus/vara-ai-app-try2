@@ -142,7 +142,13 @@ export default function EarningsTranscripts() {
       const url = `https://www.sec.gov/Archives/edgar/data/${row.cik}/${accNum}/${row.primaryDocument}`;
       return (
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <a href={url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--accent-primary)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>View <ExternalLink size={12} /></a>
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`View earnings-release exhibit ${row.documentType} attached to ${row.formType} from ${row.entityName}, filed ${row.fileDate}, on SEC.gov`}
+            style={{ color: 'var(--accent-primary)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+          >View <ExternalLink size={12} aria-hidden="true" /></a>
           <AskCopilotButton compact prompt={`Analyze earnings-release exhibit ${row.documentType} attached to ${row.formType} from ${row.entityName}, filed ${row.fileDate}`} />
         </div>
       );

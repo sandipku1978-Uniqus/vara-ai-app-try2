@@ -164,13 +164,32 @@ export const UI_ACTION_COVERAGE: Record<string, UiActionEvidence> = {
   'global.breadcrumb-navigation': { kind: 'manual-exception', owner: 'urc-engineering', expires: BURN_DOWN_DATE, reason: 'No executable archetype test yet for the global page; verified in the 2026-07-21 manual interaction sweep, queued for the WP8 archetype burn-down.' },
   'global.quick-find': { kind: 'manual-exception', owner: 'urc-engineering', expires: BURN_DOWN_DATE, reason: 'No executable archetype test yet for the global page; verified in the 2026-07-21 manual interaction sweep, queued for the WP8 archetype burn-down.' },
   'global.theme-preference': { kind: 'manual-exception', owner: 'urc-engineering', expires: BURN_DOWN_DATE, reason: 'No executable archetype test yet for the global page; verified in the 2026-07-21 manual interaction sweep, queued for the WP8 archetype burn-down.' },
-  'global.authentication': { kind: 'manual-exception', owner: 'urc-engineering', expires: BURN_DOWN_DATE, reason: 'No executable archetype test yet for the global page; verified in the 2026-07-21 manual interaction sweep, queued for the WP8 archetype burn-down.' },
+  // BLOCKED, not merely unwritten — the Playwright harness cannot observe this
+  // action at all today, for two independent reasons:
+  //   1. playwright.config.ts sets URC_E2E_BYPASS_AUTH on its webServer, and
+  //      proxy.ts returns next() unconditionally under that flag, so no route
+  //      is protected and no redirect-with-return-URL ever happens.
+  //   2. CI holds no NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY (only the two Supabase
+  //      secrets), so clerkEnabled is false and Layout renders "Authentication
+  //      unavailable" instead of the Sign In / Get Started / UserButton
+  //      controls this action names.
+  // Writing an archetype now could only assert against a surface that does not
+  // render — the HONESTY RULE above forbids that. Server-side authorization IS
+  // covered by src/__tests__/apiAuth.test.ts (401/403/503 matrix, public-path
+  // matrix, per-handler helper enforcement); what remains uncovered is the UI
+  // control layer. UNBLOCK: give CI a Clerk test-instance key and add a
+  // non-bypassed Playwright project, then write the archetype.
+  'global.authentication': { kind: 'manual-exception', owner: 'urc-engineering', expires: BURN_DOWN_DATE, reason: 'Blocked, not unwritten: the e2e webServer sets URC_E2E_BYPASS_AUTH (proxy.ts then protects nothing) and CI has no Clerk publishable key (so the Sign In / Get Started / account controls never render). Server-side authorization is covered by apiAuth.test.ts; the UI control layer needs a CI Clerk test key plus a non-bypassed Playwright project before an honest archetype can exist.' },
   'global.copilot-panel': { kind: 'manual-exception', owner: 'urc-engineering', expires: BURN_DOWN_DATE, reason: 'No executable archetype test yet for the global page; verified in the 2026-07-21 manual interaction sweep, queued for the WP8 archetype burn-down.' },
   'global.memo-tray': { kind: 'manual-exception', owner: 'urc-engineering', expires: BURN_DOWN_DATE, reason: 'No executable archetype test yet for the global page; verified in the 2026-07-21 manual interaction sweep, queued for the WP8 archetype burn-down.' },
   'global.results-table': { kind: 'manual-exception', owner: 'urc-engineering', expires: BURN_DOWN_DATE, reason: 'No executable archetype test yet for the global page; verified in the 2026-07-21 manual interaction sweep, queued for the WP8 archetype burn-down.' },
   'global.results-toolbar': { kind: 'manual-exception', owner: 'urc-engineering', expires: BURN_DOWN_DATE, reason: 'No executable archetype test yet for the global page; verified in the 2026-07-21 manual interaction sweep, queued for the WP8 archetype burn-down.' },
   'global.lookup-fields': { kind: 'manual-exception', owner: 'urc-engineering', expires: BURN_DOWN_DATE, reason: 'No executable archetype test yet for the global page; verified in the 2026-07-21 manual interaction sweep, queued for the WP8 archetype burn-down.' },
   'global.tabs': { kind: 'manual-exception', owner: 'urc-engineering', expires: BURN_DOWN_DATE, reason: 'No executable archetype test yet for the global page; verified in the 2026-07-21 manual interaction sweep, queued for the WP8 archetype burn-down.' },
-  'global.external-source-links': { kind: 'manual-exception', owner: 'urc-engineering', expires: BURN_DOWN_DATE, reason: 'No executable archetype test yet for the global page; verified in the 2026-07-21 manual interaction sweep, queued for the WP8 archetype burn-down.' },
+  'global.external-source-links': { kind: 'automated', specs: [
+    { file: 'tests/e2e/external-source-links.spec.ts', title: 'global.external-source-links names, secures, and preserves state on SEC links' },
+    { file: 'tests/e2e/external-source-links.spec.ts', title: 'global.external-source-links names each IAPD record by its firm' },
+    { file: 'tests/e2e/external-source-links.spec.ts', title: 'global.external-source-links names FASB and framework sources by their standard' },
+  ] },
   'global.async-and-retry': { kind: 'manual-exception', owner: 'urc-engineering', expires: BURN_DOWN_DATE, reason: 'No executable archetype test yet for the global page; verified in the 2026-07-21 manual interaction sweep, queued for the WP8 archetype burn-down.' },
 };
