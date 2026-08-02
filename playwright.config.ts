@@ -59,6 +59,9 @@ export default defineConfig({
         timeout: process.env.PW_PROD_BUILD === '1' ? 420_000 : 120_000,
         env: {
           URC_E2E_BYPASS_AUTH: '1',
+          // Client-side counterpart (inlined at build): CI runners cannot
+          // reach the Clerk dev instance, so identity must hydrate locally.
+          NEXT_PUBLIC_URC_E2E_BYPASS_AUTH: '1',
           NEXT_PUBLIC_SITE_URL: baseURL,
           // `npm run build` pins NEXT_LOCAL_BUILD=1 (writes .next-build);
           // `next start` must read the same distDir.

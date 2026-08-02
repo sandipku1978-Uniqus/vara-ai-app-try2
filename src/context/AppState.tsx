@@ -169,8 +169,14 @@ function loadSidebarCollapsed(): boolean {
 }
 
 export function AppProvider({ children }: { children: ReactNode }) {
-  const { isLoaded: identityLoaded, userId, orgId } = useAuth();
-  const storageScope = identityLoaded ? buildStorageScope(userId, orgId) : null;
+  const { isLoaded, userId, orgId } = useAuth();
+  // The e2e harness cannot reach the Clerk dev instance from CI runners, so
+  // identity would never hydrate there and nothing would persist. The bypass
+  // flag is inlined at BUILD time by the Playwright-managed server only —
+  // Vercel builds never set it — and mirrors the existing server-side
+  // URC_E2E_BYPASS_AUTH contract.
+  const identityLoaded = isLoaded || process.env.NEXT_PUBLIC_URC_E2E_BYPASS_AUTH === '1';
+  const storageScope = identityLoaded ? buildStorageScope(userId ?? null, orgId ?? null) : null;
   setActiveBrowserStorageScope(storageScope);
   // Written to the DOM so automated journeys can wait for identity hydration
   // before interacting: when Clerk finishes loading, this scope flips from
