@@ -147,3 +147,40 @@ test.describe('critical action: comment-letter search', () => {
     await expect(page.getByText(/not authoritative/i).first()).toBeVisible({ timeout: 20_000 });
   });
 });
+
+test.describe('critical action: the alert journey (save, then check on the Dashboard)', () => {
+  test('research-workbench.save-alert and dashboard.check-saved-alert round-trip', async ({ page }) => {
+    const stats = await installBooleanFixtures(page);
+    await runBooleanQuery(page, 'mezzanine OR temporary');
+    await expect(page.getByText(BOTH.company).first()).toBeVisible({ timeout: 30_000 });
+
+    // A completed search collapses the query panel; Save Alert lives in the
+    // expanded branch, so reopen it first.
+    const expand = page.getByRole('button', { name: 'Expand', exact: true });
+    if (await expand.isVisible().catch(() => false)) {
+      await expand.click();
+    }
+    // Save the alert. The confirmation copy renders in the collapsible rail
+    // (layout-dependent), so the journey's proof is the Dashboard card below.
+    await page.getByRole('button', { name: 'Save Alert' }).click();
+
+    // The Dashboard lists the saved alert with its current-match count.
+    await page.goto('/dashboard');
+    await expect(page.getByText('mezzanine OR temporary').first()).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText(/\d+ current match(es)? in scope/).first()).toBeVisible();
+
+    // Check Now reruns the saved search (through the same fixtures) and lands
+    // back on a truthful, non-error status line.
+    const queriesBeforeCheck = stats.eftsQueries.length;
+    await page.getByRole('button', { name: 'Check Now' }).click();
+    await expect(page.getByText(/current matches in scope|new filings? detected/).first()).toBeVisible({ timeout: 30_000 });
+    expect(stats.eftsQueries.length, 'Check Now must actually re-run retrieval').toBeGreaterThan(queriesBeforeCheck);
+  });
+});
+
+// NOTE: a generate-summary archetype was attempted and reverted: the summary
+// panel's Generate button is order-dependent under the full suite (renders
+// solo, absent in sequence) and two structural fixes did not stabilize it.
+// comment-letters.generate-summary stays an OWNED EXCEPTION in
+// uiActionCoverage.ts until the remount race is diagnosed — flaky evidence is
+// worse than a visible gap.
