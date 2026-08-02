@@ -356,8 +356,14 @@ export const UI_PAGE_CONTRACTS = [
     sourceFiles: ['src/app/privacy/page.tsx', 'src/app/privacy/PrivacyControls.tsx'],
     intendedJob: 'Explain data use in plain language and let a visitor make or change the optional analytics-consent choice.',
     actions: [
-      { id: 'privacy.allow-analytics', interaction: 'Activate Allow analytics.', expectedOutcome: 'Consent is stored as granted and the visible status confirms that optional analytics are allowed.' },
-      { id: 'privacy.decline-analytics', interaction: 'Activate Decline analytics.', expectedOutcome: 'Consent is stored as denied and the visible status confirms that optional analytics are disabled.' },
+      // The original wording ("the status confirms analytics are allowed")
+      // assumed every deployment has analytics configured. Most do not —
+      // PrivacyControls reports "disabled for this deployment" whenever
+      // NEXT_PUBLIC_POSTHOG_ENABLED/KEY are absent, which is the default and
+      // what CI runs. Demanding the old wording would have required the page
+      // to claim analytics was running when it was not.
+      { id: 'privacy.allow-analytics', interaction: 'Activate Allow analytics.', expectedOutcome: 'Consent is stored durably as granted, and the live status region reports the outcome without overstating it — confirming analytics is allowed where the deployment has it configured, and that it is unavailable where it does not.' },
+      { id: 'privacy.decline-analytics', interaction: 'Activate Decline analytics, including after previously allowing it.', expectedOutcome: 'Consent is stored durably as denied, overwriting any previous grant, and the live status region confirms optional analytics is disabled.' },
       { id: 'privacy.return-home', interaction: 'Activate Return to Uniqus Research Center.', expectedOutcome: 'The public landing page opens without requiring authentication.' },
     ],
   },
