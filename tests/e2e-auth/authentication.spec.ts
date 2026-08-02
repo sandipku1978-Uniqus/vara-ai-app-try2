@@ -139,6 +139,12 @@ test.describe('support-center routes that require sign-in', () => {
     expect(href, 'the feature link must name a route').toMatch(/^\//);
     await link.click();
 
+    // Wait for the navigation to actually settle before reading the URL.
+    // These links call router.push() from an onClick handler, so the address
+    // does not change synchronously with the click — reading page.url()
+    // immediately races the client-side navigation and sees /support.
+    await expect(page).not.toHaveURL(/\/support$/, { timeout: 20_000 });
+
     // "The EXACT product route described by the link": a link that sends the
     // reader somewhere adjacent is the failure this catches.
     const landed = new URL(page.url());
