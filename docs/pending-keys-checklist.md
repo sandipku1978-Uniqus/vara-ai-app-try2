@@ -127,3 +127,18 @@ running. Once it is green, flip `global.authentication` in
 raise the ratchet floor. It is deliberately NOT flipped in advance —
 the coverage file's HONESTY RULE forbids claiming automation that has
 never been observed to pass.
+
+## 7. URC_SUPABASE_WEB_KEY as a GitHub Actions secret (accuracy gate)
+
+- **Why**: since #41, web routes fail closed without the publishable key.
+  The first dispatch of the reworked accuracy gate (2026-08-02) failed with
+  100% ticker `API HTTP 503` for exactly this reason — the gate builds and
+  serves the app on the runner, and that server has no `URC_SUPABASE_WEB_KEY`.
+- **Do**: GitHub → Settings → Secrets and variables → Actions → New
+  repository secret: `URC_SUPABASE_WEB_KEY` = the same Supabase publishable
+  key already set in Vercel (Vercel → Project → Settings → Environment
+  Variables shows it; it is the publishable/anon key, not the service key).
+- **After**: dispatch the "Accuracy gate" workflow manually (Actions tab →
+  Accuracy gate → Run workflow) or wait for Monday 04:30 UTC. The workflow
+  now fails fast with a named-secret error instead of 10,000 cryptic 503s
+  if the key is still absent.

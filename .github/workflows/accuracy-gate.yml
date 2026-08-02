@@ -28,6 +28,11 @@ jobs:
     env:
       URC_SUPABASE_URL: ${{ secrets.URC_SUPABASE_URL }}
       URC_SUPABASE_SERVICE_KEY: ${{ secrets.URC_SUPABASE_SERVICE_KEY }}
+      # Since #41, web routes fail closed without the publishable key: every
+      # /api/es-search call 503s, which the first dispatch of the reworked
+      # gate (2026-08-02, run 30771438193) hit as 100% ticker failures. Same
+      # value already set in Vercel; here it must be a repo secret.
+      URC_SUPABASE_WEB_KEY: ${{ secrets.URC_SUPABASE_WEB_KEY }}
       URC_E2E_BYPASS_AUTH: '1'
       # The local server reports the candidate revision via /api/version, so
       # the consolidation step can prove the evidence describes THIS commit.
@@ -36,6 +41,16 @@ jobs:
       # must read the same distDir.
       NEXT_LOCAL_BUILD: '1'
     steps:
+      - name: Fail closed if required secrets are absent (WP5)
+        run: |
+          missing=""
+          [ -z "${URC_SUPABASE_URL}" ] && missing="$missing URC_SUPABASE_URL"
+          [ -z "${URC_SUPABASE_SERVICE_KEY}" ] && missing="$missing URC_SUPABASE_SERVICE_KEY"
+          [ -z "${URC_SUPABASE_WEB_KEY}" ] && missing="$missing URC_SUPABASE_WEB_KEY"
+          if [ -n "$missing" ]; then
+            echo "::error title=Accuracy gate cannot run::Missing repository secrets:$missing. Web routes fail closed without URC_SUPABASE_WEB_KEY (the Supabase publishable key, same value as Vercel) — without it every ticker probe 503s and the report would measure the outage, not accuracy. See docs/pending-keys-checklist.md."
+            exit 1
+          fi
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
