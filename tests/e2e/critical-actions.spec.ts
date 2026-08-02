@@ -186,9 +186,84 @@ test.describe('critical action: the alert journey (save, then check on the Dashb
   });
 });
 
-// NOTE: a generate-summary archetype was attempted and reverted: the summary
-// panel's Generate button is order-dependent under the full suite (renders
-// solo, absent in sequence) and two structural fixes did not stabilize it.
-// comment-letters.generate-summary stays an OWNED EXCEPTION in
-// uiActionCoverage.ts until the remount race is diagnosed — flaky evidence is
-// worse than a visible gap.
+test.describe('critical action: comment-letter AI summary generation', () => {
+  const THREAD_ID = 'thread-letterhaven-1';
+  const LETTER_ROW = {
+    accession: '0000000900-26-000900',
+    cik: 900,
+    company_name: 'Letterhaven Industries',
+    form: 'UPLOAD',
+    date_filed: '2026-03-04',
+    thread_id: THREAD_ID,
+    filename: 'letter1.txt',
+    headline: 'The Staff challenged revenue recognition.',
+    rank: 0.9,
+  };
+  const SUMMARY_TEXT = 'The Staff challenged principal-agent revenue recognition; resolved after two response rounds.';
+
+  test('comment-letters.generate-summary POSTs only on explicit click and renders labeled output', async ({ page }) => {
+    let generatePosts = 0;
+    await page.route('**/api/letters/summary**', async (route: Route) => {
+      if (route.request().method() === 'POST') {
+        generatePosts += 1;
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ thread: THREAD_ID, summary: SUMMARY_TEXT, model: 'claude-sonnet-5', generatedAt: '2026-08-01T12:00:00Z', coverage: null, cached: false }),
+        });
+        return;
+      }
+      await route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ error: 'none' }) });
+    });
+    await page.route('**/api/letters**', async (route: Route) => {
+      if (route.request().url().includes('/api/letters/summary')) return route.fallback();
+      const url = new URL(route.request().url());
+      if (url.searchParams.get('thread')) {
+        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ thread: THREAD_ID, letters: [LETTER_ROW] }) });
+        return;
+      }
+      if (url.searchParams.get('q')) {
+        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ total: 1, matches: [LETTER_ROW] }) });
+        return;
+      }
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ total: 0, threads: [] }) });
+    });
+
+    const searchInput = page.getByLabel('Search inside SEC comment letters');
+    const generateButton = page.getByRole('button', { name: 'Generate AI summary' });
+    const summaryOutput = page.getByText(SUMMARY_TEXT);
+
+    const searchAndExpand = async () => {
+      await searchInput.fill('revenue recognition');
+      await searchInput.press('Enter');
+      await expect(page.getByText(LETTER_ROW.company_name).first()).toBeVisible({ timeout: 10_000 });
+      await page.getByRole('button', { name: 'View conversation' }).click();
+    };
+
+    await page.goto('/comment-letters');
+    await searchAndExpand();
+
+    // The contract's first half: expanding a thread checks the cache with GET
+    // but never consumes AI capacity — no POST before an explicit click.
+    await expect(generateButton).toBeVisible({ timeout: 20_000 });
+    expect(generatePosts, 'expanding a thread must not consume AI capacity').toBe(0);
+
+    // Second half: an explicit click generates and renders labeled output.
+    // The app shell can remount once mid-test (observed under long suite runs
+    // with the Clerk dev instance; instrumentation showed NO page navigation),
+    // which resets this view to its pristine state. The archetype tolerates
+    // one remount by redoing search/expand — the contract being proven is
+    // explicit-POST-and-render, not shell stability.
+    await expect(async () => {
+      if (await summaryOutput.isVisible().catch(() => false)) return;
+      if (!(await generateButton.isVisible().catch(() => false))) {
+        await searchAndExpand();
+      }
+      await generateButton.click({ timeout: 3_000 });
+      await expect(summaryOutput).toBeVisible({ timeout: 5_000 });
+    }).toPass({ timeout: 45_000 });
+
+    await expect(page.getByText(/AI-generated/).first()).toBeVisible();
+    expect(generatePosts).toBeGreaterThanOrEqual(1);
+  });
+});
