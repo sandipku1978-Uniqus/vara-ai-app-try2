@@ -20,7 +20,8 @@
     "ingest:letter-text": "tsx data-pipeline/fetch-letter-text.ts",
     "enrich:companies": "tsx data-pipeline/enrich-companies.ts",
     "test:ui:boolean": "playwright test tests/e2e/boolean-search.spec.ts",
-    "accuracy": "tsx scripts/accuracy/gate.ts"
+    "accuracy": "tsx scripts/accuracy/gate.ts",
+    "test:auth": "playwright test --config playwright.auth.config.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.115.0",
@@ -40,6 +41,7 @@
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
   },
   "devDependencies": {
+    "@clerk/testing": "^2.2.16",
     "@playwright/test": "^1.62.0",
     "@testing-library/jest-dom": "^7.0.0",
     "@testing-library/react": "^16.3.2",

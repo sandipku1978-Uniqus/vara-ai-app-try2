@@ -164,22 +164,17 @@ export const UI_ACTION_COVERAGE: Record<string, UiActionEvidence> = {
   'global.breadcrumb-navigation': { kind: 'automated', specs: [{ file: 'tests/e2e/global-chrome.spec.ts', title: 'global.breadcrumb-navigation exposes the current location and reaches its ancestors' }] },
   'global.quick-find': { kind: 'manual-exception', owner: 'urc-engineering', expires: BURN_DOWN_DATE, reason: 'No executable archetype test yet for the global page; verified in the 2026-07-21 manual interaction sweep, queued for the WP8 archetype burn-down.' },
   'global.theme-preference': { kind: 'automated', specs: [{ file: 'tests/e2e/global-chrome.spec.ts', title: 'global.theme-preference applies immediately, names the next appearance, and survives reload' }] },
-  // BLOCKED, not merely unwritten — the Playwright harness cannot observe this
-  // action at all today, for two independent reasons:
-  //   1. playwright.config.ts sets URC_E2E_BYPASS_AUTH on its webServer, and
-  //      proxy.ts returns next() unconditionally under that flag, so no route
-  //      is protected and no redirect-with-return-URL ever happens.
-  //   2. CI holds no NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY (only the two Supabase
-  //      secrets), so clerkEnabled is false and Layout renders "Authentication
-  //      unavailable" instead of the Sign In / Get Started / UserButton
-  //      controls this action names.
-  // Writing an archetype now could only assert against a surface that does not
-  // render — the HONESTY RULE above forbids that. Server-side authorization IS
-  // covered by src/__tests__/apiAuth.test.ts (401/403/503 matrix, public-path
-  // matrix, per-handler helper enforcement); what remains uncovered is the UI
-  // control layer. UNBLOCK: give CI a Clerk test-instance key and add a
-  // non-bypassed Playwright project, then write the archetype.
-  'global.authentication': { kind: 'manual-exception', owner: 'urc-engineering', expires: BURN_DOWN_DATE, reason: 'Blocked, not unwritten: the e2e webServer sets URC_E2E_BYPASS_AUTH (proxy.ts then protects nothing) and CI has no Clerk publishable key (so the Sign In / Get Started / account controls never render). Server-side authorization is covered by apiAuth.test.ts; the UI control layer needs a CI Clerk test key plus a non-bypassed Playwright project before an honest archetype can exist.' },
+  // HARNESS BUILT, AWAITING CREDENTIALS. Was blocked two ways: the main e2e
+  // webServer sets URC_E2E_BYPASS_AUTH (so proxy.ts protects nothing), and CI
+  // holds no Clerk publishable key (so the Sign In / Get Started / account
+  // controls never render). playwright.auth.config.ts + tests/e2e-auth/ now
+  // serve the app with the bypass explicitly OFF against a real Clerk
+  // development instance, and the non-blocking `auth-browser` CI job runs it.
+  // Flip this to 'automated' pointing at tests/e2e-auth/authentication.spec.ts
+  // ONLY once that job has actually gone green — the HONESTY RULE above
+  // forbids claiming automation nobody has observed pass. Setup steps are in
+  // docs/pending-keys-checklist.md section 6.
+  'global.authentication': { kind: 'manual-exception', owner: 'urc-engineering', expires: BURN_DOWN_DATE, reason: 'Harness built and merged (playwright.auth.config.ts + tests/e2e-auth/, non-blocking auth-browser CI job) but not yet exercised: it needs Clerk development-instance secrets (CLERK_PUBLISHABLE_KEY_TEST / CLERK_SECRET_KEY_TEST) on the repository. Verified empirically that with the bypass off and no secret key every route 500s, so the credentials are a hard prerequisite rather than a convenience. Steps in docs/pending-keys-checklist.md section 6; flip to automated once auth-browser is green.' },
   'global.copilot-panel': { kind: 'manual-exception', owner: 'urc-engineering', expires: BURN_DOWN_DATE, reason: 'No executable archetype test yet for the global page; verified in the 2026-07-21 manual interaction sweep, queued for the WP8 archetype burn-down.' },
   'global.memo-tray': { kind: 'manual-exception', owner: 'urc-engineering', expires: BURN_DOWN_DATE, reason: 'No executable archetype test yet for the global page; verified in the 2026-07-21 manual interaction sweep, queued for the WP8 archetype burn-down.' },
   'global.results-table': { kind: 'manual-exception', owner: 'urc-engineering', expires: BURN_DOWN_DATE, reason: 'No executable archetype test yet for the global page; verified in the 2026-07-21 manual interaction sweep, queued for the WP8 archetype burn-down.' },

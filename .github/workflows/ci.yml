@@ -62,3 +62,50 @@ jobs:
           name: playwright-report
           path: ${{ runner.temp }}/urc-playwright/report
           retention-days: 7
+
+  auth-browser:
+    # The `browser` job runs behind URC_E2E_BYPASS_AUTH, so it cannot observe
+    # authentication at all — nothing is protected there. This job serves the
+    # app with the bypass OFF against a Clerk DEVELOPMENT instance, which is
+    # the only way global.authentication is provable.
+    #
+    # It is deliberately NOT a required check: until the Clerk test secrets
+    # exist it reports a notice and passes, so main stays green and nobody is
+    # blocked by a capability that is not configured yet.
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.CLERK_PUBLISHABLE_KEY_TEST }}
+      CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY_TEST }}
+      CLERK_TEST_EMAIL: ${{ secrets.CLERK_TEST_EMAIL }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - id: gate
+        name: Check whether Clerk test credentials are configured
+        run: |
+          if [ -z "${CLERK_SECRET_KEY}" ] || [ -z "${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}" ]; then
+            echo 'configured=false' >> "$GITHUB_OUTPUT"
+            echo '::notice title=Authentication suite skipped::Set the CLERK_PUBLISHABLE_KEY_TEST and CLERK_SECRET_KEY_TEST repository secrets (Clerk development instance) to enable it. See docs/pending-keys-checklist.md.'
+          else
+            echo 'configured=true' >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.gate.outputs.configured == 'true'
+        run: npx playwright install --with-deps chromium
+      - if: steps.gate.outputs.configured == 'true'
+        run: npx playwright test --config playwright.auth.config.ts
+        env:
+          CI: 'true'
+          QA_OUTPUT_DIR: ${{ runner.temp }}/urc-playwright-auth
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: failure() && steps.gate.outputs.configured == 'true'
+        with:
+          name: playwright-auth-report
+          path: ${{ runner.temp }}/urc-playwright-auth/report
+          retention-days: 7
