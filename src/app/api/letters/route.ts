@@ -80,8 +80,14 @@ export async function GET(request: Request) {
       });
       if (error) return dbErrorResponse({ route: 'letters', rpc: 'urc_search_letters', error, correlationId, startedAt });
       const rows = (data ?? []) as Array<Record<string, unknown>>;
+      // Migration 017 caps count exactness at 10,000: 10,001 means "more
+      // than 10,000", not a real total. Translate rather than display it as
+      // if it were exact.
+      const rawTotal = rows.length > 0 ? Number(rows[0].total_count) : 0;
+      const totalIsFloor = rawTotal > 10_000;
       return NextResponse.json({
-        total: rows.length > 0 ? Number(rows[0].total_count) : 0,
+        total: totalIsFloor ? 10_000 : rawTotal,
+        totalIsFloor,
         matches: rows.map(withoutTotalCount),
       });
     }
