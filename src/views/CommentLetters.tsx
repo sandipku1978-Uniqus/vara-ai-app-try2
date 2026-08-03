@@ -369,6 +369,7 @@ export default function CommentLetters() {
   const [threadsTotal, setThreadsTotal] = useState(0);
   const [matches, setMatches] = useState<SearchMatch[]>([]);
   const [matchesTotal, setMatchesTotal] = useState(0);
+  const [matchesTotalIsFloor, setMatchesTotalIsFloor] = useState(false);
   const [loading, setLoading] = useState(false);
   const [browseLoading, setBrowseLoading] = useState(true);
   const [searched, setSearched] = useState(false);
@@ -470,9 +471,11 @@ export default function CommentLetters() {
       const payload = await response.json();
       setMatches(payload.matches ?? []);
       setMatchesTotal(payload.total ?? 0);
+      setMatchesTotalIsFloor(Boolean(payload.totalIsFloor));
     } catch {
       setMatches([]);
       setMatchesTotal(0);
+      setMatchesTotalIsFloor(false);
       setSearchError('The full-text letter search failed. The zero-result state is not authoritative.');
     } finally {
       setLoading(false);
@@ -584,7 +587,7 @@ export default function CommentLetters() {
         matches.length > 0 ? (
           <div>
             <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: '6px 0 8px' }}>
-              {matchesTotal.toLocaleString()} matching letters — ranked by relevance
+              {matchesTotal.toLocaleString()}{matchesTotalIsFloor ? '+' : ''} matching letters — ranked by relevance
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               {matches.map(match => (
