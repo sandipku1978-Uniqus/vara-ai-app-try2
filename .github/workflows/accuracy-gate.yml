@@ -91,18 +91,25 @@ jobs:
       - name: Consolidated release evidence (fail-closed)
         # One verdict from separate dimensions — never averaged. Fails when any
         # suite is missing, a critical semantic check was skipped, ticker
-        # resolution is below 100%, e2e is under its bar, or the tested server
-        # reports a different SHA than this run's candidate.
+        # resolution is below 100%, e2e is under its bar, the tested server
+        # reports a different SHA than this run's candidate, or the DATABASE
+        # reports a different schema version than the repository's migration
+        # chain expects (audit R0/R3: app SHA + schema state are one
+        # candidate — this is the assertion that was missing when production
+        # ran 016 behavior under 017-expecting code).
         env:
           EXPECTED_SHA: ${{ github.sha }}
-        run: >-
-          npx tsx scripts/accuracy/consolidate.ts
-          --base http://localhost:3111
-          --semantic accuracy-report.json
-          --tickers ticker-coverage-report.json
-          --e2e e2e-perf-report.json
-          --e2e-min-pass 90
-          --out release-evidence.json
+        run: |
+          expected_schema=$(ls db/migrations/ | grep -oE '^[0-9]{3}' | sort | tail -1)
+          echo "Repository migration chain expects schema version: $expected_schema"
+          npx tsx scripts/accuracy/consolidate.ts \
+            --base http://localhost:3111 \
+            --semantic accuracy-report.json \
+            --tickers ticker-coverage-report.json \
+            --e2e e2e-perf-report.json \
+            --e2e-min-pass 90 \
+            --expect-schema "$expected_schema" \
+            --out release-evidence.json
       - name: Upload evidence artifacts
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
