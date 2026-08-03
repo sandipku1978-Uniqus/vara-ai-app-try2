@@ -7,14 +7,26 @@
 grant usage on schema public to anon;
 grant select on public.urc_sec_companies,
                 public.urc_current_auditors,
-                public.urc_thread_summaries,
                 public.urc_comment_letters to anon;
+
+-- urc_thread_summaries is created by migration 006: this file predates the
+-- numbering being an honest apply order (it was written against a database
+-- that already had 006). Guarded so the chain replays from empty
+-- (migration-chain test, 2026-08-03); on databases where the table exists
+-- the effect is identical, and 014's dynamic contract re-grants the whole
+-- urc_% surface regardless.
+do $$ begin
+  if to_regclass('public.urc_thread_summaries') is not null then
+    execute 'grant select on public.urc_thread_summaries to anon';
+  end if;
+end $$;
 
 -- RLS is enabled on three of these; anon needs explicit read policies.
 do $$ declare t text;
 begin
   foreach t in array array['urc_sec_companies','urc_thread_summaries','urc_comment_letters']
   loop
+    if to_regclass('public.' || t) is null then continue; end if;
     execute format('drop policy if exists anon_read on public.%I', t);
     execute format('create policy anon_read on public.%I for select to anon using (true)', t);
   end loop;

@@ -28,7 +28,10 @@
  *   - ticker resolution below 100%;
  *   - e2e pass rate below its own threshold as recorded by the suite;
  *   - the tested deployment reports a SHA that differs from the SHA this run
- *     claims to be testing (EXPECTED_SHA env or --expect-sha).
+ *     claims to be testing (EXPECTED_SHA env or --expect-sha);
+ *   - the database reports a schema version different from the one the
+ *     repository expects, or none at all (EXPECTED_SCHEMA_VERSION env or
+ *     --expect-schema) — app SHA and schema state are ONE candidate.
  */
 
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -129,12 +132,28 @@ async function main() {
   if (expectedSha && !version) {
     problems.push('deployment did not answer /api/version — provenance cannot be proven');
   }
+  // Database provenance (readiness audit R0/R3): the schema version is half
+  // of the release candidate. This assertion is what was missing when
+  // production ran migration-016 behavior under application code expecting
+  // 017 — nothing bound the pairing. Fail closed on mismatch AND on null:
+  // a database that cannot say what version it is cannot be promoted
+  // against.
+  const expectedSchema = arg('--expect-schema') || process.env.EXPECTED_SCHEMA_VERSION || null;
+  const reportedSchema = (version?.schemaVersion as string | null) ?? null;
+  if (expectedSchema && reportedSchema !== expectedSchema) {
+    problems.push(
+      reportedSchema
+        ? `database reports schema version ${reportedSchema}, expected ${expectedSchema} — application and database are not one candidate`
+        : `database did not report a schema version (expected ${expectedSchema}) — apply db/migrations up to ${expectedSchema}; an unversioned database cannot be promoted against`
+    );
+  }
 
   const evidence = {
     generatedAt: new Date().toISOString(),
     base,
     provenance: {
       expectedSha,
+      expectedSchema,
       reported: version,
     },
     dimensions: {

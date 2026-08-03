@@ -63,6 +63,36 @@ jobs:
           path: ${{ runner.temp }}/urc-playwright/report
           retention-days: 7
 
+  migrations:
+    # Readiness audit R0: replay the ENTIRE migration chain from an empty
+    # disposable Postgres and assert grants, search_path, deterministic
+    # ordering, sentinel totals, clamps, and empty-page behavior — including
+    # sentinel-scale seeded data (10,050 rows) so the 10,001 cap is exercised
+    # for real. Makes "the migrations produce the schema production should
+    # have" a checked claim instead of a belief.
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_PASSWORD: test
+        ports:
+          - 55432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+      - run: tests/db/migration-chain.sh
+        env:
+          DATABASE_URL: postgres://postgres:test@localhost:55432/postgres
+
   auth-browser:
     # The `browser` job runs behind URC_E2E_BYPASS_AUTH, so it cannot observe
     # authentication at all — nothing is protected there. This job serves the
