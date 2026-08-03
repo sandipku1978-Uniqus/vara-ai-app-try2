@@ -69,7 +69,21 @@ export async function GET(request: Request) {
     }
 
     if (q) {
-      const { data, error } = await db.rpc('urc_search_letters', {
+      // Pagination contract (readiness audit R0): the ranked pool is 1,000
+      // deep, so offsets beyond it are UNSUPPORTED — say so with a 422 and
+      // coverage metadata rather than a 200 that reads as "no matches".
+      const SUPPORTED_DEPTH = 1000;
+      if (from >= SUPPORTED_DEPTH) {
+        return NextResponse.json(
+          {
+            error: `Offsets beyond ${SUPPORTED_DEPTH} are not supported: results are ranked within the ${SUPPORTED_DEPTH} most recent matches.`,
+            supportedDepth: SUPPORTED_DEPTH,
+            correlationId,
+          },
+          { status: 422 }
+        );
+      }
+      const searchParams = {
         p_query: q,
         p_form: form === 'UPLOAD' || form === 'CORRESP' ? form : null,
         p_start: startdt || null,
@@ -77,13 +91,26 @@ export async function GET(request: Request) {
         p_limit: size,
         p_offset: from,
         p_company: company,
-      });
+      };
+      const { data, error } = await db.rpc('urc_search_letters', searchParams);
       if (error) return dbErrorResponse({ route: 'letters', rpc: 'urc_search_letters', error, correlationId, startedAt });
-      const rows = (data ?? []) as Array<Record<string, unknown>>;
-      // Migration 017 caps count exactness at 10,000: 10,001 means "more
-      // than 10,000", not a real total. Translate rather than display it as
-      // if it were exact.
-      const rawTotal = rows.length > 0 ? Number(rows[0].total_count) : 0;
+      let rows = (data ?? []) as Array<Record<string, unknown>>;
+      // An empty page inside the supported range means the offset ran past
+      // the real matches — but the TRUE total lives on the rows we did not
+      // get. Re-query page 0 for the total instead of fabricating a zero:
+      // the audit's probe (offset 2000 on a 3,045-match query) got
+      // { total: 0 } from this route, an authoritative-looking lie.
+      let totalRows = rows;
+      if (rows.length === 0 && from > 0) {
+        const retry = await db.rpc('urc_search_letters', { ...searchParams, p_limit: 1, p_offset: 0 });
+        if (retry.error) return dbErrorResponse({ route: 'letters', rpc: 'urc_search_letters', error: retry.error, correlationId, startedAt });
+        totalRows = (retry.data ?? []) as Array<Record<string, unknown>>;
+        rows = [];
+      }
+      // Migration 017/018 caps count exactness at 10,000: 10,001 means
+      // "more than 10,000", not a real total. Translate rather than display
+      // it as if it were exact.
+      const rawTotal = totalRows.length > 0 ? Number(totalRows[0].total_count) : 0;
       const totalIsFloor = rawTotal > 10_000;
       return NextResponse.json({
         total: totalIsFloor ? 10_000 : rawTotal,
