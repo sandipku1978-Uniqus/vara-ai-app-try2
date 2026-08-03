@@ -207,8 +207,14 @@ async function generatePoints(): Promise<TestPoint[]> {
   }
   let b = 0;
   const skippedCombos: string[] = [];
-  outer: for (let round = 0; round < 10; round++) {
-    for (const firm of FIRMS) {
+  // Attempt-budgeted, not round-capped: the old `10 rounds × 10 firms` shape
+  // silently ceilinged class B at 100 cases when nB asked for more — the
+  // readiness audit caught the shortfall (R3). Attempts are bounded at 3×nB
+  // so ground-truth skips cannot spin forever; an unfillable quota is
+  // REPORTED below, never silently absorbed.
+  outer: for (let attempt = 0; attempt < nB * 3; attempt++) {
+    {
+      const firm = FIRMS[attempt % FIRMS.length];
       if (b >= nB) break outer;
       const y = auditorYears[Math.floor(rand() * auditorYears.length)];
       const form = ['10-K', '10-Q', '8-K'][Math.floor(rand() * 3)];
@@ -241,6 +247,11 @@ async function generatePoints(): Promise<TestPoint[]> {
     // No silent caps: an empty-combo skip is a sampling decision, not proof
     // of coverage — say what was dropped and why.
     console.log(`Class B: skipped ${skippedCombos.length} empty firm-year combos (no ground truth): ${[...new Set(skippedCombos)].join('; ')}`);
+  }
+  if (b < nB) {
+    // The consolidator enforces per-class sampling floors — an unfilled
+    // quota must be loud here and fatal there, never silently absorbed.
+    console.log(`Class B: SAMPLING SHORTFALL — filled ${b} of ${nB} planned cases within the attempt budget`);
   }
 
   // --- Class C1: thread details — every thread must return its letters
