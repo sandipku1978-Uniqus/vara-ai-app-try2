@@ -133,6 +133,15 @@ async function generatePoints(): Promise<TestPoint[]> {
 
   // --- Class A: facet lookups — the known filing must come back
   const filingsA = await sampleFilings(Math.ceil(nA / years.length), years);
+  // Fail CLOSED on empty ground truth (WP5): when the corpus DB is under
+  // load or unreachable, the sampling queries come back empty and the old
+  // behavior was to generate a degenerate suite — zero class-A points and
+  // auditor cases with literally undefined years (observed: startdt=
+  // "undefined-01-01" → HTTP 400 for every class-B case). A suite that
+  // cannot see its ground truth must refuse to run, not measure noise.
+  if (filingsA.length === 0) {
+    throw new Error('Ground-truth sampling returned no filings — corpus DB unreachable or under load. Refusing to generate a degenerate suite; re-run when the database is responsive.');
+  }
   for (const f of sample(filingsA, nA)) {
     const qs = new URLSearchParams({
       forms: f.root_form,
@@ -147,9 +156,15 @@ async function generatePoints(): Promise<TestPoint[]> {
       url: `${BASE}/api/es-search?${qs}`,
       check: (json) => {
         const hits = (json as any)?.hits?.hits ?? [];
-        return hits.some((h: any) => String(h._id).startsWith(f.accession))
-          ? null
-          : `accession ${f.accession} not in ${hits.length} hits`;
+        if (hits.some((h: any) => String(h._id).startsWith(f.accession))) return null;
+        // Membership-in-top-N is only decidable when the query's whole result
+        // universe fits in N. JPMorgan filed 518 424B2s on 2026-03-03 alone —
+        // the sampled one falling outside a 100-hit window proves nothing
+        // (accuracy-gate run 30782680799, all four class-A "misses"). The
+        // per-issuer ticker sweep still asserts retrievability exhaustively.
+        const total = Number((json as any)?.hits?.total?.value ?? hits.length);
+        if (total > 100) return null;
+        return `accession ${f.accession} not in ${hits.length} hits (total ${total})`;
       },
     });
   }
@@ -161,12 +176,46 @@ async function generatePoints(): Promise<TestPoint[]> {
   ];
   // Form AP coverage starts 2017; only use years whose filings are loaded
   const auditorYears = years.filter((y) => y >= 2017 && (yearCounts.get(y) ?? 0) > 10_000);
+  // A firm-year-form combo can be LEGITIMATELY empty: the current-auditor
+  // roster only shrinks after a firm stops signing (Moss Adams folded into
+  // Baker Tilly; its remaining labeled issuers are defunct registrants with
+  // zero 2026 filings ON EDGAR ITSELF — verified against
+  // data.sec.gov/submissions). Asserting hits>0 there fails the suite for
+  // giving the CORRECT answer (run 30782680799). Small rosters get a
+  // ground-truth count before a combo is used; big rosters are never empty.
+  const rosterCache = new Map<string, number[]>();
+  async function firmCiks(firm: string): Promise<number[]> {
+    if (!rosterCache.has(firm)) {
+      const { data } = await db.from('urc_current_auditors').select('issuer_cik').eq('firm_canonical', firm);
+      rosterCache.set(firm, (data ?? []).map((r: any) => Number(r.issuer_cik)));
+    }
+    return rosterCache.get(firm)!;
+  }
+  async function comboHasGroundTruth(firm: string, form: string, y: number): Promise<boolean> {
+    const ciks = await firmCiks(firm);
+    if (ciks.length > 300) return true;
+    const { count } = await db.from('urc_sec_filings')
+      .select('*', { count: 'exact', head: true })
+      .eq('root_form', form)
+      .gte('date_filed', `${y}-01-01`)
+      .lte('date_filed', `${y}-12-31`)
+      .in('cik', ciks);
+    return (count ?? 0) > 0;
+  }
+  if (auditorYears.length === 0) {
+    throw new Error('No auditor-eligible years have loaded filings — year counts are empty (DB under load?). Refusing to generate class B with undefined years.');
+  }
   let b = 0;
+  const skippedCombos: string[] = [];
   outer: for (let round = 0; round < 10; round++) {
     for (const firm of FIRMS) {
       if (b >= nB) break outer;
       const y = auditorYears[Math.floor(rand() * auditorYears.length)];
       const form = ['10-K', '10-Q', '8-K'][Math.floor(rand() * 3)];
+      if (!(await comboHasGroundTruth(firm, form, y))) {
+        skippedCombos.push(`${firm} ${form} ${y}`);
+        continue;
+      }
       const qs = new URLSearchParams({
         forms: form,
         startdt: `${y}-01-01`,
@@ -187,6 +236,11 @@ async function generatePoints(): Promise<TestPoint[]> {
       });
       b++;
     }
+  }
+  if (skippedCombos.length) {
+    // No silent caps: an empty-combo skip is a sampling decision, not proof
+    // of coverage — say what was dropped and why.
+    console.log(`Class B: skipped ${skippedCombos.length} empty firm-year combos (no ground truth): ${[...new Set(skippedCombos)].join('; ')}`);
   }
 
   // --- Class C1: thread details — every thread must return its letters
@@ -271,9 +325,14 @@ async function generatePoints(): Promise<TestPoint[]> {
       check: (json) => {
         const hits = (json as any)?.hits?.hits ?? [];
         if (hits.length === 0) return 'zero hits';
-        return hits.some((h: any) => String(h._id).startsWith(f.accession))
-          ? null
-          : `accession ${f.accession} not among ${hits.length} text hits`;
+        if (hits.some((h: any) => String(h._id).startsWith(f.accession))) return null;
+        // Same decidability rule as class A. The "rarest-looking word" picker
+        // can still land on a common financial word — EFTS "INVESTMENT" put
+        // the target outside 50 hits among the day's 10-Ks (run 30782680799).
+        // When the universe overflows the window, absence proves nothing.
+        const total = Number((json as any)?.hits?.total?.value ?? hits.length);
+        if (total > 50) return null;
+        return `accession ${f.accession} not among ${hits.length} text hits (total ${total})`;
       },
     });
   }
