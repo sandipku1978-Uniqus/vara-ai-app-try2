@@ -89,18 +89,13 @@ describe('branches that carry their own anchor stay accepted', () => {
     }
   });
 
-  it('rejects a MIXED residual whose unanchored branch the plan would drop', () => {
-    // Audit R1: the old waiver accepted this query and the planner then
-    // silently dropped the "NOT goodwill" lane — PwC filings satisfying
-    // NOT goodwill without impairment were omitted without a word. Until
-    // firm-scoped per-branch retrieval exists, the mixed form is rejected
-    // with the remedy in the message.
+  it('accepts the MIXED residual: the firm lane is the negative branch\'s retrieval (slice 2)', () => {
+    // Audit R1 history: the old waiver accepted this and silently DROPPED
+    // the "NOT goodwill" lane; slice 1 rejected it with a remedy; slice 2
+    // added the required firm-scoped lane, making acceptance honest.
     const result = compileBooleanQuery('auditor:PwC AND (impairment OR NOT goodwill)');
-    expect(result.ok).toBe(false);
-    if (!result.ok) {
-      expect(result.code).toBe('unanchored-branch');
-      expect(result.message).toMatch(/auditor:PwC AND NOT goodwill/);
-    }
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.auditor).toBe('PwC');
   });
 
   it('keeps the firm-anchored PURE-negative form accepted (executable today)', () => {

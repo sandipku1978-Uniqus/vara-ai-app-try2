@@ -36,8 +36,21 @@ describe('audit R1 corpus — precedence and grouping', () => {
 });
 
 describe('audit R1 corpus — negative branch anchoring', () => {
-  it('rejects the mixed form whose unanchored branch the planner used to drop', () => {
+  it('accepts the mixed form now that the firm lane covers the negative branch (slice 2)', () => {
+    // Slice 1 rejected this with a remedy; slice 2 made it EXECUTABLE: the
+    // firm-scoped lane fetches PwC candidates and full-expression validation
+    // enforces (impairment OR NOT goodwill). Without a firm the same shape
+    // stays rejected — see the no-auditor case below.
     const result = compileBooleanQuery('auditor:PwC AND (impairment OR NOT goodwill)');
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.auditor).toBe('PwC');
+      expect(result.branches).toEqual(['impairment']);
+    }
+  });
+
+  it('still rejects the same shape without a firm to fetch by', () => {
+    const result = compileBooleanQuery('impairment OR NOT goodwill');
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.code).toBe('unanchored-branch');
   });
