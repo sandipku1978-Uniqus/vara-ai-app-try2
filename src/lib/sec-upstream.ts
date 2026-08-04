@@ -226,6 +226,29 @@ export function sanitizeSecHtml(html: string, documentUrl: URL): string {
  */
 const SEC_TEXT_DOCUMENT_TYPES = /^(?:text\/html|application\/xhtml\+xml|text\/plain|text\/xml|application\/xml)(?:;|$)/i;
 
+/**
+ * SEC error-page signatures as they appear in EXTRACTED TEXT. Response-level
+ * validation (below) stops new poison at fetch time; this catches rows cached
+ * BEFORE that guard existed (audit R1: "invalidate or revalidate previously
+ * cached SEC error content"). Length-bounded on purpose: error pages are a
+ * few hundred bytes, while a real filing QUOTING one of these phrases is a
+ * full document — never flag those.
+ */
+const SEC_ERROR_TEXT_SIGNATURES = [
+  'Your Request Originated from an Undeclared Automated Tool',
+  'Request Rate Threshold Exceeded',
+  'For security purposes, and to ensure that the public service remains available',
+  'This page is temporarily unavailable',
+] as const;
+
+export function looksLikeSecErrorText(text: string): string | null {
+  if (!text || text.length > 5_000) return null;
+  for (const signature of SEC_ERROR_TEXT_SIGNATURES) {
+    if (text.includes(signature)) return signature;
+  }
+  return null;
+}
+
 export function assertSecDocumentResponse(response: Response): void {
   if (!response.ok) {
     const status = response.status >= 400 && response.status <= 599 ? response.status : 502;

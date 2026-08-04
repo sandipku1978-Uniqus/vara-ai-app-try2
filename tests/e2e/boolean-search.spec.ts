@@ -84,8 +84,9 @@ test.describe('Boolean search behaviour', () => {
 
     // The complete expression must be validated BEFORE the auditor token is
     // lifted out — otherwise this becomes "mezzanine + global KPMG filter",
-    // a silent AND. The user sees the AND-only rule, and nothing is fetched.
-    await expect(page.getByText(/only be combined with AND/i)).toBeVisible();
+    // a silent AND. The user sees the precedence explanation (audit R1
+    // wording), and nothing is fetched.
+    await expect(page.getByText(/applies to only part of this query/i)).toBeVisible();
     expect(stats.eftsQueries.length - before, 'rewritten query must not reach EDGAR').toBe(0);
   });
 

@@ -11,8 +11,15 @@
  *      tokens instead of splitting at the symbol.
  * v4 — ordered proximity (P/n, PRE/n) and wildcard terms (crypto*, wom?n).
  *      "P/3" and terms containing * or ? previously matched as literal text.
+ * v5 — auditor as a parser-level operand (audit R1): quoted phrases keep
+ *      literal auditor: text, malformed/duplicate fields reject instead of
+ *      silently matching, precedence is judged on the AST, and the mixed
+ *      form (auditor:F AND (a OR NOT b)) retrieves through a REQUIRED
+ *      firm-scoped lane instead of silently dropping the negative branch.
+ *      Snippets are truth-gated on the full expression. Saved searches
+ *      legitimately recall a different (larger, correct) set.
  */
-export const BOOLEAN_ENGINE_VERSION = 4;
+export const BOOLEAN_ENGINE_VERSION = 5;
 
 /** Which class of numeric token a # operator matches. */
 export type NumberUnit = 'any' | 'currency' | 'percent';
@@ -26,7 +33,11 @@ type Token =
   | { type: 'PROX'; distance: number; ordered: boolean }
   | { type: 'NUMBER'; unit: NumberUnit }
   | { type: 'TERM'; value: string }
-  | { type: 'PHRASE'; value: string };
+  | { type: 'PHRASE'; value: string }
+  /** auditor:/accountant:/auditfirm:/audited_by: field, recognized ONLY at
+   *  bare-token position — text inside quoted phrases is never scanned, so a
+   *  phrase containing the characters `auditor:KPMG` stays literal (audit R1). */
+  | { type: 'AUDITOR'; firm: string };
 
 export type BooleanSearchNode =
   | { type: 'TERM'; value: string }
@@ -37,7 +48,11 @@ export type BooleanSearchNode =
   | { type: 'PROX'; distance: number; ordered?: boolean; left: BooleanSearchNode; right: BooleanSearchNode }
   | { type: 'NOT'; child: BooleanSearchNode }
   | { type: 'AND'; left: BooleanSearchNode; right: BooleanSearchNode }
-  | { type: 'OR'; left: BooleanSearchNode; right: BooleanSearchNode };
+  | { type: 'OR'; left: BooleanSearchNode; right: BooleanSearchNode }
+  /** Parser-level auditor operand (audit R1): participates in the AST so
+   *  placement is judged structurally, then is lifted into the structured
+   *  filter by compileBooleanQuery — never regex-stripped from raw text. */
+  | { type: 'AUDITOR'; firm: string };
 
 export interface ParsedBooleanQuery {
   expression: BooleanSearchNode | null;
@@ -93,7 +108,6 @@ interface TextIndex {
 //   "material weakness" AND auditor:Deloitte      auditor:"Ernst & Young"
 // Multi-word firm names must be quoted; short forms (Deloitte, KPMG, PwC, EY,
 // BDO) can be bare. Aliases: auditor:, accountant:, auditfirm:, audited_by:.
-const AUDITOR_FIELD_RE = /\b(?:auditor|accountant|auditfirm|audited[_-]?by)\s*:\s*(?:"([^"]*)"|(\S+))/i;
 const TERM_EQUIVALENTS: Record<string, string[]> = {
   asr: ['accelerated share repurchase', 'accelerated stock repurchase'],
 };
@@ -231,6 +245,37 @@ function tokenize(query: string): Token[] {
       continue;
     }
 
+    // Auditor field, recognized only here — at the start of a bare token,
+    // never inside a quoted phrase (the quote branch above already consumed
+    // those). The firm may be quoted (auditor:"Ernst & Young") or bare
+    // (auditor:KPMG); an empty firm produces an AUDITOR token with firm ''
+    // for the validator to reject with a precise message rather than the
+    // tokenizer guessing at intent.
+    const fieldMatch = query.slice(i).match(/^(?:auditor|accountant|auditfirm|audited[-_]?by):/i);
+    if (fieldMatch) {
+      let j = i + fieldMatch[0].length;
+      let firm = '';
+      if (query[j] === '"') {
+        let k = j + 1;
+        while (k < query.length && query[k] !== '"') {
+          firm += query[k];
+          k += 1;
+        }
+        // Unterminated firm quote: leave the dangling quote count intact for
+        // parseBooleanQuery's parity check by pushing the raw remainder as a
+        // phrase-less term; the parse-level unbalanced-quote error owns it.
+        j = k < query.length ? k + 1 : k;
+      } else {
+        while (j < query.length && !/\s|\(|\)/.test(query[j])) {
+          firm += query[j];
+          j += 1;
+        }
+      }
+      tokens.push({ type: 'AUDITOR', firm: normalizeWhitespace(firm) });
+      i = j;
+      continue;
+    }
+
     let j = i;
     let value = '';
     while (j < query.length && !/\s|\(|\)/.test(query[j])) {
@@ -329,6 +374,10 @@ function parsePrimary(state: ParserState): BooleanSearchNode {
 
   if (token.type === 'NUMBER') {
     return { type: 'NUMBER', unit: token.unit };
+  }
+
+  if (token.type === 'AUDITOR') {
+    return { type: 'AUDITOR', firm: token.firm };
   }
 
   throw new Error('Expected a search term.');
@@ -524,17 +573,16 @@ function hasUnsupportedProximity(node: BooleanSearchNode): boolean {
  * the auditor filter, so it becomes a first-class part of the Boolean search.
  */
 export function extractAuditorFilterToken(query: string): { auditor: string; residual: string } {
-  const match = query.match(AUDITOR_FIELD_RE);
-  if (!match || match.index == null) {
-    return { auditor: '', residual: normalizeWhitespace(query) };
+  // Delegates to the compiler so quote protection, placement and firm
+  // validation live in exactly one place (audit R1: the old regex here
+  // reached inside quoted phrases and rewrote grouping). For queries the
+  // compiler rejects, the caller gets the text unchanged — semantic-mode
+  // consumers treat it as plain text, never as a mutated Boolean.
+  const compiled = compileBooleanQuery(query);
+  if (compiled.ok) {
+    return { auditor: compiled.auditor, residual: compiled.residual };
   }
-  const auditor = normalizeWhitespace(match[1] ?? match[2] ?? '');
-  const residual = normalizeWhitespace(`${query.slice(0, match.index)} ${query.slice(match.index + match[0].length)}`)
-    // Drop a binary connective left dangling by the removed token
-    // ("weakness AND auditor:EY" → "weakness", "auditor:EY OR lease" → "lease").
-    .replace(/^\s*(?:AND|OR)\b\s*/i, '')
-    .replace(/\s*\b(?:AND|OR)\b\s*$/i, '');
-  return { auditor, residual: normalizeWhitespace(residual) };
+  return { auditor: '', residual: normalizeWhitespace(query) };
 }
 
 /**
@@ -544,6 +592,7 @@ export function extractAuditorFilterToken(query: string): { auditor: string; res
  */
 export type BooleanIssueCode =
   | 'auditor-composition'
+  | 'auditor-malformed'
   | 'unbalanced-quote'
   | 'dangling-operator'
   | 'unbalanced-paren'
@@ -577,27 +626,19 @@ export type BooleanCompileResult =
 export function compileBooleanQuery(raw: string): BooleanCompileResult {
   const fail = (code: BooleanIssueCode, message: string): BooleanCompileResult => ({ ok: false, code, message });
 
-  // The auditor: token is lifted into a structured AND filter, so it only has
-  // sound meaning in AND-composition. Reject only when the token itself is the
-  // operand of an OR, or is directly negated — an OR/NOT elsewhere in the query
-  // (e.g. "NOT goodwill AND auditor:PwC") is fine.
-  const AUD = 'auditor|accountant|auditfirm|audited[_-]?by';
-  if (
-    new RegExp(`\\bOR\\s+(?:${AUD})\\s*:`, 'i').test(raw) ||
-    new RegExp(`(?:${AUD})\\s*:\\s*(?:"[^"]*"|\\S+)\\s+OR\\b`, 'i').test(raw) ||
-    new RegExp(`\\bNOT\\s+(?:${AUD})\\s*:`, 'i').test(raw)
-  ) {
-    return fail('auditor-composition', 'The auditor: filter can only be combined with AND. For OR/NOT logic on the audit firm, use the Advanced Filters auditor control.');
+  // Audit R1: the auditor field is a PARSER-LEVEL operand. The whole raw
+  // query is parsed first; auditor placement, duplication and firm quality
+  // are judged on the AST — never by regex over raw text, which mutated
+  // quoted phrases and silently rewrote precedence
+  // ("lease OR goodwill AND auditor:KPMG" used to become
+  // "(lease OR goodwill) AND auditor:KPMG").
+  const trimmedRaw = normalizeWhitespace(raw);
+  if (!trimmedRaw) {
+    return { ok: true, ast: null, branches: [], auditor: '', residual: '' };
   }
 
-  const { auditor, residual } = extractAuditorFilterToken(raw);
-  const trimmed = normalizeWhitespace(residual);
-  if (!trimmed) {
-    // Empty query, or auditor-only: valid, nothing to evaluate against text.
-    return { ok: true, ast: null, branches: [], auditor, residual: trimmed };
-  }
-
-  const parsed = parseBooleanQuery(trimmed);
+  const parsed = parseBooleanQuery(trimmedRaw);
+  const trimmed = trimmedRaw;
   if (!parsed.expression) {
     if (/^"[^"]*$/.test(trimmed) || (trimmed.match(/"/g)?.length ?? 0) % 2 === 1) {
       return fail('unbalanced-quote', 'Unbalanced quotation mark — close the phrase with a matching ".');
@@ -624,16 +665,53 @@ export function compileBooleanQuery(raw: string): BooleanCompileResult {
     return fail('unsupported-proximity', 'Proximity (w/#, p/#, near/#) works between two single terms or quoted phrases — not around a group. Try: "internal control" w/5 weakness.');
   }
 
+  // ── Auditor operand: arity, firm quality, placement, lift (audit R1) ──────
+  const auditorNodes = collectAuditorNodes(parsed.expression);
+  if (auditorNodes.length > 1) {
+    return fail('auditor-composition', 'Use one auditor: filter per query — a filing has a single signing firm, so two auditor: fields can never both match. For alternative firms use the Advanced Filters auditor control.');
+  }
+  let auditor = '';
+  let lifted: BooleanSearchNode | null = parsed.expression;
+  if (auditorNodes.length === 1) {
+    const firm = auditorNodes[0].firm;
+    if (!firm) {
+      return fail('auditor-malformed', 'The auditor: filter needs a firm name — e.g. auditor:KPMG or auditor:"Ernst & Young".');
+    }
+    if (/[*?]/.test(firm)) {
+      return fail('auditor-malformed', 'Wildcards are not supported in the auditor: filter — give the firm name, e.g. auditor:Deloitte.');
+    }
+    if (/^\d+$/.test(firm)) {
+      return fail('auditor-malformed', `“auditor:${firm}” does not name an audit firm — use the firm name, e.g. auditor:KPMG.`);
+    }
+    // Placement: the auditor operand must govern the WHOLE query — a direct
+    // conjunct of the root AND chain. Anywhere else, lifting it would
+    // silently rewrite the query's meaning (the old regex extraction turned
+    // "lease OR goodwill AND auditor:KPMG" into "(lease OR goodwill) AND
+    // auditor:KPMG", auditor-filtering a branch the user never scoped).
+    if (!isRootAndConjunct(parsed.expression, auditorNodes[0])) {
+      return fail('auditor-composition', `Under AND-precedence, ${renderNodeLabel(auditorNodes[0])} applies to only part of this query. Either group the text explicitly so the auditor filter governs all of it — e.g. (lease OR goodwill) AND ${renderNodeLabel(auditorNodes[0])} — or set the firm in Advanced Filters.`);
+    }
+    auditor = firm;
+    lifted = removeRootConjunct(parsed.expression, auditorNodes[0]);
+  }
+
+  if (!lifted) {
+    // Auditor-only query: a valid firm-scoped browse with nothing to
+    // evaluate against filing text.
+    return { ok: true, ast: null, branches: [], auditor, residual: '' };
+  }
+
   // A query made only of NOT terms has nothing to fetch from EDGAR (there is no
   // "every filing that lacks X" endpoint), so it cannot be run as-is — unless an
-  // auditor token supplies the positive anchor to fetch against. The numeric
+  // auditor operand supplies the positive anchor to fetch against. The numeric
   // operators are in the same position: # matches a CLASS of token, so it can
   // validate candidates but can never retrieve them.
-  if (collectPositiveTerms(parsed.expression).size === 0 && !auditor) {
-    if (containsNumberOperand(parsed.expression)) {
+  const hasPositiveAnchors = collectPositiveTerms(lifted).size > 0;
+  if (!hasPositiveAnchors && !auditor) {
+    if (containsNumberOperand(lifted)) {
       return fail('numeric-only', 'The numeric operator matches values, not filings — anchor it to a term or phrase, e.g. "goodwill impairment" w/10 $#.');
     }
-    if (containsWildcardOperand(parsed.expression)) {
+    if (containsWildcardOperand(lifted)) {
       // EDGAR full-text search has no wildcard support, so a wildcard can
       // verify candidates but cannot fetch them. Requiring a concrete anchor
       // states the limit instead of running a search that silently misses.
@@ -642,11 +720,16 @@ export function compileBooleanQuery(raw: string): BooleanCompileResult {
     return fail('negative-only', 'Add at least one term that is not negated — a NOT-only query has nothing to match against.');
   }
 
-  // Every OR branch must carry its own retrieval anchor — unless an auditor:
-  // token is present, in which case candidates come from the auditor facet and
-  // branches only validate. Mirrors the whole-query rule above, per branch.
-  if (!auditor) {
-    const unanchored = findUnanchoredBranch(parsed.expression);
+  // Every OR branch must carry its own retrieval anchor — or, when an
+  // auditor operand is present, be covered by a REQUIRED firm-scoped lane:
+  // candidates fetched by firm, validated by the branch expression (the
+  // planner counts the covered branch via droppedUnanchored and
+  // buildBooleanServerQueries promotes the firm lane to required). Without
+  // a firm, an unanchored branch has no possible lane and is rejected —
+  // an accepted query must never contain a branch the plan cannot execute
+  // (audit R1: this exact shape used to be accepted and silently dropped).
+  if (hasPositiveAnchors && !auditor) {
+    const unanchored = findUnanchoredBranch(lifted);
     if (unanchored) {
       const branch = unanchored.label;
       if (unanchored.reason === 'wildcard') {
@@ -659,14 +742,89 @@ export function compileBooleanQuery(raw: string): BooleanCompileResult {
     }
   }
 
+  // The auditor-free residual, serialized from the lifted AST in canonical
+  // form (explicit parens). This string is what retrieval lanes and branch
+  // planning consume — the auditor reaches them only through the structured
+  // filter, never as text.
+  const residualText = serializeBooleanNode(lifted);
+
   // Complexity cap: too many OR branches would force us to approximate the logic
   // rather than retrieve each disjunct honestly. Reject instead.
-  const plan = planBooleanBranches(trimmed);
+  const plan = planBooleanBranches(residualText);
   if (plan.truncated) {
     return fail('too-complex', 'This query has too many OR branches to evaluate exactly — narrow it or split it into separate searches.');
   }
 
-  return { ok: true, ast: parsed.expression, branches: plan.branches, auditor, residual: trimmed };
+  return { ok: true, ast: lifted, branches: plan.branches, auditor, residual: residualText };
+}
+
+/** Every AUDITOR operand anywhere in the expression, in source order. */
+function collectAuditorNodes(node: BooleanSearchNode): Array<{ type: 'AUDITOR'; firm: string }> {
+  switch (node.type) {
+    case 'AUDITOR':
+      return [node];
+    case 'NOT':
+      return collectAuditorNodes(node.child);
+    case 'AND':
+    case 'OR':
+      return [...collectAuditorNodes(node.left), ...collectAuditorNodes(node.right)];
+    case 'PROX':
+      return [...collectAuditorNodes(node.left), ...collectAuditorNodes(node.right)];
+    default:
+      return [];
+  }
+}
+
+/** The conjuncts of the root AND chain (an OR/NOT/PROX root is one conjunct). */
+function rootAndConjuncts(root: BooleanSearchNode): BooleanSearchNode[] {
+  if (root.type === 'AND') {
+    return [...rootAndConjuncts(root.left), ...rootAndConjuncts(root.right)];
+  }
+  return [root];
+}
+
+/** True when `target` is a direct conjunct of the root AND chain. */
+function isRootAndConjunct(root: BooleanSearchNode, target: BooleanSearchNode): boolean {
+  return rootAndConjuncts(root).includes(target);
+}
+
+/** The expression with one root conjunct removed; null when nothing remains. */
+function removeRootConjunct(root: BooleanSearchNode, target: BooleanSearchNode): BooleanSearchNode | null {
+  const rest = rootAndConjuncts(root).filter(conjunct => conjunct !== target);
+  if (rest.length === 0) return null;
+  return rest.reduce((left, right) => ({ type: 'AND', left, right }));
+}
+
+/**
+ * Canonical source rendering of an expression — re-parses to the same AST.
+ * Non-leaf operands are always parenthesized, so precedence survives the
+ * round trip regardless of how the user grouped the original.
+ */
+export function serializeBooleanNode(node: BooleanSearchNode): string {
+  const wrap = (child: BooleanSearchNode): string => {
+    const rendered = serializeBooleanNode(child);
+    return child.type === 'AND' || child.type === 'OR' ? `(${rendered})` : rendered;
+  };
+  switch (node.type) {
+    case 'TERM':
+      return node.value;
+    case 'PHRASE':
+      return `"${node.value}"`;
+    case 'WILDCARD':
+      return node.pattern;
+    case 'NUMBER':
+      return numberUnitLabel(node.unit);
+    case 'AUDITOR':
+      return /\s/.test(node.firm) ? `auditor:"${node.firm}"` : `auditor:${node.firm}`;
+    case 'NOT':
+      return `NOT ${wrap(node.child)}`;
+    case 'PROX':
+      return `${wrap(node.left)} ${node.ordered ? 'p' : 'w'}/${node.distance} ${wrap(node.right)}`;
+    case 'AND':
+      return `${wrap(node.left)} AND ${wrap(node.right)}`;
+    case 'OR':
+      return `${wrap(node.left)} OR ${wrap(node.right)}`;
+  }
 }
 
 /** Message-only view of {@link compileBooleanQuery}, for inline field errors. */
@@ -877,6 +1035,11 @@ function extractPositiveSnippet(index: TextIndex, expression: BooleanSearchNode)
 
 function evaluate(node: BooleanSearchNode, index: TextIndex): boolean {
   switch (node.type) {
+    case 'AUDITOR':
+      // Text-neutral: the firm constraint is enforced against filing
+      // METADATA by the retrieval/post-filter layer. Against body text an
+      // auditor operand asserts nothing, so it must not veto a match.
+      return true;
     case 'TERM':
     case 'PHRASE':
     case 'NUMBER':
@@ -916,6 +1079,14 @@ export function extractBooleanMatchSnippet(query: string, text: string): Boolean
   }
 
   const index = createTextIndex(text);
+  // Truth precondition, enforced INSIDE the API so no caller can bypass it
+  // (audit R1): a snippet is evidence of a match, so text the FULL
+  // expression rejects must never yield one — an excerpt built from just a
+  // positive term reads as authoritative support for a claim the engine
+  // did not make.
+  if (!evaluate(parsed.expression, index)) {
+    return null;
+  }
   const proxSpan = findBestProximitySpan(parsed.expression, index);
   if (proxSpan) {
     return {
@@ -937,6 +1108,9 @@ export function extractBooleanMatchSnippet(query: string, text: string): Boolean
 
 function collectPositiveTerms(node: BooleanSearchNode, negated = false, bucket = new Set<string>()): Set<string> {
   switch (node.type) {
+    case 'AUDITOR':
+      // A firm scopes retrieval but anchors no text search of its own.
+      return bucket;
     case 'TERM':
     case 'PHRASE':
       if (!negated) {
@@ -984,6 +1158,8 @@ function numberUnitLabel(unit: NumberUnit): string {
 /** Compact source-like rendering of a node, for validation messages. */
 function renderNodeLabel(node: BooleanSearchNode): string {
   switch (node.type) {
+    case 'AUDITOR':
+      return /\s/.test(node.firm) ? `auditor:"${node.firm}"` : `auditor:${node.firm}`;
     case 'TERM':
       return node.value;
     case 'PHRASE':
@@ -1077,9 +1253,9 @@ export function findUnanchoredBranch(
   return null;
 }
 
-export function planBooleanBranches(query: string, maxBranches = 16): { branches: string[]; truncated: boolean } {
+export function planBooleanBranches(query: string, maxBranches = 16): { branches: string[]; truncated: boolean; droppedUnanchored: number } {
   const parsed = parseBooleanQuery(query);
-  if (!parsed.expression) return { branches: [], truncated: false };
+  if (!parsed.expression) return { branches: [], truncated: false, droppedUnanchored: 0 };
 
   const positiveTerms = (node: BooleanSearchNode): string[] => {
     switch (node.type) {
@@ -1125,18 +1301,28 @@ export function planBooleanBranches(query: string, maxBranches = 16): { branches
 
   const seen = new Set<string>();
   const branches: string[] = [];
+  // A branch-set with no positive terms is an OR disjunct nothing can fetch
+  // (pure negation/wildcard/numeric). It used to be discarded HERE without a
+  // trace — the audit R1 silent-omission site. It is now counted so the
+  // retrieval planner can cover it with a firm-scoped lane (or the compiler
+  // reject the query when no lane can exist).
+  let droppedUnanchored = 0;
   for (const set of branchSets(parsed.expression)) {
     const branchQuery = Array.from(new Set(set.filter(Boolean)))
       .map(formatCandidateQueryTerm)
       .filter(Boolean)
       .join(' ');
+    if (!branchQuery) {
+      droppedUnanchored += 1;
+      continue;
+    }
     const key = normalizeWhitespace(branchQuery).toLowerCase();
-    if (!branchQuery || seen.has(key)) continue;
-    if (branches.length >= maxBranches) return { branches, truncated: true };
+    if (seen.has(key)) continue;
+    if (branches.length >= maxBranches) return { branches, truncated: true, droppedUnanchored };
     seen.add(key);
     branches.push(branchQuery);
   }
-  return { branches, truncated: false };
+  return { branches, truncated: false, droppedUnanchored };
 }
 
 export function buildCandidateQueryFromBoolean(query: string): string {

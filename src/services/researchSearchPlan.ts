@@ -18,6 +18,7 @@ import { cloneSearchFilters, hasResearchSearchCriteria } from './researchSession
 import { interpretSearchPrompt } from './searchAssist';
 import {
   describeBooleanQueryIssue,
+  compileBooleanQuery,
   extractAuditorFilterToken,
   looksLikeBooleanQuery,
 } from '../utils/booleanSearch';
@@ -143,9 +144,20 @@ export function planResearchSearch(
   }
 
   // Re-validate the residual: promotion can leave an expression that no longer
-  // stands on its own (a bare `auditor:KPMG` reduces to empty text).
-  const residualIssue = describeBooleanQueryIssue(query);
-  if (residualIssue) return { status: 'rejected', message: residualIssue };
+  // stands on its own (a bare `auditor:KPMG` reduces to empty text). Two
+  // issue classes are tolerated ONLY when a firm was promoted, because the
+  // firm-scoped retrieval lane covers them (audit R1 slice 2): a residual
+  // with no positive anchor (auditor:PwC AND NOT goodwill) and a residual
+  // whose OR carries an unanchored branch (auditor:PwC AND (impairment OR
+  // NOT goodwill)) both fetch candidates by firm and validate by expression.
+  if (query.trim()) {
+    const residualCompiled = compileBooleanQuery(query);
+    if (!residualCompiled.ok) {
+      const coveredByFirmLane = promotedAuditor
+        && (residualCompiled.code === 'unanchored-branch' || residualCompiled.code === 'negative-only');
+      if (!coveredByFirmLane) return { status: 'rejected', message: residualCompiled.message };
+    }
+  }
 
   return { status: 'ready', trimmed, mode: effectiveMode, query, filters, appliedHints, promotedAuditor };
 }

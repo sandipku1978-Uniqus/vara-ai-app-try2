@@ -32,7 +32,13 @@ export interface ResearchSearchSession {
    * restored tab keeps its corpus answer ("10,000+ filings match") instead of
    * silently degrading to the shown count. Absent on older stored sessions.
    */
-  coverage?: { examined: number; upstreamTotal: number; complete: boolean; upstreamTotalIsFloor?: boolean } | null;
+  coverage?: {
+    examined: number; upstreamTotal: number; complete: boolean; upstreamTotalIsFloor?: boolean;
+    /** Per-lane ledger + measured work (audit R1): saved artifacts retain the
+     *  branch-level story, not just the aggregate. */
+    branches?: import('./secApi').BranchCoverageEntry[];
+    work?: import('./secApi').SearchCandidateCoverage['work'];
+  } | null;
 }
 
 const STORAGE_KEY = 'vara.research.sessions.v1';

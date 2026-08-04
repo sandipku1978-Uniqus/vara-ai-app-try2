@@ -1219,6 +1219,24 @@ export interface SearchCandidateCoverage {
    * as an exact total.
    */
   upstreamTotalIsFloor?: boolean;
+  /**
+   * Measured upstream work for the run, retries and server pre-screens
+   * included, beside the declared ceilings (audit R1: displayed limits must
+   * equal measured work — a budget that omits retries is not a ceiling).
+   */
+  work?: {
+    /** Upstream page HTTP attempts (onUpstreamPage fires per attempt). */
+    pageRequests: number;
+    /** Documents hydrated (logical fetches, reserve accounting). */
+    docFetches: number;
+    /** Document HTTP attempts, retries and parent-doc fallbacks included. */
+    docHttpAttempts: number;
+    /** Server pre-screen chunk requests issued. */
+    prescreenRequests: number;
+    /** pageRequests + docHttpAttempts + prescreenRequests. */
+    totalUpstreamRequests: number;
+    ceiling: { pages: number; docHttpAttempts: number; prescreenRequests: number };
+  };
 }
 
 export interface EnrichedSearchParams {
@@ -1587,12 +1605,14 @@ export async function fetchFilingIndex(accessionNumber: string): Promise<FilingD
  * transport failure from being scored as "fetched fine, didn't match".
  */
 export type FilingTextOutcome =
-  | { ok: true; text: string }
+  | { ok: true; text: string; /** Upstream HTTP attempts spent, retries included (audit R1). */ attempts?: number }
   | {
       ok: false;
       kind: 'not-found' | 'unsupported' | 'rate-limit' | 'timeout' | 'upstream' | 'cancelled';
       status?: number;
       retryable: boolean;
+      /** Upstream HTTP attempts spent, retries included (audit R1). */
+      attempts?: number;
     };
 
 function classifyFilingTextStatus(status: number): Extract<FilingTextOutcome, { ok: false }> {
@@ -1621,6 +1641,9 @@ export async function fetchFilingTextOutcome(
   const cached = filingTextCache.get(cacheKey);
   if (cached) return cached;
 
+  // Every HTTP attempt is counted — retries included — so budget accounting
+  // upstream can equal measured work, not logical call counts (audit R1).
+  let httpAttempts = 0;
   const pending = (async (): Promise<FilingTextOutcome> => {
     let last: Extract<FilingTextOutcome, { ok: false }> = { ok: false, kind: 'upstream', retryable: true };
 
@@ -1629,6 +1652,7 @@ export async function fetchFilingTextOutcome(
 
       let response: Response;
       try {
+        httpAttempts += 1;
         // Shared cache first: /api/filing-text returns already-extracted text,
         // so a filing any user has opened before costs SEC nothing and crosses
         // the wire without its markup.
@@ -1661,7 +1685,7 @@ export async function fetchFilingTextOutcome(
     }
 
     return last;
-  })();
+  })().then(outcome => ({ ...outcome, attempts: httpAttempts }));
 
   // Hold the in-flight promise so concurrent callers share one request, then
   // keep it only if it succeeded.
