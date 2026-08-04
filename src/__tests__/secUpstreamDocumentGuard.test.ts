@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { assertSecDocumentResponse, SecUpstreamError } from '../lib/sec-upstream';
+import { assertSecDocumentResponse, looksLikeSecErrorText, SecUpstreamError } from '../lib/sec-upstream';
 
 /**
  * Remediation handoff 2026-07-31, WP4 item 4 / acceptance T13.
@@ -71,5 +71,21 @@ describe('assertSecDocumentResponse', () => {
 
   it('tolerates a missing content-type header on a 200 (pre-2001 archive quirks)', () => {
     expect(() => assertSecDocumentResponse(response(200))).not.toThrow();
+  });
+});
+
+describe('looksLikeSecErrorText — cached-poison detection (audit R1)', () => {
+  it('flags a short cached SEC error page', () => {
+    const page = 'SEC.gov — Your Request Originated from an Undeclared Automated Tool. Please declare your traffic.';
+    expect(looksLikeSecErrorText(page)).toContain('Undeclared Automated Tool');
+  });
+
+  it('never flags a full filing that quotes the phrase', () => {
+    const filing = 'x'.repeat(6000) + ' the SEC notice "Request Rate Threshold Exceeded" appeared in our logs ';
+    expect(looksLikeSecErrorText(filing)).toBeNull();
+  });
+
+  it('passes clean extracted text through', () => {
+    expect(looksLikeSecErrorText('Annual report discussing goodwill impairment charges for fiscal 2026.')).toBeNull();
   });
 });

@@ -165,3 +165,20 @@ describe('audit R1 corpus — extraction shim refuses to rewrite rejected querie
     expect(residual).toBe('weakness');
   });
 });
+
+describe('snippet truth-gate (audit R1 slice 5)', () => {
+  it('returns no snippet for text the full expression rejects', async () => {
+    const { extractBooleanMatchSnippet } = await import('../utils/booleanSearch');
+    // Text contains the positive term but violates NOT goodwill — an excerpt
+    // here would read as evidence for a claim the engine did not make.
+    const text = 'impairment charges rose while goodwill balances remained flat';
+    expect(extractBooleanMatchSnippet('impairment AND NOT goodwill', text)).toBeNull();
+  });
+
+  it('still yields the excerpt when the full expression matches', async () => {
+    const { extractBooleanMatchSnippet } = await import('../utils/booleanSearch');
+    const text = 'impairment charges rose across reporting units this year';
+    const snippet = extractBooleanMatchSnippet('impairment AND NOT goodwill', text);
+    expect(snippet?.excerpt).toContain('impairment');
+  });
+});
