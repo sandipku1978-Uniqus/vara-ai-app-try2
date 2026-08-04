@@ -119,10 +119,23 @@ jobs:
       - run: npm ci
       - id: gate
         name: Check whether Clerk test credentials are configured
+        # Readiness audit R3: the skip-with-notice path existed so the job
+        # could land before the secrets did. The secrets exist now (added
+        # 2026-08-02), so a missing secret is a BROKEN configuration and the
+        # job fails loudly — a silently green non-run of the auth suite is
+        # exactly the class of quiet gap this pipeline is built to refuse.
+        # Sole carve-out: dependabot PRs never receive repository secrets by
+        # GitHub's design, so for that actor alone the suite is skipped with
+        # a notice instead of failing every dependency bump.
         run: |
           if [ -z "${CLERK_SECRET_KEY}" ] || [ -z "${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}" ]; then
-            echo 'configured=false' >> "$GITHUB_OUTPUT"
-            echo '::notice title=Authentication suite skipped::Set the CLERK_PUBLISHABLE_KEY_TEST and CLERK_SECRET_KEY_TEST repository secrets (Clerk development instance) to enable it. See docs/pending-keys-checklist.md.'
+            if [ "${GITHUB_ACTOR}" = "dependabot[bot]" ]; then
+              echo 'configured=false' >> "$GITHUB_OUTPUT"
+              echo '::notice title=Authentication suite skipped for dependabot::Dependabot PRs do not receive repository secrets; the auth suite runs on every other PR.'
+            else
+              echo '::error title=Clerk test credentials missing::CLERK_PUBLISHABLE_KEY_TEST / CLERK_SECRET_KEY_TEST are configured on this repository (since 2026-08-02) but were not available to this run. A silently skipped auth suite is not a passing auth suite — fix the secret configuration. See docs/pending-keys-checklist.md section 6.'
+              exit 1
+            fi
           else
             echo 'configured=true' >> "$GITHUB_OUTPUT"
           fi

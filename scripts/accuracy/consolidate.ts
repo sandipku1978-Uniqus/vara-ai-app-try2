@@ -122,6 +122,34 @@ async function main() {
   if (e2e && (!Number.isFinite(e2ePassRate) || e2ePassRate < e2eMinPass)) {
     problems.push(`e2e pass rate ${Number.isFinite(e2ePassRate) ? e2ePassRate.toFixed(1) : 'n/a'}% is below its ${e2eMinPass}% bar`);
   }
+  // Per-class mandatory gates (readiness audit R3): a class collapse must
+  // not hide inside a healthy total — class B sat at 48% in run 30782680799
+  // while the aggregate could have cleared a lower bar. Floors are COLLAPSE
+  // detectors, not precision targets: post-fix baselines run 97-100%, so a
+  // floor breach means something broke, with slack left for CI egress
+  // variance.
+  const CLASS_FLOORS: Record<string, number> = { A: 95, B: 80, C: 80, D: 95, E: 95, F: 90 };
+  // Planned sampling shares from e2e-perf-test.ts. A class delivering under
+  // 90% of its planned share is a sampler failure (the audit caught class B
+  // silently ceilinged at ~70% of plan by an attempt-capped loop).
+  const CLASS_SHARES: Record<string, number> = { A: 0.45, B: 0.15, C: 0.15, D: 0.15, E: 0.02, F: 0.08 };
+  const perClass = (e2e?.summary ?? []) as Array<{ cls: string; n: number; passRate: number }>;
+  if (e2e) {
+    for (const [cls, floor] of Object.entries(CLASS_FLOORS)) {
+      const s = perClass.find(x => x.cls === cls);
+      if (!s || s.n === 0) {
+        problems.push(`e2e class ${cls} produced no cases — a class that did not run cannot pass`);
+        continue;
+      }
+      if (s.passRate < floor) {
+        problems.push(`e2e class ${cls} pass rate ${s.passRate.toFixed(1)}% is below its ${floor}% floor — a class collapse cannot hide in the total`);
+      }
+      const planned = (CLASS_SHARES[cls] ?? 0) * e2eTotal;
+      if (planned > 0 && s.n < planned * 0.9) {
+        problems.push(`e2e class ${cls} sampled ${s.n} of ~${Math.round(planned)} planned cases — sampling shortfall, coverage claim would overstate (audit R3)`);
+      }
+    }
+  }
 
   // ── Provenance ──
   const version = await fetchVersion(base);
