@@ -97,10 +97,14 @@ describe('inline auditor field token', () => {
     expect(residual).toBe('lease');
   });
 
-  it('handles the token at the front of the query', () => {
+  it('refuses to lift a firm out of an OR — that silently rewrote the query', () => {
+    // Audit R1: the old extraction turned "auditor:KPMG OR restructuring"
+    // into a KPMG-filtered search for "restructuring", which is a DIFFERENT
+    // query. Rejected compositions now extract nothing; the text passes
+    // through untouched.
     const { auditor, residual } = extractAuditorFilterToken('auditor:KPMG OR restructuring');
-    expect(auditor).toBe('KPMG');
-    expect(residual).toBe('restructuring');
+    expect(auditor).toBe('');
+    expect(residual).toBe('auditor:KPMG OR restructuring');
   });
 
   it('returns an empty residual for an auditor-only query', () => {

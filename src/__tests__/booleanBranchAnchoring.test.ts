@@ -89,10 +89,23 @@ describe('branches that carry their own anchor stay accepted', () => {
     }
   });
 
-  it('lets the auditor facet anchor otherwise-unanchored branches', () => {
-    // With auditor: present, candidates come from the auditor facet browse and
-    // branches only validate — mirrors the whole-query negative-residual rule.
+  it('rejects a MIXED residual whose unanchored branch the plan would drop', () => {
+    // Audit R1: the old waiver accepted this query and the planner then
+    // silently dropped the "NOT goodwill" lane — PwC filings satisfying
+    // NOT goodwill without impairment were omitted without a word. Until
+    // firm-scoped per-branch retrieval exists, the mixed form is rejected
+    // with the remedy in the message.
     const result = compileBooleanQuery('auditor:PwC AND (impairment OR NOT goodwill)');
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.code).toBe('unanchored-branch');
+      expect(result.message).toMatch(/auditor:PwC AND NOT goodwill/);
+    }
+  });
+
+  it('keeps the firm-anchored PURE-negative form accepted (executable today)', () => {
+    // One firm-scoped lane retrieves; NOT validates everything it returns.
+    const result = compileBooleanQuery('auditor:PwC AND NOT goodwill');
     expect(result.ok).toBe(true);
     if (result.ok) expect(result.auditor).toBe('PwC');
   });
