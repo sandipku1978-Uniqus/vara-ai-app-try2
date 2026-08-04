@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect, useMemo, type KeyboardEvent } from 'react';
+import OwnershipFormView from '../components/research/OwnershipFormView';
+import { buildOwnershipRenderedPath, parseOwnershipDocument, type OwnershipDocument } from '../utils/ownershipForm';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 
 import { ArrowLeft, Bookmark, MessageSquare, ExternalLink, Columns, Highlighter, Settings2, Download, List, AlertCircle, FileText, Loader2, X } from 'lucide-react';
@@ -253,7 +255,7 @@ export default function FilingDetail() {
   const [resolvedPrimaryDoc, setResolvedPrimaryDoc] = useState('');
   const primaryDoc = primaryDocIsPlaceholder && resolvedPrimaryDoc ? resolvedPrimaryDoc : routePrimaryDoc;
   const isValidFilingId = Boolean(cik && accession && primaryDoc);
-  const secUrl = buildSecDocumentUrl(cik, accession, primaryDoc);
+  const rawSecUrl = buildSecDocumentUrl(cik, accession, primaryDoc);
   const formattedAccession = accession.replace(/-/g, '');
 
   useEffect(() => {
@@ -267,6 +269,37 @@ export default function FilingDetail() {
   }, [accession, cik, primaryDocIsPlaceholder]);
 
   const [showSidebar, setShowSidebar] = useState(true);
+  // Forms 3/4/5 are XML-only in the archive: no HTML rendition exists, so
+  // the iframe path has nothing to show. Fetch and parse the ownership XML
+  // instead; null after loading means "not an ownership document" and the
+  // existing external-viewer fallback stands (user report 2026-08-03: the
+  // Form 4 flow dead-ended on raw doc4.xml).
+  const [ownershipDoc, setOwnershipDoc] = useState<OwnershipDocument | null>(null);
+  const [ownershipChecked, setOwnershipChecked] = useState(false);
+  useEffect(() => {
+    setOwnershipDoc(null);
+    setOwnershipChecked(false);
+    if (!isValidFilingId || !/\.xml$/i.test(primaryDoc)) { setOwnershipChecked(true); return; }
+    let cancelled = false;
+    void (async () => {
+      try {
+        const response = await fetch(buildSecProxyUrl(`Archives/edgar/data/${cik}/${formattedAccession}/${primaryDoc}`));
+        const xml = response.ok ? await response.text() : '';
+        if (!cancelled) setOwnershipDoc(parseOwnershipDocument(xml));
+      } catch {
+        if (!cancelled) setOwnershipDoc(null);
+      } finally {
+        if (!cancelled) setOwnershipChecked(true);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [cik, formattedAccession, primaryDoc, isValidFilingId]);
+  // For a parsed ownership form, the SEC link points at SEC's own
+  // XSLT-rendered page — the raw XML is what the user reported as the
+  // dead end. Everything else keeps the direct archive URL.
+  const secUrl = ownershipDoc
+    ? `https://www.sec.gov/${buildOwnershipRenderedPath(cik, formattedAccession, primaryDoc, ownershipDoc.schemaVersion)}`
+    : rawSecUrl;
   const [isMobileSidebar, setIsMobileSidebar] = useState(false);
   const [redlineMode, setRedlineMode] = useState(false);
   const [annotationMode, setAnnotationMode] = useState(false);
@@ -1248,13 +1281,17 @@ export default function FilingDetail() {
               </div>
             </div>
           )}
-          {/\.(xml|pdf)$/i.test(primaryDoc) || iframeError ? (
+          {ownershipDoc ? (
+            <OwnershipFormView document={ownershipDoc} />
+          ) : /\.(xml|pdf)$/i.test(primaryDoc) || iframeError ? (
             <div className="iframe-fallback">
               <FileText size={48} style={{ color: 'var(--accent-blue)', marginBottom: '16px' }} />
               <h3>This document cannot be previewed inline</h3>
               <p style={{ color: 'var(--text-secondary)', marginBottom: '16px', maxWidth: '400px' }}>
                 {primaryDoc.toLowerCase().endsWith('.xml')
-                  ? 'XML-based filings (Forms 3, 4, 5) use XSLT stylesheets that require the SEC viewer to render properly.'
+                  ? (ownershipChecked
+                      ? 'This XML document is not an ownership form the inline viewer can render — open it on SEC.gov.'
+                      : 'Loading the filing\u2019s XML…')
                   : primaryDoc.toLowerCase().endsWith('.pdf')
                     ? 'This document was filed as a PDF — open it on SEC.gov to view it natively.'
                     : 'The document failed to load in the embedded viewer.'}
