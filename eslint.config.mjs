@@ -29,5 +29,10 @@ export default defineConfig([
     // ENOENT on a worktree's build manifest whenever one exists. CI never sees
     // this — it lints a fresh checkout — so it only ever breaks local runs.
     '.claude/**',
+    // Same shape, different producer: `vercel build` writes minified bundles
+    // to .vercel/output/, which lint then walks and reports thousands of
+    // no-unused-expressions warnings from generated code. Gitignored, so CI
+    // never sees it — another local-only failure.
+    '.vercel/**',
   ]),
 ]);

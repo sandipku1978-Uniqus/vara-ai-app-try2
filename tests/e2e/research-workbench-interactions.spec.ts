@@ -158,6 +158,18 @@ async function visibleResultNames(page: Page): Promise<string[]> {
 test.describe('research workbench stateful interactions', () => {
   test.beforeEach(async ({ page }) => {
     await installBooleanFixtures(page);
+    // Serve the SEC evidence popup locally, matching the convention in
+    // company-dossier-fixtures / governance-analytics-fixtures. Without it,
+    // open-issuer-or-source navigated a popup to the LIVE sec.gov: fine in
+    // isolation and fine within this file, but order-dependently flaky in a
+    // full-suite run where dozens of earlier tests have already hit SEC.
+    // The contract under test is the href, target and rel the app emits and
+    // the research state it retains — none of which needs a live third party.
+    await page.context().route('https://www.sec.gov/**', route => route.fulfill({
+      status: 200,
+      contentType: 'text/html; charset=utf-8',
+      body: '<html><body><h1>SEC source fixture</h1></body></html>',
+    }));
     await page.goto('/search', { waitUntil: 'domcontentloaded' });
     await waitForIdentity(page);
   });
