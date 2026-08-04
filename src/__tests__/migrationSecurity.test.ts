@@ -141,6 +141,15 @@ describe('database security migration chain', () => {
     expect(sql).toContain("revoke all on function public.urc_schema_contract_evidence()\n  from public, anon, authenticated");
     expect(sql).toContain("grant execute on function public.urc_schema_contract_evidence()\n  to service_role");
     expect(sql).toContain("if has_function_privilege('anon', 'public.urc_schema_contract_evidence()', 'execute')");
+    // Keep the SQL alias distinct from the PL/pgSQL `required record` used by
+    // the following loop. Reusing that name makes PostgreSQL resolve the
+    // alias as an unassigned record and abort migration 023.
+    expect(sql).toContain(
+      "]) as candidate(signature)\n  where pg_catalog.to_regprocedure(candidate.signature) is null;"
+    );
+    expect(sql).not.toContain(
+      "]) as required(signature)\n  where pg_catalog.to_regprocedure(required.signature) is null;"
+    );
   });
 
   it('022 resolves only unambiguous date-effective ordinary-issuer Form AP evidence', () => {

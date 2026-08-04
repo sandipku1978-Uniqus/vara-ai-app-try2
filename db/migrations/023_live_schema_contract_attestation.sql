@@ -264,7 +264,7 @@ declare
   function_config text[];
   is_security_definer boolean;
 begin
-  select array_agg(required.signature order by required.signature)
+  select array_agg(candidate.signature order by candidate.signature)
     into missing
   from unnest(array[
     'public.urc_search_filings(text[],date,date,text,text,text,integer,integer,bigint)',
@@ -280,8 +280,8 @@ begin
     'public.urc_refresh_auditor_periods()',
     'public.urc_companies_needing_sic(integer)',
     'public.urc_thread_letters()'
-  ]) as required(signature)
-  where pg_catalog.to_regprocedure(required.signature) is null;
+  ]) as candidate(signature)
+  where pg_catalog.to_regprocedure(candidate.signature) is null;
 
   if missing is not null then
     raise exception 'schema contract: missing function(s): %', array_to_string(missing, ', ');
@@ -853,7 +853,7 @@ insert into public.urc_schema_version (
   '023',
   25,
   -- URC CHAIN CHECKSUM VALUE
-  '065a408a3a6b1fe751aefaeba8e0864ea213256689f4b9103d727b72635c6e1b',
+  '0ae43502dee42603a4943157a171e5d513ece45065e80f58768b998765f3cfa7',
   'sha256-v2'
 )
 on conflict (singleton) do update set
