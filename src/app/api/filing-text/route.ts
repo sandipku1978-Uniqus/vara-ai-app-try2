@@ -19,6 +19,7 @@ import { getCacheWriterSupabase, getWebSupabase } from '../../../lib/supabase-we
 import { extractDocumentTextFromHtmlServer } from '../../../lib/filingTextServer';
 import {
   assertSecDocumentResponse,
+  looksLikeSecErrorText,
   buildSecTargetUrl,
   fetchSecResponse,
   readResponseWithLimit,
@@ -70,10 +71,31 @@ export async function GET(request: Request) {
         .maybeSingle();
 
       if (data?.text) {
-        return NextResponse.json(
-          { ok: true, text: data.text, cached: true },
-          { headers: { 'Cache-Control': 'private, max-age=3600' } },
-        );
+        // Revalidate on READ (audit R1): rows cached before the fetch-time
+        // guard existed can hold SEC error pages as if they were filing
+        // text. A poisoned row is deleted (best-effort, service role) and
+        // the request falls through to a live fetch — self-healing, one row
+        // at a time, no bulk migration over 100k+ cached documents.
+        const poisonSignature = looksLikeSecErrorText(data.text);
+        if (!poisonSignature) {
+          return NextResponse.json(
+            { ok: true, text: data.text, cached: true },
+            { headers: { 'Cache-Control': 'private, max-age=3600' } },
+          );
+        }
+        console.error(`[filing-text] cached SEC error page detected ("${poisonSignature}") for ${cik}/${cleanAccession}/${document}; purging and refetching.`);
+        const writer = getCacheWriterSupabase();
+        if (writer) {
+          void writer
+            .from(CACHE_TABLE)
+            .delete()
+            .eq('cik', cik)
+            .eq('accession', cleanAccession)
+            .eq('document', document)
+            .then((result: { error: { message: string } | null }) => {
+              if (result.error) console.error(`[filing-text] poison purge failed: ${result.error.message}`);
+            });
+        }
       }
     } catch (error) {
       console.error('[filing-text] cache read failed; falling through to SEC:', error);

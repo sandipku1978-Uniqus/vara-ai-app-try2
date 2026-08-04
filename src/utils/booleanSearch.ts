@@ -11,8 +11,15 @@
  *      tokens instead of splitting at the symbol.
  * v4 — ordered proximity (P/n, PRE/n) and wildcard terms (crypto*, wom?n).
  *      "P/3" and terms containing * or ? previously matched as literal text.
+ * v5 — auditor as a parser-level operand (audit R1): quoted phrases keep
+ *      literal auditor: text, malformed/duplicate fields reject instead of
+ *      silently matching, precedence is judged on the AST, and the mixed
+ *      form (auditor:F AND (a OR NOT b)) retrieves through a REQUIRED
+ *      firm-scoped lane instead of silently dropping the negative branch.
+ *      Snippets are truth-gated on the full expression. Saved searches
+ *      legitimately recall a different (larger, correct) set.
  */
-export const BOOLEAN_ENGINE_VERSION = 4;
+export const BOOLEAN_ENGINE_VERSION = 5;
 
 /** Which class of numeric token a # operator matches. */
 export type NumberUnit = 'any' | 'currency' | 'percent';
@@ -1072,6 +1079,14 @@ export function extractBooleanMatchSnippet(query: string, text: string): Boolean
   }
 
   const index = createTextIndex(text);
+  // Truth precondition, enforced INSIDE the API so no caller can bypass it
+  // (audit R1): a snippet is evidence of a match, so text the FULL
+  // expression rejects must never yield one — an excerpt built from just a
+  // positive term reads as authoritative support for a claim the engine
+  // did not make.
+  if (!evaluate(parsed.expression, index)) {
+    return null;
+  }
   const proxSpan = findBestProximitySpan(parsed.expression, index);
   if (proxSpan) {
     return {
