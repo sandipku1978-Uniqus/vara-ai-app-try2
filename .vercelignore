@@ -1,0 +1,14 @@
+# Local agent/build state; never send these to the Vercel build context.
+.claude/
+.next/
+.next-build/
+node_modules/
+deliverables/
+.git/
+
+# Local-only reports and generated QA artifacts.
+playwright-report/
+test-results/
+coverage/
+tmp/
+.DS_Store
