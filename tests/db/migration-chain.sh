@@ -48,12 +48,15 @@ end $$;
 -- migrations directory, never hardcoded: a hardcoded head silently expires
 -- the moment the next migration lands (exactly how PR #96 got stuck: the
 -- test demanded 019 while the chain stamped 020).
+-- psql variables do not interpolate inside dollar-quoted DO bodies; hand
+-- the value over as a session GUC instead.
+set chain.head = :'chain_head';
 do $$
-declare v text;
+declare v text; expected text := current_setting('chain.head');
 begin
   select version into v from urc_schema_version where singleton;
-  if v is distinct from :'chain_head' then
-    raise exception 'urc_schema_version reports %, chain head expects %', coalesce(v, 'NULL'), :'chain_head';
+  if v is distinct from expected then
+    raise exception 'urc_schema_version reports %, chain head expects %', coalesce(v, 'NULL'), expected;
   end if;
 end $$;
 
