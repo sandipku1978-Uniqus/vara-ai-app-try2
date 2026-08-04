@@ -32,7 +32,9 @@ for f in db/migrations/*.sql; do
 done
 
 echo "── Structural assertions ──"
-"${PSQL[@]}" <<'SQL'
+CHAIN_HEAD=$(ls db/migrations/ | grep -oE '^[0-9]{3}' | sort | tail -1)
+echo "  chain head from directory: $CHAIN_HEAD"
+"${PSQL[@]}" -v chain_head="$CHAIN_HEAD" <<'SQL'
 -- 018: search_path pinned on the letters search function
 do $$ begin
   if not exists (
@@ -42,13 +44,16 @@ do $$ begin
   ) then raise exception 'urc_search_letters lacks pinned search_path'; end if;
 end $$;
 
--- 019: schema version registry stamped with the chain head
+-- Schema version registry stamped with the chain head — derived from the
+-- migrations directory, never hardcoded: a hardcoded head silently expires
+-- the moment the next migration lands (exactly how PR #96 got stuck: the
+-- test demanded 019 while the chain stamped 020).
 do $$
 declare v text;
 begin
   select version into v from urc_schema_version where singleton;
-  if v is distinct from '019' then
-    raise exception 'urc_schema_version reports %, chain head expects 019', coalesce(v, 'NULL');
+  if v is distinct from :'chain_head' then
+    raise exception 'urc_schema_version reports %, chain head expects %', coalesce(v, 'NULL'), :'chain_head';
   end if;
 end $$;
 
