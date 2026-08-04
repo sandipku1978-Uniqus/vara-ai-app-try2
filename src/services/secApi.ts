@@ -1265,6 +1265,10 @@ const EFTS_PAGE_SIZE = 10;
 /** EFTS refuses from+size beyond the 10,000-result window. */
 const EFTS_MAX_WINDOW = 10_000;
 
+/** In-flight enriched calls, keyed by full request params — see the dedup
+ *  note inside searchViaEnrichedSearch. */
+const enrichedSearchInFlight = new Map<string, Promise<{ hits: EdgarSearchHit[]; coverage: SearchCandidateCoverage | null }>>();
+
 /**
  * Search filings via the enriched candidate endpoint when available, otherwise fall back to EDGAR EFTS.
  */
@@ -1290,6 +1294,25 @@ async function searchViaEnrichedSearch(
   if (extended.auditor) params.set('auditor', extended.auditor);
   if (extended.sicCode) params.set('sicCode', extended.sicCode);
 
+  // In-flight dedup (2026-08-04): the dashboard's empty-query facet browse
+  // fired FIVE identical /api/es-search?q=&forms=4 requests in parallel —
+  // one per redundant retrieval lane — before the EFTS fallback even began.
+  // The EFTS path below already shares identical calls via edgarSearchCache;
+  // this is the same pattern for the enriched path, IN-FLIGHT ONLY (entries
+  // clear on settle, so results stay fresh across runs). The creator's
+  // callbacks drive live accounting — onUpstreamPage fires once per REAL
+  // HTTP attempt, keeping measured work truthful (audit R1) — and sharers
+  // replay the final coverage into their own onCoverage so page-level
+  // accumulators agree without any extra request.
+  const shareKey = `${params.toString()}|max=${maxResults}`;
+  const inFlight = enrichedSearchInFlight.get(shareKey);
+  if (inFlight) {
+    const shared = await inFlight;
+    if (shared.coverage) extended.onCoverage?.(shared.coverage);
+    return shared.hits;
+  }
+
+  const pending = (async (): Promise<{ hits: EdgarSearchHit[]; coverage: SearchCandidateCoverage | null }> => {
   const results: EdgarSearchHit[] = [];
   const seenIds = new Set<string>();
   let totalHits = Number.POSITIVE_INFINITY;
@@ -1365,7 +1388,16 @@ async function searchViaEnrichedSearch(
     if (offset < maxResults) await delay(50);
   }
 
-  return results;
+  return { hits: results, coverage: aggregateCoverage };
+  })();
+
+  enrichedSearchInFlight.set(shareKey, pending);
+  try {
+    const settled = await pending;
+    return settled.hits;
+  } finally {
+    enrichedSearchInFlight.delete(shareKey);
+  }
 }
 
 /**
