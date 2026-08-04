@@ -16,7 +16,7 @@ describe('planResearchSearch', () => {
       // user typed. The whole expression must be judged first.
       const plan = planResearchSearch('lease OR auditor:KPMG', base(), 'boolean');
       expect(plan.status).toBe('rejected');
-      if (plan.status === 'rejected') expect(plan.message).toMatch(/only be combined with AND/i);
+      if (plan.status === 'rejected') expect(plan.message).toMatch(/applies to only part of this query/i);
     });
 
     it('rejects auditor: under NOT for the same reason', () => {

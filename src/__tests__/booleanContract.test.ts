@@ -39,11 +39,13 @@ describe('auditor: token is AND-only', () => {
   });
 
   it('rejects OR-composition', () => {
-    expect(describeBooleanQueryIssue('lease OR auditor:KPMG')).toMatch(/only be combined with AND/i);
+    // Audit R1: placement is judged on the AST now; the message explains the
+    // precedence problem instead of just naming the rule.
+    expect(describeBooleanQueryIssue('lease OR auditor:KPMG')).toMatch(/applies to only part of this query/i);
   });
 
   it('rejects NOT-composition', () => {
-    expect(describeBooleanQueryIssue('lease AND NOT auditor:KPMG')).toMatch(/only be combined with AND/i);
+    expect(describeBooleanQueryIssue('lease AND NOT auditor:KPMG')).toMatch(/applies to only part of this query/i);
   });
 });
 
