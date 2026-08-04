@@ -26,6 +26,10 @@ function inputs(overrides: Partial<RunCoverageInputs> = {}): RunCoverageInputs {
   return {
     upstreamCoverage: { examined: 5, upstreamTotal: 5, complete: true },
     collectedCandidates: 5,
+    work: {
+      pageRequests: 2, docFetches: 5, docHttpAttempts: 5,
+      prescreenRequests: 1, maxDocHttpAttempts: 180, maxPrescreenRequests: 24,
+    },
     validationExamined: 5,
     validationTimedOut: false,
     budgetExhausted: false,
@@ -85,7 +89,9 @@ describe('finalizeRunCoverage', () => {
   it('request-budget carries the actionable message with the real budget numbers', () => {
     const result = finalizeRunCoverage(inputs({ budgetExhausted: true, maxPageRequests: 240, maxDocAttempts: 120 }));
     expect(result.stopReason).toBe('request-budget');
-    expect(result.degradedMessage).toContain('240 pages / 120 documents');
+    expect(result.degradedMessage).toContain('2/240 page requests');
+    expect(result.degradedMessage).toContain('retries included');
+    expect(result.degradedMessage).toContain('8 upstream requests in all');
     expect(result.degradedMessage).toContain('not the full corpus');
   });
 

@@ -1,7 +1,6 @@
 import type { SearchFilters } from '../domain/searchFilters';
 import {
   fetchCompanySubmissions,
-  fetchFilingText,
   fetchFilingTextOutcome,
   type FilingTextOutcome,
   isEnrichedSearchEnabled,
@@ -113,6 +112,11 @@ interface FilingSignal {
   acceleratedStatus: string;
   /** Why the text was unavailable, when it was. Absent on success. */
   failure?: Extract<FilingTextOutcome, { ok: false }>['kind'];
+  /** Upstream HTTP attempts this signal's FIRST load spent (primary +
+   *  parent-document fetches, retries included). Cache hits spend zero —
+   *  accounting happens via getFilingSignal's onUpstreamAttempts, which
+   *  fires only on creation (audit R1). */
+  upstreamAttempts?: number;
 }
 
 interface CompanyResearchMetadata {
@@ -703,10 +707,12 @@ async function getFilingSignal(
   accessionNumber: string,
   primaryDocument: string,
   filingPrimaryDocument: string,
-  abortSignal?: AbortSignal
+  abortSignal?: AbortSignal,
+  onUpstreamAttempts?: (attempts: number) => void
 ): Promise<FilingSignal> {
   const cacheKey = `${cik}:${accessionNumber}:${primaryDocument}:${filingPrimaryDocument}`;
-  if (!filingSignalCache.has(cacheKey)) {
+  const created = !filingSignalCache.has(cacheKey);
+  if (created) {
     filingSignalCache.set(
       cacheKey,
       (async () => {
@@ -717,16 +723,17 @@ async function getFilingSignal(
           const outcome = await fetchFilingTextOutcome(cik, accessionNumber, primaryDocument, { signal: abortSignal });
           const text = outcome.ok ? outcome.text : '';
           const failure = outcome.ok ? undefined : outcome.kind;
+          let upstreamAttempts = outcome.attempts ?? 1;
           let parentText = '';
           let auditor = canonicalizeAuditorInput(detectAuditor(text));
           let acceleratedStatus = detectAcceleratedStatus(text);
 
           if (filingPrimaryDocument && filingPrimaryDocument !== primaryDocument) {
-            try {
-              parentText = await fetchFilingText(cik, accessionNumber, filingPrimaryDocument);
-            } catch {
-              // Parent document fetch failed — continue with what we have.
-            }
+            // Outcome variant so the parent-document fallback's HTTP attempts
+            // are measured too — it was an uncounted request class (audit R1).
+            const parentOutcome = await fetchFilingTextOutcome(cik, accessionNumber, filingPrimaryDocument, { signal: abortSignal });
+            parentText = parentOutcome.ok ? parentOutcome.text : '';
+            upstreamAttempts += parentOutcome.attempts ?? 1;
 
             if (!auditor) {
               auditor = canonicalizeAuditorInput(detectAuditor(parentText));
@@ -746,18 +753,23 @@ async function getFilingSignal(
             auditor,
             acceleratedStatus,
             failure: resolvedText ? undefined : failure,
+            upstreamAttempts,
           };
         } catch {
           // Filing text fetch failed (rate limit, network error, etc.)
           // Remove from cache so a future attempt can retry.
           filingSignalCache.delete(cacheKey);
-          return { text: '', auditor: '', acceleratedStatus: '', failure: 'upstream' };
+          return { text: '', auditor: '', acceleratedStatus: '', failure: 'upstream', upstreamAttempts: 1 };
         }
       })()
     );
   }
 
-  return filingSignalCache.get(cacheKey)!;
+  const resolved = await filingSignalCache.get(cacheKey)!;
+  // Spend accounting fires only for the call that CREATED the entry: cache
+  // hits cost SEC nothing and must not inflate the measured-work ledger.
+  if (created) onUpstreamAttempts?.(resolved.upstreamAttempts ?? 1);
+  return resolved;
 }
 
 function getSignalCacheKey(
@@ -1317,13 +1329,14 @@ async function hydrateLightweightMetadata(results: FilingResearchResult[]): Prom
   });
 }
 
-async function hydrateResultSignals(result: FilingResearchResult, abortSignal?: AbortSignal): Promise<FilingSignal> {
+async function hydrateResultSignals(result: FilingResearchResult, abortSignal?: AbortSignal, onUpstreamAttempts?: (attempts: number) => void): Promise<FilingSignal> {
   const filingSignal = await getFilingSignal(
     result.cik,
     result.accessionNumber,
     result.primaryDocument,
     result.filingPrimaryDocument,
-    abortSignal
+    abortSignal,
+    onUpstreamAttempts
   );
   result.auditor = filingSignal.auditor;
   result.acceleratedStatus = filingSignal.acceleratedStatus;
@@ -1634,6 +1647,13 @@ export async function executeFilingResearchSearch({
   // Holding such a run to the document-era budget capped recall for no reason.
   const MAX_PAGE_REQUESTS = delegatedToEfts ? 240 : 60;
   const MAX_DOC_ATTEMPTS = 120;
+  // True end-to-end ceilings (audit R1): the two counters above bound
+  // LOGICAL work (pages fire per HTTP attempt already; documents by
+  // candidate). These bound the measured HTTP attempts themselves, so
+  // retries and parent-document fallbacks can never push real request
+  // counts past what the run declares.
+  const MAX_DOC_HTTP_ATTEMPTS = 180;
+  const MAX_PRESCREEN_REQUESTS = 24;
   // Fair-share reservations (WP4). Budgets used to be first-come-first-served:
   // a broad first OR branch could spend all 120 document attempts (or the wall
   // clock) before a later required branch validated ANYTHING, so a rare
@@ -1659,6 +1679,8 @@ export async function executeFilingResearchSearch({
   const run: WaveRunState = {
     pageRequests: 0,
     docAttempts: 0,
+    docHttpAttempts: 0,
+    prescreenRequests: 0,
     validationExamined: 0,
     unvalidatedFetchFailures: 0,
     completedQueryVariants: 0,
@@ -1708,6 +1730,7 @@ export async function executeFilingResearchSearch({
     MAX_DOC_ATTEMPTS,
     PAGE_RESERVE_PER_BRANCH,
     PRESCREEN_CHUNK,
+    MAX_PRESCREEN_REQUESTS,
     PRESCREEN_MAX_PER_WAVE,
     PRESCREEN_MIN_WAVE_RESERVE,
     signal,
@@ -1725,7 +1748,7 @@ export async function executeFilingResearchSearch({
       run.validationTimedOut = true;
       break;
     }
-    if (run.pageRequests >= MAX_PAGE_REQUESTS || run.docAttempts >= MAX_DOC_ATTEMPTS) {
+    if (run.pageRequests >= MAX_PAGE_REQUESTS || run.docAttempts >= MAX_DOC_ATTEMPTS || run.docHttpAttempts >= MAX_DOC_HTTP_ATTEMPTS) {
       run.budgetExhausted = true;
       break;
     }
@@ -1805,6 +1828,14 @@ export async function executeFilingResearchSearch({
     branchLedgers,
     maxPageRequests: MAX_PAGE_REQUESTS,
     maxDocAttempts: MAX_DOC_ATTEMPTS,
+    work: {
+      pageRequests: run.pageRequests,
+      docFetches: run.docAttempts,
+      docHttpAttempts: run.docHttpAttempts,
+      prescreenRequests: run.prescreenRequests,
+      maxDocHttpAttempts: MAX_DOC_HTTP_ATTEMPTS,
+      maxPrescreenRequests: MAX_PRESCREEN_REQUESTS,
+    },
   });
   onCoverage?.(finalized.coverage);
   if (finalized.degradedMessage) onDegraded?.(finalized.degradedMessage);
@@ -1843,6 +1874,10 @@ export function rankAndLimitResults(
 interface WaveRunState {
   pageRequests: number;
   docAttempts: number;
+  /** Document HTTP attempts, retries and parent-doc fallbacks included. */
+  docHttpAttempts: number;
+  /** Server pre-screen chunk requests issued. */
+  prescreenRequests: number;
   validationExamined: number;
   unvalidatedFetchFailures: number;
   completedQueryVariants: number;
@@ -1885,6 +1920,7 @@ interface WaveStageContext {
   MAX_DOC_ATTEMPTS: number;
   PAGE_RESERVE_PER_BRANCH: number;
   PRESCREEN_CHUNK: number;
+  MAX_PRESCREEN_REQUESTS: number;
   PRESCREEN_MAX_PER_WAVE: number;
   PRESCREEN_MIN_WAVE_RESERVE: number;
   signal?: AbortSignal;
@@ -2012,7 +2048,7 @@ async function validateLaneCandidates(
     run, signalMap, filteredResults, fetchFailureKinds, query, filters, mode, needsTextFiltering,
     booleanExpression, delegatedToEfts, hydratePerDocumentSignals, preferRelevance, displayLimit,
     batchSize, progressInterval, waveStartTime, maxWaveTimeMs, MAX_DOC_ATTEMPTS,
-    PRESCREEN_CHUNK, PRESCREEN_MAX_PER_WAVE, PRESCREEN_MIN_WAVE_RESERVE, signal, progressCallback,
+    PRESCREEN_CHUNK, PRESCREEN_MAX_PER_WAVE, PRESCREEN_MIN_WAVE_RESERVE, MAX_PRESCREEN_REQUESTS, signal, progressCallback,
   } = context;
   const { ledger, branchDocCap, branchTimeCapMs, isRequiredBooleanBranch, branchResultStart } = lane;
   let waveCandidates = waveCandidatesInput;
@@ -2049,6 +2085,10 @@ async function validateLaneCandidates(
       const remainingWaveMs = maxWaveTimeMs - (Date.now() - waveStartTime);
       if (remainingWaveMs < PRESCREEN_MIN_WAVE_RESERVE) break;
 
+      // Pre-screen requests are measured work like any other upstream call
+      // (audit R1); the cap soft-stops the optimizer, never the run.
+      if (run.prescreenRequests >= MAX_PRESCREEN_REQUESTS) break;
+      run.prescreenRequests += 1;
       const verdicts = await prescreenBooleanCandidates(
         query,
         waveCandidates.slice(cursor, cursor + PRESCREEN_CHUNK).map(result => ({
@@ -2114,7 +2154,9 @@ async function validateLaneCandidates(
     if (hydratePerDocumentSignals) {
       await Promise.all(
         chunk.map(async result => {
-          const signalData = await hydrateResultSignals(result, signal);
+          const signalData = await hydrateResultSignals(result, signal, attempts => {
+            run.docHttpAttempts += attempts;
+          });
           signalMap.set(getSignalCacheKey(result), signalData);
         })
       );
@@ -2406,6 +2448,15 @@ export interface RunCoverageInputs {
   branchLedgers: readonly BranchCoverageEntry[];
   maxPageRequests: number;
   maxDocAttempts: number;
+  /** Measured upstream work, retries and pre-screens included (audit R1). */
+  work: {
+    pageRequests: number;
+    docFetches: number;
+    docHttpAttempts: number;
+    prescreenRequests: number;
+    maxDocHttpAttempts: number;
+    maxPrescreenRequests: number;
+  };
 }
 
 /**
@@ -2473,11 +2524,16 @@ export function finalizeRunCoverage(inputs: RunCoverageInputs): {
     : validationComplete ? 'exhausted'
     : 'candidate-cap';
 
+  const { work } = inputs;
+  const totalUpstreamRequests = work.pageRequests + work.docHttpAttempts + work.prescreenRequests;
+
   let degradedMessage: string | null = null;
   if (stopReason === 'deadline') {
     degradedMessage = 'Filing-text validation reached its time limit; only a partial candidate window was verified.';
   } else if (stopReason === 'request-budget') {
-    degradedMessage = `This search reached its per-run request budget (${maxPageRequests} pages / ${maxDocAttempts} documents); results are a verified partial window, not the full corpus. Narrow the query, dates, or forms to validate more.`;
+    // The measured numbers ARE the display (audit R1): retries, parent-doc
+    // fallbacks and server pre-screens included, beside the declared caps.
+    degradedMessage = `This search reached its per-run request budget: ${work.pageRequests}/${maxPageRequests} page requests, ${work.docHttpAttempts}/${work.maxDocHttpAttempts} document requests (retries included; ${work.docFetches}/${maxDocAttempts} documents), ${work.prescreenRequests}/${work.maxPrescreenRequests} pre-screen requests — ${totalUpstreamRequests} upstream requests in all. Results are a verified partial window, not the full corpus. Narrow the query, dates, or forms to validate more.`;
   } else if (stopReason === 'rate-limit') {
     degradedMessage = `SEC EDGAR rate-limited ${fetchFailureKinds.get('rate-limit')} document ${fetchFailureKinds.get('rate-limit') === 1 ? 'request' : 'requests'}; those filings could not be re-validated and are excluded. Retry shortly for a fuller window.`;
   } else if (stopReason === 'fetch-failure') {
@@ -2494,6 +2550,18 @@ export function finalizeRunCoverage(inputs: RunCoverageInputs): {
       complete: validationComplete,
       upstreamTotalIsFloor: Boolean(upstreamCoverage?.upstreamTotalIsFloor),
       branches: branchLedgers.length > 0 ? [...branchLedgers] : undefined,
+      work: {
+        pageRequests: work.pageRequests,
+        docFetches: work.docFetches,
+        docHttpAttempts: work.docHttpAttempts,
+        prescreenRequests: work.prescreenRequests,
+        totalUpstreamRequests,
+        ceiling: {
+          pages: maxPageRequests,
+          docHttpAttempts: work.maxDocHttpAttempts,
+          prescreenRequests: work.maxPrescreenRequests,
+        },
+      },
     },
     stopReason,
     degradedMessage,
