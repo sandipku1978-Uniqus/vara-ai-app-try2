@@ -524,7 +524,7 @@ function buildBooleanServerQueries(
   filters: SearchFilters,
   delegated = false
 ): { queries: string[]; requiredBranches: number } {
-  const { branches } = planBooleanBranches(query);
+  const { branches, droppedUnanchored } = planBooleanBranches(query);
   // Delegated phrase: EDGAR's verdict IS the result, so only the exact phrase
   // may be issued. The broadening lanes below exist to hand local validation a
   // wide pool to filter — with no validation step they would put filings that
@@ -555,6 +555,18 @@ function buildBooleanServerQueries(
 
   // Every OR branch is a required retrieval lane.
   for (const branch of branches) push(branch);
+  // Firm-covered negative branches (audit R1 slice 2): when the planner
+  // dropped an unanchored OR disjunct and an audit firm is in scope, the
+  // firm-name lanes ARE that branch's retrieval — candidates fetched by
+  // firm, the branch enforced by full-expression validation. ALL spelling
+  // variants go in ("PwC" and "PricewaterhouseCoopers" are different text
+  // searches; a filing typically writes only one), mirroring the
+  // auditor-only path above. Promoted into the REQUIRED zone so branch
+  // reservations protect them from a dominant anchored branch, exactly
+  // like any other disjunct.
+  if (droppedUnanchored > 0 && auditorTerms.length > 0) {
+    for (const term of auditorTerms.slice(0, 4)) push(term);
+  }
   const requiredBranches = out.length;
 
   // Precision boost: pair each branch with the auditor name when one is set.
@@ -2243,8 +2255,21 @@ export function compileSearchPlan(options: {
     // search from non-view callers) — the views surface the message, this
     // hard-stops with zero network calls. It also catches the cases a bare parse
     // misses: grouped proximity, negation-only, and over-complex OR fan-out.
-    const compiled = compileBooleanQuery(query || filters.keyword);
-    if (!compiled.ok) return null;
+    let compiled = compileBooleanQuery(query || filters.keyword);
+    if (!compiled.ok) {
+      // A firm promoted into filters.accountant (by the search plan or a
+      // saved alert) is retrieval context the bare text no longer carries:
+      // "(impairment OR NOT goodwill)" with accountant=PwC is the executable
+      // firm-lane form of "auditor:PwC AND (...)" (audit R1 slice 2).
+      // Recompile with the firm restored before giving up — every other
+      // failure code still hard-stops with zero network calls.
+      const firm = filters.accountant.trim();
+      const recoverable = compiled.code === 'unanchored-branch' || compiled.code === 'negative-only';
+      if (!firm || !recoverable) return null;
+      const withFirm = compileBooleanQuery(`auditor:"${firm}" AND (${query || filters.keyword})`);
+      if (!withFirm.ok) return null;
+      compiled = withFirm;
+    }
 
     if (compiled.auditor) {
       const canonical = canonicalizeAuditorInput(compiled.auditor) || compiled.auditor;

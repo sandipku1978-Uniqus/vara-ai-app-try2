@@ -713,23 +713,18 @@ export function compileBooleanQuery(raw: string): BooleanCompileResult {
     return fail('negative-only', 'Add at least one term that is not negated — a NOT-only query has nothing to match against.');
   }
 
-  // Every OR branch must carry its own retrieval anchor. With an auditor
-  // operand present this used to be waived wholesale — and the planner then
-  // silently DROPPED the unanchored branch, omitting valid documents
-  // (auditor:PwC AND (impairment OR NOT goodwill) retrieved only the
-  // impairment lane; audit R1). The waiver survives in exactly one shape:
-  // a residual with NO positive anchors at all (auditor:PwC AND NOT
-  // goodwill), which runs as one firm-scoped lane validating everything —
-  // executable today. A MIXED residual (some branches anchored, some not)
-  // is rejected until firm-scoped per-branch retrieval exists, because an
-  // accepted query must not contain a branch the plan cannot execute.
-  if (hasPositiveAnchors) {
+  // Every OR branch must carry its own retrieval anchor — or, when an
+  // auditor operand is present, be covered by a REQUIRED firm-scoped lane:
+  // candidates fetched by firm, validated by the branch expression (the
+  // planner counts the covered branch via droppedUnanchored and
+  // buildBooleanServerQueries promotes the firm lane to required). Without
+  // a firm, an unanchored branch has no possible lane and is rejected —
+  // an accepted query must never contain a branch the plan cannot execute
+  // (audit R1: this exact shape used to be accepted and silently dropped).
+  if (hasPositiveAnchors && !auditor) {
     const unanchored = findUnanchoredBranch(lifted);
     if (unanchored) {
       const branch = unanchored.label;
-      if (auditor) {
-        return fail('unanchored-branch', `The OR branch “${branch}” has no retrieval anchor, so it would be silently skipped rather than searched. Anchor it with a concrete term, or run the pure-negative form separately: auditor:${auditor} AND ${branch}.`);
-      }
       if (unanchored.reason === 'wildcard') {
         return fail('unanchored-branch', `The OR branch “${branch}” cannot be retrieved: wildcards validate against filing text but cannot fetch from EDGAR. Anchor that branch with a concrete term, e.g. (${branch} AND blockchain).`);
       }
@@ -1243,9 +1238,9 @@ export function findUnanchoredBranch(
   return null;
 }
 
-export function planBooleanBranches(query: string, maxBranches = 16): { branches: string[]; truncated: boolean } {
+export function planBooleanBranches(query: string, maxBranches = 16): { branches: string[]; truncated: boolean; droppedUnanchored: number } {
   const parsed = parseBooleanQuery(query);
-  if (!parsed.expression) return { branches: [], truncated: false };
+  if (!parsed.expression) return { branches: [], truncated: false, droppedUnanchored: 0 };
 
   const positiveTerms = (node: BooleanSearchNode): string[] => {
     switch (node.type) {
@@ -1291,18 +1286,28 @@ export function planBooleanBranches(query: string, maxBranches = 16): { branches
 
   const seen = new Set<string>();
   const branches: string[] = [];
+  // A branch-set with no positive terms is an OR disjunct nothing can fetch
+  // (pure negation/wildcard/numeric). It used to be discarded HERE without a
+  // trace — the audit R1 silent-omission site. It is now counted so the
+  // retrieval planner can cover it with a firm-scoped lane (or the compiler
+  // reject the query when no lane can exist).
+  let droppedUnanchored = 0;
   for (const set of branchSets(parsed.expression)) {
     const branchQuery = Array.from(new Set(set.filter(Boolean)))
       .map(formatCandidateQueryTerm)
       .filter(Boolean)
       .join(' ');
+    if (!branchQuery) {
+      droppedUnanchored += 1;
+      continue;
+    }
     const key = normalizeWhitespace(branchQuery).toLowerCase();
-    if (!branchQuery || seen.has(key)) continue;
-    if (branches.length >= maxBranches) return { branches, truncated: true };
+    if (seen.has(key)) continue;
+    if (branches.length >= maxBranches) return { branches, truncated: true, droppedUnanchored };
     seen.add(key);
     branches.push(branchQuery);
   }
-  return { branches, truncated: false };
+  return { branches, truncated: false, droppedUnanchored };
 }
 
 export function buildCandidateQueryFromBoolean(query: string): string {

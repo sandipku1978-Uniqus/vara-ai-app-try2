@@ -47,4 +47,14 @@ describe('planBooleanBranches', () => {
   it('returns no branches for a pure-negation query', () => {
     expect(planBooleanBranches('NOT goodwill').branches).toEqual([]);
   });
+
+  it('counts dropped unanchored disjuncts instead of discarding them silently', () => {
+    // Audit R1: this count is what lets the retrieval planner promote a
+    // firm-scoped lane to cover the branch — the silent-omission fix.
+    const mixed = planBooleanBranches('impairment OR NOT goodwill');
+    expect(mixed.branches).toEqual(['impairment']);
+    expect(mixed.droppedUnanchored).toBe(1);
+    expect(planBooleanBranches('alpha OR beta').droppedUnanchored).toBe(0);
+    expect(planBooleanBranches('NOT goodwill').droppedUnanchored).toBe(1);
+  });
 });
