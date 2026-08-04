@@ -7,7 +7,7 @@ const mocks = vi.hoisted(() => ({
   proxyCalls: [] as string[],
 }));
 
-vi.mock('../services/secApi', () => ({
+vi.mock('../services/secSubmissions', () => ({
   fetchCompanySubmissions: async (cik: string) => {
     mocks.submissionCalls.push(cik);
     return mocks.submissions.get(cik) ?? null;
@@ -29,13 +29,7 @@ function withForms(forms: string[], dates?: string[]) {
 const HOLDCO = '2115436';   // ExxonMobil Holdings Corp — 8-K12B, no annual
 const OPERATING = '34088';  // EXXON MOBIL CORP — 10-K 2026-02-18
 
-beforeEach(() => {
-  __clearFilingEntityCache();
-  mocks.submissions.clear();
-  mocks.atomByTicker.clear();
-  mocks.submissionCalls.length = 0;
-  mocks.proxyCalls.length = 0;
-
+function installLookupFetch() {
   vi.stubGlobal('fetch', vi.fn(async (url: string) => {
     mocks.proxyCalls.push(url);
     const ticker = new URL(url, 'http://localhost').searchParams.get('ticker') ?? '';
@@ -44,6 +38,16 @@ beforeEach(() => {
       ? { ok: true, json: async () => ({ ok: true, cik }) }
       : { ok: true, json: async () => ({ ok: true, cik: null }) };
   }));
+}
+
+beforeEach(() => {
+  __clearFilingEntityCache();
+  mocks.submissions.clear();
+  mocks.atomByTicker.clear();
+  mocks.submissionCalls.length = 0;
+  mocks.proxyCalls.length = 0;
+
+  installLookupFetch();
 });
 afterEach(() => vi.unstubAllGlobals());
 
@@ -108,9 +112,32 @@ describe('resolveFilingEntityCik (reported: XOM resolved to a CIK with no filing
     expect(await resolveFilingEntityCik('XOM', HOLDCO)).toBe(HOLDCO);
   });
 
+  it('retries successor correction after transient directory submissions failure', async () => {
+    expect(await resolveFilingEntityCik('XOM', HOLDCO)).toBe(HOLDCO);
+
+    mocks.submissions.set(HOLDCO, withForms(['8-K12B']));
+    mocks.submissions.set(OPERATING, withForms(['10-K']));
+    mocks.atomByTicker.set('XOM', OPERATING);
+
+    expect(await resolveFilingEntityCik('XOM', HOLDCO)).toBe(OPERATING);
+    expect(mocks.submissionCalls.filter(cik => cik === HOLDCO)).toHaveLength(2);
+  });
+
   it('keeps the directory CIK when EDGAR offers no alternative', async () => {
     mocks.submissions.set(HOLDCO, withForms(['8-K12B']));
     expect(await resolveFilingEntityCik('XOM', HOLDCO)).toBe(HOLDCO);
+  });
+
+  it('caches an evidence-backed no-alternative result', async () => {
+    mocks.submissions.set(HOLDCO, withForms(['8-K12B']));
+
+    expect(await resolveFilingEntityCik('XOM', HOLDCO)).toBe(HOLDCO);
+    const callsAfterEvidence = mocks.submissionCalls.length + mocks.proxyCalls.length;
+    mocks.atomByTicker.set('XOM', OPERATING);
+    mocks.submissions.set(OPERATING, withForms(['10-K']));
+
+    expect(await resolveFilingEntityCik('XOM', HOLDCO)).toBe(HOLDCO);
+    expect(mocks.submissionCalls.length + mocks.proxyCalls.length).toBe(callsAfterEvidence);
   });
 
   it('refuses a candidate that also has no annual report', async () => {
@@ -119,6 +146,17 @@ describe('resolveFilingEntityCik (reported: XOM resolved to a CIK with no filing
     mocks.atomByTicker.set('XOM', '777');
 
     expect(await resolveFilingEntityCik('XOM', HOLDCO)).toBe(HOLDCO);
+  });
+
+  it('retries when the proposed candidate submissions are transiently unavailable', async () => {
+    mocks.submissions.set(HOLDCO, withForms(['8-K12B']));
+    mocks.atomByTicker.set('XOM', OPERATING);
+
+    expect(await resolveFilingEntityCik('XOM', HOLDCO)).toBe(HOLDCO);
+    mocks.submissions.set(OPERATING, withForms(['10-K']));
+
+    expect(await resolveFilingEntityCik('XOM', HOLDCO)).toBe(OPERATING);
+    expect(mocks.proxyCalls).toHaveLength(2);
   });
 
   it('memoises so a correction costs one round trip per ticker', async () => {
@@ -138,5 +176,10 @@ describe('resolveFilingEntityCik (reported: XOM resolved to a CIK with no filing
     mocks.submissions.set(HOLDCO, withForms(['8-K12B']));
     vi.stubGlobal('fetch', vi.fn(async () => { throw new Error('network down'); }));
     expect(await resolveFilingEntityCik('XOM', HOLDCO)).toBe(HOLDCO);
+
+    installLookupFetch();
+    mocks.atomByTicker.set('XOM', OPERATING);
+    mocks.submissions.set(OPERATING, withForms(['10-K']));
+    expect(await resolveFilingEntityCik('XOM', HOLDCO)).toBe(OPERATING);
   });
 });

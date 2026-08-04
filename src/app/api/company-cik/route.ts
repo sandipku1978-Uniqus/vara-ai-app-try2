@@ -21,11 +21,13 @@ import { checkResourceRateLimit, rateLimitResponse } from '../../../lib/rate-lim
 import {
   buildSecTargetUrl,
   fetchSecResponse,
+  looksLikeSecErrorResponse,
   readResponseWithLimit,
 } from '../../../lib/sec-upstream';
 
 const USER_AGENT = process.env.NEXT_PUBLIC_EDGAR_USER_AGENT || 'Uniqus Research Center contact@uniqus.com';
 const MAX_ATOM_BYTES = 512 * 1024;
+const SEC_ATOM_CONTENT_TYPE = /^(?:application\/atom\+xml|application\/xml|text\/xml)(?:;|$)/i;
 
 export async function GET(request: Request) {
   const access = await requireApiAccess();
@@ -51,17 +53,47 @@ export async function GET(request: Request) {
     });
     const target = buildSecTargetUrl('proxy', 'cgi-bin/browse-edgar', params);
     const response = await fetchSecResponse(target, 'proxy', request.signal, USER_AGENT);
-    if (!response.ok) return NextResponse.json({ ok: true, cik: null });
+    if (!response.ok) {
+      return NextResponse.json({ ok: false, cik: null, error: 'SEC company lookup failed.' }, { status: 502 });
+    }
+    const contentType = response.headers.get('content-type')?.trim() || '';
+    if (!SEC_ATOM_CONTENT_TYPE.test(contentType)) {
+      return NextResponse.json(
+        { ok: false, cik: null, error: 'SEC company lookup returned non-Atom content.' },
+        { status: 502 },
+      );
+    }
 
     const bytes = await readResponseWithLimit(response, MAX_ATOM_BYTES, request.signal);
+    if (looksLikeSecErrorResponse(bytes)) {
+      return NextResponse.json(
+        { ok: false, cik: null, error: 'SEC company lookup returned an error page.' },
+        { status: 502 },
+      );
+    }
     const atom = new TextDecoder().decode(bytes);
-
-    const match = atom.match(/<cik>(\d{1,10})<\/cik>/i);
+    if (!/<feed(?:\s|>)/i.test(atom) || !/<\/feed>/i.test(atom)) {
+      return NextResponse.json(
+        { ok: false, cik: null, error: 'SEC company lookup returned malformed Atom.' },
+        { status: 502 },
+      );
+    }
+    const matches = Array.from(atom.matchAll(/<cik>(\d{1,10})<\/cik>/gi), match => match[1]);
+    if (new Set(matches).size > 1) {
+      return NextResponse.json(
+        { ok: false, cik: null, error: 'SEC company lookup returned ambiguous CIK evidence.' },
+        { status: 502 },
+      );
+    }
+    const cik = matches[0] ? Number(matches[0]) : 0;
     // Unpadded, so it compares equal to the directory's CIK strings.
-    return NextResponse.json({ ok: true, cik: match ? String(Number(match[1])) : null });
+    return NextResponse.json({ ok: true, cik: cik > 0 ? String(cik) : null });
   } catch {
     // A lookup we cannot make is never worse than the directory value the
     // caller already holds — it falls back on null.
-    return NextResponse.json({ ok: true, cik: null });
+    return NextResponse.json(
+      { ok: false, cik: null, error: 'SEC company lookup is unavailable.' },
+      { status: 502 },
+    );
   }
 }

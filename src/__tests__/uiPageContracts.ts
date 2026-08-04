@@ -10,6 +10,15 @@ export interface UiActionContract {
   expectedOutcome: string;
 }
 
+export interface UiContentContract {
+  /** Stable identifier for a required page/content assertion, never a control. */
+  id: string;
+  /** The content a visitor must be able to find and read. */
+  assertion: string;
+  /** The observable wording or structure that proves the content contract. */
+  expectedContent: string;
+}
+
 export interface UiPageContract {
   id: string;
   kind: UiPageKind;
@@ -19,6 +28,7 @@ export interface UiPageContract {
   sourceFiles: readonly string[];
   intendedJob: string;
   actions: readonly UiActionContract[];
+  contentChecks?: readonly UiContentContract[];
 }
 
 /**
@@ -375,8 +385,10 @@ export const UI_PAGE_CONTRACTS = [
     representativePath: '/terms',
     sourceFiles: ['src/app/terms/page.tsx'],
     intendedJob: 'State the baseline terms, research limitations, and source-verification responsibilities before product use.',
+    contentChecks: [
+      { id: 'terms.review-limitations', assertion: 'Read the professional-advice and source-verification sections.', expectedContent: 'The page clearly states that generated research does not replace professional advice or review of underlying sources.' },
+    ],
     actions: [
-      { id: 'terms.review-limitations', interaction: 'Read the professional-advice and source-verification sections.', expectedOutcome: 'The page clearly states that generated research does not replace professional advice or review of underlying sources.' },
       { id: 'terms.return-home', interaction: 'Activate Return to Uniqus Research Center.', expectedOutcome: 'The public landing page opens without requiring authentication.' },
     ],
   },

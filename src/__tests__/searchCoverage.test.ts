@@ -42,13 +42,23 @@ describe('corpus total display', () => {
     ).toBe('10,000+');
   });
 
-  it('leads with the corpus answer, then the validated window', () => {
+  it('labels unverified retrieval totals as candidate populations, not matches', () => {
     expect(
       buildResultsHeadline(403, { examined: 497, upstreamTotal: 10_000, complete: false, upstreamTotalIsFloor: true }, 500)
-    ).toBe('10,000+ filings match — 403 validated and shown');
+    ).toBe('10,000+ upstream candidates — 403 validated matches shown');
     expect(
       buildResultsHeadline(50, { examined: 50, upstreamTotal: 2_340, complete: false }, 500)
-    ).toBe('2,340 filings match — 50 validated and shown');
+    ).toBe('2,340 upstream candidates — 50 validated matches shown');
+  });
+
+  it('uses match wording only when an exact/delegated match total is present', () => {
+    expect(buildResultsHeadline(50, {
+      examined: 80,
+      upstreamTotal: 2_340,
+      complete: false,
+      verifiedMatchTotal: 1_240,
+      verifiedMatchTotalIsFloor: false,
+    }, 500)).toBe('1,240 filings match — 50 validated and shown');
   });
 
   it('falls back to the plain shown count when upstream reported nothing larger', () => {
@@ -68,7 +78,7 @@ describe('corpus total display', () => {
   it('caps the shown label at the display limit', () => {
     expect(
       buildResultsHeadline(500, { examined: 600, upstreamTotal: 10_000, complete: false, upstreamTotalIsFloor: true }, 500)
-    ).toBe('10,000+ filings match — 500+ validated and shown');
+    ).toBe('10,000+ upstream candidates — 500+ validated matches shown');
   });
 });
 

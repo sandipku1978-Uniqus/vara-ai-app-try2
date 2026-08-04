@@ -20,6 +20,7 @@ const secApi = vi.hoisted(() => ({
   fetchCompanySubmissions: vi.fn(),
   fetchFilingText: vi.fn(),
   fetchSubmissionHistory: vi.fn(),
+  resolvePrimaryDocumentPath: vi.fn(),
 }));
 
 const aiApi = vi.hoisted(() => ({
@@ -43,6 +44,7 @@ vi.mock('../services/secApi', () => ({
   fetchCompanySubmissions: secApi.fetchCompanySubmissions,
   fetchFilingText: secApi.fetchFilingText,
   fetchSubmissionHistory: secApi.fetchSubmissionHistory,
+  resolvePrimaryDocumentPath: secApi.resolvePrimaryDocumentPath,
 }));
 
 vi.mock('../services/aiApi', () => ({
@@ -56,6 +58,7 @@ describe('FilingDetail hook order', () => {
     secApi.fetchCompanySubmissions.mockResolvedValue(null);
     secApi.fetchFilingText.mockResolvedValue('');
     secApi.fetchSubmissionHistory.mockResolvedValue(null);
+    secApi.resolvePrimaryDocumentPath.mockResolvedValue('resolved-primary.htm');
     aiApi.aiSummarizeRedline.mockResolvedValue('');
   });
 
@@ -71,6 +74,25 @@ describe('FilingDetail hook order', () => {
 
     expect(screen.queryByRole('heading', { name: 'Invalid filing link' })).not.toBeInTheDocument();
     expect(screen.getByText('SEC EDGAR LIVE')).toBeInTheDocument();
+  });
+
+  it('omits invalid SEC links for a placeholder and retries resolution on a later visit', async () => {
+    navigation.pathname = '/filing/0000320193_0000320193-24-000123_edgar/data/2024/QTR4/master.idx';
+    secApi.resolvePrimaryDocumentPath
+      .mockResolvedValueOnce('')
+      .mockResolvedValueOnce('aapl-20240928.htm');
+
+    const firstVisit = render(<FilingDetail />);
+    expect(await screen.findByRole('heading', { name: 'Official filing document unavailable' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /SEC\.gov/i })).toBeNull();
+    expect(screen.queryByTitle('SEC Document View')).toBeNull();
+    firstVisit.unmount();
+
+    render(<FilingDetail />);
+    expect(await screen.findByText('SEC EDGAR LIVE')).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: /SEC\.gov/i }).length).toBeGreaterThan(0);
+    expect(screen.getByTitle('SEC Document View')).toBeInTheDocument();
+    expect(secApi.resolvePrimaryDocumentPath).toHaveBeenCalledTimes(2);
   });
 
   it('shows an explicit redline limitation when historical metadata cannot be resolved', async () => {

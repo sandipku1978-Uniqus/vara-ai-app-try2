@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { planBooleanBranches } from '../utils/booleanSearch';
+import { compileBooleanQuery, planBooleanBranches } from '../utils/booleanSearch';
 
 const norm = (branches: string[]) => branches.map(b => b.toLowerCase()).sort();
 
@@ -26,10 +26,14 @@ describe('planBooleanBranches', () => {
     expect(norm(branches)).toEqual(['alpha']);
   });
 
-  it('quotes multi-word phrase operands', () => {
+  it('widens morphology-sensitive phrase retrieval before local validation', () => {
     const { branches } = planBooleanBranches('"material weakness" OR goodwill');
-    expect(branches).toContain('"material weakness"');
+    expect(branches).toContain('((material OR materials) AND (weakness OR weaknesses))');
     expect(branches).toContain('goodwill');
+  });
+
+  it('preserves an exact quoted lane when the phrase has no local morphology alternatives', () => {
+    expect(planBooleanBranches('"net ai"').branches).toEqual(['"net ai"']);
   });
 
   it('preserves branches through nesting', () => {
@@ -42,6 +46,27 @@ describe('planBooleanBranches', () => {
     const huge = Array.from({ length: 20 }, (_, i) => `t${i}`).join(' OR ');
     const { truncated } = planBooleanBranches(huge, 16);
     expect(truncated).toBe(true);
+  });
+
+  it('caps a Cartesian DNF explosion during construction', () => {
+    // 2^20 logical branches. The planner must stop at its 16-branch proof
+    // boundary rather than materialising 1,048,576 arrays first.
+    const explosive = Array.from({ length: 20 }, (_, i) => `(a${i} OR b${i})`).join(' AND ');
+    const planned = planBooleanBranches(explosive, 16);
+    expect(planned.truncated).toBe(true);
+    expect(planned.branches.length).toBeLessThanOrEqual(16);
+  });
+
+  it('rejects an explosive expression deterministically at compile time', () => {
+    const explosive = Array.from({ length: 20 }, (_, i) => `(left${i} OR right${i})`).join(' AND ');
+    const result = compileBooleanQuery(explosive);
+    expect(result).toMatchObject({ ok: false, code: 'too-complex' });
+  });
+
+  it('does not reject syntactically repeated branches that collapse to one lane', () => {
+    const redundant = Array.from({ length: 20 }, () => '(alpha OR alpha)').join(' AND ');
+    const result = compileBooleanQuery(redundant);
+    expect(result).toMatchObject({ ok: true, branches: ['alpha'] });
   });
 
   it('returns no branches for a pure-negation query', () => {

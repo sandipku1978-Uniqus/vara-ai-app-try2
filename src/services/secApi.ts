@@ -2,30 +2,36 @@
 // SEC EDGAR requires a descriptive User-Agent string
 
 import { extractTextFromNode, stripSgmlEnvelope } from '../lib/filingText';
+import { parseAndValidateEftsPayload } from '../lib/efts-response';
+import { isDisabledEnvFlag } from '../lib/env-flags';
+import {
+  fetchCompanySubmissions,
+  fetchSubmissionHistory,
+  type SecFilingSeries,
+  type SecSubmission,
+} from './secSubmissions';
+
+export { fetchCompanySubmissions, fetchSubmissionHistory };
+export type { SecFilingSeries, SecSubmission };
 
 const USER_AGENT = process.env.NEXT_PUBLIC_EDGAR_USER_AGENT || 'Uniqus Research Center contact@uniqus.com';
 interface CachedEdgarSearch {
   hits: EdgarSearchHit[];
   coverage: SearchCandidateCoverage;
+  /** The caller vetoed the next HTTP attempt. Budget-truncated entries are
+   *  returned to that caller but never retained in the cross-run cache. */
+  requestBudgetExhausted: boolean;
 }
 
-const edgarSearchCache = new Map<string, Promise<CachedEdgarSearch>>();
-const submissionHistoryCache = new Map<string, Promise<SecFilingSeries | null>>();
-
-function isDisabledEnvFlag(value: unknown): boolean {
-  if (typeof value === 'boolean') return !value;
-  if (typeof value !== 'string') return false;
-
-  switch (value.trim().toLowerCase()) {
-    case '0':
-    case 'false':
-    case 'no':
-    case 'off':
-      return true;
-    default:
-      return false;
-  }
+/** Successful, settled EFTS responses. Abort-bound in-flight work is kept
+ * separately so a replacement run never inherits the superseded run's
+ * AbortSignal (or its AbortError). */
+const edgarSearchCache = new Map<string, CachedEdgarSearch>();
+interface EdgarSearchInFlight {
+  promise: Promise<CachedEdgarSearch>;
+  signal?: AbortSignal;
 }
+const edgarSearchInFlight = new Map<string, EdgarSearchInFlight>();
 
 /** Enables the enriched /api/es-search lane (EDGAR EFTS + Supabase facets —
  *  the Elastic cluster it originally fronted was retired).
@@ -59,7 +65,7 @@ export const getHeaders = () => ({
 });
 
 function buildProxyUrl(
-  type: 'proxy' | 'data' | 'efts',
+  type: 'proxy' | 'data' | 'efts' | 'iapd',
   path: string,
   params?: Record<string, string | number | undefined> | URLSearchParams
 ): string {
@@ -80,11 +86,7 @@ function buildProxyUrl(
   }
 
   const functionName = 'sec-proxy';
-  if (type === 'data') {
-    searchParams.set('upstream', 'data');
-  } else {
-    searchParams.set('upstream', 'proxy');
-  }
+  searchParams.set('upstream', type);
   searchParams.set('path', cleanPath);
   return `/api/${functionName}?${toReadableQuery(searchParams)}`;
 }
@@ -109,6 +111,10 @@ export function buildSecDataUrl(path: string, params?: Record<string, string | n
 
 export function buildSecEftsUrl(path: string, params?: Record<string, string | number | undefined> | URLSearchParams): string {
   return buildProxyUrl('efts', path, params);
+}
+
+export function buildSecIapdUrl(path: string, params?: Record<string, string | number | undefined> | URLSearchParams): string {
+  return buildProxyUrl('iapd', path, params);
 }
 
 /**
@@ -146,30 +152,72 @@ export interface CompanyDirectoryEntry {
   title: string;
 }
 
+/** company_tickers.json is a full-market directory (currently >10k rows).
+ * A much smaller but syntactically valid object is an incomplete upstream
+ * response and must never replace the process cache. */
+export const MIN_SEC_COMPANY_DIRECTORY_ENTRIES = 10_000;
+
 let _companyDirectory: CompanyDirectoryEntry[] | null = null;
+
+export function projectSecCompanyDirectory(value: unknown): {
+  map: Record<string, string>;
+  directory: CompanyDirectoryEntry[];
+} {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error('SEC ticker directory is not an object');
+  }
+  const sourceEntries = Object.values(value as Record<string, unknown>);
+  if (sourceEntries.length === 0) throw new Error('SEC ticker directory is empty');
+
+  const map: Record<string, string> = {};
+  const directory: CompanyDirectoryEntry[] = [];
+  for (const sourceEntry of sourceEntries) {
+    if (!sourceEntry || typeof sourceEntry !== 'object' || Array.isArray(sourceEntry)) {
+      throw new Error('SEC ticker directory contains a malformed entry');
+    }
+    const entry = sourceEntry as Record<string, unknown>;
+    const cikRaw = typeof entry.cik_str === 'number' || typeof entry.cik_str === 'string'
+      ? String(entry.cik_str).trim()
+      : '';
+    const ticker = typeof entry.ticker === 'string' ? entry.ticker.trim().toUpperCase() : '';
+    const title = typeof entry.title === 'string' ? entry.title.trim() : '';
+    if (!/^\d{1,10}$/.test(cikRaw)) throw new Error('SEC ticker directory contains an invalid CIK');
+    const cik = Number(cikRaw);
+    if (!Number.isSafeInteger(cik) || cik <= 0 || cik > 9_999_999_999) {
+      throw new Error('SEC ticker directory contains an invalid CIK');
+    }
+    if (!/^[A-Z0-9][A-Z0-9.-]{0,31}$/.test(ticker)) {
+      throw new Error('SEC ticker directory contains an invalid ticker');
+    }
+    if (!title || title.length > 500 || /[\u0000-\u001F\u007F]/.test(title)) {
+      throw new Error('SEC ticker directory contains an invalid title');
+    }
+    if (Object.prototype.hasOwnProperty.call(map, ticker)) {
+      throw new Error(`SEC ticker directory contains duplicate ticker ${ticker}`);
+    }
+    map[ticker] = String(cik);
+    directory.push({ cik: String(cik), ticker, title });
+  }
+  return { map, directory };
+}
 
 export async function loadTickerMap(): Promise<Record<string, string>> {
   if (_tickerCache) return _tickerCache;
   if (_tickerCachePromise) return _tickerCachePromise;
 
-  _tickerCachePromise = (async () => {
+  const loadPromise = (async () => {
     try {
       const response = await fetch(buildSecProxyUrl('files/company_tickers.json'), {
         headers: getHeaders()
       });
       if (!response.ok) throw new Error('Failed to load ticker map');
-      const data = await response.json();
       // Format: { "0": { "cik_str": 320193, "ticker": "AAPL", "title": "Apple Inc." }, ... }
       // File order is roughly market-cap descending — kept for entity resolution.
-      const map: Record<string, string> = {};
-      const directory: CompanyDirectoryEntry[] = [];
-      for (const entry of Object.values(data) as any[]) {
-        map[entry.ticker.toUpperCase()] = String(entry.cik_str);
-        directory.push({
-          cik: String(entry.cik_str),
-          ticker: String(entry.ticker).toUpperCase(),
-          title: String(entry.title || ''),
-        });
+      const { map, directory } = projectSecCompanyDirectory(await response.json());
+      if (directory.length < MIN_SEC_COMPANY_DIRECTORY_ENTRIES) {
+        throw new Error(
+          `SEC ticker directory is incomplete (${directory.length} < ${MIN_SEC_COMPANY_DIRECTORY_ENTRIES})`
+        );
       }
       _tickerCache = map;
       _companyDirectory = directory;
@@ -179,7 +227,13 @@ export async function loadTickerMap(): Promise<Record<string, string>> {
       return {};
     }
   })();
-  return _tickerCachePromise;
+  _tickerCachePromise = loadPromise;
+  void loadPromise.then(() => {
+    // A transient or malformed response must not poison the process for its
+    // entire lifetime. Successful directory loads remain cached.
+    if (!_tickerCache && _tickerCachePromise === loadPromise) _tickerCachePromise = null;
+  });
+  return loadPromise;
 }
 
 /**
@@ -401,13 +455,14 @@ export function resolvePrimaryDocumentPath(cik: string, accessionNumber: string)
   const key = `${cik}:${accessionNumber}`;
   const cached = primaryDocumentCache.get(key);
   if (cached) return cached;
-  const promise = (async () => {
+  const pending = (async () => {
     try {
       const submissions = await fetchCompanySubmissions(cik);
       if (submissions) {
         const recent = submissions.filings.recent;
         const index = recent.accessionNumber.indexOf(accessionNumber);
-        if (index !== -1 && recent.primaryDocument[index]) return recent.primaryDocument[index];
+        const document = index !== -1 ? recent.primaryDocument[index] : '';
+        if (document && !isPlaceholderPrimaryDocument(document, accessionNumber)) return document;
       }
       const response = await fetch(
         buildSecProxyUrl(`Archives/edgar/data/${cik}/${accessionNumber.replace(/-/g, '')}/index.json`),
@@ -428,8 +483,17 @@ export function resolvePrimaryDocumentPath(cik: string, accessionNumber: string)
     }
     return '';
   })();
-  primaryDocumentCache.set(key, promise);
-  return promise;
+  // Only a real document name is durable. An empty result means both official
+  // lookup paths failed for this attempt; evict it so a later visit can retry.
+  const retryable = pending.then(document => {
+    if (!document) primaryDocumentCache.delete(key);
+    return document;
+  }, error => {
+    primaryDocumentCache.delete(key);
+    throw error;
+  });
+  primaryDocumentCache.set(key, retryable);
+  return retryable;
 }
 
 /**
@@ -462,92 +526,6 @@ export async function lookupCIK(ticker: string): Promise<string | null> {
   return null;
 }
 
-export interface SecFilingSeries {
-  accessionNumber: string[];
-  filingDate: string[];
-  reportDate: string[];
-  acceptanceDateTime: string[];
-  act: string[];
-  form: string[];
-  fileNumber: string[];
-  primaryDocument: string[];
-  primaryDocDescription: string[];
-}
-
-export interface SecSubmission {
-  cik: string;
-  name: string;
-  tickers: string[];
-  exchanges: string[];
-  ein: string;
-  description: string;
-  sic: string;
-  sicDescription: string;
-  filings: {
-    recent: SecFilingSeries;
-    files?: Array<{
-      name: string;
-      filingCount?: number;
-      filingFrom?: string;
-      filingTo?: string;
-    }>;
-  }
-}
-
-/**
- * Fetch company submissions by formatted CIK. 
- * Note: SEC payload requires 10-digit zero-padded CIK strings.
- */
-export async function fetchCompanySubmissions(cik: string): Promise<SecSubmission | null> {
-  const paddedCik = cik.padStart(10, '0');
-  try {
-    let lastResponse: Response | null = null;
-    for (let attempt = 0; attempt < 3; attempt += 1) {
-      const response = await fetch(buildSecDataUrl(`submissions/CIK${paddedCik}.json`), {
-        headers: getHeaders()
-      });
-      lastResponse = response;
-
-      if (response.ok) {
-        return await response.json();
-      }
-
-      if ((response.status === 403 || response.status === 429 || response.status >= 500) && attempt < 2) {
-        await delay(500 * (attempt + 1));
-        continue;
-      }
-
-      throw new Error(`SEC API Error: ${response.status} ${response.statusText}`);
-    }
-
-    throw new Error(`SEC API Error: ${lastResponse?.status || 0} ${lastResponse?.statusText || 'Unknown error'}`);
-  } catch (error) {
-    console.error('Failed to fetch SEC Submissions:', error);
-    return null;
-  }
-}
-
-/** Fetch one official SEC historical-submissions segment referenced by filings.files. */
-export async function fetchSubmissionHistory(fileName: string): Promise<SecFilingSeries | null> {
-  const safeName = fileName.trim().replace(/^\/+/, '');
-  if (!safeName || safeName.includes('..')) return null;
-
-  if (!submissionHistoryCache.has(safeName)) {
-    submissionHistoryCache.set(safeName, (async () => {
-      try {
-        const response = await fetch(buildSecDataUrl(`submissions/${safeName}`), { headers: getHeaders() });
-        if (!response.ok) throw new Error(`SEC submission history error: ${response.status}`);
-        const payload = await response.json() as Partial<SecFilingSeries>;
-        return Array.isArray(payload.accessionNumber) ? payload as SecFilingSeries : null;
-      } catch (error) {
-        submissionHistoryCache.delete(safeName);
-        console.error('Failed to fetch SEC submission history:', error);
-        return null;
-      }
-    })());
-  }
-  return submissionHistoryCache.get(safeName)!;
-}
 
 /**
  * Helper to build a direct link to the SEC EDGAR rendering of a specific filing
@@ -765,23 +743,30 @@ function getFiscalYearFromFact(fact: XbrlFact): number {
 }
 
 /**
- * Deduplicate annual facts by fiscal year (end-date based).
+ * Deduplicate annual facts by period end.
  * When the same period appears in multiple filings (comparative years,
  * amendments, restatements), keep the most recently FILED version — a
- * restated 10-K/A value must beat the original 10-K's.
+ * restated 10-K/A value must beat the original 10-K's. Period-end identity is
+ * deliberately more precise than calendar year: issuers can change fiscal
+ * year-end and report two valid annual periods ending in the same year.
  */
 function deduplicateAnnualFacts(facts: XbrlFact[]): XbrlFact[] {
-  const byFiscalYear = new Map<number, XbrlFact>();
+  const byPeriodEnd = new Map<string, XbrlFact>();
   for (const fact of facts) {
-    const fiscalYear = getFiscalYearFromFact(fact);
-    const existing = byFiscalYear.get(fiscalYear);
+    const periodKey = fact.end || `FY:${getFiscalYearFromFact(fact)}`;
+    const existing = byPeriodEnd.get(periodKey);
     if (!existing || isMoreAuthoritativeFact(fact, existing)) {
-      byFiscalYear.set(fiscalYear, fact);
+      byPeriodEnd.set(periodKey, fact);
     }
   }
-  return Array.from(byFiscalYear.values()).sort(
-    (a, b) => getFiscalYearFromFact(b) - getFiscalYearFromFact(a)
-  );
+  return Array.from(byPeriodEnd.values()).sort(compareAnnualFactsNewestFirst);
+}
+
+/** Sort by the actual annual period end, then by fiscal-year fallback. */
+function compareAnnualFactsNewestFirst(a: XbrlFact, b: XbrlFact): number {
+  const endComparison = (b.end || '').localeCompare(a.end || '');
+  if (endComparison !== 0) return endComparison;
+  return getFiscalYearFromFact(b) - getFiscalYearFromFact(a);
 }
 
 /** Latest filed date wins; on the same filed date an amendment (/A) beats the
@@ -821,6 +806,95 @@ function getPreferredUnits(concept: { units: Record<string, XbrlFact[]> }, curre
       'segment', 'security', 'state', 'branch', 'hedge_fund', 'Options'].includes(key)
   );
   return fallback ? { unitKey: fallback[0], facts: fallback[1] } : null;
+}
+
+interface AnnualConceptAlias {
+  ns: Record<string, unknown>;
+  name: string;
+}
+
+interface AnnualMetricSelection {
+  fact: XbrlFact;
+  label: string;
+  unitKey: string;
+  aliasPriority: number;
+}
+
+/**
+ * Choose one annual fact across every supported taxonomy alias.
+ *
+ * SEC companyfacts retains deprecated concepts indefinitely. Choosing the
+ * first alias with any annual data therefore returns a stale value for filers
+ * that migrated tags (Apple's `Revenues` stops in 2018; Microsoft's stops in
+ * 2010). The period must be selected across aliases first. Alias order remains
+ * the semantic tie-breaker when two concepts report the same official period.
+ */
+function selectAnnualMetric(
+  aliases: AnnualConceptAlias[],
+  currency: string,
+  year?: number
+): AnnualMetricSelection | null {
+  let selected: AnnualMetricSelection | null = null;
+
+  aliases.forEach(({ ns, name }, aliasPriority) => {
+    const concept = ns[name] as { label: string; units: Record<string, XbrlFact[]> } | undefined;
+    if (!concept) return;
+
+    const preferred = getPreferredUnits(concept, currency);
+    if (!preferred) return;
+
+    const annualFacts = deduplicateAnnualFacts(
+      preferred.facts.filter(fact =>
+        Number.isFinite(fact.val)
+        && Number.isFinite(getFiscalYearFromFact(fact))
+        && isLikelyAnnualFact(fact)
+      )
+    );
+    const fact = year == null
+      ? annualFacts[0]
+      : annualFacts.find(item => getFiscalYearFromFact(item) === year);
+    if (!fact) return;
+
+    const candidate: AnnualMetricSelection = {
+      fact,
+      label: concept.label,
+      unitKey: preferred.unitKey,
+      aliasPriority,
+    };
+    if (!selected || isPreferredAnnualSelection(candidate, selected)) {
+      selected = candidate;
+    }
+  });
+
+  return selected;
+}
+
+function isPreferredAnnualSelection(
+  candidate: AnnualMetricSelection,
+  incumbent: AnnualMetricSelection
+): boolean {
+  const periodOrder = compareAnnualFactsNewestFirst(candidate.fact, incumbent.fact);
+  if (periodOrder !== 0) return periodOrder < 0;
+
+  if (isMoreAuthoritativeFact(candidate.fact, incumbent.fact)) return true;
+  if (isMoreAuthoritativeFact(incumbent.fact, candidate.fact)) return false;
+  return candidate.aliasPriority < incumbent.aliasPriority;
+}
+
+function financialMetricFromSelection(selection: AnnualMetricSelection): FinancialMetric {
+  const { fact, label, unitKey } = selection;
+  const isPerShare = unitKey.includes('/shares');
+  const detectedCurrency = isPerShare ? unitKey.replace('/shares', '') : unitKey;
+
+  return {
+    label,
+    value: fact.val,
+    year: getFiscalYearFromFact(fact),
+    period: fact.fp || 'FY',
+    unit: unitKey,
+    currency: detectedCurrency === 'shares' ? 'USD' : detectedCurrency,
+    periodEnd: fact.end || undefined,
+  };
 }
 
 /**
@@ -908,39 +982,9 @@ export function extractFinancials(facts: CompanyFacts, year?: number): Record<st
       for (const name of IFRS_CONCEPTS[metricKey]) allAliases.push({ ns: ifrs as Record<string, unknown>, name });
     }
 
-    for (const { ns, name: conceptName } of allAliases) {
-      const concept = ns[conceptName] as { label: string; units: Record<string, XbrlFact[]> } | undefined;
-      if (!concept) continue;
-
-      // Find available facts using currency-aware unit selection
-      const preferred = getPreferredUnits(concept, currency);
-      if (!preferred) continue;
-
-      // Filter to annual filings and deduplicate by fiscal year (end-date based)
-      const annualFacts = deduplicateAnnualFacts(preferred.facts.filter(isLikelyAnnualFact));
-
-      // Match by end-date fiscal year for reliability
-      const match = year != null
-        ? annualFacts.find(f => getFiscalYearFromFact(f) === year)
-        : annualFacts[0];
-
-      if (match) {
-        // Determine the actual currency from the unit key
-        const unitKey = preferred.unitKey;
-        const isPerShare = unitKey.includes('/shares');
-        const detectedCurrency = isPerShare ? unitKey.replace('/shares', '') : unitKey;
-
-        result[metricKey] = {
-          label: concept.label,
-          value: match.val,
-          year: getFiscalYearFromFact(match),
-          period: match.fp || 'FY',
-          unit: unitKey,
-          currency: detectedCurrency === 'shares' ? 'USD' : detectedCurrency,
-          periodEnd: match.end || undefined,
-        };
-        break; // Found a value — stop trying aliases
-      }
+    const selection = selectAnnualMetric(allAliases, currency, year);
+    if (selection) {
+      result[metricKey] = financialMetricFromSelection(selection);
     }
   }
 
@@ -958,41 +1002,12 @@ function lookupAnnualMetric(
 
   const currency = getPrimaryCurrency(facts);
 
+  const candidates: AnnualConceptAlias[] = [];
   for (const ns of namespaces) {
-    for (const alias of aliases) {
-      const concept = ns![alias] as { label: string; units: Record<string, XbrlFact[]> } | undefined;
-      if (!concept) continue;
-
-      const preferredUnits = getPreferredUnits(concept, currency);
-      if (!preferredUnits) continue;
-
-      const annualFacts = deduplicateAnnualFacts(
-        preferredUnits.facts.filter(isLikelyAnnualFact)
-      );
-
-      const match = year != null
-        ? annualFacts.find(item => getFiscalYearFromFact(item) === year)
-        : annualFacts[0];
-
-      if (!match) continue;
-
-      const unitKey = preferredUnits.unitKey;
-      const isPerShare = unitKey.includes('/shares');
-      const detectedCurrency = isPerShare ? unitKey.replace('/shares', '') : unitKey;
-
-      return {
-        label: concept.label,
-        value: match.val,
-        year: getFiscalYearFromFact(match),
-        period: match.fp || 'FY',
-        unit: preferredUnits.unitKey,
-        currency: detectedCurrency === 'shares' ? 'USD' : detectedCurrency,
-        periodEnd: match.end || undefined,
-      };
-    }
+    for (const alias of aliases) candidates.push({ ns: ns!, name: alias });
   }
-
-  return null;
+  const selection = selectAnnualMetric(candidates, currency, year);
+  return selection ? financialMetricFromSelection(selection) : null;
 }
 
 export function extractComparableFinancials(facts: CompanyFacts, year?: number): Record<string, FinancialMetric> {
@@ -1162,6 +1177,9 @@ export interface EdgarSearchHit {
     state_of_incorporation?: string;
     fiscal_year_end?: string;
     auditor?: string;
+    auditor_resolution_status?: string;
+    auditor_report_date?: string;
+    auditor_basis?: string;
     accelerated_status?: string[] | string;
   };
   highlight?: Record<string, string[]>;
@@ -1174,7 +1192,63 @@ export interface EdgarSearchResult {
   };
   meta?: {
     candidateCoverage?: { examined: number; upstreamTotal: number; complete: boolean; upstreamTotalIsFloor?: boolean };
+    efts?: { requests: number; requestBudget: number };
   };
+}
+
+interface EftsRequestAccounting {
+  requests: number;
+  requestBudget: number;
+}
+
+function parseEftsRequestAccounting(value: unknown): EftsRequestAccounting | null {
+  if (value === undefined) return null;
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error('Enriched search returned invalid EFTS request accounting.');
+  }
+  const accounting = value as Record<string, unknown>;
+  if (
+    !Number.isSafeInteger(accounting.requests)
+    || Number(accounting.requests) < 0
+    || Number(accounting.requests) > ENRICHED_EFTS_REQUEST_CAP
+    || !Number.isSafeInteger(accounting.requestBudget)
+    || Number(accounting.requestBudget) < 1
+    || Number(accounting.requestBudget) > ENRICHED_EFTS_REQUEST_CAP
+    || Number(accounting.requests) > Number(accounting.requestBudget)
+  ) {
+    throw new Error('Enriched search returned invalid EFTS request accounting.');
+  }
+  return {
+    requests: Number(accounting.requests),
+    requestBudget: Number(accounting.requestBudget),
+  };
+}
+
+async function readErrorEftsRequestAccounting(response: Response): Promise<EftsRequestAccounting | null> {
+  if (typeof response.clone !== 'function') return null;
+  const contentType = response.headers?.get?.('content-type') || '';
+  if (!/^application\/(?:json|[a-z0-9!#$&^_.+-]+\+json)(?:;|$)/i.test(contentType.trim())) {
+    return null;
+  }
+  const payload = await response.clone().json() as Record<string, unknown>;
+  const meta = payload.meta && typeof payload.meta === 'object' && !Array.isArray(payload.meta)
+    ? payload.meta as Record<string, unknown>
+    : undefined;
+  return parseEftsRequestAccounting(meta?.efts);
+}
+
+/** Decode an EFTS-shaped response only after validating its media type and
+ * minimum result contract. The json-only branch exists for narrow unit-test
+ * doubles; browser/server Responses always take the content-type-aware path. */
+async function readValidatedEftsResponse(response: Response): Promise<EdgarSearchResult> {
+  const hasResponseBody = typeof response.text === 'function';
+  const contentType = typeof response.headers?.get === 'function'
+    ? response.headers.get('content-type')
+    : 'application/json';
+  const body = hasResponseBody
+    ? await response.text()
+    : JSON.stringify(await response.json());
+  return parseAndValidateEftsPayload(contentType, body) as unknown as EdgarSearchResult;
 }
 
 /**
@@ -1210,6 +1284,11 @@ export interface SearchCandidateCoverage {
   examined: number;
   upstreamTotal: number;
   complete: boolean;
+  /** Verified match population when the executed predicate was delegated
+   * exactly (or an exact-count pass completed). `upstreamTotal` is otherwise
+   * only the retrieval candidate population and must not be called matches. */
+  verifiedMatchTotal?: number;
+  verifiedMatchTotalIsFloor?: boolean;
   /** Per-lane ledger backing the aggregate claim (Boolean deep runs). */
   branches?: BranchCoverageEntry[];
   /**
@@ -1219,13 +1298,17 @@ export interface SearchCandidateCoverage {
    * as an exact total.
    */
   upstreamTotalIsFloor?: boolean;
+  /** Real SEC EFTS attempts reported by the enriched server route. This is
+   *  candidate-collection evidence; the finalized run ledger publishes the
+   *  same work under work.pageRequests. */
+  upstreamRequests?: number;
   /**
    * Measured upstream work for the run, retries and server pre-screens
    * included, beside the declared ceilings (audit R1: displayed limits must
    * equal measured work — a budget that omits retries is not a ceiling).
    */
   work?: {
-    /** Upstream page HTTP attempts (onUpstreamPage fires per attempt). */
+    /** Upstream page HTTP attempts (reported individually or as a bounded batch). */
     pageRequests: number;
     /** Documents hydrated (logical fetches, reserve accounting). */
     docFetches: number;
@@ -1233,6 +1316,9 @@ export interface SearchCandidateCoverage {
     docHttpAttempts: number;
     /** Server pre-screen chunk requests issued. */
     prescreenRequests: number;
+    /** Candidates served from the server's shared text cache (zero upstream
+     *  requests, reported separately rather than pretending they were work). */
+    prescreenCacheHits?: number;
     /** pageRequests + docHttpAttempts + prescreenRequests. */
     totalUpstreamRequests: number;
     ceiling: { pages: number; docHttpAttempts: number; prescreenRequests: number };
@@ -1246,10 +1332,14 @@ export interface EnrichedSearchParams {
   useEnrichedSearch?: boolean;
   onDegraded?: (reason: string) => void;
   onCoverage?: (coverage: SearchCandidateCoverage) => void;
-  /** Fired once per actual upstream HTTP page request (EFTS page or enriched
-   *  call), so callers can budget real request counts rather than call counts
-   *  (readiness finding F-07). */
-  onUpstreamPage?: () => void;
+  /** Called before direct page attempts; an enriched route may then report
+   *  the rest of its bounded server-side EFTS fan-out as one requestCount
+   *  batch. Returning false vetoes direct attempts. Void keeps the legacy
+   *  observe-only behaviour. */
+  onUpstreamPage?: (requestCount?: number) => boolean | void;
+  /** Remaining candidate-page budget that the enriched server route may
+   *  consume. Each route call receives only its current bounded share. */
+  upstreamRequestBudget?: number;
   /** Cooperative cancellation: stops pagination and aborts in-flight fetches. */
   signal?: AbortSignal;
   /** Resolved issuer CIK. EFTS text searches filter reliably by `ciks`;
@@ -1264,10 +1354,39 @@ const EDGAR_FTS_FLOOR = '2001-01-01';
 const EFTS_PAGE_SIZE = 10;
 /** EFTS refuses from+size beyond the 10,000-result window. */
 const EFTS_MAX_WINDOW = 10_000;
+/** /api/es-search's hard per-call SEC EFTS ceiling. */
+const ENRICHED_EFTS_REQUEST_CAP = 100;
 
 /** In-flight enriched calls, keyed by full request params — see the dedup
  *  note inside searchViaEnrichedSearch. */
-const enrichedSearchInFlight = new Map<string, Promise<{ hits: EdgarSearchHit[]; coverage: SearchCandidateCoverage | null }>>();
+interface EnrichedSearchOutcome {
+  hits: EdgarSearchHit[];
+  coverage: SearchCandidateCoverage | null;
+  requestBudgetExhausted: boolean;
+}
+
+interface EnrichedSearchInFlight {
+  promise: Promise<EnrichedSearchOutcome>;
+  signal?: AbortSignal;
+}
+
+const enrichedSearchInFlight = new Map<string, EnrichedSearchInFlight>();
+
+function abortReason(signal?: AbortSignal): Error {
+  if (signal?.reason instanceof Error) return signal.reason;
+  return new DOMException('The operation was aborted.', 'AbortError');
+}
+
+function throwIfAborted(signal?: AbortSignal): void {
+  if (signal?.aborted) throw abortReason(signal);
+}
+
+/** In-flight dedup is safe only when callers share the same cancellation
+ * owner. Separate replacement runs use separate AbortControllers even when
+ * every request parameter is identical. */
+function canShareAbortBoundRequest(owner: AbortSignal | undefined, caller: AbortSignal | undefined): boolean {
+  return !owner?.aborted && owner === caller;
+}
 
 /**
  * Search filings via the enriched candidate endpoint when available, otherwise fall back to EDGAR EFTS.
@@ -1280,7 +1399,14 @@ async function searchViaEnrichedSearch(
   entityName: string,
   maxResults: number,
   extended: EnrichedSearchParams = {}
-): Promise<EdgarSearchHit[]> {
+): Promise<EnrichedSearchOutcome> {
+  const configuredRequestBudget = extended.upstreamRequestBudget;
+  if (
+    configuredRequestBudget !== undefined
+    && (!Number.isSafeInteger(configuredRequestBudget) || configuredRequestBudget < 1)
+  ) {
+    throw new Error('Enriched search request budget must be a positive integer.');
+  }
   const params = new URLSearchParams({
     q: query,
     forms,
@@ -1293,6 +1419,12 @@ async function searchViaEnrichedSearch(
   if (extended.entityCik) params.set('cik', extended.entityCik);
   if (extended.auditor) params.set('auditor', extended.auditor);
   if (extended.sicCode) params.set('sicCode', extended.sicCode);
+  if (configuredRequestBudget !== undefined) {
+    params.set(
+      'eftsRequestBudget',
+      String(Math.min(configuredRequestBudget, ENRICHED_EFTS_REQUEST_CAP))
+    );
+  }
 
   // In-flight dedup (2026-08-04): the dashboard's empty-query facet browse
   // fired FIVE identical /api/es-search?q=&forms=4 requests in parallel —
@@ -1300,38 +1432,99 @@ async function searchViaEnrichedSearch(
   // The EFTS path below already shares identical calls via edgarSearchCache;
   // this is the same pattern for the enriched path, IN-FLIGHT ONLY (entries
   // clear on settle, so results stay fresh across runs). The creator's
-  // callbacks drive live accounting — onUpstreamPage fires once per REAL
-  // HTTP attempt, keeping measured work truthful (audit R1) — and sharers
+  // callbacks drive live accounting — onUpstreamPage reports every REAL HTTP
+  // attempt, batching server-side fan-out where needed (audit R1) — and sharers
   // replay the final coverage into their own onCoverage so page-level
   // accumulators agree without any extra request.
-  const shareKey = `${params.toString()}|max=${maxResults}`;
+  const shareKey = `${params.toString()}|max=${maxResults}|budget=${configuredRequestBudget ?? 'default'}`;
   const inFlight = enrichedSearchInFlight.get(shareKey);
-  if (inFlight) {
-    const shared = await inFlight;
+  if (inFlight && canShareAbortBoundRequest(inFlight.signal, extended.signal)) {
+    const shared = await inFlight.promise;
     if (shared.coverage) extended.onCoverage?.(shared.coverage);
-    return shared.hits;
+    return shared;
   }
 
-  const pending = (async (): Promise<{ hits: EdgarSearchHit[]; coverage: SearchCandidateCoverage | null }> => {
+  const pending = (async (): Promise<EnrichedSearchOutcome> => {
   const results: EdgarSearchHit[] = [];
   const seenIds = new Set<string>();
   let totalHits = Number.POSITIVE_INFINITY;
   let totalRelation: 'eq' | 'gte' = 'eq';
   let aggregateCoverage: SearchCandidateCoverage | null = null;
+  let requestBudgetExhausted = false;
+  let remainingRequestBudget = configuredRequestBudget ?? null;
   // /api/es-search intentionally exposes a 100-row page contract.
   const pageSize = Math.min(maxResults, 100);
+  const reconcileEftsRequests = (accounting: EftsRequestAccounting): void => {
+    const additionalRequests = Math.max(0, accounting.requests - 1);
+    if (
+      remainingRequestBudget !== null
+      && additionalRequests > remainingRequestBudget
+    ) {
+      throw new Error('Enriched search exceeded its caller-provided EFTS request budget.');
+    }
+    if (additionalRequests > 0) {
+      if (extended.onUpstreamPage?.(additionalRequests) === false) {
+        requestBudgetExhausted = true;
+      }
+      if (remainingRequestBudget !== null) remainingRequestBudget -= additionalRequests;
+    }
+  };
 
   for (let offset = 0; offset < maxResults && results.length < maxResults && (totalRelation === 'gte' || offset < totalHits);) {
     if (extended.signal?.aborted) break;
+    if (remainingRequestBudget !== null && remainingRequestBudget <= 0) {
+      requestBudgetExhausted = true;
+      break;
+    }
     const requestedPageSize = Math.min(pageSize, maxResults - results.length);
     params.set('from', String(offset));
     params.set('size', String(requestedPageSize));
 
     let response: Response | null = null;
     for (let attempt = 0; attempt < 3; attempt += 1) {
-      extended.onUpstreamPage?.();
+      // The one preflight ledger entry is a placeholder for the first SEC
+      // attempt hidden behind this same-origin route call. The route is given
+      // the entire remaining share (including that placeholder); after a
+      // successful response we reconcile any additional reported attempts.
+      const routeRequestBudget = remainingRequestBudget === null
+        ? null
+        : Math.min(remainingRequestBudget, ENRICHED_EFTS_REQUEST_CAP);
+      if (routeRequestBudget !== null) {
+        if (routeRequestBudget <= 0) {
+          requestBudgetExhausted = true;
+          break;
+        }
+        params.set('eftsRequestBudget', String(routeRequestBudget));
+      }
+      if (extended.onUpstreamPage?.() === false) {
+        requestBudgetExhausted = true;
+        break;
+      }
+      if (remainingRequestBudget !== null) remainingRequestBudget -= 1;
       response = await fetch(`/api/es-search?${params.toString()}`, { signal: extended.signal });
       if (response.ok) break;
+      let errorAccounting: EftsRequestAccounting | null = null;
+      try {
+        errorAccounting = await readErrorEftsRequestAccounting(response);
+      } catch {
+        // Treat malformed accounting exactly like missing accounting below:
+        // a budgeted caller reserves the full authorized share.
+      }
+      if (errorAccounting) {
+        reconcileEftsRequests(errorAccounting);
+      } else if (routeRequestBudget !== null) {
+        // Old/malformed error envelopes cannot prove how much hidden work the
+        // route completed. Reserve its full authorized share so a retry can
+        // never overspend the declared run ceiling or understate work.
+        reconcileEftsRequests({
+          requests: routeRequestBudget,
+          requestBudget: routeRequestBudget,
+        });
+      }
+      if (requestBudgetExhausted || remainingRequestBudget === 0) {
+        requestBudgetExhausted = true;
+        break;
+      }
       if ((response.status === 429 || response.status >= 500) && attempt < 2) {
         // A 429 from the facet lane means another user's search holds the
         // deployment-wide EDGAR lease. The server says when to come back
@@ -1345,13 +1538,22 @@ async function searchViaEnrichedSearch(
       throw new Error(`Enriched search error: ${response.status}`);
     }
 
+    if (requestBudgetExhausted) break;
     if (!response?.ok) throw new Error('Enriched search error: no successful response');
-    const data: EdgarSearchResult = await response.json();
+    const data = await readValidatedEftsResponse(response);
     const pageHits = data.hits?.hits || [];
     totalHits = data.hits?.total?.value || pageHits.length;
     totalRelation = data.hits?.total?.relation || 'eq';
+    const successAccounting = parseEftsRequestAccounting(data.meta?.efts);
+    if (successAccounting) reconcileEftsRequests(successAccounting);
+    const reportedEftsRequests = successAccounting?.requests;
     if (data.meta?.candidateCoverage) {
-      const coverage = data.meta.candidateCoverage;
+      const coverage: SearchCandidateCoverage = {
+        ...data.meta.candidateCoverage,
+        ...(reportedEftsRequests === undefined
+          ? {}
+          : { upstreamRequests: reportedEftsRequests }),
+      };
       aggregateCoverage = aggregateCoverage
         ? {
             examined: Math.max(aggregateCoverage.examined, coverage.examined),
@@ -1359,6 +1561,8 @@ async function searchViaEnrichedSearch(
             complete: aggregateCoverage.complete && coverage.complete,
             upstreamTotalIsFloor:
               Boolean(aggregateCoverage.upstreamTotalIsFloor) || Boolean(coverage.upstreamTotalIsFloor),
+            upstreamRequests:
+              (aggregateCoverage.upstreamRequests ?? 0) + (coverage.upstreamRequests ?? 0),
           }
         : coverage;
       extended.onCoverage?.(aggregateCoverage);
@@ -1385,18 +1589,29 @@ async function searchViaEnrichedSearch(
     // it — and a 'gte' total is a floor, so it can never end it early.
     if (totalRelation !== 'gte' && offset >= totalHits) break;
     if (offset >= EFTS_MAX_WINDOW) break;
+    if (remainingRequestBudget === 0) {
+      requestBudgetExhausted = true;
+      break;
+    }
     if (offset < maxResults) await delay(50);
   }
 
-  return { hits: results, coverage: aggregateCoverage };
+  if (requestBudgetExhausted && aggregateCoverage) {
+    aggregateCoverage = { ...aggregateCoverage, complete: false };
+  }
+  throwIfAborted(extended.signal);
+  return { hits: results, coverage: aggregateCoverage, requestBudgetExhausted };
   })();
 
-  enrichedSearchInFlight.set(shareKey, pending);
+  const owner: EnrichedSearchInFlight = { promise: pending, signal: extended.signal };
+  enrichedSearchInFlight.set(shareKey, owner);
   try {
     const settled = await pending;
-    return settled.hits;
+    return settled;
   } finally {
-    enrichedSearchInFlight.delete(shareKey);
+    if (enrichedSearchInFlight.get(shareKey) === owner) {
+      enrichedSearchInFlight.delete(shareKey);
+    }
   }
 }
 
@@ -1419,7 +1634,7 @@ export async function searchEdgarFilings(
     // Enrichment is an optimization, never a hard dependency: on failure or an empty
     // index, fall through to live EDGAR EFTS so the user still gets results.
     try {
-      const enrichedResults = await searchViaEnrichedSearch(
+      const enriched = await searchViaEnrichedSearch(
         query,
         forms,
         startDate || EDGAR_FTS_FLOOR,
@@ -1428,10 +1643,16 @@ export async function searchEdgarFilings(
         maxResults,
         extended
       );
-      if (enrichedResults.length > 0) return enrichedResults;
+      // A caller-enforced budget stop is not an enriched-search failure and
+      // must not trigger an unbudgeted EFTS fallback.
+      if (enriched.requestBudgetExhausted) return enriched.hits;
+      if (enriched.hits.length > 0) return enriched.hits;
       console.warn('[search] Enriched search returned 0 hits; falling back to EDGAR EFTS');
       extended.onDegraded?.('Enriched candidate search returned no hits; live SEC EDGAR fallback is in use.');
     } catch (error) {
+      if (extended.signal?.aborted || (error as Error)?.name === 'AbortError') {
+        throw error;
+      }
       console.error('[search] Enriched search failed; falling back to EDGAR EFTS:', error);
       extended.onDegraded?.('Enriched candidate search is unavailable; live SEC EDGAR fallback is in use.');
     }
@@ -1456,108 +1677,133 @@ export async function searchEdgarFilings(
   }
 
   const cacheKey = `${baseParams.toString()}|max=${maxResults}`;
-  if (!edgarSearchCache.has(cacheKey)) {
-    edgarSearchCache.set(cacheKey, (async () => {
-      try {
-        const results: EdgarSearchHit[] = [];
-        const seenIds = new Set<string>();
-        let totalHits = Number.POSITIVE_INFINITY;
-        let totalRelation: 'eq' | 'gte' = 'eq';
-        let exhaustedUpstream = false;
-
-        // EFTS ignores large size requests and always returns ~10 hits/page, so
-        // page with from += actual-hits-received; anything else truncates recall
-        // to a single page (results 10..N were previously never fetched).
-        let offset = 0;
-        while (results.length < maxResults && offset < totalHits && offset < EFTS_MAX_WINDOW) {
-          const params = new URLSearchParams(baseParams);
-          params.set('from', String(offset));
-          params.set('size', String(EFTS_PAGE_SIZE));
-
-          let lastResponse: Response | null = null;
-          let pageHits: EdgarSearchHit[] = [];
-          let totalForPage = Number.POSITIVE_INFINITY;
-
-          if (extended.signal?.aborted) break;
-          for (let attempt = 0; attempt < 2; attempt += 1) {
-            extended.onUpstreamPage?.();
-            const response = await fetch(buildSecEftsUrl('LATEST/search-index', params), {
-              headers: getHeaders(),
-              signal: extended.signal,
-            });
-            lastResponse = response;
-            if (response.ok) {
-              const data: EdgarSearchResult = await response.json();
-              pageHits = data.hits?.hits || [];
-              totalForPage = data.hits?.total?.value || pageHits.length;
-              totalRelation = data.hits?.total?.relation || 'eq';
-              break;
-            }
-
-            if ((response.status === 403 || response.status === 429 || response.status >= 500) && attempt === 0) {
-              await delay(700);
-              continue;
-            }
-
-            throw new Error(`EDGAR Search Error: ${response.status} ${response.statusText}`);
-          }
-
-          if (!lastResponse?.ok) {
-            throw new Error(`EDGAR Search Error: ${lastResponse?.status || 0} ${lastResponse?.statusText || 'Unknown error'}`);
-          }
-
-          totalHits = Math.min(totalHits, totalForPage);
-          for (const hit of pageHits) {
-            if (seenIds.has(hit._id)) continue;
-            seenIds.add(hit._id);
-            results.push(hit);
-            if (results.length >= maxResults) {
-              break;
-            }
-          }
-
-          if (pageHits.length === 0) {
-            exhaustedUpstream = true;
-            break;
-          }
-          offset += pageHits.length;
-
-          if (results.length < maxResults && offset < totalHits) {
-            await delay(180);
-          }
-        }
-
-        // Sort results newest-first by file date
-        results.sort((a, b) => {
-          const dateA = a._source?.file_date || '';
-          const dateB = b._source?.file_date || '';
-          return dateB.localeCompare(dateA);
-        });
-        const finiteTotal = Number.isFinite(totalHits) ? totalHits : results.length;
-        const upstreamTotal = Math.max(finiteTotal, results.length);
-        const complete = exhaustedUpstream || (
-          totalRelation === 'eq' && results.length >= upstreamTotal && upstreamTotal <= EFTS_MAX_WINDOW
-        );
-        return {
-          hits: results,
-          coverage: {
-            examined: results.length,
-            upstreamTotal,
-            complete,
-            upstreamTotalIsFloor: totalRelation === 'gte',
-          },
-        };
-      } catch (error) {
-        edgarSearchCache.delete(cacheKey);
-        console.error('EDGAR search failed:', error);
-        throw error instanceof Error ? error : new Error('EDGAR search failed');
-      }
-    })());
+  const settled = edgarSearchCache.get(cacheKey);
+  if (settled) {
+    extended.onCoverage?.(settled.coverage);
+    return settled.hits;
   }
 
-  const cached = await edgarSearchCache.get(cacheKey)!;
-  extended.onCoverage?.(cached.coverage);
-  return cached.hits;
+  const existing = edgarSearchInFlight.get(cacheKey);
+  if (existing && canShareAbortBoundRequest(existing.signal, extended.signal)) {
+    const shared = await existing.promise;
+    extended.onCoverage?.(shared.coverage);
+    return shared.hits;
+  }
+
+  const pending = (async (): Promise<CachedEdgarSearch> => {
+    try {
+      const results: EdgarSearchHit[] = [];
+      const seenIds = new Set<string>();
+      let totalHits = Number.POSITIVE_INFINITY;
+      let totalRelation: 'eq' | 'gte' = 'eq';
+      let exhaustedUpstream = false;
+      let requestBudgetExhausted = false;
+
+      // EFTS ignores large size requests and always returns ~10 hits/page, so
+      // page with from += actual-hits-received; anything else truncates recall
+      // to a single page (results 10..N were previously never fetched).
+      let offset = 0;
+      while (results.length < maxResults && offset < totalHits && offset < EFTS_MAX_WINDOW) {
+        const params = new URLSearchParams(baseParams);
+        params.set('from', String(offset));
+        params.set('size', String(EFTS_PAGE_SIZE));
+
+        let lastResponse: Response | null = null;
+        let pageHits: EdgarSearchHit[] = [];
+        let totalForPage = Number.POSITIVE_INFINITY;
+
+        throwIfAborted(extended.signal);
+        for (let attempt = 0; attempt < 2; attempt += 1) {
+          if (extended.onUpstreamPage?.() === false) {
+            requestBudgetExhausted = true;
+            break;
+          }
+          const response = await fetch(buildSecEftsUrl('LATEST/search-index', params), {
+            headers: getHeaders(),
+            signal: extended.signal,
+          });
+          lastResponse = response;
+          if (response.ok) {
+            const data = await readValidatedEftsResponse(response);
+            pageHits = data.hits?.hits || [];
+            totalForPage = data.hits?.total?.value || pageHits.length;
+            totalRelation = data.hits?.total?.relation || 'eq';
+            break;
+          }
+
+          if ((response.status === 403 || response.status === 429 || response.status >= 500) && attempt === 0) {
+            await delay(700);
+            continue;
+          }
+
+          throw new Error(`EDGAR Search Error: ${response.status} ${response.statusText}`);
+        }
+
+        if (requestBudgetExhausted) break;
+        if (!lastResponse?.ok) {
+          throw new Error(`EDGAR Search Error: ${lastResponse?.status || 0} ${lastResponse?.statusText || 'Unknown error'}`);
+        }
+
+        totalHits = Math.min(totalHits, totalForPage);
+        for (const hit of pageHits) {
+          if (seenIds.has(hit._id)) continue;
+          seenIds.add(hit._id);
+          results.push(hit);
+          if (results.length >= maxResults) break;
+        }
+
+        if (pageHits.length === 0) {
+          exhaustedUpstream = true;
+          break;
+        }
+        offset += pageHits.length;
+
+        if (results.length < maxResults && offset < totalHits) await delay(180);
+      }
+
+      throwIfAborted(extended.signal);
+      // Sort results newest-first by file date
+      results.sort((a, b) => {
+        const dateA = a._source?.file_date || '';
+        const dateB = b._source?.file_date || '';
+        return dateB.localeCompare(dateA);
+      });
+      const finiteTotal = Number.isFinite(totalHits) ? totalHits : results.length;
+      const upstreamTotal = Math.max(finiteTotal, results.length);
+      const complete = !requestBudgetExhausted && (exhaustedUpstream || (
+        totalRelation === 'eq' && results.length >= upstreamTotal && upstreamTotal <= EFTS_MAX_WINDOW
+      ));
+      return {
+        hits: results,
+        coverage: {
+          examined: results.length,
+          upstreamTotal,
+          complete,
+          upstreamTotalIsFloor: totalRelation === 'gte',
+        },
+        requestBudgetExhausted,
+      };
+    } catch (error) {
+      if (extended.signal?.aborted || (error as Error)?.name === 'AbortError') {
+        throw error;
+      }
+      console.error('EDGAR search failed:', error);
+      throw error instanceof Error ? error : new Error('EDGAR search failed');
+    }
+  })();
+
+  const owner: EdgarSearchInFlight = { promise: pending, signal: extended.signal };
+  edgarSearchInFlight.set(cacheKey, owner);
+  try {
+    const outcome = await pending;
+    if (!outcome.requestBudgetExhausted) edgarSearchCache.set(cacheKey, outcome);
+    extended.onCoverage?.(outcome.coverage);
+    return outcome.hits;
+  } finally {
+    if (edgarSearchInFlight.get(cacheKey) === owner) {
+      edgarSearchInFlight.delete(cacheKey);
+    }
+  }
 }
 
 /** Read the authoritative total for an EDGAR EFTS query without pretending
@@ -1581,7 +1827,7 @@ export async function fetchEdgarSearchTotal(
   if (entityName) params.set('entityName', entityName);
   const response = await fetch(buildSecEftsUrl('LATEST/search-index', params), { headers: getHeaders() });
   if (!response.ok) throw new Error(`EDGAR total search error: ${response.status}`);
-  const data = await response.json() as EdgarSearchResult;
+  const data = await readValidatedEftsResponse(response);
   return {
     value: Number(data.hits?.total?.value || 0),
     relation: data.hits?.total?.relation || 'eq',
@@ -1812,6 +2058,15 @@ export interface BooleanPrescreenVerdict extends BooleanPrescreenCandidate {
   validated: boolean;
 }
 
+export interface BooleanPrescreenWork {
+  /** Actual SEC HTTP attempts made by the route, redirects included. */
+  upstreamAttempts: number;
+  /** Candidates decided from the shared filing-text cache (zero SEC work). */
+  cacheHits: number;
+  /** The server vetoed further SEC work at the supplied hard ceiling. */
+  budgetExhausted: boolean;
+}
+
 /**
  * Ask the server which candidates satisfy a Boolean expression, so the browser
  * only downloads the documents that survive.
@@ -1828,7 +2083,12 @@ export interface BooleanPrescreenVerdict extends BooleanPrescreenCandidate {
 export async function prescreenBooleanCandidates(
   query: string,
   candidates: BooleanPrescreenCandidate[],
-  options: { signal?: AbortSignal; timeoutMs?: number } = {}
+  options: {
+    signal?: AbortSignal;
+    timeoutMs?: number;
+    maxUpstreamAttempts?: number;
+    onWork?: (work: BooleanPrescreenWork) => void;
+  } = {}
 ): Promise<BooleanPrescreenVerdict[] | null> {
   if (!query.trim() || candidates.length === 0) return null;
 
@@ -1842,12 +2102,27 @@ export async function prescreenBooleanCandidates(
     const response = await fetch('/api/boolean-validate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query, candidates }),
+      body: JSON.stringify({
+        query,
+        candidates,
+        maxUpstreamAttempts: options.maxUpstreamAttempts,
+      }),
       signal: timeout.signal,
     });
     if (!response.ok) return null;
 
-    const payload = await response.json() as { ok?: boolean; verdicts?: BooleanPrescreenVerdict[] };
+    const payload = await response.json() as {
+      ok?: boolean;
+      verdicts?: BooleanPrescreenVerdict[];
+      summary?: Partial<BooleanPrescreenWork>;
+    };
+    if (payload.summary) {
+      options.onWork?.({
+        upstreamAttempts: Math.max(0, Number(payload.summary.upstreamAttempts) || 0),
+        cacheHits: Math.max(0, Number(payload.summary.cacheHits) || 0),
+        budgetExhausted: payload.summary.budgetExhausted === true,
+      });
+    }
     return payload.ok && Array.isArray(payload.verdicts) ? payload.verdicts : null;
   } catch {
     return null;
@@ -2021,7 +2296,14 @@ export function parseLitigationReleases(html: string): LitigationRelease[] {
     const releaseFromRow = row.querySelector('.view-table_subfield_release_number .view-table_subfield_value')?.textContent || '';
     const numberMatch = `${releaseFromRow} ${href}`.match(/LR[-\s]?(\d+)/i);
     const releaseNumber = numberMatch ? `LR-${numberMatch[1]}` : '';
-    const url = href.startsWith('https://www.sec.gov') ? href : `https://www.sec.gov${href.startsWith('/') ? href : `/${href}`}`;
+    let url: string;
+    try {
+      const parsedUrl = new URL(href, 'https://www.sec.gov');
+      if (parsedUrl.origin !== 'https://www.sec.gov' || parsedUrl.username || parsedUrl.password) continue;
+      url = parsedUrl.toString();
+    } catch {
+      continue;
+    }
     if (!title || !releaseNumber || seen.has(url)) continue;
     seen.add(url);
     items.push({

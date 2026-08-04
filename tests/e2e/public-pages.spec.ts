@@ -70,17 +70,20 @@ test.describe('archetype: public legal and support pages', () => {
 
   test('privacy.return-home and terms.return-home reach the public landing without sign-in', async ({ page }) => {
     for (const route of ['/privacy', '/terms']) {
-      await page.goto(route, { waitUntil: 'domcontentloaded' });
-      await waitForIdentity(page);
+      const actionId = route === '/privacy' ? 'privacy.return-home' : 'terms.return-home';
+      await test.step(`ui-action:${actionId}`, async () => {
+        await page.goto(route, { waitUntil: 'domcontentloaded' });
+        await waitForIdentity(page);
 
-      const back = page.getByRole('link', { name: 'Return to Uniqus Research Center' });
-      await expect(back, `${route} must offer a way back`).toBeVisible({ timeout: 20_000 });
-      await back.click();
+        const back = page.getByRole('link', { name: 'Return to Uniqus Research Center' });
+        await expect(back, `${route} must offer a way back`).toBeVisible({ timeout: 20_000 });
+        await back.click();
 
-      // The landing page itself, not an auth wall — these pages are reachable
-      // by signed-out visitors, so their way out must be too.
-      await expect(page).toHaveURL(/\/$/);
-      await expect(page.getByRole('heading', { level: 1 })).toBeVisible({ timeout: 20_000 });
+        // The landing page itself, not an auth wall — these pages are reachable
+        // by signed-out visitors, so their way out must be too.
+        await expect(page).toHaveURL(/\/$/);
+        await expect(page.getByRole('heading', { level: 1 })).toBeVisible({ timeout: 20_000 });
+      });
     }
   });
 
@@ -93,6 +96,8 @@ test.describe('archetype: public legal and support pages', () => {
     await expect(page.getByRole('heading', { name: /not professional advice/i })).toBeVisible({ timeout: 20_000 });
     await expect(page.getByText(/not legal,\s*accounting, investment, tax, or other professional advice/i).first()).toBeVisible();
     await expect(page.getByText(/should not replace review\s*of the underlying source documents/i).first()).toBeVisible();
+
+    await expect(page.getByRole('heading', { name: 'Source verification' })).toBeVisible();
   });
 
   test('support-center.filter-guidance narrows the guide and says so when nothing matches', async ({ page }) => {
@@ -144,9 +149,4 @@ test.describe('archetype: public legal and support pages', () => {
  *   specific product route opens "requesting sign-in if required". The e2e
  *   webServer bypasses auth entirely, so the sign-in half is unobservable here
  *   for the same reason global.authentication is.
- * - design-gallery.review-component-states / exercise-static-controls: left
- *   deliberately untouched. "Inspect components" is arguably not an action at
- *   all, but exercise-static-controls also asserts that production visitors
- *   cannot reach the internal gallery — a real exposure claim that deserves
- *   its own test rather than being narrowed away in passing.
  */

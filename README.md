@@ -24,7 +24,7 @@ Each result surface identifies its source and limitations. Features that lack an
 
 ## Local setup
 
-Requirements: Node.js 20 or newer and npm.
+Requirements: Node.js 22.22.2 or newer and npm.
 
 ```bash
 npm install
@@ -34,17 +34,17 @@ npm run dev -- -p 3033
 
 Open `http://localhost:3033`. Next.js otherwise defaults to port 3000.
 
-Local development may use Clerk's keyless development flow. Production deliberately fails closed unless live Clerk keys and a research entitlement are configured.
+Local development may use Clerk's keyless development flow. The current internal pilot deliberately permits a configured Clerk development instance without a research entitlement; missing keys still fail closed. Live Clerk keys and `CLERK_RESEARCH_FEATURE` remain prerequisites for an external production launch and are intentionally outside this branch.
 
 ## Environment
 
 Use [.env.example](.env.example) as the complete template. The principal settings are:
 
-- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, and `CLERK_RESEARCH_FEATURE` for production access control
+- `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, and—before external production launch—`CLERK_RESEARCH_FEATURE` for strict access control
 - `ANTHROPIC_API_KEY` and optional `ANTHROPIC_MODEL` for AI routes
 - `KV_REST_API_URL`, `KV_REST_API_TOKEN`, `AI_DAILY_TOKEN_BUDGET_PER_USER`, and optional `AI_MAX_CONCURRENT_*` values for distributed limits and budgets
-- `URC_SUPABASE_URL` and `URC_SUPABASE_WEB_KEY` for production read/write routes that operate under database policy
-- `URC_SUPABASE_SERVICE_KEY` only for trusted ingestion and maintenance jobs
+- `URC_SUPABASE_URL` and `URC_SUPABASE_WEB_KEY` for production read routes that operate under database policy
+- `URC_SUPABASE_SERVICE_KEY` as a server-only secret for trusted ingestion/maintenance jobs and the three audited cache-writer routes; it is never a web-read identity
 - `NEXT_PUBLIC_EDGAR_USER_AGENT` for SEC requests, in `Organization contact@example.com` form
 - optional `NEXT_PUBLIC_POSTHOG_*` settings for consent-aware analytics
 
@@ -59,7 +59,7 @@ npm test
 npm run typecheck
 npm run lint
 npm run build
-npm audit --omit=dev
+npm audit
 ```
 
 Targeted Vitest files can be run with `npx vitest run path/to/test.ts`.
@@ -74,8 +74,8 @@ Use a descriptive SEC user agent, respect upstream rate limits, retry bounded tr
 
 1. Import the repository into Vercel.
 2. Use `npm run build`; no custom output directory is required.
-3. Configure the application-runtime variables from `.env.example` with live credentials. Do not add `URC_SUPABASE_SERVICE_KEY` to Vercel; the web application uses only `URC_SUPABASE_WEB_KEY`.
-4. Apply the required Supabase migrations and configure `URC_SUPABASE_SERVICE_KEY` only as a secret for the scheduled ingestion workflows.
-5. Verify anonymous access is denied for protected pages and APIs, AI limits use KV, the production Clerk development-key warning is absent, and the quality-gate commands pass.
+3. Configure the application-runtime variables from `.env.example` with live credentials. Production reads use only `URC_SUPABASE_WEB_KEY`. If shared cache warming/self-healing is enabled, add `URC_SUPABASE_SERVICE_KEY` as a Vercel Sensitive, server-only variable solely for the three audited cache-writer routes; it must never be exposed through `NEXT_PUBLIC_*` or used as a read fallback.
+4. Apply the required Supabase migrations and separately configure `URC_SUPABASE_SERVICE_KEY` as a protected secret for scheduled ingestion and release-evidence workflows.
+5. Verify anonymous access is denied for protected pages and APIs, AI limits use KV, and the quality-gate commands pass. The internal pilot currently logs the deliberate Clerk development-instance/no-entitlement warning; require that warning to be absent only after live keys and `CLERK_RESEARCH_FEATURE` are configured for external production launch.
 
 SEC documents are fetched through the application routes as sanitized inert content; do not reintroduce a same-origin active HTML proxy or unsandboxed document rendering.

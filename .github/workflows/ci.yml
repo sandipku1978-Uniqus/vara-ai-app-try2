@@ -22,14 +22,18 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
       - run: npm ci
+      - name: Enforce an acyclic source dependency graph
+        run: npm run check:cycles
       - run: npm test -- --no-file-parallelism --maxWorkers=1
       - run: npm run typecheck
       - run: npm run lint
       - run: npm run build
-      - run: npm audit --omit=dev
+      # Test/build tooling executes in CI and can expose the repository even
+      # when it is not shipped to users, so audit the complete dependency tree.
+      - run: npm audit
 
   browser:
     # Deterministic Playwright acceptance: route smoke, neutral visitor,
@@ -45,17 +49,52 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
-      - run: npx playwright test
+      - run: npx --no-install playwright install --with-deps chromium
+      # The internal component gallery exists only under `next dev`; exercise
+      # that acceptance surface explicitly before the production-build suite
+      # proves that the fabricated specimens cannot ship.
+      - name: Exercise the internal design gallery in development
+        run: npx --no-install playwright test tests/e2e/design-gallery-interactions.spec.ts
+        env:
+          CI: 'true'
+          QA_OUTPUT_DIR: ${{ runner.temp }}/urc-playwright-gallery
+          QA_ACTION_RUN_LABEL: browser-development
+          QA_ACTION_SHA: ${{ github.sha }}
+      - name: Exercise the complete production-build browser suite
+        run: npx --no-install playwright test
         env:
           CI: 'true'
           QA_OUTPUT_DIR: ${{ runner.temp }}/urc-playwright
+          QA_ACTION_RUN_LABEL: browser-production
+          QA_ACTION_SHA: ${{ github.sha }}
           # Release evidence exercises the production build, not next dev
           # (handoff WP8): what CI proves must be what users get.
           PW_PROD_BUILD: '1'
+          # Semantic findings are release failures, not report-only notes.
+          QA_STRICT_AUDIT: '1'
+      - name: Validate every mapped browser action from runtime results
+        if: always()
+        run: >-
+          npx --no-install tsx scripts/ui-actions/validate.ts
+          --scope browser
+          --expect-sha "$GITHUB_SHA"
+          --report "${{ runner.temp }}/urc-playwright-gallery/ui-action-run.json"
+          --report "${{ runner.temp }}/urc-playwright/ui-action-run.json"
+          --out "${{ runner.temp }}/ui-action-evidence-browser.json"
+      - name: Retain exact-SHA browser action evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ui-action-evidence-browser-${{ github.sha }}
+          if-no-files-found: error
+          retention-days: 30
+          path: |
+            ${{ runner.temp }}/ui-action-evidence-browser.json
+            ${{ runner.temp }}/urc-playwright-gallery/ui-action-run.json
+            ${{ runner.temp }}/urc-playwright/ui-action-run.json
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: failure()
         with:
@@ -94,61 +133,20 @@ jobs:
           DATABASE_URL: postgres://postgres:test@localhost:55432/postgres
 
   auth-browser:
-    # The `browser` job runs behind URC_E2E_BYPASS_AUTH, so it cannot observe
-    # authentication at all — nothing is protected there. This job serves the
-    # app with the bypass OFF against a Clerk DEVELOPMENT instance, which is
-    # the only way global.authentication is provable.
-    #
-    # It is deliberately NOT a required check: until the Clerk test secrets
-    # exist it reports a notice and passes, so main stays green and nobody is
-    # blocked by a capability that is not configured yet.
+    # Keep the existing required PR check meaningful without exposing a Clerk
+    # secret or test identity to pull-request-controlled source. The real
+    # sign-in/sign-out lifecycle lives in auth-lifecycle.yml and runs only for
+    # the exact revision already accepted onto protected main.
     runs-on: ubuntu-latest
-    timeout-minutes: 25
-    env:
-      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.CLERK_PUBLISHABLE_KEY_TEST }}
-      CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY_TEST }}
-      CLERK_TEST_EMAIL: ${{ secrets.CLERK_TEST_EMAIL }}
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: 20
+          node-version: 22
           cache: npm
-      - run: npm ci
-      - id: gate
-        name: Check whether Clerk test credentials are configured
-        # Readiness audit R3: the skip-with-notice path existed so the job
-        # could land before the secrets did. The secrets exist now (added
-        # 2026-08-02), so a missing secret is a BROKEN configuration and the
-        # job fails loudly — a silently green non-run of the auth suite is
-        # exactly the class of quiet gap this pipeline is built to refuse.
-        # Sole carve-out: dependabot PRs never receive repository secrets by
-        # GitHub's design, so for that actor alone the suite is skipped with
-        # a notice instead of failing every dependency bump.
-        run: |
-          if [ -z "${CLERK_SECRET_KEY}" ] || [ -z "${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}" ]; then
-            if [ "${GITHUB_ACTOR}" = "dependabot[bot]" ]; then
-              echo 'configured=false' >> "$GITHUB_OUTPUT"
-              echo '::notice title=Authentication suite skipped for dependabot::Dependabot PRs do not receive repository secrets; the auth suite runs on every other PR.'
-            else
-              echo '::error title=Clerk test credentials missing::CLERK_PUBLISHABLE_KEY_TEST / CLERK_SECRET_KEY_TEST are configured on this repository (since 2026-08-02) but were not available to this run. A silently skipped auth suite is not a passing auth suite — fix the secret configuration. See docs/pending-keys-checklist.md section 6.'
-              exit 1
-            fi
-          else
-            echo 'configured=true' >> "$GITHUB_OUTPUT"
-          fi
-      - if: steps.gate.outputs.configured == 'true'
-        run: npx playwright install --with-deps chromium
-      - if: steps.gate.outputs.configured == 'true'
-        run: npx playwright test --config playwright.auth.config.ts
-        env:
-          CI: 'true'
-          QA_OUTPUT_DIR: ${{ runner.temp }}/urc-playwright-auth
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        if: failure() && steps.gate.outputs.configured == 'true'
-        with:
-          name: playwright-auth-report
-          path: ${{ runner.temp }}/urc-playwright-auth/report
-          retention-days: 7
+      - run: npm ci --ignore-scripts
+      - name: Verify proxy, route, bypass, and entitlement contracts without secrets
+        run: npx --no-install vitest run src/__tests__/apiAuth.test.ts --no-file-parallelism --maxWorkers=1

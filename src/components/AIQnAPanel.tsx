@@ -1,31 +1,12 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 
-import {
-  AlertTriangle,
-  BellRing,
-  Bot,
-  CheckCircle2,
-  ClipboardList,
-  ExternalLink,
-  FileSearch,
-  Loader2,
-  Send,
-  Sparkles,
-  X,
-} from 'lucide-react';
 import { useApp } from '../context/AppState';
-import ResponsibleAIBanner from './ResponsibleAIBanner';
-import { renderMarkdown } from '../utils/markdownRenderer';
-import { defaultSearchFilters, type SearchFilters } from './filters/SearchFilterBar';
 import type {
   AgentCitation,
-  AgentContextSnapshot,
   AgentEvidencePacket,
-  AgentRun,
-  FilingLocator,
   PendingAlertDraft,
   ResolvedCompany,
 } from '../types/agent';
@@ -39,195 +20,25 @@ import {
   findLatestFilingForCompany,
   resolveCompanyHint,
 } from '../services/agentEvidence';
-import { buildSearchTrendSummary, executeFilingResearchSearch, type FilingResearchResult, type ResearchSearchMode } from '../services/filingResearch';
-import { generateAgentAnswerStreaming, generateFilingSummary, planAgentRun, summarizeConversation } from '../services/aiApi';
+import { buildSearchTrendSummary, executeFilingResearchSearch, type ResearchSearchMode } from '../services/filingResearch';
+import { generateAgentAnswerStreaming, generateFilingSummary, planAgentRun } from '../services/aiApi';
 import { openCleanPrintView } from '../services/filingExport';
 import { BRAND } from '../config/brand';
-import { SAMPLE_PROMPTS, SAMPLE_PROMPT_CATEGORIES } from '../data/samplePrompts';
+import {
+  buildContextSnapshotAsync,
+  buildFallbackEvidence,
+  createInitialRuntimeState,
+  dedupeCitations,
+  deriveCompanyHintFromTitle,
+  filingRouteFromResult,
+  normalizeSearchFilters,
+  routeForSurface,
+  type PanelTab,
+  type SurfaceRoute,
+} from './AIQnAPanel.helpers';
+import { AIQnAPanelView } from './AIQnAPanelView';
+import { useResizablePanel } from './useResizablePanel';
 import './AIQnA.css';
-
-type SurfaceRoute = 'search' | 'accounting' | 'comment-letters';
-type PanelTab = 'answer' | 'evidence' | 'actions';
-
-interface AgentRuntimeState {
-  resolvedCompanies: ResolvedCompany[];
-  latestFiling: FilingLocator | null;
-  searchResults: FilingResearchResult[];
-  commentLetterResults: FilingResearchResult[];
-  /** Matches found in the owned letter corpus (full-text lane) — excerpts
-   *  land directly in findings, so this only tracks the count for summaries. */
-  lettersCorpusCount: number;
-  importantSummary: string;
-  draftedAlert: PendingAlertDraft | null;
-  findings: string[];
-  citations: AgentCitation[];
-  notes: string[];
-  compareTickers: string[];
-  searchQuery: string;
-  searchMode: ResearchSearchMode;
-  searchFilters: SearchFilters;
-}
-
-function routeForSurface(surface: SurfaceRoute): string {
-  switch (surface) {
-    case 'accounting':
-      return '/accounting';
-    case 'comment-letters':
-      return '/comment-letters';
-    default:
-      return '/search';
-  }
-}
-
-function filingRouteFromResult(result: FilingResearchResult): string {
-  return `/filing/${result.cik}_${result.accessionNumber}_${result.primaryDocument}`;
-}
-
-function dedupeCitations(citations: AgentCitation[]): AgentCitation[] {
-  const seen = new Set<string>();
-  return citations.filter(citation => {
-    const key = [
-      citation.kind,
-      citation.title,
-      citation.sectionLabel || '',
-      citation.route || '',
-      citation.externalUrl || '',
-    ].join('|');
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-}
-
-function normalizeSearchFilters(input: unknown): SearchFilters {
-  if (!input || typeof input !== 'object') {
-    return { ...defaultSearchFilters };
-  }
-
-  const value = input as Partial<SearchFilters>;
-  return {
-    ...defaultSearchFilters,
-    ...value,
-    formTypes: Array.isArray(value.formTypes) ? value.formTypes : defaultSearchFilters.formTypes,
-    exchange: Array.isArray(value.exchange) ? value.exchange : defaultSearchFilters.exchange,
-    acceleratedStatus: Array.isArray(value.acceleratedStatus) ? value.acceleratedStatus : defaultSearchFilters.acceleratedStatus,
-  };
-}
-
-// Cache for conversation summaries to avoid re-summarizing
-const conversationSummaryCache = new Map<string, string>();
-
-async function buildContextSnapshotAsync(app: ReturnType<typeof useApp>, pathname: string): Promise<AgentContextSnapshot> {
-  const completedRuns = app.agentRuns
-    .filter(run => run.prompt.trim().length > 0 && run.answer.trim().length > 0);
-
-  let conversation: Array<{ prompt: string; answer: string; startedAt: string }>;
-
-  if (completedRuns.length > 8) {
-    // Summarize older turns, keep last 3 verbatim (Plan Section 6.1)
-    const olderTurns = completedRuns.slice(3).reverse();
-    const recentTurns = completedRuns.slice(0, 3).reverse();
-
-    const cacheKey = olderTurns.map(r => r.id).join(':');
-    let summary = conversationSummaryCache.get(cacheKey);
-    if (!summary) {
-      try {
-        summary = await summarizeConversation(
-          olderTurns.map(r => ({ prompt: r.prompt, answer: r.answer }))
-        );
-        conversationSummaryCache.set(cacheKey, summary);
-      } catch {
-        summary = '';
-      }
-    }
-
-    conversation = [
-      ...(summary ? [{ prompt: '[Conversation summary]', answer: summary, startedAt: olderTurns[0]?.startedAt || '' }] : []),
-      ...recentTurns.map(run => ({ prompt: run.prompt, answer: run.answer, startedAt: run.startedAt })),
-    ];
-  } else {
-    conversation = completedRuns
-      .slice(0, 6)
-      .reverse()
-      .map(run => ({ prompt: run.prompt, answer: run.answer, startedAt: run.startedAt }));
-  }
-
-  return {
-    pagePath: app.currentPageContext.path || pathname,
-    pageLabel: app.currentPageContext.label || 'Workspace',
-    filing: app.currentFilingContext
-      ? {
-          ...app.currentFilingContext,
-          sections: app.currentFilingSections,
-        }
-      : null,
-    search: app.activeSearchContext
-      ? {
-          surface: app.activeSearchContext.surface,
-          query: app.activeSearchContext.query,
-          mode: app.activeSearchContext.mode,
-          filters: app.activeSearchContext.filters,
-          resultCount: app.activeSearchContext.results.length,
-          topResults: app.activeSearchContext.results.slice(0, 8),
-        }
-      : null,
-    compare: app.activeCompareContext
-      ? {
-          tickers: app.activeCompareContext.tickers,
-          sicCode: app.activeCompareContext.sicCode,
-          viewMode: app.activeCompareContext.viewMode,
-          selectedSection: app.activeCompareContext.selectedSection,
-        }
-      : null,
-    conversation,
-  };
-}
-
-function deriveCompanyHintFromTitle(title: string): string {
-  const trimmed = title.trim();
-  if (!trimmed) return '';
-
-  const resolveMatch = trimmed.match(/^resolve\s+(.+)$/i);
-  if (resolveMatch) return resolveMatch[1].trim();
-
-  const filingMatch = trimmed.match(/\bfor\s+(.+)$/i);
-  if (filingMatch) return filingMatch[1].trim();
-
-  return '';
-}
-
-function createInitialRuntimeState(): AgentRuntimeState {
-  return {
-    resolvedCompanies: [],
-    latestFiling: null,
-    searchResults: [],
-    commentLetterResults: [],
-    lettersCorpusCount: 0,
-    importantSummary: '',
-    draftedAlert: null,
-    findings: [],
-    citations: [],
-    notes: [],
-    compareTickers: [],
-    searchQuery: '',
-    searchMode: 'semantic',
-    searchFilters: { ...defaultSearchFilters },
-  };
-}
-
-function buildFallbackEvidence(run: AgentRun | null): AgentEvidencePacket | null {
-  if (!run) return null;
-  if (run.evidence) return run.evidence;
-
-  return {
-    title: 'Copilot Result',
-    summary: run.answer || 'The copilot completed a run, but no structured evidence packet was generated.',
-    findings: [],
-    citations: [],
-    followUps: [],
-    notes: [],
-  };
-}
 
 export function AIQnAPanel() {
   const app = useApp();
@@ -257,10 +68,10 @@ export function AIQnAPanel() {
   const [running, setRunning] = useState(false);
   const [streamingText, setStreamingText] = useState('');
   const [loadingStage, setLoadingStage] = useState('');
-  const [panelWidth, setPanelWidth] = useState<number | null>(null);
-  const isResizing = useRef(false);
+  const { panelWidth, handleResizeStart, handleResizeKeyDown } = useResizablePanel();
   const processingRequestIdRef = useRef<string | null>(null);
   const messageInputRef = useRef<HTMLInputElement>(null);
+  const restoreFocusRef = useRef<HTMLElement | null>(null);
 
   // A pill fills the composer with a draft and focuses it, so it reads as
   // "edit, then send" rather than a message that was already sent.
@@ -270,34 +81,6 @@ export function AIQnAPanel() {
   }, []);
   const executePromptRef = useRef<((prompt: string) => Promise<void>) | null>(null);
   const panelBodyRef = useRef<HTMLDivElement>(null);
-
-  // Resize handler — drag the left edge to resize the copilot panel
-  const handleResizeStart = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    isResizing.current = true;
-    const startX = e.clientX;
-    const startWidth = panelWidth || Math.min(window.innerWidth, 520);
-
-    function onMouseMove(ev: MouseEvent) {
-      if (!isResizing.current) return;
-      const delta = startX - ev.clientX;
-      const newWidth = Math.max(320, Math.min(window.innerWidth * 0.8, startWidth + delta));
-      setPanelWidth(newWidth);
-    }
-
-    function onMouseUp() {
-      isResizing.current = false;
-      document.removeEventListener('mousemove', onMouseMove);
-      document.removeEventListener('mouseup', onMouseUp);
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-    }
-
-    document.body.style.cursor = 'col-resize';
-    document.body.style.userSelect = 'none';
-    document.addEventListener('mousemove', onMouseMove);
-    document.addEventListener('mouseup', onMouseUp);
-  }, [panelWidth]);
 
   const activeRun = useMemo(
     () => agentRuns.find(run => run.id === activeAgentRunId) || agentRuns[0] || null,
@@ -313,6 +96,24 @@ export function AIQnAPanel() {
   useEffect(() => {
     panelBodyRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
   }, [activeRun?.id, tab]);
+
+  useEffect(() => {
+    if (!isChatOpen) return;
+    const activeElement = document.activeElement;
+    restoreFocusRef.current = activeElement instanceof HTMLElement && activeElement !== document.body
+      ? activeElement
+      : null;
+    const frame = window.requestAnimationFrame(() => messageInputRef.current?.focus());
+    return () => window.cancelAnimationFrame(frame);
+  }, [isChatOpen]);
+
+  const closePanel = useCallback(() => {
+    setChatOpen(false);
+    const restoreTarget = restoreFocusRef.current;
+    window.requestAnimationFrame(() => {
+      if (restoreTarget?.isConnected) restoreTarget.focus();
+    });
+  }, [setChatOpen]);
 
   async function executePrompt(prompt: string) {
     const runId = startAgentRun(prompt);
@@ -818,7 +619,7 @@ export function AIQnAPanel() {
     });
   }, [agentPromptQueue, isChatOpen, removeAgentPromptRequest, running]);
 
-  const handleSend = async (event: React.FormEvent) => {
+  const handleSend = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!inputValue.trim() || running) return;
     const prompt = inputValue.trim();
@@ -857,247 +658,32 @@ export function AIQnAPanel() {
   }
 
   return (
-    <div id="urc-copilot-panel" role="complementary" aria-label={`${BRAND.copilotName} research assistant`} className="ai-panel glass-card" style={panelWidth ? { width: `${panelWidth}px` } : undefined}>
-      {/* Resize handle on the left edge — drag with the mouse, or focus and
-          use arrow keys / Home / End for keyboard + assistive-tech access. */}
-      <div
-        className="ai-panel-resize-handle"
-        role="separator"
-        aria-orientation="vertical"
-        aria-label="Resize copilot panel (arrow keys)"
-        tabIndex={0}
-        onMouseDown={handleResizeStart}
-        onKeyDown={e => {
-          const max = Math.round(window.innerWidth * 0.8);
-          const current = panelWidth || Math.min(window.innerWidth, 520);
-          const clamp = (w: number) => Math.max(320, Math.min(max, w));
-          if (e.key === 'ArrowLeft') { e.preventDefault(); setPanelWidth(clamp(current + 40)); }
-          else if (e.key === 'ArrowRight') { e.preventDefault(); setPanelWidth(clamp(current - 40)); }
-          else if (e.key === 'Home') { e.preventDefault(); setPanelWidth(max); }
-          else if (e.key === 'End') { e.preventDefault(); setPanelWidth(320); }
-        }}
-        title="Drag, or focus and use arrow keys, to resize"
-      />
-      <div className="ai-panel-header">
-        <div className="ai-title">
-          <Sparkles size={18} className="ai-icon" />
-          <span>{BRAND.copilotName}</span>
-        </div>
-        <div className="ai-header-actions">
-          {agentRuns.length > 0 && (
-            <button type="button" className="icon-btn-small" onClick={clearAgentRuns} title="Clear run history" aria-label="Clear copilot run history">
-              <ClipboardList size={16} />
-            </button>
-          )}
-          <button type="button" className="icon-btn-small" onClick={() => setChatOpen(false)} title="Close copilot" aria-label="Close copilot">
-            <X size={18} />
-          </button>
-        </div>
-      </div>
-
-      <div className="ai-panel-body" ref={panelBodyRef}>
-        <div className="copilot-hero">
-          <div className="copilot-hero-icon">
-            <Bot size={18} />
-          </div>
-          <div>
-            <h3>Structured research copilot</h3>
-            <p>Ask {BRAND.shortName} to open filings, set filters, prepare peer cohorts, summarize evidence, and draft alerts for review.</p>
-          </div>
-        </div>
-
-        {agentRuns.length > 1 && (
-          <div className="run-history">
-            {agentRuns.slice(0, 4).map(run => (
-              <button
-                key={run.id}
-                className={`history-chip ${activeRun?.id === run.id ? 'active' : ''}`}
-                onClick={() => setActiveAgentRunId(run.id)}
-              >
-                {run.prompt.length > 42 ? `${run.prompt.slice(0, 42)}...` : run.prompt}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {activeRun ? (
-          <div className="run-card">
-            <div className="run-card-header">
-              <div>
-                <div className="run-label">Latest request</div>
-                <div className="run-prompt">{activeRun.prompt}</div>
-              </div>
-              <div className={`run-status ${activeRun.status}`}>
-                {activeRun.status === 'running'
-                  ? <Loader2 size={14} className="spinner" />
-                  : activeRun.status === 'completed'
-                    ? <CheckCircle2 size={14} />
-                    : <AlertTriangle size={14} />}
-                <span>{activeRun.status}</span>
-              </div>
-            </div>
-
-            <div className="panel-tabs">
-              {(['answer', 'evidence', 'actions'] as PanelTab[]).map(item => (
-                <button key={item} className={tab === item ? 'active' : ''} onClick={() => setTab(item)}>
-                  {item === 'answer' ? 'Answer' : item === 'evidence' ? 'Evidence' : 'Action Log'}
-                </button>
-              ))}
-            </div>
-
-            {tab === 'answer' && (
-              <div className="panel-tab-content">
-                {activeRun.answer ? (
-                  <div className="copilot-answer md-content" dangerouslySetInnerHTML={{ __html: renderMarkdown(activeRun.answer) }} />
-                ) : streamingText ? (
-                  <div className="copilot-answer md-content streaming" dangerouslySetInnerHTML={{ __html: renderMarkdown(streamingText) }} />
-                ) : activeRun.status === 'running' ? (
-                  <div className="loading-state">
-                    <Loader2 size={16} className="spinner" />
-                    <span>{loadingStage || 'Running actions and assembling evidence...'}</span>
-                  </div>
-                ) : (
-                  <div className="empty-state-small">This run has no answer yet.</div>
-                )}
-
-                {pendingAlertDraft && (
-                  <div className="draft-alert-card">
-                    <div className="draft-alert-header">
-                      <BellRing size={16} />
-                      <span>Draft Alert Ready</span>
-                    </div>
-                    <div className="draft-alert-name">{pendingAlertDraft.name}</div>
-                    <div className="draft-alert-meta">{pendingAlertDraft.defaultForms} | {pendingAlertDraft.mode}</div>
-                    <p>{pendingAlertDraft.rationale}</p>
-                    <div className="draft-alert-actions">
-                      <button className="primary-btn" onClick={confirmPendingAlertDraft}>Save Alert</button>
-                      <button className="secondary-btn" onClick={() => setPendingAlertDraft(null)}>Dismiss</button>
-                    </div>
-                  </div>
-                )}
-
-                <div className="suggestions-block">
-                  <div className="section-label">Follow-ups</div>
-                  <div className="suggestion-list">
-                    {suggestions.slice(0, 4).map(suggestion => (
-                      <button key={suggestion} className="suggestion-pill" title="Fill the message box — edit if you like, then press Enter" onClick={() => fillComposer(suggestion)}>
-                        {suggestion}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {tab === 'evidence' && (
-              <div className="panel-tab-content">
-                <div className="section-label">Evidence Summary</div>
-                <p className="evidence-summary">{evidence?.summary || 'No evidence packet available yet.'}</p>
-
-                <div className="section-label">Citations</div>
-                <div className="citation-list">
-                  {evidence?.citations?.length ? evidence.citations.map(citation => (
-                    <button key={citation.id} className="citation-card" onClick={() => handleCitationOpen(citation)}>
-                      <div className="citation-card-header">
-                        <span>{citation.title}</span>
-                        {(citation.route || citation.externalUrl || citation.filingRoute) ? <ExternalLink size={14} /> : <FileSearch size={14} />}
-                      </div>
-                      {(citation.subtitle || citation.meta) && (
-                        <div className="citation-card-meta">{citation.subtitle || citation.meta}</div>
-                      )}
-                      {citation.excerpt && <p>{citation.excerpt.slice(0, 220)}{citation.excerpt.length > 220 ? '...' : ''}</p>}
-                    </button>
-                  )) : (
-                    <div className="empty-state-small">No citations yet.</div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {tab === 'actions' && (
-              <div className="panel-tab-content">
-                <div className="section-label">Action Log</div>
-                <div className="action-log-list">
-                  {activeRun.actionLog.length ? activeRun.actionLog.map(entry => (
-                    <div key={entry.id} className={`action-log-item ${entry.status}`}>
-                      <div className="action-log-title">{entry.title}</div>
-                      <div className="action-log-detail">{entry.detail}</div>
-                    </div>
-                  )) : (
-                    <div className="empty-state-small">No actions recorded yet.</div>
-                  )}
-                </div>
-
-                {activeRun.plan && (
-                  <>
-                    <div className="section-label">Search Logic</div>
-                    <div className="search-logic-card">
-                      <div className="search-logic-row">
-                        <span className="search-logic-label">Goal:</span>
-                        <span>{activeRun.plan.goal}</span>
-                      </div>
-                      {activeRun.plan.confidence && (
-                        <div className="search-logic-row">
-                          <span className="search-logic-label">Confidence:</span>
-                          <span className={`confidence-badge ${activeRun.plan.confidence}`}>{activeRun.plan.confidence}</span>
-                        </div>
-                      )}
-                      {activeRun.plan.rationale && (
-                        <div className="search-logic-row">
-                          <span className="search-logic-label">Rationale:</span>
-                          <span>{activeRun.plan.rationale}</span>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="section-label">Planned Actions</div>
-                    <div className="planned-actions">
-                      {activeRun.plan.actions.map(action => (
-                        <div key={action.id} className="planned-action">
-                          <div className="planned-action-title">{action.title}</div>
-                          <div className="planned-action-reason">{action.reason || action.type}</div>
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="empty-copilot-state">
-            {SAMPLE_PROMPT_CATEGORIES.map(category => (
-              <div key={category} className="sample-category">
-                <div className="section-label">{category}</div>
-                <div className="suggestion-list">
-                  {SAMPLE_PROMPTS.filter(p => p.category === category).slice(0, 3).map(sp => (
-                    <button key={sp.label} className="suggestion-pill" onClick={() => fillComposer(sp.prompt)} title={sp.prompt}>
-                      {sp.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        <ResponsibleAIBanner />
-      </div>
-
-      <form className="ai-input-area" onSubmit={handleSend}>
-        <input
-          ref={messageInputRef}
-          type="text"
-          aria-label={`Message ${BRAND.copilotName}`}
-          value={inputValue}
-          onChange={event => setInputValue(event.target.value)}
-          placeholder={`Ask ${BRAND.shortName} to open filings, compare peers, find comment letters, or draft alerts...`}
-          disabled={running}
-        />
-        <button type="submit" disabled={!inputValue.trim() || running} className="send-btn" aria-label={running ? 'Copilot is working' : 'Send message to copilot'}>
-          {running ? <Loader2 size={16} className="spinner" /> : <Send size={16} />}
-        </button>
-      </form>
-    </div>
+    <AIQnAPanelView
+      panelWidth={panelWidth}
+      panelBodyRef={panelBodyRef}
+      messageInputRef={messageInputRef}
+      agentRuns={agentRuns}
+      activeRun={activeRun}
+      evidence={evidence}
+      tab={tab}
+      running={running}
+      streamingText={streamingText}
+      loadingStage={loadingStage}
+      inputValue={inputValue}
+      pendingAlertDraft={pendingAlertDraft}
+      suggestions={suggestions}
+      onResizeStart={handleResizeStart}
+      onResizeKeyDown={handleResizeKeyDown}
+      onClearRuns={clearAgentRuns}
+      onClose={closePanel}
+      onSelectRun={setActiveAgentRunId}
+      onTabChange={setTab}
+      onConfirmAlert={confirmPendingAlertDraft}
+      onDismissAlert={() => setPendingAlertDraft(null)}
+      onFillComposer={fillComposer}
+      onOpenCitation={handleCitationOpen}
+      onInputChange={setInputValue}
+      onSubmit={handleSend}
+    />
   );
 }

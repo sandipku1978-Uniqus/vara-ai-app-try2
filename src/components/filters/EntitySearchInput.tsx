@@ -37,6 +37,7 @@ export default function EntitySearchInput({
 }: EntitySearchInputProps) {
   const [directory, setDirectory] = useState<CompanyDirectoryEntry[]>([]);
   const [open, setOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(-1);
   const listboxId = useId();
 
   useEffect(() => {
@@ -49,6 +50,13 @@ export default function EntitySearchInput({
 
   const suggestions = computeCompanySuggestions(directory, value);
 
+  const chooseSuggestion = (entry: CompanyDirectoryEntry) => {
+    if (onPick) onPick(entry);
+    else onChange(`${entry.ticker} `);
+    setOpen(false);
+    setActiveIndex(-1);
+  };
+
   return (
     <div style={{ position: 'relative', width: '100%' }}>
       <input
@@ -57,22 +65,47 @@ export default function EntitySearchInput({
         onChange={event => {
           onChange(event.target.value);
           setOpen(true);
+          setActiveIndex(0);
         }}
         onKeyDown={event => {
-          if (event.key === 'Enter' && onSubmit) {
+          if (event.key === 'ArrowDown' && suggestions.length > 0) {
+            event.preventDefault();
+            setOpen(true);
+            setActiveIndex(index => Math.min(index + 1, suggestions.length - 1));
+          } else if (event.key === 'ArrowUp' && suggestions.length > 0) {
+            event.preventDefault();
+            setOpen(true);
+            setActiveIndex(index => Math.max(index - 1, 0));
+          } else if (event.key === 'Enter' && open && activeIndex >= 0 && suggestions[activeIndex]) {
+            event.preventDefault();
+            chooseSuggestion(suggestions[activeIndex]);
+          } else if (event.key === 'Enter' && onSubmit) {
             event.preventDefault();
             setOpen(false);
+            setActiveIndex(-1);
             onSubmit();
+          } else if (event.key === 'Escape') {
+            setOpen(false);
+            setActiveIndex(-1);
           }
         }}
-        onFocus={() => setOpen(true)}
-        onBlur={() => window.setTimeout(() => setOpen(false), 150)}
+        onFocus={() => {
+          setOpen(true);
+          setActiveIndex(suggestions.length > 0 ? 0 : -1);
+        }}
+        onBlur={() => window.setTimeout(() => {
+          setOpen(false);
+          setActiveIndex(-1);
+        }, 150)}
         placeholder={placeholder}
         aria-label={ariaLabel}
         role="combobox"
         aria-controls={open && suggestions.length > 0 ? listboxId : undefined}
         aria-autocomplete="list"
         aria-expanded={open && suggestions.length > 0}
+        aria-activedescendant={open && activeIndex >= 0 && suggestions[activeIndex]
+          ? `${listboxId}-option-${activeIndex}`
+          : undefined}
         style={{
           width: '100%', padding: '8px 12px', background: 'var(--input-bg)',
           border: '1px solid var(--input-border)', borderRadius: '8px',
@@ -87,25 +120,25 @@ export default function EntitySearchInput({
           background: 'var(--bg-elevated)', border: '1px solid var(--border-color)',
           boxShadow: 'var(--glow-shadow)',
         }}>
-          {suggestions.map(entry => (
+          {suggestions.map((entry, index) => (
             <button
               key={entry.ticker}
+              id={`${listboxId}-option-${index}`}
               type="button"
               role="option"
-              aria-selected="false"
+              aria-selected={index === activeIndex}
+              tabIndex={-1}
               onMouseDown={event => {
                 event.preventDefault();
-                if (onPick) onPick(entry);
-                else onChange(`${entry.ticker} `);
-                setOpen(false);
+                chooseSuggestion(entry);
               }}
+              onMouseEnter={() => setActiveIndex(index)}
               style={{
                 display: 'flex', gap: '10px', alignItems: 'baseline', width: '100%',
                 padding: '8px 12px', border: 'none', cursor: 'pointer', textAlign: 'left',
-                background: 'transparent', color: 'var(--text-primary)', fontSize: '0.82rem',
+                background: index === activeIndex ? 'var(--interactive-hover)' : 'transparent',
+                color: 'var(--text-primary)', fontSize: '0.82rem',
               }}
-              onMouseEnter={event => { event.currentTarget.style.background = 'var(--interactive-hover)'; }}
-              onMouseLeave={event => { event.currentTarget.style.background = 'transparent'; }}
             >
               <strong style={{ color: 'var(--accent-primary)', minWidth: '52px' }}>{entry.ticker}</strong>
               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{entry.title}</span>

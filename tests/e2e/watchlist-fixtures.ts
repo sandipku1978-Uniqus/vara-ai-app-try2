@@ -1,4 +1,5 @@
 import type { Page, Route } from '@playwright/test';
+import { buildCompleteSecCompanyDirectory } from './sec-company-directory-fixture';
 
 /**
  * Company directory + submissions stand-ins for the watchlist archetype.
@@ -25,30 +26,35 @@ export const DIRECTORY = [
 ];
 
 /** The SEC ships this as an object keyed by row index, not an array. */
-function directoryPayload(): Record<string, { cik_str: number; ticker: string; title: string }> {
-  return Object.fromEntries(
-    DIRECTORY.map((entry, index) => [
-      String(index),
-      { cik_str: entry.cik, ticker: entry.ticker, title: entry.title },
-    ])
-  );
-}
+const COMPLETE_DIRECTORY = buildCompleteSecCompanyDirectory(
+  DIRECTORY.map(entry => ({ cik_str: entry.cik, ticker: entry.ticker, title: entry.title })),
+);
 
 function submissionsPayload(cik: string) {
   const entry = DIRECTORY.find(d => String(d.cik) === String(Number(cik)));
+  const accession = `${String(Number(cik)).padStart(10, '0')}-26-000003`;
   return {
     cik: String(Number(cik)),
     name: entry?.title ?? 'Fixture Issuer',
     tickers: entry ? [entry.ticker] : [],
+    exchanges: entry ? ['Nasdaq'] : [],
+    ein: '',
+    description: 'Deterministic watchlist fixture issuer.',
+    sic: '3571',
+    sicDescription: 'Electronic Computers',
     filings: {
       recent: {
-        accessionNumber: ['0001000003-26-000003'],
+        accessionNumber: [accession],
         filingDate: ['2026-03-04'],
         reportDate: ['2026-03-04'],
+        acceptanceDateTime: ['2026-03-04T16:00:00.000Z'],
+        act: ['34'],
         form: ['10-K'],
+        fileNumber: ['001-00001'],
         primaryDocument: ['fixture-10k.htm'],
         primaryDocDescription: ['Annual report'],
       },
+      files: [],
     },
   };
 }
@@ -64,7 +70,7 @@ export async function installWatchlistFixtures(page: Page): Promise<void> {
     const path = url.searchParams.get('path') || '';
 
     if (path.includes('company_tickers.json')) {
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(directoryPayload()) });
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(COMPLETE_DIRECTORY) });
       return;
     }
     const submissions = path.match(/submissions\/CIK(\d+)\.json/i);

@@ -99,24 +99,22 @@ test.describe('Boolean search behaviour', () => {
     expect(stats.eftsQueries.length - before, 'a NOT-only query must not reach EDGAR').toBe(0);
   });
 
-  test('a bare phrase is answered by the SEC index without opening any document', async ({ page }) => {
+  test('a bare phrase keeps exact adjacency without downloading rejected candidates', async ({ page }) => {
     const stats = await openBooleanWorkbench(page);
-    // EDGAR matches quoted phrases exactly, so re-reading each candidate to
-    // confirm what the index already proved only spends the budget that caps
-    // recall. NEAR_MISS carries both tokens but never adjacently, so the index
-    // itself excludes it.
+    // "mezzanine equity" has local singular/plural alternatives, so candidate
+    // retrieval is deliberately wider and the shared server pre-screen proves
+    // adjacency. NEAR_MISS carries both tokens but never adjacently.
     await runQuery(page, '"mezzanine equity"');
 
     await expect(anyMention(page, MEZZ_ONLY.company).first()).toBeVisible({ timeout: 30_000 });
     await expect(anyMention(page, NEAR_MISS.company)).toHaveCount(0);
 
     // Opening a filing the reader is looking at is fine — the preview pane
-    // does that. What must not happen is opening one to DECIDE whether it
-    // matched, which is the cost delegation removes. NEAR_MISS is the probe:
-    // only a validation pass would ever need to read it.
+    // does that. A candidate rejected by the shared pre-screen must not be
+    // downloaded again by the browser.
     expect(
       stats.documentFetches.some(doc => doc.includes(NEAR_MISS.document)),
-      'a delegated phrase must not open a filing to decide whether it matched'
+      'a server-rejected phrase candidate must not be downloaded by the browser'
     ).toBe(false);
     // And the count must stay at preview scale rather than candidate scale.
     expect(stats.documentFetches.length).toBeLessThanOrEqual(2);

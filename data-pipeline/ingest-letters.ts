@@ -16,6 +16,7 @@ import { writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fetchQuarterIndex, getQuartersInRange, delay, type EdgarIndexEntry } from './edgar-index';
 import { chunkedUpsert, createServiceClient } from './supabase';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 const LETTER_FORMS = new Set(['UPLOAD', 'CORRESP']);
 
@@ -37,6 +38,14 @@ function toRow(entry: EdgarIndexEntry) {
     date_filed: entry.dateFiled,
     filename: entry.filename,
   };
+}
+
+export async function rethreadIngestedLetters(client: SupabaseClient): Promise<number> {
+  const { data, error } = await client.rpc('urc_thread_letters');
+  if (error) {
+    throw new Error(`urc_thread_letters failed after comment-letter metadata upsert: ${error.message}`);
+  }
+  return Number(data ?? 0);
 }
 
 async function main() {
@@ -88,14 +97,15 @@ async function main() {
   }
 
   if (!dryRun && totalRows > 0) {
-    const { data, error } = await client!.rpc('urc_thread_letters');
-    if (error) console.error('Threading failed (re-run later):', error.message);
-    else console.log(`Threading: ${data} rows (re)assigned.`);
+    const threaded = await rethreadIngestedLetters(client!);
+    console.log(`Threading: ${threaded} rows (re)assigned.`);
   }
   console.log(`Done. ${totalRows} letter rows ${dryRun ? 'written locally' : 'upserted'}.`);
 }
 
-main().catch(error => {
-  console.error('Letter ingest failed:', error instanceof Error ? error.message : error);
-  process.exit(1);
-});
+if (process.argv[1]?.includes('ingest-letters')) {
+  main().catch(error => {
+    console.error('Letter ingest failed:', error instanceof Error ? error.message : error);
+    process.exit(1);
+  });
+}

@@ -107,6 +107,11 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen: boolean; on
     <aside
       ref={asideRef}
       id="primary-navigation"
+      // The desktop rail is complementary navigation. At the mobile
+      // breakpoint the same element becomes a focus-trapped modal drawer, so
+      // expose dialog semantics only while that modal behavior is active.
+      role={mobileOpen ? 'dialog' : undefined}
+      aria-modal={mobileOpen ? true : undefined}
       aria-label="Primary navigation"
       className={`sidebar glass-card ${visuallyCollapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}
       style={{ overflowY: 'auto' }}
@@ -363,15 +368,22 @@ export function Layout({ children }: { children: ReactNode }) {
     <div className={`app-wrapper ${isLanding ? 'is-landing' : 'has-sidebar'} ${!isLanding && isChatOpen ? 'has-copilot' : ''}`}>
       <Sidebar mobileOpen={mobileNavOpen} onMobileClose={closeMobileNav} />
       {mobileNavOpen && <button type="button" className="mobile-nav-overlay" aria-label="Close navigation" onClick={closeMobileNav} />}
-      <CommandPalette />
-      <div className="main-content">
+      <div
+        className="main-content"
+        // Keep every non-drawer surface in this subtree. A modal mobile drawer
+        // must hide the page, global command palette, AND fixed memo tray from
+        // keyboard and assistive-technology users, not only cover them.
+        inert={mobileNavOpen ? true : undefined}
+        aria-hidden={mobileNavOpen ? true : undefined}
+      >
+        <CommandPalette />
         <Navbar mobileNavOpen={mobileNavOpen} onMobileNavToggle={() => setMobileNavOpen(open => !open)} menuButtonRef={menuButtonRef} />
         {!isLanding && <Breadcrumbs />}
         <main className="page-content">
           {children}
         </main>
+        {!isLanding && <MemoTray />}
       </div>
-      {!isLanding && <MemoTray />}
     </div>
   );
 }

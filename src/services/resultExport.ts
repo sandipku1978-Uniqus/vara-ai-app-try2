@@ -79,8 +79,15 @@ export function buildCoverageRows(context: ResultExportContext, shownCount: numb
     ['Validated filings in this export', shownCount],
   ];
   if (context.coverage) {
+    const hasVerifiedMatchTotal = context.coverage.verifiedMatchTotal !== undefined;
+    const populationLabel = hasVerifiedMatchTotal
+      ? 'Verified filing matches'
+      : 'Upstream retrieval candidates';
+    const populationValue = hasVerifiedMatchTotal
+      ? `${context.coverage.verifiedMatchTotal!.toLocaleString()}${context.coverage.verifiedMatchTotalIsFloor ? '+' : ''}`
+      : formatUpstreamTotal(context.coverage);
     rows.push(
-      ['Filings matching upstream', `${formatUpstreamTotal(context.coverage)}`],
+      [populationLabel, populationValue],
       ['Candidates examined', context.coverage.examined],
       ['Coverage', context.coverage.complete
         ? 'Complete — every upstream candidate was validated'

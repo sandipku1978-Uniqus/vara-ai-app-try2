@@ -3,6 +3,7 @@ import { render, act, waitFor } from '@testing-library/react';
 import { AppProvider, useApp } from '../context/AppState';
 import React from 'react';
 import { buildStorageScope, scopedStorageKey } from '../services/storageNamespace';
+import type { SavedAlertCoverage } from '../services/alertRoutes';
 
 function TestConsumer({ onRender }: { onRender: (ctx: ReturnType<typeof useApp>) => void }) {
   const ctx = useApp();
@@ -323,6 +324,83 @@ describe('AppState', () => {
       const alertId = ctx!.savedAlerts[0].id;
       act(() => { ctx!.updateSavedAlert(alertId, { name: 'Updated' }); });
       expect(ctx!.savedAlerts[0].name).toBe('Updated');
+    });
+
+    it('persists and reloads the full alert coverage evidence ledger', async () => {
+      const coverage: SavedAlertCoverage = {
+        complete: false,
+        examined: 17,
+        upstreamTotal: 10_000,
+        upstreamTotalIsFloor: true,
+        branches: [
+          {
+            branch: 'revenue',
+            required: true,
+            pages: 2,
+            candidatesSurfaced: 14,
+            candidatesNew: 12,
+            examined: 12,
+            matched: 4,
+            exhausted: true,
+            collectionComplete: true,
+          },
+          {
+            branch: 'material weakness',
+            required: true,
+            pages: 3,
+            candidatesSurfaced: 9,
+            candidatesNew: 7,
+            examined: 5,
+            matched: 1,
+            exhausted: false,
+            collectionComplete: false,
+            incompleteReason: 'deadline',
+          },
+        ],
+        work: {
+          pageRequests: 5,
+          docFetches: 17,
+          docHttpAttempts: 19,
+          prescreenRequests: 2,
+          totalUpstreamRequests: 26,
+          ceiling: { pages: 60, docHttpAttempts: 120, prescreenRequests: 20 },
+        },
+      };
+      let ctx: ReturnType<typeof useApp> | null = null;
+      const first = renderWithProvider(value => { ctx = value; });
+
+      act(() => {
+        ctx!.addSavedAlert({
+          name: 'Coverage evidence',
+          query: 'revenue OR "material weakness"',
+          mode: 'boolean',
+          filters: {} as any,
+          defaultForms: '10-K',
+        });
+      });
+      const alertId = ctx!.savedAlerts[0].id;
+      act(() => { ctx!.updateSavedAlert(alertId, { lastCheckCoverage: coverage }); });
+
+      const storageKey = scopedStorageKey(
+        'vara.alerts.v1',
+        buildStorageScope('user_test', null)
+      )!;
+      await waitFor(() => {
+        const stored = JSON.parse(window.localStorage.getItem(storageKey) || '[]');
+        expect(stored[0]?.lastCheckCoverage).toEqual(coverage);
+      });
+
+      first.unmount();
+      ctx = null;
+      renderWithProvider(value => { ctx = value; });
+
+      await waitFor(() => expect(ctx?.savedAlerts[0]?.lastCheckCoverage).toEqual(coverage));
+      expect(ctx!.savedAlerts[0].lastCheckCoverage?.branches?.[1]).toMatchObject({
+        branch: 'material weakness',
+        exhausted: false,
+        incompleteReason: 'deadline',
+      });
+      expect(ctx!.savedAlerts[0].lastCheckCoverage?.work).toEqual(coverage.work);
     });
   });
 });

@@ -1,5 +1,18 @@
-import { describe, it, expect } from 'vitest';
-import { assertSecDocumentResponse, looksLikeSecErrorText, SecUpstreamError } from '../lib/sec-upstream';
+import { afterEach, describe, it, expect, vi } from 'vitest';
+import {
+  assertSecDocumentResponse,
+  fetchSecJson,
+  fetchSecResponse,
+  looksLikeSecErrorResponse,
+  looksLikeSecErrorText,
+  SecUpstreamError,
+} from '../lib/sec-upstream';
+
+const pacerKv = vi.hoisted(() => ({ set: vi.fn() }));
+
+vi.mock('@vercel/kv', () => ({
+  kv: { set: pacerKv.set },
+}));
 
 /**
  * Remediation handoff 2026-07-31, WP4 item 4 / acceptance T13.
@@ -87,5 +100,228 @@ describe('looksLikeSecErrorText — cached-poison detection (audit R1)', () => {
 
   it('passes clean extracted text through', () => {
     expect(looksLikeSecErrorText('Annual report discussing goodwill impairment charges for fiscal 2026.')).toBeNull();
+  });
+
+  it('uses a separate bounded raw-response scan for padded fresh error pages', () => {
+    const paddedErrorPage = `${'padding '.repeat(900)}Request Rate Threshold Exceeded`;
+    expect(paddedErrorPage.length).toBeGreaterThan(5_000);
+    expect(looksLikeSecErrorText(paddedErrorPage)).toBeNull();
+    expect(looksLikeSecErrorResponse(new TextEncoder().encode(paddedErrorPage)))
+      .toBe('Request Rate Threshold Exceeded');
+  });
+});
+
+describe('fetchSecJson', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('routes SEC JSON through the central fetch path and returns validated syntax', async () => {
+    const fetchMock = vi.fn<(
+      input: RequestInfo | URL,
+      init?: RequestInit
+    ) => Promise<Response>>(async () => new Response('{"name":"Example"}', {
+      status: 200,
+      headers: { 'content-type': 'application/json; charset=utf-8' },
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(fetchSecJson({
+      upstream: 'data',
+      path: 'submissions/CIK0000000001.json',
+      userAgent: 'test-agent',
+      maxBytes: 1024,
+    })).resolves.toEqual({ name: 'Example' });
+    expect(String(fetchMock.mock.calls[0]?.[0])).toBe(
+      'https://data.sec.gov/submissions/CIK0000000001.json',
+    );
+    expect(fetchMock.mock.calls[0]?.[1]).toEqual(expect.objectContaining({
+      cache: 'no-store',
+      redirect: 'manual',
+    }));
+  });
+
+  it.each([
+    ['malformed JSON', '{"name":', 'application/json'],
+    ['wrong media type', '{"name":"Example"}', 'text/html'],
+  ])('fails closed on HTTP 200 %s', async (_label, body, contentType) => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(body, {
+      status: 200,
+      headers: { 'content-type': contentType },
+    })));
+
+    await expect(fetchSecJson({
+      upstream: 'data',
+      path: 'submissions/CIK0000000001.json',
+      userAgent: 'test-agent',
+      maxBytes: 1024,
+    })).rejects.toBeInstanceOf(SecUpstreamError);
+  });
+});
+
+describe('fetchSecResponse attempt authorization', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+    vi.unstubAllEnvs();
+    pacerKv.set.mockReset();
+  });
+
+  it('paces rapid successful request starts at no more than eight per second', async () => {
+    vi.stubEnv('URC_TEST_SEC_REQUEST_PACING', '1');
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-08-04T12:00:00.000Z'));
+    const starts: number[] = [];
+    const fetchMock = vi.fn(async () => {
+      starts.push(Date.now());
+      return new Response('ok', { status: 200, headers: { 'content-type': 'text/html' } });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const requests = Array.from({ length: 3 }, (_, index) => fetchSecResponse(
+      new URL(`https://www.sec.gov/Archives/edgar/data/1/doc-${index}.htm`),
+      'proxy',
+      new AbortController().signal,
+      'test-agent',
+    ));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(124);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(125);
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    await Promise.all(requests);
+
+    expect(starts[1] - starts[0]).toBeGreaterThanOrEqual(125);
+    expect(starts[2] - starts[1]).toBeGreaterThanOrEqual(125);
+  });
+
+  it('does not issue a request when the caller vetoes the next attempt', async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(fetchSecResponse(
+      new URL('https://www.sec.gov/Archives/edgar/data/1/doc.htm'),
+      'proxy',
+      new AbortController().signal,
+      'test-agent',
+      () => false,
+    )).rejects.toMatchObject({ status: 429 });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('does not authorize, pace, or fetch when the incoming signal was already aborted', async () => {
+    const fetchMock = vi.fn();
+    const authorize = vi.fn(() => true);
+    const controller = new AbortController();
+    controller.abort(new DOMException('superseded', 'AbortError'));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(fetchSecResponse(
+      new URL('https://www.sec.gov/Archives/edgar/data/1/doc.htm'),
+      'proxy',
+      controller.signal,
+      'test-agent',
+      authorize,
+    )).rejects.toMatchObject({ name: 'AbortError' });
+    expect(authorize).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('authorizes and counts each redirect as its own real SEC attempt', async () => {
+    vi.stubEnv('URC_TEST_SEC_REQUEST_PACING', '1');
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-08-04T12:01:00.000Z'));
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response(null, {
+        status: 302,
+        headers: { location: '/Archives/edgar/data/1/final.htm' },
+      }))
+      .mockResolvedValueOnce(new Response('ok', {
+        status: 200,
+        headers: { 'content-type': 'text/html' },
+      }));
+    vi.stubGlobal('fetch', fetchMock);
+    const authorize = vi.fn(() => true);
+
+    const pending = fetchSecResponse(
+      new URL('https://www.sec.gov/Archives/edgar/data/1/doc.htm'),
+      'proxy',
+      new AbortController().signal,
+      'test-agent',
+      authorize,
+    );
+
+    await vi.advanceTimersByTimeAsync(0);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(124);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1);
+    const result = await pending;
+
+    expect(result.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(authorize).toHaveBeenCalledTimes(2);
+  });
+
+  it('fails closed before fetch in production when distributed pacing is not configured', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    vi.stubEnv('KV_REST_API_URL', '');
+    vi.stubEnv('KV_REST_API_TOKEN', '');
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(fetchSecResponse(
+      new URL('https://www.sec.gov/Archives/edgar/data/1/doc.htm'),
+      'proxy',
+      new AbortController().signal,
+      'test-agent',
+    )).rejects.toMatchObject({ status: 503 });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('fails closed before fetch in production when the distributed pacer is broken', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    vi.stubEnv('KV_REST_API_URL', 'https://kv.example');
+    vi.stubEnv('KV_REST_API_TOKEN', 'secret');
+    pacerKv.set.mockRejectedValueOnce(new Error('KV unavailable'));
+    const fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(fetchSecResponse(
+      new URL('https://www.sec.gov/Archives/edgar/data/1/doc.htm'),
+      'proxy',
+      new AbortController().signal,
+      'test-agent',
+    )).rejects.toMatchObject({ status: 503 });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('falls back to the local pacer outside production when configured KV is broken', async () => {
+    vi.stubEnv('NODE_ENV', 'development');
+    vi.stubEnv('KV_REST_API_URL', 'https://kv.example');
+    vi.stubEnv('KV_REST_API_TOKEN', 'secret');
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2027-08-04T12:00:00.000Z'));
+    pacerKv.set.mockRejectedValueOnce(new Error('KV unavailable'));
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined);
+    const fetchMock = vi.fn().mockResolvedValue(new Response('ok', {
+      status: 200,
+      headers: { 'content-type': 'text/html' },
+    }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const response = await fetchSecResponse(
+      new URL('https://www.sec.gov/Archives/edgar/data/1/doc.htm'),
+      'proxy',
+      new AbortController().signal,
+      'test-agent',
+    );
+
+    expect(response.status).toBe(200);
+    expect(fetchMock).toHaveBeenCalledOnce();
+    expect(warn).toHaveBeenCalledOnce();
   });
 });

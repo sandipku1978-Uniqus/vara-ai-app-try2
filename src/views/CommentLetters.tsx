@@ -374,6 +374,10 @@ export default function CommentLetters() {
   const [browseLoading, setBrowseLoading] = useState(true);
   const [searched, setSearched] = useState(false);
   const [expandedThread, setExpandedThread] = useState<string | null>(() => requestedThreadId || null);
+  // Search results can contain several letters from the same review thread.
+  // Track the activated row as well as its thread so expanding one match does
+  // not duplicate the complete conversation beneath every sibling match.
+  const [expandedSearchMatch, setExpandedSearchMatch] = useState<string | null>(null);
   const [unavailable, setUnavailable] = useState(false);
   const [browseReloadKey, setBrowseReloadKey] = useState(0);
   const [searchError, setSearchError] = useState('');
@@ -450,6 +454,7 @@ export default function CommentLetters() {
   useEffect(() => {
     if (!requestedThreadId || !threads.some(thread => thread.thread_id === requestedThreadId)) return;
     setExpandedThread(requestedThreadId);
+    setExpandedSearchMatch(null);
     window.requestAnimationFrame(() => {
       document.getElementById(`thread-card-${requestedThreadId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
@@ -461,6 +466,7 @@ export default function CommentLetters() {
     setSearchError('');
     setSearched(Boolean(query.trim()));
     setExpandedThread(null);
+    setExpandedSearchMatch(null);
     if (!query.trim()) { setLoading(false); return; } // company-only filters the browse list via effect
     try {
       const params = new URLSearchParams({ q: query.trim(), size: '50' });
@@ -590,46 +596,56 @@ export default function CommentLetters() {
               {matchesTotal.toLocaleString()}{matchesTotalIsFloor ? '+' : ''} matching letters — ranked by relevance
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-              {matches.map(match => (
-                <div key={`${match.accession}:${match.cik}`} style={cardStyle}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '6px', marginBottom: '5px', flexWrap: 'wrap' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '7px', minWidth: 0 }}>
-                      <a href={`/company/${match.cik}`} title="Open issuer dossier"
-                        style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.88rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: 'none' }}>
-                        {match.company_name}
-                      </a>
-                      <FormBadge form={match.form} />
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{match.date_filed}</span>
+              {matches.map(match => {
+                const matchExpansionKey = `${match.thread_id}:${match.accession}:${match.cik}`;
+                const isMatchExpanded = expandedThread === match.thread_id && expandedSearchMatch === matchExpansionKey;
+                return (
+                  <div key={`${match.accession}:${match.cik}`} style={cardStyle}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '6px', marginBottom: '5px', flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '7px', minWidth: 0 }}>
+                        <a href={`/company/${match.cik}`} title="Open issuer dossier"
+                          style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.88rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', textDecoration: 'none' }}>
+                          {match.company_name}
+                        </a>
+                        <FormBadge form={match.form} />
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{match.date_filed}</span>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+                        <button
+                          type="button"
+                          aria-expanded={isMatchExpanded}
+                          onClick={() => {
+                            setExpandedThread(isMatchExpanded ? null : match.thread_id);
+                            setExpandedSearchMatch(isMatchExpanded ? null : matchExpansionKey);
+                          }}
+                          style={{ color: 'var(--accent-primary)', fontSize: '0.75rem', background: 'none', border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          <MessageSquare size={12} /> {isMatchExpanded ? 'Hide conversation' : 'View conversation'}
+                        </button>
+                        <a href={edgarLetterIndexUrl(match.cik, match.accession)} target="_blank" rel="noreferrer"
+                          style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          EDGAR <ExternalLink size={11} />
+                        </a>
+                        <CiteButton
+                          compact
+                          citation={{
+                            kind: 'letter',
+                            cik: String(match.cik),
+                            accessionNumber: match.accession,
+                            company: match.company_name,
+                            form: match.form,
+                            fileDate: match.date_filed,
+                            excerpt: (match.headline || '').replace(/<\/?b>/g, '').slice(0, 400),
+                            sourceUrl: edgarLetterIndexUrl(match.cik, match.accession),
+                          }}
+                        />
+                      </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
-                      <button type="button" aria-expanded={expandedThread === match.thread_id} onClick={() => setExpandedThread(expandedThread === match.thread_id ? null : match.thread_id)}
-                        style={{ color: 'var(--accent-primary)', fontSize: '0.75rem', background: 'none', border: 'none', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                        <MessageSquare size={12} /> {expandedThread === match.thread_id ? 'Hide conversation' : 'View conversation'}
-                      </button>
-                      <a href={edgarLetterIndexUrl(match.cik, match.accession)} target="_blank" rel="noreferrer"
-                        style={{ color: 'var(--text-secondary)', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                        EDGAR <ExternalLink size={11} />
-                      </a>
-                      <CiteButton
-                        compact
-                        citation={{
-                          kind: 'letter',
-                          cik: String(match.cik),
-                          accessionNumber: match.accession,
-                          company: match.company_name,
-                          form: match.form,
-                          fileDate: match.date_filed,
-                          excerpt: (match.headline || '').replace(/<\/?b>/g, '').slice(0, 400),
-                          sourceUrl: edgarLetterIndexUrl(match.cik, match.accession),
-                        }}
-                      />
-                    </div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.45 }}
+                      dangerouslySetInnerHTML={renderHeadline(match.headline || '')} />
+                    {isMatchExpanded && <ThreadConversation threadId={match.thread_id} />}
                   </div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.45 }}
-                    dangerouslySetInnerHTML={renderHeadline(match.headline || '')} />
-                  {expandedThread === match.thread_id && <ThreadConversation threadId={match.thread_id} />}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         ) : (
@@ -675,7 +691,10 @@ export default function CommentLetters() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
                       <button
                         type="button"
-                        onClick={() => setExpandedThread(expandedThread === thread.thread_id ? null : thread.thread_id)}
+                        onClick={() => {
+                          setExpandedThread(expandedThread === thread.thread_id ? null : thread.thread_id);
+                          setExpandedSearchMatch(null);
+                        }}
                         aria-expanded={expandedThread === thread.thread_id}
                         aria-controls={`thread-${thread.thread_id}`}
                         style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '6px', cursor: 'pointer', flexWrap: 'wrap', flex: 1, minWidth: 0, background: 'none', border: 'none', padding: 0, textAlign: 'left' }}>

@@ -98,6 +98,7 @@ export default function CompanySearchInput({ onSelect, placeholder = 'Search tic
     onSelect(value, result.cik);
     setQuery(value);
     onTextChange?.(value);
+    setResults([]);
     setShowDropdown(false);
     setActiveIndex(-1);
     inputRef.current?.focus();

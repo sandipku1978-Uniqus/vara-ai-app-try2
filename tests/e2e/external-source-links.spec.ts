@@ -1,4 +1,4 @@
-import { expect, test, type Page, type Route } from '@playwright/test';
+import { expect, test, type Locator, type Page, type Route } from '@playwright/test';
 import { FILINGS, installBooleanFixtures } from './boolean-fixtures';
 import { LITIGATION, NO_ACTION, RULEMAKING, installOfficialSourceFixtures } from './official-source-fixtures';
 import { assertSourceLinkContract, collectExternalLinks } from './source-link-contract';
@@ -23,12 +23,60 @@ import { assertSourceLinkContract, collectExternalLinks } from './source-link-co
 
 const BOTH = FILINGS[2];
 
+interface OfficialSourceActivation {
+  link: Locator;
+  expectedUrl: string;
+  assertOriginState: () => Promise<void>;
+}
+
 async function waitForIdentity(page: Page) {
   await page.waitForFunction(
     () => Boolean(document.documentElement.dataset.urcIdentityScope),
     undefined,
     { timeout: 30_000 }
   );
+}
+
+/**
+ * Exercise the browser activation, not just the anchor attributes. External
+ * navigation is fulfilled in the popup context so these checks are exact and
+ * deterministic without depending on an official site's availability.
+ */
+async function activateOfficialSource(
+  page: Page,
+  { link, expectedUrl, assertOriginState }: OfficialSourceActivation,
+) {
+  const sourceRequests: string[] = [];
+  await page.context().route(expectedUrl, async route => {
+    sourceRequests.push(route.request().url());
+    await route.fulfill({
+      status: 200,
+      contentType: 'text/html; charset=utf-8',
+      body: '<!doctype html><html><body><h1>Official destination fixture</h1></body></html>',
+    });
+  });
+
+  const originUrl = page.url();
+  try {
+    await expect(link).toHaveAttribute('href', expectedUrl);
+    await expect(link).toHaveAttribute('target', '_blank');
+
+    const [popup] = await Promise.all([
+      page.waitForEvent('popup'),
+      link.click(),
+    ]);
+    await expect.poll(() => popup.url()).toBe(expectedUrl);
+    await expect(popup.getByRole('heading', { name: 'Official destination fixture', exact: true })).toBeVisible();
+    expect(sourceRequests, 'activation must request the exact official URL once').toEqual([expectedUrl]);
+
+    expect(page.url(), 'external activation must not replace the research surface').toBe(originUrl);
+    await assertOriginState();
+    await popup.close();
+    expect(page.url(), 'closing the source must leave the original route intact').toBe(originUrl);
+    await assertOriginState();
+  } finally {
+    await page.context().unroute(expectedUrl);
+  }
 }
 
 test.describe('critical action: external source links', () => {
@@ -50,12 +98,25 @@ test.describe('critical action: external source links', () => {
     await expect(page.getByRole('link', { name: 'Open filing on SEC.gov' }).first()).toBeVisible({ timeout: 20_000 });
 
     assertSourceLinkContract(await collectExternalLinks(page), 'filing detail (SEC)', /sec\.gov/);
+
+    const expectedUrl = `https://www.sec.gov/Archives/edgar/data/${BOTH.cik}/${BOTH.accession.replace(/-/g, '')}/${BOTH.document}`;
+    await activateOfficialSource(page, {
+      link: page.getByRole('link', { name: 'Open filing on SEC.gov', exact: true }).first(),
+      expectedUrl,
+      assertOriginState: async () => {
+        await expect(page.getByRole('heading', {
+          name: `SEC filing viewer — CIK ${BOTH.cik}, accession ${BOTH.accession.replace(/-/g, '')}`,
+          exact: true,
+        })).toBeVisible();
+        await expect(page.getByText(BOTH.document, { exact: true })).toBeVisible();
+      },
+    });
   });
 
   test('global.external-source-links names each IAPD record by its firm', async ({ page }) => {
-    // The IAPD directory is called straight from the browser; fixture it so
-    // this proves our rendering, not adviserinfo.sec.gov's availability.
-    await page.route('**api.adviserinfo.sec.gov/search/firm**', async (route: Route) => {
+    // The IAPD directory is reached through the authenticated, centrally paced
+    // same-origin SEC proxy; fixture it so this proves rendering, not IAPD uptime.
+    await page.route('**/api/sec-proxy?**upstream=iapd**', async (route: Route) => {
       const firm = (id: string, name: string) => ({
         _source: {
           firm_source_id: id,
@@ -83,16 +144,20 @@ test.describe('critical action: external source links', () => {
     await expect(page.getByText('Northgate Advisers LLC').first()).toBeVisible({ timeout: 20_000 });
     assertSourceLinkContract(await collectExternalLinks(page), 'adviser registrations (IAPD)', /adviserinfo\.sec\.gov/);
 
-    // Activating a source link must leave the research state available: the
-    // result table is still there and the route has not changed underneath it.
-    const before = page.url();
-    const [popup] = await Promise.all([
-      page.waitForEvent('popup'),
-      page.getByRole('link', { name: /Northgate Advisers LLC/ }).first().click(),
-    ]);
-    await popup.close();
-    expect(page.url()).toBe(before);
-    await expect(page.getByText('Southbank Capital Management').first()).toBeVisible();
+    await test.step('ui-action:adv-registrations.open-source,global.external-source-links', async () => {
+      await activateOfficialSource(page, {
+        link: page.getByRole('link', {
+          name: 'Open the IAPD record for Northgate Advisers LLC on adviserinfo.sec.gov',
+          exact: true,
+        }),
+        expectedUrl: 'https://adviserinfo.sec.gov/firm/summary/1001',
+        assertOriginState: async () => {
+          await expect(input).toHaveValue('advisers');
+          await expect(page.getByText('Northgate Advisers LLC').first()).toBeVisible();
+          await expect(page.getByText('Southbank Capital Management').first()).toBeVisible();
+        },
+      });
+    });
   });
 
   test('global.external-source-links names FASB and framework sources by their standard', async ({ page }) => {
@@ -104,6 +169,22 @@ test.describe('critical action: external source links', () => {
 
     assertSourceLinkContract(await collectExternalLinks(page), 'accounting hub (FASB)', /fasb\.org/);
 
+    const standardsSearch = page.getByLabel('Search accounting standards topics');
+    await standardsSearch.fill('606');
+    const asc606 = page.getByTitle('Open ASC 606 - Revenue from Contracts with Customers on FASB.org');
+    await expect(asc606).toBeVisible();
+    await test.step('ui-action:accounting-standards.open-topic-source,global.external-source-links', async () => {
+      await activateOfficialSource(page, {
+        link: asc606,
+        expectedUrl: 'https://asc.fasb.org/606/',
+        assertOriginState: async () => {
+          await expect(page.getByRole('button', { name: /Standards Directory/i })).toHaveAttribute('aria-pressed', 'true');
+          await expect(standardsSearch).toHaveValue('606');
+          await expect(asc606).toBeVisible();
+        },
+      });
+    });
+
     await page.goto('/esg');
     await waitForIdentity(page);
     await expect(page.getByText('SASB Standards').first()).toBeVisible({ timeout: 20_000 });
@@ -111,6 +192,17 @@ test.describe('critical action: external source links', () => {
     // Framework and policy sources are issued by many standard-setters, so the
     // host allowlist here is "an official https origin", not a single domain.
     assertSourceLinkContract(await collectExternalLinks(page), 'ESG research (frameworks)', /^https:\/\//);
+
+    const sasb = page.locator('a.framework-card', { hasText: 'SASB Standards' });
+    await activateOfficialSource(page, {
+      link: sasb,
+      expectedUrl: 'https://sasb.ifrs.org/standards/',
+      assertOriginState: async () => {
+        await expect(page.getByRole('button', { name: /Framework Navigator/i })).toHaveAttribute('aria-pressed', 'true');
+        await expect(sasb).toBeVisible();
+        await expect(page.getByText('Cross-Framework Mapping', { exact: true })).toBeVisible();
+      },
+    });
   });
 
   /**
@@ -127,14 +219,71 @@ test.describe('critical action: external source links', () => {
     await expect(page.getByText(RULEMAKING[0].title).first()).toBeVisible({ timeout: 20_000 });
     assertSourceLinkContract(await collectExternalLinks(page), 'securities regulation (SEC)', /sec\.gov/);
 
+    const regulationSearch = page.getByRole('textbox', { name: 'Search official SEC regulation sources' });
+    await regulationSearch.fill('Climate-Related');
+    await regulationSearch.press('Enter');
+    await expect(page.getByText(RULEMAKING[0].title).first()).toBeVisible();
+    await test.step('ui-action:securities-regulation.open-source', async () => {
+      await activateOfficialSource(page, {
+        link: page.getByRole('link', {
+          name: `Open the official SEC Rulemaking "${RULEMAKING[0].title}" on SEC.gov`,
+          exact: true,
+        }),
+        expectedUrl: `https://www.sec.gov${RULEMAKING[0].href}`,
+        assertOriginState: async () => {
+          await expect(regulationSearch).toHaveValue('Climate-Related');
+          await expect(page.getByText(RULEMAKING[0].title).first()).toBeVisible();
+        },
+      });
+    });
+
     await page.goto('/no-action-letters');
     await waitForIdentity(page);
     await expect(page.getByText(NO_ACTION[0].title).first()).toBeVisible({ timeout: 20_000 });
     assertSourceLinkContract(await collectExternalLinks(page), 'no-action letters (SEC)', /sec\.gov/);
 
+    const noActionSearch = page.getByRole('textbox', { name: 'Search official SEC no-action responses' });
+    await noActionSearch.fill('Acme Corp');
+    await noActionSearch.press('Enter');
+    await expect(page.getByText(NO_ACTION[0].title).first()).toBeVisible();
+    await expect(page.getByText(NO_ACTION[1].title)).toHaveCount(0);
+    await test.step('ui-action:no-action-letters.open-source', async () => {
+      await activateOfficialSource(page, {
+        link: page.getByRole('link', {
+          name: `Open the SEC staff No-action response "${NO_ACTION[0].title}" on SEC.gov`,
+          exact: true,
+        }),
+        expectedUrl: `https://www.sec.gov${NO_ACTION[0].href}`,
+        assertOriginState: async () => {
+          await expect(noActionSearch).toHaveValue('Acme Corp');
+          await expect(page.getByText(NO_ACTION[0].title).first()).toBeVisible();
+          await expect(page.getByText(NO_ACTION[1].title)).toHaveCount(0);
+        },
+      });
+    });
+
     await page.goto('/enforcement');
     await waitForIdentity(page);
     await expect(page.getByText(LITIGATION[0].title).first()).toBeVisible({ timeout: 20_000 });
     assertSourceLinkContract(await collectExternalLinks(page), 'SEC enforcement (SEC)', /sec\.gov/);
+
+    const enforcementFilter = page.getByRole('searchbox', { name: 'Filter litigation releases' });
+    await enforcementFilter.fill(LITIGATION[0].number);
+    await expect(page.getByText(LITIGATION[0].title).first()).toBeVisible();
+    await expect(page.getByText(LITIGATION[1].title)).toHaveCount(0);
+    await test.step('ui-action:sec-enforcement.open-source', async () => {
+      await activateOfficialSource(page, {
+        link: page.getByRole('link', {
+          name: `View SEC litigation release ${LITIGATION[0].number} (${LITIGATION[0].title}) on SEC.gov`,
+          exact: true,
+        }),
+        expectedUrl: `https://www.sec.gov${LITIGATION[0].href}`,
+        assertOriginState: async () => {
+          await expect(enforcementFilter).toHaveValue(LITIGATION[0].number);
+          await expect(page.getByText(LITIGATION[0].title).first()).toBeVisible();
+          await expect(page.getByText(LITIGATION[1].title)).toHaveCount(0);
+        },
+      });
+    });
   });
 });

@@ -17,6 +17,8 @@
  */
 
 import { buildSecEftsUrl, normalizeEftsForms } from './secApi';
+import type { SearchFilters } from '../domain/searchFilters';
+import { compileBooleanQuery, eftsDelegablePhrase } from '../utils/booleanSearch';
 
 export interface ExactCountRequest {
   query: string;
@@ -46,6 +48,33 @@ const EFTS_COUNT_CEILING = 10_000;
 const FTS_FLOOR_YEAR = 2001;
 /** Pacing between count requests — same posture as the legacy retrieval lane. */
 const INTER_REQUEST_DELAY_MS = 220;
+
+/** True only when the complete executed predicate is identical to the EFTS
+ * query that exact-count slicing will issue. Local NOT/proximity/wildcard,
+ * singular/plural, section, auditor, and metadata semantics are deliberately
+ * excluded: counting their raw retrieval query would count candidates, not
+ * matches. */
+export function isEftsExactCountEquivalent(query: string, filters: SearchFilters): boolean {
+  const compiled = compileBooleanQuery(query);
+  if (!compiled.ok || compiled.auditor || !eftsDelegablePhrase(compiled.ast)) return false;
+
+  return !(
+    filters.keyword.trim() ||
+    filters.sectionKeywords.trim() ||
+    filters.sicCode.trim() ||
+    filters.stateOfInc.trim() ||
+    filters.headquarters.trim() ||
+    filters.exchange.length > 0 ||
+    filters.acceleratedStatus.length > 0 ||
+    filters.accountant.trim() ||
+    filters.accessionNumber.trim() ||
+    filters.fileNumber.trim() ||
+    filters.fiscalYearEnd.trim() ||
+    filters.accountingFramework.trim() ||
+    (filters.ascReference || '').trim() ||
+    (filters.sectionScope || '').trim()
+  );
+}
 
 function delay(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));

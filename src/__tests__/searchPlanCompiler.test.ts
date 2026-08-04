@@ -46,16 +46,42 @@ describe('compileSearchPlan', () => {
   });
 
   it('a bare quoted phrase delegates to EDGAR and opens no documents', () => {
-    const result = plan({ mode: 'boolean', query: '"climate remediation"', hydrateTextSignals: true });
+    const result = plan({ mode: 'boolean', query: '"net ai"', hydrateTextSignals: true });
     expect(result!.delegatedToEfts).toBe(true);
     expect(result!.hydratePerDocumentSignals).toBe(false);
     expect(result!.perQueryResultLimit).toBeGreaterThanOrEqual(500);
   });
 
+  it('retrieves singular/plural phrase variants before local semantic validation', () => {
+    const result = plan({ mode: 'boolean', query: '"going concern"', hydrateTextSignals: true });
+    expect(result!.delegatedToEfts).toBe(false);
+    expect(result!.hydratePerDocumentSignals).toBe(true);
+    expect(result!.filteredServerQueries[0]).toBe(
+      '((going OR goings) AND (concern OR concerns))'
+    );
+  });
+
+  it('keeps quoted text delegated when an authoritative auditor facet is the only local predicate', () => {
+    const result = plan({
+      mode: 'boolean',
+      query: '"net ai" AND auditor:KPMG',
+      hydrateTextSignals: true,
+      useEnrichedSearch: true,
+    });
+    expect(result!.query).toBe('"net ai"');
+    expect(result!.filters.accountant).toBe('KPMG');
+    expect(result!.delegatedToEfts).toBe(true);
+    expect(result!.hydratePerDocumentSignals).toBe(false);
+  });
+
   it('an OR expression keeps one retrieval lane per required branch', () => {
     const result = plan({ mode: 'boolean', query: 'impairment OR restatement OR "material weakness"', hydrateTextSignals: true });
     expect(result!.requiredBooleanBranches).toBe(3);
-    expect(result!.filteredServerQueries.slice(0, 3)).toEqual(['impairment', 'restatement', '"material weakness"']);
+    expect(result!.filteredServerQueries.slice(0, 3)).toEqual([
+      'impairment',
+      'restatement',
+      '((material OR materials) AND (weakness OR weaknesses))',
+    ]);
   });
 
   it('exhibits are admitted as candidates only in Boolean mode', () => {

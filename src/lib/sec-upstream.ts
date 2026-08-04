@@ -1,11 +1,38 @@
 import sanitizeHtml from 'sanitize-html';
+import {
+  paceSecRequestStart,
+  SecRequestPacerUnavailableError,
+} from './sec-request-pacer';
 
-export type SecUpstream = 'proxy' | 'data' | 'efts';
+export {
+  InvalidEftsResponseError,
+  parseAndValidateEftsPayload,
+  type EftsPayload,
+  type EftsPayloadHit,
+} from './efts-response';
+
+export type SecUpstream = 'proxy' | 'data' | 'efts' | 'iapd';
+
+/**
+ * One document-level in-flight pool shared by every route that can miss the
+ * filing-text cache. This bounds open response/body work; the separate central
+ * request-start pacer enforces SEC request-rate spacing. The lease covers the
+ * response body read as well as the initial request and validated redirects.
+ */
+export const SEC_DOCUMENT_CONCURRENCY_OPTIONS = {
+  operation: 'sec-filing-document-fetch',
+  userLimit: 4,
+  orgLimit: 4,
+  ipLimit: 4,
+  globalLimit: 4,
+  leaseSeconds: 30,
+} as const;
 
 const UPSTREAM_ORIGINS: Record<SecUpstream, string> = {
   proxy: 'https://www.sec.gov',
   data: 'https://data.sec.gov',
   efts: 'https://efts.sec.gov',
+  iapd: 'https://api.adviserinfo.sec.gov',
 };
 
 const QUERY_KEYS: Record<SecUpstream, Set<string>> = {
@@ -14,6 +41,7 @@ const QUERY_KEYS: Record<SecUpstream, Set<string>> = {
   proxy: new Set(['action', 'CIK', 'ticker', 'type', 'dateb', 'owner', 'count', 'output', 'search']),
   data: new Set(),
   efts: new Set(['q', 'forms', 'dateRange', 'startdt', 'enddt', 'entityName', 'ciks', 'from', 'size']),
+  iapd: new Set(['query', 'hl', 'nrows', 'start', 'r', 'sort', 'wt']),
 };
 
 const SAFE_HTML_TAGS = [
@@ -73,7 +101,10 @@ export class SecUpstreamError extends Error {
 }
 
 function validPath(upstream: SecUpstream, pathname: string): boolean {
-  if (pathname.length > 2048 || !pathname.startsWith('/')) return false;
+  // buildSecTargetUrl already decodes one layer. Any remaining percent escape
+  // could be decoded again by URL normalization or the upstream server and
+  // turn into a dot/slash segment outside the audited allowlist.
+  if (pathname.length > 2048 || !pathname.startsWith('/') || pathname.includes('%')) return false;
   const segments = pathname.split('/');
   if (segments.some(segment => segment === '.' || segment === '..')) return false;
 
@@ -90,13 +121,14 @@ function validPath(upstream: SecUpstream, pathname: string): boolean {
       || pathname === '/rules-regulations/no-action-interpretive-exemptive-letters/division-trading-markets-no-action'
       || pathname === '/divisions/investment/noaction/noaction.htm'
       || /^\/rules-regulations\/\d{4}\/\d{2}\/[A-Za-z0-9._~-]+$/.test(pathname)
-      || /^\/Archives\/edgar\/data\/\d{1,10}\/[A-Za-z0-9._~!$&'()+,;=@%-]+(?:\/[A-Za-z0-9._~!$&'()+,;=@%-]+)*$/.test(pathname);
+      || /^\/Archives\/edgar\/data\/\d{1,10}\/[A-Za-z0-9._~!$&'()+,;=@-]+(?:\/[A-Za-z0-9._~!$&'()+,;=@-]+)*$/.test(pathname);
   }
   if (upstream === 'data') {
     return /^\/submissions\/[A-Za-z0-9._-]+\.json$/.test(pathname)
       || /^\/api\/xbrl\/companyfacts\/CIK\d{10}\.json$/.test(pathname);
   }
-  return pathname === '/LATEST/search-index';
+  if (upstream === 'efts') return pathname === '/LATEST/search-index';
+  return pathname === '/search/firm';
 }
 
 function queryAllowed(upstream: SecUpstream, pathname: string, params: URLSearchParams): boolean {
@@ -108,7 +140,26 @@ function queryAllowed(upstream: SecUpstream, pathname: string, params: URLSearch
     && params.size > 0
   ) return false;
   const allowed = QUERY_KEYS[upstream];
-  return [...params].every(([key, value]) => allowed.has(key) && value.length <= 4000);
+  if (![...params].every(([key, value]) => allowed.has(key) && value.length <= 4000)) return false;
+  if (upstream !== 'iapd') return true;
+
+  const requiredKeys = ['query', 'hl', 'nrows', 'start', 'r', 'sort', 'wt'] as const;
+  if (params.size !== requiredKeys.length || requiredKeys.some(key => params.getAll(key).length !== 1)) {
+    return false;
+  }
+  const query = params.get('query')?.trim() || '';
+  const integerInRange = (key: string, minimum: number, maximum: number) => {
+    const value = params.get(key) || '';
+    return /^\d+$/.test(value) && Number(value) >= minimum && Number(value) <= maximum;
+  };
+  return query.length > 0
+    && query.length <= 200
+    && params.get('hl') === 'true'
+    && integerInRange('nrows', 1, 100)
+    && integerInRange('start', 0, 10_000)
+    && integerInRange('r', 1, 100)
+    && params.get('sort') === 'score desc'
+    && params.get('wt') === 'json';
 }
 
 export function buildSecTargetUrl(
@@ -128,6 +179,16 @@ export function buildSecTargetUrl(
   }
   const target = new URL(pathname, UPSTREAM_ORIGINS[upstream]);
   target.search = params.toString();
+  // WHATWG URL construction normalizes encoded dot segments. Re-check the
+  // canonical URL, including the exact pathname, so validation can never be
+  // performed on a different path than the one fetch() will receive.
+  if (
+    target.pathname !== pathname
+    || !validPath(upstream, target.pathname)
+    || !queryAllowed(upstream, target.pathname, target.searchParams)
+  ) {
+    throw new SecUpstreamError('SEC path or query is not allowed.', 400);
+  }
   return target;
 }
 
@@ -241,12 +302,94 @@ const SEC_ERROR_TEXT_SIGNATURES = [
   'This page is temporarily unavailable',
 ] as const;
 
-export function looksLikeSecErrorText(text: string): string | null {
-  if (!text || text.length > 5_000) return null;
+const SEC_ERROR_RESPONSE_SCAN_BYTES = 64 * 1024;
+const SEC_JSON_MAX_BYTES = 25 * 1024 * 1024;
+const SEC_JSON_CONTENT_TYPE = /^application\/(?:[a-z0-9!#$&^_.+-]+\+)?json(?:;|$)/i;
+
+function findSecErrorSignature(text: string): string | null {
   for (const signature of SEC_ERROR_TEXT_SIGNATURES) {
     if (text.includes(signature)) return signature;
   }
   return null;
+}
+
+export function looksLikeSecErrorText(text: string): string | null {
+  if (!text || text.length > 5_000) return null;
+  return findSecErrorSignature(text);
+}
+
+/**
+ * Inspect only a bounded prefix of a fresh raw response for the SEC's known
+ * fair-access/error-page signatures. Unlike looksLikeSecErrorText, this guard
+ * deliberately does not trust total body length: SEC can pad an HTTP 200
+ * throttle page beyond 5 KB, and the proxy must reject it before returning or
+ * caching it. Keeping the scan bounded avoids decoding a full 25 MB filing.
+ */
+export function looksLikeSecErrorResponse(body: string | Uint8Array): string | null {
+  const sample = typeof body === 'string'
+    ? body.slice(0, SEC_ERROR_RESPONSE_SCAN_BYTES)
+    : new TextDecoder('utf-8').decode(body.subarray(0, SEC_ERROR_RESPONSE_SCAN_BYTES));
+  return findSecErrorSignature(sample);
+}
+
+/** Parse a size-bounded SEC response only after its media type and JSON syntax
+ * have been validated. Domain-specific callers must still validate the shape. */
+export function parseSecJsonResponse(bytes: Uint8Array, contentType: string | null): unknown {
+  if (looksLikeSecErrorResponse(bytes)) {
+    throw new SecUpstreamError('SEC upstream returned an error page.', 502);
+  }
+  if (!contentType || !SEC_JSON_CONTENT_TYPE.test(contentType.trim())) {
+    throw new SecUpstreamError('SEC upstream returned a non-JSON response.', 502);
+  }
+
+  let body: string;
+  try {
+    body = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+  } catch {
+    throw new SecUpstreamError('SEC upstream returned invalid UTF-8 JSON.', 502);
+  }
+
+  try {
+    return JSON.parse(body.replace(/^\uFEFF/, '')) as unknown;
+  } catch {
+    throw new SecUpstreamError('SEC upstream returned malformed JSON.', 502);
+  }
+}
+
+export interface FetchSecJsonOptions {
+  upstream: SecUpstream;
+  path: string;
+  params?: URLSearchParams;
+  userAgent: string;
+  maxBytes: number;
+  signal?: AbortSignal;
+}
+
+/**
+ * The single server-side path for SEC JSON: strict target allow-list, central
+ * fair-access pacing (including redirects), bounded body read, media-type
+ * validation, UTF-8 validation, and fail-closed JSON parsing.
+ */
+export async function fetchSecJson({
+  upstream,
+  path,
+  params = new URLSearchParams(),
+  userAgent,
+  maxBytes,
+  signal = new AbortController().signal,
+}: FetchSecJsonOptions): Promise<unknown> {
+  if (!Number.isSafeInteger(maxBytes) || maxBytes <= 0 || maxBytes > SEC_JSON_MAX_BYTES) {
+    throw new SecUpstreamError('Invalid SEC JSON response size limit.', 500);
+  }
+
+  const target = buildSecTargetUrl(upstream, path, new URLSearchParams(params));
+  const response = await fetchSecResponse(target, upstream, signal, userAgent);
+  if (!response.ok) {
+    const status = response.status >= 400 && response.status <= 599 ? response.status : 502;
+    throw new SecUpstreamError('SEC upstream request failed.', status);
+  }
+  const bytes = await readResponseWithLimit(response, maxBytes, signal);
+  return parseSecJsonResponse(bytes, response.headers.get('content-type'));
 }
 
 export function assertSecDocumentResponse(response: Response): void {
@@ -264,16 +407,38 @@ export async function fetchSecResponse(
   initialTarget: URL,
   upstream: SecUpstream,
   requestSignal: AbortSignal,
-  userAgent: string
+  userAgent: string,
+  /** Called immediately before each real SEC HTTP attempt, redirects included.
+   * Returning false vetoes the attempt so callers can enforce a hard fan-out
+   * budget instead of learning they overspent after fetch resolves. */
+  onRequestAttempt?: () => boolean | void
 ): Promise<Response> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 12_000);
   const abortFromRequest = () => controller.abort(requestSignal.reason);
-  requestSignal.addEventListener('abort', abortFromRequest, { once: true });
+  // AbortSignal does not replay an abort event to listeners attached after it
+  // fired. Propagate that state synchronously so a request cancelled before
+  // this function starts cannot authorize, pace, fetch, or later cache data.
+  if (requestSignal.aborted) controller.abort(requestSignal.reason);
+  else requestSignal.addEventListener('abort', abortFromRequest, { once: true });
   let target = initialTarget;
 
   try {
+    controller.signal.throwIfAborted();
     for (let redirect = 0; redirect <= 3; redirect += 1) {
+      if (onRequestAttempt?.() === false) {
+        throw new SecUpstreamError('SEC upstream request budget exhausted.', 429);
+      }
+      try {
+        // Central fair-access gate: every real request start, including each
+        // redirect, is spaced before fetch() regardless of which route called.
+        await paceSecRequestStart(controller.signal);
+      } catch (error) {
+        if (error instanceof SecRequestPacerUnavailableError) {
+          throw new SecUpstreamError('SEC request pacing is unavailable.', 503);
+        }
+        throw error;
+      }
       const response = await fetch(target, {
         method: 'GET',
         headers: {
@@ -388,5 +553,4 @@ export const SEC_DOCUMENT_CSP = [
   "style-src 'unsafe-inline'",
   "img-src data: https://www.sec.gov https://*.sec.gov",
   "font-src https://www.sec.gov https://*.sec.gov",
-  "navigate-to 'none'",
 ].join('; ');

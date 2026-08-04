@@ -9,12 +9,18 @@ import { eftsDelegablePhrase, parseBooleanQuery } from '../utils/booleanSearch';
 const phraseOf = (query: string) => eftsDelegablePhrase(parseBooleanQuery(query).expression);
 
 describe('eftsDelegablePhrase', () => {
-  it('delegates a bare quoted phrase', () => {
-    // Verified against the live index: "material weakness" reports ≥10,000
-    // hits, the reversed "weakness material" reports 414 — EFTS quoted
-    // phrases are exact adjacent matches, not bags of words.
-    expect(phraseOf('"material weakness"')).toBe('material weakness');
-    expect(phraseOf('  "revenue recognition"  ')).toBe('revenue recognition');
+  it('delegates a bare quoted phrase when local matching adds no morphology', () => {
+    expect(phraseOf('"net ai"')).toBe('net ai');
+    expect(phraseOf('  "sec 10"  ')).toBe('sec 10');
+  });
+
+  it('keeps morphology-sensitive phrases on the locally validated path', () => {
+    // Concrete SEC regression: 0001437749-23-024627 / ex_564485.htm contains
+    // only "going concerns". Our matcher correctly accepts it for the singular
+    // query, while a verbatim EFTS query for "going concern" returns no hit.
+    expect(phraseOf('"going concern"')).toBeNull();
+    expect(phraseOf('"going concerns"')).toBeNull();
+    expect(phraseOf('"material weakness"')).toBeNull();
   });
 
   it('refuses every operator whose semantics are not demonstrated', () => {
@@ -47,8 +53,8 @@ describe('eftsDelegablePhrase', () => {
   });
 
   it('returns the phrase without its quotes, ready to re-issue', () => {
-    const phrase = phraseOf('"internal control over financial reporting"');
-    expect(phrase).toBe('internal control over financial reporting');
+    const phrase = phraseOf('"net ai"');
+    expect(phrase).toBe('net ai');
     expect(phrase).not.toContain('"');
   });
 });

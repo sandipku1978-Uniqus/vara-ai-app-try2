@@ -1,4 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 const createClient = vi.hoisted(() => vi.fn(() => ({ kind: 'restricted-client' })));
 
@@ -65,6 +67,40 @@ describe('restricted Supabase web client', () => {
       key,
       { auth: { persistSession: false } }
     );
+  });
+
+  it('keeps the production cache writer separate from the restricted read client', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    vi.stubEnv('VERCEL_ENV', 'production');
+    const webKey = unsignedRoleToken('anon');
+    vi.stubEnv('URC_SUPABASE_WEB_KEY', webKey);
+    vi.stubEnv('URC_SUPABASE_SERVICE_KEY', 'server-only-cache-writer-key');
+    const { getCacheWriterSupabase, getWebSupabase } = await import('../lib/supabase-web');
+
+    expect(getWebSupabase()).toEqual({ kind: 'restricted-client' });
+    expect(getCacheWriterSupabase()).toEqual({ kind: 'restricted-client' });
+    expect(createClient).toHaveBeenNthCalledWith(
+      1,
+      'https://example.supabase.co',
+      webKey,
+      { auth: { persistSession: false } },
+    );
+    expect(createClient).toHaveBeenNthCalledWith(
+      2,
+      'https://example.supabase.co',
+      'server-only-cache-writer-key',
+      { auth: { persistSession: false } },
+    );
+  });
+
+  it('documents the narrow runtime writer without reintroducing a read fallback', () => {
+    const readme = readFileSync(resolve(process.cwd(), 'README.md'), 'utf8');
+    const example = readFileSync(resolve(process.cwd(), '.env.example'), 'utf8');
+
+    expect(readme).not.toContain('Do not add `URC_SUPABASE_SERVICE_KEY` to Vercel');
+    expect(readme).toContain('three audited cache-writer routes');
+    expect(example).toContain('never use it as');
+    expect(example).toContain('production web-read fallback');
   });
 
   it('accepts the publishable key and a legacy anon JWT in production', async () => {

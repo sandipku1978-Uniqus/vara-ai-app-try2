@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { isProductionDeployment } from './clerk-config';
+import { configuredSupabaseOrigin } from './database-origin';
 
 let webClient: SupabaseClient | null = null;
 
@@ -16,15 +17,16 @@ function jwtRole(token: string): string | null {
 
 /**
  * Web request handlers must use the migration-defined `urc_web` Postgres role.
- * Service-role credentials remain valid only for offline ingestion jobs. Local
- * development may fall back so the existing Supabase stack remains runnable,
- * but production fails closed until URC_SUPABASE_WEB_KEY is provisioned —
- * the service key is never a production read identity.
+ * Service authority is never a production read identity. It remains available
+ * separately to trusted jobs and getCacheWriterSupabase()'s three audited
+ * server-only cache-writer routes. Local development may fall back so the existing
+ * Supabase stack remains runnable, but production reads fail closed until
+ * URC_SUPABASE_WEB_KEY is provisioned.
  */
 export function getWebSupabase(): SupabaseClient | null {
   if (webClient) return webClient;
 
-  const url = process.env.URC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const url = configuredSupabaseOrigin();
   const webKey = process.env.URC_SUPABASE_WEB_KEY?.trim() || '';
   if (!url) return null;
 
@@ -84,7 +86,7 @@ let cacheWriterClient: SupabaseClient | null = null;
 export function getCacheWriterSupabase(): SupabaseClient | null {
   if (cacheWriterClient) return cacheWriterClient;
 
-  const url = process.env.URC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const url = configuredSupabaseOrigin();
   const serviceKey = process.env.URC_SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
   // A missing key is not an error: the cache is an accelerator, so callers fall
   // back to fetching from SEC rather than failing the request.

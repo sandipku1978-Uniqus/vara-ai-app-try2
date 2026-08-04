@@ -11,10 +11,12 @@ import Link from 'next/link';
 import { ExternalLink, Loader2 } from 'lucide-react';
 import CiteButton from '../../../components/memo/CiteButton';
 import {
-  fetchCompanyFacts,
+  buildSecDataUrl,
   extractComparableFinancials,
   getAvailableYears,
+  getHeaders,
   formatFinancialValue,
+  type CompanyFacts,
   type FinancialMetric,
 } from '../../../services/secApi';
 import { describeForm } from '../../../lib/formLabels';
@@ -70,6 +72,30 @@ const KEY_METRICS: Array<{ key: string; label: string }> = [
   { key: 'CapitalExpenditures', label: 'Capital expenditures' },
 ];
 
+type CompanyFactsLoad =
+  | { status: 'available'; facts: CompanyFacts }
+  | { status: 'unavailable' }
+  | { status: 'error' };
+
+/**
+ * Keep source failure distinct from a truthful SEC 404. The generic
+ * `fetchCompanyFacts` helper intentionally returns null for both, but the
+ * dossier promises an explicit retry for transient XBRL failures.
+ */
+async function loadDossierCompanyFacts(cik: number): Promise<CompanyFactsLoad> {
+  const paddedCik = String(cik).padStart(10, '0');
+  try {
+    const response = await fetch(buildSecDataUrl(`api/xbrl/companyfacts/CIK${paddedCik}.json`), {
+      headers: getHeaders(),
+    });
+    if (response.status === 404) return { status: 'unavailable' };
+    if (!response.ok) return { status: 'error' };
+    return { status: 'available', facts: await response.json() as CompanyFacts };
+  } catch {
+    return { status: 'error' };
+  }
+}
+
 export default function DossierTabs({
   cik,
   companyName,
@@ -102,14 +128,23 @@ export default function DossierTabs({
     if (tab !== 'financials' || financials !== null) return;
     setFinancials('loading');
     (async () => {
+      const outcome = await loadDossierCompanyFacts(cik);
+      if (outcome.status === 'error') {
+        setFinancials('error');
+        return;
+      }
+      if (outcome.status === 'unavailable') {
+        setFinancials('unavailable');
+        return;
+      }
       try {
-        const facts = await fetchCompanyFacts(String(cik).padStart(10, '0'));
-        if (!facts) { setFinancials('unavailable'); return; }
-        const years = getAvailableYears(facts);
+        const years = getAvailableYears(outcome.facts);
         if (years.length === 0) { setFinancials('unavailable'); return; }
-        const metrics = extractComparableFinancials(facts, years[0]);
+        const metrics = extractComparableFinancials(outcome.facts, years[0]);
         setFinancials({ year: years[0], metrics });
       } catch {
+        // A syntactically valid but malformed upstream payload is a source
+        // failure, not evidence that the registrant has no financial data.
         setFinancials('error');
       }
     })();

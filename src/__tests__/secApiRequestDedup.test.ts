@@ -95,4 +95,75 @@ describe('enriched facet request dedup', () => {
 
     expect(fetchCalls.filter(url => url.includes('/api/es-search'))).toHaveLength(2);
   });
+
+  it('does not make a same-query replacement inherit the aborted enriched owner', async () => {
+    const firstController = new AbortController();
+    const replacementController = new AbortController();
+    let requestNumber = 0;
+    (globalThis.fetch as ReturnType<typeof vi.fn>).mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
+      fetchCalls.push(String(input));
+      requestNumber += 1;
+      if (requestNumber === 1) {
+        return new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => reject(new DOMException('superseded', 'AbortError')), { once: true });
+        });
+      }
+      return Promise.resolve(new Response(JSON.stringify(PAGE), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }));
+    });
+
+    const first = searchEdgarFilings('', '4', '2001-01-01', '2026-08-04', '', 100, {
+      useEnrichedSearch: true,
+      signal: firstController.signal,
+    });
+    await vi.waitFor(() => expect(requestNumber).toBe(1));
+    firstController.abort(new DOMException('superseded', 'AbortError'));
+    const replacement = searchEdgarFilings('', '4', '2001-01-01', '2026-08-04', '', 100, {
+      useEnrichedSearch: true,
+      signal: replacementController.signal,
+    });
+
+    await expect(first).rejects.toMatchObject({ name: 'AbortError' });
+    await expect(replacement).resolves.toHaveLength(1);
+    expect(fetchCalls.filter(url => url.includes('/api/es-search'))).toHaveLength(2);
+  });
+});
+
+describe('plain EFTS request ownership', () => {
+  it('does not reuse an aborted same-query request and still caches the replacement success', async () => {
+    const firstController = new AbortController();
+    const replacementController = new AbortController();
+    let requestNumber = 0;
+    (globalThis.fetch as ReturnType<typeof vi.fn>).mockImplementation((input: RequestInfo | URL, init?: RequestInit) => {
+      fetchCalls.push(String(input));
+      requestNumber += 1;
+      if (requestNumber === 1) {
+        return new Promise<Response>((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => reject(new DOMException('superseded', 'AbortError')), { once: true });
+        });
+      }
+      return Promise.resolve(new Response(JSON.stringify(PAGE), {
+        status: 200,
+        headers: { 'content-type': 'application/json' },
+      }));
+    });
+
+    const first = searchEdgarFilings('same-query-abort-regression', '10-K', '2026-01-01', '2026-08-04', '', 100, {
+      signal: firstController.signal,
+    });
+    await vi.waitFor(() => expect(requestNumber).toBe(1));
+    firstController.abort(new DOMException('superseded', 'AbortError'));
+    const replacement = searchEdgarFilings('same-query-abort-regression', '10-K', '2026-01-01', '2026-08-04', '', 100, {
+      signal: replacementController.signal,
+    });
+
+    await expect(first).rejects.toMatchObject({ name: 'AbortError' });
+    await expect(replacement).resolves.toHaveLength(1);
+    await expect(searchEdgarFilings(
+      'same-query-abort-regression', '10-K', '2026-01-01', '2026-08-04', '', 100
+    )).resolves.toHaveLength(1);
+    expect(fetchCalls.filter(url => url.includes('/api/sec-efts'))).toHaveLength(2);
+  });
 });

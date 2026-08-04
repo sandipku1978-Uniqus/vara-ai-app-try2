@@ -39,6 +39,28 @@ describe('prescreenBooleanCandidates', () => {
     expect(init.method).toBe('POST');
   });
 
+  it('carries the remaining SEC budget and reports actual server work', async () => {
+    const onWork = vi.fn();
+    respond({
+      ok: true,
+      verdicts: [{ ...candidates[0], matched: true, validated: true }],
+      summary: { upstreamAttempts: 3, cacheHits: 1, budgetExhausted: false },
+    });
+
+    await prescreenBooleanCandidates('lease', candidates, {
+      maxUpstreamAttempts: 7,
+      onWork,
+    });
+
+    const [, init] = fetchMock.mock.calls[0];
+    expect(JSON.parse(init.body).maxUpstreamAttempts).toBe(7);
+    expect(onWork).toHaveBeenCalledWith({
+      upstreamAttempts: 3,
+      cacheHits: 1,
+      budgetExhausted: false,
+    });
+  });
+
   it('returns null — not an empty verdict list — when the endpoint fails', async () => {
     // Critical: null means "pre-screen did not happen", so the caller keeps
     // every candidate. An empty list would read as "nothing matched".

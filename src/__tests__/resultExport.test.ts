@@ -68,9 +68,27 @@ describe('coverage sheet honesty', () => {
     );
     const flat = rows.map(r => r.join(' | ')).join('\n');
     expect(flat).toContain('10,000+');
+    expect(flat).toContain('Upstream retrieval candidates');
+    expect(flat).not.toContain('Filings matching upstream');
     expect(flat).toContain('verified subset, not the full corpus');
     expect(flat).toContain('Validated filings in this export | 403');
     expect(flat).toContain('Forms: 10-K, 10-K/A');
+  });
+
+  it('labels a separately verified match total as matches', () => {
+    const rows = buildCoverageRows({
+      query: '"material weakness"',
+      mode: 'boolean',
+      coverage: {
+        examined: 500,
+        upstreamTotal: 10_000,
+        complete: false,
+        upstreamTotalIsFloor: true,
+        verifiedMatchTotal: 12_345,
+      },
+      filterSummary: [],
+    }, 403);
+    expect(rows).toContainEqual(['Verified filing matches', '12,345']);
   });
 
   it('states completeness only when coverage was complete', () => {

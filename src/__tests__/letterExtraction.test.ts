@@ -1,11 +1,19 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
+  authoritativeWriteFailureReason,
   extractLetterIdentifiers,
   deriveStoredLetterIdentifierPatch,
+  fetchSubmission,
   nextLetterRetryAt,
+  rethreadLetterDerivations,
   shouldRethreadLetters,
+  updateCommentLetterWithRetry,
   uudecode,
 } from '../../data-pipeline/fetch-letter-text';
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 describe('data-pipeline/fetch-letter-text uudecode', () => {
   it('decodes a classic uuencoded block', () => {
@@ -27,6 +35,111 @@ describe('data-pipeline/fetch-letter-text uudecode', () => {
 });
 
 describe('comment-letter review identity and retry policy', () => {
+  it('rejects padded SEC throttle prose instead of returning cacheable letter text', async () => {
+    const fetchMock = vi.fn().mockImplementation(async () => new Response(
+      `Your Request Originated from an Undeclared Automated Tool${' '.repeat(8_000)}`,
+      { status: 200, headers: { 'Content-Type': 'text/html; charset=UTF-8' } },
+    ));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(fetchSubmission('edgar/data/1/letter.txt', {
+      maxAttempts: 2,
+      retryBaseMs: 0,
+    })).resolves.toEqual({ raw: null, error: 'fetch_failed' });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('rejects non-text and oversized SEC submission responses', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(new Response('{}', {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }))
+      .mockResolvedValueOnce(new Response('oversized', {
+        status: 200,
+        headers: { 'Content-Type': 'text/plain', 'Content-Length': '9' },
+      }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(fetchSubmission('edgar/data/1/wrong-media.txt', {
+      maxAttempts: 1,
+      retryBaseMs: 0,
+    })).resolves.toEqual({ raw: null, error: 'fetch_failed' });
+    await expect(fetchSubmission('edgar/data/1/oversized.txt', {
+      maxAttempts: 1,
+      retryBaseMs: 0,
+      maxBytes: 8,
+    })).resolves.toEqual({ raw: null, error: 'too_large' });
+  });
+
+  it('returns a bounded, validated SEC text submission', async () => {
+    const submission = '<SEC-DOCUMENT><DOCUMENT><TEXT>valid letter body</TEXT></DOCUMENT>';
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(submission, {
+      status: 200,
+      headers: { 'Content-Type': 'text/plain' },
+    })));
+
+    await expect(fetchSubmission('edgar/data/1/letter.txt', {
+      maxAttempts: 1,
+      retryBaseMs: 0,
+    })).resolves.toEqual({ raw: submission, error: null });
+  });
+
+  it('uses structural HTML parsing and ignores malformed script end tags', () => {
+    const identifiers = extractLetterIdentifiers(`
+      <script>Re: Injected Corp\nAccession Number 0000000000-26-999999</script ignored="true">
+      <p>Re: Safe &amp; Sound Corp</p>
+      <p>Form 10-K for fiscal year 2025</p>
+      <p>File No. 001-12345</p>
+      <p>Accession Number 0000123456-25-000099</p>
+    `);
+
+    expect(identifiers).toMatchObject({
+      subject: 'Safe & Sound Corp',
+      referencedAccession: '0000123456-25-000099',
+    });
+  });
+
+  it('fails a run when any authoritative DB write exhausts retries', () => {
+    expect(authoritativeWriteFailureReason({ attempted: 0, succeeded: 0, exhausted: 0 }))
+      .toBeNull();
+    expect(authoritativeWriteFailureReason({ attempted: 1, succeeded: 0, exhausted: 1 }))
+      .toContain('all 1 authoritative');
+    expect(authoritativeWriteFailureReason({ attempted: 50, succeeded: 45, exhausted: 5 }))
+      .toContain('5/50 authoritative');
+    expect(authoritativeWriteFailureReason({ attempted: 100, succeeded: 95, exhausted: 5 }))
+      .toContain('5/100 authoritative');
+    expect(authoritativeWriteFailureReason({ attempted: 10, succeeded: 9, exhausted: 1 }))
+      .toContain('1/10 authoritative');
+  });
+
+  it('tracks an authoritative update that exhausts every retry', async () => {
+    const terminalEq = vi.fn().mockResolvedValue({ error: { message: 'database unavailable' } });
+    const firstEq = vi.fn().mockReturnValue({ eq: terminalEq });
+    const update = vi.fn().mockReturnValue({ eq: firstEq });
+    const client = { from: vi.fn().mockReturnValue({ update }) };
+
+    await expect(updateCommentLetterWithRetry(
+      client as never,
+      { accession: '0000123456-26-000001', cik: 123456 },
+      { content_error: 'fetch_failed' },
+      { retryBaseMs: 0 }
+    )).resolves.toBe(false);
+    expect(update).toHaveBeenCalledTimes(4);
+  });
+
+  it('fails closed when the authoritative thread rebuild RPC fails', async () => {
+    const failingClient = {
+      rpc: vi.fn().mockResolvedValue({ data: null, error: { message: 'statement timeout' } }),
+    };
+    await expect(rethreadLetterDerivations(failingClient as never)).rejects.toThrow(
+      'urc_thread_letters failed after authoritative comment-letter writes: statement timeout'
+    );
+
+    const successfulClient = { rpc: vi.fn().mockResolvedValue({ data: 23, error: null }) };
+    await expect(rethreadLetterDerivations(successfulClient as never)).resolves.toBe(23);
+  });
+
   it('derives the same review key from a referenced filing header', () => {
     const staff = extractLetterIdentifiers(`
       <p>Re: Example Corp</p>

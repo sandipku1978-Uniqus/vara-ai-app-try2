@@ -8,6 +8,7 @@
 
 import { extractDocumentTextFromHtmlServer } from '../../src/lib/filingTextServer';
 import { containsFinancialStatementNotes } from '../../src/services/secApi';
+import { parseHTML } from 'linkedom';
 
 const USER_AGENT =
   process.env.SEC_USER_AGENT ||
@@ -16,17 +17,32 @@ const USER_AGENT =
 
 /** SEC asks for <=10 requests/second. Stay well under it. */
 const MIN_INTERVAL_MS = 130;
-let lastRequestAt = 0;
 
 function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-async function throttle(): Promise<void> {
-  const wait = lastRequestAt + MIN_INTERVAL_MS - Date.now();
-  if (wait > 0) await sleep(wait);
-  lastRequestAt = Date.now();
+/** Serialize request starts. A shared timestamp without a promise tail lets
+ * concurrent callers sleep together and then burst at the same instant. */
+export function createSerializedRequestPacer(
+  minimumIntervalMs: number,
+  now: () => number = Date.now,
+  wait: (ms: number) => Promise<void> = sleep,
+): () => Promise<void> {
+  let lastRequestAt = 0;
+  let tail = Promise.resolve();
+  return () => {
+    const scheduled = tail.then(async () => {
+      const remaining = lastRequestAt + minimumIntervalMs - now();
+      if (remaining > 0) await wait(remaining);
+      lastRequestAt = now();
+    });
+    tail = scheduled.catch(() => undefined);
+    return scheduled;
+  };
 }
+
+const throttle = createSerializedRequestPacer(MIN_INTERVAL_MS);
 
 export async function secFetch(url: string, attempt = 0): Promise<Response> {
   await throttle();
@@ -198,28 +214,34 @@ export async function fetchDisclosureHtml(
  * Reads the RAW html: text extraction strips the tags this depends on.
  */
 export function auditorFromIxbrl(html: string): { name: string | null; firmId: string | null } {
-  const grab = (tag: string): string | null => {
-    const patterns = [
-      new RegExp(`name=["']dei:${tag}["'][^>]*>([\\s\\S]{0,200}?)</ix:nonNumeric>`, 'i'),
-      new RegExp(`<ix:nonNumeric[^>]*name=["']dei:${tag}["'][^>]*>([\\s\\S]{0,200}?)<`, 'i'),
-    ];
-    for (const pattern of patterns) {
-      const match = html.match(pattern);
-      if (!match) continue;
-      const value = match[1]
-        .replace(/<[^>]*>/g, '')
-        // Filings use numeric entities freely: SPG tags "Ernst&#160;& Young&#160;LLP".
-        // Leaving those raw made a correct detection look like a mismatch.
-        .replace(/&#x([0-9a-f]+);/gi, (_, hex) => String.fromCodePoint(parseInt(hex, 16)))
-        .replace(/&#(\d+);/g, (_, dec) => String.fromCodePoint(Number(dec)))
-        .replace(/&nbsp;/gi, ' ')
-        .replace(/&amp;/gi, '&')
-        .replace(/\s+/g, ' ')
-        .trim();
-      if (value) return value;
-    }
-    return null;
-  };
+  // iXBRL is HTML, so use a parser rather than attempting to sanitize nested
+  // markup and entities with replacement expressions. textContent performs a
+  // single standards-based entity decode and cannot re-introduce tags.
+  const { document } = parseHTML(html);
+  const values = new Map<string, string>();
+  for (const node of Array.from(document.querySelectorAll('[name]'))) {
+    // In HTML mode linkedom exposes the qualified name as both
+    // `IX:NONNUMERIC`/`ix:nonnumeric`; namespace-aware DOM implementations may
+    // instead split it into prefix `ix` and localName `nonNumeric`. Accept both
+    // representations, but never trust a matching `name` on an ordinary HTML
+    // element or a different iXBRL fact type.
+    const tagName = node.tagName?.toLowerCase() || '';
+    const localName = node.localName?.toLowerCase() || '';
+    const prefix = node.prefix?.toLowerCase() || '';
+    const isIxNonNumeric =
+      tagName === 'ix:nonnumeric'
+      || localName === 'ix:nonnumeric'
+      || (prefix === 'ix' && localName === 'nonnumeric');
+    if (!isIxNonNumeric) continue;
 
-  return { name: grab('AuditorName'), firmId: grab('AuditorFirmId') };
+    const name = node.getAttribute('name')?.toLowerCase();
+    if (name !== 'dei:auditorname' && name !== 'dei:auditorfirmid') continue;
+    const value = (node.textContent || '').slice(0, 500).replace(/\s+/g, ' ').trim();
+    if (value && !values.has(name)) values.set(name, value);
+  }
+
+  return {
+    name: values.get('dei:auditorname') || null,
+    firmId: values.get('dei:auditorfirmid') || null,
+  };
 }

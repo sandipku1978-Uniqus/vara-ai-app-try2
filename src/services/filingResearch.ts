@@ -3,7 +3,6 @@ import {
   fetchCompanySubmissions,
   fetchFilingTextOutcome,
   type FilingTextOutcome,
-  isEnrichedSearchEnabled,
   prescreenBooleanCandidates,
   resolveCompanyInput,
   searchEdgarFilings,
@@ -14,48 +13,54 @@ import {
   type SecSubmission,
 } from './secApi';
 import {
-  buildAuditorSearchTerms,
   canonicalizeAuditorInput,
   detectAuditorInText,
   matchesAuditorSelection,
 } from './auditors';
 import { loadSicDirectoryIndex } from './referenceData';
 import { deriveSectionPath } from '../utils/sectionPath';
+import { isValidIsoDate } from '../lib/api-query';
 import { extractResolvedSection, resolveSectionScope } from '../utils/sectionTaxonomy';
 import {
-  buildReferenceSearchTerms,
   parseAccountingReference,
   referenceBooleanExpression,
   textCitesReference,
 } from '../utils/accountingReference';
 import { parseSearchHit } from '../hooks/useEdgarSearch';
 import {
-  buildBooleanCandidateQueries,
   buildCandidateQueryFromBoolean,
   booleanQueryMatches,
   extractBooleanMatchSnippet,
-  compileBooleanQuery,
-  eftsDelegablePhrase,
-  parseBooleanQuery,
-  planBooleanBranches,
-  type BooleanSearchNode,
 } from '../utils/booleanSearch';
+import {
+  compileSearchPlan,
+  shouldUseEnrichedSearch,
+  type ResearchSearchMode,
+} from './filingResearchPlan';
+import { finalizeRunCoverage } from './filingResearchCoverage';
+import {
+  buildWaveExecutionPolicy,
+  collectLaneCandidates,
+  validateLaneCandidates,
+  type WaveExecutionClients,
+  type WaveRunState,
+  type WaveStageContext,
+} from './filingResearchExecution';
 
-export type ResearchSearchMode = 'semantic' | 'boolean';
-
-/**
- * Why a Boolean run stopped. Only 'exhausted' is compatible with complete
- * coverage — every other value means the result set is a bounded partial.
- */
-export type BooleanStopReason =
-  | 'exhausted'
-  | 'candidate-cap'
-  | 'request-budget'
-  | 'deadline'
-  | 'rate-limit'
-  | 'fetch-failure'
-  | 'unknown-upstream'
-  | 'cancelled';
+// Keep the established public surface stable while the implementation lives
+// in cohesive pure modules.
+export {
+  canUseInstantEnrichedSearch,
+  compileSearchPlan,
+  type CompileSearchPlanOptions,
+  type ResearchSearchMode,
+  type SearchExecutionPlan,
+} from './filingResearchPlan';
+export {
+  finalizeRunCoverage,
+  type BooleanStopReason,
+  type RunCoverageInputs,
+} from './filingResearchCoverage';
 
 export interface FilingResearchResult {
   id: string;
@@ -89,11 +94,15 @@ export interface FilingResearchResult {
   headquarters: string;
   fileNumber: string;
   auditor: string;
-  // Authoritative auditor of record from the PCAOB Form AP facet store (2017→).
-  // When present it drives both the auditor filter and the displayed firm;
-  // `auditor` (detected in the filing text) is the fallback where Form AP has no
-  // coverage. Kept distinct so the filter and the label can never disagree.
+  // Date-effective PCAOB Form AP evidence (2017→): the latest unambiguous
+  // ordinary-issuer report on or before this SEC filing date. This is not the
+  // issuer's current auditor and does not claim an exact engagement start.
+  // `auditor` (detected in filing text) remains the fallback when Form AP is
+  // unavailable, ambiguous, or scoped to a fund/benefit plan.
   registeredAuditor?: string;
+  registeredAuditorReportDate?: string;
+  registeredAuditorBasis?: string;
+  registeredAuditorResolutionStatus?: string;
   acceleratedStatus: string;
   /** Set when the Boolean expression matched inside an exhibit rather than the
    *  parent document. The row represents the parent filing; these identify the
@@ -452,20 +461,6 @@ function uniqueById<T extends { id: string }>(items: T[]): T[] {
   });
 }
 
-function normalizeFormTypes(filters: SearchFilters, defaultForms = ''): string {
-  if (filters.formTypes.length > 0) {
-    return filters.formTypes.join(',');
-  }
-  return defaultForms;
-}
-
-function parseFormScope(formScope: string): string[] {
-  return formScope
-    .split(',')
-    .map(form => form.trim())
-    .filter(Boolean);
-}
-
 function normalizeFormValue(value: string): string {
   return value.trim().toUpperCase().replace(/\s+/g, '');
 }
@@ -499,144 +494,16 @@ function normalizeBaseForm(value: string): string {
   return normalizeFormValue(value).replace(/\/A$/, '');
 }
 
-function buildServerQuery(rawQuery: string, filters: SearchFilters, mode: ResearchSearchMode): string {
-  const primaryQuery = rawQuery.trim();
-  const combined =
-    primaryQuery ||
-    filters.accessionNumber.trim() ||
-    filters.fileNumber.trim() ||
-    filters.sectionKeywords.trim();
-  if (!combined) {
-    return '';
-  }
-
-  if (mode === 'boolean') {
-    return buildCandidateQueryFromBoolean(combined);
-  }
-
-  return combined;
-}
-
-// Branch-aware Boolean candidate queries. Independent OR branches come FIRST and
-// are counted as `requiredBranches`: the executor must attempt each one before
-// the display limit can end retrieval, so a rare second OR disjunct is never
-// skipped just because a broad first branch already filled the visible rows.
-// Auditor-combined and recall-fallback candidates follow as best-effort fill;
-// the auditor is enforced either way by the text-signal post-filter.
-function buildBooleanServerQueries(
-  query: string,
-  filters: SearchFilters,
-  delegated = false
-): { queries: string[]; requiredBranches: number } {
-  const { branches, droppedUnanchored } = planBooleanBranches(query);
-  // Delegated phrase: EDGAR's verdict IS the result, so only the exact phrase
-  // may be issued. The broadening lanes below exist to hand local validation a
-  // wide pool to filter — with no validation step they would put filings that
-  // merely contain the words somewhere into the results as phrase matches.
-  if (delegated) {
-    const phrase = query.replace(/\s+/g, ' ').trim();
-    return { queries: [phrase], requiredBranches: 1 };
-  }
-  const auditorTerms = buildAuditorSearchTerms(filters.accountant);
-  const ascReference = parseAccountingReference(filters.ascReference || '');
-  const referenceTerms = ascReference ? buildReferenceSearchTerms(ascReference) : [];
-
-  const out: string[] = [];
-  const push = (value: string) => {
-    const trimmed = value.replace(/\s+/g, ' ').trim();
-    if (trimmed && !out.some(item => normalizeLooseText(item) === normalizeLooseText(trimmed))) {
-      out.push(trimmed);
-    }
-  };
-
-  if (branches.length === 0) {
-    // No positive text branches (auditor-only or citation-only search) —
-    // fetch by firm name / citation spellings; validation enforces the rest.
-    for (const term of auditorTerms.slice(0, 4)) push(term);
-    for (const term of referenceTerms) push(term);
-    return { queries: out, requiredBranches: out.length };
-  }
-
-  // Every OR branch is a required retrieval lane.
-  for (const branch of branches) push(branch);
-  // Firm-covered negative branches (audit R1 slice 2): when the planner
-  // dropped an unanchored OR disjunct and an audit firm is in scope, the
-  // firm-name lanes ARE that branch's retrieval — candidates fetched by
-  // firm, the branch enforced by full-expression validation. ALL spelling
-  // variants go in ("PwC" and "PricewaterhouseCoopers" are different text
-  // searches; a filing typically writes only one), mirroring the
-  // auditor-only path above. Promoted into the REQUIRED zone so branch
-  // reservations protect them from a dominant anchored branch, exactly
-  // like any other disjunct.
-  if (droppedUnanchored > 0 && auditorTerms.length > 0) {
-    for (const term of auditorTerms.slice(0, 4)) push(term);
-  }
-  const requiredBranches = out.length;
-
-  // Precision boost: pair each branch with the auditor name when one is set.
-  if (auditorTerms.length > 0) {
-    for (const branch of branches) push(`${branch} ${auditorTerms[0]}`);
-  }
-  // Citation filter: candidates that pair the branch with the citation are
-  // far more likely to survive validation than the branch alone.
-  if (referenceTerms.length > 0) {
-    for (const branch of branches) push(`${branch} ${referenceTerms[0]}`);
-  }
-  // Recall fallback: legacy flat candidates catch documented equivalents.
-  for (const candidate of buildBooleanCandidateQueries(query)) push(candidate);
-
-  return { queries: out, requiredBranches };
-}
-
-function buildSemanticCandidateQueries(serverQuery: string, filters: SearchFilters): string[] {
-  const baseQuery = serverQuery.trim();
-  const queries: string[] = [];
-  const auditorTerms = buildAuditorSearchTerms(filters.accountant);
-  const sectionKeywords = filters.sectionKeywords.trim();
-  const ascReference = parseAccountingReference(filters.ascReference || '');
-  const referenceTerms = ascReference ? buildReferenceSearchTerms(ascReference) : [];
-
-  function pushQuery(value: string) {
-    const trimmed = value.replace(/\s+/g, ' ').trim();
-    if (!trimmed) return;
-    if (!queries.some(item => normalizeLooseText(item) === normalizeLooseText(trimmed))) {
-      queries.push(trimmed);
-    }
-  }
-
-  if (baseQuery && auditorTerms.length > 0 && sectionKeywords) {
-    for (const auditorTerm of auditorTerms.slice(0, 3)) {
-      pushQuery(`${baseQuery} ${auditorTerm} ${sectionKeywords}`);
-    }
-  }
-
-  if (baseQuery && auditorTerms.length > 0) {
-    for (const auditorTerm of auditorTerms.slice(0, 4)) {
-      pushQuery(`${baseQuery} ${auditorTerm}`);
-    }
-  }
-
-  if (baseQuery && sectionKeywords) {
-    pushQuery(`${baseQuery} ${sectionKeywords}`);
-  }
-
-  // Citation-anchored lanes: paired with the query when there is one, or as
-  // standalone lanes for a citation-only search ("every filing citing ASC
-  // 842") — validation then enforces the citation on each candidate.
-  if (referenceTerms.length > 0) {
-    if (baseQuery) pushQuery(`${baseQuery} ${referenceTerms[0]}`);
-    else for (const term of referenceTerms) pushQuery(term);
-  }
-
-  pushQuery(baseQuery);
-
-  return queries.slice(0, 8);
-}
-
 async function getCompanySubmissionsCached(cik: string): Promise<SecSubmission | null> {
   if (!cik) return null;
   if (!companySubmissionsCache.has(cik)) {
-    companySubmissionsCache.set(cik, fetchCompanySubmissions(cik));
+    const loadPromise = fetchCompanySubmissions(cik);
+    companySubmissionsCache.set(cik, loadPromise);
+    void loadPromise.then(result => {
+      if (!result && companySubmissionsCache.get(cik) === loadPromise) {
+        companySubmissionsCache.delete(cik);
+      }
+    });
   }
   return companySubmissionsCache.get(cik)!;
 }
@@ -644,9 +511,7 @@ async function getCompanySubmissionsCached(cik: string): Promise<SecSubmission |
 async function getCompanyMetadata(cik: string): Promise<CompanyResearchMetadata | null> {
   if (!cik) return null;
   if (!companyMetadataCache.has(cik)) {
-    companyMetadataCache.set(
-      cik,
-      (async () => {
+    const loadPromise = (async () => {
         const submissions = await getCompanySubmissionsCached(cik);
         if (!submissions) {
           return null;
@@ -683,8 +548,13 @@ async function getCompanyMetadata(cik: string): Promise<CompanyResearchMetadata 
           fileNumbersByAccession,
           primaryDocumentsByAccession,
         };
-      })()
-    );
+      })();
+    companyMetadataCache.set(cik, loadPromise);
+    void loadPromise.then(result => {
+      if (!result && companyMetadataCache.get(cik) === loadPromise) {
+        companyMetadataCache.delete(cik);
+      }
+    });
   }
 
   return companyMetadataCache.get(cik)!;
@@ -1000,19 +870,6 @@ function matchesBaseFilters(result: FilingResearchResult, filters: SearchFilters
   return true;
 }
 
-function requiresCompanyMetadata(filters: SearchFilters): boolean {
-  const needsCompanyFields = Boolean(
-    filters.sicCode.trim() ||
-    filters.fileNumber.trim() ||
-    filters.stateOfInc.trim() ||
-    filters.headquarters.trim() ||
-    filters.exchange.length > 0 ||
-    filters.fiscalYearEnd.trim()
-  );
-
-  return needsCompanyFields;
-}
-
 function matchesSignalFilters(
   result: FilingResearchResult,
   filters: SearchFilters,
@@ -1045,10 +902,9 @@ function matchesSignalFilters(
   }
 
   if (filters.accountant.trim()) {
-    // Authoritative PCAOB Form AP auditor wins; the auditor detected in the
-    // filing text is only a fallback where Form AP has no coverage. This is why
-    // a KPMG filter no longer surfaces a filing whose auditor of record is a
-    // different firm (the ENZON 8-K / EisnerAmper case).
+    // Resolved filing-date Form AP evidence wins; the auditor detected in the
+    // filing text is a fallback for missing, ambiguous, fund, or benefit-plan
+    // events. This prevents today's issuer firm from rewriting old filings.
     const effectiveAuditor = result.registeredAuditor?.trim() || result.auditor;
     if (!matchesAuditorSelection(effectiveAuditor, filters.accountant)) {
       return false;
@@ -1206,15 +1062,25 @@ export function mapSearchHit(hit: EdgarSearchHit): FilingResearchResult {
     headquarters: firstString(source?.biz_locations),
     fileNumber: firstString(source?.file_num),
     auditor: canonicalizeAuditorInput(source?.auditor || ''),
+    // Enriched search emits a scalar only for a filing-date resolved Form AP
+    // event. Legacy/mocked responses without a status remain compatible.
+    registeredAuditor: source?.auditor && (
+      !source.auditor_resolution_status || source.auditor_resolution_status === 'resolved'
+    )
+      ? canonicalizeAuditorInput(source.auditor)
+      : undefined,
+    registeredAuditorReportDate: source?.auditor_report_date || undefined,
+    registeredAuditorBasis: source?.auditor_basis || undefined,
+    registeredAuditorResolutionStatus: source?.auditor_resolution_status || undefined,
     acceleratedStatus: joinStrings(source?.accelerated_status),
   };
 }
 
 /**
- * One-call batch enrichment from the Supabase facet store: current auditor
- * (PCAOB Form AP), SIC, tickers. Replaces per-filing text-scraping for these
- * display fields — exact data, no extra EDGAR round-trips. Failure is a no-op
- * so search never depends on the facet store being reachable.
+ * Batch enrichment from the facet store. Company profile data comes from the
+ * issuer-level GET contract; filing auditors come from the date-aware POST
+ * contract. Never copy the GET contract's current auditor onto a filing.
+ * Failure is a no-op so search can fall back to filing-text evidence.
  */
 export async function enrichResultsFromFacetStore(
   results: FilingResearchResult[]
@@ -1224,21 +1090,19 @@ export async function enrichResultsFromFacetStore(
   ));
   if (ciks.length === 0) return results;
 
+  await hydrateRegisteredAuditors(results);
+
   try {
     const response = await fetch(`/api/enrich?ciks=${ciks.slice(0, 200).join(',')}`);
     if (!response.ok) return results;
     const payload = await response.json() as { companies?: Record<string, {
-      auditor?: string; sic?: string | null; sic_description?: string | null;
+      sic?: string | null; sic_description?: string | null;
       tickers?: string[]; exchanges?: string[]; state_of_incorporation?: string | null;
     }> };
     const companies = payload.companies ?? {};
     for (const result of results) {
       const info = companies[String(Number(result.cik))];
       if (!info) continue;
-      if (info.auditor) {
-        result.registeredAuditor = info.auditor;
-        result.auditor = info.auditor;
-      }
       if (info.sic && !result.sic) result.sic = info.sic;
       if (info.sic_description) result.sicDescription = info.sic_description;
       if (info.tickers?.length && (!result.tickers || result.tickers.length === 0)) result.tickers = info.tickers;
@@ -1251,27 +1115,56 @@ export async function enrichResultsFromFacetStore(
   return results;
 }
 
-// Populate ONLY the authoritative Form AP auditor (not the display fields), so
-// the wave's auditor filter can decide on the auditor of record before the
-// final display enrichment runs. Batched by CIK; a facet-store miss leaves
-// registeredAuditor undefined and the filter falls back to text detection.
+// Populate only filing-date Form AP evidence, keyed by result rather than CIK
+// so the same issuer's old and new filings can resolve to different firms.
+// A non-resolved event leaves registeredAuditor undefined and the filter falls
+// back to filing-text detection.
 async function hydrateRegisteredAuditors(results: FilingResearchResult[]): Promise<void> {
-  const ciks = Array.from(new Set(
-    results
-      .filter(result => result.registeredAuditor === undefined)
-      .map(result => Number(result.cik))
-      .filter(value => Number.isFinite(value) && value > 0)
-  ));
-  if (ciks.length === 0) return;
+  const filings = results
+    .filter(result =>
+      result.registeredAuditor === undefined
+      && result.registeredAuditorResolutionStatus === undefined
+    )
+    .map(result => ({ result, cik: Number(result.cik) }))
+    .filter(({ result, cik }) =>
+      Number.isFinite(cik) && cik > 0 && isValidIsoDate(result.fileDate)
+    )
+    .slice(0, 200);
+  if (filings.length === 0) return;
 
   try {
-    const response = await fetch(`/api/enrich?ciks=${ciks.slice(0, 200).join(',')}`);
+    const response = await fetch('/api/enrich', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        filings: filings.map(({ result, cik }) => ({
+          key: result.id,
+          cik: String(cik),
+          fileDate: result.fileDate,
+        })),
+      }),
+    });
     if (!response.ok) return;
-    const payload = await response.json() as { companies?: Record<string, { auditor?: string }> };
-    const companies = payload.companies ?? {};
-    for (const result of results) {
-      const info = companies[String(Number(result.cik))];
-      if (info?.auditor) result.registeredAuditor = info.auditor;
+    const payload = await response.json() as { filings?: Record<string, {
+      auditor?: string | null;
+      auditReportDate?: string | null;
+      basis?: string | null;
+      resolutionStatus?: string;
+    }> };
+    const evidenceByKey = payload.filings ?? {};
+    for (const { result } of filings) {
+      const evidence = evidenceByKey[result.id];
+      if (!evidence) continue;
+      result.registeredAuditorResolutionStatus = evidence.resolutionStatus;
+      result.registeredAuditorReportDate = evidence.auditReportDate || undefined;
+      result.registeredAuditorBasis = evidence.basis || undefined;
+      if (evidence.resolutionStatus === 'resolved' && evidence.auditor) {
+        const canonical = canonicalizeAuditorInput(evidence.auditor);
+        if (canonical) {
+          result.registeredAuditor = canonical;
+          result.auditor = canonical;
+        }
+      }
     }
   } catch {
     // facet store unreachable — auditor filter falls back to text detection
@@ -1338,13 +1231,12 @@ async function hydrateResultSignals(result: FilingResearchResult, abortSignal?: 
     abortSignal,
     onUpstreamAttempts
   );
-  result.auditor = filingSignal.auditor;
+  // Filing text is fallback evidence. A resolved date-effective Form AP value
+  // drives both filtering and display; otherwise a later validation pass could
+  // make a KPMG-filtered result render blank or as a conflicting text guess.
+  result.auditor = result.registeredAuditor || filingSignal.auditor;
   result.acceleratedStatus = filingSignal.acceleratedStatus;
   return filingSignal;
-}
-
-function shouldUseEnrichedSearch(useEnrichedSearch: boolean): boolean {
-  return useEnrichedSearch && isEnrichedSearchEnabled();
 }
 
 function buildEnrichedSearchParams(
@@ -1355,112 +1247,28 @@ function buildEnrichedSearchParams(
 ): EnrichedSearchParams {
   const requiresClientValidation = Boolean(
     filters.sectionKeywords.trim() ||
-    filters.accountant.trim() ||
     filters.acceleratedStatus.length > 0 ||
     filters.accountingFramework.trim() ||
-    filters.sicCode.trim() ||
     filters.fileNumber.trim() ||
     filters.stateOfInc.trim() ||
     filters.headquarters.trim() ||
     filters.exchange.length > 0 ||
     filters.fiscalYearEnd.trim()
   );
+  const hasAuthoritativeFacet = Boolean(filters.accountant.trim() || filters.sicCode.trim());
   return {
-    // The enriched endpoint is a candidate accelerator, not an authority for
-    // filing-text predicates. Route those searches through EFTS and validate
-    // locally instead of silently trusting unsupported query parameters.
-    useEnrichedSearch: shouldUseEnrichedSearch(useEnrichedSearch) && !requiresClientValidation,
+    // Auditor and SIC are authoritative facets on /api/es-search. Keep that
+    // lane available even when another predicate still needs client-side
+    // validation; disabling the whole route for `accountant` made an auditor
+    // search depend on the firm's name happening to appear in EFTS text.
+    useEnrichedSearch:
+      shouldUseEnrichedSearch(useEnrichedSearch) &&
+      (!requiresClientValidation || hasAuthoritativeFacet),
+    auditor: filters.accountant.trim() || undefined,
+    sicCode: filters.sicCode.trim() || undefined,
     onDegraded,
     onCoverage,
   };
-}
-
-export function canUseInstantEnrichedSearch(
-  _query: string,
-  filters: SearchFilters,
-  mode: ResearchSearchMode,
-  useEnrichedSearch = false
-): boolean {
-  if (!shouldUseEnrichedSearch(useEnrichedSearch)) {
-    return false;
-  }
-
-  if (mode !== 'semantic') {
-    return false;
-  }
-
-  return !(
-    filters.sectionKeywords.trim() ||
-    filters.accountant.trim() ||
-    filters.acceleratedStatus.length > 0 ||
-    filters.accountingFramework.trim() ||
-    filters.sicCode.trim() ||
-    filters.fileNumber.trim() ||
-    filters.stateOfInc.trim() ||
-    filters.headquarters.trim() ||
-    filters.exchange.length > 0 ||
-    filters.fiscalYearEnd.trim()
-  );
-}
-
-function requiresTextFiltering(
-  filters: SearchFilters,
-  rawQuery: string,
-  mode: ResearchSearchMode,
-  useEnrichedSearch: boolean
-): boolean {
-  if (mode === 'boolean') {
-    const parsed = parseBooleanQuery(rawQuery);
-    if (parsed.expression) {
-      // A bare quoted phrase is matched exactly by EDGAR full-text search, so
-      // re-opening each candidate to confirm what the index already proved
-      // only spends the wall-clock budget that caps recall. Any structured
-      // filter still needs the document, so it keeps local validation.
-      const delegable =
-        eftsDelegablePhrase(parsed.expression) &&
-        !filters.accountant.trim() &&
-        filters.acceleratedStatus.length === 0 &&
-        !filters.sectionKeywords.trim() &&
-        !filters.accountingFramework.trim() &&
-        !(filters.ascReference || '').trim() &&
-        !(filters.sectionScope || '').trim();
-      return !delegable;
-    }
-    // An auditor-only Boolean search ("auditor:KPMG") has no text expression but
-    // still needs signal hydration to confirm the firm on each candidate.
-    return (
-      filters.accountant.trim().length > 0 ||
-      filters.acceleratedStatus.length > 0 ||
-      (filters.ascReference || '').trim().length > 0 ||
-      (filters.sectionScope || '').trim().length > 0
-    );
-  }
-
-  if (filters.sectionKeywords.trim()) {
-    return true;
-  }
-
-  if (filters.accountingFramework.trim()) {
-    return true;
-  }
-
-  if ((filters.ascReference || '').trim()) {
-    return true;
-  }
-
-  if ((filters.sectionScope || '').trim()) {
-    return true;
-  }
-
-  if (canUseInstantEnrichedSearch(rawQuery, filters, mode, useEnrichedSearch)) {
-    return false;
-  }
-
-  if (filters.accountant.trim() || filters.acceleratedStatus.length > 0) {
-    return true;
-  }
-
-  return false;
 }
 
 export async function executeFilingResearchSearch({
@@ -1631,45 +1439,9 @@ export async function executeFilingResearchSearch({
   // ── Wave-based collect + validate (text-filtered deep refinement) ──
   const signalMap = new Map<string, FilingSignal>();
   const filteredResults: FilingResearchResult[] = [];
-  // Filing-text concurrency. Four keeps burst pressure on /api/sec-proxy low
-  // enough to leave headroom for filing previews while still validating quickly.
-  const batchSize = 4;
-  const progressCallback = onProgress;
-  const progressInterval = 15;
   const waveStartTime = Date.now();
-  const maxWaveTimeMs = 45_000; // Stop after 45 seconds to avoid endless validation
-  // Per-run request budgets that stay well under the /api/sec-proxy limit (180
-  // requests / user / 5 min) so a single Boolean run can never self-inflict a
-  // 429 or starve filing previews. When a budget is hit the run stops and is
-  // reported partial rather than pretending the corpus was exhausted.
-  // A delegated phrase opens no documents, so the only cost is EFTS paging —
-  // a different host from the document proxy, and far cheaper per request.
-  // Holding such a run to the document-era budget capped recall for no reason.
-  const MAX_PAGE_REQUESTS = delegatedToEfts ? 240 : 60;
-  const MAX_DOC_ATTEMPTS = 120;
-  // True end-to-end ceilings (audit R1): the two counters above bound
-  // LOGICAL work (pages fire per HTTP attempt already; documents by
-  // candidate). These bound the measured HTTP attempts themselves, so
-  // retries and parent-document fallbacks can never push real request
-  // counts past what the run declares.
-  const MAX_DOC_HTTP_ATTEMPTS = 180;
-  const MAX_PRESCREEN_REQUESTS = 24;
-  // Fair-share reservations (WP4). Budgets used to be first-come-first-served:
-  // a broad first OR branch could spend all 120 document attempts (or the wall
-  // clock) before a later required branch validated ANYTHING, so a rare
-  // exclusive disjunct was collected, counted — and then silently absent from
-  // results. Each still-unprocessed required branch now keeps a floor of
-  // documents, pages, and time reserved out of every earlier branch's spend.
-  const DOC_RESERVE_PER_BRANCH = Math.min(24, Math.floor(MAX_DOC_ATTEMPTS / Math.max(requiredBooleanBranches, 1)));
-  const PAGE_RESERVE_PER_BRANCH = 2;
-  const TIME_RESERVE_PER_BRANCH_MS = 6_000;
+  const policy = buildWaveExecutionPolicy(delegatedToEfts, requiredBooleanBranches);
   const branchLedgers: BranchCoverageEntry[] = [];
-  // Server pre-screen sizing. The chunk matches the route's own per-request cap;
-  // the wave cap bounds how long verdict-gathering can delay the fetches it is
-  // meant to make cheaper, and the reserve keeps 15s of every wave for them.
-  const PRESCREEN_CHUNK = 40;
-  const PRESCREEN_MAX_PER_WAVE = 120;
-  const PRESCREEN_MIN_WAVE_RESERVE = 15_000;
   // Shared wave counters, boxed so the collect/validate stages can advance
   // them. unvalidatedFetchFailures counts candidates that matched upstream
   // but whose text could not be fetched for local re-validation — surfaced so
@@ -1681,6 +1453,7 @@ export async function executeFilingResearchSearch({
     docAttempts: 0,
     docHttpAttempts: 0,
     prescreenRequests: 0,
+    prescreenCacheHits: 0,
     validationExamined: 0,
     unvalidatedFetchFailures: 0,
     completedQueryVariants: 0,
@@ -1688,6 +1461,7 @@ export async function executeFilingResearchSearch({
     budgetExhausted: false,
     validationTimedOut: false,
     branchDocBudgetTruncated: false,
+    branchPageBudgetTruncated: false,
   };
   // Failure reasons behind those exclusions, so the notice can name the actual
   // cause (rate limit vs unreadable document) instead of guessing.
@@ -1698,45 +1472,92 @@ export async function executeFilingResearchSearch({
     ? filteredServerQueries.slice(0, Math.max(requiredBooleanBranches, 2))
     : filteredServerQueries;
 
-  const waveContext: WaveStageContext = {
-    run,
-    hitMap,
-    signalMap,
-    filteredResults,
-    fetchFailureKinds,
-    query,
-    filters,
-    mode,
-    formTypes,
-    formScope,
-    excludeExhibits,
-    needsCompanyMetadata,
-    needsTextFiltering,
-    booleanExpression: parsedBooleanQuery.expression,
-    delegatedToEfts,
-    hydratePerDocumentSignals,
-    useEnrichedSearch,
-    includeExhibits,
-    entityCik,
-    preferRelevance,
-    displayLimit,
-    wavePerQueryLimit,
-    totalServerQueries: filteredServerQueries.length,
-    batchSize,
-    progressInterval,
-    waveStartTime,
-    maxWaveTimeMs,
-    MAX_PAGE_REQUESTS,
-    MAX_DOC_ATTEMPTS,
-    PAGE_RESERVE_PER_BRANCH,
-    PRESCREEN_CHUNK,
-    MAX_PRESCREEN_REQUESTS,
-    PRESCREEN_MAX_PER_WAVE,
-    PRESCREEN_MIN_WAVE_RESERVE,
-    signal,
-    onDegraded,
-    progressCallback,
-    captureUpstreamCoverage,
+  const waveContext: WaveStageContext<FilingResearchResult, FilingSignal> = {
+    state: { run, hitMap, signalMap, filteredResults, fetchFailureKinds },
+    search: {
+      query,
+      filters,
+      mode,
+      formTypes,
+      formScope,
+      excludeExhibits,
+      needsCompanyMetadata,
+      needsTextFiltering,
+      booleanExpression: parsedBooleanQuery.expression,
+      delegatedToEfts,
+      hydratePerDocumentSignals,
+      useEnrichedSearch,
+      includeExhibits,
+      entityCik,
+      preferRelevance,
+      displayLimit,
+      wavePerQueryLimit,
+      totalServerQueries: filteredServerQueries.length,
+    },
+    policy,
+    lifecycle: {
+      waveStartTime,
+      signal,
+      onDegraded,
+      progressCallback: onProgress,
+      captureUpstreamCoverage,
+    },
+  };
+
+  const waveClients: WaveExecutionClients<FilingResearchResult, FilingSignal> = {
+    searchCandidates: ({
+      candidateQuery,
+      formTypes: candidateFormTypes,
+      dateFrom,
+      dateTo,
+      entityName,
+      resultLimit,
+      filters: candidateFilters,
+      useEnrichedSearch: candidateUseEnrichedSearch,
+      includeExhibits: candidateIncludeExhibits,
+      entityCik: candidateEntityCik,
+      signal: candidateSignal,
+      onDegraded: candidateOnDegraded,
+      onCoverage: candidateOnCoverage,
+      upstreamRequestBudget,
+      onUpstreamPage,
+    }) => searchEdgarFilings(
+      candidateQuery,
+      candidateFormTypes,
+      dateFrom,
+      dateTo,
+      entityName,
+      resultLimit,
+      {
+        ...buildEnrichedSearchParams(
+          candidateFilters,
+          candidateUseEnrichedSearch && !candidateIncludeExhibits,
+          candidateOnDegraded,
+          candidateOnCoverage
+        ),
+        entityCik: candidateEntityCik,
+        upstreamRequestBudget,
+        onUpstreamPage,
+        signal: candidateSignal,
+      }
+    ),
+    mapSearchHit,
+    uniqueById,
+    hydrateCompanyMetadataBatch,
+    matchesBaseFilters,
+    delay,
+    prescreenBooleanCandidates,
+    hydrateRegisteredAuditors,
+    getSignalCacheKey,
+    hydrateResultSignals,
+    resolveScopedText: (filingText, sectionScope, resultFormType) => {
+      const resolved = resolveSectionScope(sectionScope, resultFormType);
+      return resolved ? extractResolvedSection(filingText, resolved) : '';
+    },
+    matchesBooleanQuery: booleanQueryMatches,
+    matchesSignalFilters,
+    annotateResultMatchContext,
+    sortResearchResults,
   };
 
   for (const [queryIndex, candidateQuery] of waveQueryVariants.entries()) {
@@ -1744,11 +1565,15 @@ export async function executeFilingResearchSearch({
     // been attempted — otherwise a broad first branch that fills the visible
     // rows would hide a rare second disjunct (the mezzanine-OR-temporary bug).
     if (filteredResults.length >= displayLimit && queryIndex >= requiredBooleanBranches) break;
-    if (Date.now() - waveStartTime > maxWaveTimeMs) {
+    if (Date.now() - waveStartTime > policy.maxWaveTimeMs) {
       run.validationTimedOut = true;
       break;
     }
-    if (run.pageRequests >= MAX_PAGE_REQUESTS || run.docAttempts >= MAX_DOC_ATTEMPTS || run.docHttpAttempts >= MAX_DOC_HTTP_ATTEMPTS) {
+    if (
+      run.pageRequests >= policy.maxPageRequests ||
+      run.docAttempts >= policy.maxDocAttempts ||
+      run.docHttpAttempts >= policy.maxDocHttpAttempts
+    ) {
       run.budgetExhausted = true;
       break;
     }
@@ -1769,12 +1594,11 @@ export async function executeFilingResearchSearch({
     };
     branchLedgers.push(ledger);
 
-    const collected = await collectLaneCandidates(waveContext, {
-      candidateQuery,
-      queryIndex,
-      laterRequiredBranches,
-      ledger,
-    });
+    const collected = await collectLaneCandidates(
+      waveContext,
+      { candidateQuery, queryIndex, laterRequiredBranches, ledger },
+      waveClients
+    );
     if (collected.status === 'error') {
       lastSearchError = collected.error;
       if (mode !== 'boolean') throw lastSearchError;
@@ -1782,15 +1606,20 @@ export async function executeFilingResearchSearch({
     }
     if (collected.status === 'empty') continue;
 
-    await validateLaneCandidates(waveContext, {
-      ledger,
-      branchDocCap: MAX_DOC_ATTEMPTS - laterRequiredBranches * DOC_RESERVE_PER_BRANCH,
-      branchTimeCapMs: maxWaveTimeMs - laterRequiredBranches * TIME_RESERVE_PER_BRANCH_MS,
-      isRequiredBooleanBranch: mode === 'boolean' && queryIndex < requiredBooleanBranches,
-      branchResultStart: filteredResults.length,
-    }, collected.waveCandidates);
+    await validateLaneCandidates(
+      waveContext,
+      {
+        ledger,
+        branchDocCap: policy.maxDocAttempts - laterRequiredBranches * policy.docReservePerBranch,
+        branchTimeCapMs: policy.maxWaveTimeMs - laterRequiredBranches * policy.timeReservePerBranchMs,
+        isRequiredBooleanBranch: mode === 'boolean' && queryIndex < requiredBooleanBranches,
+        branchResultStart: filteredResults.length,
+      },
+      collected.waveCandidates,
+      waveClients
+    );
 
-    if (Date.now() - waveStartTime >= maxWaveTimeMs && run.validationExamined < hitMap.size) {
+    if (Date.now() - waveStartTime >= policy.maxWaveTimeMs && run.validationExamined < hitMap.size) {
       run.validationTimedOut = true;
       break;
     }
@@ -1803,7 +1632,7 @@ export async function executeFilingResearchSearch({
 
   // A lane truncated at its fair-share cap means the run is partial for the
   // same reason a global cap does — the budget, not the corpus, ended it.
-  if (run.branchDocBudgetTruncated) run.budgetExhausted = true;
+  if (run.branchDocBudgetTruncated || run.branchPageBudgetTruncated) run.budgetExhausted = true;
 
   if (filteredResults.length === 0 && lastSearchError) throw lastSearchError;
 
@@ -1826,15 +1655,16 @@ export async function executeFilingResearchSearch({
     completedQueryVariants: run.completedQueryVariants,
     totalQueryVariants: waveQueryVariants.length,
     branchLedgers,
-    maxPageRequests: MAX_PAGE_REQUESTS,
-    maxDocAttempts: MAX_DOC_ATTEMPTS,
+    maxPageRequests: policy.maxPageRequests,
+    maxDocAttempts: policy.maxDocAttempts,
     work: {
       pageRequests: run.pageRequests,
       docFetches: run.docAttempts,
       docHttpAttempts: run.docHttpAttempts,
       prescreenRequests: run.prescreenRequests,
-      maxDocHttpAttempts: MAX_DOC_HTTP_ATTEMPTS,
-      maxPrescreenRequests: MAX_PRESCREEN_REQUESTS,
+      prescreenCacheHits: run.prescreenCacheHits,
+      maxDocHttpAttempts: policy.maxDocHttpAttempts,
+      maxPrescreenRequests: policy.maxPrescreenRequests,
     },
   });
   onCoverage?.(finalized.coverage);
@@ -1866,714 +1696,7 @@ export function rankAndLimitResults(
   return sortResearchResults(rolledUp, options.preferRelevance).slice(0, Math.max(options.displayLimit, 0));
 }
 
-/**
- * Shared mutable counters of one wave run. Boxed so the collect/validate
- * stages can advance them; everything else in the context is read-only or a
- * reference type.
- */
-interface WaveRunState {
-  pageRequests: number;
-  docAttempts: number;
-  /** Document HTTP attempts, retries and parent-doc fallbacks included. */
-  docHttpAttempts: number;
-  /** Server pre-screen chunk requests issued. */
-  prescreenRequests: number;
-  validationExamined: number;
-  unvalidatedFetchFailures: number;
-  completedQueryVariants: number;
-  lastProgressCount: number;
-  budgetExhausted: boolean;
-  validationTimedOut: boolean;
-  branchDocBudgetTruncated: boolean;
-}
 
-/** Everything the wave stages need, injected once per run (WP7). */
-interface WaveStageContext {
-  run: WaveRunState;
-  hitMap: Map<string, { hit: EdgarSearchHit; queryPriority: number; score: number }>;
-  signalMap: Map<string, FilingSignal>;
-  filteredResults: FilingResearchResult[];
-  fetchFailureKinds: Map<string, number>;
-  query: string;
-  filters: SearchFilters;
-  mode: ResearchSearchMode;
-  formTypes: string;
-  formScope: ReturnType<typeof parseFormScope>;
-  excludeExhibits: boolean;
-  needsCompanyMetadata: boolean;
-  needsTextFiltering: boolean;
-  booleanExpression: BooleanSearchNode | null;
-  delegatedToEfts: boolean;
-  hydratePerDocumentSignals: boolean;
-  useEnrichedSearch: boolean;
-  includeExhibits: boolean;
-  entityCik: string;
-  preferRelevance: boolean;
-  displayLimit: number;
-  wavePerQueryLimit: number;
-  totalServerQueries: number;
-  batchSize: number;
-  progressInterval: number;
-  waveStartTime: number;
-  maxWaveTimeMs: number;
-  MAX_PAGE_REQUESTS: number;
-  MAX_DOC_ATTEMPTS: number;
-  PAGE_RESERVE_PER_BRANCH: number;
-  PRESCREEN_CHUNK: number;
-  MAX_PRESCREEN_REQUESTS: number;
-  PRESCREEN_MAX_PER_WAVE: number;
-  PRESCREEN_MIN_WAVE_RESERVE: number;
-  signal?: AbortSignal;
-  onDegraded?: (message: string) => void;
-  progressCallback?: (results: FilingResearchResult[]) => void;
-  captureUpstreamCoverage: (coverage: SearchCandidateCoverage) => void;
-}
-
-interface WaveLane {
-  candidateQuery: string;
-  queryIndex: number;
-  laterRequiredBranches: number;
-  ledger: BranchCoverageEntry;
-}
-
-/**
- * Candidate collection for one retrieval lane (WP7 stage: collectCandidates).
- * Pages EDGAR within the lane's fair-share reserve, dedups against the run's
- * hit map while recording branch attribution FIRST, hydrates metadata, and
- * applies the deterministic base filters. Returns 'error' for the
- * orchestrator to record (non-boolean callers rethrow there), 'empty' when
- * the lane surfaced nothing new, else the wave candidates for validation.
- */
-async function collectLaneCandidates(
-  context: WaveStageContext,
-  lane: WaveLane
-): Promise<
-  | { status: 'error'; error: Error }
-  | { status: 'empty' }
-  | { status: 'ok'; waveCandidates: FilingResearchResult[] }
-> {
-  const {
-    run, hitMap, filters, mode, formTypes, formScope, excludeExhibits, needsCompanyMetadata,
-    useEnrichedSearch, includeExhibits, entityCik, wavePerQueryLimit, totalServerQueries,
-    MAX_PAGE_REQUESTS, PAGE_RESERVE_PER_BRANCH, signal, onDegraded, captureUpstreamCoverage,
-  } = context;
-  const { candidateQuery, queryIndex, laterRequiredBranches, ledger } = lane;
-
-  let queryBatchHits: EdgarSearchHit[];
-  try {
-    // The page budget counts ACTUAL upstream HTTP pages via onUpstreamPage —
-    // one searchEdgarFilings call may issue many EFTS pages (page size is
-    // ~10 hits), so counting calls understated real request volume by up to
-    // 50x (readiness finding F-07). The result cap is also clamped to the
-    // remaining page budget so a single call cannot blow through it.
-    // A lane may not page later required branches out of their reserve —
-    // but a required lane always keeps at least its own reserve.
-    let remainingPages = Math.max(0, MAX_PAGE_REQUESTS - run.pageRequests - laterRequiredBranches * PAGE_RESERVE_PER_BRANCH);
-    if (ledger.required) {
-      remainingPages = Math.max(remainingPages, Math.min(PAGE_RESERVE_PER_BRANCH, MAX_PAGE_REQUESTS - run.pageRequests));
-    }
-    queryBatchHits = await searchEdgarFilings(
-      candidateQuery,
-      formTypes,
-      filters.dateFrom || undefined,
-      filters.dateTo || undefined,
-      filters.entityName || undefined,
-      Math.min(wavePerQueryLimit, remainingPages * 10),
-      {
-        ...buildEnrichedSearchParams(filters, useEnrichedSearch && !includeExhibits, onDegraded, (coverage: SearchCandidateCoverage) => {
-          ledger.collectionComplete = coverage.complete;
-          captureUpstreamCoverage(coverage);
-        }),
-        entityCik: entityCik || undefined,
-        onUpstreamPage: () => { run.pageRequests += 1; ledger.pages += 1; },
-        signal,
-      }
-    );
-  } catch (error) {
-    ledger.incompleteReason = 'error';
-    return { status: 'error', error: error instanceof Error ? error : new Error('EDGAR search failed') };
-  }
-
-  // Deduplicate against previously seen hits — but record what this lane
-  // surfaced FIRST, so branch attribution survives the dedup (a hit shared
-  // with an earlier lane still counts as surfaced by this one).
-  ledger.candidatesSurfaced = queryBatchHits.length;
-  const newHits: EdgarSearchHit[] = [];
-  for (const hit of queryBatchHits) {
-    if (!hitMap.has(hit._id)) {
-      hitMap.set(hit._id, { hit, queryPriority: totalServerQueries - queryIndex, score: hit._score });
-      newHits.push(hit);
-    }
-  }
-  ledger.candidatesNew = newHits.length;
-
-  if (newHits.length === 0) {
-    run.completedQueryVariants += 1;
-    ledger.exhausted = ledger.collectionComplete !== false;
-    if (mode === 'boolean') await delay(120);
-    return { status: 'empty' };
-  }
-
-  // Map, hydrate metadata, and filter this wave of candidates
-  let waveCandidates = uniqueById(newHits.map(mapSearchHit));
-  if (needsCompanyMetadata) waveCandidates = await hydrateCompanyMetadataBatch(waveCandidates);
-  waveCandidates = waveCandidates.filter(result => matchesBaseFilters(result, filters, formScope, excludeExhibits));
-  // Candidates rejected by deterministic metadata filters have still been
-  // examined for this validation pass.
-  run.validationExamined += Math.max(0, newHits.length - waveCandidates.length);
-  ledger.examined += Math.max(0, newHits.length - waveCandidates.length);
-
-  return { status: 'ok', waveCandidates };
-}
-
-/**
- * Validation for one lane's collected candidates (WP7 stage:
- * validateDocuments). Server pre-screen, per-chunk text hydration, section
- * scoping, Boolean and signal filtering, result annotation, progress
- * publication, and the lane's ledger finalization — bounded by the lane's
- * fair-share document and time caps.
- */
-async function validateLaneCandidates(
-  context: WaveStageContext,
-  lane: {
-    ledger: BranchCoverageEntry;
-    branchDocCap: number;
-    branchTimeCapMs: number;
-    isRequiredBooleanBranch: boolean;
-    branchResultStart: number;
-  },
-  waveCandidatesInput: FilingResearchResult[]
-): Promise<void> {
-  const {
-    run, signalMap, filteredResults, fetchFailureKinds, query, filters, mode, needsTextFiltering,
-    booleanExpression, delegatedToEfts, hydratePerDocumentSignals, preferRelevance, displayLimit,
-    batchSize, progressInterval, waveStartTime, maxWaveTimeMs, MAX_DOC_ATTEMPTS,
-    PRESCREEN_CHUNK, PRESCREEN_MAX_PER_WAVE, PRESCREEN_MIN_WAVE_RESERVE, MAX_PRESCREEN_REQUESTS, signal, progressCallback,
-  } = context;
-  const { ledger, branchDocCap, branchTimeCapMs, isRequiredBooleanBranch, branchResultStart } = lane;
-  let waveCandidates = waveCandidatesInput;
-
-  // ── Server-side pre-screen ──
-  // Ask the API which candidates satisfy the expression before the browser
-  // spends a document download on each one. The server runs the SAME matcher
-  // over the SAME cached text, so a validated non-match is exactly the verdict
-  // the loop below would have reached — it just costs no bytes to reach it.
-  //
-  // This is why it raises recall rather than merely saving bandwidth: rejects
-  // never touch run.docAttempts, so the 120-document budget stops being spent on
-  // filings that were only ever going to be discarded.
-  //
-  // Two invariants keep it a strict optimisation: an unvalidated verdict is
-  // NOT a non-match and falls through to the local path unchanged, and any
-  // failure — offline, 4xx, slow — skips the pre-screen entirely.
-  // The server pre-screen evaluates the expression over the WHOLE document.
-  // Under an Item scope that verdict is not transferable: a NOT operand can
-  // fail on the full text yet hold inside the section, so a full-text
-  // non-match must not reject a section-scoped candidate.
-  if (mode === 'boolean' && needsTextFiltering && booleanExpression && waveCandidates.length > 0 && !(filters.sectionScope || '').trim()) {
-    const prescreenKey = (cik: string, accession: string, document: string) =>
-      `${cik}:${accession.replace(/-/g, '')}:${document}`;
-    const rejectedByServer = new Set<string>();
-
-    for (
-      let cursor = 0;
-      cursor < Math.min(waveCandidates.length, PRESCREEN_MAX_PER_WAVE) && !signal?.aborted;
-      cursor += PRESCREEN_CHUNK
-    ) {
-      // Never spend the wave budget the pre-screen exists to protect: stop
-      // once the remaining time is worth more as fetches than as verdicts.
-      const remainingWaveMs = maxWaveTimeMs - (Date.now() - waveStartTime);
-      if (remainingWaveMs < PRESCREEN_MIN_WAVE_RESERVE) break;
-
-      // Pre-screen requests are measured work like any other upstream call
-      // (audit R1); the cap soft-stops the optimizer, never the run.
-      if (run.prescreenRequests >= MAX_PRESCREEN_REQUESTS) break;
-      run.prescreenRequests += 1;
-      const verdicts = await prescreenBooleanCandidates(
-        query,
-        waveCandidates.slice(cursor, cursor + PRESCREEN_CHUNK).map(result => ({
-          cik: result.cik,
-          accession: result.accessionNumber.replace(/-/g, ''),
-          document: result.primaryDocument,
-        })),
-        { signal, timeoutMs: Math.min(20_000, remainingWaveMs - PRESCREEN_MIN_WAVE_RESERVE + 5_000) }
-      );
-      // No verdicts means the pre-screen is unavailable; behave as if it never existed.
-      if (!verdicts) break;
-
-      for (const verdict of verdicts) {
-        if (verdict.validated && !verdict.matched) {
-          rejectedByServer.add(prescreenKey(verdict.cik, verdict.accession, verdict.document));
-        }
-      }
-    }
-
-    if (rejectedByServer.size > 0) {
-      const beforePrescreen = waveCandidates.length;
-      waveCandidates = waveCandidates.filter(
-        result => !rejectedByServer.has(prescreenKey(result.cik, result.accessionNumber, result.primaryDocument))
-      );
-      // Server-rejected candidates were genuinely examined — coverage counts
-      // them, the document budget does not.
-      run.validationExamined += beforePrescreen - waveCandidates.length;
-      ledger.examined += beforePrescreen - waveCandidates.length;
-    }
-  }
-
-  // Validate each candidate in this wave (fetch text, check auditor/boolean/section).
-  // A required OR branch keeps its validation allowance even after earlier
-  // branches filled the visible rows — otherwise a saturated broad branch
-  // records the rare branch as "requested" while none of its exclusive
-  // candidates can ever enter the result set (readiness finding F-06). The
-  // doc-attempt and wall-clock budgets still bound the extra work.
-  for (
-    let index = 0;
-    index < waveCandidates.length &&
-    (filteredResults.length < displayLimit || isRequiredBooleanBranch) &&
-    Date.now() - waveStartTime < branchTimeCapMs;
-    index += batchSize
-  ) {
-    // Stop at this lane's fair-share cap, not only the global cap: the
-    // difference is reserved for later required branches. Hitting the
-    // fair-share cap ends THIS lane but lets the loop continue.
-    if (run.docAttempts >= branchDocCap) {
-      if (branchDocCap >= MAX_DOC_ATTEMPTS) run.budgetExhausted = true;
-      else run.branchDocBudgetTruncated = true;
-      ledger.incompleteReason = 'doc-budget';
-      break;
-    }
-    if (signal?.aborted) break;
-    const chunk = waveCandidates.slice(index, Math.min(index + batchSize, waveCandidates.length));
-
-    // Only open documents when something actually reads them. A delegated
-    // phrase is already proved by EDGAR's index over the whole filing, so
-    // fetching each one confirms nothing and spends the budget that caps
-    // recall — this loop used to hydrate whenever the CALLER asked for
-    // signals, which every Boolean run does (that was the 110-filing recall
-    // ceiling).
-    if (hydratePerDocumentSignals) {
-      await Promise.all(
-        chunk.map(async result => {
-          const signalData = await hydrateResultSignals(result, signal, attempts => {
-            run.docHttpAttempts += attempts;
-          });
-          signalMap.set(getSignalCacheKey(result), signalData);
-        })
-      );
-      run.docAttempts += chunk.length;
-    }
-    // Resolve the authoritative auditor of record before the auditor filter
-    // runs, so the firm the filter matches on is the one that gets displayed.
-    if (filters.accountant.trim()) await hydrateRegisteredAuditors(chunk);
-    run.validationExamined += chunk.length;
-    ledger.examined += chunk.length;
-
-    for (const result of chunk) {
-      const filingText = signalMap.get(getSignalCacheKey(result))?.text || '';
-      // "Item 1A contains X" / "risk factors contains X": the expression
-      // and section keywords are evaluated INSIDE the named section's
-      // slice. Concept names resolve through the cross-form taxonomy using
-      // THIS candidate's form — Risk Factors is Item 1A on a 10-K but
-      // Part II Item 1A on a 10-Q. A filing without the section (or a form
-      // the concept is not mapped for) yields an empty slice and never
-      // matches — scoping must never silently widen back to the whole
-      // document or slice at a guessed location.
-      const sectionScope = (filters.sectionScope || '').trim();
-      let scopedText = filingText;
-      if (sectionScope && filingText) {
-        const resolved = resolveSectionScope(sectionScope, result.formType);
-        scopedText = resolved ? extractResolvedSection(filingText, resolved) : '';
-      }
-
-      if (needsTextFiltering && mode === 'boolean' && booleanExpression) {
-        if (!filingText) {
-          // Distinguish "couldn't fetch the text" from "fetched, didn't match"
-          // so the former can be reported rather than silently dropped.
-          run.unvalidatedFetchFailures += 1;
-          const kind = signalMap.get(getSignalCacheKey(result))?.failure;
-          if (kind) fetchFailureKinds.set(kind, (fetchFailureKinds.get(kind) ?? 0) + 1);
-          continue;
-        }
-        if (!scopedText || !booleanQueryMatches(query, scopedText)) continue;
-      }
-
-      if (needsTextFiltering && !matchesSignalFilters(result, filters, filingText, scopedText)) continue;
-
-      // With a delegated phrase there is no fetched text to snippet from —
-      // the match was proved upstream, and the label must say so. A scoped
-      // match snippets from the section slice, so the excerpt (and its
-      // breadcrumb) come from where the match actually was allowed to live.
-      filteredResults.push(
-        annotateResultMatchContext(result, query, filters, mode, scopedText, delegatedToEfts)
-      );
-    }
-
-    if (progressCallback && filteredResults.length >= run.lastProgressCount + progressInterval) {
-      run.lastProgressCount = filteredResults.length;
-      progressCallback(sortResearchResults([...filteredResults], preferRelevance).slice(0, displayLimit));
-    }
-
-    // Pacing exists to protect /api/sec-proxy from fetch bursts. A wave that
-    // opened no documents has nothing to pace — sleeping 150ms per 4
-    // candidates would add ~19s of idle time to a 500-candidate delegated run.
-    if (hydratePerDocumentSignals && index + batchSize < waveCandidates.length && filteredResults.length < displayLimit) {
-      await delay(150);
-    }
-  }
-
-  // Finalize this lane's ledger before moving on.
-  ledger.matched = filteredResults.length - branchResultStart;
-  if (!ledger.incompleteReason) {
-    if (signal?.aborted) {
-      ledger.incompleteReason = 'cancelled';
-    } else if (ledger.examined < ledger.candidatesNew) {
-      ledger.incompleteReason = Date.now() - waveStartTime >= branchTimeCapMs ? 'deadline' : 'display-limit';
-    }
-  }
-  ledger.exhausted = !ledger.incompleteReason && ledger.examined >= ledger.candidatesNew && ledger.collectionComplete !== false;
-}
-
-/** Everything the executor needs that is derivable from the request alone. */
-export interface SearchExecutionPlan {
-  /** Residual query after an auditor: token is lifted into the filters. */
-  query: string;
-  /** Filters with any lifted auditor canonicalized in. */
-  filters: SearchFilters;
-  serverQuery: string;
-  formTypes: string;
-  formScope: ReturnType<typeof parseFormScope>;
-  excludeExhibits: boolean;
-  preferRelevance: boolean;
-  semanticAuditorSearch: boolean;
-  needsCompanyMetadata: boolean;
-  displayLimit: number;
-  fastPass: boolean;
-  fastCandidateCollection: boolean;
-  needsTextFiltering: boolean;
-  shouldHydrateSignals: boolean;
-  parsedBooleanQuery: { expression: BooleanSearchNode | null };
-  delegatedToEfts: boolean;
-  hydratePerDocumentSignals: boolean;
-  requiredBooleanBranches: number;
-  filteredServerQueries: string[];
-  perQueryResultLimit: number;
-}
-
-/**
- * Plan compiler (WP7 stage: compileSearchPlan). Pure — no network, no state.
- * Returns null when a Boolean expression is invalid: the run must issue zero
- * retrieval requests, and the views surface the message via the same compiler.
- *
- * The judgment calls in here are load-bearing and documented inline: exhibit
- * admission is Boolean-only (roll-up removes the duplicate-row problem
- * without losing exhibit-only evidence); delegation flags must never be
- * proxied off needsTextFiltering (any flag used as a proxy for "reads
- * documents" inverts under delegation — that was the 110-filing recall
- * ceiling); and paging depth keys off what can actually be shown.
- */
-export function compileSearchPlan(options: {
-  query: string;
-  filters: SearchFilters;
-  mode: ResearchSearchMode;
-  defaultForms: string;
-  limit: number;
-  includeExhibits: boolean;
-  deferTextValidation: boolean;
-  preferFastCandidateCollection: boolean;
-  hydrateTextSignals: boolean;
-  useEnrichedSearch: boolean;
-}): SearchExecutionPlan | null {
-  let { query, filters } = options;
-  const { mode, defaultForms, limit, includeExhibits, deferTextValidation, preferFastCandidateCollection, hydrateTextSignals, useEnrichedSearch } = options;
-
-  // Intelligize-style inline audit-firm field: "material weakness" AND
-  // auditor:Deloitte (or a bare auditor:KPMG). Lift the firm out of the Boolean
-  // query into the structured auditor filter — the existing signal post-filter
-  // then enforces it — and search only the residual expression as text.
-  if (mode === 'boolean') {
-    // One compile path shared with the views, saved-alert checks and the
-    // Accounting Hub. Compiling here is what stops an invalid expression from
-    // reaching EDGAR as a literal string (how "revenue AND" silently ran a wrong
-    // search from non-view callers) — the views surface the message, this
-    // hard-stops with zero network calls. It also catches the cases a bare parse
-    // misses: grouped proximity, negation-only, and over-complex OR fan-out.
-    let compiled = compileBooleanQuery(query || filters.keyword);
-    if (!compiled.ok) {
-      // A firm promoted into filters.accountant (by the search plan or a
-      // saved alert) is retrieval context the bare text no longer carries:
-      // "(impairment OR NOT goodwill)" with accountant=PwC is the executable
-      // firm-lane form of "auditor:PwC AND (...)" (audit R1 slice 2).
-      // Recompile with the firm restored before giving up — every other
-      // failure code still hard-stops with zero network calls.
-      const firm = filters.accountant.trim();
-      const recoverable = compiled.code === 'unanchored-branch' || compiled.code === 'negative-only';
-      if (!firm || !recoverable) return null;
-      const withFirm = compileBooleanQuery(`auditor:"${firm}" AND (${query || filters.keyword})`);
-      if (!withFirm.ok) return null;
-      compiled = withFirm;
-    }
-
-    if (compiled.auditor) {
-      const canonical = canonicalizeAuditorInput(compiled.auditor) || compiled.auditor;
-      filters = { ...filters, accountant: filters.accountant.trim() || canonical };
-      query = compiled.residual;
-    }
-  }
-
-  const serverQuery = buildServerQuery(query || filters.keyword, filters, mode);
-  const formTypes = normalizeFormTypes(filters, defaultForms);
-  const formScope = parseFormScope(formTypes);
-  // Exhibit sub-documents are excluded unless the caller opts in (Exhibit
-  // Search does): EFTS returns each matching document of a filing as its own
-  // hit, so one 8-K/A could surface five EX-99.x rows that read as duplicates
-  // and crowd out distinct filings in the main research results.
-  //
-  // Boolean mode is the exception: a disclosure that lives only in EX-99.1 was
-  // being discarded before it could be validated, hiding a real match entirely.
-  // There we admit exhibits as candidates and instead roll successful matches up
-  // to one row per accession (see rollUpExhibitMatches), which removes the
-  // duplicate-row problem without losing the exhibit-only evidence.
-  const excludeExhibits = !includeExhibits && mode !== 'boolean';
-  const preferRelevance = Boolean((query || filters.keyword).trim() || filters.sectionKeywords.trim());
-  const semanticAuditorSearch = mode === 'semantic' && Boolean(filters.accountant.trim());
-  const needsCompanyMetadata = requiresCompanyMetadata(filters);
-  const requestedLimit = Math.max(limit, 1);
-  const fastPass = deferTextValidation && mode !== 'boolean';
-  const fastCandidateCollection = deferTextValidation || preferFastCandidateCollection;
-  const displayLimit = Math.min(requestedLimit, 500);
-  const needsTextFiltering = requiresTextFiltering(filters, query, mode, useEnrichedSearch);
-  const shouldHydrateSignals = !fastPass && (hydrateTextSignals || needsTextFiltering);
-
-  const parsedBooleanQuery = mode === 'boolean' ? parseBooleanQuery(query) : { expression: null };
-  // True when EDGAR's index already proved the phrase and we deliberately skip
-  // re-opening documents (see requiresTextFiltering).
-  const delegatedToEfts =
-    mode === 'boolean' && !needsTextFiltering && Boolean(eftsDelegablePhrase(parsedBooleanQuery.expression));
-  // Whether the wave loop opens each candidate document. A delegated phrase is
-  // already proved by EDGAR's index and nothing downstream reads the text, but
-  // callers still pass hydrateTextSignals=true for every Boolean run — left
-  // ungated, those no-op fetches spend the 120-document budget and cap recall
-  // at ~120 candidates regardless of collection depth (measured: 498 collected,
-  // 120 examined, 110 shown). Same trap as keying depth off needsTextFiltering:
-  // any flag used as a proxy for "reads documents" inverts under delegation.
-  const hydratePerDocumentSignals = shouldHydrateSignals && !delegatedToEfts;
-
-  const booleanPlan = mode === 'boolean'
-    ? buildBooleanServerQueries(query || filters.keyword, filters, delegatedToEfts)
-    : { queries: [] as string[], requiredBranches: 0 };
-  // Keep every required OR branch plus a few recall extras (bounded by the
-  // 16-branch complexity cap).
-  const booleanServerQueries = booleanPlan.queries.slice(0, Math.max(booleanPlan.requiredBranches, 6));
-  const requiredBooleanBranches = Math.min(booleanPlan.requiredBranches, booleanServerQueries.length);
-  const semanticServerQueries = mode === 'semantic' ? buildSemanticCandidateQueries(serverQuery, filters) : [];
-
-  const serverQueries =
-    mode === 'boolean'
-      ? (booleanServerQueries.length > 0 ? booleanServerQueries : [serverQuery])
-      : (semanticServerQueries.length > 0 ? semanticServerQueries : [serverQuery]);
-
-  const candidateServerQueries = (
-    fastCandidateCollection
-      ? serverQueries.slice(0, mode === 'boolean' ? Math.max(requiredBooleanBranches, 3) : semanticAuditorSearch ? 2 : 3)
-      : serverQueries
-  ).filter(Boolean);
-  // Empty-query browse is intentional for form/date/SIC and other filter-only
-  // requests. Both EFTS and the enriched metadata route support that contract.
-  const filteredServerQueries = candidateServerQueries.length > 0 ? candidateServerQueries : [''];
-
-  // An issuer-scoped browse intentionally has NO text query ("OGN 10-K" →
-  // entity + cleared text). filter(Boolean) used to drop that empty query,
-  // so the fetch loop below never ran — instant zero results with no
-  // request. Keep one empty candidate: the enriched lane treats q='' as a
-  // facet browse and the legacy lane substitutes the quoted issuer name.
-  if (filteredServerQueries.length === 0 && filters.entityName.trim()) {
-    filteredServerQueries.push('');
-  }
-
-  // How deep to page per query variant.
-  //
-  // This used to key off needsTextFiltering as a proxy for "collect widely",
-  // which inverted the moment a phrase could be delegated: with no local
-  // validation the flag flips false and the depth silently dropped 500 -> 300,
-  // even though a delegated run needs MORE depth, not less — every upstream
-  // hit is a finished result rather than a candidate to be filtered.
-  const perQueryResultLimit =
-    fastCandidateCollection
-      ? Math.min(Math.max(displayLimit, 80), 140)
-      : delegatedToEfts || needsTextFiltering
-        ? Math.max(displayLimit, 500)
-        : Math.min(Math.max(displayLimit, 140), 300);
-  // Depth is bounded by what can be shown: display caps at 500, and for a
-  // delegated run every upstream hit is a finished row. (An earlier "2,000
-  // candidates produced the same rows as 500" measurement was an artifact of
-  // the document budget capping validation at 120 — see hydratePerDocumentSignals.)
-
-  return {
-    query,
-    filters,
-    serverQuery,
-    formTypes,
-    formScope,
-    excludeExhibits,
-    preferRelevance,
-    semanticAuditorSearch,
-    needsCompanyMetadata,
-    displayLimit,
-    fastPass,
-    fastCandidateCollection,
-    needsTextFiltering,
-    shouldHydrateSignals,
-    parsedBooleanQuery,
-    delegatedToEfts,
-    hydratePerDocumentSignals,
-    requiredBooleanBranches,
-    filteredServerQueries,
-    perQueryResultLimit,
-  };
-}
-
-/** Inputs the coverage finalizer needs from a finished validation run. */
-export interface RunCoverageInputs {
-  upstreamCoverage: SearchCandidateCoverage | null;
-  /** Deduplicated candidates collected across every lane (hitMap size). */
-  collectedCandidates: number;
-  validationExamined: number;
-  validationTimedOut: boolean;
-  budgetExhausted: boolean;
-  aborted: boolean;
-  unvalidatedFetchFailures: number;
-  fetchFailureKinds: ReadonlyMap<string, number>;
-  completedQueryVariants: number;
-  totalQueryVariants: number;
-  branchLedgers: readonly BranchCoverageEntry[];
-  maxPageRequests: number;
-  maxDocAttempts: number;
-  /** Measured upstream work, retries and pre-screens included (audit R1). */
-  work: {
-    pageRequests: number;
-    docFetches: number;
-    docHttpAttempts: number;
-    prescreenRequests: number;
-    maxDocHttpAttempts: number;
-    maxPrescreenRequests: number;
-  };
-}
-
-/**
- * Coverage finalizer — the single place a run's honesty claims are computed
- * (WP7 stage: buildCoverageLedger). Pure: same inputs, same verdict, no I/O.
- *
- * Unknown upstream coverage is PARTIAL, never assumed complete — both
- * retrieval lanes report coverage on success, so absence means something went
- * wrong or was skipped (readiness finding F-07). Fetch failures and
- * cancellation also forfeit completeness: an unvalidated candidate is not a
- * validated nonmatch. And aggregate counters cannot prove PER-BRANCH
- * exhaustion — a run can examine "everything it collected" while a required
- * branch was never fully collected — so completeness additionally requires
- * every required lane's own ledger to say exhausted.
- *
- * `exhausted` is the only stop reason that can accompany complete coverage;
- * every other value means partial, and the partial reasons that a user can
- * act on carry a degraded message.
- */
-export function finalizeRunCoverage(inputs: RunCoverageInputs): {
-  coverage: SearchCandidateCoverage;
-  stopReason: BooleanStopReason;
-  degradedMessage: string | null;
-} {
-  const {
-    upstreamCoverage,
-    collectedCandidates,
-    validationExamined,
-    validationTimedOut,
-    budgetExhausted,
-    aborted,
-    unvalidatedFetchFailures,
-    fetchFailureKinds,
-    completedQueryVariants,
-    totalQueryVariants,
-    branchLedgers,
-    maxPageRequests,
-    maxDocAttempts,
-  } = inputs;
-
-  const upstreamTotal = Math.max(
-    upstreamCoverage?.upstreamTotal ?? 0,
-    upstreamCoverage?.examined ?? 0,
-    collectedCandidates
-  );
-  const collectionComplete = upstreamCoverage?.complete ?? false;
-  const validationComplete = (
-    !validationTimedOut &&
-    !budgetExhausted &&
-    !aborted &&
-    unvalidatedFetchFailures === 0 &&
-    completedQueryVariants === totalQueryVariants &&
-    collectionComplete &&
-    validationExamined >= collectedCandidates &&
-    branchLedgers.filter(entry => entry.required).every(entry => entry.exhausted)
-  );
-
-  const stopReason: BooleanStopReason =
-    aborted ? 'cancelled'
-    : validationTimedOut ? 'deadline'
-    : budgetExhausted ? 'request-budget'
-    : fetchFailureKinds.has('rate-limit') ? 'rate-limit'
-    : unvalidatedFetchFailures > 0 ? 'fetch-failure'
-    : !collectionComplete ? 'unknown-upstream'
-    : validationComplete ? 'exhausted'
-    : 'candidate-cap';
-
-  const { work } = inputs;
-  const totalUpstreamRequests = work.pageRequests + work.docHttpAttempts + work.prescreenRequests;
-
-  let degradedMessage: string | null = null;
-  if (stopReason === 'deadline') {
-    degradedMessage = 'Filing-text validation reached its time limit; only a partial candidate window was verified.';
-  } else if (stopReason === 'request-budget') {
-    // The measured numbers ARE the display (audit R1): retries, parent-doc
-    // fallbacks and server pre-screens included, beside the declared caps.
-    degradedMessage = `This search reached its per-run request budget: ${work.pageRequests}/${maxPageRequests} page requests, ${work.docHttpAttempts}/${work.maxDocHttpAttempts} document requests (retries included; ${work.docFetches}/${maxDocAttempts} documents), ${work.prescreenRequests}/${work.maxPrescreenRequests} pre-screen requests — ${totalUpstreamRequests} upstream requests in all. Results are a verified partial window, not the full corpus. Narrow the query, dates, or forms to validate more.`;
-  } else if (stopReason === 'rate-limit') {
-    degradedMessage = `SEC EDGAR rate-limited ${fetchFailureKinds.get('rate-limit')} document ${fetchFailureKinds.get('rate-limit') === 1 ? 'request' : 'requests'}; those filings could not be re-validated and are excluded. Retry shortly for a fuller window.`;
-  } else if (stopReason === 'fetch-failure') {
-    const unreadable = (fetchFailureKinds.get('unsupported') ?? 0) + (fetchFailureKinds.get('not-found') ?? 0);
-    degradedMessage =
-      `${unvalidatedFetchFailures} matching candidate ${unvalidatedFetchFailures === 1 ? 'filing was' : 'filings were'} excluded because the document text could not be retrieved for Boolean re-validation` +
-      (unreadable > 0 ? ' (non-HTML primary document such as a scanned PDF or image).' : ' (upstream fetch failure).');
-  }
-
-  return {
-    coverage: {
-      examined: Math.min(validationExamined, upstreamTotal),
-      upstreamTotal,
-      complete: validationComplete,
-      // A multi-required-lane run's aggregate total is the MAX across lane
-      // totals — the true OR-union is unknown (lanes overlap upstream, and
-      // no endpoint counts the union). Displaying it as exact overstated
-      // coverage (audit R1): it is a floor whenever more than one required
-      // lane contributed.
-      upstreamTotalIsFloor:
-        Boolean(upstreamCoverage?.upstreamTotalIsFloor) ||
-        branchLedgers.filter(entry => entry.required).length > 1,
-      branches: branchLedgers.length > 0 ? [...branchLedgers] : undefined,
-      work: {
-        pageRequests: work.pageRequests,
-        docFetches: work.docFetches,
-        docHttpAttempts: work.docHttpAttempts,
-        prescreenRequests: work.prescreenRequests,
-        totalUpstreamRequests,
-        ceiling: {
-          pages: maxPageRequests,
-          docHttpAttempts: work.maxDocHttpAttempts,
-          prescreenRequests: work.maxPrescreenRequests,
-        },
-      },
-    },
-    stopReason,
-    degradedMessage,
-  };
-}
 
 /**
  * Union of two independently verified result windows for the same query.

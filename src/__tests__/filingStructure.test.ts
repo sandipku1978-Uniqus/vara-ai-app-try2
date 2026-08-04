@@ -139,6 +139,8 @@ describe('locateTopicInBlocks', () => {
     });
 
     expect(match?.blockName).toBe('LEASES');
+    expect(match?.blockFile).toBe('R23.htm');
+    expect(match?.sourceTextLength).toBe(leaseNote.length);
     expect(match?.passage.text).toContain('right-of-use');
     expect(match?.passage.matchReason).toMatch(/tagged by the registrant/i);
   });

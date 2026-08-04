@@ -371,6 +371,18 @@
   --el-font-ui: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
     'Helvetica Neue', Arial, sans-serif;
 }
+.el-gallery .el-gallery-static-control {
+  cursor: default;
+}
+.el-gallery .el-gallery-static-control.el-link:hover {
+  text-decoration: none;
+}
+.el-gallery .el-gallery-static-control.el-btn-primary:hover {
+  background: var(--el-plum);
+}
+.el-gallery .el-gallery-static-control.el-btn-secondary:hover {
+  background: var(--el-surface);
+}
 .el-scope.research-query-panel,
 .el-scope.research-toolbar,
 .el-scope.research-context-bar {

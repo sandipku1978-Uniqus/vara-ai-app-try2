@@ -14,33 +14,11 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getWebSupabase } from '../../../lib/supabase-web';
 import { fetchDossierCompanyData } from './companyData';
+import { resolveDossierCik } from './companyTickerDirectory';
 import DossierTabs from './DossierTabs';
 
 export const revalidate = 86400; // 24h ISR
 export const dynamicParams = true;
-
-const SEC_USER_AGENT = 'Uniqus Research Center contact@uniqus.com';
-
-async function resolveCik(raw: string): Promise<string | null> {
-  const trimmed = decodeURIComponent(raw).trim();
-  // Raw CIK: digits, optionally prefixed CIK
-  const cikMatch = trimmed.match(/^(?:cik)?0*(\d{1,10})$/i);
-  if (cikMatch) return cikMatch[1].padStart(10, '0');
-
-  try {
-    const response = await fetch('https://www.sec.gov/files/company_tickers.json', {
-      headers: { 'User-Agent': SEC_USER_AGENT },
-      next: { revalidate: 86400 },
-    });
-    if (!response.ok) return null;
-    const data = await response.json() as Record<string, { cik_str: number; ticker: string }>;
-    const upper = trimmed.toUpperCase();
-    for (const entry of Object.values(data)) {
-      if (entry.ticker === upper) return String(entry.cik_str).padStart(10, '0');
-    }
-  } catch { /* resolution failure → 404 below */ }
-  return null;
-}
 
 async function fetchAuditor(cik: string): Promise<{ auditor: string; periodEnd: string | null } | null> {
   const db = getWebSupabase();
@@ -59,10 +37,10 @@ async function fetchAuditor(cik: string): Promise<{ auditor: string; periodEnd: 
 }
 
 export async function generateStaticParams() {
-  // Prebuild the majors; everything else renders on demand via ISR
-  return ['AAPL', 'MSFT', 'GOOGL', 'TSLA', 'JPM', 'AMZN', 'META', 'NVDA'].map(
-    (ticker) => ({ ticker })
-  );
+  // SEC access is centrally paced and hosted production deliberately fails
+  // closed without the distributed pacer. Generate dossiers on first request
+  // so a build never needs SEC/KV access; the 24-hour ISR contract is retained.
+  return [];
 }
 
 export async function generateMetadata({
@@ -71,7 +49,7 @@ export async function generateMetadata({
   params: Promise<{ ticker: string }>;
 }): Promise<Metadata> {
   const { ticker } = await params;
-  const cik = await resolveCik(ticker);
+  const cik = await resolveDossierCik(ticker);
   if (!cik) return { title: 'Company Not Found | Uniqus Research Center' };
   const data = await fetchDossierCompanyData(cik);
   const companyName = data?.name ?? ticker.toUpperCase();
@@ -92,7 +70,7 @@ export default async function CompanyPage({
   params: Promise<{ ticker: string }>;
 }) {
   const { ticker } = await params;
-  const cik = await resolveCik(ticker);
+  const cik = await resolveDossierCik(ticker);
   if (!cik) notFound();
 
   const [data, auditorInfo] = await Promise.all([
@@ -154,6 +132,7 @@ export default async function CompanyPage({
       </section>
 
       <DossierTabs
+        key={cik}
         cik={Number(cik)}
         companyName={data!.name}
         recentFilings={data!.filings.recent}

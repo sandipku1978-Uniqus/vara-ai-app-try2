@@ -5,7 +5,7 @@ import OwnershipFormView from '../components/research/OwnershipFormView';
 import { buildOwnershipRenderedPath, parseOwnershipDocument, type OwnershipDocument } from '../utils/ownershipForm';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 
-import { ArrowLeft, Bookmark, MessageSquare, ExternalLink, Columns, Highlighter, Settings2, Download, List, AlertCircle, FileText, Loader2, X } from 'lucide-react';
+import { ArrowLeft, Bookmark, MessageSquare, ExternalLink, Columns, Highlighter, Settings2, Download, List, AlertCircle, FileText, Loader2, Copy, X } from 'lucide-react';
 import { useApp } from '../context/AppState';
 import { BRAND } from '../config/brand';
 import { buildSecDocumentUrl, buildSecProxyUrl, fetchCompanySubmissions, fetchFilingText, fetchSubmissionHistory, resolvePrimaryDocumentPath, type SecFilingSeries, type SecSubmission } from '../services/secApi';
@@ -252,21 +252,43 @@ export default function FilingDetail() {
   // otherwise every Archives URL built from it is a guaranteed 404.
   const primaryDocIsPlaceholder =
     routePrimaryDoc.startsWith('edgar/') || routePrimaryDoc === `${accession}.txt`;
-  const [resolvedPrimaryDoc, setResolvedPrimaryDoc] = useState('');
-  const primaryDoc = primaryDocIsPlaceholder && resolvedPrimaryDoc ? resolvedPrimaryDoc : routePrimaryDoc;
-  const isValidFilingId = Boolean(cik && accession && primaryDoc);
-  const rawSecUrl = buildSecDocumentUrl(cik, accession, primaryDoc);
+  const primaryDocumentKey = `${cik}:${accession}`;
+  const [resolvedPrimaryDoc, setResolvedPrimaryDoc] = useState<{ key: string; document: string }>({
+    key: '',
+    document: '',
+  });
+  const [primaryDocumentStatus, setPrimaryDocumentStatus] = useState<'idle' | 'resolving' | 'unavailable'>('idle');
+  const primaryDoc = primaryDocIsPlaceholder
+    ? (resolvedPrimaryDoc.key === primaryDocumentKey ? resolvedPrimaryDoc.document : '')
+    : routePrimaryDoc;
+  const hasFilingAddress = Boolean(cik && accession && routePrimaryDoc);
+  const isValidFilingId = Boolean(hasFilingAddress && primaryDoc);
+  const rawSecUrl = isValidFilingId ? buildSecDocumentUrl(cik, accession, primaryDoc) : '';
   const formattedAccession = accession.replace(/-/g, '');
 
   useEffect(() => {
-    if (!cik || !accession || !primaryDocIsPlaceholder) return;
-    setResolvedPrimaryDoc('');
+    if (!cik || !accession || !primaryDocIsPlaceholder) {
+      setPrimaryDocumentStatus('idle');
+      return;
+    }
+    setResolvedPrimaryDoc({ key: primaryDocumentKey, document: '' });
+    setPrimaryDocumentStatus('resolving');
     let cancelled = false;
-    void resolvePrimaryDocumentPath(cik, accession).then(doc => {
-      if (!cancelled && doc) setResolvedPrimaryDoc(doc);
-    });
+    void resolvePrimaryDocumentPath(cik, accession)
+      .then(doc => {
+        if (cancelled) return;
+        if (doc) {
+          setResolvedPrimaryDoc({ key: primaryDocumentKey, document: doc });
+          setPrimaryDocumentStatus('idle');
+        } else {
+          setPrimaryDocumentStatus('unavailable');
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setPrimaryDocumentStatus('unavailable');
+      });
     return () => { cancelled = true; };
-  }, [accession, cik, primaryDocIsPlaceholder]);
+  }, [accession, cik, primaryDocIsPlaceholder, primaryDocumentKey]);
 
   const [showSidebar, setShowSidebar] = useState(true);
   // Forms 3/4/5 are XML-only in the archive: no HTML rendition exists, so
@@ -297,7 +319,7 @@ export default function FilingDetail() {
   // For a parsed ownership form, the SEC link points at SEC's own
   // XSLT-rendered page — the raw XML is what the user reported as the
   // dead end. Everything else keeps the direct archive URL.
-  const secUrl = ownershipDoc
+  const secUrl = rawSecUrl && ownershipDoc
     ? `https://www.sec.gov/${buildOwnershipRenderedPath(cik, formattedAccession, primaryDoc, ownershipDoc.schemaVersion)}`
     : rawSecUrl;
   const [isMobileSidebar, setIsMobileSidebar] = useState(false);
@@ -564,6 +586,47 @@ export default function FilingDetail() {
     addToWatchlist(ticker);
     setToolMessage(`${ticker} was added to your watchlist.`);
   }, [addToWatchlist, companyTickers]);
+
+  const handleCopyCitation = useCallback(async () => {
+    const citation = [
+      filingMeta.companyName || 'SEC filing',
+      filingMeta.formType ? `Form ${filingMeta.formType}` : 'SEC filing',
+      filingMeta.filingDate ? `filed ${filingMeta.filingDate}` : '',
+      `accession ${accession}`,
+      `document ${primaryDoc}`,
+      secUrl,
+    ].filter(Boolean).join(' — ');
+
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error('Clipboard API unavailable');
+      await navigator.clipboard.writeText(citation);
+      setToolMessage('Filing citation copied to clipboard.');
+      return;
+    } catch {
+      // Clipboard permission is not universal (notably embedded and hardened
+      // enterprise browsers). Keep a synchronous selection-copy fallback so
+      // the action still produces the exact same citation when supported.
+      const textarea = document.createElement('textarea');
+      textarea.value = citation;
+      textarea.readOnly = true;
+      textarea.style.position = 'fixed';
+      textarea.style.opacity = '0';
+      textarea.style.pointerEvents = 'none';
+      document.body.appendChild(textarea);
+      textarea.select();
+      let copied = false;
+      try {
+        copied = typeof document.execCommand === 'function' && document.execCommand('copy');
+      } catch {
+        copied = false;
+      } finally {
+        textarea.remove();
+      }
+      setToolMessage(copied
+        ? 'Filing citation copied to clipboard.'
+        : 'Clipboard access was blocked. Use Open in SEC.gov to copy the official filing link.');
+    }
+  }, [accession, filingMeta.companyName, filingMeta.filingDate, filingMeta.formType, primaryDoc, secUrl]);
 
   const handleSaveAnnotation = useCallback(() => {
     if (!selectedQuote.trim() || !annotationDraft.trim()) {
@@ -1123,7 +1186,7 @@ export default function FilingDetail() {
     }
   }, [fetchCurrentFilingHtml, filingMeta.companyName, filingMeta.formType, primaryDoc, secUrl]);
 
-  if (!isValidFilingId) {
+  if (!hasFilingAddress) {
     return (
       <section className="filing-invalid-state" role="alert">
         <AlertCircle size={32} aria-hidden="true" />
@@ -1132,6 +1195,27 @@ export default function FilingDetail() {
         <button type="button" onClick={() => navigate.push('/search')} className="primary-btn">
           Back to Search
         </button>
+      </section>
+    );
+  }
+
+  if (primaryDocIsPlaceholder && !primaryDoc) {
+    const unavailable =
+      resolvedPrimaryDoc.key === primaryDocumentKey && primaryDocumentStatus === 'unavailable';
+    return (
+      <section className="filing-invalid-state" role={unavailable ? 'alert' : 'status'}>
+        {unavailable ? <AlertCircle size={32} aria-hidden="true" /> : <Loader2 size={32} className="spinner" aria-hidden="true" />}
+        <h1>{unavailable ? 'Official filing document unavailable' : 'Locating SEC filing'}</h1>
+        <p>
+          {unavailable
+            ? 'The SEC document name could not be resolved on this visit. Return to Search and reopen the filing to retry the official source.'
+            : 'Resolving the official primary document from SEC EDGAR metadata.'}
+        </p>
+        {unavailable && (
+          <button type="button" onClick={() => navigate.push('/search')} className="primary-btn">
+            Back to Search
+          </button>
+        )}
       </section>
     );
   }
@@ -1156,7 +1240,7 @@ export default function FilingDetail() {
                 navigate.push(`/search?tab=${encodeURIComponent(routeState.originatingSearchSessionId)}`);
                 return;
               }
-              navigate.back();
+              navigate.push('/search');
             }}
           >
             <ArrowLeft size={18} /> Back
@@ -1217,6 +1301,7 @@ export default function FilingDetail() {
         </div>
 
         <div className="header-actions">
+          <button type="button" className="icon-btn" title="Copy filing citation" aria-label="Copy filing citation" onClick={() => void handleCopyCitation()}><Copy size={18} aria-hidden="true" /></button>
           <button type="button" className="icon-btn" title="Save to Watchlist" aria-label="Save filing to watchlist" onClick={handleAddToWatchlist}><Bookmark size={18} aria-hidden="true" /></button>
           <a href={secUrl} target="_blank" rel="noreferrer" className="icon-btn" title="Open in SEC.gov" aria-label="Open filing on SEC.gov"><ExternalLink size={18} aria-hidden="true" /></a>
           <button
@@ -1250,7 +1335,13 @@ export default function FilingDetail() {
             </div>
           )}
           {toolMessage && (
-            <div className="tool-status-banner">
+            <div
+              className="tool-status-banner"
+              data-filing-tool-status
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
+            >
               {toolMessage}
             </div>
           )}
