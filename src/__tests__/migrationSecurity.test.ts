@@ -150,6 +150,9 @@ describe('database security migration chain', () => {
     expect(sql).not.toContain(
       "]) as required(signature)\n  where pg_catalog.to_regprocedure(required.signature) is null;"
     );
+    expect(sql).toContain(
+      "chr(39) || chr(39),\n    chr(39)"
+    );
   });
 
   it('022 resolves only unambiguous date-effective ordinary-issuer Form AP evidence', () => {

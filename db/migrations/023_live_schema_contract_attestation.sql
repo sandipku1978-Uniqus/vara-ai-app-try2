@@ -331,8 +331,17 @@ begin
     raise exception 'schema contract: deterministic/bounded letter search is absent';
   end if;
 
-  select lower(pg_catalog.pg_get_functiondef(
-    'public.urc_search_filings(text[],date,date,text,text,text,integer,integer,bigint)'::regprocedure
+  -- pg_get_functiondef returns the PL/pgSQL source, where a quote inside a
+  -- dynamic SQL string is represented by two adjacent quote characters
+  -- (''resolved''). Normalize that representation before checking semantic
+  -- markers so the attestation validates the installed function rather than
+  -- the source-escaping detail.
+  select lower(replace(
+    pg_catalog.pg_get_functiondef(
+      'public.urc_search_filings(text[],date,date,text,text,text,integer,integer,bigint)'::regprocedure
+    ),
+    chr(39) || chr(39),
+    chr(39)
   )) into definition;
   if position('public.urc_auditor_periods_mat' in definition) = 0
      or position('f.date_filed >= a.effective_from' in definition) = 0
@@ -853,7 +862,7 @@ insert into public.urc_schema_version (
   '023',
   25,
   -- URC CHAIN CHECKSUM VALUE
-  '0ae43502dee42603a4943157a171e5d513ece45065e80f58768b998765f3cfa7',
+  'ad6daeba4b7d72e563d7dded29bf2c21ecaf25eabdb10716512819906444b33b',
   'sha256-v2'
 )
 on conflict (singleton) do update set
