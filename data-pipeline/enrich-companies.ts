@@ -30,31 +30,165 @@ function getArg(name: string): string | undefined {
   return idx !== -1 ? process.argv[idx + 1] : undefined;
 }
 
-async function fetchJson(url: string): Promise<unknown | null> {
-  for (let attempt = 0; attempt < 3; attempt++) {
+export type SecJsonFailureReason =
+  | 'network'
+  | 'rate-limited'
+  | 'server-error'
+  | 'invalid-json'
+  | 'http-error';
+
+export type SecJsonResult =
+  | { kind: 'success'; data: unknown; attempts: number }
+  | { kind: 'not-found'; status: 404; attempts: number }
+  | {
+      kind: 'retry-exhausted';
+      reason: SecJsonFailureReason;
+      status: number | null;
+      attempts: number;
+    };
+
+interface FetchSecJsonOptions {
+  maxAttempts?: number;
+  retryBaseMs?: number;
+  validate?: (data: unknown) => boolean;
+}
+
+/**
+ * Keep an authoritative SEC 404 distinct from a transport or decoding outage.
+ * Callers may persist an explicit "not found" sentinel only for the former;
+ * every other exhausted result must leave the database untouched and fail the
+ * pipeline so the issuer remains eligible for a later retry.
+ */
+export async function fetchSecJson(
+  url: string,
+  options: FetchSecJsonOptions = {},
+): Promise<SecJsonResult> {
+  const maxAttempts = options.maxAttempts ?? 3;
+  const retryBaseMs = options.retryBaseMs ?? 1_000;
+  if (!Number.isSafeInteger(maxAttempts) || maxAttempts < 1) {
+    throw new Error('maxAttempts must be a positive integer');
+  }
+  if (!Number.isFinite(retryBaseMs) || retryBaseMs < 0) {
+    throw new Error('retryBaseMs must be a non-negative number');
+  }
+
+  let lastFailure: Omit<Extract<SecJsonResult, { kind: 'retry-exhausted' }>, 'kind' | 'attempts'> = {
+    reason: 'network',
+    status: null,
+  };
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    let response: Response;
     try {
-      const response = await fetch(url, {
+      response = await fetch(url, {
         headers: { 'User-Agent': USER_AGENT, Accept: 'application/json' },
         signal: AbortSignal.timeout(30_000),
       });
-      if (response.status === 404) return null;
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      return await response.json();
     } catch {
-      await delay(1000 * 2 ** attempt);
+      lastFailure = { reason: 'network', status: null };
+      if (attempt < maxAttempts) await delay(retryBaseMs * 2 ** (attempt - 1));
+      continue;
     }
+
+    // A real SEC 404 is authoritative and should not be retried. It is the only
+    // outcome that permits the SIC 0000 sentinel in sicPass.
+    if (response.status === 404) {
+      return { kind: 'not-found', status: 404, attempts: attempt };
+    }
+
+    if (!response.ok) {
+      lastFailure = {
+        reason: response.status === 429
+          ? 'rate-limited'
+          : response.status >= 500
+            ? 'server-error'
+            : 'http-error',
+        status: response.status,
+      };
+      if (attempt < maxAttempts) await delay(retryBaseMs * 2 ** (attempt - 1));
+      continue;
+    }
+
+    try {
+      const data: unknown = await response.json();
+      if (options.validate && !options.validate(data)) {
+        lastFailure = { reason: 'invalid-json', status: response.status };
+      } else {
+        return { kind: 'success', data, attempts: attempt };
+      }
+    } catch {
+      lastFailure = { reason: 'invalid-json', status: response.status };
+    }
+    if (attempt < maxAttempts) await delay(retryBaseMs * 2 ** (attempt - 1));
   }
-  return null;
+
+  return { kind: 'retry-exhausted', ...lastFailure, attempts: maxAttempts };
 }
 
-async function bulkTickers(): Promise<void> {
+interface TickerExchangePayload {
+  fields: string[];
+  data: Array<[number, string, string, string]>;
+}
+
+interface SubmissionsPayload {
+  name: string;
+  sic: string;
+  sicDescription?: string;
+  stateOfIncorporation?: string;
+  tickers?: string[];
+  exchanges?: string[];
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every(entry => typeof entry === 'string');
+}
+
+const TICKER_EXCHANGE_FIELDS = ['cik', 'name', 'ticker', 'exchange'] as const;
+
+export function isTickerExchangePayload(value: unknown): value is TickerExchangePayload {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const candidate = value as Record<string, unknown>;
+  return isStringArray(candidate.fields)
+    && candidate.fields.length === TICKER_EXCHANGE_FIELDS.length
+    && candidate.fields.every((field, index) => field === TICKER_EXCHANGE_FIELDS[index])
+    && Array.isArray(candidate.data)
+    && candidate.data.every(row => Array.isArray(row)
+      && row.length === TICKER_EXCHANGE_FIELDS.length
+      && Number.isSafeInteger(row[0])
+      && typeof row[1] === 'string'
+      && typeof row[2] === 'string'
+      && typeof row[3] === 'string');
+}
+
+function isSubmissionsPayload(value: unknown): value is SubmissionsPayload {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const candidate = value as Record<string, unknown>;
+  return typeof candidate.name === 'string'
+    && typeof candidate.sic === 'string'
+    && (candidate.sicDescription === undefined || typeof candidate.sicDescription === 'string')
+    && (candidate.stateOfIncorporation === undefined || typeof candidate.stateOfIncorporation === 'string')
+    && (candidate.tickers === undefined || isStringArray(candidate.tickers))
+    && (candidate.exchanges === undefined || isStringArray(candidate.exchanges));
+}
+
+function exhaustedFetchError(label: string, result: Extract<SecJsonResult, { kind: 'retry-exhausted' }>): Error {
+  const status = result.status === null ? '' : ` (HTTP ${result.status})`;
+  return new Error(`${label} failed after ${result.attempts} attempts: ${result.reason}${status}`);
+}
+
+export async function bulkTickers(): Promise<void> {
   const client = createServiceClient();
   console.log('Fetching company_tickers_exchange.json ...');
-  const data = await fetchJson('https://www.sec.gov/files/company_tickers_exchange.json') as {
-    fields: string[];
-    data: Array<[number, string, string, string]>; // cik, name, ticker, exchange
-  } | null;
-  if (!data?.data) throw new Error('Unexpected company_tickers_exchange.json shape');
+  const fetched = await fetchSecJson('https://www.sec.gov/files/company_tickers_exchange.json', {
+    validate: isTickerExchangePayload,
+  });
+  if (fetched.kind === 'not-found') {
+    throw new Error('company_tickers_exchange.json returned an authoritative SEC 404');
+  }
+  if (fetched.kind === 'retry-exhausted') {
+    throw exhaustedFetchError('company_tickers_exchange.json', fetched);
+  }
+  const data = fetched.data as TickerExchangePayload;
 
   // Merge multiple listings per CIK (share classes)
   const byCik = new Map<number, { name: string; tickers: Set<string>; exchanges: Set<string> }>();
@@ -81,7 +215,13 @@ async function bulkTickers(): Promise<void> {
   console.log('Bulk ticker/exchange pass done.');
 }
 
-async function sicPass(limit: number): Promise<void> {
+interface SicPassOptions {
+  maxAttempts?: number;
+  retryBaseMs?: number;
+  requestDelayMs?: number;
+}
+
+export async function sicPass(limit: number, options: SicPassOptions = {}): Promise<void> {
   const client = createServiceClient();
 
   // Issuers we care about: present in auditor or filing data, lacking SIC.
@@ -94,30 +234,44 @@ async function sicPass(limit: number): Promise<void> {
   let done = 0;
   for (const cik of ciks) {
     const padded = String(cik).padStart(10, '0');
-    const submissions = await fetchJson(`https://data.sec.gov/submissions/CIK${padded}.json`) as {
-      name?: string; sic?: string; sicDescription?: string; stateOfIncorporation?: string;
-      tickers?: string[]; exchanges?: string[];
-    } | null;
+    const fetched = await fetchSecJson(`https://data.sec.gov/submissions/CIK${padded}.json`, {
+      maxAttempts: options.maxAttempts,
+      retryBaseMs: options.retryBaseMs,
+      validate: isSubmissionsPayload,
+    });
+    if (fetched.kind === 'retry-exhausted') {
+      throw exhaustedFetchError(`SEC submissions for CIK ${cik}`, fetched);
+    }
 
-    const row = submissions
-      ? {
-          cik,
-          name: submissions.name ?? null,
-          sic: submissions.sic || null,
-          sic_description: submissions.sicDescription || null,
-          state_of_incorporation: submissions.stateOfIncorporation || null,
-          ...(submissions.tickers?.length ? { tickers: submissions.tickers } : {}),
-          ...(submissions.exchanges?.length ? { exchanges: submissions.exchanges.filter(Boolean) } : {}),
-          updated_at: new Date().toISOString(),
-        }
-      : { cik, sic: '0000', sic_description: 'UNKNOWN (no submissions record)', updated_at: new Date().toISOString() };
+    let row: Record<string, unknown>;
+    if (fetched.kind === 'success') {
+      const submissions = fetched.data as SubmissionsPayload;
+      row = {
+        cik,
+        name: submissions.name,
+        sic: submissions.sic || null,
+        sic_description: submissions.sicDescription || null,
+        state_of_incorporation: submissions.stateOfIncorporation || null,
+        ...(submissions.tickers?.length ? { tickers: submissions.tickers } : {}),
+        ...(submissions.exchanges?.length ? { exchanges: submissions.exchanges.filter(Boolean) } : {}),
+        updated_at: new Date().toISOString(),
+      };
+    } else {
+      row = {
+        cik,
+        sic: '0000',
+        sic_description: 'UNKNOWN (no submissions record)',
+        updated_at: new Date().toISOString(),
+      };
+    }
 
     const { error: upsertError } = await client.from('urc_sec_companies').upsert(row, { onConflict: 'cik' });
     if (upsertError) throw new Error(`upsert cik ${cik} failed: ${upsertError.message}`);
 
     done++;
     if (done % 250 === 0) console.log(`  ${done}/${ciks.length}`);
-    await delay(220); // ~4.5 req/s
+    const requestDelayMs = options.requestDelayMs ?? 220;
+    if (requestDelayMs > 0) await delay(requestDelayMs); // ~4.5 req/s
   }
   console.log(`SIC pass done: ${done} issuers enriched.`);
 }
@@ -131,7 +285,9 @@ async function main() {
   }
 }
 
-main().catch(error => {
-  console.error('Company enrichment failed:', error instanceof Error ? error.message : error);
-  process.exit(1);
-});
+if (process.argv[1]?.includes('enrich-companies')) {
+  main().catch(error => {
+    console.error('Company enrichment failed:', error instanceof Error ? error.message : error);
+    process.exit(1);
+  });
+}

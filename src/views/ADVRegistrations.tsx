@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { ClipboardList, ExternalLink, Loader2, Search } from 'lucide-react';
 import DataTable, { type ColumnDef } from '../components/tables/DataTable';
 import ResultsToolbar from '../components/tables/ResultsToolbar';
@@ -13,23 +13,30 @@ export default function ADVRegistrations() {
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   const [error, setError] = useState('');
+  const [lastSubmittedQuery, setLastSubmittedQuery] = useState('');
+  const requestIdRef = useRef(0);
 
-  async function handleSearch() {
-    if (!query.trim()) return;
+  async function handleSearch(criteria = query) {
+    const normalizedCriteria = criteria.trim();
+    if (!normalizedCriteria) return;
+    const requestId = ++requestIdRef.current;
+    setLastSubmittedQuery(normalizedCriteria);
     setLoading(true);
     setSearched(true);
     setError('');
     try {
-      const response = await searchInvestmentAdvisers(query, 100);
+      const response = await searchInvestmentAdvisers(normalizedCriteria, 100);
+      if (requestId !== requestIdRef.current) return;
       setResults(response.firms);
       setTotal(response.total);
     } catch (searchError) {
       console.error('IAPD adviser search failed:', searchError);
+      if (requestId !== requestIdRef.current) return;
       setResults([]);
       setTotal(0);
       setError('The official IAPD search service could not be reached. No EDGAR filing forms have been substituted for Form ADV data.');
     } finally {
-      setLoading(false);
+      if (requestId === requestIdRef.current) setLoading(false);
     }
   }
 
@@ -82,18 +89,18 @@ export default function ADVRegistrations() {
           placeholder="Firm name, CRD number, or SEC number"
           style={{ flex: '1 1 280px', minWidth: 0, padding: '7px 10px', background: 'var(--input-bg)', border: '1px solid var(--input-border)', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '0.82rem' }}
         />
-        <button type="submit" className="primary-btn" disabled={loading || !query.trim()} style={{ padding: '7px 14px', fontSize: '0.82rem' }}>
+        <button type="submit" className="primary-btn" disabled={!query.trim()} aria-busy={loading} style={{ padding: '7px 14px', fontSize: '0.82rem' }}>
           {loading ? <Loader2 size={14} className="spinner" /> : <Search size={14} />} Search IAPD
         </button>
       </form>
 
       {error && (
         <div role="alert" style={{ padding: '10px 12px', border: '1px solid var(--status-warning)', borderRadius: '4px', background: 'color-mix(in srgb, var(--status-warning) 8%, var(--bg-elevated))', color: 'var(--text-primary)', marginBottom: '12px' }}>
-          {error} <button type="button" className="secondary-btn" onClick={() => void handleSearch()}>Retry</button>
+          {error} <button type="button" className="secondary-btn" onClick={() => void handleSearch(lastSubmittedQuery)}>Retry</button>
         </div>
       )}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '28px', color: 'var(--text-muted)' }}><Loader2 size={20} className="spinner" /> Loading official IAPD results…</div>
+        <div role="status" aria-live="polite" style={{ textAlign: 'center', padding: '28px', color: 'var(--text-muted)' }}><Loader2 size={20} className="spinner" /> Loading official IAPD results…</div>
       ) : results.length > 0 ? (
         <>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.78rem', margin: '0 0 6px' }}>Showing {results.length.toLocaleString()} of {total.toLocaleString()} matching IAPD firms.</p>

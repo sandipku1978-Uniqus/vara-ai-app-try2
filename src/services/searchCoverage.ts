@@ -6,6 +6,10 @@ export interface CandidateCoverageNotice {
   complete: boolean;
   /** upstreamTotal is a floor (EFTS stops counting at 10,000), not an exact count. */
   upstreamTotalIsFloor?: boolean;
+  /** Present only when this number counts verified matches rather than the
+   * candidate population presented to local Boolean/text validation. */
+  verifiedMatchTotal?: number;
+  verifiedMatchTotalIsFloor?: boolean;
   /** Per-lane ledger (audit R1): survives merging, session save and alert
    *  runs — branch-level exhaustion must never be flattened away. */
   branches?: BranchCoverageEntry[];
@@ -29,6 +33,15 @@ export function mergeCandidateCoverage(
     upstreamTotal: Math.max(current.upstreamTotal, incoming.upstreamTotal),
     complete: current.complete && incoming.complete,
     upstreamTotalIsFloor: Boolean(current.upstreamTotalIsFloor) || Boolean(incoming.upstreamTotalIsFloor),
+    ...((incoming.verifiedMatchTotal ?? current.verifiedMatchTotal) !== undefined
+      ? {
+          verifiedMatchTotal: incoming.verifiedMatchTotal ?? current.verifiedMatchTotal,
+          verifiedMatchTotalIsFloor:
+            incoming.verifiedMatchTotal !== undefined
+              ? Boolean(incoming.verifiedMatchTotalIsFloor)
+              : current.verifiedMatchTotalIsFloor,
+        }
+      : {}),
     // The final run report carries the authoritative ledgers; mid-run page
     // events carry none. Preserve whichever side has them — merging used to
     // FLATTEN these away, so a session restored after any accumulator merge
@@ -59,8 +72,15 @@ export function buildResultsHeadline(
   shownCap: number
 ): string {
   const shownLabel = shownCount >= shownCap ? `${shownCap}+` : shownCount.toLocaleString();
+  if (coverage?.verifiedMatchTotal !== undefined) {
+    if (coverage.verifiedMatchTotal > shownCount || coverage.verifiedMatchTotalIsFloor) {
+      const total = `${coverage.verifiedMatchTotal.toLocaleString()}${coverage.verifiedMatchTotalIsFloor ? '+' : ''}`;
+      return `${total} filings match — ${shownLabel} validated and shown`;
+    }
+    return `${shownLabel} filings`;
+  }
   if (coverage && (coverage.upstreamTotal > shownCount || coverage.upstreamTotalIsFloor)) {
-    return `${formatUpstreamTotal(coverage)} filings match — ${shownLabel} validated and shown`;
+    return `${formatUpstreamTotal(coverage)} upstream candidates — ${shownLabel} validated matches shown`;
   }
   return `${shownLabel} filings`;
 }

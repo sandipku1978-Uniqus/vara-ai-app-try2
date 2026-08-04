@@ -5,6 +5,7 @@ import { createContext, Fragment, useContext, useEffect, useState, type ReactNod
 import { ChatMessage } from '../types';
 import type { SearchFilters } from '../components/filters/SearchFilterBar';
 import type { FilingResearchResult, ResearchSearchMode } from '../services/filingResearch';
+import type { SavedAlertCoverage } from '../services/alertRoutes';
 import { BRAND } from '../config/brand';
 import { buildStorageScope, scopedStorageKey, setActiveBrowserStorageScope } from '../services/storageNamespace';
 import type {
@@ -66,16 +67,10 @@ export interface SavedAlert {
    *  instead of reporting the recall difference as new filings. Optional so a
    *  rollback build ignores it safely. */
   engineVersion?: number;
-  /** Coverage snapshot from the latest check (audit R1): whether the run was
-   *  complete and which required branches did not finish. Retained so a
-   *  partial check is never remembered as an authoritative one. */
-  lastCheckCoverage?: {
-    complete: boolean;
-    examined: number;
-    upstreamTotal: number;
-    upstreamTotalIsFloor?: boolean;
-    partialBranches?: string[];
-  };
+  /** Full evidence snapshot from the latest check. The branch ledger, stop
+   *  reasons and measured work survive local persistence so a partial check
+   *  is never remembered as an authoritative one. */
+  lastCheckCoverage?: SavedAlertCoverage;
 }
 
 export type ThemeMode = 'light' | 'dark';

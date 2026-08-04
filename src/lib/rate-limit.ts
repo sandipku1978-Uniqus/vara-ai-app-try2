@@ -1,6 +1,10 @@
 import crypto from 'node:crypto';
 import { kv } from '@vercel/kv';
 import { isLocalE2eBypass, isProductionDeployment } from './clerk-config';
+import {
+  configuredReleaseGateNotAfter,
+  isReleaseGateWindowActive,
+} from './release-gate-window';
 
 const WINDOW_SECONDS = 5 * 60;
 const DEFAULT_DAILY_TOKEN_BUDGET = 250_000;
@@ -17,7 +21,33 @@ interface LocalCounter {
 export interface RateLimitIdentity {
   userId: string;
   orgId: string | null;
+  releaseGate?: boolean;
+  releaseGateHost?: string;
 }
+
+/**
+ * Passing-run upper bound for one staged candidate's complete lifetime:
+ * 15,000 ticker issuers + 7,120 bounded e2e requests + 449 semantic requests +
+ * five auth/scope probes = 22,574. The 25k ceiling leaves ~11% scheduling/headroom.
+ * The e2e and semantic figures are retry-inclusive hard ceilings; remaining
+ * headroom keeps this finite bridge resilient to small evaluator changes.
+ */
+export const RELEASE_GATE_PASSING_REQUEST_BOUND = {
+  ticker: 15_000,
+  e2e: 7_120,
+  semantic: 449,
+  credentialProbe: 5,
+} as const;
+export const RELEASE_GATE_RESOURCE_WINDOW_LIMIT = 25_000;
+const RELEASE_GATE_RESOURCE_OPERATIONS = new Map([
+  ['GET /api/es-search', 'enriched-search'],
+  ['GET /api/letters', 'letters'],
+  ['GET /api/enrich', 'enrich'],
+  ['POST /api/enrich', 'filing-auditor-enrich'],
+  ['GET /api/filing-text', 'filing-text'],
+  ['POST /api/boolean-validate', 'boolean-validate'],
+  ['GET /api/sec-efts', 'sec-efts'],
+]);
 
 export interface RateLimitOptions {
   operation: string;
@@ -251,18 +281,73 @@ export async function checkResourceRateLimit(
 ): Promise<RateLimitResult> {
   const operation = options.operation.replace(/[^a-z0-9_-]/gi, '').slice(0, 40) || 'unknown';
   const bucket = Math.floor(Date.now() / (WINDOW_SECONDS * 1000));
+  const nowEpochSeconds = Math.floor(Date.now() / 1_000);
   const ip = clientIpFrom(request);
-  const scopes: Array<{ key: string; limit: number }> = [
-    { key: `user:${opaqueKeyPart(identity.userId)}:${operation}:${bucket}`, limit: options.userLimit || 120 },
-    { key: `ip:${opaqueKeyPart(ip)}:${operation}:${bucket}`, limit: options.ipLimit || 180 },
+  let releaseGatePolicy = false;
+  let releaseGateNotAfter: number | null = null;
+  if (
+    identity.releaseGate === true &&
+    process.env.VERCEL === '1' &&
+    process.env.VERCEL_ENV === 'production' &&
+    process.env.VERCEL_TARGET_ENV === 'production'
+  ) {
+    try {
+      const url = new URL(request.url);
+      const canonicalHost = (identity.releaseGateHost || '').toLowerCase();
+      const deploymentHost = (process.env.VERCEL_URL || '').trim().toLowerCase();
+      releaseGateNotAfter = configuredReleaseGateNotAfter();
+      releaseGatePolicy = Boolean(
+        isReleaseGateWindowActive(nowEpochSeconds) &&
+        /^[a-z0-9-]+\.vercel\.app$/.test(canonicalHost) &&
+        canonicalHost === deploymentHost &&
+        url.hostname.toLowerCase() === canonicalHost &&
+        RELEASE_GATE_RESOURCE_OPERATIONS.get(`${request.method.toUpperCase()} ${url.pathname}`) === operation,
+      );
+    } catch {
+      releaseGatePolicy = false;
+    }
+  }
+  // The signed release identity is limited to seven read-only method/path
+  // pairs and one exact staged production deployment. Give the sweep a bounded counter ceiling;
+  // this is not an unlimited bypass and does not alter concurrency or EDGAR
+  // upstream pacing controls.
+  const userLimit = releaseGatePolicy
+    ? RELEASE_GATE_RESOURCE_WINDOW_LIMIT
+    : options.userLimit || 120;
+  const ipLimit = releaseGatePolicy
+    ? RELEASE_GATE_RESOURCE_WINDOW_LIMIT
+    : options.ipLimit || 180;
+  if (releaseGatePolicy && !hasDistributedStore()) {
+    console.error('[rate-limit] distributed KV is required for the staged-release lifetime quota');
+    return { allowed: false, retryAfterSeconds: 30, reason: 'unavailable' };
+  }
+
+  const scopes: Array<{ key: string; limit: number; ttlSeconds?: number }> = [
+    { key: `user:${opaqueKeyPart(identity.userId)}:${operation}:${bucket}`, limit: userLimit },
+    { key: `ip:${opaqueKeyPart(ip)}:${operation}:${bucket}`, limit: ipLimit },
   ];
+  if (releaseGatePolicy && releaseGateNotAfter) {
+    // The documented bound is for the whole candidate sweep, not separately
+    // for search, letters, and enrichment. This deployment-scoped key has no
+    // five-minute bucket and lives through the candidate's absolute not-after,
+    // so time or serverless-instance rollover cannot reset the 25k ceiling.
+    scopes.unshift({
+      key: `release-gate:${opaqueKeyPart(identity.userId)}:lifetime`,
+      limit: RELEASE_GATE_RESOURCE_WINDOW_LIMIT,
+      ttlSeconds: Math.max(releaseGateNotAfter - nowEpochSeconds + 5, 5),
+    });
+  }
   if (identity.orgId) {
     scopes.push({ key: `org:${opaqueKeyPart(identity.orgId)}:${operation}:${bucket}`, limit: options.orgLimit || 600 });
   }
 
   try {
     for (const scope of scopes) {
-      const count = await incrementCounter(`resource-rate:${scope.key}`, 1, WINDOW_SECONDS + 5);
+      const count = await incrementCounter(
+        `resource-rate:${scope.key}`,
+        1,
+        scope.ttlSeconds || WINDOW_SECONDS + 5,
+      );
       if (count > scope.limit) {
         return { allowed: false, retryAfterSeconds: secondsUntilWindowReset(WINDOW_SECONDS), reason: 'rate' };
       }
@@ -306,7 +391,10 @@ async function acquireDistributedConcurrency(
   const now = Date.now();
   await kv.zremrangebyscore(key, 0, now);
   await kv.zadd(key, { score: now + leaseSeconds * 1000, member: token });
-  await kv.expire(key, leaseSeconds + 5);
+  // Members carry their individual expiries in their scores. Keep the ZSET
+  // itself alive for the longest lease we permit so a later short acquisition
+  // cannot truncate an earlier long lease by shortening the key TTL.
+  await kv.expire(key, MAX_CONCURRENCY_LEASE_SECONDS + 5);
   const count = await kv.zcard(key);
   if (count <= limit) return true;
   await kv.zrem(key, token);
@@ -450,7 +538,7 @@ export function rateLimitResponse(result: RateLimitResult): Response {
     : budget
       ? 'Daily AI usage budget reached.'
       : concurrency
-        ? 'Too many AI requests are already in progress.'
+        ? 'Too many requests are already in progress.'
       : 'Rate limit exceeded — try again shortly.';
 
   return Response.json({ error }, {

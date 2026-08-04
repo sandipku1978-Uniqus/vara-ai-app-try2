@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { defaultSearchFilters } from '../components/filters/SearchFilterBar';
-import { buildSavedAlertRouteParams } from '../services/alertRoutes';
+import { buildSavedAlertRouteParams, snapshotSavedAlertCoverage } from '../services/alertRoutes';
 import { hasResearchSearchCriteria, parseResearchRouteParams } from '../services/researchSessions';
 
 function filters() {
@@ -97,5 +97,44 @@ describe('saved-alert route contract', () => {
     };
 
     expect(hasResearchSearchCriteria('', filterOnly)).toBe(true);
+  });
+});
+
+describe('saved alert coverage snapshots', () => {
+  it('deep-copies branch verdicts, incomplete reasons, and measured work', () => {
+    const source = {
+      complete: false,
+      examined: 8,
+      upstreamTotal: 12,
+      branches: [{
+        branch: 'going concern',
+        required: true,
+        pages: 2,
+        candidatesSurfaced: 9,
+        candidatesNew: 8,
+        examined: 8,
+        matched: 3,
+        exhausted: false,
+        collectionComplete: false,
+        incompleteReason: 'page-budget' as const,
+      }],
+      work: {
+        pageRequests: 2,
+        docFetches: 8,
+        docHttpAttempts: 10,
+        prescreenRequests: 1,
+        totalUpstreamRequests: 13,
+        ceiling: { pages: 2, docHttpAttempts: 12, prescreenRequests: 2 },
+      },
+    };
+
+    const snapshot = snapshotSavedAlertCoverage(source);
+
+    expect(snapshot).toEqual(source);
+    expect(snapshot).not.toBe(source);
+    expect(snapshot.branches).not.toBe(source.branches);
+    expect(snapshot.branches?.[0]).not.toBe(source.branches[0]);
+    expect(snapshot.work).not.toBe(source.work);
+    expect(snapshot.work?.ceiling).not.toBe(source.work.ceiling);
   });
 });

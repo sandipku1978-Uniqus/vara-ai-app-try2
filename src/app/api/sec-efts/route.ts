@@ -5,6 +5,7 @@ import {
   buildSecTargetUrl,
   bytesToArrayBuffer,
   fetchSecResponse,
+  parseAndValidateEftsPayload,
   readResponseWithLimit,
   SecUpstreamError,
 } from '../../../lib/sec-upstream';
@@ -13,7 +14,7 @@ const USER_AGENT = process.env.NEXT_PUBLIC_EDGAR_USER_AGENT || 'Uniqus Research 
 const MAX_RESPONSE_BYTES = 5 * 1024 * 1024;
 
 export async function GET(request: Request) {
-  const access = await requireApiAccess();
+  const access = await requireApiAccess(true, '/api/sec-efts', 'GET');
   if (access.response) return access.response;
 
   const requestUrl = new URL(request.url);
@@ -39,11 +40,8 @@ export async function GET(request: Request) {
         : 502;
       return NextResponse.json({ error: 'SEC search upstream request failed.' }, { status });
     }
-    const contentType = (upstreamResponse.headers.get('content-type') || '').toLowerCase();
-    if (!contentType.includes('json')) {
-      return NextResponse.json({ error: 'SEC search returned an unsupported response.' }, { status: 502 });
-    }
     const bytes = await readResponseWithLimit(upstreamResponse, MAX_RESPONSE_BYTES, request.signal);
+    parseAndValidateEftsPayload(upstreamResponse.headers.get('content-type'), bytes);
     return new NextResponse(bytesToArrayBuffer(bytes), {
       status: 200,
       headers: {

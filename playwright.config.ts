@@ -6,6 +6,8 @@ const requestedBaseUrl = process.env.QA_BASE_URL?.replace(/\/$/, '');
 const localPort = Number(process.env.QA_PORT || 4317);
 const baseURL = requestedBaseUrl || `http://127.0.0.1:${localPort}`;
 const artifactRoot = process.env.QA_OUTPUT_DIR || join(tmpdir(), 'urc-playwright');
+const actionReportPath = process.env.QA_ACTION_REPORT || join(artifactRoot, 'ui-action-run.json');
+const actionRunLabel = process.env.QA_ACTION_RUN_LABEL || 'browser-local';
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -19,8 +21,24 @@ export default defineConfig({
     timeout: 15_000,
   },
   reporter: process.env.CI
-    ? [['line'], ['html', { outputFolder: join(artifactRoot, 'report'), open: 'never' }]]
-    : [['list'], ['html', { outputFolder: join(artifactRoot, 'report'), open: 'never' }]],
+    ? [
+        ['line'],
+        ['./scripts/ui-actions/playwright-reporter.ts', {
+          outputFile: actionReportPath,
+          suite: 'browser',
+          runLabel: actionRunLabel,
+        }],
+        ['html', { outputFolder: join(artifactRoot, 'report'), open: 'never' }],
+      ]
+    : [
+        ['list'],
+        ['./scripts/ui-actions/playwright-reporter.ts', {
+          outputFile: actionReportPath,
+          suite: 'browser',
+          runLabel: actionRunLabel,
+        }],
+        ['html', { outputFolder: join(artifactRoot, 'report'), open: 'never' }],
+      ],
   use: {
     baseURL,
     storageState: process.env.QA_STORAGE_STATE || undefined,
@@ -35,6 +53,15 @@ export default defineConfig({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
+      testIgnore: /mobile-navigation\.spec\.ts/,
+    },
+    {
+      // A deliberately small protected-route matrix. The local server's
+      // deterministic identity bypass supplies an authenticated application
+      // shell; Clerk itself remains covered by playwright.auth.config.ts.
+      name: 'mobile-chromium',
+      testMatch: /mobile-navigation\.spec\.ts/,
+      use: { ...devices['Pixel 5'] },
     },
   ],
   // QA_BASE_URL lets the suite inspect an already-running local, preview, or
@@ -52,7 +79,7 @@ export default defineConfig({
     ? undefined
     : {
         command: process.env.PW_PROD_BUILD === '1'
-          ? `npm run build && npx next start --hostname 127.0.0.1 --port ${localPort}`
+          ? `npm run build && npm run start -- --hostname 127.0.0.1 --port ${localPort}`
           : `npm run dev -- --hostname 127.0.0.1 --port ${localPort}`,
         url: baseURL,
         reuseExistingServer: true,

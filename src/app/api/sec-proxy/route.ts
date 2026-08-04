@@ -1,12 +1,20 @@
 import { NextResponse } from 'next/server';
 import { requireApiAccess } from '../../../lib/api-auth';
-import { checkResourceRateLimit, rateLimitResponse } from '../../../lib/rate-limit';
+import {
+  acquireResourceConcurrency,
+  checkResourceRateLimit,
+  rateLimitResponse,
+  releaseAiConcurrency,
+} from '../../../lib/rate-limit';
 import {
   buildSecTargetUrl,
   bytesToArrayBuffer,
   fetchSecResponse,
+  looksLikeSecErrorResponse,
+  parseSecJsonResponse,
   readResponseWithLimit,
   sanitizeSecHtml,
+  SEC_DOCUMENT_CONCURRENCY_OPTIONS,
   SEC_DOCUMENT_CSP,
   SecUpstreamError,
   type SecUpstream,
@@ -37,7 +45,7 @@ export async function GET(request: Request) {
   const requestUrl = new URL(request.url);
   const rawUpstream = requestUrl.searchParams.get('upstream') || 'proxy';
   const rawPath = requestUrl.searchParams.get('path');
-  if (!rawPath || !['proxy', 'data'].includes(rawUpstream)) {
+  if (!rawPath || !['proxy', 'data', 'iapd'].includes(rawUpstream)) {
     return NextResponse.json({ error: 'Invalid SEC proxy request.' }, { status: 400 });
   }
 
@@ -60,25 +68,48 @@ export async function GET(request: Request) {
     });
     if (!rate.allowed) return rateLimitResponse(rate);
 
-    const upstreamResponse = await fetchSecResponse(targetUrl, upstream, request.signal, USER_AGENT);
-    if (!upstreamResponse.ok) {
-      const status = upstreamResponse.status >= 400 && upstreamResponse.status <= 599
-        ? upstreamResponse.status
-        : 502;
-      return NextResponse.json({ error: 'SEC upstream request failed.' }, { status });
+    const isFilingDocument = upstream === 'proxy'
+      && targetUrl.pathname.startsWith('/Archives/edgar/data/');
+    const capacity = isFilingDocument
+      ? await acquireResourceConcurrency(request, access.identity, SEC_DOCUMENT_CONCURRENCY_OPTIONS)
+      : null;
+    if (capacity && !capacity.allowed) return rateLimitResponse(capacity);
+
+    let upstreamResponse: Response;
+    let bytes: Uint8Array;
+    try {
+      upstreamResponse = await fetchSecResponse(targetUrl, upstream, request.signal, USER_AGENT);
+      if (!upstreamResponse.ok) {
+        const status = upstreamResponse.status >= 400 && upstreamResponse.status <= 599
+          ? upstreamResponse.status
+          : 502;
+        return NextResponse.json({ error: 'SEC upstream request failed.' }, { status });
+      }
+
+      const responseLimit = upstream === 'iapd' ? 5 * 1024 * 1024 : MAX_RESPONSE_BYTES;
+      bytes = await readResponseWithLimit(upstreamResponse, responseLimit, request.signal, 12_000, truncateOversized);
+    } finally {
+      await releaseAiConcurrency(capacity?.lease);
     }
 
-    const bytes = await readResponseWithLimit(upstreamResponse, MAX_RESPONSE_BYTES, request.signal, 12_000, truncateOversized);
     const contentType = (upstreamResponse.headers.get('content-type') || '').toLowerCase();
+    const textual = contentType.includes('text/html')
+      || contentType.includes('application/xhtml+xml')
+      || contentType.includes('text/plain')
+      || contentType.includes('xml');
+    const decodedText = textual ? new TextDecoder('utf-8').decode(bytes) : null;
+    if (looksLikeSecErrorResponse(bytes)) {
+      return NextResponse.json({ error: 'SEC upstream returned an error page.' }, { status: 502 });
+    }
     if (contentType.includes('text/html') || contentType.includes('application/xhtml+xml')) {
-      const html = new TextDecoder('utf-8').decode(bytes);
-      const sanitized = sanitizeSecHtml(html, targetUrl);
+      const sanitized = sanitizeSecHtml(decodedText || '', targetUrl);
       return new NextResponse(sanitized, {
         status: 200,
         headers: safeHeaders('text/html; charset=utf-8', true),
       });
     }
     if (contentType.includes('json')) {
+      parseSecJsonResponse(bytes, contentType);
       return new NextResponse(bytesToArrayBuffer(bytes), {
         status: 200,
         headers: safeHeaders('application/json; charset=utf-8', false),

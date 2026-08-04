@@ -113,8 +113,16 @@ export default function SicLookupField({
       .map(item => item.option);
   }, [options, value]);
 
+  useEffect(() => {
+    setActiveIndex(open && matches.length > 0 ? 0 : -1);
+  }, [matches, open]);
+
   function chooseOption(option: SicDirectoryEntry) {
-    onChange(`${option.code} - ${option.title}`);
+    // The display menu supplies the title, but the authoritative search facet
+    // accepts an exact four-digit SIC code. Persisting "code - title" made a
+    // seemingly valid pointer/keyboard selection fail /api/es-search
+    // validation and silently left the user with no usable facet.
+    onChange(option.code.padStart(4, '0'));
     setOpen(false);
     setActiveIndex(-1);
     inputRef.current?.focus();
@@ -139,7 +147,7 @@ export default function SicLookupField({
               event.preventDefault(); setOpen(true); setActiveIndex(index => Math.min(index + 1, matches.length - 1));
             } else if (event.key === 'ArrowUp' && matches.length > 0) {
               event.preventDefault(); setOpen(true); setActiveIndex(index => Math.max(index - 1, 0));
-            } else if (event.key === 'Enter' && open && activeIndex >= 0) {
+            } else if (event.key === 'Enter' && open && activeIndex >= 0 && matches[activeIndex]) {
               event.preventDefault(); chooseOption(matches[activeIndex]);
             } else if (event.key === 'Escape') {
               setOpen(false); setActiveIndex(-1);
@@ -149,7 +157,9 @@ export default function SicLookupField({
           aria-autocomplete="list"
           aria-expanded={open}
           aria-controls={open ? listboxId : undefined}
-          aria-activedescendant={open && activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined}
+          aria-activedescendant={open && activeIndex >= 0 && matches[activeIndex]
+            ? `${listboxId}-option-${activeIndex}`
+            : undefined}
           aria-label="Industry or SIC code"
           placeholder={placeholder}
           style={inputStyle}

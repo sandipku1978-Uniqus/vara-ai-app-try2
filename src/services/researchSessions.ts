@@ -34,6 +34,7 @@ export interface ResearchSearchSession {
    */
   coverage?: {
     examined: number; upstreamTotal: number; complete: boolean; upstreamTotalIsFloor?: boolean;
+    verifiedMatchTotal?: number; verifiedMatchTotalIsFloor?: boolean;
     /** Per-lane ledger + measured work (audit R1): saved artifacts retain the
      *  branch-level story, not just the aggregate. */
     branches?: import('./secApi').BranchCoverageEntry[];
@@ -166,7 +167,7 @@ const defaultSearchFiltersForRoutes: SearchFilters = {
 };
 
 export function createResearchSessionId(): string {
-  return `research-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  return `research-${Date.now()}-${globalThis.crypto.randomUUID()}`;
 }
 
 export function buildResearchSessionTitle(query: string, filters: SearchFilters): string {
@@ -229,7 +230,6 @@ function retireStaleBooleanResults(session: ResearchSearchSession): ResearchSear
   const isStaleBoolean =
     session.mode === 'boolean' &&
     session.searched &&
-    session.results.length > 0 &&
     (session.engineVersion ?? 1) !== BOOLEAN_ENGINE_VERSION;
 
   if (!isStaleBoolean) return session;

@@ -54,7 +54,16 @@ describe('UI page QA contracts', () => {
   it('defines a useful job and observable, nonempty, distinct outcomes for every page', () => {
     for (const contract of UI_PAGE_CONTRACTS) {
       expect(contract.intendedJob.trim().length, `${contract.id} intended job`).toBeGreaterThan(40);
-      expect(contract.actions.length, `${contract.id} action count`).toBeGreaterThanOrEqual(2);
+      const contentChecks = 'contentChecks' in contract ? contract.contentChecks : [];
+
+      // A page must expose at least one real control, but useful required content
+      // is also an observable contract. Legal/reference pages should not acquire a
+      // fake second button merely to satisfy the inventory shape.
+      expect(contract.actions.length, `${contract.id} action count`).toBeGreaterThanOrEqual(1);
+      expect(
+        contract.actions.length + contentChecks.length,
+        `${contract.id} observable contract count`,
+      ).toBeGreaterThanOrEqual(2);
 
       const outcomes = contract.actions.map(action => action.expectedOutcome.trim());
       expect(new Set(outcomes).size, `${contract.id} distinct outcomes`).toBe(outcomes.length);
@@ -63,6 +72,12 @@ describe('UI page QA contracts', () => {
         expect(action.id.startsWith(`${contract.id}.`), `${action.id} page prefix`).toBe(true);
         expect(action.interaction.trim().length, `${action.id} interaction`).toBeGreaterThan(20);
         expect(action.expectedOutcome.trim().length, `${action.id} expected outcome`).toBeGreaterThan(30);
+      }
+
+      for (const content of contentChecks) {
+        expect(content.id.startsWith(`${contract.id}.`), `${content.id} page prefix`).toBe(true);
+        expect(content.assertion.trim().length, `${content.id} assertion`).toBeGreaterThan(20);
+        expect(content.expectedContent.trim().length, `${content.id} expected content`).toBeGreaterThan(30);
       }
     }
   });

@@ -1,8 +1,15 @@
 import { unstable_cache } from 'next/cache';
+import { isLocalE2eBypass } from '../../../lib/clerk-config';
+import { fetchSecJson } from '../../../lib/sec-upstream';
+import {
+  LOCAL_E2E_DOSSIER_CIK,
+  LOCAL_E2E_DOSSIER_SUBMISSION,
+} from './dossierE2eFixture';
 
 const SEC_USER_AGENT = 'Uniqus Research Center contact@uniqus.com';
 const DOSSIER_REVALIDATE_SECONDS = 86_400;
 const RECENT_FILING_LIMIT = 15;
+const DOSSIER_SUBMISSIONS_MAX_BYTES = 20 * 1024 * 1024;
 
 export interface DossierCompanyData {
   name: string;
@@ -69,15 +76,17 @@ export function projectDossierCompanyData(value: unknown): DossierCompanyData | 
 }
 
 async function loadDossierCompanyData(cik: string): Promise<DossierCompanyData> {
-  const response = await fetch(`https://data.sec.gov/submissions/CIK${cik}.json`, {
-    headers: { 'User-Agent': SEC_USER_AGENT },
-    // The projected result below is the persistent cache entry. Caching this raw
-    // response would exceed Next's per-entry data-cache limit for large issuers.
-    cache: 'no-store',
+  const payload = await fetchSecJson({
+    upstream: 'data',
+    path: `submissions/CIK${cik}.json`,
+    userAgent: SEC_USER_AGENT,
+    maxBytes: DOSSIER_SUBMISSIONS_MAX_BYTES,
   });
-  if (!response.ok) throw new Error(`SEC submissions request failed (${response.status})`);
 
-  const projected = projectDossierCompanyData(await response.json());
+  // The projected result below is the persistent cache entry. The central SEC
+  // helper always reads the raw response no-store, avoiding Next's per-entry
+  // data-cache limit for large issuers while this small projection keeps ISR.
+  const projected = projectDossierCompanyData(payload);
   if (!projected) throw new Error('SEC submissions response was malformed');
   return projected;
 }
@@ -93,6 +102,13 @@ const loadDossierCompanyDataCached = unstable_cache(
 const inFlight = new Map<string, Promise<DossierCompanyData | null>>();
 
 export function fetchDossierCompanyData(cik: string): Promise<DossierCompanyData | null> {
+  // Playwright cannot intercept this Server Component's outbound SEC request.
+  // The existing localhost-only auth bypass is the single test-mode boundary;
+  // Vercel always sets VERCEL, so this branch is unreachable on hosted builds.
+  if (isLocalE2eBypass() && cik === LOCAL_E2E_DOSSIER_CIK) {
+    return Promise.resolve(projectDossierCompanyData(LOCAL_E2E_DOSSIER_SUBMISSION));
+  }
+
   const pending = inFlight.get(cik);
   if (pending) return pending;
 

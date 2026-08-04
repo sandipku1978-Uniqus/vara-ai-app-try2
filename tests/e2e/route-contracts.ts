@@ -1,3 +1,8 @@
+import {
+  LOCAL_E2E_DOSSIER_CIK,
+  LOCAL_E2E_DOSSIER_COMPANY,
+} from '../../src/app/company/[ticker]/dossierE2eFixture';
+
 export interface RouteContract {
   path: string;
   heading: RegExp;
@@ -8,6 +13,10 @@ export interface RouteContract {
 
 function h1(path: string, heading: RegExp, isPublic = false): RouteContract {
   return { path, heading, headingLevel: 1, public: isPublic };
+}
+
+function exactText(value: string): RegExp {
+  return new RegExp(`^${value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
 }
 
 /**
@@ -52,11 +61,11 @@ export const LANDING_ROUTE_CONTRACT = h1(
  */
 export const DYNAMIC_ROUTE_CONTRACTS: readonly RouteContract[] = [
   {
-    path: '/company/0000320193',
-    heading: /Apple Inc\./i,
+    path: `/company/${LOCAL_E2E_DOSSIER_CIK}`,
+    heading: exactText(LOCAL_E2E_DOSSIER_COMPANY),
     headingLevel: 1,
     public: false,
-    note: 'Raw Apple CIK avoids making ticker resolution part of this route contract.',
+    note: 'The localhost-only dossier issuer exercises the real server/client boundary without a live SEC dependency.',
   },
   {
     path: '/filing/0000320193_0000320193-24-000123_aapl-20240928.htm',
@@ -72,7 +81,7 @@ export const INTERNAL_ROUTE_CONTRACT: RouteContract = {
   heading: /^Command bar$/,
   headingLevel: 2,
   public: false,
-  note: 'Internal component specimen; semantic census intentionally reports its missing page H1 and inert controls.',
+  note: 'Internal static specimen; development tests exercise its state matrix and production builds reject the route.',
 };
 
 export const ALL_ROUTE_CONTRACTS: readonly RouteContract[] = [

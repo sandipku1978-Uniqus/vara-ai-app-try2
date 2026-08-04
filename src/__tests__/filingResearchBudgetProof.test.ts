@@ -83,9 +83,13 @@ beforeEach(() => {
     return { ok: true, text: id ? TEXT[id] : '', attempts: 2 };
   });
 
-  // Pre-screen answers nothing useful (no filtering) but each call is work.
-  mocks.prescreen.mockImplementation(async () => {
-    tally.prescreens += 1;
+  // Pre-screen answers nothing useful but reports the actual hidden server
+  // fan-out: one client→route POST plus three SEC attempts.
+  mocks.prescreen.mockImplementation(async (_query: string, _candidates: unknown[], options?: {
+    onWork?: (work: { upstreamAttempts: number; cacheHits: number; budgetExhausted: boolean }) => void;
+  }) => {
+    tally.prescreens += 4;
+    options?.onWork?.({ upstreamAttempts: 3, cacheHits: 0, budgetExhausted: false });
     return null;
   });
 
@@ -134,5 +138,39 @@ describe('end-to-end budget proof (audit R1)', () => {
     expect(work.pageRequests).toBeLessThanOrEqual(work.ceiling.pages);
     expect(work.docHttpAttempts).toBeLessThanOrEqual(work.ceiling.docHttpAttempts);
     expect(work.prescreenRequests).toBeLessThanOrEqual(work.ceiling.prescreenRequests);
+  });
+
+  it('charges one enriched route call for its full reported server EFTS fan-out', async () => {
+    mocks.search.mockImplementationOnce(async (_query: string, ...rest: unknown[]) => {
+      const options = rest[5] as {
+        upstreamRequestBudget?: number;
+        onUpstreamPage?: (requestCount?: number) => boolean | void;
+        onCoverage?: (coverage: SearchCandidateCoverage) => void;
+      };
+      expect(options.upstreamRequestBudget).toBe(60);
+      tally.pageAttempts += 60;
+      expect(options.onUpstreamPage?.(60)).not.toBe(false);
+      options.onCoverage?.({
+        examined: 0,
+        upstreamTotal: 5_000,
+        complete: false,
+        upstreamRequests: 60,
+      });
+      return [];
+    });
+
+    let coverage: SearchCandidateCoverage | null = null;
+    await executeFilingResearchSearch({
+      query: 'alpha AND beta',
+      filters: defaultSearchFilters,
+      mode: 'boolean',
+      onCoverage: value => { coverage = value; },
+    });
+
+    const work = coverage!.work!;
+    expect(work.pageRequests).toBe(60);
+    expect(work.pageRequests).toBe(tally.pageAttempts);
+    expect(work.pageRequests).toBe(work.ceiling.pages);
+    expect(coverage!.branches?.[0]?.pages).toBe(60);
   });
 });

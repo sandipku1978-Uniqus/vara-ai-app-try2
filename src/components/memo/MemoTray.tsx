@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { BookMarked, Copy, Download, Loader2, Sparkles, Trash2, X } from 'lucide-react';
 import { useMemoDraft, useMemoTray } from '../../hooks/useMemoTray';
 import {
@@ -19,6 +19,8 @@ import MemoDraft from './MemoDraft';
 import '../../styles/evidence-ledger.css';
 import './MemoTray.css';
 
+const CLEAR_CONFIRM_TIMEOUT_MS = 5_000;
+
 export default function MemoTray() {
   const citations = useMemoTray();
   const draftRecord = useMemoDraft();
@@ -27,6 +29,20 @@ export default function MemoTray() {
   const [draftError, setDraftError] = useState('');
   const [copied, setCopied] = useState<'citations' | 'draft' | ''>('');
   const [copyError, setCopyError] = useState('');
+  const [clearConfirmationRevision, setClearConfirmationRevision] = useState<string | null>(null);
+  const clearButtonRef = useRef<HTMLButtonElement>(null);
+  const cancelClearButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Confirmation is authorization for this exact evidence ledger, not for any
+  // future set of citations that happens to occupy the tray.
+  const citationRevision = JSON.stringify(citations);
+  const confirmClear = clearConfirmationRevision === citationRevision;
+
+  useEffect(() => {
+    if (clearConfirmationRevision === null) return;
+    const timeout = window.setTimeout(() => setClearConfirmationRevision(null), CLEAR_CONFIRM_TIMEOUT_MS);
+    return () => window.clearTimeout(timeout);
+  }, [clearConfirmationRevision]);
 
   const draft = draftRecord?.text || '';
   const draftIsStale = Boolean(
@@ -118,9 +134,12 @@ export default function MemoTray() {
       <button
         type="button"
         className="memo-tray-trigger"
-        onClick={() => setOpen(current => !current)}
+        onClick={() => {
+          setOpen(current => !current);
+          setClearConfirmationRevision(null);
+        }}
         aria-expanded={open}
-        aria-label={`Open memo tray (${citations.length} citation${citations.length === 1 ? '' : 's'})`}
+        aria-label={`${open ? 'Close' : 'Open'} memo tray (${citations.length} citation${citations.length === 1 ? '' : 's'})`}
       >
         <BookMarked size={16} />
         <span>Memo</span>
@@ -134,7 +153,7 @@ export default function MemoTray() {
               <div className="memo-tray-eyebrow">Citation ledger</div>
               <h2>Memo tray</h2>
             </div>
-            <button type="button" className="memo-tray-icon-btn" onClick={() => setOpen(false)} aria-label="Close memo tray">
+            <button type="button" className="memo-tray-icon-btn" onClick={() => { setOpen(false); setClearConfirmationRevision(null); }} aria-label="Close memo tray">
               <X size={16} />
             </button>
           </header>
@@ -185,9 +204,41 @@ export default function MemoTray() {
                 <button type="button" className="el-btn el-btn-primary" onClick={() => void draftMemo()} disabled={drafting}>
                   {drafting ? <Loader2 size={14} className="spinner" /> : <Sparkles size={14} />} Draft memo with AI
                 </button>
-                <button type="button" className="memo-tray-clear" onClick={() => { clearMemoTray(); clearMemoDraft(); }}>
-                  Clear all
+                <button
+                  ref={clearButtonRef}
+                  type="button"
+                  className="memo-tray-clear"
+                  onBlur={event => {
+                    if (event.relatedTarget !== cancelClearButtonRef.current) {
+                      setClearConfirmationRevision(null);
+                    }
+                  }}
+                  onClick={() => {
+                    if (!confirmClear) {
+                      setClearConfirmationRevision(citationRevision);
+                      return;
+                    }
+                    clearMemoTray();
+                    clearMemoDraft();
+                    setClearConfirmationRevision(null);
+                  }}
+                >
+                  {confirmClear ? 'Confirm clear all' : 'Clear all'}
                 </button>
+                {confirmClear && (
+                  <button
+                    ref={cancelClearButtonRef}
+                    type="button"
+                    className="el-btn el-btn-secondary"
+                    onBlur={() => setClearConfirmationRevision(null)}
+                    onClick={() => {
+                      setClearConfirmationRevision(null);
+                      clearButtonRef.current?.focus();
+                    }}
+                  >
+                    Cancel clear
+                  </button>
+                )}
               </div>
 
               {copyError && <div role="alert" className="el-state el-state-error memo-tray-empty">{copyError}</div>}

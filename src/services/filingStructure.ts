@@ -249,6 +249,10 @@ export interface TopicBlockMatch {
   passage: TopicPassage;
   /** The registrant's own name for the block, shown as provenance. */
   blockName: string;
+  /** Exact SEC archive document that supplied the scored passage. */
+  blockFile: string;
+  /** Length after report chrome is removed—the text actually scored. */
+  sourceTextLength: number;
 }
 
 /**
@@ -294,7 +298,12 @@ export async function locateTopicInBlocks(options: {
     const strength = passageStrength(passage);
     if (strength > bestStrength) {
       bestStrength = strength;
-      best = { passage, blockName: candidate.shortName };
+      best = {
+        passage,
+        blockName: candidate.shortName,
+        blockFile: candidate.file,
+        sourceTextLength: text.length,
+      };
     }
     // Two diagnostic terms is a block that plainly discusses the topic; no
     // reason to spend another fetch looking for a better one.

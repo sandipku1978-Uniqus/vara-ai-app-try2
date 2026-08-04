@@ -15,10 +15,70 @@ import { describeForm } from '../lib/formLabels';
 import { buildResearchRouteParams } from '../services/researchSessions';
 import { BOOLEAN_ENGINE_VERSION } from '../utils/booleanSearch';
 import { buildWatchlistAnalytics } from '../services/dashboardAnalytics';
-import { buildSavedAlertRouteParams } from '../services/alertRoutes';
+import {
+  buildSavedAlertRouteParams,
+  snapshotSavedAlertCoverage,
+  type SavedAlertCoverage,
+} from '../services/alertRoutes';
 import './Dashboard.css';
 
 const CHART_COLORS = ['#B31F7E', '#482A7A', '#E8B15E', '#247BA0', '#3A8D5D', '#D65A4A'];
+
+const INCOMPLETE_REASON_LABELS: Record<NonNullable<NonNullable<SavedAlertCoverage['branches']>[number]['incompleteReason']>, string> = {
+  'doc-budget': 'document budget reached',
+  'page-budget': 'page budget reached',
+  deadline: 'time limit reached',
+  error: 'source error',
+  cancelled: 'check cancelled',
+  'display-limit': 'result display limit reached',
+};
+
+function AlertCoverageState({ coverage }: { coverage: SavedAlertCoverage }) {
+  const requiredBranches = coverage.branches?.filter(branch => branch.required) ?? [];
+  const unfinishedBranches = requiredBranches.filter(branch => !branch.exhausted);
+  const completedBranchCount = requiredBranches.length - unfinishedBranches.length;
+  const upstreamTotal = `${coverage.upstreamTotal.toLocaleString()}${coverage.upstreamTotalIsFloor ? '+' : ''}`;
+
+  return (
+    <div
+      className={`alert-coverage ${coverage.complete ? 'alert-coverage-complete' : 'alert-coverage-partial'}`}
+      data-coverage-state={coverage.complete ? 'complete' : 'partial'}
+    >
+      <p className="alert-coverage-summary">
+        <strong>{coverage.complete ? 'Complete coverage' : 'Partial coverage'}</strong>
+        <span>Examined {coverage.examined.toLocaleString()} of {upstreamTotal} upstream candidates</span>
+        {requiredBranches.length > 0 && (
+          <span>{completedBranchCount}/{requiredBranches.length} required branches complete</span>
+        )}
+      </p>
+      {unfinishedBranches.length > 0 && (
+        <ul className="alert-coverage-branches" aria-label="Unfinished Boolean branches">
+          {unfinishedBranches.map((branch, index) => (
+            <li key={`${branch.branch}-${index}`}>
+              <code>{branch.branch}</code>
+              <span>
+                {branch.incompleteReason
+                  ? (INCOMPLETE_REASON_LABELS[branch.incompleteReason] ?? branch.incompleteReason)
+                  : 'did not finish'}
+                {' · '}{branch.examined.toLocaleString()} examined
+                {' · '}{branch.pages.toLocaleString()} page{branch.pages === 1 ? '' : 's'}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {coverage.work && (
+        <p className="alert-coverage-work">
+          Measured work: {coverage.work.totalUpstreamRequests.toLocaleString()} upstream requests
+          {' · '}pages {coverage.work.pageRequests.toLocaleString()}/{coverage.work.ceiling.pages.toLocaleString()}
+          {' · '}document attempts {coverage.work.docHttpAttempts.toLocaleString()}/{coverage.work.ceiling.docHttpAttempts.toLocaleString()}
+          {' · '}documents hydrated {coverage.work.docFetches.toLocaleString()}
+          {' · '}pre-screen {coverage.work.prescreenRequests.toLocaleString()}/{coverage.work.ceiling.prescreenRequests.toLocaleString()}
+        </p>
+      )}
+    </div>
+  );
+}
 
 export default function Dashboard() {
   const {
@@ -142,7 +202,14 @@ export default function Dashboard() {
         onCoverage: coverage => { runCoverage = coverage; },
       });
       const coverageSnapshot = runCoverage as import('../services/secApi').SearchCandidateCoverage | null;
-      const runComplete = coverageSnapshot !== null && coverageSnapshot.complete;
+      // A result array without coverage is not an auditable search result.
+      // Invalid/legacy Boolean plans can stop before onCoverage fires; treating
+      // that as a successful zero would clear prior evidence and advance the
+      // engine version even though no retrieval was measured.
+      if (!coverageSnapshot) {
+        throw new Error('The saved search completed without coverage evidence.');
+      }
+      const runComplete = coverageSnapshot.complete;
 
       const accessions = results.map(result => result.accessionNumber);
       // The v2 Boolean engine legitimately recalls a different set than the one
@@ -157,19 +224,10 @@ export default function Dashboard() {
 
       updateSavedAlert(alert.id, {
         lastCheckedAt: new Date().toISOString(),
-        // Retain the check's coverage story (audit R1): partial checks stay
-        // visibly partial — including WHICH branches did not finish.
-        lastCheckCoverage: coverageSnapshot
-          ? {
-              complete: coverageSnapshot.complete,
-              examined: coverageSnapshot.examined,
-              upstreamTotal: coverageSnapshot.upstreamTotal,
-              upstreamTotalIsFloor: coverageSnapshot.upstreamTotalIsFloor,
-              partialBranches: coverageSnapshot.branches
-                ?.filter(entry => entry.required && !entry.exhausted)
-                .map(entry => entry.branch),
-            }
-          : undefined,
+        // Retain the complete evidence ledger (audit R1). A partial alert
+        // check remains explainable after reload: every branch verdict, stop
+        // reason and measured request count crosses the storage boundary.
+        lastCheckCoverage: snapshotSavedAlertCoverage(coverageSnapshot),
         // Only a COMPLETE run may replace the seen-set. A partial window
         // still reports what it found, but the baseline stays intact so
         // nothing it missed gets silently marked as seen.
@@ -178,7 +236,10 @@ export default function Dashboard() {
           : Array.from(new Set([...alert.lastSeenAccessions, ...accessions])),
         latestNewAccessions,
         latestResultCount: results.length,
-        engineVersion: BOOLEAN_ENGINE_VERSION,
+        // A partial run has not established the current engine's complete
+        // baseline. Preserve the old version marker so the next healthy run
+        // still performs the required re-baseline.
+        ...(runComplete ? { engineVersion: BOOLEAN_ENGINE_VERSION } : {}),
       });
     } catch (error) {
       console.error('Alert check failed:', error);
@@ -388,7 +449,15 @@ export default function Dashboard() {
             </div>
             {loadingWatchlist && <div className="text-muted"><Loader2 size={16} className="spinner" /> Loading...</div>}
             {!loadingWatchlist && (() => {
-              const recentFilings: { ticker: string; issuer: string; form: string; date: string }[] = [];
+              const recentFilings: {
+                ticker: string;
+                issuer: string;
+                form: string;
+                date: string;
+                cik: string;
+                accessionNumber: string;
+                primaryDocument: string;
+              }[] = [];
 
               for (const ticker of watchlist) {
                 const secData = watchlistData[ticker];
@@ -400,6 +469,9 @@ export default function Dashboard() {
                     issuer: secData.name || ticker,
                     form: recent.form[i],
                     date: recent.filingDate[i],
+                    cik: secData.cik,
+                    accessionNumber: recent.accessionNumber[i] || '',
+                    primaryDocument: recent.primaryDocument[i] || '',
                   });
                 }
               }
@@ -424,7 +496,16 @@ export default function Dashboard() {
                   type="button"
                   key={`${filing.ticker}-${filing.form}-${filing.date}-${idx}`}
                   className="recent-filing-row"
-                  onClick={() => navigate.push(`/search?q=${filing.ticker}`)}
+                  aria-label={`Open ${filing.issuer} ${filing.form} filed ${filing.date}`}
+                  onClick={() => {
+                    if (filing.cik && filing.accessionNumber && filing.primaryDocument) {
+                      navigate.push(`/filing/${Number(filing.cik)}_${filing.accessionNumber}_${filing.primaryDocument}`);
+                      return;
+                    }
+                    // Malformed upstream rows still retain a useful issuer
+                    // research fallback instead of becoming inert.
+                    navigate.push(`/search?q=${filing.ticker}`);
+                  }}
                 >
                   <span className="recent-filing-form">
                     <FileText size={14} className={filing.form === '8-K' ? 'text-orange' : 'text-blue'} aria-hidden="true" />
@@ -474,6 +555,7 @@ export default function Dashboard() {
                         ? `${alert.latestNewAccessions.length} new filing${alert.latestNewAccessions.length === 1 ? '' : 's'} detected.`
                         : `${alert.latestResultCount} current match${alert.latestResultCount === 1 ? '' : 'es'} in scope.`}
                     </p>
+                    {alert.lastCheckCoverage && <AlertCoverageState coverage={alert.lastCheckCoverage} />}
                     <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '10px' }}>
                       <button
                         className="secondary-btn"

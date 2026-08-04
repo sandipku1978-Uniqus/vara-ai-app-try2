@@ -103,6 +103,16 @@ test.describe('critical action: open a filing from research results', () => {
     expect(href).toContain(BOTH.document);
     // External links never hand the opener to the target page.
     await expect(sourceLink).toHaveAttribute('rel', /noreferrer|noopener/);
+
+    const filingUrl = page.url();
+    const [sourcePage] = await Promise.all([
+      page.waitForEvent('popup'),
+      sourceLink.click(),
+    ]);
+    await expect.poll(() => sourcePage.url()).toBe(href);
+    await sourcePage.close();
+    expect(page.url(), 'opening the source must retain the filing workspace').toBe(filingUrl);
+    await expect(page.getByRole('heading', { name: BOTH.document })).toBeVisible();
   });
 });
 
@@ -177,23 +187,23 @@ test.describe('critical action: the alert journey (save, then check on the Dashb
     await runBooleanQuery(page, 'mezzanine OR temporary');
     await expect(page.getByText(BOTH.company).first()).toBeVisible({ timeout: 30_000 });
 
-    // A completed search collapses the query panel; Save Alert lives in the
-    // expanded branch, so reopen it first.
-    const expand = page.getByRole('button', { name: 'Expand', exact: true });
-    if (await expand.isVisible().catch(() => false)) {
-      await expand.click();
-    }
-    // Save the alert. The confirmation copy renders in the collapsible rail
-    // (layout-dependent), so the journey's proof is the Dashboard card below.
-    await page.getByRole('button', { name: 'Save Alert' }).click();
+    await test.step('ui-action:research-workbench.save-alert', async () => {
+      // A completed search collapses the query panel; Save Alert lives in the
+      // expanded branch, so reopen it first.
+      const expand = page.getByRole('button', { name: 'Expand', exact: true });
+      if (await expand.isVisible().catch(() => false)) {
+        await expand.click();
+      }
+      await page.getByRole('button', { name: 'Save Alert' }).click();
+      await expect.poll(() => page.evaluate(() =>
+        Object.keys(window.localStorage).some(key =>
+          (window.localStorage.getItem(key) || '').includes('mezzanine OR temporary')
+        )
+      )).toBe(true);
+    });
 
     // Identity settled before the save (waitForIdentity), so the alert
     // persists to the scoped key; a hard navigation now proves durability.
-    await page.waitForFunction(() =>
-      Object.keys(window.localStorage).some(key =>
-        (window.localStorage.getItem(key) || '').includes('mezzanine OR temporary')
-      )
-    );
     await page.goto('/dashboard');
     await waitForIdentity(page);
     await expect(page.getByText('mezzanine OR temporary').first()).toBeVisible({ timeout: 20_000 });
@@ -201,15 +211,17 @@ test.describe('critical action: the alert journey (save, then check on the Dashb
 
     // Check Now reruns the saved search (through the same fixtures) and lands
     // back on a truthful, non-error status line.
-    const queriesBeforeCheck = stats.eftsQueries.length;
-    await page.getByRole('button', { name: 'Check Now' }).click();
-    // The status line never disappears (it shows the saved count), so the
-    // proof that Check Now re-ran retrieval is the fixture request counter —
-    // polled, because the check is asynchronous.
-    await expect
-      .poll(() => stats.eftsQueries.length, { timeout: 30_000 })
-      .toBeGreaterThan(queriesBeforeCheck);
-    await expect(page.getByText(/current matches in scope|new filings? detected/).first()).toBeVisible();
+    await test.step('ui-action:dashboard.check-saved-alert', async () => {
+      const queriesBeforeCheck = stats.eftsQueries.length;
+      await page.getByRole('button', { name: 'Check Now' }).click();
+      // The status line never disappears (it shows the saved count), so the
+      // proof that Check Now re-ran retrieval is the fixture request counter —
+      // polled, because the check is asynchronous.
+      await expect
+        .poll(() => stats.eftsQueries.length, { timeout: 30_000 })
+        .toBeGreaterThan(queriesBeforeCheck);
+      await expect(page.getByText(/current matches in scope|new filings? detected/).first()).toBeVisible();
+    });
   });
 });
 

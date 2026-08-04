@@ -57,11 +57,10 @@ function tokenize(query: string): string[] {
  * Mirrors EFTS semantics: space = AND of terms, explicit OR = union, and a
  * QUOTED STRING IS AN EXACT ADJACENT PHRASE.
  *
- * Phrase support is not cosmetic here. The executor now delegates a bare
- * quoted phrase to EDGAR rather than re-reading each document, so this stub
- * stands in for the index that decides the result. Verified against the live
- * index before relying on it: "material weakness" reports ≥10,000 hits while
- * the reversed "weakness material" reports 414.
+ * Phrase support is not cosmetic here. Morphology-invariant phrases can be
+ * delegated to this exact index contract. Morphology-sensitive phrases use a
+ * wider candidate query and are then checked by the real local matcher in the
+ * server pre-screen, because EFTS quotes do not share its singular/plural rule.
  */
 function matchesEfts(query: string, filing: FixtureFiling): boolean {
   const haystack = filing.text.toLowerCase();

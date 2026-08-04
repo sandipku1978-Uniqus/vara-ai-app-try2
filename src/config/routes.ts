@@ -11,6 +11,10 @@ export interface ProductRoute {
 
 export const PUBLIC_PAGE_PATHS = ['/', '/support', '/privacy', '/terms'] as const;
 
+// Machine-facing exceptions stay separate from public pages so they cannot
+// accidentally appear in the sitemap or crawler allow-list.
+export const PUBLIC_API_PATHS = ['/api/csp-report', '/api/version'] as const;
+
 export const PRODUCT_ROUTES: ProductRoute[] = [
   { path: '/dashboard', label: 'Dashboard', group: 'Monitor', keywords: 'home monitor overview', palette: true },
   { path: '/earnings', label: EARNINGS_SCOPE_LABEL, group: 'Monitor', keywords: 'earnings release exhibit ex-99.1', palette: true },

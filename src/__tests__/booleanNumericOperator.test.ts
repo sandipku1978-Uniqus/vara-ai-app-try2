@@ -52,10 +52,11 @@ describe('# numeric operators', () => {
   });
 
   it('anchors retrieval on the phrase, never on the numeric operand', () => {
+    const phraseRecallLane = '((goodwill OR goodwills) AND (impairment OR impairments))';
     const compiled = compileBooleanQuery('"goodwill impairment" W/10 $#');
     expect(compiled.ok).toBe(true);
-    if (compiled.ok) expect(compiled.branches).toEqual(['"goodwill impairment"']);
-    expect(planBooleanBranches('"goodwill impairment" W/10 $#').branches).toEqual(['"goodwill impairment"']);
+    if (compiled.ok) expect(compiled.branches).toEqual([phraseRecallLane]);
+    expect(planBooleanBranches('"goodwill impairment" W/10 $#').branches).toEqual([phraseRecallLane]);
     expect(buildBooleanCandidateQueries('"goodwill impairment" W/10 $#').every(q => !q.includes('#'))).toBe(true);
   });
 

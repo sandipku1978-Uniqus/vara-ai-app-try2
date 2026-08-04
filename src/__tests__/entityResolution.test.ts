@@ -1,13 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { buildCompleteSecCompanyDirectory } from '../../tests/e2e/sec-company-directory-fixture';
 
 const mockFetch = vi.fn();
 vi.stubGlobal('fetch', mockFetch);
 
-const DIRECTORY = {
-  '0': { cik_str: 320193, ticker: 'AAPL', title: 'Apple Inc.' },
-  '1': { cik_str: 1679788, ticker: 'COIN', title: 'Coinbase Global, Inc.' },
-  '2': { cik_str: 1418121, ticker: 'APLE', title: 'Apple Hospitality REIT, Inc.' },
-};
+const DIRECTORY = buildCompleteSecCompanyDirectory([
+  { cik_str: 320193, ticker: 'AAPL', title: 'Apple Inc.' },
+  { cik_str: 1679788, ticker: 'COIN', title: 'Coinbase Global, Inc.' },
+  { cik_str: 1418121, ticker: 'APLE', title: 'Apple Hospitality REIT, Inc.' },
+]);
 
 describe('resolveCompanyEntity', () => {
   beforeEach(() => {

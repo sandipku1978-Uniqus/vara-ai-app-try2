@@ -9,23 +9,66 @@ import { NextResponse } from 'next/server';
 import { requireApiAccess } from '../../../lib/api-auth';
 import { checkResourceRateLimit, rateLimitResponse } from '../../../lib/rate-limit';
 import { getWebSupabase } from '../../../lib/supabase-web';
-import { dbErrorResponse, newCorrelationId } from '../../../lib/db-observability';
+import { classifyDbError, dbErrorResponse, newCorrelationId } from '../../../lib/db-observability';
 
 export async function GET(request: Request) {
   const access = await requireApiAccess();
   if (access.response) return access.response;
-  const db = getWebSupabase();
-  if (!db) return NextResponse.json({ error: 'Stats not configured with a restricted database role.' }, { status: 503 });
-  const rate = await checkResourceRateLimit(request, access.identity, { operation: 'stats' });
-  if (!rate.allowed) return rateLimitResponse(rate);
-
   const correlationId = newCorrelationId();
   const startedAt = Date.now();
+  let completionLogged = false;
+  const complete = (response: Response, details: {
+    outcome: 'success' | 'error' | 'rate-limited';
+    errorClass?: string;
+    rowCount?: number;
+    errorName?: string;
+  }): Response => {
+    response.headers.set('x-correlation-id', correlationId);
+    if (!completionLogged) {
+      completionLogged = true;
+      console.info(JSON.stringify({
+        kind: 'route-completion',
+        route: 'stats',
+        status: response.status,
+        elapsedMs: Date.now() - startedAt,
+        correlationId,
+        ...details,
+      }));
+    }
+    return response;
+  };
+
+  const db = getWebSupabase();
+  if (!db) {
+    return complete(
+      NextResponse.json({
+        ok: false,
+        error: 'Stats are not configured with a restricted database role.',
+        errorClass: 'configuration',
+        correlationId,
+      }, { status: 503 }),
+      { outcome: 'error', errorClass: 'configuration' }
+    );
+  }
+  const rate = await checkResourceRateLimit(request, access.identity, { operation: 'stats' });
+  if (!rate.allowed) {
+    return complete(rateLimitResponse(rate), {
+      outcome: 'rate-limited',
+      errorClass: 'rate-limited',
+    });
+  }
+
   try {
     const { data, error } = await db.rpc('urc_data_stats');
-    if (error) return dbErrorResponse({ route: 'stats', rpc: 'urc_data_stats', error, correlationId, startedAt });
+    if (error) {
+      const classified = classifyDbError(error);
+      return complete(
+        dbErrorResponse({ route: 'stats', rpc: 'urc_data_stats', error, correlationId, startedAt }),
+        { outcome: 'error', errorClass: classified.errorClass }
+      );
+    }
     const row = Array.isArray(data) ? data[0] : data;
-    return NextResponse.json({
+    const response = NextResponse.json({
       filings: { count: Number(row?.filings_estimate ?? 0), through: row?.filings_through ?? null, source: 'SEC EDGAR master index' },
       auditors: { count: Number(row?.auditors_estimate ?? 0), source: 'PCAOB Form AP' },
       letters: {
@@ -37,8 +80,20 @@ export async function GET(request: Request) {
         source: 'SEC EDGAR (UPLOAD/CORRESP)',
       },
     });
+    return complete(response, { outcome: 'success', rowCount: row ? 1 : 0 });
   } catch (error) {
-    console.error('[stats] failed:', error);
-    return NextResponse.json({ error: 'Stats failed' }, { status: 502 });
+    return complete(
+      NextResponse.json({
+        ok: false,
+        error: 'Statistics request failed unexpectedly. Retry.',
+        errorClass: 'unexpected',
+        correlationId,
+      }, { status: 502 }),
+      {
+        outcome: 'error',
+        errorClass: 'unexpected',
+        errorName: error instanceof Error ? error.name : 'UnknownError',
+      }
+    );
   }
 }

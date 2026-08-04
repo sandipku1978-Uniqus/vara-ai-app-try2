@@ -30,6 +30,7 @@ loadEnv({ path: '.env.local', quiet: true });
  * REQUIRES (see docs/pending-keys-checklist.md):
  *   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY  pk_test_… from a Clerk DEVELOPMENT instance
  *   CLERK_SECRET_KEY                   sk_test_… from the same instance
+ *   CLERK_TEST_EMAIL                   +clerk_test user in that instance
  * @clerk/testing refuses production keys outright, by design.
  *
  * Verified empirically: with the bypass off and NO secret key, every route —
@@ -48,19 +49,26 @@ const localPort = Number(process.env.QA_AUTH_PORT || 4318);
 const host = 'localhost';
 const baseURL = `http://${host}:${localPort}`;
 const artifactRoot = process.env.QA_OUTPUT_DIR || join(tmpdir(), 'urc-playwright-auth');
+const actionReportPath = process.env.QA_ACTION_REPORT || join(artifactRoot, 'ui-action-run.json');
+const actionRunLabel = process.env.QA_ACTION_RUN_LABEL || 'auth-local';
 const prodBuild = process.env.PW_PROD_BUILD === '1' || Boolean(process.env.CI);
 
 // Checked at CONFIG LOAD, before Playwright starts the web server. Without a
 // secret key the server 500s on every route, and Clerk's own "Missing
 // secretKey" error floods the output long before globalSetup could report
 // anything useful — so the actionable message has to come first.
-if (!process.env.CLERK_SECRET_KEY || !(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || process.env.CLERK_PUBLISHABLE_KEY)) {
+if (
+  !process.env.CLERK_SECRET_KEY ||
+  !(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || process.env.CLERK_PUBLISHABLE_KEY) ||
+  !process.env.CLERK_TEST_EMAIL
+) {
   throw new Error(
     'The authentication suite needs a Clerk DEVELOPMENT instance key pair.\n' +
       '  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=pk_test_…\n' +
       '  CLERK_SECRET_KEY=sk_test_…\n' +
-      'Optionally CLERK_TEST_EMAIL=<user>+clerk_test@example.com to include the\n' +
-      'sign-in/sign-out round trip. Setup steps: docs/pending-keys-checklist.md.\n' +
+      '  CLERK_TEST_EMAIL=<user>+clerk_test@example.com\n' +
+      'All three are required so sign-in, sign-out, and access revocation are always proved.\n' +
+      'Setup steps: docs/pending-keys-checklist.md.\n' +
       'The main suite is unaffected — run `npx playwright test` for that.'
   );
 }
@@ -76,15 +84,36 @@ export default defineConfig({
   timeout: 60_000,
   expect: { timeout: 15_000 },
   reporter: process.env.CI
-    ? [['line'], ['html', { outputFolder: join(artifactRoot, 'report'), open: 'never' }]]
-    : [['list'], ['html', { outputFolder: join(artifactRoot, 'report'), open: 'never' }]],
+    ? [
+        ['line'],
+        ['./scripts/ui-actions/playwright-reporter.ts', {
+          outputFile: actionReportPath,
+          suite: 'auth',
+          runLabel: actionRunLabel,
+        }],
+        ['html', { outputFolder: join(artifactRoot, 'report'), open: 'never' }],
+      ]
+    : [
+        ['list'],
+        ['./scripts/ui-actions/playwright-reporter.ts', {
+          outputFile: actionReportPath,
+          suite: 'auth',
+          runLabel: actionRunLabel,
+        }],
+        ['html', { outputFolder: join(artifactRoot, 'report'), open: 'never' }],
+      ],
   use: {
     baseURL,
     viewport: { width: 1440, height: 900 },
     actionTimeout: 10_000,
     navigationTimeout: 30_000,
     screenshot: 'only-on-failure',
-    trace: 'retain-on-failure',
+    // Auth traces capture network requests, cookies, and Clerk testing tokens.
+    // The protected-main workflow uploads the HTML report on failure, and the
+    // reporter copies retained trace attachments into that artifact. Keep
+    // traces off for this credentialed suite so diagnostics cannot publish
+    // reusable authentication material.
+    trace: 'off',
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {

@@ -48,6 +48,25 @@ describe('Boolean engine migration', () => {
     expect(restored.isRefining).toBe(false);                 // never auto-reruns
   });
 
+  it('retires a searched stale Boolean zero instead of treating it as authoritative', () => {
+    const legacyZero = session({
+      results: [],
+      selectedResultId: null,
+      engineVersion: BOOLEAN_ENGINE_VERSION - 1,
+    });
+    window.sessionStorage.setItem(
+      'urc.identity.test-user.vara.research.sessions.v1',
+      JSON.stringify([legacyZero])
+    );
+
+    const [restored] = loadResearchSessions();
+    expect(restored.searched).toBe(true);
+    expect(restored.results).toEqual([]);
+    expect(restored.selectedResultId).toBeNull();
+    expect(restored.errorMsg).toMatch(/run the search again/i);
+    expect(restored.engineVersion).toBe(BOOLEAN_ENGINE_VERSION - 1);
+  });
+
   it('keeps rows produced by the current engine', () => {
     saveResearchSessions([session()]);
     const [restored] = loadResearchSessions();

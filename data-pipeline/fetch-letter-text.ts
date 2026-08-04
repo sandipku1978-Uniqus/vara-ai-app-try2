@@ -18,7 +18,13 @@
 import { createServiceClient } from './supabase';
 import { delay } from './edgar-index';
 import { createHash } from 'node:crypto';
+import { DOMParser } from 'linkedom';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import {
+  looksLikeSecErrorResponse,
+  readResponseWithLimit,
+  SecUpstreamError,
+} from '../src/lib/sec-upstream';
 
 const EDGAR_BASE = 'https://www.sec.gov';
 const USER_AGENT =
@@ -29,6 +35,8 @@ const USER_AGENT =
 /** ~4 req/s — well under the SEC's 10 req/s ceiling, sustainable for hours. */
 const REQUEST_INTERVAL_MS = 250;
 const MAX_CONTENT_CHARS = 600_000; // keep below the tsvector guard in the schema
+const MAX_SUBMISSION_BYTES = 50 * 1024 * 1024;
+const SEC_SUBMISSION_CONTENT_TYPE = /^(?:text\/plain|text\/html|application\/xhtml\+xml)(?:;|$)/i;
 const BATCH = 500;
 
 export interface LetterIdentifiers {
@@ -42,6 +50,18 @@ export interface LegacyIdentifierRow {
   accession: string;
   cik: number;
   content: string;
+}
+
+export interface AuthoritativeWriteHealth {
+  attempted: number;
+  succeeded: number;
+  exhausted: number;
+}
+
+export interface IdentifierReconciliationStats {
+  updated: number;
+  attemptedUpdates: number;
+  exhaustedUpdates: number;
 }
 
 export function deriveStoredLetterIdentifierPatch(content: string, checkedAt: string) {
@@ -59,20 +79,40 @@ export function shouldRethreadLetters(identifierUpdates: number, contentUpdates:
   return identifierUpdates + contentUpdates > 0;
 }
 
+/** Every exhausted authoritative update fails the job. The row remains
+ * resumable, but a green pipeline run must mean every attempted write landed. */
+export function authoritativeWriteFailureReason(health: AuthoritativeWriteHealth): string | null {
+  if (health.attempted <= 0 || health.exhausted <= 0) return null;
+  if (health.succeeded <= 0 && health.exhausted >= health.attempted) {
+    return `all ${health.attempted} authoritative comment-letter DB writes exhausted retries`;
+  }
+  return `${health.exhausted}/${health.attempted} authoritative comment-letter DB writes exhausted retries`;
+}
+
 function getArg(name: string): string | undefined {
   const idx = process.argv.indexOf(`--${name}`);
   return idx !== -1 ? process.argv[idx + 1] : undefined;
 }
 
 function htmlToText(html: string): string {
-  return html
-    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
-    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
-    .replace(/<\/?(p|div|br|hr|h[1-6]|tr|li|table)[^>]*>/gi, '\n')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&#x27;/gi, "'").replace(/&nbsp;/g, ' ')
-    .replace(/&#x[0-9a-f]+;/gi, ' ').replace(/&#\d+;/g, ' ').replace(/&\w+;/g, ' ')
+  // SEC submissions are malformed often enough that regex-based tag removal
+  // is both incomplete and unsafe. Parse as HTML so script/style contents are
+  // discarded structurally and character references are decoded exactly once.
+  const document = new DOMParser().parseFromString(
+    `<!doctype html><html><body>${html}</body></html>`,
+    'text/html'
+  ) as unknown as Document;
+  for (const node of Array.from(document.querySelectorAll('script, style'))) {
+    node.remove();
+  }
+  for (const node of Array.from(
+    document.querySelectorAll('p, div, br, hr, h1, h2, h3, h4, h5, h6, tr, li, table')
+  )) {
+    node.before(document.createTextNode('\n'));
+  }
+
+  return (document.documentElement?.textContent || '')
+    .replace(/\u00a0/g, ' ')
     .replace(/[ \t]+/g, ' ')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
@@ -195,19 +235,39 @@ export async function extractLetterText(raw: string): Promise<{ text: string | n
   return { text: combined.slice(0, MAX_CONTENT_CHARS), error: null };
 }
 
-async function fetchSubmission(filename: string): Promise<{ raw: string | null; error: string | null }> {
+export async function fetchSubmission(
+  filename: string,
+  options: { maxAttempts?: number; retryBaseMs?: number; maxBytes?: number } = {}
+): Promise<{ raw: string | null; error: string | null }> {
   const url = `${EDGAR_BASE}/Archives/${filename}`;
-  for (let attempt = 0; attempt < 3; attempt++) {
+  const maxAttempts = options.maxAttempts ?? 3;
+  const retryBaseMs = options.retryBaseMs ?? 1_000;
+  const maxBytes = options.maxBytes ?? MAX_SUBMISSION_BYTES;
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
+      const signal = AbortSignal.timeout(30_000);
       const response = await fetch(url, {
         headers: { 'User-Agent': USER_AGENT, 'Accept-Encoding': 'gzip, deflate' },
-        signal: AbortSignal.timeout(30_000),
+        signal,
       });
       if (response.status === 404) return { raw: null, error: 'not_found' };
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      return { raw: await response.text(), error: null };
-    } catch {
-      await delay(1000 * 2 ** attempt);
+      const contentType = response.headers.get('content-type')?.trim() || '';
+      if (!SEC_SUBMISSION_CONTENT_TYPE.test(contentType)) {
+        throw new SecUpstreamError('SEC submission is not a text document.', 415);
+      }
+      const bytes = await readResponseWithLimit(response, maxBytes, signal, 30_000);
+      if (looksLikeSecErrorResponse(bytes)) {
+        throw new SecUpstreamError('SEC upstream returned an error page.', 502);
+      }
+      return { raw: new TextDecoder('utf-8').decode(bytes), error: null };
+    } catch (error) {
+      if (error instanceof SecUpstreamError && error.status === 413) {
+        return { raw: null, error: 'too_large' };
+      }
+      if (attempt + 1 < maxAttempts && retryBaseMs > 0) {
+        await delay(retryBaseMs * 2 ** attempt);
+      }
     }
   }
   return { raw: null, error: 'fetch_failed' };
@@ -218,12 +278,15 @@ export function nextLetterRetryAt(attempts: number, now = Date.now()): string {
   return new Date(now + delayMinutes * 60_000).toISOString();
 }
 
-async function updateLetterIdentifiers(
+export async function updateCommentLetterWithRetry(
   client: SupabaseClient,
   row: { accession: string; cik: number },
-  patch: Record<string, unknown>
+  patch: Record<string, unknown>,
+  options: { maxAttempts?: number; retryBaseMs?: number } = {}
 ): Promise<boolean> {
-  for (let attempt = 0; attempt < 4; attempt += 1) {
+  const maxAttempts = options.maxAttempts ?? 4;
+  const retryBaseMs = options.retryBaseMs ?? 500;
+  for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     try {
       const { error } = await client
         .from('urc_comment_letters')
@@ -234,9 +297,21 @@ async function updateLetterIdentifiers(
     } catch {
       // Retry below; leaving identifier_checked_at null makes the phase resumable.
     }
-    if (attempt < 3) await delay(500 * 2 ** attempt);
+    if (attempt + 1 < maxAttempts && retryBaseMs > 0) {
+      await delay(retryBaseMs * 2 ** attempt);
+    }
   }
   return false;
+}
+
+export async function rethreadLetterDerivations(client: SupabaseClient): Promise<number> {
+  const { data, error } = await client.rpc('urc_thread_letters');
+  if (error) {
+    throw new Error(
+      `urc_thread_letters failed after authoritative comment-letter writes: ${error.message}`
+    );
+  }
+  return Number(data ?? 0);
 }
 
 /**
@@ -250,8 +325,10 @@ async function backfillLegacyIdentifiers(
   deadline: number,
   localLimit: number,
   headerRefetchLimit: number
-): Promise<number> {
+): Promise<IdentifierReconciliationStats> {
   let updated = 0;
+  let attemptedUpdates = 0;
+  let exhaustedUpdates = 0;
   let localProcessed = 0;
   while (Date.now() < deadline && localProcessed < localLimit) {
     const { data, error } = await client
@@ -268,8 +345,12 @@ async function backfillLegacyIdentifiers(
       if (Date.now() >= deadline || localProcessed >= localLimit) break;
       localProcessed += 1;
       const checkedAt = new Date().toISOString();
-      if (await updateLetterIdentifiers(client, row, deriveStoredLetterIdentifierPatch(row.content, checkedAt))) {
+      attemptedUpdates += 1;
+      if (await updateCommentLetterWithRetry(client, row, deriveStoredLetterIdentifierPatch(row.content, checkedAt))) {
         updated += 1;
+      } else {
+        exhaustedUpdates += 1;
+        return { updated, attemptedUpdates, exhaustedUpdates };
       }
     }
   }
@@ -297,7 +378,12 @@ async function backfillLegacyIdentifiers(
       const patch = fetchedSubmission.raw
         ? deriveStoredLetterIdentifierPatch(fetchedSubmission.raw, checkedAt)
         : { identifier_checked_at: checkedAt };
-      if (await updateLetterIdentifiers(client, row, patch)) updated += 1;
+      attemptedUpdates += 1;
+      if (await updateCommentLetterWithRetry(client, row, patch)) updated += 1;
+      else {
+        exhaustedUpdates += 1;
+        return { updated, attemptedUpdates, exhaustedUpdates };
+      }
       await delay(REQUEST_INTERVAL_MS);
     }
   }
@@ -305,7 +391,7 @@ async function backfillLegacyIdentifiers(
   if (updated > 0) {
     console.log(`Identifier reconciliation: ${updated} legacy rows checked (${localProcessed} stored-text, ${remoteProcessed} header refetches).`);
   }
-  return updated;
+  return { updated, attemptedUpdates, exhaustedUpdates };
 }
 
 async function main() {
@@ -316,16 +402,30 @@ async function main() {
   const deadline = maxMinutes > 0 ? Date.now() + maxMinutes * 60_000 : Infinity;
 
   const client = createServiceClient();
-  const identifierUpdates = await backfillLegacyIdentifiers(
+  const identifierStats = await backfillLegacyIdentifiers(
     client,
     deadline,
     identifierLimit,
     identifierRefetchLimit
   );
+  const identifierWriteFailure = authoritativeWriteFailureReason({
+    attempted: identifierStats.attemptedUpdates,
+    succeeded: identifierStats.updated,
+    exhausted: identifierStats.exhaustedUpdates,
+  });
+  if (identifierWriteFailure) {
+    if (identifierStats.updated > 0) {
+      const threaded = await rethreadLetterDerivations(client);
+      console.log(`Threading: ${threaded} rows (re)assigned after partial identifier reconciliation.`);
+    }
+    throw new Error(`${identifierWriteFailure}; successful writes were retained and the remaining rows are resumable.`);
+  }
   let fetched = 0;
   let errored = 0;
+  let contentUpdateAttempts = 0;
+  let contentUpdateExhausted = 0;
 
-  for (;;) {
+  contentQueue: for (;;) {
     if (Date.now() >= deadline) break;
     if (limit > 0 && fetched + errored >= limit) break;
 
@@ -368,43 +468,34 @@ async function main() {
           ? { identifier_checked_at: attemptTime }
           : {};
 
-      // Transient network blips on the update must not kill a multi-hour run —
-      // retry, then skip the row (it stays unfetched and is retried next run)
-      let updated = false;
-      for (let attempt = 0; attempt < 4 && !updated; attempt++) {
-        try {
-          const { error: updateError } = await client
-            .from('urc_comment_letters')
-            .update(
-              text
-                ? {
-                    ...identifierPatch,
-                    content: text,
-                    content_fetched_at: attemptTime,
-                    content_error: null,
-                    content_fetch_attempts: attemptCount,
-                    content_last_attempt_at: attemptTime,
-                    content_next_retry_at: null,
-                  }
-                : {
-                    ...identifierPatch,
-                    content_error: extractError,
-                    content_fetch_attempts: attemptCount,
-                    content_last_attempt_at: attemptTime,
-                    content_next_retry_at: retryable ? nextLetterRetryAt(attemptCount) : null,
-                  }
-            )
-            .eq('accession', row.accession)
-            .eq('cik', row.cik);
-          if (!updateError) updated = true;
-          else if (attempt + 1 < 4) await delay(1500 * 2 ** attempt);
-        } catch {
-          if (attempt + 1 < 4) await delay(1500 * 2 ** attempt);
-        }
-      }
+      const contentPatch = text
+        ? {
+            ...identifierPatch,
+            content: text,
+            content_fetched_at: attemptTime,
+            content_error: null,
+            content_fetch_attempts: attemptCount,
+            content_last_attempt_at: attemptTime,
+            content_next_retry_at: null,
+          }
+        : {
+            ...identifierPatch,
+            content_error: extractError,
+            content_fetch_attempts: attemptCount,
+            content_last_attempt_at: attemptTime,
+            content_next_retry_at: retryable ? nextLetterRetryAt(attemptCount) : null,
+          };
+
+      // A failed update leaves the row resumable, but the run now records the
+      // exhausted write and fails if the DB is broadly unavailable.
+      contentUpdateAttempts += 1;
+      const updated = await updateCommentLetterWithRetry(client, row, contentPatch, {
+        retryBaseMs: 1_500,
+      });
       if (!updated) {
+        contentUpdateExhausted += 1;
         console.error(`  update kept failing for ${row.accession}; skipping (will retry next run)`);
-        continue;
+        break contentQueue;
       }
 
       if (text) fetched++; else errored++;
@@ -415,13 +506,24 @@ async function main() {
     }
   }
 
-  if (shouldRethreadLetters(identifierUpdates, fetched + errored)) {
-    const { data: threaded, error: threadError } = await client.rpc('urc_thread_letters');
-    if (threadError) console.error('Threading failed (re-run later):', threadError.message);
-    else console.log(`Threading: ${threaded} rows (re)assigned after header extraction.`);
+  if (shouldRethreadLetters(identifierStats.updated, fetched + errored)) {
+    const threaded = await rethreadLetterDerivations(client);
+    console.log(`Threading: ${threaded} rows (re)assigned after header extraction.`);
   }
 
-  console.log(`Done. ${identifierUpdates} legacy identifiers reconciled, ${fetched} letters stored, ${errored} unavailable or scheduled for retry.`);
+  const writeHealth: AuthoritativeWriteHealth = {
+    attempted: identifierStats.attemptedUpdates + contentUpdateAttempts,
+    succeeded: identifierStats.updated + fetched + errored,
+    exhausted: identifierStats.exhaustedUpdates + contentUpdateExhausted,
+  };
+  const writeFailure = authoritativeWriteFailureReason(writeHealth);
+  if (writeFailure) {
+    throw new Error(`${writeFailure}; successful writes were retained and the remaining rows are resumable.`);
+  }
+  console.log(
+    `Done. ${identifierStats.updated} legacy identifiers reconciled, ${fetched} letters stored, ` +
+    `${errored} unavailable or scheduled for retry, ${writeHealth.exhausted} DB writes exhausted.`
+  );
 }
 
 if (process.argv[1]?.includes('fetch-letter-text')) {

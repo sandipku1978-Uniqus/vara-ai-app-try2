@@ -1,0 +1,75 @@
+name: Auth lifecycle
+
+# Repository test credentials are never available to pull-request-controlled
+# source. This workflow runs only after an exact revision reaches protected
+# main; release evidence requires this exact-SHA workflow to pass.
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: auth-lifecycle-${{ github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  auth-lifecycle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - id: gate
+        name: Require the complete Clerk development test identity
+        env:
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.CLERK_PUBLISHABLE_KEY_TEST }}
+          CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY_TEST }}
+          CLERK_TEST_EMAIL: ${{ secrets.CLERK_TEST_EMAIL }}
+        run: |
+          if [ -z "${CLERK_SECRET_KEY}" ] || [ -z "${NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}" ] || [ -z "${CLERK_TEST_EMAIL}" ]; then
+            echo '::error title=Clerk test credentials missing::CLERK_PUBLISHABLE_KEY_TEST / CLERK_SECRET_KEY_TEST / CLERK_TEST_EMAIL must all be available on protected-main pushes. A silently skipped sign-in lifecycle is not a passing suite. See docs/pending-keys-checklist.md section 6.'
+            exit 1
+          fi
+      - run: npx --no-install playwright install --with-deps chromium
+      - run: npx --no-install playwright test --config playwright.auth.config.ts
+        env:
+          CI: 'true'
+          QA_OUTPUT_DIR: ${{ runner.temp }}/urc-playwright-auth
+          QA_ACTION_RUN_LABEL: auth-production
+          QA_ACTION_SHA: ${{ github.sha }}
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.CLERK_PUBLISHABLE_KEY_TEST }}
+          CLERK_SECRET_KEY: ${{ secrets.CLERK_SECRET_KEY_TEST }}
+          CLERK_TEST_EMAIL: ${{ secrets.CLERK_TEST_EMAIL }}
+      - name: Validate every mapped authentication action from runtime results
+        if: always()
+        run: >-
+          npx --no-install tsx scripts/ui-actions/validate.ts
+          --scope auth
+          --expect-sha "$GITHUB_SHA"
+          --report "${{ runner.temp }}/urc-playwright-auth/ui-action-run.json"
+          --out "${{ runner.temp }}/ui-action-evidence-auth.json"
+      - name: Retain exact-SHA authentication action evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ui-action-evidence-auth-${{ github.sha }}
+          if-no-files-found: error
+          retention-days: 30
+          path: |
+            ${{ runner.temp }}/ui-action-evidence-auth.json
+            ${{ runner.temp }}/urc-playwright-auth/ui-action-run.json
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: failure()
+        with:
+          name: playwright-auth-report-${{ github.sha }}
+          path: ${{ runner.temp }}/urc-playwright-auth/report
+          retention-days: 7

@@ -4,6 +4,7 @@ import { buildCsv, escapeCsvCell } from '../components/tables/ResultsToolbar';
 import {
   buildSecTargetUrl,
   sanitizeSecHtml,
+  SEC_DOCUMENT_CSP,
   SecUpstreamError,
   validateSecRedirect,
 } from '../lib/sec-upstream';
@@ -54,12 +55,39 @@ describe('security hardening', () => {
       new URL('https://www.sec.gov/Archives/edgar/data/1/a.htm?url=https://evil.test'),
       'proxy'
     )).toThrow(SecUpstreamError);
+    for (const traversal of [
+      'Archives/edgar/data/1/%252e%252e/files/company_tickers.json',
+      'Archives/edgar/data/1/%25252e%25252e/files/company_tickers.json',
+      'Archives/edgar/data/1/%252f..%252fsecret.txt',
+    ]) {
+      expect(
+        () => buildSecTargetUrl('proxy', traversal, new URLSearchParams()),
+        traversal,
+      ).toThrow(SecUpstreamError);
+    }
 
     expect(buildSecTargetUrl(
       'proxy',
       'Archives/edgar/data/1/a.htm',
       new URLSearchParams()
     ).toString()).toBe('https://www.sec.gov/Archives/edgar/data/1/a.htm');
+
+    const iapdParams = new URLSearchParams({
+      query: 'BlackRock',
+      hl: 'true',
+      nrows: '12',
+      start: '0',
+      r: '25',
+      sort: 'score desc',
+      wt: 'json',
+    });
+    expect(buildSecTargetUrl('iapd', 'search/firm', iapdParams).origin)
+      .toBe('https://api.adviserinfo.sec.gov');
+    expect(() => buildSecTargetUrl('iapd', 'search/other', iapdParams))
+      .toThrow(SecUpstreamError);
+    iapdParams.set('r', '1000000');
+    expect(() => buildSecTargetUrl('iapd', 'search/firm', iapdParams))
+      .toThrow(SecUpstreamError);
   });
 
   it('sanitizes proxied SEC HTML and retains inert filing structure', () => {
@@ -74,6 +102,14 @@ describe('security hardening', () => {
     expect(result).toContain('Disclosure');
     expect(result).toContain('https://www.sec.gov/Archives/edgar/data/1/a.htm');
     expect(result).not.toMatch(/<script|<form|<input|onclick|javascript:/i);
+  });
+
+  it('locks sanitized SEC documents to inert, same-origin embedding-compatible content', () => {
+    expect(SEC_DOCUMENT_CSP).toContain('sandbox allow-same-origin');
+    expect(SEC_DOCUMENT_CSP).toContain("script-src 'none'");
+    expect(SEC_DOCUMENT_CSP).toContain("frame-src 'none'");
+    expect(SEC_DOCUMENT_CSP).toContain("form-action 'none'");
+    expect(SEC_DOCUMENT_CSP).not.toContain('navigate-to');
   });
 
   it('drops undeclared model tool fields and clamps bounded inputs', () => {

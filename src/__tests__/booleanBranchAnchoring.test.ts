@@ -85,7 +85,9 @@ describe('branches that carry their own anchor stay accepted', () => {
     const result = compileBooleanQuery('restatement OR ("goodwill impairment" w/10 $#)');
     expect(result.ok).toBe(true);
     if (result.ok) {
-      expect(result.branches.some(branch => branch.includes('goodwill impairment'))).toBe(true);
+      expect(result.branches.some(branch =>
+        branch.includes('goodwill OR goodwills') && branch.includes('impairment OR impairments')
+      )).toBe(true);
     }
   });
 

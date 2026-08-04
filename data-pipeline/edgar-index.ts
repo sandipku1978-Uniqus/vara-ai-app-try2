@@ -22,8 +22,29 @@ export interface EdgarIndexEntry {
   accessionNumber: string;
 }
 
+const MASTER_INDEX_HEADER = 'CIK|Company Name|Form Type|Date Filed|Filename';
+
+export class EdgarIndexUnavailableError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+  ) {
+    super(message);
+    this.name = 'EdgarIndexUnavailableError';
+  }
+}
+
 export function delay(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/** Strict calendar-date validation. A shape-only regex accepts impossible
+ * values such as 2026-02-30, which made a backfill silently scan no quarters
+ * and exit green. */
+export function isValidEdgarDate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const parsed = new Date(`${value}T00:00:00.000Z`);
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
 }
 
 async function fetchText(url: string, timeoutMs = 90_000, retries = 3): Promise<string> {
@@ -37,13 +58,20 @@ async function fetchText(url: string, timeoutMs = 90_000, retries = 3): Promise<
           headers: { 'User-Agent': SEC_USER_AGENT, 'Accept-Encoding': 'gzip, deflate' },
           signal: controller.signal,
         });
-        if (response.status === 404) return '';
+        if (response.status === 404) {
+          throw new EdgarIndexUnavailableError(`EDGAR master index returned HTTP 404: ${url}`, 404);
+        }
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         return await response.text();
       } finally {
         clearTimeout(timer);
       }
     } catch (error) {
+      // A 404 is an authoritative source outcome, not a transient transport
+      // failure. The caller decides whether the requested quarter is truly in
+      // the future; existing quarters must fail closed rather than ingesting
+      // an authoritative-looking zero rows.
+      if (error instanceof EdgarIndexUnavailableError) throw error;
       lastError = error instanceof Error ? error : new Error(String(error));
       await delay(Math.min(1000 * 2 ** attempt, 8000));
     }
@@ -63,7 +91,7 @@ export function parseMasterIndex(text: string): EdgarIndexEntry[] {
     if (parts.length !== 5) continue;
     const [cikRaw, companyName, formType, dateFiled, filename] = parts.map(part => part.trim());
     if (!/^\d+$/.test(cikRaw)) continue;
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateFiled)) continue;
+    if (!isValidEdgarDate(dateFiled)) continue;
     if (!filename.startsWith('edgar/data/')) continue;
     const accMatch = filename.match(/(\d{10}-\d{2}-\d{6})/);
     if (!accMatch) continue;
@@ -79,14 +107,76 @@ export function parseMasterIndex(text: string): EdgarIndexEntry[] {
   return entries;
 }
 
+/** Validate the source envelope before accepting its rows. `parseMasterIndex`
+ * intentionally remains tolerant for exploratory callers, but a production
+ * ingest must not turn an SEC error page, changed format, or truncated body
+ * into a successful zero-row refresh. */
+export function validateMasterIndexDocument(text: string): EdgarIndexEntry[] {
+  const lines = text.split(/\r?\n/);
+  const headerIndex = lines.findIndex(line => line.trim() === MASTER_INDEX_HEADER);
+  if (headerIndex < 0) {
+    throw new Error(`EDGAR master index is malformed: missing exact ${MASTER_INDEX_HEADER} header.`);
+  }
+
+  let dividerIndex = headerIndex + 1;
+  while (dividerIndex < lines.length && !lines[dividerIndex].trim()) dividerIndex += 1;
+  if (dividerIndex >= lines.length || !/^-{20,}$/.test(lines[dividerIndex].trim())) {
+    throw new Error('EDGAR master index is malformed: missing header divider.');
+  }
+
+  const dataLines = lines.slice(dividerIndex + 1).filter(line => line.trim().length > 0);
+  if (dataLines.length === 0) {
+    throw new Error('EDGAR master index is truncated or empty: no filing rows followed the header.');
+  }
+
+  const parsed = parseMasterIndex([
+    MASTER_INDEX_HEADER,
+    '--------------------',
+    ...dataLines,
+  ].join('\n'));
+  if (parsed.length !== dataLines.length) {
+    throw new Error(
+      `EDGAR master index is malformed: ${dataLines.length - parsed.length} of ${dataLines.length} filing rows failed validation.`,
+    );
+  }
+  return parsed;
+}
+
+function isStrictlyFutureQuarter(year: number, quarter: number, now = new Date()): boolean {
+  const currentYear = now.getUTCFullYear();
+  const currentQuarter = Math.floor(now.getUTCMonth() / 3) + 1;
+  return year > currentYear || (year === currentYear && quarter > currentQuarter);
+}
+
 export async function fetchQuarterIndex(year: number, quarter: number): Promise<EdgarIndexEntry[]> {
+  if (!Number.isInteger(year) || year < 1993 || !Number.isInteger(quarter) || quarter < 1 || quarter > 4) {
+    throw new Error(`Invalid EDGAR quarter ${year}/QTR${quarter}.`);
+  }
   const url = `${EDGAR_BASE}/Archives/edgar/full-index/${year}/QTR${quarter}/master.idx`;
-  const text = await fetchText(url);
-  if (!text.trim()) return [];
-  return parseMasterIndex(text);
+  try {
+    return validateMasterIndexDocument(await fetchText(url));
+  } catch (error) {
+    // A not-yet-created future-quarter archive is the one explicit absence
+    // that proves zero work. Current and historical quarters are expected to
+    // exist and must stop the ingest on 404.
+    if (error instanceof EdgarIndexUnavailableError && isStrictlyFutureQuarter(year, quarter)) {
+      return [];
+    }
+    throw error;
+  }
 }
 
 export function getQuartersInRange(startDate: string, endDate: string): Array<{ year: number; quarter: number }> {
+  if (!isValidEdgarDate(startDate)) {
+    throw new Error(`Invalid start date "${startDate}"; expected a real YYYY-MM-DD calendar date.`);
+  }
+  if (!isValidEdgarDate(endDate)) {
+    throw new Error(`Invalid end date "${endDate}"; expected a real YYYY-MM-DD calendar date.`);
+  }
+  if (startDate > endDate) {
+    throw new Error(`Invalid date range: start ${startDate} is after end ${endDate}.`);
+  }
+
   const startYear = Number(startDate.slice(0, 4));
   const startQuarter = Math.ceil(Number(startDate.slice(5, 7)) / 3);
   const endYear = Number(endDate.slice(0, 4));
@@ -103,9 +193,28 @@ export function getQuartersInRange(startDate: string, endDate: string): Array<{ 
   return quarters;
 }
 
+/** Parse a comma-separated form filter as root-form families. Selecting `4`
+ *  (or `4/A`) intentionally includes both the original and amendments. */
+export function parseFormFamilies(value: string | undefined): Set<string> | null {
+  if (value === undefined) return null;
+  const families = value
+    .split(',')
+    .map(form => form.trim().toUpperCase().replace(/\/A$/, ''))
+    .filter(Boolean);
+  return new Set(families);
+}
+
+export function matchesFormFamilies(form: string, families: Set<string>): boolean {
+  return families.has(form.trim().toUpperCase().replace(/\/A$/, ''));
+}
+
 /** Forms the research product actually surfaces — both pre- and post-rename
  *  spellings of the Schedule 13 family. */
 export const CORE_FORMS = new Set([
+  // Ownership reports and notices of proposed sale. These also power the
+  // Insider Trading surface and the Dashboard filing-mix drill-down, so they
+  // must live in the facet store rather than only in per-issuer submissions.
+  '3', '3/A', '4', '4/A', '5', '5/A', '144', '144/A',
   '10-K', '10-K/A', '10-KT',
   '10-Q', '10-Q/A',
   '8-K', '8-K/A',
@@ -143,3 +252,14 @@ export const CORE_FORMS = new Set([
   'N-2', 'N-2/A', 'N-8A', 'N-8A/A',
   '15-12B', '15-12G', '15-15D', 'RW',
 ]);
+
+/** Targeted issuer backfills are deliberately broader than CORE_FORMS. The
+ *  only excluded families are institutional-manager reports, which are not
+ *  part of the issuer-filing facet product. */
+export const TARGETED_CIK_EXCLUDED_FORMS = new Set([
+  '13F-HR', '13F-HR/A', '13F-NT', '13F-NT/A',
+]);
+
+export function shouldIngestTargetedCikForm(form: string): boolean {
+  return !TARGETED_CIK_EXCLUDED_FORMS.has(form.trim().toUpperCase());
+}

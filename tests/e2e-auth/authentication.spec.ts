@@ -47,6 +47,24 @@ test.describe('critical action: global.authentication', () => {
     expect(publicPaths.includes('/privacy'), '/privacy must stay public').toBe(true);
   });
 
+  test('public Sign In and Get Started controls open Clerk identity surfaces with their return target', async ({ page }) => {
+    await setupClerkTestingToken({ page });
+
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await clerk.loaded({ page });
+    await page.getByRole('button', { name: 'Sign In', exact: true }).click();
+    await expect.poll(() => page.url()).toMatch(/clerk\.accounts\.dev|\.clerk\.com|\/sign-in/);
+    const signInTarget = new URL(page.url()).searchParams.get('redirect_url') || '';
+    expect(signInTarget, `Sign In did not retain the application target: ${page.url()}`).toContain('/');
+
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await clerk.loaded({ page });
+    await page.getByRole('button', { name: 'Get Started', exact: true }).click();
+    await expect.poll(() => page.url()).toMatch(/clerk\.accounts\.dev|\.clerk\.com|\/sign-up/);
+    const signUpTarget = new URL(page.url()).searchParams.get('redirect_url') || '';
+    expect(signUpTarget, `Get Started did not retain the application target: ${page.url()}`).toContain('/');
+  });
+
   test('a signed-out visitor is sent to the identity surface with the intended return URL intact', async ({ page }) => {
     await setupClerkTestingToken({ page });
 
@@ -84,7 +102,6 @@ test.describe('critical action: global.authentication', () => {
   });
 
   test('signing in reaches the protected route, and signing out removes access again', async ({ page }) => {
-    test.skip(!TEST_EMAIL, 'CLERK_TEST_EMAIL is not set — see docs/pending-keys-checklist.md');
     await setupClerkTestingToken({ page });
 
     // Clerk requires a loaded, unprotected page before its helpers run.
@@ -96,7 +113,8 @@ test.describe('critical action: global.authentication', () => {
     await expect(page).toHaveURL(new RegExp(`${PROTECTED_ROUTE}$`));
     await expect(page.getByRole('heading', { name: 'Overview Dashboard' })).toBeVisible({ timeout: 30_000 });
 
-    await clerk.signOut({ page });
+    await page.getByRole('button', { name: 'Open user button' }).click();
+    await page.getByRole('menuitem', { name: 'Sign out' }).click();
 
     // The claim that matters: access is genuinely revoked, not just hidden.
     // A fresh navigation must be bounced back to the identity surface.
@@ -152,11 +170,3 @@ test.describe('support-center routes that require sign-in', () => {
     expect(carried, `link said ${href} but landed on ${page.url()}`).toContain(href);
   });
 });
-
-/**
- * STILL DEFERRED, with reasons: design-gallery.review-component-states and
- * exercise-static-controls are left untouched on purpose. "Inspect components"
- * is arguably not an action at all, but exercise-static-controls also asserts
- * that PRODUCTION VISITORS CANNOT REACH the internal gallery — a real exposure
- * claim that deserves its own test rather than being narrowed away in passing.
- */

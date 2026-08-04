@@ -22,6 +22,10 @@ concurrency:
 
 jobs:
   fetch-text:
+    # A manual caller may choose a ref in the Actions UI. Refuse anything
+    # other than protected main before production database credentials enter
+    # a step; scheduled runs already execute the default-branch revision.
+    if: github.event_name == 'schedule' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 330
     env:
@@ -29,17 +33,18 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.sha }}
           persist-credentials: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: 22
           cache: npm
       - name: Install dependencies
-        run: npm ci --no-audit --no-fund
+        run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Reconcile current and prior-quarter letter metadata
         # A 90-day overlap catches retroactively disseminated older-quarter
         # records; the accession+CIK upsert makes the scan idempotent.
-        run: npx tsx data-pipeline/ingest-letters.ts --since 90
+        run: npx --no-install tsx data-pipeline/ingest-letters.ts --since 90
         env:
           URC_SUPABASE_URL: ${{ secrets.URC_SUPABASE_URL }}
           URC_SUPABASE_SERVICE_KEY: ${{ secrets.URC_SUPABASE_SERVICE_KEY }}
@@ -47,7 +52,7 @@ jobs:
         # Stored text rows are checked locally first; permanently unresolved
         # rows receive a bounded header refetch. The script checkpoints each
         # row and calls urc_thread_letters after identity/content updates.
-        run: npx tsx data-pipeline/fetch-letter-text.ts --max-minutes "$MAX_MINUTES" --identifier-limit 20000 --identifier-refetch-limit 5000
+        run: npx --no-install tsx data-pipeline/fetch-letter-text.ts --max-minutes "$MAX_MINUTES" --identifier-limit 20000 --identifier-refetch-limit 5000
         env:
           MAX_MINUTES: ${{ github.event.inputs.max_minutes || '300' }}
           URC_SUPABASE_URL: ${{ secrets.URC_SUPABASE_URL }}

@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { aggregateExactCount, planMonthSlices, planYearSlices, type SliceCounter } from '../services/exactCount';
+import { defaultSearchFilters } from '../domain/searchFilters';
+import {
+  aggregateExactCount,
+  isEftsExactCountEquivalent,
+  planMonthSlices,
+  planYearSlices,
+  type SliceCounter,
+} from '../services/exactCount';
 
 /**
  * Exact counting above EDGAR's 10,000 ceiling: date slices count exactly and
@@ -28,6 +35,29 @@ describe('slice planning', () => {
     const clipped = planMonthSlices('2024-11-15', '2024-12-31');
     expect(clipped).toHaveLength(2);
     expect(clipped[0]).toEqual({ start: '2024-11-15', end: '2024-11-30' });
+  });
+});
+
+describe('EFTS exact-count eligibility', () => {
+  it('accepts only the demonstrated delegated exact-phrase predicate', () => {
+    expect(isEftsExactCountEquivalent('"net ai"', { ...defaultSearchFilters })).toBe(true);
+  });
+
+  it.each([
+    ['NOT', 'goodwill AND NOT impairment'],
+    ['proximity', 'goodwill W/5 impairment'],
+    ['wildcard', 'blockchain AND crypto*'],
+    ['local singular/plural term matching', 'lease'],
+    ['multi-branch Boolean', 'lease OR impairment'],
+  ])('refuses %s semantics that raw EFTS totals do not count', (_label, query) => {
+    expect(isEftsExactCountEquivalent(query, { ...defaultSearchFilters })).toBe(false);
+  });
+
+  it('refuses local metadata/text filters omitted from the EFTS count request', () => {
+    expect(isEftsExactCountEquivalent('"material weakness"', {
+      ...defaultSearchFilters,
+      sectionScope: '9A',
+    })).toBe(false);
   });
 });
 

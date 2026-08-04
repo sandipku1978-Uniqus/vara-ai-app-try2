@@ -219,7 +219,7 @@ These were discovered after the original register and were fixed before final ve
 
 1. Copy the documented variables from `.env.example` into the existing Vercel project using real production values. Do not expose `CLERK_SECRET_KEY`, `URC_SUPABASE_SERVICE_KEY`, Anthropic, or KV secrets to the client.
 2. Apply migrations `009` and `010` in Supabase and provision/rotate a JWT whose `role` claim is `urc_web` for `URC_SUPABASE_WEB_KEY`.
-3. Confirm `URC_SUPABASE_SERVICE_KEY` is present only in trusted ingestion/maintenance environments.
+3. Confirm `URC_SUPABASE_SERVICE_KEY` is present only in trusted ingestion/maintenance/release environments and, if enabled in Vercel, as a Sensitive server-only variable used solely by the three audited cache-writer routes. Production reads must use `URC_SUPABASE_WEB_KEY` without fallback.
 4. Deploy, then verify anonymous, signed-in/unentitled, user-entitled, and org-entitled cases across every protected page and API.
 5. Run comment-letter reconciliation/text backfill with the existing GitHub workflows or data-pipeline commands; verify retry backlog and `input_coverage` statistics.
 6. Repeat the exact Boolean/NOT/proximity fixtures against live filings and verify incomplete/degraded coverage labels under upstream interruption.

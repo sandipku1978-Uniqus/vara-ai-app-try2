@@ -1,4 +1,4 @@
-import { buildSecProxyUrl } from './secApi';
+import { buildSecIapdUrl, buildSecProxyUrl } from './secApi';
 
 export interface OfficialSecItem {
   id: string;
@@ -39,6 +39,12 @@ function normalizeText(value: string | null | undefined): string {
   return (value || '').replace(/\s+/g, ' ').trim();
 }
 
+function record(value: unknown): Record<string, unknown> | null {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : null;
+}
+
 function requireOfficialIndexItems<T>(items: T[], source: string): T[] {
   if (items.length === 0) {
     throw new Error(`${source} returned no parseable entries; the official page contract may have changed.`);
@@ -67,13 +73,19 @@ export async function searchInvestmentAdvisers(query: string, limit = 50): Promi
     sort: 'score desc',
     wt: 'json',
   });
-  const response = await fetch(`https://api.adviserinfo.sec.gov/search/firm?${params.toString()}`);
+  const response = await fetch(buildSecIapdUrl('search/firm', params));
   if (!response.ok) throw new Error(`IAPD search returned ${response.status}`);
-  const payload = await response.json() as {
-    hits?: { total?: number; hits?: Array<{ _source?: Record<string, unknown> }> };
-  };
-  const firms = (payload.hits?.hits || []).map(hit => {
-    const source = hit._source || {};
+  const payload = record(await response.json());
+  const hitContainer = record(payload?.hits);
+  const total = hitContainer?.total;
+  const rawHits = hitContainer?.hits;
+  if (!Number.isSafeInteger(total) || Number(total) < 0 || !Array.isArray(rawHits)) {
+    throw new Error('IAPD search response was malformed.');
+  }
+
+  const firms = rawHits.map(rawHit => {
+    const source = record(record(rawHit)?._source);
+    if (!source) throw new Error('IAPD search response was malformed.');
     let address: { city?: string; state?: string; country?: string } = {};
     try {
       const parsed = JSON.parse(String(source.firm_ia_address_details || '{}')) as { officeAddress?: typeof address };
@@ -94,7 +106,7 @@ export async function searchInvestmentAdvisers(query: string, limit = 50): Promi
       url: `https://adviserinfo.sec.gov/firm/summary/${encodeURIComponent(crdNumber)}`,
     };
   });
-  return { total: Number(payload.hits?.total || firms.length), firms };
+  return { total: Number(total), firms };
 }
 
 export function parseRulemakingIndex(html: string): OfficialSecItem[] {

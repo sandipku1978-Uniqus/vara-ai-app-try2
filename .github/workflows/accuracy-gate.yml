@@ -1,137 +1,399 @@
-name: Accuracy gate
+name: Release candidate accuracy
 
-# CI note: GitHub runners share throttled egress to SEC/Supabase, so the e2e
-# baseline here is ~94% vs ~98% locally — the 90% CI bar catches real
-# regressions (which fail whole classes) without weekly false alarms. The
-# ticker sweep below remains a hard 100% gate.
-# Weekly proof that search accuracy is still 100%: builds the app, serves it
-# locally with the CI/e2e auth bypass (inert on hosted deploys), then runs the
-# full 10,426-ticker directory sweep plus the 1,000-point e2e suite against it.
-# Fails loudly if any ticker stops resolving or the e2e pass rate regresses.
-
+# This workflow never deploys or promotes. It runs evaluator code from the
+# protected main commit that dispatched it, while probing one immutable,
+# unpromoted STAGED Vercel production build of that SAME commit. Candidate
+# input never selects executable code.
 on:
-  schedule:
-    - cron: '30 4 * * 1' # Mondays 04:30 UTC, before the daily data refresh
   workflow_dispatch:
+    inputs:
+      deployment_url:
+        description: Canonical URL of an unpromoted staged Production deployment (not an alias)
+        required: true
+        type: string
+      deployment_id:
+        description: Vercel deployment ID (dpl_...)
+        required: true
+        type: string
 
 permissions:
   contents: read
 
 concurrency:
-  group: accuracy-gate
+  # Distinct candidates also share upstream SEC courtesy limits; serialize
+  # every sweep so parallel candidates cannot perturb availability evidence.
+  group: release-accuracy
   cancel-in-progress: false
 
 jobs:
-  sweep:
+  trusted-dispatch:
+    name: Verify trusted evaluator revision
     runs-on: ubuntu-latest
-    timeout-minutes: 90
-    env:
-      URC_SUPABASE_URL: ${{ secrets.URC_SUPABASE_URL }}
-      URC_SUPABASE_SERVICE_KEY: ${{ secrets.URC_SUPABASE_SERVICE_KEY }}
-      # Since #41, web routes fail closed without the publishable key: every
-      # /api/es-search call 503s, which the first dispatch of the reworked
-      # gate (2026-08-02, run 30771438193) hit as 100% ticker failures. Same
-      # value already set in Vercel; here it must be a repo secret.
-      URC_SUPABASE_WEB_KEY: ${{ secrets.URC_SUPABASE_WEB_KEY }}
-      URC_E2E_BYPASS_AUTH: '1'
-      # The local server reports the candidate revision via /api/version, so
-      # the consolidation step can prove the evidence describes THIS commit.
-      VERCEL_GIT_COMMIT_SHA: ${{ github.sha }}
-      # npm run build pins NEXT_LOCAL_BUILD=1 (writes .next-build); next start
-      # must read the same distDir.
-      NEXT_LOCAL_BUILD: '1'
+    outputs:
+      sha: ${{ steps.trust.outputs.sha }}
     steps:
-      - name: Fail closed if required secrets are absent (WP5)
+      - name: Refuse dispatches outside protected main
         run: |
-          missing=""
-          [ -z "${URC_SUPABASE_URL}" ] && missing="$missing URC_SUPABASE_URL"
-          [ -z "${URC_SUPABASE_SERVICE_KEY}" ] && missing="$missing URC_SUPABASE_SERVICE_KEY"
-          [ -z "${URC_SUPABASE_WEB_KEY}" ] && missing="$missing URC_SUPABASE_WEB_KEY"
-          if [ -n "$missing" ]; then
-            echo "::error title=Accuracy gate cannot run::Missing repository secrets:$missing. Web routes fail closed without URC_SUPABASE_WEB_KEY (the Supabase publishable key, same value as Vercel) — without it every ticker probe 503s and the report would measure the outage, not accuracy. See docs/pending-keys-checklist.md."
+          if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            echo "::error title=Untrusted workflow ref::Release evidence may be dispatched only from protected main; got $GITHUB_REF"
             exit 1
           fi
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - id: trust
+        name: Bind evaluator to the dispatch SHA
+        run: |
+          actual_sha=$(git rev-parse HEAD)
+          if [ "$actual_sha" != "$GITHUB_SHA" ]; then
+            echo "::error title=Evaluator checkout mismatch::Checked out $actual_sha, workflow dispatch is $GITHUB_SHA"
+            exit 1
+          fi
+          echo "sha=$actual_sha" >> "$GITHUB_OUTPUT"
+
+  candidate-accuracy:
+    name: Immutable candidate accuracy
+    needs: trusted-dispatch
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      actions: read
+      # Independently inventory exact-ref CodeQL findings after proving the
+      # exact-SHA analysis workflow completed. Workflow success alone is not a
+      # clean-security finding attestation.
+      security-events: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    # Store release secrets ONLY in this environment and restrict it to main.
+    # Do not duplicate them as unrestricted repository secrets.
+    environment: release-candidate
+    env:
+      CANDIDATE_URL: ${{ inputs.deployment_url }}
+      CANDIDATE_DEPLOYMENT_ID: ${{ inputs.deployment_id }}
+      EXPECTED_SHA: ${{ needs.trusted-dispatch.outputs.sha }}
+      EXPECTED_REPOSITORY: ${{ github.repository }}
+      EXPECTED_REPOSITORY_ID: ${{ github.repository_id }}
+      ACCURACY_THRESHOLD: '97'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # Never check out caller-provided code. Every script below comes
+          # from the already-validated protected-main evaluator revision.
+          ref: ${{ needs.trusted-dispatch.outputs.sha }}
           persist-credentials: false
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          # supabase-js in the e2e script needs native WebSocket (Node 22+)
           node-version: 22
           cache: npm
-      - run: npm ci
-      - run: npm run build
-      - name: Start production server
-        run: |
-          npx next start -p 3111 &
-          for i in $(seq 1 45); do
-            curl -sf -o /dev/null http://localhost:3111/ && exit 0
-            sleep 2
-          done
-          echo "Server did not become ready" >&2
-          exit 1
+      - name: Install trusted evaluator dependencies (no secrets in scope)
+        run: npm ci --ignore-scripts
 
-      - name: Probe the web read path before the sweep
-        # A present-but-invalid URC_SUPABASE_WEB_KEY passes the secrets guard,
-        # then 503s all 10,412 probes at ~750ms each (observed 2026-08-02, run
-        # 30772616107, 13 wasted minutes). One request settles it up front.
+      - name: Bind evidence to evaluator code and migration chain
         run: |
-          code=$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:3111/api/es-search?cik=0000320193&size=1")
-          if [ "$code" != "200" ]; then
-            echo "::error title=Web read path is broken::/api/es-search returned HTTP $code for a known CIK. If 503, URC_SUPABASE_WEB_KEY is present but not a usable key (must be the sb_publishable_… key or the legacy anon JWT — check for clipboard/paste mishaps). The sweep would fail on every probe; aborting now instead."
+          actual_sha=$(git rev-parse HEAD)
+          if [ "$actual_sha" != "$EXPECTED_SHA" ]; then
+            echo "::error title=Wrong evaluator checkout::Checked out $actual_sha, expected $EXPECTED_SHA"
             exit 1
           fi
-          echo "Web read path OK (HTTP $code)."
-      - name: Full ticker coverage sweep (100% required)
-        run: npx tsx scripts/ticker-coverage-test.ts --base http://localhost:3111 --out ticker-coverage-report.json
-      - name: 1,000-point e2e performance suite
-        run: npx tsx scripts/e2e-perf-test.ts --base http://localhost:3111 --out e2e-perf-report.json --min-pass 90
-      - name: Semantic accuracy gate (SEC-derived expectations)
-        run: npx tsx scripts/accuracy/gate.ts --json accuracy-report.json
-      - name: Consolidated release evidence (fail-closed)
-        # One verdict from separate dimensions — never averaged. Fails when any
-        # suite is missing, a critical semantic check was skipped, ticker
-        # resolution is below 100%, e2e is under its bar, the tested server
-        # reports a different SHA than this run's candidate, or the DATABASE
-        # reports a different schema version than the repository's migration
-        # chain expects (audit R0/R3: app SHA + schema state are one
-        # candidate — this is the assertion that was missing when production
-        # ran 016 behavior under 017-expecting code).
+          echo "EXPECTED_SCHEMA_VERSION=$(node scripts/schema-provenance.mjs --field schemaVersion)" >> "$GITHUB_ENV"
+          echo "EXPECTED_SCHEMA_MIGRATION_COUNT=$(node scripts/schema-provenance.mjs --field schemaMigrationCount)" >> "$GITHUB_ENV"
+          echo "EXPECTED_SCHEMA_CHAIN_CHECKSUM=$(node scripts/schema-provenance.mjs --field schemaChainChecksum)" >> "$GITHUB_ENV"
+          echo "EXPECTED_SCHEMA_CHECKSUM_ALGORITHM=$(node scripts/schema-provenance.mjs --field schemaChecksumAlgorithm)" >> "$GITHUB_ENV"
+
+      - id: quality
+        name: Require exact-SHA quality runs and clean blocking CodeQL findings
+        continue-on-error: true
         env:
-          EXPECTED_SHA: ${{ github.sha }}
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
-          expected_schema=$(ls db/migrations/ | grep -oE '^[0-9]{3}' | sort | tail -1)
-          echo "Repository migration chain expects schema version: $expected_schema"
-          npx tsx scripts/accuracy/consolidate.ts \
-            --base http://localhost:3111 \
+          npx --no-install tsx scripts/accuracy/verify-quality-runs.ts \
+            --repository "$EXPECTED_REPOSITORY" \
+            --expect-sha "$EXPECTED_SHA" \
+            --out quality-attestation.json
+
+      - id: ui_evidence_runs
+        name: Bind UI evidence to the exact attested quality runs
+        if: steps.quality.outcome == 'success'
+        run: |
+          select_run_id() {
+            workflow_path="$1"
+            jq -er --arg path "$workflow_path" --arg sha "$EXPECTED_SHA" '
+              [.workflows[]? | select(
+                .workflowPath == $path and
+                .headSha == $sha and
+                .event == "push" and
+                .headBranch == "main" and
+                .status == "completed" and
+                .conclusion == "success"
+              ) | .runId] as $ids
+              | if ($ids | length) != 1 then
+                  error("expected exactly one attested run for " + $path)
+                elif (($ids[0] | type) != "number") or
+                     (($ids[0] | floor) != $ids[0]) or
+                     $ids[0] <= 0 then
+                  error("attested run ID is not a positive integer for " + $path)
+                else
+                  $ids[0]
+                end
+            ' quality-attestation.json
+          }
+          ci_run_id=$(select_run_id '.github/workflows/ci.yml')
+          auth_run_id=$(select_run_id '.github/workflows/auth-lifecycle.yml')
+          echo "ci_run_id=$ci_run_id" >> "$GITHUB_OUTPUT"
+          echo "auth_run_id=$auth_run_id" >> "$GITHUB_OUTPUT"
+
+      - id: ui_browser_evidence
+        name: Download exact-SHA browser action evidence
+        if: steps.quality.outcome == 'success'
+        continue-on-error: true
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: ui-action-evidence-browser-${{ needs.trusted-dispatch.outputs.sha }}
+          path: ui-action-evidence/browser
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ steps.ui_evidence_runs.outputs.ci_run_id }}
+
+      - id: ui_auth_evidence
+        name: Download exact-SHA authentication action evidence
+        if: always() && steps.quality.outcome == 'success' && steps.ui_evidence_runs.outcome == 'success'
+        continue-on-error: true
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        with:
+          name: ui-action-evidence-auth-${{ needs.trusted-dispatch.outputs.sha }}
+          path: ui-action-evidence/auth
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ steps.ui_evidence_runs.outputs.auth_run_id }}
+
+      - id: candidate
+        name: Verify canonical immutable candidate before testing
+        if: >-
+          steps.quality.outcome == 'success' &&
+          steps.ui_browser_evidence.outcome == 'success' &&
+          steps.ui_auth_evidence.outcome == 'success'
+        continue-on-error: true
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+        run: |
+          npx --no-install tsx scripts/accuracy/verify-candidate.ts \
+            --base "$CANDIDATE_URL" \
+            --deployment-id "$CANDIDATE_DEPLOYMENT_ID" \
+            --expect-sha "$EXPECTED_SHA" \
+            --expect-repository-id "$EXPECTED_REPOSITORY_ID" \
+            --expect-schema "$EXPECTED_SCHEMA_VERSION" \
+            --expect-migration-count "$EXPECTED_SCHEMA_MIGRATION_COUNT" \
+            --expect-schema-checksum "$EXPECTED_SCHEMA_CHAIN_CHECKSUM" \
+            --expect-checksum-algorithm "$EXPECTED_SCHEMA_CHECKSUM_ALGORITHM" \
+            --min-not-after-seconds 7200 \
+            --out candidate-provenance.json
+          trusted_origin=$(jq -er '
+            select(
+              .pass == true and
+              (.problems | type) == "array" and
+              (.problems | length) == 0 and
+              (.base | type) == "string"
+            ) | .base
+          ' candidate-provenance.json)
+          if [ "$trusted_origin" != "${CANDIDATE_URL%/}" ]; then
+            echo "::error title=Candidate origin mismatch::Passing provenance did not bind the workflow candidate URL"
+            exit 1
+          fi
+          echo "trusted_origin=$trusted_origin" >> "$GITHUB_OUTPUT"
+
+      - id: candidate_auth
+        name: Verify renewable staged-production release credential
+        if: steps.candidate.outcome == 'success'
+        continue-on-error: true
+        env:
+          URC_RELEASE_GATE_PRIVATE_KEY: ${{ secrets.URC_RELEASE_GATE_PRIVATE_KEY }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          TRUSTED_CANDIDATE_ORIGIN: ${{ steps.candidate.outputs.trusted_origin }}
+        run: >-
+          npx --no-install tsx scripts/accuracy/probe-auth.ts
+          --base "$CANDIDATE_URL"
+          --out release-auth-probe.json
+
+      - id: security_headers
+        name: Verify enforced security headers on the immutable candidate
+        if: steps.candidate.outcome == 'success' && steps.candidate_auth.outcome == 'success'
+        continue-on-error: true
+        env:
+          URC_RELEASE_GATE_PRIVATE_KEY: ${{ secrets.URC_RELEASE_GATE_PRIVATE_KEY }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          TRUSTED_CANDIDATE_ORIGIN: ${{ steps.candidate.outputs.trusted_origin }}
+        run: >-
+          npx --no-install tsx scripts/accuracy/security-headers.ts
+          --base "$CANDIDATE_URL"
+          --out security-header-report.json
+
+      - name: Full ticker coverage sweep
+        if: steps.candidate.outcome == 'success' && steps.candidate_auth.outcome == 'success' && steps.security_headers.outcome == 'success'
+        continue-on-error: true
+        env:
+          URC_RELEASE_GATE_PRIVATE_KEY: ${{ secrets.URC_RELEASE_GATE_PRIVATE_KEY }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          TRUSTED_CANDIDATE_ORIGIN: ${{ steps.candidate.outputs.trusted_origin }}
+        run: >-
+          npx --no-install tsx scripts/ticker-coverage-test.ts
+          --base "$CANDIDATE_URL"
+          --out ticker-coverage-report.json
+
+      - name: 1,000-point deployed API accuracy and latency suite
+        if: steps.candidate.outcome == 'success' && steps.candidate_auth.outcome == 'success' && steps.security_headers.outcome == 'success'
+        continue-on-error: true
+        env:
+          URC_SUPABASE_URL: ${{ secrets.URC_SUPABASE_URL }}
+          URC_SUPABASE_SERVICE_KEY: ${{ secrets.URC_SUPABASE_SERVICE_KEY }}
+          URC_RELEASE_GATE_PRIVATE_KEY: ${{ secrets.URC_RELEASE_GATE_PRIVATE_KEY }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          TRUSTED_CANDIDATE_ORIGIN: ${{ steps.candidate.outputs.trusted_origin }}
+        run: >-
+          npx --no-install tsx scripts/e2e-perf-test.ts
+          --base "$CANDIDATE_URL"
+          --points 1000
+          --out e2e-perf-report.json
+          --min-pass 97
+
+      - name: SEC-derived semantic truth suite
+        if: steps.candidate.outcome == 'success' && steps.candidate_auth.outcome == 'success' && steps.security_headers.outcome == 'success'
+        continue-on-error: true
+        env:
+          URC_RELEASE_GATE_PRIVATE_KEY: ${{ secrets.URC_RELEASE_GATE_PRIVATE_KEY }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          TRUSTED_CANDIDATE_ORIGIN: ${{ steps.candidate.outputs.trusted_origin }}
+        run: npx --no-install tsx scripts/accuracy/gate.ts --json accuracy-report.json
+
+      - id: final_candidate
+        name: Re-attest staged candidate after the long sweep
+        if: always() && steps.candidate.outcome == 'success'
+        continue-on-error: true
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+          TRUSTED_CANDIDATE_ORIGIN: ${{ steps.candidate.outputs.trusted_origin }}
+        run: |
+          npx --no-install tsx scripts/accuracy/verify-candidate.ts \
+            --base "$CANDIDATE_URL" \
+            --deployment-id "$CANDIDATE_DEPLOYMENT_ID" \
+            --expect-sha "$EXPECTED_SHA" \
+            --expect-repository-id "$EXPECTED_REPOSITORY_ID" \
+            --expect-schema "$EXPECTED_SCHEMA_VERSION" \
+            --expect-migration-count "$EXPECTED_SCHEMA_MIGRATION_COUNT" \
+            --expect-schema-checksum "$EXPECTED_SCHEMA_CHAIN_CHECKSUM" \
+            --expect-checksum-algorithm "$EXPECTED_SCHEMA_CHECKSUM_ALGORITHM" \
+            --min-not-after-seconds 300 \
+            --out candidate-final-provenance.json
+
+      - id: schema_contract
+        name: Independently attest the live database contract
+        if: always() && steps.candidate.outcome == 'success'
+        continue-on-error: true
+        env:
+          # These credentials exist only in the restricted release-candidate
+          # environment and are never sent to the deployed application.
+          URC_SUPABASE_URL: ${{ secrets.URC_SUPABASE_URL }}
+          URC_SUPABASE_SERVICE_KEY: ${{ secrets.URC_SUPABASE_SERVICE_KEY }}
+        run: |
+          npx --no-install tsx scripts/accuracy/schema-contract.ts \
+            --expect-schema "$EXPECTED_SCHEMA_VERSION" \
+            --expect-migration-count "$EXPECTED_SCHEMA_MIGRATION_COUNT" \
+            --expect-schema-checksum "$EXPECTED_SCHEMA_CHAIN_CHECKSUM" \
+            --expect-checksum-algorithm "$EXPECTED_SCHEMA_CHECKSUM_ALGORITHM" \
+            --out schema-contract-report.json
+
+      - name: Consolidate fail-closed release evidence
+        if: always()
+        env:
+          # /api/version is public. Only Vercel deployment protection may
+          # need bypassing for the final identity read. A failed or skipped
+          # preflight receives no secret even though consolidation still runs.
+          VERCEL_AUTOMATION_BYPASS_SECRET: ${{ steps.candidate.outcome == 'success' && secrets.VERCEL_AUTOMATION_BYPASS_SECRET || '' }}
+          TRUSTED_CANDIDATE_ORIGIN: ${{ steps.candidate.outputs.trusted_origin }}
+        run: |
+          npx --no-install tsx scripts/accuracy/consolidate.ts \
+            --base "$CANDIDATE_URL" \
+            --deployment-id "$CANDIDATE_DEPLOYMENT_ID" \
+            --expect-sha "$EXPECTED_SHA" \
+            --expect-repository "$EXPECTED_REPOSITORY" \
+            --expect-repository-id "$EXPECTED_REPOSITORY_ID" \
+            --expect-schema "$EXPECTED_SCHEMA_VERSION" \
+            --expect-migration-count "$EXPECTED_SCHEMA_MIGRATION_COUNT" \
+            --expect-schema-checksum "$EXPECTED_SCHEMA_CHAIN_CHECKSUM" \
+            --expect-checksum-algorithm "$EXPECTED_SCHEMA_CHECKSUM_ALGORITHM" \
+            --candidate candidate-provenance.json \
+            --candidate-final candidate-final-provenance.json \
+            --quality-attestation quality-attestation.json \
+            --ui-browser ui-action-evidence/browser/ui-action-evidence-browser.json \
+            --ui-auth ui-action-evidence/auth/ui-action-evidence-auth.json \
+            --schema-contract schema-contract-report.json \
+            --auth release-auth-probe.json \
+            --security-headers security-header-report.json \
             --semantic accuracy-report.json \
             --tickers ticker-coverage-report.json \
             --e2e e2e-perf-report.json \
-            --e2e-min-pass 90 \
-            --expect-schema "$expected_schema" \
             --out release-evidence.json
-      - name: Upload evidence artifacts
+
+      - name: Upload immutable release evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: release-evidence-${{ github.sha }}
+          name: release-evidence-${{ inputs.deployment_id }}-${{ needs.trusted-dispatch.outputs.sha }}
+          if-no-files-found: warn
+          retention-days: 30
           path: |
+            candidate-provenance.json
+            candidate-final-provenance.json
+            quality-attestation.json
+            ui-action-evidence/browser/ui-action-evidence-browser.json
+            ui-action-evidence/browser/urc-playwright-gallery/ui-action-run.json
+            ui-action-evidence/browser/urc-playwright/ui-action-run.json
+            ui-action-evidence/auth/ui-action-evidence-auth.json
+            ui-action-evidence/auth/urc-playwright-auth/ui-action-run.json
+            schema-contract-report.json
+            release-auth-probe.json
+            security-header-report.json
             release-evidence.json
             accuracy-report.json
             ticker-coverage-report.json
             e2e-perf-report.json
-      - name: Publish summary
+
+      - name: Publish decision summary
         if: always()
         run: |
           {
-            echo "## Accuracy gate"
+            echo "## Immutable release-candidate decision"
+            echo "Candidate: \`$CANDIDATE_DEPLOYMENT_ID\` at \`$EXPECTED_SHA\`"
             echo '```json'
-            [ -f release-evidence.json ] && node -e "const r=require('./release-evidence.json');console.log(JSON.stringify({pass:r.pass,problems:r.problems,dimensions:r.dimensions,sha:r.provenance?.reported?.sha},null,1))" || echo '"release evidence missing"'
-            echo '```'
-            echo '```json'
-            [ -f ticker-coverage-report.json ] && node -e "const r=require('./ticker-coverage-report.json');console.log(JSON.stringify({tickers:r.tickers,pass:r.pass,fail:r.fail,emptyVerified:r.emptyVerified,latency:r.latency,failures:(r.failures||[]).slice(0,20)},null,1))" || echo '"ticker report missing"'
-            echo '```'
-            echo '```json'
-            [ -f e2e-perf-report.json ] && node -e "const r=require('./e2e-perf-report.json');const s=r.summary||r;console.log(JSON.stringify(s,null,1).slice(0,4000))" || echo '"e2e report missing"'
+            if [ -f release-evidence.json ]; then
+              node -e "const r=require('./release-evidence.json');console.log(JSON.stringify({pass:r.pass,base:r.base,candidateDeploymentId:r.candidateDeploymentId,problems:r.problems,warnings:r.warnings,policy:r.policy,dimensions:r.dimensions,provenance:r.provenance},null,2).slice(0,30000))"
+            else
+              echo '"release evidence missing — promotion blocked"'
+            fi
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+
+  candidate-evidence-passed:
+    # No deploy command exists here. This signal can run only after the exact
+    # candidate passes. Until required reviewers/no-bypass are configured on
+    # the Production environment, this remains an evidence-only operator record.
+    name: Candidate evidence passed — operator promotion pending
+    needs: [trusted-dispatch, candidate-accuracy]
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - env:
+          CANDIDATE_URL: ${{ inputs.deployment_url }}
+          CANDIDATE_DEPLOYMENT_ID: ${{ inputs.deployment_id }}
+          EXPECTED_SHA: ${{ needs.trusted-dispatch.outputs.sha }}
+        run: |
+          echo "Accuracy evidence passed for deployment $CANDIDATE_DEPLOYMENT_ID at SHA $EXPECTED_SHA."
+          echo "Canonical tested URL: $CANDIDATE_URL"
+          echo "This is not promotion authorization while the GitHub Production environment lacks required reviewers and no-bypass protection."
+          echo "After those external controls are confirmed, an operator may select this exact STAGED Production deployment in Vercel and use Promote (no rebuild), then verify /api/version reports this deployment ID and SHA on the production domain."

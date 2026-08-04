@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { FILINGS, installBooleanFixtures } from './boolean-fixtures';
+import { installWatchlistFixtures } from './watchlist-fixtures';
 
 /**
  * Critical-action archetype: the persistent application chrome (WP8 burn-down).
@@ -253,5 +254,45 @@ test.describe('critical action: global application chrome', () => {
     await expect.poll(appliedTheme, { message: 'the chosen theme did not survive reload' }).toBe(after);
     await expect(toggle(), 'the reloaded control misnames the next appearance').toHaveAccessibleName(named(before));
     await expect(toggle()).toHaveAttribute('title', `Switch to ${before} mode`);
+  });
+
+  test('global.quick-find filters, keyboard-selects one route, and restores focus on Escape', async ({ page }) => {
+    await installBooleanFixtures(page);
+    await installWatchlistFixtures(page);
+    await page.goto('/dashboard');
+    await waitForIdentity(page);
+
+    const opener = page.getByRole('button', { name: 'Open quick navigation and search' });
+    await opener.click();
+    const dialog = page.getByRole('dialog', { name: 'Quick navigation and filing search' });
+    const input = page.getByRole('combobox', { name: 'Quick navigation search' });
+    await expect(dialog).toBeVisible();
+    await expect(input).toBeFocused();
+
+    await input.fill('Accounting Analytics');
+    const analytics = page.getByRole('option', { name: /^Accounting Analytics Go to/ });
+    await expect(analytics).toBeVisible();
+    await expect(page.getByRole('option', { name: /Research Workbench/ })).toHaveCount(0);
+
+    // There is also an explicit "search filings for" option. Move to it and
+    // back to prove Arrow navigation updates the active descendant, then open
+    // the highlighted product route with Enter.
+    await input.press('ArrowDown');
+    await expect(page.getByRole('option', { name: /Search filings for/ })).toHaveAttribute('aria-selected', 'true');
+    await input.press('ArrowUp');
+    await expect(analytics).toHaveAttribute('aria-selected', 'true');
+    await input.press('Enter');
+    await expect(page).toHaveURL(urlEndingIn('/accounting-analytics'));
+
+    // The keyboard shortcut opens the same labelled dialog. Escape closes it
+    // and returns focus to whichever control opened it most recently.
+    const routeOpener = page.getByRole('button', { name: 'Open quick navigation and search' });
+    await routeOpener.focus();
+    await page.keyboard.press('ControlOrMeta+K');
+    await expect(dialog).toBeVisible();
+    await expect(input).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(dialog).toHaveCount(0);
+    await expect(routeOpener).toBeFocused();
   });
 });

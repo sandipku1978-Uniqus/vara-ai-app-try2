@@ -1,16 +1,263 @@
-# Accuracy gate
+# Accuracy and immutable release-candidate gate
 
-Closes readiness finding **F-09**. The previous accuracy number (894/950, 2026-07-20)
-was produced by hand, could not be re-run, and predated most of the search work, so it
-could not gate anything.
+This closes readiness finding **F-09** without treating a localhost rebuild as
+release evidence.
+
+## Optional developer smoke (never release evidence)
+
+These commands are useful while developing the evaluator or search behavior:
 
 ```bash
-npm run accuracy                          # all suites
-npm run accuracy -- --suite boolean       # one suite
-npm run accuracy -- --json report.json    # machine-readable report
+CANDIDATE_URL=http://localhost:3033 npm run accuracy
+CANDIDATE_URL=http://localhost:3033 npm run accuracy -- --suite boolean
+CANDIDATE_URL=http://localhost:3033 npm run accuracy -- --json report.json
 ```
 
-Exits non-zero below `ACCURACY_THRESHOLD` (default 90%).
+The standalone semantic command exits non-zero below `ACCURACY_THRESHOLD`
+(default **97%**). Filing-entity and Boolean checks now exercise the product
+HTTP path, so a candidate base is mandatory. A local server must use the
+existing local-only e2e auth setup; an immutable Vercel candidate additionally
+needs the deployment ID, expected SHA, P-256 private key, and any deployment
+protection bypass described below. A standalone run is useful during
+development, but it is not permission to promote a release.
+
+## Immutable release evidence
+
+The blocking release run is **Release candidate accuracy**
+(`.github/workflows/accuracy-gate.yml`). Dispatch it with:
+
+- the Vercel deployment's canonical `*.vercel.app` URL;
+- its `dpl_...` deployment ID.
+
+The expected SHA and GitHub repository ID are never caller-controlled. The
+workflow refuses to run unless it was dispatched from `refs/heads/main`, checks
+out that exact workflow SHA, and executes only that protected-main evaluator
+code. Before touching a candidate, it resolves GitHub Actions workflows by the
+exact repository paths `.github/workflows/ci.yml` and
+`.github/workflows/codeql.yml`, plus the push-only credentialed Clerk lifecycle
+at `.github/workflows/auth-lifecycle.yml`. It then requires completed successful
+`push` runs on protected `main` for that exact SHA. Display names and generic
+check names are not trusted. This does not alter the deliberately deferred
+production Clerk configuration. It then calculates the expected database version, migration count,
+full-chain SHA-256 checksum, and checksum algorithm. Before any long sweep, it
+asks Vercel's API to prove that the supplied URL is the canonical URL for an
+unpromoted **STAGED Production** deployment of the same SHA in the configured
+project—not an alias. `gitSource` must identify GitHub, protected `main`, and
+the workflow's repository ID; caller-settable deployment metadata is never
+accepted as source attestation. The application must report the same deployment,
+SHA, production environment, and schema identity. Identity is checked again
+after the sweep.
+
+## Release policy
+
+Every condition is independently blocking:
+
+| Dimension | Required result |
+|---|---|
+| Semantic truth | At least 97%; 100% of scored Boolean/filing-entity checks; zero critical skips |
+| Ticker directory | Full directory, 100% accepted; only EDGAR-verified empty issuers may count |
+| Deployed API suite | At least 1,000 cases and 97% overall |
+| HTTP availability | Zero 5xx responses, including a 5xx hidden by a successful retry; zero request errors |
+| Class A | At least 97%; p95 no more than 5s |
+| Class B — auditor | At least 97%; p95 no more than 5s |
+| Class C — comment-letter/topic | At least 97%; p95 no more than 2s |
+| Class D | At least 97%; p95 no more than 5s |
+| Class E | 100%; p95 no more than 5s |
+| Class F | At least 95%; p95 no more than 5s |
+| Evaluator quality | Exact-SHA successful `push` runs for the repository's exact CI, CodeQL, and credentialed Clerk lifecycle workflow files; the latest `refs/heads/main` CodeQL analysis is the same SHA and has zero open critical/high findings |
+| Candidate security headers | Enforced CSP and the complete hardening header set on public HTML, public API, static 404, protected-route boundary, and typed API 400 responses |
+| Candidate search configuration | `/api/version` reports `filingSearchBackend: enriched` at initial and final attestation; a legacy-mode build is rejected |
+| Provenance | Canonical staged Production deployment URL, exact deployment ID/SHA, exact schema-chain identity at start and finish, independently verified live schema contract, and exact candidate/probe database binding |
+
+Retries remain useful diagnostic behavior, but they no longer erase an upstream
+server failure from evidence. The consolidated JSON records both logical cases
+and HTTP attempts. Auditor and topic-search samples also have dedicated
+sub-reports, so faster comment-thread requests cannot hide topic latency inside
+the broader class-C percentile.
+
+Security-header evidence is collected directly from the canonical immutable
+Vercel candidate, not inferred from a local production build. It covers routing
+archetypes where the framework or edge can behave differently and records only
+response metadata; the signed request credential is never written to artifacts.
+The gate parses CSP, HSTS, and Permissions-Policy as structured directives:
+duplicate CSP directives, source-token smuggling beside `'none'`, approximate
+HSTS values, extra capability allowlists, and forged substring matches fail.
+The `/dashboard` archetype is requested as a neutral unauthenticated visitor:
+no Clerk session and no release-gate token are sent, redirects are observed
+with `redirect: manual`, and only 301/302/303/307/308 or explicit 401/403/404
+boundary responses pass. HTTP 200 is a blocking fail-open result. This rule is
+independent of the intentionally deferred production Clerk configuration.
+
+A green CodeQL workflow proves only that analysis completed. The release gate
+therefore performs a second, independent GitHub code-scanning check. It reads
+the latest `refs/heads/main` CodeQL analysis before and after querying the open
+critical and high alert inventories, requires both analysis reads to be the
+same analysis for the release SHA and exact CodeQL workflow key, binds its
+timestamp and run ID to the attested workflow run, and blocks on any finding.
+The bookends prevent a later clean branch scan from being credited to an older
+candidate, including the otherwise ambiguous zero-alert case. Medium and low
+findings remain visible for normal security triage but are not release blockers.
+
+## Declared schema identity and observed live contract
+
+The migration-chain checksum returned by `/api/version` proves what the database
+registry declares. It cannot, by itself, prove that an operator applied every
+earlier migration or that the live catalog still has the required indexes,
+grants, columns, and function semantics.
+
+Migration `023_live_schema_contract_attestation.sql` closes that gap in two
+independent ways:
+
+1. It refuses to advance the registry head until selected structural,
+   least-privilege, public-schema/default-privilege, and temporal-auditor
+   contracts from the preceding chain are observable in `pg_catalog`.
+2. It exposes raw, deterministically ordered evidence through
+   `urc_schema_contract_evidence()`. Only `service_role` may execute that RPC.
+   Protected-main evaluator code, rather than database-owned pass/fail logic,
+   assesses the evidence and records `observedEvidenceSha256` in
+   `schema-contract-report.json`.
+
+Release consolidation does not trust that report's `pass` flag. It requires an
+empty producer problem list, bounds the raw catalog payload and its collections,
+recomputes the canonical SHA-256 digest, and runs the catalog/ACL/index/function
+contract assessor again. A syntactically valid forged digest or `pass: true`
+cannot substitute for the underlying evidence.
+
+The public application reports only
+`schemaDatabaseFingerprint = sha256(normalized Supabase origin)`. The live
+service probe reports the same one-way `databaseFingerprint` from the exact
+origin it queried. Release consolidation requires both non-null values to be
+identical, preventing a candidate pointed at database A from passing with
+catalog evidence sampled from database B. Neither the origin nor any key is
+published.
+
+The disposable-Postgres chain test also drops a required index inside a
+transaction, captures evidence while it is absent, and proves that the evidence
+digest changes and the independent assessor fails before rolling the change
+back:
+
+```bash
+DATABASE_URL=postgresql://... tests/db/migration-chain.sh
+```
+
+This is deliberately a selected live-contract attestation, not a claim of
+byte-for-byte historical execution. It does not prove corpus completeness, data
+freshness, planner choice, or production latency; those remain the responsibility
+of the accuracy, refresh, and performance evidence in this gate.
+
+## Required secrets
+
+- `URC_SUPABASE_URL` and `URC_SUPABASE_SERVICE_KEY` sample independent database
+  ground truth. The evaluator's service key is never sent in candidate HTTP
+  requests. A deployment may separately hold a Vercel Sensitive server-only
+  service key for the three audited cache-writer routes; it is never a read fallback.
+- `VERCEL_TOKEN` proves the canonical deployment URL through Vercel's API;
+  `VERCEL_PROJECT_ID` binds it to this application, and `VERCEL_ORG_ID` is
+  required to bind both deployment and project ownership (and supplies team
+  scope for the API calls).
+- `URC_RELEASE_GATE_PRIVATE_KEY` is a base64 PKCS#8 P-256 private key stored
+  only in the GitHub `release-candidate` environment. It signs five-minute
+  credentials and must never be configured in Vercel.
+- `URC_RELEASE_GATE_PUBLIC_KEY` is the corresponding base64 SPKI public key.
+  Configure it in Vercel Production **before this candidate's staged build**.
+  It is not secret and can verify but cannot mint credentials.
+- `URC_RELEASE_GATE_NOT_AFTER` is the per-candidate absolute expiry, as an ISO
+  timestamp or epoch. Configure it alongside the public key before the staged
+  build. It is nonsecret and `/api/version` reports its normalized ISO value.
+- `VERCEL_AUTOMATION_BYPASS_SECRET` is optional and only bypasses Vercel
+  deployment protection. It does not bypass application authentication.
+
+Generate the pair outside the repository, for example with OpenSSL, and place
+only the two base64 values in their respective environment stores:
+
+```bash
+openssl ecparam -name prime256v1 -genkey -noout -out release-gate.pem
+openssl pkcs8 -topk8 -nocrypt -in release-gate.pem -outform DER | base64 | tr -d '\n'
+openssl ec -in release-gate.pem -pubout -outform DER | base64 | tr -d '\n'
+```
+
+Use a fresh pair for every candidate. Never paste the private key into workflow
+inputs, logs, artifacts, or Vercel. Each v3 HTTP credential is bound to the
+canonical host, deployment ID, Git SHA, one method/path pair, and the deployed absolute not-after;
+each token expires after five minutes. It is accepted only when both
+`VERCEL_ENV` and `VERCEL_TARGET_ENV` are `production`, and only for GET
+`/api/es-search`, `/api/letters`, `/api/enrich`, `/api/filing-text`, and
+`/api/sec-efts`, plus POST `/api/enrich` and `/api/boolean-validate`. A token for one pair cannot
+be replayed on another. The public
+production alias has a different host and therefore falls through to Clerk:
+the signed host and request host must both equal the build's immutable
+`VERCEL_URL`, not merely any `*.vercel.app` alias.
+The canonical deployment URL also stops accepting credentials at the absolute
+not-after, even though that URL remains reachable after promotion. Application
+code has no signing material, so a compromised runtime cannot renew the release
+credential.
+
+The not-after must leave at least 7,200 seconds at initial preflight and 300
+seconds at final re-attestation, and it may be no later than six hours after
+Vercel reports the deployment ready (created time is the fail-closed fallback).
+A practical pre-build value is four hours ahead:
+
+```bash
+node -e "console.log(new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString())"
+```
+
+Because Vercel snapshots Production environment variables into the build, the
+workflow cannot generate this timestamp after deployment. Set the fresh public
+key and not-after first, allow the Git Integration to create the unaliased
+staged Production build, and then dispatch the evidence workflow. Immediately
+after the run, delete the candidate private key from GitHub. Rotate/remove the
+public key and not-after before creating another candidate; the old deployment's
+snapshotted bridge still expires on schedule.
+
+Those seven method/path pairs retain request controls. The signed release identity receives
+one distributed, deployment-lifetime 25,000-request window across all seven
+operations (in addition to per-operation counters). The counter has no
+five-minute bucket and expires only after the candidate not-after; missing or
+unavailable KV blocks release access rather than falling back per instance. Its
+documented 22,574-request passing bound
+covers the full ticker directory, all 7,120 bounded paginated e2e requests,
+up to 449 candidate-facing semantic requests, and five credential/scope probes with
+roughly 11% headroom; normal users,
+production-alias traffic, AI endpoints, and SEC fan-out concurrency/pacing keep
+their existing limits. Release workflows serialize globally so two candidates
+cannot consume one another's rate or upstream courtesy budgets.
+
+## Promotion boundary
+
+The repository workflow intentionally contains no deployment or promotion
+command. Its final `Candidate evidence passed — operator promotion pending` job
+can run only after all evidence passes and is attached to the GitHub `production`
+environment. It records the exact deployment ID, canonical URL, and SHA, but it
+is not promotion authorization until the external reviewer/no-bypass controls
+below are confirmed. Then an operator may select the recorded **STAGED
+Production** `dpl_...` deployment without rebuilding. Request `/api/version`
+on the production domain and verify that `deploymentId` and `sha` equal the
+evidence record before
+performing the remaining production smoke checks. A Preview candidate is
+invalid: Vercel rebuilds Preview deployments with Production variables during
+promotion, so it would not be the tested artifact.
+
+Administrative controls remain outside this repository and must be enabled
+before this is a hard production boundary:
+
+1. In Vercel Production environment settings, disable **Auto-assign Custom
+   Production Domains**. Let the Git integration build protected `main` as a
+   staged Production deployment, then explicitly promote that exact deployment
+   after this gate. The preflight requires `target=production`,
+   `readySubstate=STAGED`, `aliasAssigned=false`, and
+   `autoAssignCustomDomains=false`; local-file/metadata-only CLI deployments and
+   Preview builds are rejected.
+2. In GitHub, allow the `release-candidate` environment only from protected
+   `main`; store the private signing key, Supabase, and Vercel credentials only
+   in that environment—not as unrestricted repository secrets.
+3. Protect the `production` environment with required reviewers and prevent
+   bypass for the release actors.
+
+Until those controls are set, a repository workflow cannot stop Vercel's Git
+integration from independently publishing `main`. That limitation must be
+treated as a release blocker, not as evidence that the code-level gate failed.
+Because the current environment is not yet protected, the workflow remains
+evidence-only and will not perform the promotion itself.
 
 ## Design rule
 
@@ -19,8 +266,15 @@ only proves we did not change, not that we are right. Every expectation is eithe
 from SEC at run time, or is a structural invariant that must hold for any correct
 implementation.
 
-Unreachable sources are **skipped, not failed** — scoring SEC downtime as a miss is how
-the previous run produced uninvestigated 502s.
+Unreachable sources are **not mislabelled as semantic misses**. For the
+filing-entity corpus, the runner canonicalizes the complete SEC directory by
+ticker and CIK, then walks that verifiable prefix until it obtains 60 scored
+issuers. Every examined selection or exclusion is recorded against the full
+directory manifest. An upstream-HTTP-failure replacement blocks release; only a
+fully evidenced issuer with no annual-reporting entity may be replaced. A hard
+examination ceiling prevents an unbounded run, and failure to fill the scored
+target blocks release. Boolean remains fail-closed: any critical skip or scored
+failure blocks release.
 
 ## Suites
 
@@ -283,9 +537,10 @@ passage.
 
 ### Why `filing-entity` is property-based
 
-It asserts a property over the largest ~60 tickers rather than comparing against
-hand-written CIKs, so it needs no maintenance and will catch the *next* holdco
-reorganization without anyone updating a fixture. The `entity` suite's per-issuer CIK
+It asserts a property over 60 scoreable issuers from a cryptographically bound,
+canonical SEC-directory prefix rather than comparing against hand-written CIKs,
+so it needs no maintenance and will catch the *next* holdco reorganization
+without anyone updating a fixture. The `entity` suite's per-issuer CIK
 assertions were removed for the same reason: they reported XOM as broken when the real
 defect was that SEC had repointed the ticker — the fixture was wrong, not the ranking.
 

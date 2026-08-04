@@ -63,7 +63,7 @@ beforeEach(() => {
   mocks.search.mockImplementation(async () =>
     Array.from({ length: CANDIDATE_COUNT }, (_, i) => hit(i))
   );
-  mocks.fetchText.mockImplementation(async () => 'material weakness discussed here');
+  mocks.fetchText.mockImplementation(async () => 'net ai and a material weakness are discussed here');
   vi.stubGlobal('fetch', vi.fn(async () => ({ ok: false, json: async () => ({}) })));
 });
 
@@ -73,7 +73,7 @@ describe('delegated phrase recall vs the document budget', () => {
     const degraded: string[] = [];
 
     const results = await executeFilingResearchSearch({
-      query: '"material weakness"',
+      query: '"net ai"',
       filters: { ...defaultSearchFilters },
       mode: 'boolean',
       limit: 500,
@@ -98,6 +98,41 @@ describe('delegated phrase recall vs the document budget', () => {
     // Validation coverage spans the whole collected set.
     const final = coverage.at(-1);
     expect(final?.examined).toBe(CANDIDATE_COUNT);
+  });
+
+  it('recalls a plural-only SEC hit for a singular quoted phrase', async () => {
+    const target = {
+      _id: '0001437749-23-024627:ex_564485.htm',
+      _score: 1,
+      _source: {
+        display_names: ['Orbital Infrastructure Group, Inc.'],
+        file_date: '2023-08-24',
+        file_type: 'EX-99.1',
+        root_form: '8-K',
+        adsh: '0001437749-23-024627',
+        ciks: ['0001108967'],
+        primary_document: 'ex_564485.htm',
+      },
+    };
+    mocks.search.mockImplementation(async (query: string) =>
+      query.includes('concerns') ? [target] : []
+    );
+    mocks.fetchText.mockResolvedValue('The audit opinion discusses going concerns only.');
+
+    const results = await executeFilingResearchSearch({
+      query: '"going concern"',
+      filters: { ...defaultSearchFilters },
+      mode: 'boolean',
+      limit: 20,
+      hydrateTextSignals: true,
+      deferTextValidation: false,
+    });
+
+    expect(mocks.search.mock.calls[0][0]).toBe(
+      '((going OR goings) AND (concern OR concerns))'
+    );
+    expect(mocks.fetchText).toHaveBeenCalled();
+    expect(results.map(result => result.accessionNumber)).toContain('0001437749-23-024627');
   });
 
   it('still opens documents when the expression genuinely needs local validation', async () => {

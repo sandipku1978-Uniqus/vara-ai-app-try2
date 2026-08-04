@@ -18,8 +18,13 @@
  *      firm-scoped lane instead of silently dropping the negative branch.
  *      Snippets are truth-gated on the full expression. Saved searches
  *      legitimately recall a different (larger, correct) set.
+ * v6 — quoted phrases whose tokens have local singular/plural alternatives
+ *      are no longer trusted to verbatim EFTS delegation. Their retrieval
+ *      lane explicitly covers those alternatives, then the filing text is
+ *      checked by the local matcher. This restores phrase recall parity for
+ *      cases such as "going concern" matching "going concerns".
  */
-export const BOOLEAN_ENGINE_VERSION = 5;
+export const BOOLEAN_ENGINE_VERSION = 6;
 
 /** Which class of numeric token a # operator matches. */
 export type NumberUnit = 'any' | 'currency' | 'percent';
@@ -77,16 +82,21 @@ export interface ParsedBooleanQuery {
  * delegating correctness to an index we do not control is only defensible
  * where the semantics have actually been demonstrated.
  *
- * Known narrowing: our matcher treats singular and plural as equivalent and
- * EFTS does not, so delegating can miss plural variants. It returns fewer
- * filings than local validation would, never different ones.
+ * The local matcher treats singular and plural as equivalent while an EFTS
+ * quoted phrase is verbatim. Any phrase with such an alternative therefore
+ * stays on the locally validated path; delegating it would create a silent
+ * false negative before validation ever saw the filing.
  */
 export function eftsDelegablePhrase(expression: BooleanSearchNode | null): string | null {
   if (!expression || expression.type !== 'PHRASE') return null;
   const phrase = expression.value.trim();
+  const tokens = normalizeMatchText(phrase).split(' ').filter(Boolean);
   // A single quoted word gains nothing from phrase semantics, and is more
   // often a stray quote than an intent to search a phrase.
-  return phrase.includes(' ') ? phrase : null;
+  if (tokens.length < 2) return null;
+  // EFTS does not apply the matcher's symmetric singular/plural equivalence
+  // inside quotes. Only delegate when both engines accept the same token set.
+  return tokens.some(token => morphologyVariants(token).length > 1) ? null : phrase;
 }
 
 export interface BooleanMatchSnippet {
@@ -185,6 +195,55 @@ function singularStem(token: string): string {
   if (token.endsWith('ss')) return token;                // weakness, class (already singular)
   if (token.endsWith('s')) return token.slice(0, -1);    // filings→filing, leases→lease
   return token;
+}
+
+/**
+ * Every normalized token the local matcher considers equivalent through its
+ * deliberately narrow singular/plural rule. This is also the source of truth
+ * for recall-safe EFTS candidate lanes: the retrieval query must be a superset
+ * of the local verdict, not a narrower verbatim phrase.
+ */
+function morphologyVariants(token: string): string[] {
+  const normalized = normalizeTokenValue(token);
+  if (!normalized || normalized.includes(' ')) return normalized ? [normalized] : [];
+
+  const stem = singularStem(normalized);
+  const candidates = [normalized, stem];
+  if (stem.length > 3) {
+    if (stem.endsWith('ss')) {
+      candidates.push(`${stem}es`);
+    } else {
+      candidates.push(`${stem}s`);
+      if (stem.endsWith('y')) candidates.push(`${stem.slice(0, -1)}ies`);
+    }
+  }
+
+  return Array.from(new Set(candidates)).filter(candidate =>
+    normalizeTokenValue(candidate) === candidate && tokensEquivalent(candidate, normalized)
+  );
+}
+
+/**
+ * A bounded, linear-size EFTS superset for one morphology-sensitive phrase.
+ * Each token position admits exactly the variants the local matcher admits;
+ * adjacency and order are deliberately re-checked against filing text. For
+ * example, "going concern" becomes:
+ *   (going OR goings) AND (concern OR concerns)
+ * rather than the narrower EFTS phrase "going concern".
+ */
+function buildMorphologyAwarePhraseCandidate(value: string): string {
+  const tokens = normalizeTokenValue(value).split(' ').filter(Boolean);
+  const variantSets = tokens.map(morphologyVariants);
+  // Preserve the exact quoted EFTS lane when local matching introduces no
+  // alternatives; callers will quote this raw phrase in the usual way.
+  if (!variantSets.some(variants => variants.length > 1)) return value;
+  const groups = variantSets.map(variants => {
+    if (variants.length <= 1) return variants[0] || '';
+    return `(${variants.join(' OR ')})`;
+  }).filter(Boolean);
+  if (groups.length === 0) return '';
+  if (groups.length === 1) return groups[0];
+  return `(${groups.join(' AND ')})`;
 }
 
 // Bare terms match complete normalized tokens (with singular/plural equivalence).
@@ -1257,11 +1316,19 @@ export function planBooleanBranches(query: string, maxBranches = 16): { branches
   const parsed = parseBooleanQuery(query);
   if (!parsed.expression) return { branches: [], truncated: false, droppedUnanchored: 0 };
 
+  const formatRetrievalAnchor = (node: Extract<BooleanSearchNode, { type: 'TERM' | 'PHRASE' }>): string => {
+    if (node.type === 'TERM') return formatCandidateQueryTerm(node.value);
+    const morphologyAware = buildMorphologyAwarePhraseCandidate(node.value);
+    return morphologyAware === node.value
+      ? formatCandidateQueryTerm(node.value)
+      : morphologyAware;
+  };
+
   const positiveTerms = (node: BooleanSearchNode): string[] => {
     switch (node.type) {
       case 'TERM':
       case 'PHRASE':
-        return [node.value];
+        return [formatRetrievalAnchor(node)];
       case 'PROX':
         return [...positiveTerms(node.left), ...positiveTerms(node.right)];
       case 'NOT':
@@ -1274,28 +1341,68 @@ export function planBooleanBranches(query: string, maxBranches = 16): { branches
     }
   };
 
-  const branchSets = (node: BooleanSearchNode): string[][] => {
+  type BranchExpansion = { sets: string[][]; truncated: boolean };
+  const expansionLimit = Math.max(1, maxBranches) + 1;
+  const branchKey = (set: string[]): string => Array.from(
+    new Set(set.filter(Boolean).map(term => normalizeWhitespace(term).toLowerCase()))
+  ).sort().join('\u0000');
+  const pushUniqueBranch = (
+    out: string[][],
+    seen: Set<string>,
+    set: string[]
+  ): boolean => {
+    const key = branchKey(set);
+    if (seen.has(key)) return true;
+    if (out.length >= expansionLimit) return false;
+    seen.add(key);
+    out.push(set);
+    return true;
+  };
+  const branchSets = (node: BooleanSearchNode): BranchExpansion => {
     switch (node.type) {
       case 'TERM':
       case 'PHRASE':
-        return [[node.value]];
+        return { sets: [[formatRetrievalAnchor(node)]], truncated: false };
       case 'PROX':
-        return [positiveTerms(node)];
+        return { sets: [positiveTerms(node)], truncated: false };
       case 'NOT':
-        return [[]];
+        return { sets: [[]], truncated: false };
       case 'AND': {
+        const left = branchSets(node.left);
+        const right = branchSets(node.right);
         const out: string[][] = [];
-        for (const left of branchSets(node.left)) {
-          for (const right of branchSets(node.right)) {
-            out.push([...left, ...right]);
+        const seen = new Set<string>();
+        let truncated = left.truncated || right.truncated;
+        for (const leftSet of left.sets) {
+          for (const rightSet of right.sets) {
+            if (!pushUniqueBranch(out, seen, [...leftSet, ...rightSet])) {
+              truncated = true;
+              break;
+            }
+          }
+          if (truncated) break;
+        }
+        return { sets: out, truncated };
+      }
+      case 'OR': {
+        const left = branchSets(node.left);
+        const right = branchSets(node.right);
+        const out: string[][] = [];
+        const seen = new Set<string>();
+        let truncated = left.truncated || right.truncated;
+        for (const set of [...left.sets, ...right.sets]) {
+          if (!pushUniqueBranch(out, seen, set)) {
+            truncated = true;
+            break;
           }
         }
-        return out;
+        return {
+          sets: out,
+          truncated,
+        };
       }
-      case 'OR':
-        return [...branchSets(node.left), ...branchSets(node.right)];
       default:
-        return [[]];
+        return { sets: [[]], truncated: false };
     }
   };
 
@@ -1307,10 +1414,9 @@ export function planBooleanBranches(query: string, maxBranches = 16): { branches
   // retrieval planner can cover it with a firm-scoped lane (or the compiler
   // reject the query when no lane can exist).
   let droppedUnanchored = 0;
-  for (const set of branchSets(parsed.expression)) {
+  const expansion = branchSets(parsed.expression);
+  for (const set of expansion.sets) {
     const branchQuery = Array.from(new Set(set.filter(Boolean)))
-      .map(formatCandidateQueryTerm)
-      .filter(Boolean)
       .join(' ');
     if (!branchQuery) {
       droppedUnanchored += 1;
@@ -1322,7 +1428,7 @@ export function planBooleanBranches(query: string, maxBranches = 16): { branches
     seen.add(key);
     branches.push(branchQuery);
   }
-  return { branches, truncated: false, droppedUnanchored };
+  return { branches, truncated: expansion.truncated, droppedUnanchored };
 }
 
 export function buildCandidateQueryFromBoolean(query: string): string {

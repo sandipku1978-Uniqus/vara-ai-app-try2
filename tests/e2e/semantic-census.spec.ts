@@ -1,5 +1,11 @@
 import { expect, test, type ConsoleMessage, type Page } from '@playwright/test';
 import { ALL_ROUTE_CONTRACTS, type RouteContract } from './route-contracts';
+import { installSemanticAuditFixtures } from './semantic-audit-fixtures';
+import {
+  reconcileFailedRequests,
+  type FailedRequest,
+  type RequestIdentity,
+} from './semantic-runtime-audit';
 
 interface ControlRecord {
   selector: string;
@@ -28,8 +34,10 @@ interface RouteAudit {
   horizontalOverflowPixels: number;
   overflowCandidates: Array<{ selector: string; left: number; right: number; width: number }>;
   consoleErrors: string[];
+  sandboxEnforcements: string[];
   pageErrors: string[];
   failedFirstPartyRequests: string[];
+  embeddedSecDocumentHazards: string[];
   issues: string[];
 }
 
@@ -38,26 +46,51 @@ const publicOnly = process.env.QA_PUBLIC_ONLY === '1';
 
 function listenForRuntimeProblems(page: Page) {
   const consoleErrors: string[] = [];
+  const sandboxEnforcements: string[] = [];
   const pageErrors: string[] = [];
-  const failedFirstPartyRequests: string[] = [];
+  const failedFirstPartyRequests: FailedRequest[] = [];
+  const successfulRequests: RequestIdentity[] = [];
 
   page.on('console', (message: ConsoleMessage) => {
-    if (message.type() === 'error') consoleErrors.push(message.text());
+    if (message.type() !== 'error') return;
+    const text = message.text();
+    const locationUrl = message.location().url;
+    let expectedSandboxEnforcement = false;
+    try {
+      const location = new URL(locationUrl);
+      const currentPage = new URL(page.url());
+      expectedSandboxEnforcement = location.origin === currentPage.origin
+        && location.pathname === '/api/sec-proxy'
+        && /^Blocked script execution in '.+' because the document's frame is sandboxed and the 'allow-scripts' permission is not set\.$/.test(text);
+    } catch {
+      // A malformed console location is not an expected browser security signal.
+    }
+    if (expectedSandboxEnforcement) sandboxEnforcements.push(text);
+    else consoleErrors.push(text);
   });
   page.on('pageerror', error => pageErrors.push(error.message));
+  page.on('response', response => {
+    if (!response.ok()) return;
+    const request = response.request();
+    successfulRequests.push({ method: request.method(), url: request.url() });
+  });
   page.on('requestfailed', request => {
     try {
       const requestUrl = new URL(request.url());
       const pageUrl = new URL(page.url());
       if (requestUrl.origin === pageUrl.origin) {
-        failedFirstPartyRequests.push(`${request.method()} ${requestUrl.pathname}: ${request.failure()?.errorText || 'failed'}`);
+        failedFirstPartyRequests.push({
+          method: request.method(),
+          url: request.url(),
+          errorText: request.failure()?.errorText || 'failed',
+        });
       }
     } catch {
       // Ignore malformed third-party URLs; the browser has already rejected them.
     }
   });
 
-  return { consoleErrors, pageErrors, failedFirstPartyRequests };
+  return { consoleErrors, sandboxEnforcements, pageErrors, failedFirstPartyRequests, successfulRequests };
 }
 
 async function auditRoute(page: Page, contract: RouteContract): Promise<RouteAudit> {
@@ -76,6 +109,14 @@ async function auditRoute(page: Page, contract: RouteContract): Promise<RouteAud
   // Let hydration-driven controls and short client fetches settle without
   // waiting for third-party sources that may intentionally remain active.
   await page.waitForTimeout(300);
+
+  const failedFirstPartyRequests = reconcileFailedRequests(
+    runtime.failedFirstPartyRequests,
+    runtime.successfulRequests,
+  ).map(failure => {
+    const requestUrl = new URL(failure.url);
+    return `${failure.method} ${requestUrl.pathname}: ${failure.errorText}`;
+  });
 
   const dom = await page.evaluate(() => {
     const visible = (element: Element) => {
@@ -179,6 +220,27 @@ async function auditRoute(page: Page, contract: RouteContract): Promise<RouteAud
       .sort((a, b) => Math.max(b.right - viewportWidth, -b.left) - Math.max(a.right - viewportWidth, -a.left))
       .slice(0, 20);
 
+    // Chromium reports blocked execution in a sandboxed frame as a console
+    // error even when the sandbox is the intended control. Keep that signal in
+    // the audit attachment, but independently fail if the SEC proxy ever
+    // delivers executable markup into the embedded document.
+    const embeddedSecDocumentHazards: string[] = [];
+    for (const frame of Array.from(document.querySelectorAll<HTMLIFrameElement>('iframe[src*="/api/sec-proxy"]'))) {
+      const frameDocument = frame.contentDocument;
+      if (!frameDocument) continue;
+      const executableTags = frameDocument.querySelectorAll('script, iframe, object, embed').length;
+      if (executableTags) embeddedSecDocumentHazards.push(`${executableTags} executable/nested tag(s)`);
+      const eventHandlers = Array.from(frameDocument.querySelectorAll('*')).reduce(
+        (count, element) => count + Array.from(element.attributes).filter(attribute => /^on/i.test(attribute.name)).length,
+        0
+      );
+      if (eventHandlers) embeddedSecDocumentHazards.push(`${eventHandlers} inline event handler(s)`);
+      const executableUrls = Array.from(frameDocument.querySelectorAll('[href], [src]')).filter(element =>
+        /^(?:javascript|vbscript):/i.test(element.getAttribute('href') || element.getAttribute('src') || '')
+      ).length;
+      if (executableUrls) embeddedSecDocumentHazards.push(`${executableUrls} executable URL(s)`);
+    }
+
     return {
       title: document.title,
       viewport: { width: viewportWidth, height: document.documentElement.clientHeight },
@@ -190,6 +252,7 @@ async function auditRoute(page: Page, contract: RouteContract): Promise<RouteAud
       invalidAriaReferences,
       horizontalOverflowPixels: Math.max(0, document.documentElement.scrollWidth - viewportWidth),
       overflowCandidates,
+      embeddedSecDocumentHazards,
     };
   });
 
@@ -200,15 +263,19 @@ async function auditRoute(page: Page, contract: RouteContract): Promise<RouteAud
   if (dom.duplicateIds.length) issues.push(`${dom.duplicateIds.length} duplicate DOM id(s) found.`);
   if (dom.invalidAriaReferences.length) issues.push(`${dom.invalidAriaReferences.length} ARIA ID reference(s) do not resolve: ${JSON.stringify(dom.invalidAriaReferences.slice(0, 6))}`);
   if (dom.horizontalOverflowPixels > 2) issues.push(`Document overflows horizontally by ${dom.horizontalOverflowPixels}px.`);
+  if (dom.embeddedSecDocumentHazards.length) issues.push(`Embedded SEC document contains executable markup: ${dom.embeddedSecDocumentHazards.join(', ')}.`);
   if (runtime.consoleErrors.length) issues.push(`${runtime.consoleErrors.length} console error(s) observed.`);
   if (runtime.pageErrors.length) issues.push(`${runtime.pageErrors.length} uncaught page error(s) observed.`);
-  if (runtime.failedFirstPartyRequests.length) issues.push(`${runtime.failedFirstPartyRequests.length} first-party request(s) failed.`);
+  if (failedFirstPartyRequests.length) issues.push(`${failedFirstPartyRequests.length} first-party request(s) failed.`);
 
   return {
     path: contract.path,
     url: page.url(),
     ...dom,
-    ...runtime,
+    consoleErrors: runtime.consoleErrors,
+    sandboxEnforcements: runtime.sandboxEnforcements,
+    pageErrors: runtime.pageErrors,
+    failedFirstPartyRequests,
     issues,
   };
 }
@@ -225,6 +292,7 @@ test.describe('semantic and interaction census', () => {
   for (const contract of censusContracts) {
     test(`${contract.path} produces an actionable accessibility and UI audit`, async ({ page }, testInfo) => {
       test.skip(publicOnly && !contract.public, 'QA_PUBLIC_ONLY excludes authenticated product routes.');
+      await installSemanticAuditFixtures(page, contract.path);
       const audit = await auditRoute(page, contract);
       await testInfo.attach(`semantic-audit-${contract.path.replace(/[^a-z0-9]+/gi, '-') || 'home'}.json`, {
         body: Buffer.from(JSON.stringify(audit, null, 2)),

@@ -127,6 +127,20 @@ describe('official SEC source parsers', () => {
     }]);
   });
 
+  it('rejects litigation-release links whose parsed origin is not sec.gov', () => {
+    const items = parseLitigationReleases(`
+      <table><tbody><tr class="pr-list-page-row">
+        <td><time>March 27, 2026</time></td>
+        <td>
+          <a href="https://www.sec.gov.attacker.example/enforcement-litigation/litigation-releases/lr-99999">Impostor release</a>
+          <div class="view-table_subfield_release_number"><span class="view-table_subfield_value">LR-99999</span></div>
+        </td>
+      </tr></tbody></table>
+    `);
+
+    expect(items).toEqual([]);
+  });
+
   it('maps the official IAPD firm response and constructs the official profile URL', async () => {
     fetchMock.mockResolvedValue({
       ok: true,
@@ -149,7 +163,9 @@ describe('official SEC source parsers', () => {
 
     const result = await searchInvestmentAdvisers('BlackRock', 25);
 
-    expect(String(fetchMock.mock.calls[0][0])).toContain('https://api.adviserinfo.sec.gov/search/firm?');
+    expect(String(fetchMock.mock.calls[0][0])).toContain('/api/sec-proxy?');
+    expect(String(fetchMock.mock.calls[0][0])).toContain('upstream=iapd');
+    expect(String(fetchMock.mock.calls[0][0])).toContain('path=search/firm');
     expect(String(fetchMock.mock.calls[0][0])).toContain('query=BlackRock');
     expect(result).toEqual({
       total: 21,
@@ -165,6 +181,16 @@ describe('official SEC source parsers', () => {
         url: 'https://adviserinfo.sec.gov/firm/summary/162379',
       }],
     });
+  });
+
+  it('fails closed when the proxied IAPD response contract is malformed', async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({ hits: { total: '21', hits: [] } }),
+    });
+
+    await expect(searchInvestmentAdvisers('BlackRock', 25))
+      .rejects.toThrow('IAPD search response was malformed');
   });
 
   it('treats an empty official index parse as source drift instead of a legitimate zero', async () => {

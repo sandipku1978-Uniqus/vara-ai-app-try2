@@ -6,7 +6,7 @@
  *
  *   text queries  → EDGAR EFTS full-text search (free, always current)
  *   facets/enrich → Supabase Postgres metadata layer (urc_sec_filings,
- *                   urc_current_auditors from PCAOB Form AP, urc_sec_companies)
+ *                   filing-date Form AP evidence, urc_sec_companies)
  *
  * With a text query: EFTS supplies candidates, Postgres supplies exact
  * auditor/SIC facets and enrichment. Without a text query: pure facet browse
@@ -29,8 +29,18 @@ import {
   releaseAiConcurrency,
 } from '../../../lib/rate-limit';
 import { getWebSupabase } from '../../../lib/supabase-web';
-import { buildSecTargetUrl, fetchSecResponse, readResponseWithLimit } from '../../../lib/sec-upstream';
-import { dbErrorResponse, newCorrelationId } from '../../../lib/db-observability';
+import {
+  buildSecTargetUrl,
+  fetchSecResponse,
+  parseAndValidateEftsPayload,
+  readResponseWithLimit,
+} from '../../../lib/sec-upstream';
+import {
+  classifyDbError,
+  dbErrorResponse,
+  newCorrelationId,
+  type DbErrorClass,
+} from '../../../lib/db-observability';
 
 /** The platform default would kill this route mid-flight; see the in-route budgets. */
 export const maxDuration = 60;
@@ -41,6 +51,8 @@ const USER_AGENT =
 /** Extra candidates fetched beyond the requested page so post-filtering by
  *  auditor/SIC still fills the page. */
 const CANDIDATE_CAP = 1_000;
+const AUDITOR_LOOKUP_CAP = 5_000;
+const COMPANY_LOOKUP_CHUNK = 150;
 export const EFTS_CANDIDATE_REQUEST_CAP = 100;
 export const EFTS_CANDIDATE_TIME_BUDGET_MS = 45_000;
 const EFTS_INTER_PAGE_DELAY_MS = 125;
@@ -51,7 +63,43 @@ interface EftsHit {
   _source: Record<string, unknown> & { ciks?: string[] };
 }
 
+interface AuditorEvidenceRow {
+  request_key: string;
+  auditor?: string | null;
+  auditor_report_date?: string | null;
+  auditor_resolution_status?: string | null;
+  auditor_basis?: string | null;
+}
+
 type EftsTotalRelation = 'eq' | 'gte';
+
+class EftsCandidateCollectionError extends Error {
+  readonly requests: number;
+
+  constructor(error: unknown, requests: number) {
+    super(error instanceof Error ? error.message : 'EFTS candidate collection failed.');
+    this.name = 'EftsCandidateCollectionError';
+    this.requests = requests;
+  }
+}
+
+interface SearchCompletionDetails {
+  outcome: 'success' | 'degraded' | 'error' | 'rejected' | 'rate-limited';
+  mode?: 'facet-browse' | 'text';
+  errorClass?: DbErrorClass | 'configuration' | 'unsupported-window';
+  candidateCount?: number;
+  postFacetMatchCount?: number;
+  returnedCount?: number;
+  upstreamTotal?: number;
+  attributionRequestCount?: number;
+  auditorEvidenceCount?: number;
+  companyEnrichmentCount?: number;
+  candidateComplete?: boolean;
+  upstreamInterrupted?: boolean;
+  upstreamRequestCount?: number;
+  degradedSources?: string[];
+  errorName?: string;
+}
 
 async function delayBetweenEftsPages(signal: AbortSignal): Promise<void> {
   // Unit tests exercise the request bound without waiting through SEC pacing.
@@ -78,6 +126,7 @@ async function fetchEftsCandidates(params: {
   cik?: string;
 
   cap: number;
+  requestCap: number;
   signal: AbortSignal;
 }): Promise<{
   total: number;
@@ -120,46 +169,55 @@ async function fetchEftsCandidates(params: {
     while (
       collected.length < params.cap
       && offset <= 10_000
-      && requests < EFTS_CANDIDATE_REQUEST_CAP
+      && requests < params.requestCap
       && !loopController.signal.aborted
     ) {
       const pageParams = new URLSearchParams(base);
       pageParams.set('from', String(offset));
       pageParams.set('size', String(Math.min(100, params.cap - collected.length)));
       const target = buildSecTargetUrl('efts', 'LATEST/search-index', pageParams);
-      let response: Response;
       try {
-        requests += 1;
-        response = await fetchSecResponse(target, 'efts', loopController.signal, USER_AGENT);
+        const response = await fetchSecResponse(
+          target,
+          'efts',
+          loopController.signal,
+          USER_AGENT,
+          () => {
+            if (requests >= params.requestCap) return false;
+            requests += 1;
+            return true;
+          }
+        );
+        if (!response.ok) {
+          throw new Error(`EFTS ${response.status}`);
+        }
+        const bytes = await readResponseWithLimit(response, 5 * 1024 * 1024, loopController.signal);
+        const data = parseAndValidateEftsPayload(response.headers.get('content-type'), bytes);
+        const pageHits = data.hits.hits as EftsHit[];
+        total = data.hits.total.value;
+        relation = data.hits.total.relation;
+        for (const hit of pageHits) {
+          if (seen.has(hit._id)) continue;
+          seen.add(hit._id);
+          collected.push(hit);
+          if (collected.length >= params.cap) break;
+        }
+        if (pageHits.length === 0) break;
+        offset += pageHits.length;
+        if (relation === 'eq' && offset >= total) break;
+        if (collected.length < params.cap) await delayBetweenEftsPages(loopController.signal);
       } catch (error) {
-        if (collected.length === 0) throw error;
+        // Once at least one validated page has been collected, a later fetch,
+        // response-body read, or inter-page pacing abort is a bounded partial
+        // result — not a route-wide 502 that discards valid evidence.
+        if (collected.length === 0) {
+          throw new EftsCandidateCollectionError(error, requests);
+        }
         interrupted = true;
         break;
       }
-      if (!response.ok) {
-        if (collected.length > 0) {
-          interrupted = true;
-          break;
-        }
-        throw new Error(`EFTS ${response.status}`);
-      }
-      const bytes = await readResponseWithLimit(response, 5 * 1024 * 1024, loopController.signal);
-      const data = JSON.parse(new TextDecoder().decode(bytes));
-      const pageHits: EftsHit[] = data?.hits?.hits ?? [];
-      total = Number(data?.hits?.total?.value ?? total);
-      if (data?.hits?.total?.relation === 'gte') relation = 'gte';
-      for (const hit of pageHits) {
-        if (seen.has(hit._id)) continue;
-        seen.add(hit._id);
-        collected.push(hit);
-        if (collected.length >= params.cap) break;
-      }
-      if (pageHits.length === 0) break;
-      offset += pageHits.length;
-      if (relation === 'eq' && offset >= total) break;
-      if (collected.length < params.cap) await delayBetweenEftsPages(loopController.signal);
     }
-    if (loopController.signal.aborted || requests >= EFTS_CANDIDATE_REQUEST_CAP) {
+    if (loopController.signal.aborted || requests >= params.requestCap) {
       interrupted = !(relation === 'eq' && offset >= total);
     }
   } finally {
@@ -180,12 +238,66 @@ async function fetchEftsCandidates(params: {
 function hitCiks(hit: EftsHit): number[] {
   const raw = hit._source?.ciks;
   if (!Array.isArray(raw)) return [];
-  return raw.map(value => Number(String(value).replace(/\D/g, ''))).filter(Number.isFinite);
+  return raw
+    .map(value => Number(String(value).replace(/\D/g, '')))
+    .filter(value => Number.isSafeInteger(value) && value > 0 && value <= 9_999_999_999);
+}
+
+function hitFileDate(hit: EftsHit): string | null {
+  const value = hit._source?.file_date;
+  return typeof value === 'string' && isValidIsoDate(value) ? value : null;
+}
+
+async function addEftsErrorMetadata(
+  response: Response,
+  accounting: { requests: number; requestBudget: number }
+): Promise<NextResponse> {
+  const payload = await response.json() as Record<string, unknown>;
+  const existingMeta = payload.meta && typeof payload.meta === 'object' && !Array.isArray(payload.meta)
+    ? payload.meta as Record<string, unknown>
+    : {};
+  return NextResponse.json({
+    ...payload,
+    meta: { ...existingMeta, efts: accounting },
+  }, {
+    status: response.status,
+    headers: response.headers,
+  });
 }
 
 export async function GET(request: Request) {
-  const access = await requireApiAccess();
+  const access = await requireApiAccess(true, '/api/es-search', 'GET');
   if (access.response) return access.response;
+
+  const correlationId = newCorrelationId();
+  const startedAt = Date.now();
+  let completionLogged = false;
+  let databaseCallCount = 0;
+  const complete = (response: Response, details: SearchCompletionDetails): Response => {
+    response.headers.set('x-correlation-id', correlationId);
+    if (!completionLogged) {
+      completionLogged = true;
+      console.info(JSON.stringify({
+        kind: 'route-completion',
+        route: 'es-search',
+        status: response.status,
+        elapsedMs: Date.now() - startedAt,
+        correlationId,
+        databaseCallCount,
+        ...details,
+      }));
+    }
+    return response;
+  };
+  const errorEnvelope = (
+    error: string,
+    status: number,
+    errorClass: SearchCompletionDetails['errorClass'],
+    details: Omit<SearchCompletionDetails, 'outcome' | 'errorClass'> = {}
+  ): Response => complete(
+    NextResponse.json({ ok: false, error, errorClass, correlationId }, { status }),
+    { outcome: 'rejected', errorClass, ...details }
+  );
 
   const params = new URL(request.url).searchParams;
   const q = (params.get('q') || '').trim();
@@ -208,34 +320,56 @@ export async function GET(request: Request) {
     || (enddt && !isValidIsoDate(enddt))
     || (startdt && enddt && startdt > enddt)
   ) {
-    return NextResponse.json({ error: 'Invalid or oversized search parameter.' }, { status: 400 });
+    return errorEnvelope('Invalid or oversized search parameter.', 400, 'invalid-request');
   }
   if (params.has('mode') || params.has('acceleratedStatus')) {
-    return NextResponse.json(
-      { error: 'mode and acceleratedStatus are filing-text predicates and are not supported by this candidate endpoint' },
-      { status: 400 }
+    return errorEnvelope(
+      'mode and acceleratedStatus are filing-text predicates and are not supported by this candidate endpoint',
+      400,
+      'invalid-request'
     );
   }
   const from = parseBoundedInteger(params.get('from'), 0, 0, 10_000);
   const size = parseBoundedInteger(params.get('size'), 10, 1, 100);
-  if (from === null || size === null) {
-    return NextResponse.json({ error: 'from or size is outside the supported integer range.' }, { status: 400 });
+  const eftsRequestBudget = parseBoundedInteger(
+    params.get('eftsRequestBudget'),
+    EFTS_CANDIDATE_REQUEST_CAP,
+    1,
+    EFTS_CANDIDATE_REQUEST_CAP
+  );
+  if (from === null || size === null || eftsRequestBudget === null) {
+    return errorEnvelope(
+      'from, size, or eftsRequestBudget is outside the supported integer range.',
+      400,
+      'invalid-request'
+    );
   }
   const facetsApplied = Boolean(auditor || sicCode);
   if (q && facetsApplied && from + size > CANDIDATE_CAP) {
-    return NextResponse.json({
+    const response = NextResponse.json({
+      ok: false,
       error: `Facet-filtered enriched search is bounded to the first ${CANDIDATE_CAP} upstream candidates. Narrow the query or use a page within that candidate window.`,
+      errorClass: 'unsupported-window',
+      correlationId,
       meta: { candidateCoverage: { examined: 0, upstreamTotal: 0, complete: false } },
     }, { status: 422 });
+    return complete(response, {
+      outcome: 'rejected',
+      errorClass: 'unsupported-window',
+      mode: 'text',
+      candidateCount: 0,
+      returnedCount: 0,
+      upstreamTotal: 0,
+    });
   }
 
-  const correlationId = newCorrelationId();
-  const startedAt = Date.now();
   const db = getWebSupabase();
   if (!db) {
-    return NextResponse.json(
-      { error: 'Enriched search is not configured with a restricted database role.' },
-      { status: 503 }
+    return errorEnvelope(
+      'Enriched search is not configured with a restricted database role.',
+      503,
+      'configuration',
+      { mode: q ? 'text' : 'facet-browse' }
     );
   }
   const rate = await checkResourceRateLimit(request, access.identity, {
@@ -244,7 +378,13 @@ export async function GET(request: Request) {
     orgLimit: 450,
     ipLimit: 120,
   });
-  if (!rate.allowed) return rateLimitResponse(rate);
+  if (!rate.allowed) {
+    return complete(rateLimitResponse(rate), {
+      outcome: 'rate-limited',
+      errorClass: 'rate-limited',
+      mode: q ? 'text' : 'facet-browse',
+    });
+  }
 
   // Facet entity matching is a trigram-assisted ILIKE. Corporate suffixes
   // (", Inc.", "Corp") are made of ultra-common trigrams that blow the GIN
@@ -253,8 +393,10 @@ export async function GET(request: Request) {
   // are LIKE escape chars that silently break the pattern. Strip both.
   const facetEntity = (() => {
     if (!entityName) return null;
-    let e = entityName.trim();
-    const suffix = /[,.]?\s+(incorporated|inc|corp|corporation|company|co|ltd|llc|llp|lp|plc|nv|sa|se|ag)\.?$/i;
+    // Collapse whitespace first so the suffix expression has no ambiguous
+    // repeated group followed by an end anchor (a polynomial ReDoS shape).
+    let e = entityName.trim().replace(/\s+/g, ' ');
+    const suffix = /[,.]?\s(?:incorporated|inc|corp|corporation|company|co|ltd|llc|llp|lp|plc|nv|sa|se|ag)\.?$/i;
     for (let i = 0; i < 2; i++) {
       const stripped = e.replace(suffix, '');
       if (stripped === e || stripped.length < 4) break;
@@ -263,10 +405,17 @@ export async function GET(request: Request) {
     return e.replace(/[\\%_]/g, (m) => `\\${m}`) || null;
   })();
 
+  let candidateCount = 0;
+  let attributionRequestCount = 0;
+  let auditorEvidenceCount = 0;
+  let companyEnrichmentCount = 0;
+  let completedEftsRequestCount = 0;
+  const degradedSources: string[] = [];
+
   try {
     // ── Facet browse: no text query — serve straight from Postgres ─────────
     if (!q) {
-      const { data, error } = await db.rpc('urc_search_filings', {
+      const facetRpcArgs = {
         p_forms: forms ? forms.split(',').map(f => f.trim().toUpperCase()).filter(Boolean) : null,
         p_start: startdt ?? null,
         p_end: enddt ?? null,
@@ -277,14 +426,48 @@ export async function GET(request: Request) {
         p_offset: from,
         // Exact issuer identity beats the name-ILIKE approximation (009)
         p_cik: cik ? Number(cik) : null,
-      });
+      };
+      databaseCallCount += 1;
+      const { data, error } = await db.rpc('urc_search_filings', facetRpcArgs);
       if (error) {
-        return dbErrorResponse({ route: 'es-search', rpc: 'urc_search_filings', error, correlationId, startedAt });
+        const classified = classifyDbError(error);
+        return complete(
+          dbErrorResponse({ route: 'es-search', rpc: 'urc_search_filings', error, correlationId, startedAt }),
+          { outcome: 'error', errorClass: classified.errorClass, mode: 'facet-browse' }
+        );
       }
 
       const rows = (data ?? []) as Array<Record<string, unknown>>;
-      const total = rows.length > 0 ? Number(rows[0].total_count) : 0;
-      return NextResponse.json({
+      candidateCount = rows.length;
+      let total = rows.length > 0 ? Number(rows[0].total_count) : 0;
+      if (rows.length === 0 && from > 0) {
+        // `total_count` is carried on result rows by the RPC. A valid deep
+        // offset beyond the last row therefore has no carrier and used to be
+        // reported as an authoritative zero. Probe the first row with exactly
+        // the same filters to recover the honest total; if that is also empty,
+        // the filtered corpus is genuinely empty.
+        databaseCallCount += 1;
+        const { data: totalData, error: totalError } = await db.rpc('urc_search_filings', {
+          ...facetRpcArgs,
+          p_limit: 1,
+          p_offset: 0,
+        });
+        if (totalError) {
+          const classified = classifyDbError(totalError);
+          return complete(
+            dbErrorResponse({ route: 'es-search', rpc: 'urc_search_filings', error: totalError, correlationId, startedAt }),
+            {
+              outcome: 'error',
+              errorClass: classified.errorClass,
+              mode: 'facet-browse',
+              candidateCount,
+            }
+          );
+        }
+        const totalRows = (totalData ?? []) as Array<Record<string, unknown>>;
+        total = totalRows.length > 0 ? Number(totalRows[0].total_count) : 0;
+      }
+      const response = NextResponse.json({
         hits: {
           total: { value: total, relation: total >= 10_000 ? 'gte' : 'eq' },
           hits: rows.map(row => ({
@@ -300,12 +483,23 @@ export async function GET(request: Request) {
               file_date: row.date_filed,
               file_type: row.form,
               auditor: row.auditor ?? '',
+              auditor_resolution_status: row.auditor ? 'resolved' : 'unresolved',
+              auditor_basis: row.auditor
+                ? 'latest_pcaob_reported_issuer_audit_firm_on_or_before_sec_filing_date'
+                : '',
               sic: row.sic ?? '',
               sic_description: row.sic_description ?? '',
               tickers: row.tickers ?? [],
             },
           })),
         },
+      });
+      return complete(response, {
+        outcome: 'success',
+        mode: 'facet-browse',
+        candidateCount,
+        returnedCount: rows.length,
+        upstreamTotal: total,
       });
     }
 
@@ -324,6 +518,7 @@ export async function GET(request: Request) {
       cik,
       startOffset: facetsApplied ? 0 : from,
       cap: facetsApplied ? cap : size,
+      requestCap: eftsRequestBudget,
       signal: request.signal,
     };
     let efts: Awaited<ReturnType<typeof fetchEftsCandidates>>;
@@ -339,7 +534,13 @@ export async function GET(request: Request) {
         globalLimit: 1,
         leaseSeconds: 60,
       });
-      if (!capacity.allowed) return rateLimitResponse(capacity);
+      if (!capacity.allowed) {
+        return complete(rateLimitResponse(capacity), {
+          outcome: 'rate-limited',
+          errorClass: 'rate-limited',
+          mode: 'text',
+        });
+      }
       try {
         efts = await fetchEftsCandidates(candidateRequest);
       } finally {
@@ -349,60 +550,214 @@ export async function GET(request: Request) {
       efts = await fetchEftsCandidates(candidateRequest);
     }
 
+    completedEftsRequestCount = efts.requests;
+    candidateCount = efts.hits.length;
 
     const allCiks = Array.from(new Set(efts.hits.flatMap(hitCiks)));
-    const auditorByCik = new Map<number, string>();
+    const auditorLookups = efts.hits.flatMap((hit, hitIndex) => {
+      const fileDate = hitFileDate(hit);
+      if (!fileDate) return [];
+      return hitCiks(hit).map((cik, cikIndex) => ({
+        key: `${hitIndex}:${cikIndex}`,
+        cik: String(cik),
+        file_date: fileDate,
+      }));
+    });
+    attributionRequestCount = auditorLookups.length;
+    if (auditorLookups.length > AUDITOR_LOOKUP_CAP) {
+      const response = NextResponse.json({
+        ok: false,
+        error: `Auditor attribution exceeded the ${AUDITOR_LOOKUP_CAP}-pair evidence budget. Narrow the query.`,
+        errorClass: 'unsupported-window',
+        correlationId,
+        meta: {
+          efts: { requests: efts.requests, requestBudget: eftsRequestBudget },
+          candidateCoverage: { examined: efts.hits.length, upstreamTotal: efts.total, complete: false },
+        },
+      }, { status: 422 });
+      return complete(response, {
+        outcome: 'rejected',
+        errorClass: 'unsupported-window',
+        mode: 'text',
+        candidateCount,
+        returnedCount: 0,
+        upstreamTotal: efts.total,
+        attributionRequestCount,
+        candidateComplete: false,
+        upstreamInterrupted: efts.interrupted,
+        upstreamRequestCount: efts.requests,
+      });
+    }
+    const auditorEvidenceByHit = new Map<number, AuditorEvidenceRow[]>();
+    let auditorReadFailed = false;
     const companyByCik = new Map<number, { sic: string | null; sic_description: string | null; tickers: string[] }>();
 
     if (allCiks.length > 0) {
-      const [auditorsResult, companiesResult] = await Promise.all([
-        db.from('urc_current_auditors').select('issuer_cik, firm_canonical').in('issuer_cik', allCiks),
-        db.from('urc_sec_companies').select('cik, sic, sic_description, tickers').in('cik', allCiks),
+      const companyCikChunks = Array.from(
+        { length: Math.ceil(allCiks.length / COMPANY_LOOKUP_CHUNK) },
+        (_, index) => allCiks.slice(
+          index * COMPANY_LOOKUP_CHUNK,
+          (index + 1) * COMPANY_LOOKUP_CHUNK
+        )
+      );
+      if (auditorLookups.length > 0) databaseCallCount += 1;
+      databaseCallCount += companyCikChunks.length;
+      const [auditorsResult, companiesResults] = await Promise.all([
+        auditorLookups.length > 0
+          ? db.rpc('urc_resolve_filing_auditors', { p_filings: auditorLookups })
+          : Promise.resolve({ data: [], error: null }),
+        Promise.all(companyCikChunks.map(cikChunk =>
+          db.from('urc_sec_companies').select('cik, sic, sic_description, tickers').in('cik', cikChunk)
+        )),
       ]);
+      const companiesError = companiesResults.find(result => result.error)?.error ?? null;
       // A facet search whose enrichment read failed must NOT proceed: the
       // auditor/SIC post-filter below would then drop every hit and report
       // an authoritative-looking zero. A database outage is a 503, never a
       // silent empty result set.
-      if (facetsApplied && (auditorsResult.error || companiesResult.error)) {
-        console.error('[es-search] facet enrichment read failed:', auditorsResult.error || companiesResult.error);
-        return NextResponse.json(
-          { error: 'The facet store is temporarily unavailable; auditor and SIC filters cannot be applied. Retry shortly.' },
-          { status: 503 }
+      const requiredFacetError = (auditor ? auditorsResult.error : null)
+        || (sicCode ? companiesError : null);
+      if (requiredFacetError) {
+        const rpc = auditor && auditorsResult.error
+          ? 'urc_resolve_filing_auditors'
+          : 'urc_sec_companies.select';
+        const classified = classifyDbError(requiredFacetError);
+        const dbResponse = dbErrorResponse({
+          route: 'es-search',
+          rpc,
+          error: requiredFacetError,
+          correlationId,
+          startedAt,
+        });
+        return complete(
+          await addEftsErrorMetadata(dbResponse, {
+            requests: efts.requests,
+            requestBudget: eftsRequestBudget,
+          }),
+          {
+            outcome: 'error',
+            errorClass: classified.errorClass,
+            mode: 'text',
+            candidateCount,
+            returnedCount: 0,
+            upstreamTotal: efts.total,
+            attributionRequestCount,
+            candidateComplete: efts.completeCorpus,
+            upstreamInterrupted: efts.interrupted,
+            upstreamRequestCount: efts.requests,
+          }
         );
       }
-      if (auditorsResult.error || companiesResult.error) {
+      if (auditorsResult.error || companiesError) {
         // Enrichment is cosmetic when no facet depends on it — degrade the
-        // labels, never the result set, but say so in the log.
-        console.error('[es-search] enrichment read failed (labels degraded):', auditorsResult.error || companiesResult.error);
+        // labels, never the result set. The single completion event below
+        // records which safe source labels were unavailable.
+        if (auditorsResult.error) degradedSources.push('auditor-attribution');
+        if (companiesError) degradedSources.push('company-metadata');
       }
+      auditorReadFailed = Boolean(auditorsResult.error);
       for (const row of auditorsResult.data ?? []) {
-        auditorByCik.set(Number(row.issuer_cik), String(row.firm_canonical));
+        auditorEvidenceCount += 1;
+        const hitIndex = Number(String(row.request_key).split(':', 1)[0]);
+        if (!Number.isSafeInteger(hitIndex)) continue;
+        const evidence = auditorEvidenceByHit.get(hitIndex) ?? [];
+        evidence.push(row as AuditorEvidenceRow);
+        auditorEvidenceByHit.set(hitIndex, evidence);
       }
-      for (const row of companiesResult.data ?? []) {
-        companyByCik.set(Number(row.cik), {
-          sic: row.sic ?? null,
-          sic_description: row.sic_description ?? null,
-          tickers: row.tickers ?? [],
-        });
+      for (const companiesResult of companiesResults) {
+        for (const row of companiesResult.data ?? []) {
+          companyEnrichmentCount += 1;
+          companyByCik.set(Number(row.cik), {
+            sic: row.sic ?? null,
+            sic_description: row.sic_description ?? null,
+            tickers: row.tickers ?? [],
+          });
+        }
       }
     }
 
-    const enriched = efts.hits.map(hit => {
+    const enriched = efts.hits.map((hit, hitIndex) => {
       const ciks = hitCiks(hit);
-      const hitAuditor = ciks.map(cik => auditorByCik.get(cik)).find(Boolean) || '';
-      const company = ciks.map(cik => companyByCik.get(cik)).find(Boolean);
+      const auditorEvidence = auditorEvidenceByHit.get(hitIndex) ?? [];
+      const resolvedEvidence = auditorEvidence.filter(row =>
+        row.auditor_resolution_status === 'resolved' && Boolean(row.auditor)
+      );
+      const resolvedAuditors = Array.from(new Set(resolvedEvidence.map(row => String(row.auditor))));
+      // A multi-CIK filing is resolved only when EVERY issuer lookup returned
+      // resolved evidence and every one names the same canonical firm. One
+      // resolved co-filer plus one unknown co-filer is partial evidence, not a
+      // filing-level KPMG match.
+      const everyCikResolved = ciks.length > 0
+        && auditorEvidence.length === ciks.length
+        && auditorEvidence.every(row =>
+          row.auditor_resolution_status === 'resolved' && Boolean(row.auditor)
+        );
+      const hitAuditor = everyCikResolved && resolvedAuditors.length === 1
+        ? resolvedAuditors[0]
+        : '';
+      const evidenceStatuses = new Set(
+        auditorEvidence.map(row => row.auditor_resolution_status || 'unknown')
+      );
+      const auditorStatus = everyCikResolved && resolvedAuditors.length > 1
+        ? 'ambiguous_multiple_ciks'
+        : hitAuditor
+          ? 'resolved'
+          : ciks.length > 1 && (
+            resolvedEvidence.length > 0
+            || auditorEvidence.length !== ciks.length
+            || evidenceStatuses.size > 1
+          )
+            ? 'incomplete_multiple_ciks'
+            : auditorEvidence[0]?.auditor_resolution_status
+              || (auditorReadFailed
+                ? 'temporarily_unavailable'
+                : hitFileDate(hit)
+                  ? (ciks.length > 0 ? 'no_prior_form_ap_report' : 'issuer_identity_unavailable')
+                  : 'filing_date_unavailable');
+      const resolvedSource = hitAuditor
+        ? resolvedEvidence.find(row => row.auditor === hitAuditor)
+        : undefined;
+      const companies = ciks
+        .map(cik => companyByCik.get(cik))
+        .filter((company): company is NonNullable<typeof company> => Boolean(company));
+      const sourceSics = Array.isArray(hit._source.sics)
+        ? hit._source.sics.map(String)
+        : hit._source.sics
+          ? [String(hit._source.sics)]
+          : hit._source.sic
+            ? [String(hit._source.sic)]
+            : [];
+      const sics = Array.from(new Set([
+        ...sourceSics,
+        ...companies.map(company => company.sic).filter((sic): sic is string => Boolean(sic)),
+      ])).sort();
+      const tickers = Array.from(new Set([
+        ...(Array.isArray(hit._source.tickers)
+          ? hit._source.tickers.map(String)
+          : hit._source.tickers
+            ? [String(hit._source.tickers)]
+            : []),
+        ...companies.flatMap(company => company.tickers.map(String)),
+      ])).sort();
+      const unambiguousSic = sics.length === 1 ? sics[0] : '';
+      const sicDescription = unambiguousSic
+        ? companies.find(company => company.sic === unambiguousSic)?.sic_description
+          ?? (String(hit._source.sic || '') === unambiguousSic
+            ? String(hit._source.sic_description || '')
+            : '')
+        : '';
       return {
         ...hit,
         _source: {
           ...hit._source,
           auditor: hitAuditor,
-          sic: company?.sic ?? hit._source.sic ?? '',
-          sics: Array.from(new Set([
-            ...(Array.isArray(hit._source.sics) ? hit._source.sics.map(String) : hit._source.sics ? [String(hit._source.sics)] : []),
-            ...(company?.sic ? [company.sic] : []),
-          ])),
-          sic_description: company?.sic_description ?? '',
-          tickers: company?.tickers?.length ? company.tickers : hit._source.tickers ?? [],
+          auditor_resolution_status: auditorStatus,
+          auditor_report_date: resolvedSource?.auditor_report_date ?? '',
+          auditor_basis: resolvedSource?.auditor_basis ?? '',
+          sic: unambiguousSic,
+          sics,
+          sic_description: sicDescription,
+          tickers,
         },
       };
     });
@@ -423,7 +778,7 @@ export async function GET(request: Request) {
 
     const candidateComplete = efts.completeCorpus;
     const page = facetsApplied ? filtered.slice(from, from + size) : filtered;
-    return NextResponse.json({
+    const response = NextResponse.json({
       hits: {
         // When facets filtered the candidate pool we only know the filtered
         // count within the fetched window — report it as a lower bound.
@@ -433,6 +788,10 @@ export async function GET(request: Request) {
         hits: page,
       },
       meta: {
+        efts: {
+          requests: efts.requests,
+          requestBudget: eftsRequestBudget,
+        },
         ...(facetsApplied
           ? {
               candidateCoverage: {
@@ -467,8 +826,56 @@ export async function GET(request: Request) {
             }),
       },
     });
+    return complete(response, {
+      outcome: degradedSources.length > 0 ? 'degraded' : 'success',
+      mode: 'text',
+      candidateCount,
+      postFacetMatchCount: filtered.length,
+      returnedCount: page.length,
+      upstreamTotal: efts.total,
+      attributionRequestCount,
+      auditorEvidenceCount,
+      companyEnrichmentCount,
+      candidateComplete,
+      upstreamInterrupted: efts.interrupted,
+      upstreamRequestCount: efts.requests,
+      ...(degradedSources.length > 0 ? { degradedSources } : {}),
+    });
   } catch (error) {
-    console.error('[es-search] enriched search failed:', error);
-    return NextResponse.json({ error: 'Enriched search failed' }, { status: 502 });
+    const failedEftsRequestCount = error instanceof EftsCandidateCollectionError
+      ? error.requests
+      : completedEftsRequestCount;
+    const response = NextResponse.json(
+      {
+        ok: false,
+        error: 'Enriched search failed unexpectedly. Retry; results are not a verified zero.',
+        errorClass: 'unexpected',
+        correlationId,
+        ...(failedEftsRequestCount > 0
+          ? {
+              meta: {
+                efts: {
+                  requests: failedEftsRequestCount,
+                  requestBudget: eftsRequestBudget,
+                },
+              },
+            }
+          : {}),
+      },
+      { status: 502 }
+    );
+    return complete(response, {
+      outcome: 'error',
+      errorClass: 'unexpected',
+      mode: q ? 'text' : 'facet-browse',
+      candidateCount,
+      attributionRequestCount,
+      auditorEvidenceCount,
+      companyEnrichmentCount,
+      ...(failedEftsRequestCount > 0
+        ? { upstreamRequestCount: failedEftsRequestCount }
+        : {}),
+      errorName: error instanceof Error ? error.name : 'UnknownError',
+    });
   }
 }

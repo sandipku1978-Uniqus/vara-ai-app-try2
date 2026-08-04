@@ -21,6 +21,12 @@ on:
       run_auditors:
         description: 'Also refresh auditors (true/false)'
         default: 'false'
+      ownership_backfill_start:
+        description: 'Optional Forms 3/4/5/144 backfill start (YYYY-MM-DD)'
+        default: ''
+      ownership_backfill_end:
+        description: 'Optional ownership backfill end (YYYY-MM-DD; defaults to today)'
+        default: ''
 
 concurrency:
   group: urc-data-refresh
@@ -28,6 +34,10 @@ concurrency:
 
 jobs:
   refresh:
+    # Scheduled runs execute from the default branch. Manual runs must be
+    # dispatched from main so a caller-selected feature branch cannot run
+    # unreviewed pipeline code with the production data credentials.
+    if: github.event_name == 'schedule' || github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
@@ -35,6 +45,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.sha }}
           persist-credentials: false
 
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
@@ -43,24 +54,24 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci --no-audit --no-fund
+        run: npm ci --ignore-scripts --no-audit --no-fund
 
       - name: Refresh filing metadata
-        run: npx tsx data-pipeline/ingest-metadata.ts --since "$METADATA_SINCE_DAYS"
+        run: npx --no-install tsx data-pipeline/ingest-metadata.ts --since "$METADATA_SINCE_DAYS"
         env:
           METADATA_SINCE_DAYS: ${{ github.event.inputs.metadata_since_days || '3' }}
           URC_SUPABASE_URL: ${{ secrets.URC_SUPABASE_URL }}
           URC_SUPABASE_SERVICE_KEY: ${{ secrets.URC_SUPABASE_SERVICE_KEY }}
 
       - name: Ingest new comment letters (UPLOAD/CORRESP metadata)
-        run: npx tsx data-pipeline/ingest-letters.ts --since "$METADATA_SINCE_DAYS"
+        run: npx --no-install tsx data-pipeline/ingest-letters.ts --since "$METADATA_SINCE_DAYS"
         env:
           METADATA_SINCE_DAYS: ${{ github.event.inputs.metadata_since_days || '3' }}
           URC_SUPABASE_URL: ${{ secrets.URC_SUPABASE_URL }}
           URC_SUPABASE_SERVICE_KEY: ${{ secrets.URC_SUPABASE_SERVICE_KEY }}
 
       - name: Enrich company SIC/state (incremental, self-completing)
-        run: npx tsx data-pipeline/enrich-companies.ts --sic --limit 2000
+        run: npx --no-install tsx data-pipeline/enrich-companies.ts --sic --limit 2000
         env:
           URC_SUPABASE_URL: ${{ secrets.URC_SUPABASE_URL }}
           URC_SUPABASE_SERVICE_KEY: ${{ secrets.URC_SUPABASE_SERVICE_KEY }}
@@ -68,7 +79,49 @@ jobs:
       # Weekly schedule (Sunday 11:00) or manual opt-in
       - name: Refresh auditor engagements
         if: github.event.schedule == '0 11 * * 0' || github.event.inputs.run_auditors == 'true'
-        run: npx tsx data-pipeline/load-auditors.ts
+        run: npx --no-install tsx data-pipeline/load-auditors.ts
         env:
           URC_SUPABASE_URL: ${{ secrets.URC_SUPABASE_URL }}
           URC_SUPABASE_SERVICE_KEY: ${{ secrets.URC_SUPABASE_SERVICE_KEY }}
+
+  # The daily refresh starts retaining these form families once this revision
+  # lands. This manual, form-scoped job fills the pre-existing historical gap
+  # without reprocessing every other core form. Run bounded date ranges when
+  # performing the initial production backfill; upserts make retries safe.
+  backfill-ownership-forms:
+    if: >-
+      github.event_name == 'workflow_dispatch' &&
+      github.ref == 'refs/heads/main' &&
+      github.event.inputs.ownership_backfill_start != ''
+    needs: refresh
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      EDGAR_USER_AGENT: 'Uniqus Research Center contact@uniqus.com'
+      BACKFILL_START: ${{ github.event.inputs.ownership_backfill_start }}
+      BACKFILL_END: ${{ github.event.inputs.ownership_backfill_end }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+
+      - name: Backfill ownership and proposed-sale forms
+        shell: bash
+        env:
+          URC_SUPABASE_URL: ${{ secrets.URC_SUPABASE_URL }}
+          URC_SUPABASE_SERVICE_KEY: ${{ secrets.URC_SUPABASE_SERVICE_KEY }}
+        run: |
+          args=(--start "$BACKFILL_START" --forms "3,4,5,144")
+          if [ -n "$BACKFILL_END" ]; then
+            args+=(--end "$BACKFILL_END")
+          fi
+          npx --no-install tsx data-pipeline/ingest-metadata.ts "${args[@]}"
