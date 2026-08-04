@@ -306,17 +306,34 @@ async function generatePoints(): Promise<TestPoint[]> {
 
   // --- Class D: EFTS full-text — find the known filing by company text
   const dYears = years.filter((y) => y >= 2010);
-  const filingsD = sample(
-    filingsA.filter((f) => ['10-K', '10-Q', '8-K', 'DEF 14A', 'S-1'].includes(f.root_form)),
-    nD,
-  );
+  const D_FORMS = ['10-K', '10-Q', '8-K', 'DEF 14A', 'S-1'];
+  // D gets its OWN draw. It used to filter class A's already-drawn pool, so
+  // whatever survived the form filter was all D got — the class-gate's first
+  // live run caught it at 129 of ~146 planned (the same silent-shortfall
+  // disease the audit found in B, different vector). Top up with dedicated
+  // oversampled draws until the plan is filled or the budget is spent.
+  const filingsD: FilingRow[] = filingsA.filter((f) => D_FORMS.includes(f.root_form));
+  for (let round = 0; round < 4 && filingsD.length < nD; round++) {
+    const extra = await sampleFilings(Math.ceil((nD * 2) / years.length), years);
+    const have = new Set(filingsD.map((f) => f.accession));
+    for (const f of extra) {
+      if (D_FORMS.includes(f.root_form) && !have.has(f.accession)) {
+        filingsD.push(f);
+        have.add(f.accession);
+      }
+    }
+  }
+  if (filingsD.length < nD) {
+    console.log(`Class D: SAMPLING SHORTFALL — ${filingsD.length} of ${nD} planned cases after top-up rounds`);
+  }
+  const filingsDFinal = sample(filingsD, nD);
   const GENERIC = new Set([
     'GROUP', 'INC', 'CORP', 'COMPANY', 'HOLDINGS', 'HOLDING', 'INTERNATIONAL',
     'INDUSTRIES', 'TRUST', 'FUND', 'CAPITAL', 'FINANCIAL', 'TECHNOLOGIES',
     'ENTERPRISES', 'PARTNERS', 'RESOURCES', 'SYSTEMS', 'BANCORP', 'THE',
     'CORPORATION', 'LTD', 'LLC', 'PLC', 'CO', 'NEW', 'FIRST', 'GLOBAL',
   ]);
-  for (const f of filingsD) {
+  for (const f of filingsDFinal) {
     // Rarest-looking word of the company name: distinctive, survives the
     // punctuation differences that break exact multi-word phrases in EFTS
     const words = f.company_name.toUpperCase().split(/[^A-Z0-9]+/).filter((w) => w.length > 2);
