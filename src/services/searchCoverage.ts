@@ -1,9 +1,16 @@
+import type { BranchCoverageEntry, SearchCandidateCoverage } from './secApi';
+
 export interface CandidateCoverageNotice {
   examined: number;
   upstreamTotal: number;
   complete: boolean;
   /** upstreamTotal is a floor (EFTS stops counting at 10,000), not an exact count. */
   upstreamTotalIsFloor?: boolean;
+  /** Per-lane ledger (audit R1): survives merging, session save and alert
+   *  runs — branch-level exhaustion must never be flattened away. */
+  branches?: BranchCoverageEntry[];
+  /** Measured upstream work + declared ceilings (audit R1 slice 3). */
+  work?: SearchCandidateCoverage['work'];
 }
 
 /**
@@ -22,6 +29,12 @@ export function mergeCandidateCoverage(
     upstreamTotal: Math.max(current.upstreamTotal, incoming.upstreamTotal),
     complete: current.complete && incoming.complete,
     upstreamTotalIsFloor: Boolean(current.upstreamTotalIsFloor) || Boolean(incoming.upstreamTotalIsFloor),
+    // The final run report carries the authoritative ledgers; mid-run page
+    // events carry none. Preserve whichever side has them — merging used to
+    // FLATTEN these away, so a session restored after any accumulator merge
+    // had lost its per-branch story (audit R1).
+    branches: incoming.branches ?? current.branches,
+    work: incoming.work ?? current.work,
   };
 }
 

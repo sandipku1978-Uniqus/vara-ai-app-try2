@@ -1833,6 +1833,18 @@ export default function SearchPage() {
                 {candidateCoverage
                   ? `Candidate coverage: examined ${candidateCoverage.examined.toLocaleString()} of ${formatUpstreamTotal(candidateCoverage)} upstream candidates (${candidateCoverage.complete ? 'complete' : 'partial candidate window'}). `
                   : ''}
+                {(() => {
+                  // Per-branch honesty (audit R1): a healthy aggregate can
+                  // hide one starved lane, so name the lanes that did not
+                  // finish rather than flattening them into the total.
+                  const required = candidateCoverage?.branches?.filter(entry => entry.required) ?? [];
+                  if (required.length < 2) return null;
+                  const unfinished = required.filter(entry => !entry.exhausted);
+                  const summary = unfinished.length === 0
+                    ? `All ${required.length} required branches fully examined. `
+                    : `${required.length - unfinished.length}/${required.length} required branches fully examined — partial: ${unfinished.map(entry => `“${entry.branch}”${entry.incompleteReason ? ` (${entry.incompleteReason})` : ''}`).join(', ')}. `;
+                  return <span>{summary}</span>;
+                })()}
                 {canCountExactly && (
                   // EDGAR stops counting one query at 10,000; counts of date
                   // slices are exact and sum. ~26 cheap requests on demand.

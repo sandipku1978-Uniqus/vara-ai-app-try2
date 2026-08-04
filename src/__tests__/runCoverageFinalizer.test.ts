@@ -135,3 +135,18 @@ describe('finalizeRunCoverage', () => {
     expect(result.coverage.upstreamTotalIsFloor).toBe(true);
   });
 });
+
+describe('OR-union totals are floors (audit R1)', () => {
+  it('marks the aggregate total as a floor when more than one required lane contributed', () => {
+    const result = finalizeRunCoverage(inputs({
+      branchLedgers: [branch(), branch({ branch: 'beta' })],
+    }));
+    // Lane totals are maxima, not a union count — exactness would overstate.
+    expect(result.coverage.upstreamTotalIsFloor).toBe(true);
+  });
+
+  it('keeps a single-lane exact total exact', () => {
+    const result = finalizeRunCoverage(inputs({ branchLedgers: [branch()] }));
+    expect(result.coverage.upstreamTotalIsFloor).toBe(false);
+  });
+});

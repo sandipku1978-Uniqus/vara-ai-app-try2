@@ -71,3 +71,27 @@ describe('corpus total display', () => {
     ).toBe('10,000+ filings match — 500+ validated and shown');
   });
 });
+
+describe('ledger preservation through merges (audit R1)', () => {
+  const branch = (over: Record<string, unknown> = {}) => ({
+    branch: 'alpha', required: true, pages: 1, candidatesSurfaced: 5,
+    candidatesNew: 5, examined: 5, matched: 3, exhausted: true, ...over,
+  });
+
+  it('keeps branches and work from whichever side carries them', () => {
+    const withLedger = {
+      examined: 10, upstreamTotal: 100, complete: false,
+      branches: [branch(), branch({ branch: 'beta', exhausted: false, incompleteReason: 'doc-budget' })],
+      work: { pageRequests: 4, docFetches: 10, docHttpAttempts: 12, prescreenRequests: 1, totalUpstreamRequests: 17, ceiling: { pages: 60, docHttpAttempts: 180, prescreenRequests: 24 } },
+    };
+    // Page-accumulator event with no ledgers arrives AFTER the final report —
+    // the merge must not flatten the story away.
+    const merged = mergeCandidateCoverage(withLedger, { examined: 11, upstreamTotal: 100, complete: false });
+    expect(merged.branches).toHaveLength(2);
+    expect(merged.branches?.[1].incompleteReason).toBe('doc-budget');
+    expect(merged.work?.totalUpstreamRequests).toBe(17);
+    // And in the other order, incoming ledgers win.
+    const merged2 = mergeCandidateCoverage({ examined: 3, upstreamTotal: 50, complete: true }, withLedger);
+    expect(merged2.branches).toHaveLength(2);
+  });
+});
