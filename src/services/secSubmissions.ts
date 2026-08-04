@@ -127,6 +127,13 @@ export function parseSecSubmissionPayload(value: unknown, requestedCik: string):
     ['sic', 10, true],
     ['sicDescription', 1_000, true],
   ] as const) {
+    // SEC omits these or sends an explicit null for real filers — KKR & Co.
+    // (CIK 1404912) returns "ein": null. Treating absence as a validation
+    // FAILURE rejected a payload that is entirely well-formed, and the
+    // rejection then cascaded (see fetchCompanySubmissionsBatch). Only the
+    // required fields — those with allowEmpty false, i.e. `name` — may not be
+    // absent; optional ones are allowed to be null/undefined.
+    if (allowEmpty && (source[key] === null || source[key] === undefined)) continue;
     if (!boundedString(source[key], maxLength, allowEmpty)) return null;
   }
   if (

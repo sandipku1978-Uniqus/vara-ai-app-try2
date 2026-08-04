@@ -2239,9 +2239,20 @@ export async function fetchCompanySubmissionsBatch(
   const results: (SecSubmission | null)[] = new Array(ciks.length).fill(null);
   for (let i = 0; i < ciks.length; i += concurrency) {
     const batch = ciks.slice(i, i + concurrency);
-    const batchResults = await Promise.all(
+    // allSettled, not all: this function's return type is
+    // (SecSubmission | null)[] — it already PROMISES to report per-company
+    // failure as null. Promise.all broke that promise, because one company
+    // that throws rejects the whole batch and every sibling result is lost.
+    // Observed live on /compare: a single peer with a null EIN failed
+    // validation, and "Add industry peers" silently added nobody at all.
+    const settled = await Promise.allSettled(
       batch.map(cik => fetchCompanySubmissions(cik))
     );
+    const batchResults = settled.map(outcome => {
+      if (outcome.status === 'fulfilled') return outcome.value;
+      console.warn('[sec-submissions] company skipped:', outcome.reason);
+      return null;
+    });
     for (let j = 0; j < batchResults.length; j++) {
       results[i + j] = batchResults[j];
     }
