@@ -132,7 +132,7 @@ export default function Dashboard() {
       // the alert: filings a partial window failed to see would be
       // re-announced as "new" on the next healthy check — or worse, real
       // new filings would be counted as seen without ever being announced.
-      let runCoverage: { complete: boolean } | null = null;
+      let runCoverage: import('../services/secApi').SearchCandidateCoverage | null = null;
       const results = await executeFilingResearchSearch({
         query: alert.query,
         filters: alert.filters,
@@ -141,7 +141,8 @@ export default function Dashboard() {
         limit: 20,
         onCoverage: coverage => { runCoverage = coverage; },
       });
-      const runComplete = runCoverage !== null && (runCoverage as { complete: boolean }).complete;
+      const coverageSnapshot = runCoverage as import('../services/secApi').SearchCandidateCoverage | null;
+      const runComplete = coverageSnapshot !== null && coverageSnapshot.complete;
 
       const accessions = results.map(result => result.accessionNumber);
       // The v2 Boolean engine legitimately recalls a different set than the one
@@ -156,6 +157,19 @@ export default function Dashboard() {
 
       updateSavedAlert(alert.id, {
         lastCheckedAt: new Date().toISOString(),
+        // Retain the check's coverage story (audit R1): partial checks stay
+        // visibly partial — including WHICH branches did not finish.
+        lastCheckCoverage: coverageSnapshot
+          ? {
+              complete: coverageSnapshot.complete,
+              examined: coverageSnapshot.examined,
+              upstreamTotal: coverageSnapshot.upstreamTotal,
+              upstreamTotalIsFloor: coverageSnapshot.upstreamTotalIsFloor,
+              partialBranches: coverageSnapshot.branches
+                ?.filter(entry => entry.required && !entry.exhausted)
+                .map(entry => entry.branch),
+            }
+          : undefined,
         // Only a COMPLETE run may replace the seen-set. A partial window
         // still reports what it found, but the baseline stays intact so
         // nothing it missed gets silently marked as seen.

@@ -2548,7 +2548,14 @@ export function finalizeRunCoverage(inputs: RunCoverageInputs): {
       examined: Math.min(validationExamined, upstreamTotal),
       upstreamTotal,
       complete: validationComplete,
-      upstreamTotalIsFloor: Boolean(upstreamCoverage?.upstreamTotalIsFloor),
+      // A multi-required-lane run's aggregate total is the MAX across lane
+      // totals — the true OR-union is unknown (lanes overlap upstream, and
+      // no endpoint counts the union). Displaying it as exact overstated
+      // coverage (audit R1): it is a floor whenever more than one required
+      // lane contributed.
+      upstreamTotalIsFloor:
+        Boolean(upstreamCoverage?.upstreamTotalIsFloor) ||
+        branchLedgers.filter(entry => entry.required).length > 1,
       branches: branchLedgers.length > 0 ? [...branchLedgers] : undefined,
       work: {
         pageRequests: work.pageRequests,

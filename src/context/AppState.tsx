@@ -66,6 +66,16 @@ export interface SavedAlert {
    *  instead of reporting the recall difference as new filings. Optional so a
    *  rollback build ignores it safely. */
   engineVersion?: number;
+  /** Coverage snapshot from the latest check (audit R1): whether the run was
+   *  complete and which required branches did not finish. Retained so a
+   *  partial check is never remembered as an authoritative one. */
+  lastCheckCoverage?: {
+    complete: boolean;
+    examined: number;
+    upstreamTotal: number;
+    upstreamTotalIsFloor?: boolean;
+    partialBranches?: string[];
+  };
 }
 
 export type ThemeMode = 'light' | 'dark';
