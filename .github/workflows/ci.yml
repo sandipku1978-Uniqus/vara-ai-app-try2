@@ -127,6 +127,16 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 20
+          cache: npm
+      # The chain test was pure psql when this job was written; it now also
+      # runs scripts/accuracy/schema-contract.ts, which imports
+      # @supabase/supabase-js. Without an install the script dies with
+      # ERR_MODULE_NOT_FOUND *after* a clean 001→023 replay, which reads like
+      # a schema failure and is not one.
+      - run: npm ci
       - run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
       - run: tests/db/migration-chain.sh
         env:
