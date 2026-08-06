@@ -1,4 +1,4 @@
-import { expect, test, type Page, type Route } from '@playwright/test';
+import { expect, test, type Page, type Route, type TestInfo } from '@playwright/test';
 import {
   FIXTURE_DOCUMENT_URL,
   FIXTURE_REGISTRANT,
@@ -31,6 +31,17 @@ async function open(page: Page, path: string) {
   await waitForIdentity(page);
 }
 
+/**
+ * The page's own alert.
+ *
+ * Next.js keeps a permanent `role="alert"` route announcer on the document, so
+ * an unscoped `getByRole('alert')` is ambiguous everywhere in this app. Scoping
+ * to the page container keeps the assertion semantic without matching it.
+ */
+function pageAlert(page: Page) {
+  return page.locator('.fai-page').getByRole('alert');
+}
+
 /** Keep the console's history read deterministic and offline. */
 async function installConsoleFixtures(page: Page) {
   await installFilingAiFixtures(page);
@@ -58,7 +69,7 @@ test.describe('filing ai pre-flight console', () => {
     await page.getByLabel('Registrant CIK').fill('not-a-cik');
     await page.getByRole('button', { name: 'Run pre-flight check' }).click();
 
-    await expect(page.getByRole('alert')).toContainText('valid CIK');
+    await expect(pageAlert(page)).toContainText('Enter the registrant’s CIK');
     expect(state.runRequests, 'an invalid registrant must not reach the run API').toHaveLength(0);
   });
 
@@ -79,17 +90,19 @@ test.describe('filing ai pre-flight console', () => {
     await open(page, '/filing-ai');
 
     const tier = page.getByLabel('Input tier');
+    const tierField = page.locator('.fai-field', { has: page.getByLabel('Input tier') });
+
     await tier.selectOption('0');
-    await expect(page.getByText(/Needs nothing from the client/i)).toBeVisible();
+    await expect(tierField.getByText(/Needs nothing from the client/i)).toBeVisible();
 
     await tier.selectOption('2');
-    await expect(page.getByText(/Requires client source data/i)).toBeVisible();
+    await expect(tierField.getByText(/Requires client source data/i)).toBeVisible();
   });
 
   test('filing-ai-console.open-catalog reaches the governed rule catalog', async ({ page }) => {
     await installConsoleFixtures(page);
     await open(page, '/filing-ai');
-    await page.getByRole('link', { name: 'Rule catalog' }).click();
+    await page.locator('.fai-header').getByRole('link', { name: 'Rule catalog' }).click();
     await expect(page.getByRole('heading', { level: 1, name: 'Rule catalog' })).toBeVisible();
   });
 
@@ -217,7 +230,7 @@ test.describe('filing ai exception report', () => {
     });
 
     await open(page, '/filing-ai/runs/run_00000000-0000-0000-0000-000000000000');
-    await expect(page.getByRole('alert')).toContainText('Run not found');
+    await expect(pageAlert(page)).toContainText('Run not found');
     await expect(page.getByRole('link', { name: 'Back to the console' })).toBeVisible();
   });
 
@@ -244,7 +257,7 @@ test.describe('filing ai rule catalog', () => {
     await expect(rows.first()).toBeVisible({ timeout: 30_000 });
     const before = await rows.count();
 
-    await page.getByLabel('Search').fill('R-MECH-EXH');
+    await page.getByLabel('Search rules').fill('R-MECH-EXH');
     await expect.poll(async () => rows.count()).toBeLessThan(before);
     await expect(page.locator('.fai-table tbody').getByText('R-MECH-EXH-010').first()).toBeVisible();
   });
@@ -286,53 +299,70 @@ test.describe('filing ai rule catalog', () => {
 });
 
 test.describe('filing ai engagements', () => {
-  const CLIENT = 'Playwright Industries, Inc.';
-
-  async function createEngagement(page: Page) {
-    await open(page, '/filing-ai/governance');
-    await page.getByLabel('Client').fill(CLIENT);
-    await page.getByLabel('Registrant CIK').fill('1234567');
-    await page.getByRole('button', { name: 'Create' }).click();
-    await expect(page.getByRole('heading', { level: 2, name: CLIENT })).toBeVisible({ timeout: 30_000 });
+  /**
+   * Engagements live in the server's store for the life of the process, so
+   * every test in this file sees the ones its predecessors created. Naming each
+   * one after the test that created it keeps the assertions unambiguous without
+   * pretending the store is per-test — which is exactly the behaviour a real
+   * deployment has.
+   */
+  function clientName(testInfo: TestInfo, suffix = ''): string {
+    return `Playwright ${testInfo.testId}${suffix} Industries, Inc.`;
   }
 
-  test('filing-ai-governance.create-engagement opens a new engagement with its onboarding gate outstanding', async ({ page }) => {
-    await createEngagement(page);
+  async function createEngagement(page: Page, name: string, cik = '1234567') {
+    await open(page, '/filing-ai/governance');
+    await page.getByLabel('Client').fill(name);
+    await page.getByLabel('Registrant CIK').fill(cik);
+    await page.getByRole('button', { name: 'Create' }).click();
+    await expect(page.getByRole('heading', { level: 2, name })).toBeVisible({ timeout: 30_000 });
+  }
+
+  test('filing-ai-governance.create-engagement opens a new engagement with its onboarding gate outstanding', async ({ page }, testInfo) => {
+    await createEngagement(page, clientName(testInfo));
     await expect(page.getByText('Onboarding.')).toBeVisible();
     await expect(page.getByText(/0 of 6 complete/)).toBeVisible();
   });
 
-  test('filing-ai-governance.add-member records the member with their role', async ({ page }) => {
-    await createEngagement(page);
+  test('filing-ai-governance.add-member records the member with their role', async ({ page }, testInfo) => {
+    await createEngagement(page, clientName(testInfo));
+    const email = `dana-${testInfo.testId}@example.com`;
     await page.getByLabel('Name').fill('Dana Whitfield');
-    await page.getByLabel('Email').fill('dana@example.com');
+    await page.getByLabel('Email').fill(email);
     await page.getByLabel('Role').selectOption('reviewer');
     await page.getByRole('button', { name: 'Add member' }).click();
 
-    const row = page.locator('.fai-table tbody tr', { hasText: 'dana@example.com' });
+    const row = page.locator('.fai-table tbody tr', { hasText: email });
     await expect(row).toBeVisible({ timeout: 30_000 });
     await expect(row).toContainText('Reviewer');
   });
 
-  test('filing-ai-governance.remove-member drops only the selected member', async ({ page }) => {
-    await createEngagement(page);
-    await page.getByLabel('Name').fill('Dana Whitfield');
-    await page.getByLabel('Email').fill('dana@example.com');
-    await page.getByRole('button', { name: 'Add member' }).click();
-    await expect(page.locator('.fai-table tbody tr', { hasText: 'dana@example.com' })).toBeVisible({ timeout: 30_000 });
+  test('filing-ai-governance.remove-member drops only the selected member', async ({ page }, testInfo) => {
+    await createEngagement(page, clientName(testInfo));
+    const keep = `priya-${testInfo.testId}@example.com`;
+    const remove = `dana-${testInfo.testId}@example.com`;
+    for (const [name, email, role] of [['Priya Raman', keep, 'reviewer'], ['Dana Whitfield', remove, 'preparer']]) {
+      await page.getByLabel('Name').fill(name);
+      await page.getByLabel('Email').fill(email);
+      await page.getByLabel('Role').selectOption(role);
+      await page.getByRole('button', { name: 'Add member' }).click();
+      await expect(page.locator('.fai-table tbody tr', { hasText: email })).toBeVisible({ timeout: 30_000 });
+    }
 
-    await page.locator('.fai-table tbody tr', { hasText: 'dana@example.com' })
+    await page.locator('.fai-table tbody tr', { hasText: remove })
       .getByRole('button', { name: 'Remove' })
       .click();
-    await expect(page.locator('.fai-table tbody tr', { hasText: 'dana@example.com' })).toBeHidden();
+    await expect(page.locator('.fai-table tbody tr', { hasText: remove })).toBeHidden();
+    // "Only": the neighbour must survive.
+    await expect(page.locator('.fai-table tbody tr', { hasText: keep })).toBeVisible();
   });
 
-  test('filing-ai-governance.sign-off-step refuses the team step until the team can dispose of a finding', async ({ page }) => {
-    await createEngagement(page);
+  test('filing-ai-governance.sign-off-step refuses the team step until the team can dispose of a finding', async ({ page }, testInfo) => {
+    await createEngagement(page, clientName(testInfo));
     const teamStep = page.locator('.fai-step', { hasText: 'Name the team and roles' });
     await teamStep.getByRole('button', { name: 'Sign off' }).click();
 
-    await expect(page.getByRole('alert')).toContainText(/four-eyes|disposition requirements/i);
+    await expect(pageAlert(page)).toContainText(/four-eyes|disposition requirements/i);
     await expect(teamStep.getByRole('button', { name: 'Sign off' })).toBeVisible();
   });
 
@@ -344,10 +374,10 @@ test.describe('filing ai engagements', () => {
     await expect(page.getByText(/second approval on a critical finding/i)).toBeVisible();
   });
 
-  test('filing-ai-governance.team-shortfall names the four-eyes requirement a one-person team cannot meet', async ({ page }) => {
-    await createEngagement(page);
+  test('filing-ai-governance.team-shortfall names the four-eyes requirement a one-person team cannot meet', async ({ page }, testInfo) => {
+    await createEngagement(page, clientName(testInfo));
     await page.getByLabel('Name').fill('Dana Whitfield');
-    await page.getByLabel('Email').fill('dana@example.com');
+    await page.getByLabel('Email').fill(`dana-${testInfo.testId}@example.com`);
     await page.getByLabel('Role').selectOption('preparer');
     await page.getByRole('button', { name: 'Add member' }).click();
 
@@ -355,14 +385,15 @@ test.describe('filing ai engagements', () => {
     await expect(page.getByText(/four-eyes requirement/i)).toBeVisible();
   });
 
-  test('filing-ai-governance.select-engagement replaces the visible engagement', async ({ page }) => {
-    await createEngagement(page);
-    await page.getByLabel('Client').fill('Second Engagement Co.');
-    await page.getByLabel('Registrant CIK').fill('7654321');
-    await page.getByRole('button', { name: 'Create' }).click();
-    await expect(page.getByRole('heading', { level: 2, name: 'Second Engagement Co.' })).toBeVisible({ timeout: 30_000 });
+  test('filing-ai-governance.select-engagement replaces the visible engagement', async ({ page }, testInfo) => {
+    const first = clientName(testInfo, '-first');
+    const second = clientName(testInfo, '-second');
+    await createEngagement(page, first);
+    await createEngagement(page, second, '7654321');
+    await expect(page.getByRole('heading', { level: 2, name: second })).toBeVisible();
 
-    await page.locator('.fai-layer', { hasText: CLIENT }).click();
-    await expect(page.getByRole('heading', { level: 2, name: CLIENT })).toBeVisible();
+    await page.locator('.fai-layer', { hasText: first }).click();
+    await expect(page.getByRole('heading', { level: 2, name: first })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 2, name: second })).toBeHidden();
   });
 });

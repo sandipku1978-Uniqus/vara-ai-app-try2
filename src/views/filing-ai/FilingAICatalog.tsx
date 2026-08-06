@@ -148,7 +148,7 @@ export default function FilingAICatalog() {
 
             <div className="fai-form-grid">
               <div className="fai-field">
-                <label htmlFor="cat-search">Search</label>
+                <label htmlFor="cat-search">Search rules</label>
                 <input
                   id="cat-search"
                   type="search"
