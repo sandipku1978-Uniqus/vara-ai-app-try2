@@ -145,11 +145,47 @@ const ENTITIES: Record<string, string> = {
   '&nbsp;': ' ',
 };
 
+const TAG = /<[^>]*>/g;
+
+/**
+ * Remove every element from a fragment, repeatedly, until the result stops
+ * changing.
+ *
+ * One pass is not enough. Stripping the inner element from `<scr<a>ipt>`
+ * rejoins the remainder into `<script>`, so a single `.replace` hands back
+ * markup it was asked to remove. Each pass strictly shortens the string, so
+ * the loop terminates.
+ */
+function removeTagsUntilStable(value: string): string {
+  let text = value;
+  let previous: string;
+  do {
+    previous = text;
+    text = text.replace(TAG, '');
+  } while (text !== previous);
+  return text;
+}
+
+/**
+ * The plain-text content of an HTML fragment.
+ *
+ * The contract is that the return value is text and carries no markup. That
+ * matters because the result becomes a fact literal and, when the reading-text
+ * extractor cannot parse a document, the whole document's text — both of which
+ * are quoted back in findings and written into the evidence pack.
+ *
+ * Entity decoding runs between two strip passes on purpose: decoding is what
+ * turns `&lt;b&gt;` into `<b>`, so a decode after the last strip would
+ * reintroduce exactly what the first one removed. A filing that displays
+ * literal markup as text loses it here, which is the right trade — a fact
+ * literal is a number or a short label, never a tag.
+ */
 export function stripTags(html: string): string {
-  return html
-    .replace(/<[^>]*>/g, '')
+  const withoutTags = removeTagsUntilStable(html);
+  const decoded = withoutTags
     .replace(/&#(\d+);/g, (_, code: string) => String.fromCodePoint(Number(code)))
-    .replace(/&[a-z]+;|&#\d+;/gi, entity => ENTITIES[entity.toLowerCase()] ?? ' ')
+    .replace(/&[a-z]+;|&#\d+;/gi, entity => ENTITIES[entity.toLowerCase()] ?? ' ');
+  return removeTagsUntilStable(decoded)
     .replace(/\s+/g, ' ')
     .trim();
 }

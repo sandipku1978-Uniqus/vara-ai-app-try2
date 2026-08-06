@@ -100,6 +100,30 @@ describe('inline XBRL literals', () => {
   it('strips markup and entities from a tagged value', () => {
     expect(stripTags('<span>1,<b>234</b></span>&nbsp;')).toBe('1,234');
   });
+
+  it('leaves no element behind, however the fragment is nested or encoded', () => {
+    // The contract is that no `<` survives, which is what makes an element
+    // impossible to reconstruct. A stray `>` is left alone on purpose: filings
+    // legitimately write "revenue > $1bn", and dropping it would corrupt real
+    // content to defend against nothing.
+    for (const input of [
+      // A single strip pass rejoins the remainder into the tag it removed.
+      '<scr<a>ipt>alert(1)</scr<a>ipt>',
+      '<<div>span>text</<div>span>',
+      // Decoding must not reintroduce what stripping already removed.
+      '&lt;script&gt;alert(1)&lt;/script&gt;',
+      '&#60;img src=x onerror=alert(1)&#62;',
+      '<span>1,<b>234</b></span>',
+    ]) {
+      expect(stripTags(input), input).not.toContain('<');
+    }
+
+    // Entity-encoded markup is removed outright, not merely defanged.
+    expect(stripTags('&lt;script&gt;alert(1)&lt;/script&gt;')).toBe('alert(1)');
+    expect(stripTags('&#60;img src=x&#62;value')).toBe('value');
+    // Ordinary comparison text is untouched.
+    expect(stripTags('<p>revenue &gt; $1bn</p>')).toBe('revenue > $1bn');
+  });
 });
 
 describe('inline XBRL instance', () => {
