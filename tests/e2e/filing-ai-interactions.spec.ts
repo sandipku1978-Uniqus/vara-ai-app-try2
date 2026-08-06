@@ -221,7 +221,13 @@ test.describe('filing ai exception report', () => {
   });
 
   test('filing-ai-run.missing-run states unavailability instead of rendering an empty report', async ({ page }) => {
-    await page.route('**/api/filing-ai/runs/**', async (route: Route) => {
+    // Reached the way a reader actually reaches it: opening a run from the
+    // recent-checks table that is no longer readable — a stale link, or one
+    // belonging to another scope. Typing the URL would prove the page renders
+    // an error, not that the control leads anywhere honest.
+    await installFilingAiFixtures(page, { withHistory: true });
+    // Registered last, so it takes precedence over the fixture's run handler.
+    await page.route('**/api/filing-ai/runs/run_*', async (route: Route) => {
       await route.fulfill({
         status: 404,
         contentType: 'application/json',
@@ -229,9 +235,15 @@ test.describe('filing ai exception report', () => {
       });
     });
 
-    await open(page, '/filing-ai/runs/run_00000000-0000-0000-0000-000000000000');
+    await open(page, '/filing-ai');
+    const row = page.locator('.fai-table tbody tr', { hasText: FIXTURE_REGISTRANT }).first();
+    await expect(row).toBeVisible({ timeout: 30_000 });
+    await row.getByRole('link', { name: 'Open' }).click();
+
     await expect(pageAlert(page)).toContainText('Run not found');
     await expect(page.getByRole('link', { name: 'Back to the console' })).toBeVisible();
+    // The empty report is the failure this guards against.
+    await expect(page.getByRole('heading', { level: 2, name: 'Coverage statement' })).toBeHidden();
   });
 
   test('filing-ai-run.back-to-console returns to the pre-flight console from an unavailable report', async ({ page }) => {
