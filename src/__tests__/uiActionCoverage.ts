@@ -233,6 +233,31 @@ export const UI_ACTION_COVERAGE: Record<string, UiActionEvidence> = {
     { file: 'tests/e2e/global-workspace-interactions.spec.ts', title: 'global.async-and-retry distinguishes loading, failure, empty, and partial success while retrying the same criteria' },
     { file: 'tests/e2e/global-workspace-interactions.spec.ts', title: 'global.async-and-retry allows only the newest overlapping request to update the view' },
   ] },
+
+  // Filing AI pre-flight surfaces. A run itself is stubbed at the network
+  // boundary; the engine that produces a run result is covered by the unit
+  // suite against synthetic filings, so a green browser spec here proves the
+  // screen, never the engine.
+  'filing-ai-console.run-check': { kind: 'automated-full', specs: [{ file: 'tests/e2e/filing-ai-interactions.spec.ts', title: 'filing-ai-console.run-check opens the exception report for the completed run' }] },
+  'filing-ai-console.reject-invalid-cik': { kind: 'automated-full', specs: [{ file: 'tests/e2e/filing-ai-interactions.spec.ts', title: 'filing-ai-console.reject-invalid-cik refuses a run without a registrant identifier' }] },
+  'filing-ai-console.open-run': { kind: 'automated-full', specs: [{ file: 'tests/e2e/filing-ai-interactions.spec.ts', title: 'filing-ai-console.open-run reaches the exception report from the recent-checks table' }] },
+  'filing-ai-console.choose-tier': { kind: 'automated-full', specs: [{ file: 'tests/e2e/filing-ai-interactions.spec.ts', title: 'filing-ai-console.choose-tier states what the chosen tier cannot see before the run' }] },
+  'filing-ai-console.open-catalog': { kind: 'automated-full', specs: [{ file: 'tests/e2e/filing-ai-interactions.spec.ts', title: 'filing-ai-console.open-catalog reaches the governed rule catalog' }] },
+  'filing-ai-run.filter-severity': { kind: 'automated-full', specs: [{ file: 'tests/e2e/filing-ai-interactions.spec.ts', title: 'filing-ai-run.filter-severity narrows the finding list to one severity' }] },
+  'filing-ai-run.filter-layer': { kind: 'automated-full', specs: [{ file: 'tests/e2e/filing-ai-interactions.spec.ts', title: 'filing-ai-run.filter-layer narrows the finding list to one check layer' }] },
+  'filing-ai-run.expand-finding': { kind: 'automated-full', specs: [{ file: 'tests/e2e/filing-ai-interactions.spec.ts', title: 'filing-ai-run.expand-finding reveals the evidence, authority and next step' }] },
+  'filing-ai-run.open-provenance': { kind: 'automated-full', specs: [{ file: 'tests/e2e/filing-ai-interactions.spec.ts', title: 'filing-ai-run.open-provenance links the finding to the filed document' }] },
+  'filing-ai-run.dispose-finding': { kind: 'automated-full', specs: [{ file: 'tests/e2e/filing-ai-interactions.spec.ts', title: 'filing-ai-run.dispose-finding refuses a disposition without a stated basis and records a complete one' }] },
+  'filing-ai-run.missing-run': { kind: 'automated-full', specs: [{ file: 'tests/e2e/filing-ai-interactions.spec.ts', title: 'filing-ai-run.missing-run states unavailability instead of rendering an empty report' }] },
+  'filing-ai-run.back-to-console': { kind: 'automated-full', specs: [{ file: 'tests/e2e/filing-ai-interactions.spec.ts', title: 'filing-ai-run.back-to-console returns to the pre-flight console from an unavailable report' }] },
+  'filing-ai-catalog.search-rules': { kind: 'automated-full', specs: [{ file: 'tests/e2e/filing-ai-interactions.spec.ts', title: 'filing-ai-catalog.search-rules narrows the catalog to matching rules' }] },
+  'filing-ai-catalog.filter-layer': { kind: 'automated-full', specs: [{ file: 'tests/e2e/filing-ai-interactions.spec.ts', title: 'filing-ai-catalog.filter-layer restricts the catalog to one check layer' }] },
+  'filing-ai-catalog.filter-deployed': { kind: 'automated-full', specs: [{ file: 'tests/e2e/filing-ai-interactions.spec.ts', title: 'filing-ai-catalog.filter-deployed removes rules with no deployed predicate' }] },
+  'filing-ai-governance.create-engagement': { kind: 'automated-full', specs: [{ file: 'tests/e2e/filing-ai-interactions.spec.ts', title: 'filing-ai-governance.create-engagement opens a new engagement with its onboarding gate outstanding' }] },
+  'filing-ai-governance.add-member': { kind: 'automated-full', specs: [{ file: 'tests/e2e/filing-ai-interactions.spec.ts', title: 'filing-ai-governance.add-member records the member with their role' }] },
+  'filing-ai-governance.remove-member': { kind: 'automated-full', specs: [{ file: 'tests/e2e/filing-ai-interactions.spec.ts', title: 'filing-ai-governance.remove-member drops only the selected member' }] },
+  'filing-ai-governance.sign-off-step': { kind: 'automated-full', specs: [{ file: 'tests/e2e/filing-ai-interactions.spec.ts', title: 'filing-ai-governance.sign-off-step refuses the team step until the team can dispose of a finding' }] },
+  'filing-ai-governance.select-engagement': { kind: 'automated-full', specs: [{ file: 'tests/e2e/filing-ai-interactions.spec.ts', title: 'filing-ai-governance.select-engagement replaces the visible engagement' }] },
 };
 
 /**
@@ -260,6 +285,69 @@ export const UI_CONTENT_COVERAGE: Readonly<Record<string, UiContentEvidence>> = 
     specs: [{
       file: 'tests/e2e/public-pages.spec.ts',
       title: 'terms.review-limitations states the professional-advice limitation',
+    }],
+  },
+  'filing-ai-console.scope-language': {
+    kind: 'content-contract',
+    specs: [{
+      file: 'tests/e2e/filing-ai-interactions.spec.ts',
+      title: 'filing-ai-console.scope-language states the reporting limitation without an interaction',
+    }],
+  },
+  'filing-ai-console.ipog': {
+    kind: 'content-contract',
+    specs: [{
+      file: 'tests/e2e/filing-ai-interactions.spec.ts',
+      title: 'filing-ai-console.ipog explains input, process, output and governance where the work starts',
+    }],
+  },
+  'filing-ai-run.coverage-statement': {
+    kind: 'content-contract',
+    specs: [{
+      file: 'tests/e2e/filing-ai-interactions.spec.ts',
+      title: 'filing-ai-run.coverage-statement states rule coverage and what the run could not see',
+    }],
+  },
+  'filing-ai-run.gate-and-score': {
+    kind: 'content-contract',
+    specs: [{
+      file: 'tests/e2e/filing-ai-interactions.spec.ts',
+      title: 'filing-ai-run.gate-and-score shows the gate beside the coverage-adjusted readiness figure',
+    }],
+  },
+  'filing-ai-run.suppressed-rules': {
+    kind: 'content-contract',
+    specs: [{
+      file: 'tests/e2e/filing-ai-interactions.spec.ts',
+      title: 'filing-ai-run.suppressed-rules lists each unexecuted rule with the gate that stopped it',
+    }],
+  },
+  'filing-ai-catalog.unbound-reasons': {
+    kind: 'content-contract',
+    specs: [{
+      file: 'tests/e2e/filing-ai-interactions.spec.ts',
+      title: 'filing-ai-catalog.unbound-reasons states why each undeployed rule cannot run',
+    }],
+  },
+  'filing-ai-catalog.promotion-ladder': {
+    kind: 'content-contract',
+    specs: [{
+      file: 'tests/e2e/filing-ai-interactions.spec.ts',
+      title: 'filing-ai-catalog.promotion-ladder shows the rule board stages and the bar for live',
+    }],
+  },
+  'filing-ai-governance.roles': {
+    kind: 'content-contract',
+    specs: [{
+      file: 'tests/e2e/filing-ai-interactions.spec.ts',
+      title: 'filing-ai-governance.roles states what each role may do',
+    }],
+  },
+  'filing-ai-governance.team-shortfall': {
+    kind: 'content-contract',
+    specs: [{
+      file: 'tests/e2e/filing-ai-interactions.spec.ts',
+      title: 'filing-ai-governance.team-shortfall names the four-eyes requirement a one-person team cannot meet',
     }],
   },
 });

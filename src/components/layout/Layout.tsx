@@ -9,7 +9,8 @@ import {
   Search, LayoutDashboard, BarChart2, MessageSquare, Menu, ChevronLeft, ChevronRight,
   BookOpen, Globe, Users, Briefcase, Handshake, LifeBuoy,
   TrendingUp, UserCheck, Mail, ShieldCheck, Gavel, Scale,
-  FileSearch, DollarSign, Mic, ClipboardList, Moon, Sun, X
+  FileSearch, DollarSign, Mic, ClipboardList, Moon, Sun, X,
+  PlaneTakeoff, BookOpen as BookOpenCheck, UsersRound
 } from 'lucide-react';
 import { useApp } from '../../context/AppState';
 import { URCBrandLockup, URCBrandMark } from '../brand/URCBrand';
@@ -27,15 +28,22 @@ function SidebarNavItem({
   icon,
   isSidebarCollapsed,
   onNavigate,
+  // Set where a sibling entry lives under this path. Prefix matching would
+  // light up both the parent and the child, so two rows would claim to be the
+  // current page — and aria-current would say so twice.
+  activeWhenNested = true,
 }: {
   to: string;
   label: string;
   icon: ReactNode;
   isSidebarCollapsed: boolean;
   onNavigate?: () => void;
+  activeWhenNested?: boolean;
 }) {
   const pathname = usePathname();
-  const isActive = pathname === to || pathname.startsWith(`${to}/`);
+  const isActive = activeWhenNested
+    ? pathname === to || pathname.startsWith(`${to}/`)
+    : pathname === to;
   return (
     <Link
       href={to}
@@ -181,6 +189,18 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen: boolean; on
         <SidebarNavItem to="/mna" label="M&A Research" icon={<Handshake size={16} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
         <SidebarNavItem to="/exempt-offerings" label="Exempt Offerings" icon={<DollarSign size={16} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
         <SidebarNavItem to="/adv-registrations" label="ADV Registrations" icon={<ClipboardList size={16} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
+
+        {/* Pre-filing sits last because it is the only group that acts on a
+            draft the registrant has not filed yet; everything above researches
+            what is already public. */}
+        <div className="nav-group-header">Pre-filing</div>
+        {/* Exception reports live at /filing-ai/runs/:id and are reached from
+            the console's recent-checks table, so this entry matches exactly
+            rather than by prefix — otherwise it and its two siblings below
+            would all report themselves as the current page. */}
+        <SidebarNavItem to="/filing-ai" label="Filing AI Pre-Flight" icon={<PlaneTakeoff size={16} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} activeWhenNested={false} />
+        <SidebarNavItem to="/filing-ai/catalog" label="Rule Catalog" icon={<BookOpenCheck size={16} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
+        <SidebarNavItem to="/filing-ai/governance" label="Engagements" icon={<UsersRound size={16} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
       </nav>
 
       <div className="sidebar-footer">

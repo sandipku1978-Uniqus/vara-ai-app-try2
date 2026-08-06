@@ -1579,7 +1579,7 @@ function replaySamplingMixProblems(cases: UnknownRecord[]): string[] {
 const UI_ACTION_SCOPE_REQUIREMENTS: Record<UiActionScope, {
   actions: number; references: number; contentChecks: number; contentReferences: number;
 }> = {
-  browser: { actions: 131, references: 145, contentChecks: 1, contentReferences: 1 },
+  browser: { actions: 151, references: 165, contentChecks: 10, contentReferences: 10 },
   auth: { actions: 3, references: 4, contentChecks: 0, contentReferences: 0 },
 };
 

@@ -57,17 +57,27 @@ describe('database security migration chain', () => {
     }
   });
 
-  it('limits the privileged cache-writer helper to the three audited server routes', () => {
+  it('limits the privileged cache-writer helper to the audited server modules', () => {
     const sourceRoot = resolve(process.cwd(), 'src');
     const callers = runtimeSources(sourceRoot)
       .filter(file => readFileSync(file, 'utf8').includes('getCacheWriterSupabase'))
       .map(file => relative(sourceRoot, file))
       .sort();
 
+    // This list is the audit. Adding to it is a deliberate, reviewed decision,
+    // never a side effect — which is the whole reason the assertion is exact.
+    //
+    // `lib/filing-ai/store.ts` holds the fourth entry. Filing AI writes runs,
+    // dispositions and engagements for draft filings, and migration 024 grants
+    // those tables to service_role only with no web-role surface at all, so
+    // there is no lower-privilege credential that could serve them. Every call
+    // path into the store passes through a route that has already authenticated
+    // the caller and resolved their org scope.
     expect(callers).toEqual([
       'app/api/boolean-validate/route.ts',
       'app/api/filing-text/route.ts',
       'app/api/letters/summary/route.ts',
+      'lib/filing-ai/store.ts',
       'lib/supabase-web.ts',
     ]);
   });

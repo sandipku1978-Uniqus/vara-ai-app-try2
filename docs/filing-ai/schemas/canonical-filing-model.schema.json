@@ -1,0 +1,198 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "CanonicalFilingModel",
+ "type": "object",
+ "description": "P1 output. Every downstream engine reads this, never raw HTML.",
+ "required": [
+  "run_id",
+  "sections",
+  "facts",
+  "tables",
+  "exhibits",
+  "dei_tags"
+ ],
+ "properties": {
+  "run_id": {
+   "type": "string"
+  },
+  "sections": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "properties": {
+     "item_ref": {
+      "type": "string",
+      "examples": [
+       "Part II / Item 9A"
+      ]
+     },
+     "heading": {
+      "type": "string"
+     },
+     "text": {
+      "type": "string"
+     },
+     "char_start": {
+      "type": "integer"
+     },
+     "char_end": {
+      "type": "integer"
+     }
+    }
+   }
+  },
+  "facts": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "properties": {
+     "concept": {
+      "type": "string",
+      "examples": [
+       "us-gaap:Revenues"
+      ]
+     },
+     "value": {
+      "type": [
+       "number",
+       "string"
+      ]
+     },
+     "unit": {
+      "type": "string"
+     },
+     "sign": {
+      "type": "integer"
+     },
+     "period_start": {
+      "type": "string"
+     },
+     "period_end": {
+      "type": "string"
+     },
+     "context_ref": {
+      "type": "string"
+     },
+     "decimals": {
+      "type": [
+       "integer",
+       "string"
+      ]
+     },
+     "source": {
+      "enum": [
+       "ixbrl",
+       "table",
+       "narrative"
+      ]
+     },
+     "provenance": {
+      "type": "object"
+     }
+    }
+   }
+  },
+  "tables": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "properties": {
+     "caption": {
+      "type": "string"
+     },
+     "grid": {
+      "type": "array"
+     },
+     "row_labels": {
+      "type": "array"
+     },
+     "col_periods": {
+      "type": "array"
+     },
+     "footnote_refs": {
+      "type": "array"
+     },
+     "provenance": {
+      "type": "object"
+     }
+    }
+   }
+  },
+  "narrative_numbers": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "properties": {
+     "literal": {
+      "type": "string"
+     },
+     "normalized": {
+      "type": "number"
+     },
+     "section": {
+      "type": "string"
+     },
+     "char_offset": {
+      "type": "integer"
+     }
+    }
+   }
+  },
+  "exhibits": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "properties": {
+     "number": {
+      "type": "string"
+     },
+     "type": {
+      "type": "string"
+     },
+     "attached": {
+      "type": "boolean"
+     },
+     "filed_or_furnished": {
+      "enum": [
+       "filed",
+       "furnished"
+      ]
+     },
+     "ibr_target": {
+      "type": "string"
+     },
+     "resolved": {
+      "type": "boolean"
+     }
+    }
+   }
+  },
+  "dei_tags": {
+   "type": "object",
+   "additionalProperties": true
+  },
+  "signatures": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "properties": {
+     "name": {
+      "type": "string"
+     },
+     "title": {
+      "type": "string"
+     },
+     "conformed": {
+      "type": "boolean"
+     },
+     "date": {
+      "type": "string"
+     },
+     "block_ref": {
+      "type": "string"
+     }
+    }
+   }
+  }
+ }
+}

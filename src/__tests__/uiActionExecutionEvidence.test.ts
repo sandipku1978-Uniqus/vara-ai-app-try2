@@ -81,9 +81,9 @@ describe('runtime UI action execution evidence', () => {
     expect(isUserInteractionStep({ category: 'pw:api', title: 'Press "Enter" getByRole("searchbox")' })).toBe(true);
   });
 
-  it('keeps 134 actionable contracts separate from static content and validates exact runtime identities', () => {
-    expect(Object.keys(UI_ACTION_TEST_MAP)).toHaveLength(134);
-    expect(Object.keys(UI_CONTENT_TEST_MAP)).toHaveLength(1);
+  it('keeps 154 actionable contracts separate from static content and validates exact runtime identities', () => {
+    expect(Object.keys(UI_ACTION_TEST_MAP)).toHaveLength(154);
+    expect(Object.keys(UI_CONTENT_TEST_MAP)).toHaveLength(10);
     expect(uiActionMappingDigest()).toMatch(/^sha256:[0-9a-f]{64}$/);
     expect(uiContentMappingDigest()).toMatch(/^sha256:[0-9a-f]{64}$/);
 
@@ -99,13 +99,13 @@ describe('runtime UI action execution evidence', () => {
     });
 
     expect(browser.pass, browser.problems.join('\n')).toBe(true);
-    expect(browser.expectedActionCount).toBe(131);
-    expect(browser.expectedTestReferenceCount).toBe(145);
+    expect(browser.expectedActionCount).toBe(151);
+    expect(browser.expectedTestReferenceCount).toBe(165);
     expect(browser.passedActionCount).toBe(browser.expectedActionCount);
-    expect(browser.expectedContentCheckCount).toBe(1);
-    expect(browser.passedContentCheckCount).toBe(1);
-    expect(browser.expectedContentTestReferenceCount).toBe(1);
-    expect(browser.passedContentTestReferenceCount).toBe(1);
+    expect(browser.expectedContentCheckCount).toBe(10);
+    expect(browser.passedContentCheckCount).toBe(10);
+    expect(browser.expectedContentTestReferenceCount).toBe(10);
+    expect(browser.passedContentTestReferenceCount).toBe(10);
     expect(auth.pass, auth.problems.join('\n')).toBe(true);
     expect(auth.expectedActionCount).toBe(3);
     expect(auth.expectedTestReferenceCount).toBe(4);
@@ -115,7 +115,9 @@ describe('runtime UI action execution evidence', () => {
 
   it('accepts assertion-only content evidence without letting it masquerade as an action', () => {
     const tests = executions('browser');
-    const content = Object.values(UI_CONTENT_TEST_MAP)[0][0];
+    // Derived from the mapping rather than named, so adding a content contract
+    // does not silently retarget this assertion at a different entry.
+    const [contentId, [content]] = Object.entries(UI_CONTENT_TEST_MAP)[0];
     const contentIndex = tests.findIndex(test => test.file === content.file && test.title === content.title);
     tests[contentIndex] = {
       ...tests[contentIndex],
@@ -126,8 +128,9 @@ describe('runtime UI action execution evidence', () => {
       scope: 'browser', expectedSha: SHA, reports: [{ name: 'browser.json', value: runReport('browser', tests) }],
     });
     expect(accepted.pass, accepted.problems.join('\n')).toBe(true);
-    expect(accepted.actions.some(action => action.actionId === 'terms.review-limitations')).toBe(false);
-    expect(accepted.contentChecks[0]).toMatchObject({ contentId: 'terms.review-limitations', pass: true });
+    expect(accepted.actions.some(action => action.actionId === contentId)).toBe(false);
+    expect(accepted.contentChecks.find(check => check.contentId === contentId))
+      .toMatchObject({ contentId, pass: true });
 
     tests[contentIndex] = {
       ...tests[contentIndex],

@@ -1,0 +1,141 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "RunResult",
+ "type": "object",
+ "required": [
+  "run_id",
+  "gate",
+  "readiness_score",
+  "coverage",
+  "findings"
+ ],
+ "properties": {
+  "run_id": {
+   "type": "string"
+  },
+  "completed_at": {
+   "type": "string",
+   "format": "date-time"
+  },
+  "gate": {
+   "enum": [
+    "NOT_READY",
+    "READY_WITH_EXCEPTIONS",
+    "READY"
+   ]
+  },
+  "readiness_score": {
+   "type": "number",
+   "minimum": 0,
+   "maximum": 100
+  },
+  "coverage": {
+   "type": "object",
+   "required": [
+    "tier_effective",
+    "rules_executed",
+    "rules_total",
+    "coverage_factor",
+    "out_of_scope"
+   ],
+   "properties": {
+    "tier_effective": {
+     "type": "integer"
+    },
+    "rules_executed": {
+     "type": "integer"
+    },
+    "rules_total": {
+     "type": "integer"
+    },
+    "coverage_factor": {
+     "type": "number"
+    },
+    "rules_suppressed": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "rule_id": {
+        "type": "string"
+       },
+       "reason": {
+        "type": "string"
+       },
+       "gate": {
+        "type": "string"
+       }
+      }
+     }
+    },
+    "out_of_scope": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     },
+     "description": "Defect classes NOT detectable at this tier. MANDATORY, non-suppressible (O4)."
+    },
+    "scope_language": {
+     "type": "string",
+     "description": "Fixed disclaimer text. Non-suppressible (G6)."
+    }
+   }
+  },
+  "gate_results": {
+   "type": "array",
+   "items": {
+    "type": "object",
+    "properties": {
+     "gate": {
+      "enum": [
+       "G1",
+       "G2",
+       "G3",
+       "G4",
+       "G5",
+       "G6"
+      ]
+     },
+     "passed": {
+      "type": "boolean"
+     },
+     "action": {
+      "enum": [
+       "proceed",
+       "suppress_dependent_rules",
+       "hard_stop"
+      ]
+     },
+     "detail": {
+      "type": "string"
+     }
+    }
+   }
+  },
+  "findings": {
+   "type": "array",
+   "items": {
+    "$ref": "finding.schema.json"
+   }
+  },
+  "filer_risk": {
+   "type": "object",
+   "properties": {
+    "band": {
+     "enum": [
+      "low",
+      "moderate",
+      "elevated",
+      "high"
+     ]
+    },
+    "prior_amendments_8q": {
+     "type": "integer"
+    },
+    "rationale": {
+     "type": "string"
+    }
+   }
+  }
+ }
+}

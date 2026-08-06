@@ -1,0 +1,303 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "FilingRunRequest",
+ "type": "object",
+ "required": [
+  "run_id",
+  "tier",
+  "registrant",
+  "filing",
+  "authority",
+  "attestation"
+ ],
+ "properties": {
+  "run_id": {
+   "type": "string",
+   "format": "uuid"
+  },
+  "tier": {
+   "type": "integer",
+   "enum": [
+    0,
+    1,
+    2,
+    3
+   ],
+   "description": "Declared tier. Verified against inputs actually supplied by gate G6."
+  },
+  "registrant": {
+   "type": "object",
+   "required": [
+    "cik",
+    "legal_name",
+    "fiscal_year_end",
+    "filer_status"
+   ],
+   "properties": {
+    "cik": {
+     "type": "string",
+     "pattern": "^[0-9]{10}$"
+    },
+    "legal_name": {
+     "type": "string"
+    },
+    "fiscal_year_end": {
+     "type": "string",
+     "description": "MM-DD"
+    },
+    "filer_status": {
+     "enum": [
+      "large_accelerated",
+      "accelerated",
+      "non_accelerated"
+     ]
+    },
+    "is_src": {
+     "type": "boolean"
+    },
+    "is_egc": {
+     "type": "boolean"
+    },
+    "is_shell": {
+     "type": "boolean"
+    },
+    "auditor_pcaob_id": {
+     "type": "string"
+    },
+    "officers": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "required": [
+       "legal_name",
+       "role"
+      ],
+      "properties": {
+       "legal_name": {
+        "type": "string"
+       },
+       "title": {
+        "type": "string"
+       },
+       "role": {
+        "enum": [
+         "PEO",
+         "PFO",
+         "PAO",
+         "director",
+         "other"
+        ]
+       },
+       "effective_from": {
+        "type": "string",
+        "format": "date"
+       }
+      }
+     }
+    }
+   }
+  },
+  "filing": {
+   "type": "object",
+   "required": [
+    "form_type",
+    "period_of_report",
+    "primary_document"
+   ],
+   "properties": {
+    "form_type": {
+     "enum": [
+      "10-K",
+      "10-Q",
+      "8-K",
+      "S-1",
+      "20-F",
+      "DEF 14A"
+     ]
+    },
+    "period_of_report": {
+     "type": "string",
+     "format": "date"
+    },
+    "draft_version": {
+     "type": "string"
+    },
+    "primary_document": {
+     "$ref": "#/$defs/artifact"
+    },
+    "exhibits": {
+     "type": "array",
+     "items": {
+      "type": "object",
+      "properties": {
+       "number": {
+        "type": "string"
+       },
+       "description": {
+        "type": "string"
+       },
+       "artifact": {
+        "$ref": "#/$defs/artifact"
+       },
+       "ibr_accession": {
+        "type": "string"
+       },
+       "filed_or_furnished": {
+        "enum": [
+         "filed",
+         "furnished"
+        ]
+       }
+      }
+     }
+    },
+    "xbrl_instance": {
+     "$ref": "#/$defs/artifact"
+    },
+    "extension_taxonomy": {
+     "$ref": "#/$defs/artifact"
+    },
+    "submission_header": {
+     "type": "object",
+     "properties": {
+      "form_type": {
+       "type": "string"
+      },
+      "period": {
+       "type": "string"
+      },
+      "filer_cik": {
+       "type": "string"
+      },
+      "file_number": {
+       "type": "string"
+      }
+     }
+    }
+   }
+  },
+  "history": {
+   "type": "object",
+   "description": "Tier 1+",
+   "properties": {
+    "prior_filings": {
+     "type": "array",
+     "items": {
+      "type": "string",
+      "description": "accession"
+     }
+    },
+    "prior_amendments": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    },
+    "comment_letters": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    }
+   }
+  },
+  "authority": {
+   "type": "object",
+   "required": [
+    "regsk_version",
+    "taxonomy_year"
+   ],
+   "properties": {
+    "regsk_version": {
+     "type": "string"
+    },
+    "regsx_version": {
+     "type": "string"
+    },
+    "asc_asof": {
+     "type": "string",
+     "format": "date"
+    },
+    "taxonomy_year": {
+     "type": "integer"
+    },
+    "dqc_ruleset_version": {
+     "type": "string"
+    },
+    "efm_version": {
+     "type": "string"
+    }
+   },
+   "description": "Pinned to the FILING PERIOD, never to today. Gate G4."
+  },
+  "source_data": {
+   "type": "object",
+   "description": "Tier 2+",
+   "properties": {
+    "trial_balance": {
+     "$ref": "#/$defs/artifact"
+    },
+    "mapping": {
+     "$ref": "#/$defs/artifact"
+    },
+    "consolidation": {
+     "$ref": "#/$defs/artifact"
+    },
+    "cap_table": {
+     "$ref": "#/$defs/artifact"
+    },
+    "contracts": {
+     "type": "array",
+     "items": {
+      "$ref": "#/$defs/artifact"
+     }
+    }
+   }
+  },
+  "attestation": {
+   "type": "object",
+   "required": [
+    "submitted_by",
+    "submitted_at"
+   ],
+   "properties": {
+    "submitted_by": {
+     "type": "string"
+    },
+    "submitted_at": {
+     "type": "string",
+     "format": "date-time"
+    },
+    "is_final_draft": {
+     "type": "boolean"
+    }
+   }
+  }
+ },
+ "$defs": {
+  "artifact": {
+   "type": "object",
+   "required": [
+    "filename",
+    "sha256"
+   ],
+   "properties": {
+    "filename": {
+     "type": "string"
+    },
+    "content_type": {
+     "type": "string"
+    },
+    "sha256": {
+     "type": "string"
+    },
+    "uri": {
+     "type": "string"
+    },
+    "bytes": {
+     "type": "integer"
+    }
+   }
+  }
+ }
+}

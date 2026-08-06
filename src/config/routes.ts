@@ -4,7 +4,7 @@ import { ENFORCEMENT_SCOPE_LABEL } from './enforcement';
 export interface ProductRoute {
   path: string;
   label: string;
-  group: 'Monitor' | 'Research' | 'Benchmark' | 'Reference' | 'Transactions' | 'More';
+  group: 'Monitor' | 'Research' | 'Benchmark' | 'Reference' | 'Transactions' | 'Pre-filing' | 'More';
   keywords: string;
   palette?: boolean;
 }
@@ -34,6 +34,9 @@ export const PRODUCT_ROUTES: ProductRoute[] = [
   { path: '/mna', label: 'M&A Research', group: 'Transactions', keywords: 'merger deals tender', palette: true },
   { path: '/exempt-offerings', label: 'Exempt Offerings', group: 'Transactions', keywords: 'form d regulation d', palette: true },
   { path: '/adv-registrations', label: 'ADV Registrations', group: 'Transactions', keywords: 'investment adviser iard iapd', palette: true },
+  { path: '/filing-ai', label: 'Filing AI Pre-Flight', group: 'Pre-filing', keywords: 'pre-flight integrity check exception report readiness before filing errors', palette: true },
+  { path: '/filing-ai/catalog', label: 'Rule Catalog', group: 'Pre-filing', keywords: 'rules rule board governance catalog predicates', palette: true },
+  { path: '/filing-ai/governance', label: 'Engagements', group: 'Pre-filing', keywords: 'engagement onboarding team roles four eyes disposition', palette: true },
   { path: '/support', label: 'Support Center', group: 'More', keywords: 'help documentation', palette: true },
   { path: '/privacy', label: 'Privacy', group: 'More', keywords: 'data privacy retention', palette: true },
   { path: '/terms', label: 'Terms', group: 'More', keywords: 'terms use legal', palette: true },
@@ -45,6 +48,9 @@ export function findProductRoute(pathname: string): ProductRoute | null {
   }
   if (pathname.startsWith('/company/')) {
     return { path: '/company', label: 'Company Dossier', group: 'Research', keywords: '' };
+  }
+  if (pathname.startsWith('/filing-ai/runs/')) {
+    return { path: '/filing-ai', label: 'Exception Report', group: 'Pre-filing', keywords: '' };
   }
 
   return PRODUCT_ROUTES

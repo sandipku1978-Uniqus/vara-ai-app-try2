@@ -1,0 +1,174 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "Finding",
+ "type": "object",
+ "required": [
+  "finding_id",
+  "rule_id",
+  "rule_version",
+  "layer",
+  "determinism",
+  "severity",
+  "blocking",
+  "title",
+  "evidence",
+  "authority",
+  "status"
+ ],
+ "properties": {
+  "finding_id": {
+   "type": "string"
+  },
+  "run_id": {
+   "type": "string"
+  },
+  "rule_id": {
+   "type": "string"
+  },
+  "rule_version": {
+   "type": "string",
+   "description": "Pinned. Required for reproducibility (G5)."
+  },
+  "layer": {
+   "enum": [
+    "mechanical",
+    "xbrl",
+    "consistency",
+    "continuity",
+    "disclosure",
+    "judgment"
+   ]
+  },
+  "determinism": {
+   "enum": [
+    "deterministic",
+    "judgment"
+   ]
+  },
+  "severity": {
+   "enum": [
+    "critical",
+    "high",
+    "medium",
+    "low"
+   ]
+  },
+  "blocking": {
+   "type": "boolean"
+  },
+  "title": {
+   "type": "string"
+  },
+  "description": {
+   "type": "string"
+  },
+  "evidence": {
+   "type": "object",
+   "required": [
+    "extracted",
+    "expected",
+    "location"
+   ],
+   "properties": {
+    "extracted": {
+     "type": "string"
+    },
+    "expected": {
+     "type": "string"
+    },
+    "location": {
+     "type": "object",
+     "properties": {
+      "section": {
+       "type": "string"
+      },
+      "page": {
+       "type": "integer"
+      },
+      "char_start": {
+       "type": "integer"
+      },
+      "char_end": {
+       "type": "integer"
+      },
+      "artifact": {
+       "type": "string"
+      }
+     }
+    }
+   }
+  },
+  "authority": {
+   "type": "array",
+   "items": {
+    "type": "string"
+   }
+  },
+  "remediation": {
+   "type": "string"
+  },
+  "confidence": {
+   "type": "number",
+   "minimum": 0,
+   "maximum": 1,
+   "description": "MUST be exactly 1.0 for deterministic findings. Judgment findings use a band."
+  },
+  "root_cause_group": {
+   "type": "string",
+   "description": "Findings sharing a root cause are de-duplicated under one group (P6)."
+  },
+  "status": {
+   "enum": [
+    "open",
+    "remediated",
+    "accepted",
+    "suppressed"
+   ]
+  },
+  "disposition": {
+   "type": "object",
+   "properties": {
+    "actor": {
+     "type": "string"
+    },
+    "timestamp": {
+     "type": "string",
+     "format": "date-time"
+    },
+    "rationale": {
+     "type": "string"
+    },
+    "four_eyes_by": {
+     "type": "string",
+     "description": "Required when a critical finding is accepted rather than fixed (G3)."
+    },
+    "expires_at": {
+     "type": "string",
+     "format": "date-time",
+     "description": "Suppressions must expire (G3)."
+    }
+   }
+  },
+  "model_provenance": {
+   "type": "object",
+   "description": "Judgment findings only (G2).",
+   "properties": {
+    "model": {
+     "type": "string"
+    },
+    "prompt_version": {
+     "type": "string"
+    },
+    "retrieval_index_version": {
+     "type": "string"
+    },
+    "retrieved_passages": {
+     "type": "array",
+     "items": {
+      "type": "string"
+     }
+    }
+   }
+  }
+ }
+}

@@ -1,0 +1,5067 @@
+{
+  "catalog_version": "0.1.0",
+  "generated_from": "Filing AI - Rule Catalog.xlsx",
+  "note": "Seed catalog. Executable check count expands by rule x form x fiscal-year vintage x statement instance. Rule names and detection logic were amended for GR-1 conformance (prohibited assurance vocabulary in the wording that describes each test); rule ids, severities, authorities and scopes are unchanged.",
+  "rule_count": 176,
+  "rules": [
+    {
+      "rule_id": "R-MECH-EXH-001",
+      "layer": "mechanical",
+      "family": "Exhibit matrix",
+      "name": "Exhibit 3.1 — Articles of incorporation",
+      "detection_logic": "Test exhibit index and attached document set for EX-3.1. Required where amended in period; else IBR permitted",
+      "authority": [
+        "Reg S-K Item 601(b)(3)"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K"
+      ],
+      "evidence_captured": "Exhibit index rows parsed vs required-exhibit matrix for form and fiscal year",
+      "evidence_base": "2025 amendment sample (n=52): 18 hits — most common single cause",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-EXH-002",
+      "layer": "mechanical",
+      "family": "Exhibit matrix",
+      "name": "Exhibit 3.2 — Bylaws",
+      "detection_logic": "Test exhibit index and attached document set for EX-3.2. Required where amended in period; else IBR permitted",
+      "authority": [
+        "Reg S-K Item 601(b)(3)"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K"
+      ],
+      "evidence_captured": "Exhibit index rows parsed vs required-exhibit matrix for form and fiscal year",
+      "evidence_base": "2025 amendment sample (n=52): 18 hits — most common single cause",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-EXH-003",
+      "layer": "mechanical",
+      "family": "Exhibit matrix",
+      "name": "Exhibit 4.1 — Description of registrant's securities",
+      "detection_logic": "Test exhibit index and attached document set for EX-4.1. Required for each class registered under Sec 12",
+      "authority": [
+        "Reg S-K Item 601(b)(4)"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K"
+      ],
+      "evidence_captured": "Exhibit index rows parsed vs required-exhibit matrix for form and fiscal year",
+      "evidence_base": "2025 amendment sample (n=52): 18 hits — most common single cause",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-EXH-004",
+      "layer": "mechanical",
+      "family": "Exhibit matrix",
+      "name": "Exhibit 10.x — Material contracts",
+      "detection_logic": "Test exhibit index and attached document set for EX-10.x. Each contract described in filing must appear in index or be IBR-resolved",
+      "authority": [
+        "Reg S-K Item 601(b)(10)"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Exhibit index rows parsed vs required-exhibit matrix for form and fiscal year",
+      "evidence_base": "2025 amendment sample (n=52): 18 hits — most common single cause",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-EXH-005",
+      "layer": "mechanical",
+      "family": "Exhibit matrix",
+      "name": "Exhibit 19 — Insider trading policy",
+      "detection_logic": "Test exhibit index and attached document set for EX-19. Required for annual reports FY2024 onward",
+      "authority": [
+        "Reg S-K Item 601(b)(19)"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Critical",
+      "blocking": true,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K"
+      ],
+      "evidence_captured": "Exhibit index rows parsed vs required-exhibit matrix for form and fiscal year",
+      "evidence_base": "2025 amendment sample (n=52): 18 hits — most common single cause",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-EXH-006",
+      "layer": "mechanical",
+      "family": "Exhibit matrix",
+      "name": "Exhibit 21.1 — Subsidiaries of the registrant",
+      "detection_logic": "Test exhibit index and attached document set for EX-21.1. Required unless no subsidiaries",
+      "authority": [
+        "Reg S-K Item 601(b)(21)"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K"
+      ],
+      "evidence_captured": "Exhibit index rows parsed vs required-exhibit matrix for form and fiscal year",
+      "evidence_base": "2025 amendment sample (n=52): 18 hits — most common single cause",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-EXH-007",
+      "layer": "mechanical",
+      "family": "Exhibit matrix",
+      "name": "Exhibit 22 — Subsidiary guarantors / issuers",
+      "detection_logic": "Test exhibit index and attached document set for EX-22. Required where registered securities carry a subsidiary guarantor obligation",
+      "authority": [
+        "Reg S-K Item 601(b)(22)"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Exhibit index rows parsed vs required-exhibit matrix for form and fiscal year",
+      "evidence_base": "2025 amendment sample (n=52): 18 hits — most common single cause",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-EXH-008",
+      "layer": "mechanical",
+      "family": "Exhibit matrix",
+      "name": "Exhibit 23.1 — Consent of independent registered public accounting firm",
+      "detection_logic": "Test exhibit index and attached document set for EX-23.1. Required where financial statements incorporated into a registration statement",
+      "authority": [
+        "Reg S-K Item 601(b)(23)"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Critical",
+      "blocking": true,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K"
+      ],
+      "evidence_captured": "Exhibit index rows parsed vs required-exhibit matrix for form and fiscal year",
+      "evidence_base": "2025 amendment sample (n=52): 18 hits — most common single cause",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-EXH-009",
+      "layer": "mechanical",
+      "family": "Exhibit matrix",
+      "name": "Exhibit 24 — Power of attorney",
+      "detection_logic": "Test exhibit index and attached document set for EX-24. Required where any signature executed by attorney-in-fact",
+      "authority": [
+        "Reg S-K Item 601(b)(24)"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K"
+      ],
+      "evidence_captured": "Exhibit index rows parsed vs required-exhibit matrix for form and fiscal year",
+      "evidence_base": "2025 amendment sample (n=52): 18 hits — most common single cause",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-EXH-010",
+      "layer": "mechanical",
+      "family": "Exhibit matrix",
+      "name": "Exhibit 31.1 — Rule 13a-14(a) certification — principal executive officer",
+      "detection_logic": "Test exhibit index and attached document set for EX-31.1. Mandatory, all periodic reports",
+      "authority": [
+        "Reg S-K Item 601(b)(31)"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Critical",
+      "blocking": true,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Exhibit index rows parsed vs required-exhibit matrix for form and fiscal year",
+      "evidence_base": "2025 amendment sample (n=52): 18 hits — most common single cause",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-EXH-011",
+      "layer": "mechanical",
+      "family": "Exhibit matrix",
+      "name": "Exhibit 31.2 — Rule 13a-14(a) certification — principal financial officer",
+      "detection_logic": "Test exhibit index and attached document set for EX-31.2. Mandatory, all periodic reports",
+      "authority": [
+        "Reg S-K Item 601(b)(31)"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Critical",
+      "blocking": true,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Exhibit index rows parsed vs required-exhibit matrix for form and fiscal year",
+      "evidence_base": "2025 amendment sample (n=52): 18 hits — most common single cause",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-EXH-012",
+      "layer": "mechanical",
+      "family": "Exhibit matrix",
+      "name": "Exhibit 32.1 — Section 1350 certification",
+      "detection_logic": "Test exhibit index and attached document set for EX-32.1. Mandatory, furnished not filed",
+      "authority": [
+        "Reg S-K Item 601(b)(32)"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Critical",
+      "blocking": true,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Exhibit index rows parsed vs required-exhibit matrix for form and fiscal year",
+      "evidence_base": "2025 amendment sample (n=52): 18 hits — most common single cause",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-EXH-013",
+      "layer": "mechanical",
+      "family": "Exhibit matrix",
+      "name": "Exhibit 95 — Mine safety disclosures",
+      "detection_logic": "Test exhibit index and attached document set for EX-95. Required for registrants operating mines",
+      "authority": [
+        "Reg S-K Item 601(b)(95)"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Exhibit index rows parsed vs required-exhibit matrix for form and fiscal year",
+      "evidence_base": "2025 amendment sample (n=52): 18 hits — most common single cause",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-EXH-014",
+      "layer": "mechanical",
+      "family": "Exhibit matrix",
+      "name": "Exhibit 97 — Executive compensation recovery (clawback) policy",
+      "detection_logic": "Test exhibit index and attached document set for EX-97. Required for annual reports FY2023 onward",
+      "authority": [
+        "Reg S-K Item 601(b)(97)"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K"
+      ],
+      "evidence_captured": "Exhibit index rows parsed vs required-exhibit matrix for form and fiscal year",
+      "evidence_base": "2025 amendment sample (n=52): 18 hits — most common single cause",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-EXH-015",
+      "layer": "mechanical",
+      "family": "Exhibit matrix",
+      "name": "Exhibit 101 — Inline XBRL instance and linkbases",
+      "detection_logic": "Test exhibit index and attached document set for EX-101. Mandatory",
+      "authority": [
+        "Reg S-K Item 601(b)(101)"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Critical",
+      "blocking": true,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Exhibit index rows parsed vs required-exhibit matrix for form and fiscal year",
+      "evidence_base": "2025 amendment sample (n=52): 18 hits — most common single cause",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-EXH-016",
+      "layer": "mechanical",
+      "family": "Exhibit matrix",
+      "name": "Exhibit 104 — Cover page inline XBRL",
+      "detection_logic": "Test exhibit index and attached document set for EX-104. Mandatory",
+      "authority": [
+        "Reg S-K Item 601(b)(104)"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Exhibit index rows parsed vs required-exhibit matrix for form and fiscal year",
+      "evidence_base": "2025 amendment sample (n=52): 18 hits — most common single cause",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-EXH-100",
+      "layer": "mechanical",
+      "family": "Exhibit integrity",
+      "name": "Exhibit index row resolves to an attached document",
+      "detection_logic": "Every row in the exhibit index must map to an attached file or a valid incorporation-by-reference accession + file reference.",
+      "authority": [
+        "Reg S-K Item 601(a)",
+        "Rule 12b-23"
+      ],
+      "inputs_required": [
+        "I1"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": true,
+      "determinism": "deterministic",
+      "form_scope": [
+        "*"
+      ],
+      "evidence_captured": "Index row → resolution target → HTTP/accession resolution result",
+      "evidence_base": "2025 sample: 4 hits",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-EXH-101",
+      "layer": "mechanical",
+      "family": "Exhibit integrity",
+      "name": "Incorporation-by-reference target exists and is the required form",
+      "detection_logic": "IBR target accession must exist, belong to the same registrant, and contain the referenced exhibit.",
+      "authority": [
+        "Rule 12b-23"
+      ],
+      "inputs_required": [
+        "I1",
+        "I2"
+      ],
+      "min_tier": 1,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "*"
+      ],
+      "evidence_captured": "IBR accession + resolution status",
+      "evidence_base": "Design",
+      "build_wave": "P1",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-EXH-102",
+      "layer": "mechanical",
+      "family": "Exhibit integrity",
+      "name": "Filed vs furnished classification as prescribed",
+      "detection_logic": "EX-32 must be furnished; EX-31 must be filed and attached separately for each certifying officer.",
+      "authority": [
+        "Reg S-K Item 601(b)(32)",
+        "SEC Release 33-8238"
+      ],
+      "inputs_required": [
+        "I1"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "EDGAR exhibit type tag vs required classification",
+      "evidence_base": "2025 sample: 1 hit",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-CRT-001",
+      "layer": "mechanical",
+      "family": "SOX 302 certification",
+      "name": "EX-31 conformity — Paragraph 1 — review statement",
+      "detection_logic": "Token-level diff of the certification text against the prescribed Item 601(b)(31) wording. I have reviewed this report",
+      "authority": [
+        "Reg S-K Item 601(b)(31)",
+        "Exchange Act Rule 13a-14(a)"
+      ],
+      "inputs_required": [
+        "I1",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Critical",
+      "blocking": true,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Drafted text vs prescribed text, token diff with position",
+      "evidence_base": "2025 sample: 9 of 34 mechanical hits were certification defects",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-CRT-002",
+      "layer": "mechanical",
+      "family": "SOX 302 certification",
+      "name": "EX-31 conformity — Paragraph 2 — no untrue statement of material fact",
+      "detection_logic": "Token-level diff of the certification text against the prescribed Item 601(b)(31) wording. Standard 302 wording",
+      "authority": [
+        "Reg S-K Item 601(b)(31)",
+        "Exchange Act Rule 13a-14(a)"
+      ],
+      "inputs_required": [
+        "I1",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Critical",
+      "blocking": true,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Drafted text vs prescribed text, token diff with position",
+      "evidence_base": "2025 sample: 9 of 34 mechanical hits were certification defects",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-CRT-003",
+      "layer": "mechanical",
+      "family": "SOX 302 certification",
+      "name": "EX-31 conformity — Paragraph 3 — fair presentation",
+      "detection_logic": "Token-level diff of the certification text against the prescribed Item 601(b)(31) wording. Standard 302 wording",
+      "authority": [
+        "Reg S-K Item 601(b)(31)",
+        "Exchange Act Rule 13a-14(a)"
+      ],
+      "inputs_required": [
+        "I1",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Critical",
+      "blocking": true,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Drafted text vs prescribed text, token diff with position",
+      "evidence_base": "2025 sample: 9 of 34 mechanical hits were certification defects",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-CRT-004",
+      "layer": "mechanical",
+      "family": "SOX 302 certification",
+      "name": "EX-31 conformity — Paragraph 4 — DC&P and ICFR responsibility",
+      "detection_logic": "Token-level diff of the certification text against the prescribed Item 601(b)(31) wording. Includes the internal control over financial reporting clause",
+      "authority": [
+        "Reg S-K Item 601(b)(31)",
+        "Exchange Act Rule 13a-14(a)"
+      ],
+      "inputs_required": [
+        "I1",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Critical",
+      "blocking": true,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Drafted text vs prescribed text, token diff with position",
+      "evidence_base": "2025 sample: 9 of 34 mechanical hits were certification defects",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-CRT-005",
+      "layer": "mechanical",
+      "family": "SOX 302 certification",
+      "name": "EX-31 conformity — Paragraph 4(a)-(d) sub-clauses",
+      "detection_logic": "Token-level diff of the certification text against the prescribed Item 601(b)(31) wording. Design, evaluation, presentation of conclusions, changes in ICFR",
+      "authority": [
+        "Reg S-K Item 601(b)(31)",
+        "Exchange Act Rule 13a-14(a)"
+      ],
+      "inputs_required": [
+        "I1",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Drafted text vs prescribed text, token diff with position",
+      "evidence_base": "2025 sample: 9 of 34 mechanical hits were certification defects",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-CRT-006",
+      "layer": "mechanical",
+      "family": "SOX 302 certification",
+      "name": "EX-31 conformity — Paragraph 5 — disclosure to auditors and audit committee",
+      "detection_logic": "Token-level diff of the certification text against the prescribed Item 601(b)(31) wording. Significant deficiencies and fraud",
+      "authority": [
+        "Reg S-K Item 601(b)(31)",
+        "Exchange Act Rule 13a-14(a)"
+      ],
+      "inputs_required": [
+        "I1",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Drafted text vs prescribed text, token diff with position",
+      "evidence_base": "2025 sample: 9 of 34 mechanical hits were certification defects",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-CRT-010",
+      "layer": "mechanical",
+      "family": "SOX 302 certification",
+      "name": "Certifying officer name matches signature page and officer register",
+      "detection_logic": "Officer names in EX-31.1, EX-31.2, EX-32.1 must match each other, the signature page, and I3 officer register (including suffixes).",
+      "authority": [
+        "Exchange Act Rule 13a-14",
+        "18 U.S.C. 1350"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Name strings extracted from each location, normalised and compared",
+      "evidence_base": "2025 sample: real Fortune-500 10-Q/A filed solely for this",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-CRT-011",
+      "layer": "mechanical",
+      "family": "SOX 302 certification",
+      "name": "Certifying officer title identifies the required principal officer role",
+      "detection_logic": "Titles must identify principal executive officer and principal financial officer; a single officer signing both requires both certifications.",
+      "authority": [
+        "Exchange Act Rule 13a-14(a)"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Title strings vs officer register roles",
+      "evidence_base": "Design",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-CRT-012",
+      "layer": "mechanical",
+      "family": "SOX 302 certification",
+      "name": "Certification period and form reference match the report",
+      "detection_logic": "The report and period named inside each certification must equal the cover-page form type and period of report.",
+      "authority": [
+        "Exchange Act Rule 13a-14(a)"
+      ],
+      "inputs_required": [
+        "I1"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": true,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Period string in certification vs cover page vs header",
+      "evidence_base": "2025 sample: 3 hits",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-CRT-013",
+      "layer": "mechanical",
+      "family": "SOX 302 certification",
+      "name": "Certification is dated and date is on/after period end",
+      "detection_logic": "Each certification must carry a date not earlier than the period end and not later than the filing date.",
+      "authority": [
+        "Exchange Act Rule 13a-14(a)"
+      ],
+      "inputs_required": [
+        "I1"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Extracted date vs period end and filing date",
+      "evidence_base": "Design",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-CRT-014",
+      "layer": "mechanical",
+      "family": "Section 1350 certification",
+      "name": "EX-32 references the report and period under test",
+      "detection_logic": "Section 1350 statement must identify the report by form type and period end.",
+      "authority": [
+        "18 U.S.C. 1350"
+      ],
+      "inputs_required": [
+        "I1"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Report reference string vs cover page",
+      "evidence_base": "Design",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-SIG-001",
+      "layer": "mechanical",
+      "family": "Signatures",
+      "name": "Signature page present",
+      "detection_logic": "A signature page appears in the filing",
+      "authority": [
+        "Form 10-K / Form 10-Q General Instructions",
+        "Exchange Act Rule 12b-11"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3"
+      ],
+      "min_tier": 0,
+      "severity": "Critical",
+      "blocking": true,
+      "determinism": "deterministic",
+      "form_scope": [
+        "*"
+      ],
+      "evidence_captured": "Signature blocks parsed with names, titles, dates",
+      "evidence_base": "2025 sample: conformed-signature omission observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-SIG-002",
+      "layer": "mechanical",
+      "family": "Signatures",
+      "name": "Registrant name on signature page",
+      "detection_logic": "Signature page names the registrant exactly as on the cover",
+      "authority": [
+        "Form 10-K / Form 10-Q General Instructions",
+        "Exchange Act Rule 12b-11"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "*"
+      ],
+      "evidence_captured": "Signature blocks parsed with names, titles, dates",
+      "evidence_base": "2025 sample: conformed-signature omission observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-SIG-003",
+      "layer": "mechanical",
+      "family": "Signatures",
+      "name": "Conformed signature format",
+      "detection_logic": "Every signature block uses /s/ conformed format",
+      "authority": [
+        "Form 10-K / Form 10-Q General Instructions",
+        "Exchange Act Rule 12b-11"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "*"
+      ],
+      "evidence_captured": "Signature blocks parsed with names, titles, dates",
+      "evidence_base": "2025 sample: conformed-signature omission observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-SIG-004",
+      "layer": "mechanical",
+      "family": "Signatures",
+      "name": "Principal executive officer signed",
+      "detection_logic": "PEO signature present and identified",
+      "authority": [
+        "Form 10-K / Form 10-Q General Instructions",
+        "Exchange Act Rule 12b-11"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3"
+      ],
+      "min_tier": 0,
+      "severity": "Critical",
+      "blocking": true,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K"
+      ],
+      "evidence_captured": "Signature blocks parsed with names, titles, dates",
+      "evidence_base": "2025 sample: conformed-signature omission observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-SIG-005",
+      "layer": "mechanical",
+      "family": "Signatures",
+      "name": "Principal financial officer signed",
+      "detection_logic": "PFO signature present and identified",
+      "authority": [
+        "Form 10-K / Form 10-Q General Instructions",
+        "Exchange Act Rule 12b-11"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3"
+      ],
+      "min_tier": 0,
+      "severity": "Critical",
+      "blocking": true,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K"
+      ],
+      "evidence_captured": "Signature blocks parsed with names, titles, dates",
+      "evidence_base": "2025 sample: conformed-signature omission observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-SIG-006",
+      "layer": "mechanical",
+      "family": "Signatures",
+      "name": "Principal accounting officer / controller signed",
+      "detection_logic": "PAO signature present and identified",
+      "authority": [
+        "Form 10-K / Form 10-Q General Instructions",
+        "Exchange Act Rule 12b-11"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K"
+      ],
+      "evidence_captured": "Signature blocks parsed with names, titles, dates",
+      "evidence_base": "2025 sample: conformed-signature omission observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-SIG-007",
+      "layer": "mechanical",
+      "family": "Signatures",
+      "name": "Majority of board signed",
+      "detection_logic": "A majority of the board of directors has signed the annual report",
+      "authority": [
+        "Form 10-K / Form 10-Q General Instructions",
+        "Exchange Act Rule 12b-11"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K"
+      ],
+      "evidence_captured": "Signature blocks parsed with names, titles, dates",
+      "evidence_base": "2025 sample: conformed-signature omission observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-SIG-008",
+      "layer": "mechanical",
+      "family": "Signatures",
+      "name": "Signature dates present",
+      "detection_logic": "Each signature block carries a date",
+      "authority": [
+        "Form 10-K / Form 10-Q General Instructions",
+        "Exchange Act Rule 12b-11"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "*"
+      ],
+      "evidence_captured": "Signature blocks parsed with names, titles, dates",
+      "evidence_base": "2025 sample: conformed-signature omission observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-SIG-009",
+      "layer": "mechanical",
+      "family": "Signatures",
+      "name": "Duly authorised officer signed",
+      "detection_logic": "10-Q signed by a duly authorised officer and the principal financial officer",
+      "authority": [
+        "Form 10-K / Form 10-Q General Instructions",
+        "Exchange Act Rule 12b-11"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-Q"
+      ],
+      "evidence_captured": "Signature blocks parsed with names, titles, dates",
+      "evidence_base": "2025 sample: conformed-signature omission observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-COV-001",
+      "layer": "mechanical",
+      "family": "Cover page",
+      "name": "Form type stated on cover matches submission",
+      "detection_logic": "Parse cover page and inline XBRL cover tags; test presence, format and consistency with entity reference data.",
+      "authority": [
+        "Form 10-K / 10-Q cover",
+        "Exchange Act Rule 12b-2",
+        "Rule 10D-1"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3"
+      ],
+      "min_tier": 0,
+      "severity": "Critical",
+      "blocking": true,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Cover-page field value and corresponding dei tag",
+      "evidence_base": "Design / Rule 10D-1 cover tags",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-COV-002",
+      "layer": "mechanical",
+      "family": "Cover page",
+      "name": "Period of report stated and well-formed",
+      "detection_logic": "Parse cover page and inline XBRL cover tags; test presence, format and consistency with entity reference data.",
+      "authority": [
+        "Form 10-K / 10-Q cover",
+        "Exchange Act Rule 12b-2",
+        "Rule 10D-1"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3"
+      ],
+      "min_tier": 0,
+      "severity": "Critical",
+      "blocking": true,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Cover-page field value and corresponding dei tag",
+      "evidence_base": "Design / Rule 10D-1 cover tags",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-COV-003",
+      "layer": "mechanical",
+      "family": "Cover page",
+      "name": "Commission file number present",
+      "detection_logic": "Parse cover page and inline XBRL cover tags; test presence, format and consistency with entity reference data.",
+      "authority": [
+        "Form 10-K / 10-Q cover",
+        "Exchange Act Rule 12b-2",
+        "Rule 10D-1"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Cover-page field value and corresponding dei tag",
+      "evidence_base": "Design / Rule 10D-1 cover tags",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-COV-004",
+      "layer": "mechanical",
+      "family": "Cover page",
+      "name": "State of incorporation present",
+      "detection_logic": "Parse cover page and inline XBRL cover tags; test presence, format and consistency with entity reference data.",
+      "authority": [
+        "Form 10-K / 10-Q cover",
+        "Exchange Act Rule 12b-2",
+        "Rule 10D-1"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3"
+      ],
+      "min_tier": 0,
+      "severity": "Low",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Cover-page field value and corresponding dei tag",
+      "evidence_base": "Design / Rule 10D-1 cover tags",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-COV-005",
+      "layer": "mechanical",
+      "family": "Cover page",
+      "name": "IRS employer identification number present",
+      "detection_logic": "Parse cover page and inline XBRL cover tags; test presence, format and consistency with entity reference data.",
+      "authority": [
+        "Form 10-K / 10-Q cover",
+        "Exchange Act Rule 12b-2",
+        "Rule 10D-1"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3"
+      ],
+      "min_tier": 0,
+      "severity": "Low",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Cover-page field value and corresponding dei tag",
+      "evidence_base": "Design / Rule 10D-1 cover tags",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-COV-006",
+      "layer": "mechanical",
+      "family": "Cover page",
+      "name": "Title of each class / trading symbol / exchange table fully populated",
+      "detection_logic": "Parse cover page and inline XBRL cover tags; test presence, format and consistency with entity reference data.",
+      "authority": [
+        "Form 10-K / 10-Q cover",
+        "Exchange Act Rule 12b-2",
+        "Rule 10D-1"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Cover-page field value and corresponding dei tag",
+      "evidence_base": "Design / Rule 10D-1 cover tags",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-COV-007",
+      "layer": "mechanical",
+      "family": "Cover page",
+      "name": "Well-known seasoned issuer checkbox marked",
+      "detection_logic": "Parse cover page and inline XBRL cover tags; test presence, format and consistency with entity reference data.",
+      "authority": [
+        "Form 10-K / 10-Q cover",
+        "Exchange Act Rule 12b-2",
+        "Rule 10D-1"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Cover-page field value and corresponding dei tag",
+      "evidence_base": "Design / Rule 10D-1 cover tags",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-COV-008",
+      "layer": "mechanical",
+      "family": "Cover page",
+      "name": "Shell company checkbox marked",
+      "detection_logic": "Parse cover page and inline XBRL cover tags; test presence, format and consistency with entity reference data.",
+      "authority": [
+        "Form 10-K / 10-Q cover",
+        "Exchange Act Rule 12b-2",
+        "Rule 10D-1"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Cover-page field value and corresponding dei tag",
+      "evidence_base": "Design / Rule 10D-1 cover tags",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-COV-009",
+      "layer": "mechanical",
+      "family": "Cover page",
+      "name": "Filer status checkbox consistent with entity reference data",
+      "detection_logic": "Parse cover page and inline XBRL cover tags; test presence, format and consistency with entity reference data.",
+      "authority": [
+        "Form 10-K / 10-Q cover",
+        "Exchange Act Rule 12b-2",
+        "Rule 10D-1"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Cover-page field value and corresponding dei tag",
+      "evidence_base": "Design / Rule 10D-1 cover tags",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-COV-010",
+      "layer": "mechanical",
+      "family": "Cover page",
+      "name": "Emerging growth company checkbox and transition election consistent",
+      "detection_logic": "Parse cover page and inline XBRL cover tags; test presence, format and consistency with entity reference data.",
+      "authority": [
+        "Form 10-K / 10-Q cover",
+        "Exchange Act Rule 12b-2",
+        "Rule 10D-1"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Cover-page field value and corresponding dei tag",
+      "evidence_base": "Design / Rule 10D-1 cover tags",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-COV-011",
+      "layer": "mechanical",
+      "family": "Cover page",
+      "name": "Error-correction checkbox consistent with restatement language in document",
+      "detection_logic": "Parse cover page and inline XBRL cover tags; test presence, format and consistency with entity reference data.",
+      "authority": [
+        "Form 10-K / 10-Q cover",
+        "Exchange Act Rule 12b-2",
+        "Rule 10D-1"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Cover-page field value and corresponding dei tag",
+      "evidence_base": "Design / Rule 10D-1 cover tags",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-COV-012",
+      "layer": "mechanical",
+      "family": "Cover page",
+      "name": "Incentive-based compensation recovery analysis checkbox consistent",
+      "detection_logic": "Parse cover page and inline XBRL cover tags; test presence, format and consistency with entity reference data.",
+      "authority": [
+        "Form 10-K / 10-Q cover",
+        "Exchange Act Rule 12b-2",
+        "Rule 10D-1"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Cover-page field value and corresponding dei tag",
+      "evidence_base": "Design / Rule 10D-1 cover tags",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-COV-013",
+      "layer": "mechanical",
+      "family": "Cover page",
+      "name": "Aggregate market value held by non-affiliates stated (10-K)",
+      "detection_logic": "Parse cover page and inline XBRL cover tags; test presence, format and consistency with entity reference data.",
+      "authority": [
+        "Form 10-K / 10-Q cover",
+        "Exchange Act Rule 12b-2",
+        "Rule 10D-1"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Cover-page field value and corresponding dei tag",
+      "evidence_base": "Design / Rule 10D-1 cover tags",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-COV-014",
+      "layer": "mechanical",
+      "family": "Cover page",
+      "name": "Shares outstanding and as-of date stated",
+      "detection_logic": "Parse cover page and inline XBRL cover tags; test presence, format and consistency with entity reference data.",
+      "authority": [
+        "Form 10-K / 10-Q cover",
+        "Exchange Act Rule 12b-2",
+        "Rule 10D-1"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Cover-page field value and corresponding dei tag",
+      "evidence_base": "Design / Rule 10D-1 cover tags",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-COV-015",
+      "layer": "mechanical",
+      "family": "Cover page",
+      "name": "Interactive data file checkbox marked",
+      "detection_logic": "Parse cover page and inline XBRL cover tags; test presence, format and consistency with entity reference data.",
+      "authority": [
+        "Form 10-K / 10-Q cover",
+        "Exchange Act Rule 12b-2",
+        "Rule 10D-1"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3"
+      ],
+      "min_tier": 0,
+      "severity": "Low",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Cover-page field value and corresponding dei tag",
+      "evidence_base": "Design / Rule 10D-1 cover tags",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-HDR-001",
+      "layer": "mechanical",
+      "family": "EDGAR header",
+      "name": "Submission form type matches primary document form type",
+      "detection_logic": "Compare EDGAR submission header fields against the primary document and entity reference data.",
+      "authority": [
+        "EDGAR Filer Manual Vol. II"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3"
+      ],
+      "min_tier": 0,
+      "severity": "Critical",
+      "blocking": true,
+      "determinism": "deterministic",
+      "form_scope": [
+        "*"
+      ],
+      "evidence_captured": "Header field vs document field",
+      "evidence_base": "2025 sample: header period error observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-HDR-002",
+      "layer": "mechanical",
+      "family": "EDGAR header",
+      "name": "Submission PERIOD matches cover page period of report",
+      "detection_logic": "Compare EDGAR submission header fields against the primary document and entity reference data.",
+      "authority": [
+        "EDGAR Filer Manual Vol. II"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3"
+      ],
+      "min_tier": 0,
+      "severity": "Critical",
+      "blocking": true,
+      "determinism": "deterministic",
+      "form_scope": [
+        "*"
+      ],
+      "evidence_captured": "Header field vs document field",
+      "evidence_base": "2025 sample: header period error observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-HDR-003",
+      "layer": "mechanical",
+      "family": "EDGAR header",
+      "name": "Filer CIK matches registrant reference data",
+      "detection_logic": "Compare EDGAR submission header fields against the primary document and entity reference data.",
+      "authority": [
+        "EDGAR Filer Manual Vol. II"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3"
+      ],
+      "min_tier": 0,
+      "severity": "Critical",
+      "blocking": true,
+      "determinism": "deterministic",
+      "form_scope": [
+        "*"
+      ],
+      "evidence_captured": "Header field vs document field",
+      "evidence_base": "2025 sample: header period error observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-HDR-004",
+      "layer": "mechanical",
+      "family": "EDGAR header",
+      "name": "Commission file number in header matches cover page",
+      "detection_logic": "Compare EDGAR submission header fields against the primary document and entity reference data.",
+      "authority": [
+        "EDGAR Filer Manual Vol. II"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "*"
+      ],
+      "evidence_captured": "Header field vs document field",
+      "evidence_base": "2025 sample: header period error observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-MECH-HDR-005",
+      "layer": "mechanical",
+      "family": "EDGAR header",
+      "name": "Fiscal year end in header matches registrant calendar",
+      "detection_logic": "Compare EDGAR submission header fields against the primary document and entity reference data.",
+      "authority": [
+        "EDGAR Filer Manual Vol. II"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "*"
+      ],
+      "evidence_captured": "Header field vs document field",
+      "evidence_base": "2025 sample: header period error observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-XBRL-DEI-001",
+      "layer": "xbrl",
+      "family": "Cover-page dei tags",
+      "name": "dei:DocumentType present and consistent",
+      "detection_logic": "Required cover tag dei:DocumentType must be present, well-formed, and agree with the printed cover page and entity reference data.",
+      "authority": [
+        "SEC Inline XBRL rules",
+        "EDGAR Filer Manual",
+        "dei taxonomy"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Critical",
+      "blocking": true,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Tag value vs cover-page value vs reference data",
+      "evidence_base": "Design",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-XBRL-DEI-002",
+      "layer": "xbrl",
+      "family": "Cover-page dei tags",
+      "name": "dei:DocumentPeriodEndDate present and consistent",
+      "detection_logic": "Required cover tag dei:DocumentPeriodEndDate must be present, well-formed, and agree with the printed cover page and entity reference data.",
+      "authority": [
+        "SEC Inline XBRL rules",
+        "EDGAR Filer Manual",
+        "dei taxonomy"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Critical",
+      "blocking": true,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Tag value vs cover-page value vs reference data",
+      "evidence_base": "Design",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-XBRL-DEI-003",
+      "layer": "xbrl",
+      "family": "Cover-page dei tags",
+      "name": "dei:DocumentFiscalYearFocus present and consistent",
+      "detection_logic": "Required cover tag dei:DocumentFiscalYearFocus must be present, well-formed, and agree with the printed cover page and entity reference data.",
+      "authority": [
+        "SEC Inline XBRL rules",
+        "EDGAR Filer Manual",
+        "dei taxonomy"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Tag value vs cover-page value vs reference data",
+      "evidence_base": "Design",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-XBRL-DEI-004",
+      "layer": "xbrl",
+      "family": "Cover-page dei tags",
+      "name": "dei:DocumentFiscalPeriodFocus present and consistent",
+      "detection_logic": "Required cover tag dei:DocumentFiscalPeriodFocus must be present, well-formed, and agree with the printed cover page and entity reference data.",
+      "authority": [
+        "SEC Inline XBRL rules",
+        "EDGAR Filer Manual",
+        "dei taxonomy"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Tag value vs cover-page value vs reference data",
+      "evidence_base": "Design",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-XBRL-DEI-005",
+      "layer": "xbrl",
+      "family": "Cover-page dei tags",
+      "name": "dei:EntityRegistrantName present and consistent",
+      "detection_logic": "Required cover tag dei:EntityRegistrantName must be present, well-formed, and agree with the printed cover page and entity reference data.",
+      "authority": [
+        "SEC Inline XBRL rules",
+        "EDGAR Filer Manual",
+        "dei taxonomy"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Tag value vs cover-page value vs reference data",
+      "evidence_base": "Design",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-XBRL-DEI-006",
+      "layer": "xbrl",
+      "family": "Cover-page dei tags",
+      "name": "dei:EntityCentralIndexKey present and consistent",
+      "detection_logic": "Required cover tag dei:EntityCentralIndexKey must be present, well-formed, and agree with the printed cover page and entity reference data.",
+      "authority": [
+        "SEC Inline XBRL rules",
+        "EDGAR Filer Manual",
+        "dei taxonomy"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Critical",
+      "blocking": true,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Tag value vs cover-page value vs reference data",
+      "evidence_base": "Design",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-XBRL-DEI-007",
+      "layer": "xbrl",
+      "family": "Cover-page dei tags",
+      "name": "dei:EntityFilerCategory present and consistent",
+      "detection_logic": "Required cover tag dei:EntityFilerCategory must be present, well-formed, and agree with the printed cover page and entity reference data.",
+      "authority": [
+        "SEC Inline XBRL rules",
+        "EDGAR Filer Manual",
+        "dei taxonomy"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Tag value vs cover-page value vs reference data",
+      "evidence_base": "Design",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-XBRL-DEI-008",
+      "layer": "xbrl",
+      "family": "Cover-page dei tags",
+      "name": "dei:EntityCurrentReportingStatus present and consistent",
+      "detection_logic": "Required cover tag dei:EntityCurrentReportingStatus must be present, well-formed, and agree with the printed cover page and entity reference data.",
+      "authority": [
+        "SEC Inline XBRL rules",
+        "EDGAR Filer Manual",
+        "dei taxonomy"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Tag value vs cover-page value vs reference data",
+      "evidence_base": "Design",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-XBRL-DEI-009",
+      "layer": "xbrl",
+      "family": "Cover-page dei tags",
+      "name": "dei:EntityInteractiveDataCurrent present and consistent",
+      "detection_logic": "Required cover tag dei:EntityInteractiveDataCurrent must be present, well-formed, and agree with the printed cover page and entity reference data.",
+      "authority": [
+        "SEC Inline XBRL rules",
+        "EDGAR Filer Manual",
+        "dei taxonomy"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Tag value vs cover-page value vs reference data",
+      "evidence_base": "Design",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-XBRL-DEI-010",
+      "layer": "xbrl",
+      "family": "Cover-page dei tags",
+      "name": "dei:EntityShellCompany present and consistent",
+      "detection_logic": "Required cover tag dei:EntityShellCompany must be present, well-formed, and agree with the printed cover page and entity reference data.",
+      "authority": [
+        "SEC Inline XBRL rules",
+        "EDGAR Filer Manual",
+        "dei taxonomy"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Tag value vs cover-page value vs reference data",
+      "evidence_base": "Design",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-XBRL-DEI-011",
+      "layer": "xbrl",
+      "family": "Cover-page dei tags",
+      "name": "dei:EntitySmallBusiness present and consistent",
+      "detection_logic": "Required cover tag dei:EntitySmallBusiness must be present, well-formed, and agree with the printed cover page and entity reference data.",
+      "authority": [
+        "SEC Inline XBRL rules",
+        "EDGAR Filer Manual",
+        "dei taxonomy"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Tag value vs cover-page value vs reference data",
+      "evidence_base": "Design",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-XBRL-DEI-012",
+      "layer": "xbrl",
+      "family": "Cover-page dei tags",
+      "name": "dei:EntityEmergingGrowthCompany present and consistent",
+      "detection_logic": "Required cover tag dei:EntityEmergingGrowthCompany must be present, well-formed, and agree with the printed cover page and entity reference data.",
+      "authority": [
+        "SEC Inline XBRL rules",
+        "EDGAR Filer Manual",
+        "dei taxonomy"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Tag value vs cover-page value vs reference data",
+      "evidence_base": "Design",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-XBRL-DEI-013",
+      "layer": "xbrl",
+      "family": "Cover-page dei tags",
+      "name": "dei:EntityCommonStockSharesOutstanding present and consistent",
+      "detection_logic": "Required cover tag dei:EntityCommonStockSharesOutstanding must be present, well-formed, and agree with the printed cover page and entity reference data.",
+      "authority": [
+        "SEC Inline XBRL rules",
+        "EDGAR Filer Manual",
+        "dei taxonomy"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Tag value vs cover-page value vs reference data",
+      "evidence_base": "Design",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-XBRL-DEI-014",
+      "layer": "xbrl",
+      "family": "Cover-page dei tags",
+      "name": "dei:AmendmentFlag present and consistent",
+      "detection_logic": "Required cover tag dei:AmendmentFlag must be present, well-formed, and agree with the printed cover page and entity reference data.",
+      "authority": [
+        "SEC Inline XBRL rules",
+        "EDGAR Filer Manual",
+        "dei taxonomy"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Tag value vs cover-page value vs reference data",
+      "evidence_base": "Design",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-XBRL-DEI-015",
+      "layer": "xbrl",
+      "family": "Cover-page dei tags",
+      "name": "dei:EntityIncorporationStateCountryCode present and consistent",
+      "detection_logic": "Required cover tag dei:EntityIncorporationStateCountryCode must be present, well-formed, and agree with the printed cover page and entity reference data.",
+      "authority": [
+        "SEC Inline XBRL rules",
+        "EDGAR Filer Manual",
+        "dei taxonomy"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Tag value vs cover-page value vs reference data",
+      "evidence_base": "Design",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-XBRL-DEI-016",
+      "layer": "xbrl",
+      "family": "Cover-page dei tags",
+      "name": "dei:Security12bTitle present and consistent",
+      "detection_logic": "Required cover tag dei:Security12bTitle must be present, well-formed, and agree with the printed cover page and entity reference data.",
+      "authority": [
+        "SEC Inline XBRL rules",
+        "EDGAR Filer Manual",
+        "dei taxonomy"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Tag value vs cover-page value vs reference data",
+      "evidence_base": "Design",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-XBRL-DEI-017",
+      "layer": "xbrl",
+      "family": "Cover-page dei tags",
+      "name": "dei:TradingSymbol present and consistent",
+      "detection_logic": "Required cover tag dei:TradingSymbol must be present, well-formed, and agree with the printed cover page and entity reference data.",
+      "authority": [
+        "SEC Inline XBRL rules",
+        "EDGAR Filer Manual",
+        "dei taxonomy"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Tag value vs cover-page value vs reference data",
+      "evidence_base": "Design",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-XBRL-DEI-018",
+      "layer": "xbrl",
+      "family": "Cover-page dei tags",
+      "name": "dei:SecurityExchangeName present and consistent",
+      "detection_logic": "Required cover tag dei:SecurityExchangeName must be present, well-formed, and agree with the printed cover page and entity reference data.",
+      "authority": [
+        "SEC Inline XBRL rules",
+        "EDGAR Filer Manual",
+        "dei taxonomy"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Tag value vs cover-page value vs reference data",
+      "evidence_base": "Design",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-XBRL-DEI-019",
+      "layer": "xbrl",
+      "family": "Cover-page dei tags",
+      "name": "dei:EntityFileNumber present and consistent",
+      "detection_logic": "Required cover tag dei:EntityFileNumber must be present, well-formed, and agree with the printed cover page and entity reference data.",
+      "authority": [
+        "SEC Inline XBRL rules",
+        "EDGAR Filer Manual",
+        "dei taxonomy"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Tag value vs cover-page value vs reference data",
+      "evidence_base": "Design",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-XBRL-DEI-020",
+      "layer": "xbrl",
+      "family": "Cover-page dei tags",
+      "name": "dei:EntityTaxIdentificationNumber present and consistent",
+      "detection_logic": "Required cover tag dei:EntityTaxIdentificationNumber must be present, well-formed, and agree with the printed cover page and entity reference data.",
+      "authority": [
+        "SEC Inline XBRL rules",
+        "EDGAR Filer Manual",
+        "dei taxonomy"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Tag value vs cover-page value vs reference data",
+      "evidence_base": "Design",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-XBRL-STR-001",
+      "layer": "xbrl",
+      "family": "Structured data integrity",
+      "name": "Required inline XBRL instance attached",
+      "detection_logic": "Instance document and linkbases present for the form and period",
+      "authority": [
+        "Reg S-T Rule 405",
+        "EDGAR Filer Manual",
+        "XBRL US DQC ruleset"
+      ],
+      "inputs_required": [
+        "I1",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Critical",
+      "blocking": true,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Fact / context / linkbase extract with element and value",
+      "evidence_base": "XBRL US DQC — filers using DQC rules cut covered errors 64%",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-XBRL-STR-002",
+      "layer": "xbrl",
+      "family": "Structured data integrity",
+      "name": "Every reported fact has a resolvable context",
+      "detection_logic": "Context ref exists with valid entity and period",
+      "authority": [
+        "Reg S-T Rule 405",
+        "EDGAR Filer Manual",
+        "XBRL US DQC ruleset"
+      ],
+      "inputs_required": [
+        "I1",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Critical",
+      "blocking": true,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Fact / context / linkbase extract with element and value",
+      "evidence_base": "XBRL US DQC — filers using DQC rules cut covered errors 64%",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-XBRL-STR-003",
+      "layer": "xbrl",
+      "family": "Structured data integrity",
+      "name": "Every numeric fact has a unit and decimals attribute",
+      "detection_logic": "Unit and decimals present and plausible",
+      "authority": [
+        "Reg S-T Rule 405",
+        "EDGAR Filer Manual",
+        "XBRL US DQC ruleset"
+      ],
+      "inputs_required": [
+        "I1",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Fact / context / linkbase extract with element and value",
+      "evidence_base": "XBRL US DQC — filers using DQC rules cut covered errors 64%",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-XBRL-STR-004",
+      "layer": "xbrl",
+      "family": "Structured data integrity",
+      "name": "Calculation linkbase consistency",
+      "detection_logic": "Summation-item relationships hold across the instance",
+      "authority": [
+        "Reg S-T Rule 405",
+        "EDGAR Filer Manual",
+        "XBRL US DQC ruleset"
+      ],
+      "inputs_required": [
+        "I1",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Fact / context / linkbase extract with element and value",
+      "evidence_base": "XBRL US DQC — filers using DQC rules cut covered errors 64%",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-XBRL-STR-005",
+      "layer": "xbrl",
+      "family": "Structured data integrity",
+      "name": "Negative value plausibility",
+      "detection_logic": "Elements with a natural positive balance are not tagged negative (DQC family)",
+      "authority": [
+        "Reg S-T Rule 405",
+        "EDGAR Filer Manual",
+        "XBRL US DQC ruleset"
+      ],
+      "inputs_required": [
+        "I1",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Fact / context / linkbase extract with element and value",
+      "evidence_base": "XBRL US DQC — filers using DQC rules cut covered errors 64%",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-XBRL-STR-006",
+      "layer": "xbrl",
+      "family": "Structured data integrity",
+      "name": "Element selection appropriateness",
+      "detection_logic": "Standard element used where one exists; extension not used to replace a standard concept",
+      "authority": [
+        "Reg S-T Rule 405",
+        "EDGAR Filer Manual",
+        "XBRL US DQC ruleset"
+      ],
+      "inputs_required": [
+        "I1",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Fact / context / linkbase extract with element and value",
+      "evidence_base": "XBRL US DQC — filers using DQC rules cut covered errors 64%",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-XBRL-STR-007",
+      "layer": "xbrl",
+      "family": "Structured data integrity",
+      "name": "Extension element justification",
+      "detection_logic": "Every extension element has a documented rationale and a calculation or definition relationship",
+      "authority": [
+        "Reg S-T Rule 405",
+        "EDGAR Filer Manual",
+        "XBRL US DQC ruleset"
+      ],
+      "inputs_required": [
+        "I1",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Fact / context / linkbase extract with element and value",
+      "evidence_base": "XBRL US DQC — filers using DQC rules cut covered errors 64%",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-XBRL-STR-008",
+      "layer": "xbrl",
+      "family": "Structured data integrity",
+      "name": "Axis and member misuse",
+      "detection_logic": "Standard axes used with standard members; no custom member on a standard axis where a standard member exists",
+      "authority": [
+        "Reg S-T Rule 405",
+        "EDGAR Filer Manual",
+        "XBRL US DQC ruleset"
+      ],
+      "inputs_required": [
+        "I1",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Fact / context / linkbase extract with element and value",
+      "evidence_base": "XBRL US DQC — filers using DQC rules cut covered errors 64%",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-XBRL-STR-009",
+      "layer": "xbrl",
+      "family": "Structured data integrity",
+      "name": "Period type matches concept",
+      "detection_logic": "Instant concepts tagged at an instant; duration concepts over a duration",
+      "authority": [
+        "Reg S-T Rule 405",
+        "EDGAR Filer Manual",
+        "XBRL US DQC ruleset"
+      ],
+      "inputs_required": [
+        "I1",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Fact / context / linkbase extract with element and value",
+      "evidence_base": "XBRL US DQC — filers using DQC rules cut covered errors 64%",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-XBRL-STR-010",
+      "layer": "xbrl",
+      "family": "Structured data integrity",
+      "name": "Fiscal focus consistency",
+      "detection_logic": "DocumentFiscalYearFocus and PeriodFocus agree with the period of report",
+      "authority": [
+        "Reg S-T Rule 405",
+        "EDGAR Filer Manual",
+        "XBRL US DQC ruleset"
+      ],
+      "inputs_required": [
+        "I1",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Fact / context / linkbase extract with element and value",
+      "evidence_base": "XBRL US DQC — filers using DQC rules cut covered errors 64%",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-XBRL-STR-011",
+      "layer": "xbrl",
+      "family": "Structured data integrity",
+      "name": "Amendment flag consistency",
+      "detection_logic": "AmendmentFlag true only on amendments; description present where true",
+      "authority": [
+        "Reg S-T Rule 405",
+        "EDGAR Filer Manual",
+        "XBRL US DQC ruleset"
+      ],
+      "inputs_required": [
+        "I1",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Fact / context / linkbase extract with element and value",
+      "evidence_base": "XBRL US DQC — filers using DQC rules cut covered errors 64%",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-XBRL-STR-012",
+      "layer": "xbrl",
+      "family": "Structured data integrity",
+      "name": "Decimals consistency across a statement",
+      "detection_logic": "Scale and decimals applied consistently within a statement",
+      "authority": [
+        "Reg S-T Rule 405",
+        "EDGAR Filer Manual",
+        "XBRL US DQC ruleset"
+      ],
+      "inputs_required": [
+        "I1",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Low",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Fact / context / linkbase extract with element and value",
+      "evidence_base": "XBRL US DQC — filers using DQC rules cut covered errors 64%",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-XBRL-STR-013",
+      "layer": "xbrl",
+      "family": "Structured data integrity",
+      "name": "Face financial statements fully tagged",
+      "detection_logic": "All face statement line items tagged, none rendered as untagged text",
+      "authority": [
+        "Reg S-T Rule 405",
+        "EDGAR Filer Manual",
+        "XBRL US DQC ruleset"
+      ],
+      "inputs_required": [
+        "I1",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Fact / context / linkbase extract with element and value",
+      "evidence_base": "XBRL US DQC — filers using DQC rules cut covered errors 64%",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-XBRL-STR-014",
+      "layer": "xbrl",
+      "family": "Structured data integrity",
+      "name": "Footnote-level detail tagging present",
+      "detection_logic": "Detail tagging present for required footnote data",
+      "authority": [
+        "Reg S-T Rule 405",
+        "EDGAR Filer Manual",
+        "XBRL US DQC ruleset"
+      ],
+      "inputs_required": [
+        "I1",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Fact / context / linkbase extract with element and value",
+      "evidence_base": "XBRL US DQC — filers using DQC rules cut covered errors 64%",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-XBRL-STR-015",
+      "layer": "xbrl",
+      "family": "Structured data integrity",
+      "name": "Cover page fully tagged (EX-104)",
+      "detection_logic": "All required cover-page items carry inline tags",
+      "authority": [
+        "Reg S-T Rule 405",
+        "EDGAR Filer Manual",
+        "XBRL US DQC ruleset"
+      ],
+      "inputs_required": [
+        "I1",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Fact / context / linkbase extract with element and value",
+      "evidence_base": "XBRL US DQC — filers using DQC rules cut covered errors 64%",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-CONS-001",
+      "layer": "consistency",
+      "family": "Recomputation & tie-out",
+      "name": "Basic EPS recomputes from numerator and weighted-average shares",
+      "detection_logic": "EPS basic = income available to common / weighted-avg basic shares",
+      "authority": [
+        "ASC 260-10-45"
+      ],
+      "inputs_required": [
+        "I1"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Recomputed value vs presented value, with component extract",
+      "evidence_base": "2025 sample: non-GAAP and EPS defects observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-CONS-002",
+      "layer": "consistency",
+      "family": "Recomputation & tie-out",
+      "name": "Diluted EPS recomputes from numerator and diluted shares",
+      "detection_logic": "EPS diluted = adjusted numerator / weighted-avg diluted shares",
+      "authority": [
+        "ASC 260-10-45"
+      ],
+      "inputs_required": [
+        "I1"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Recomputed value vs presented value, with component extract",
+      "evidence_base": "2025 sample: non-GAAP and EPS defects observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-CONS-003",
+      "layer": "consistency",
+      "family": "Recomputation & tie-out",
+      "name": "EPS in MD&A narrative agrees to face of income statement",
+      "detection_logic": "Narrative numbers matched to statement values",
+      "authority": [
+        "ASC 260",
+        "Reg S-K Item 303"
+      ],
+      "inputs_required": [
+        "I1"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Recomputed value vs presented value, with component extract",
+      "evidence_base": "2025 sample: non-GAAP and EPS defects observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-CONS-004",
+      "layer": "consistency",
+      "family": "Recomputation & tie-out",
+      "name": "Income statement subtotals foot",
+      "detection_logic": "Each subtotal equals the sum of its components",
+      "authority": [
+        "Reg S-X Rule 5-03"
+      ],
+      "inputs_required": [
+        "I1"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Recomputed value vs presented value, with component extract",
+      "evidence_base": "2025 sample: non-GAAP and EPS defects observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-CONS-005",
+      "layer": "consistency",
+      "family": "Recomputation & tie-out",
+      "name": "Balance sheet balances",
+      "detection_logic": "Total assets = total liabilities + total equity",
+      "authority": [
+        "Reg S-X Rule 5-02"
+      ],
+      "inputs_required": [
+        "I1"
+      ],
+      "min_tier": 0,
+      "severity": "Critical",
+      "blocking": true,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Recomputed value vs presented value, with component extract",
+      "evidence_base": "2025 sample: non-GAAP and EPS defects observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-CONS-006",
+      "layer": "consistency",
+      "family": "Recomputation & tie-out",
+      "name": "Balance sheet subtotals foot",
+      "detection_logic": "Current, non-current and total captions foot",
+      "authority": [
+        "Reg S-X Rule 5-02"
+      ],
+      "inputs_required": [
+        "I1"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Recomputed value vs presented value, with component extract",
+      "evidence_base": "2025 sample: non-GAAP and EPS defects observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-CONS-007",
+      "layer": "consistency",
+      "family": "Recomputation & tie-out",
+      "name": "Statement of cash flows nets to the change in cash",
+      "detection_logic": "Operating + investing + financing + FX = change in cash",
+      "authority": [
+        "ASC 230-10-45"
+      ],
+      "inputs_required": [
+        "I1"
+      ],
+      "min_tier": 0,
+      "severity": "Critical",
+      "blocking": true,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Recomputed value vs presented value, with component extract",
+      "evidence_base": "2025 sample: non-GAAP and EPS defects observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-CONS-008",
+      "layer": "consistency",
+      "family": "Recomputation & tie-out",
+      "name": "Ending cash on cash flow ties to balance sheet cash",
+      "detection_logic": "Including restricted cash reconciliation",
+      "authority": [
+        "ASC 230-10-45-4"
+      ],
+      "inputs_required": [
+        "I1"
+      ],
+      "min_tier": 0,
+      "severity": "Critical",
+      "blocking": true,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Recomputed value vs presented value, with component extract",
+      "evidence_base": "2025 sample: non-GAAP and EPS defects observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-CONS-009",
+      "layer": "consistency",
+      "family": "Recomputation & tie-out",
+      "name": "Comprehensive income ties to equity statement",
+      "detection_logic": "OCI components reconcile to accumulated OCI movement",
+      "authority": [
+        "ASC 220-10-45"
+      ],
+      "inputs_required": [
+        "I1"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Recomputed value vs presented value, with component extract",
+      "evidence_base": "2025 sample: non-GAAP and EPS defects observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-CONS-010",
+      "layer": "consistency",
+      "family": "Recomputation & tie-out",
+      "name": "Segment revenue total agrees to consolidated revenue",
+      "detection_logic": "Sum of reportable segments plus reconciling items = consolidated",
+      "authority": [
+        "ASC 280-10-50-30"
+      ],
+      "inputs_required": [
+        "I1"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Recomputed value vs presented value, with component extract",
+      "evidence_base": "2025 sample: non-GAAP and EPS defects observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-CONS-011",
+      "layer": "consistency",
+      "family": "Recomputation & tie-out",
+      "name": "Segment profit total agrees to consolidated pre-tax income",
+      "detection_logic": "Sum of segment measures plus reconciling items",
+      "authority": [
+        "ASC 280-10-50-30"
+      ],
+      "inputs_required": [
+        "I1"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Recomputed value vs presented value, with component extract",
+      "evidence_base": "2025 sample: non-GAAP and EPS defects observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-CONS-012",
+      "layer": "consistency",
+      "family": "Recomputation & tie-out",
+      "name": "Geographic and product revenue totals agree to consolidated",
+      "detection_logic": "Disaggregation totals foot to revenue",
+      "authority": [
+        "ASC 280-10-50-41"
+      ],
+      "inputs_required": [
+        "I1"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Recomputed value vs presented value, with component extract",
+      "evidence_base": "2025 sample: non-GAAP and EPS defects observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-CONS-013",
+      "layer": "consistency",
+      "family": "Recomputation & tie-out",
+      "name": "Equity roll-forward foots",
+      "detection_logic": "Opening + movements = closing for each equity component",
+      "authority": [
+        "Reg S-X Rule 5-02"
+      ],
+      "inputs_required": [
+        "I1"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Recomputed value vs presented value, with component extract",
+      "evidence_base": "2025 sample: non-GAAP and EPS defects observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-CONS-014",
+      "layer": "consistency",
+      "family": "Recomputation & tie-out",
+      "name": "Property, plant and equipment roll-forward foots",
+      "detection_logic": "Cost and accumulated depreciation roll-forwards",
+      "authority": [
+        "ASC 360-10-50"
+      ],
+      "inputs_required": [
+        "I1"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Recomputed value vs presented value, with component extract",
+      "evidence_base": "2025 sample: non-GAAP and EPS defects observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-CONS-015",
+      "layer": "consistency",
+      "family": "Recomputation & tie-out",
+      "name": "Goodwill roll-forward foots by reporting unit",
+      "detection_logic": "Opening + additions - impairment + FX = closing",
+      "authority": [
+        "ASC 350-20-50-1"
+      ],
+      "inputs_required": [
+        "I1"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Recomputed value vs presented value, with component extract",
+      "evidence_base": "2025 sample: non-GAAP and EPS defects observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-CONS-016",
+      "layer": "consistency",
+      "family": "Recomputation & tie-out",
+      "name": "Allowance for credit losses roll-forward foots",
+      "detection_logic": "Opening + provision - write-offs + recoveries = closing",
+      "authority": [
+        "ASC 326-20-50"
+      ],
+      "inputs_required": [
+        "I1"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Recomputed value vs presented value, with component extract",
+      "evidence_base": "2025 sample: non-GAAP and EPS defects observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-CONS-017",
+      "layer": "consistency",
+      "family": "Recomputation & tie-out",
+      "name": "Debt maturity schedule totals to balance sheet debt",
+      "detection_logic": "Five-year maturities plus thereafter = carrying amount",
+      "authority": [
+        "ASC 470-10-50"
+      ],
+      "inputs_required": [
+        "I1"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Recomputed value vs presented value, with component extract",
+      "evidence_base": "2025 sample: non-GAAP and EPS defects observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-CONS-018",
+      "layer": "consistency",
+      "family": "Recomputation & tie-out",
+      "name": "Lease maturity schedule totals to lease liability",
+      "detection_logic": "Undiscounted cash flows less imputed interest = liability",
+      "authority": [
+        "ASC 842-20-50-6"
+      ],
+      "inputs_required": [
+        "I1"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Recomputed value vs presented value, with component extract",
+      "evidence_base": "2025 sample: non-GAAP and EPS defects observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-CONS-019",
+      "layer": "consistency",
+      "family": "Recomputation & tie-out",
+      "name": "Income tax rate reconciliation foots to effective rate",
+      "detection_logic": "Reconciling items sum to the statutory-to-effective difference",
+      "authority": [
+        "ASC 740-10-50-12"
+      ],
+      "inputs_required": [
+        "I1"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Recomputed value vs presented value, with component extract",
+      "evidence_base": "2025 sample: non-GAAP and EPS defects observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-CONS-020",
+      "layer": "consistency",
+      "family": "Recomputation & tie-out",
+      "name": "Deferred tax assets and liabilities net to balance sheet amount",
+      "detection_logic": "Gross DTA/DTL less valuation allowance = net recognised",
+      "authority": [
+        "ASC 740-10-50-2"
+      ],
+      "inputs_required": [
+        "I1"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Recomputed value vs presented value, with component extract",
+      "evidence_base": "2025 sample: non-GAAP and EPS defects observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-CONS-021",
+      "layer": "consistency",
+      "family": "Recomputation & tie-out",
+      "name": "Non-GAAP measure recomputes from its stated components",
+      "detection_logic": "Per-share non-GAAP = numerator / stated denominator",
+      "authority": [
+        "Reg G",
+        "Reg S-K Item 10(e)"
+      ],
+      "inputs_required": [
+        "I1"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Recomputed value vs presented value, with component extract",
+      "evidence_base": "2025 sample: non-GAAP and EPS defects observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-CONS-022",
+      "layer": "consistency",
+      "family": "Recomputation & tie-out",
+      "name": "Non-GAAP measure reconciles to its GAAP anchor",
+      "detection_logic": "Reconciliation table foots and starts from the prescribed GAAP measure",
+      "authority": [
+        "Reg S-K Item 10(e)(1)(i)"
+      ],
+      "inputs_required": [
+        "I1"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Recomputed value vs presented value, with component extract",
+      "evidence_base": "2025 sample: non-GAAP and EPS defects observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-CONS-023",
+      "layer": "consistency",
+      "family": "Recomputation & tie-out",
+      "name": "Footnote totals agree to the face of the statements",
+      "detection_logic": "Each footnote total matched to its statement caption",
+      "authority": [
+        "Reg S-X"
+      ],
+      "inputs_required": [
+        "I1"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Recomputed value vs presented value, with component extract",
+      "evidence_base": "2025 sample: non-GAAP and EPS defects observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-CONS-024",
+      "layer": "consistency",
+      "family": "Recomputation & tie-out",
+      "name": "Numbers in narrative agree to the tables they describe",
+      "detection_logic": "Extracted narrative numerals matched to table cells",
+      "authority": [
+        "Reg S-K Item 303"
+      ],
+      "inputs_required": [
+        "I1"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Recomputed value vs presented value, with component extract",
+      "evidence_base": "2025 sample: non-GAAP and EPS defects observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-CONS-025",
+      "layer": "consistency",
+      "family": "Recomputation & tie-out",
+      "name": "Share counts consistent across cover, statements and footnotes",
+      "detection_logic": "Shares outstanding, weighted average and cap table agree",
+      "authority": [
+        "ASC 260",
+        "Form cover"
+      ],
+      "inputs_required": [
+        "I1"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Recomputed value vs presented value, with component extract",
+      "evidence_base": "2025 sample: non-GAAP and EPS defects observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-CONS-026",
+      "layer": "consistency",
+      "family": "Recomputation & tie-out",
+      "name": "Filing captions agree to the trial balance",
+      "detection_logic": "Each caption ties to mapped TB accounts within tolerance",
+      "authority": [
+        "Reg S-X Rule 4-01"
+      ],
+      "inputs_required": [
+        "I1",
+        "I5"
+      ],
+      "min_tier": 2,
+      "severity": "Critical",
+      "blocking": true,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Recomputed value vs presented value, with component extract",
+      "evidence_base": "2025 sample: non-GAAP and EPS defects observed",
+      "build_wave": "P2",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-CONS-027",
+      "layer": "consistency",
+      "family": "Recomputation & tie-out",
+      "name": "Consolidation eliminations are exhaustive and balanced",
+      "detection_logic": "Intercompany eliminations net to zero across the group",
+      "authority": [
+        "ASC 810-10-45"
+      ],
+      "inputs_required": [
+        "I1",
+        "I5"
+      ],
+      "min_tier": 2,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Recomputed value vs presented value, with component extract",
+      "evidence_base": "2025 sample: non-GAAP and EPS defects observed",
+      "build_wave": "P2",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-CONS-028",
+      "layer": "consistency",
+      "family": "Recomputation & tie-out",
+      "name": "EPS denominator agrees to the cap table",
+      "detection_logic": "Weighted-average share computation reperformed from the register",
+      "authority": [
+        "ASC 260-10-55"
+      ],
+      "inputs_required": [
+        "I1",
+        "I5"
+      ],
+      "min_tier": 2,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Recomputed value vs presented value, with component extract",
+      "evidence_base": "2025 sample: non-GAAP and EPS defects observed",
+      "build_wave": "P2",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-CONT-001",
+      "layer": "continuity",
+      "family": "Prior-period diff",
+      "name": "Comparative figures agree to amounts as originally reported",
+      "detection_logic": "Fact-level diff vs prior filing; differences must be explained",
+      "authority": [
+        "ASC 250-10-50",
+        "Reg S-X Rule 4-01",
+        "Item 4.01 Form 8-K"
+      ],
+      "inputs_required": [
+        "I1",
+        "I2"
+      ],
+      "min_tier": 1,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Current value vs as-originally-reported value with source accession",
+      "evidence_base": "Design — Tier 1 family",
+      "build_wave": "P1",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-CONT-002",
+      "layer": "continuity",
+      "family": "Prior-period diff",
+      "name": "Restated comparative carries a restatement or reclassification note",
+      "detection_logic": "Any changed comparative requires disclosure",
+      "authority": [
+        "ASC 250-10-50",
+        "Reg S-X Rule 4-01",
+        "Item 4.01 Form 8-K"
+      ],
+      "inputs_required": [
+        "I1",
+        "I2"
+      ],
+      "min_tier": 1,
+      "severity": "Critical",
+      "blocking": true,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Current value vs as-originally-reported value with source accession",
+      "evidence_base": "Design — Tier 1 family",
+      "build_wave": "P1",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-CONT-003",
+      "layer": "continuity",
+      "family": "Prior-period diff",
+      "name": "XBRL element usage consistent with prior periods",
+      "detection_logic": "Element or extension drift flagged for explanation",
+      "authority": [
+        "ASC 250-10-50",
+        "Reg S-X Rule 4-01",
+        "Item 4.01 Form 8-K"
+      ],
+      "inputs_required": [
+        "I1",
+        "I2"
+      ],
+      "min_tier": 1,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Current value vs as-originally-reported value with source accession",
+      "evidence_base": "Design — Tier 1 family",
+      "build_wave": "P1",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-CONT-004",
+      "layer": "continuity",
+      "family": "Prior-period diff",
+      "name": "Disclosure present last period is absent this period",
+      "detection_logic": "Section-level presence diff",
+      "authority": [
+        "ASC 250-10-50",
+        "Reg S-X Rule 4-01",
+        "Item 4.01 Form 8-K"
+      ],
+      "inputs_required": [
+        "I1",
+        "I2"
+      ],
+      "min_tier": 1,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Current value vs as-originally-reported value with source accession",
+      "evidence_base": "Design — Tier 1 family",
+      "build_wave": "P1",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-CONT-005",
+      "layer": "continuity",
+      "family": "Prior-period diff",
+      "name": "Accounting policy language changed without a stated change",
+      "detection_logic": "Policy text diff vs prior filing",
+      "authority": [
+        "ASC 250-10-50",
+        "Reg S-X Rule 4-01",
+        "Item 4.01 Form 8-K"
+      ],
+      "inputs_required": [
+        "I1",
+        "I2"
+      ],
+      "min_tier": 1,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Current value vs as-originally-reported value with source accession",
+      "evidence_base": "Design — Tier 1 family",
+      "build_wave": "P1",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-CONT-006",
+      "layer": "continuity",
+      "family": "Prior-period diff",
+      "name": "Segment composition changed without disclosure",
+      "detection_logic": "Segment names and count diff vs prior period",
+      "authority": [
+        "ASC 250-10-50",
+        "Reg S-X Rule 4-01",
+        "Item 4.01 Form 8-K"
+      ],
+      "inputs_required": [
+        "I1",
+        "I2"
+      ],
+      "min_tier": 1,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Current value vs as-originally-reported value with source accession",
+      "evidence_base": "Design — Tier 1 family",
+      "build_wave": "P1",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-CONT-007",
+      "layer": "continuity",
+      "family": "Prior-period diff",
+      "name": "Matter previously raised in an SEC comment letter recurs",
+      "detection_logic": "Prior comment topics matched against current filing content",
+      "authority": [
+        "ASC 250-10-50",
+        "Reg S-X Rule 4-01",
+        "Item 4.01 Form 8-K"
+      ],
+      "inputs_required": [
+        "I1",
+        "I2"
+      ],
+      "min_tier": 1,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Current value vs as-originally-reported value with source accession",
+      "evidence_base": "Design — Tier 1 family",
+      "build_wave": "P1",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-CONT-008",
+      "layer": "continuity",
+      "family": "Prior-period diff",
+      "name": "Auditor changed without a corresponding Item 4.01 Form 8-K",
+      "detection_logic": "Auditor identity diff vs prior filing and 8-K history",
+      "authority": [
+        "ASC 250-10-50",
+        "Reg S-X Rule 4-01",
+        "Item 4.01 Form 8-K"
+      ],
+      "inputs_required": [
+        "I1",
+        "I2"
+      ],
+      "min_tier": 1,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Current value vs as-originally-reported value with source accession",
+      "evidence_base": "Design — Tier 1 family",
+      "build_wave": "P1",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-CONT-009",
+      "layer": "continuity",
+      "family": "Prior-period diff",
+      "name": "Filer status changed without corresponding cover-page update",
+      "detection_logic": "Status diff vs prior filing",
+      "authority": [
+        "ASC 250-10-50",
+        "Reg S-X Rule 4-01",
+        "Item 4.01 Form 8-K"
+      ],
+      "inputs_required": [
+        "I1",
+        "I2"
+      ],
+      "min_tier": 1,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Current value vs as-originally-reported value with source accession",
+      "evidence_base": "Design — Tier 1 family",
+      "build_wave": "P1",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-DISC-001",
+      "layer": "disclosure",
+      "family": "Required content",
+      "name": "Item 9A states an explicit conclusion on disclosure controls effectiveness",
+      "detection_logic": "Test for presence and non-emptiness of the required item, conditioned on filer status and form type.",
+      "authority": [
+        "Reg S-K Item 307"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Critical",
+      "blocking": true,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K"
+      ],
+      "evidence_captured": "Section locator, extracted text and presence test result",
+      "evidence_base": "2025 sample: omitted Item 9A conclusion observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-DISC-002",
+      "layer": "disclosure",
+      "family": "Required content",
+      "name": "Item 9A includes management's report on ICFR",
+      "detection_logic": "Test for presence and non-emptiness of the required item, conditioned on filer status and form type.",
+      "authority": [
+        "Reg S-K Item 308(a)"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Critical",
+      "blocking": true,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K"
+      ],
+      "evidence_captured": "Section locator, extracted text and presence test result",
+      "evidence_base": "2025 sample: omitted Item 9A conclusion observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-DISC-003",
+      "layer": "disclosure",
+      "family": "Required content",
+      "name": "ICFR auditor attestation present where filer status requires it",
+      "detection_logic": "Test for presence and non-emptiness of the required item, conditioned on filer status and form type.",
+      "authority": [
+        "Reg S-K Item 308(b)"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Critical",
+      "blocking": true,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K"
+      ],
+      "evidence_captured": "Section locator, extracted text and presence test result",
+      "evidence_base": "2025 sample: omitted Item 9A conclusion observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-DISC-004",
+      "layer": "disclosure",
+      "family": "Required content",
+      "name": "Item 4 states conclusion on disclosure controls (10-Q)",
+      "detection_logic": "Test for presence and non-emptiness of the required item, conditioned on filer status and form type.",
+      "authority": [
+        "Reg S-K Item 307"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Critical",
+      "blocking": true,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-Q"
+      ],
+      "evidence_captured": "Section locator, extracted text and presence test result",
+      "evidence_base": "2025 sample: omitted Item 9A conclusion observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-DISC-005",
+      "layer": "disclosure",
+      "family": "Required content",
+      "name": "Changes in ICFR during the period addressed",
+      "detection_logic": "Test for presence and non-emptiness of the required item, conditioned on filer status and form type.",
+      "authority": [
+        "Reg S-K Item 308(c)"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Section locator, extracted text and presence test result",
+      "evidence_base": "2025 sample: omitted Item 9A conclusion observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-DISC-006",
+      "layer": "disclosure",
+      "family": "Required content",
+      "name": "Item 1A risk factors present or SRC omission properly taken",
+      "detection_logic": "Test for presence and non-emptiness of the required item, conditioned on filer status and form type.",
+      "authority": [
+        "Reg S-K Item 105"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K"
+      ],
+      "evidence_captured": "Section locator, extracted text and presence test result",
+      "evidence_base": "2025 sample: omitted Item 9A conclusion observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-DISC-007",
+      "layer": "disclosure",
+      "family": "Required content",
+      "name": "Material changes to risk factors addressed (10-Q)",
+      "detection_logic": "Test for presence and non-emptiness of the required item, conditioned on filer status and form type.",
+      "authority": [
+        "Reg S-K Item 105"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-Q"
+      ],
+      "evidence_captured": "Section locator, extracted text and presence test result",
+      "evidence_base": "2025 sample: omitted Item 9A conclusion observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-DISC-008",
+      "layer": "disclosure",
+      "family": "Required content",
+      "name": "Item 3 legal proceedings present or stated as none",
+      "detection_logic": "Test for presence and non-emptiness of the required item, conditioned on filer status and form type.",
+      "authority": [
+        "Reg S-K Item 103"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Section locator, extracted text and presence test result",
+      "evidence_base": "2025 sample: omitted Item 9A conclusion observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-DISC-009",
+      "layer": "disclosure",
+      "family": "Required content",
+      "name": "Item 5 unregistered sales and issuer repurchases addressed",
+      "detection_logic": "Test for presence and non-emptiness of the required item, conditioned on filer status and form type.",
+      "authority": [
+        "Reg S-K Items 701, 703"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Section locator, extracted text and presence test result",
+      "evidence_base": "2025 sample: omitted Item 9A conclusion observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-DISC-010",
+      "layer": "disclosure",
+      "family": "Required content",
+      "name": "Item 7A quantitative and qualitative market risk present unless SRC",
+      "detection_logic": "Test for presence and non-emptiness of the required item, conditioned on filer status and form type.",
+      "authority": [
+        "Reg S-K Item 305"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K"
+      ],
+      "evidence_captured": "Section locator, extracted text and presence test result",
+      "evidence_base": "2025 sample: omitted Item 9A conclusion observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-DISC-011",
+      "layer": "disclosure",
+      "family": "Required content",
+      "name": "Item 106 cybersecurity risk management and governance present",
+      "detection_logic": "Test for presence and non-emptiness of the required item, conditioned on filer status and form type.",
+      "authority": [
+        "Reg S-K Item 106"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K"
+      ],
+      "evidence_captured": "Section locator, extracted text and presence test result",
+      "evidence_base": "2025 sample: omitted Item 9A conclusion observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-DISC-012",
+      "layer": "disclosure",
+      "family": "Required content",
+      "name": "Item 1.05 material cybersecurity incident consistency",
+      "detection_logic": "Test for presence and non-emptiness of the required item, conditioned on filer status and form type.",
+      "authority": [
+        "Form 8-K Item 1.05"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K"
+      ],
+      "evidence_captured": "Section locator, extracted text and presence test result",
+      "evidence_base": "2025 sample: omitted Item 9A conclusion observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-DISC-013",
+      "layer": "disclosure",
+      "family": "Required content",
+      "name": "Insider trading policy statement under Item 408(b) present",
+      "detection_logic": "Test for presence and non-emptiness of the required item, conditioned on filer status and form type.",
+      "authority": [
+        "Reg S-K Item 408(b)"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K"
+      ],
+      "evidence_captured": "Section locator, extracted text and presence test result",
+      "evidence_base": "2025 sample: omitted Item 9A conclusion observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-DISC-014",
+      "layer": "disclosure",
+      "family": "Required content",
+      "name": "Rule 10b5-1 trading arrangement disclosure present",
+      "detection_logic": "Test for presence and non-emptiness of the required item, conditioned on filer status and form type.",
+      "authority": [
+        "Reg S-K Item 408(a)"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Section locator, extracted text and presence test result",
+      "evidence_base": "2025 sample: omitted Item 9A conclusion observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-DISC-015",
+      "layer": "disclosure",
+      "family": "Required content",
+      "name": "Item 9B other information addressed",
+      "detection_logic": "Test for presence and non-emptiness of the required item, conditioned on filer status and form type.",
+      "authority": [
+        "Form 10-K Item 9B"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Low",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K"
+      ],
+      "evidence_captured": "Section locator, extracted text and presence test result",
+      "evidence_base": "2025 sample: omitted Item 9A conclusion observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-DISC-016",
+      "layer": "disclosure",
+      "family": "Required content",
+      "name": "Part III present or valid forward incorporation statement with 120-day test",
+      "detection_logic": "Test for presence and non-emptiness of the required item, conditioned on filer status and form type.",
+      "authority": [
+        "Form 10-K General Instruction G(3)"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K"
+      ],
+      "evidence_captured": "Section locator, extracted text and presence test result",
+      "evidence_base": "2025 sample: omitted Item 9A conclusion observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-DISC-017",
+      "layer": "disclosure",
+      "family": "Required content",
+      "name": "Critical audit matters present in the audit report",
+      "detection_logic": "Test for presence and non-emptiness of the required item, conditioned on filer status and form type.",
+      "authority": [
+        "PCAOB AS 3101"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K"
+      ],
+      "evidence_captured": "Section locator, extracted text and presence test result",
+      "evidence_base": "2025 sample: omitted Item 9A conclusion observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-DISC-018",
+      "layer": "disclosure",
+      "family": "Required content",
+      "name": "Audit report identifies auditor name, location, tenure and PCAOB ID",
+      "detection_logic": "Test for presence and non-emptiness of the required item, conditioned on filer status and form type.",
+      "authority": [
+        "PCAOB AS 3101"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K"
+      ],
+      "evidence_captured": "Section locator, extracted text and presence test result",
+      "evidence_base": "2025 sample: omitted Item 9A conclusion observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-DISC-019",
+      "layer": "disclosure",
+      "family": "Required content",
+      "name": "Going concern evaluation disclosed where indicators present",
+      "detection_logic": "Test for presence and non-emptiness of the required item, conditioned on filer status and form type.",
+      "authority": [
+        "ASC 205-40-50"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Critical",
+      "blocking": true,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Section locator, extracted text and presence test result",
+      "evidence_base": "2025 sample: omitted Item 9A conclusion observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-DISC-020",
+      "layer": "disclosure",
+      "family": "Required content",
+      "name": "Subsequent events evaluated through a stated date",
+      "detection_logic": "Test for presence and non-emptiness of the required item, conditioned on filer status and form type.",
+      "authority": [
+        "ASC 855-10-50"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Section locator, extracted text and presence test result",
+      "evidence_base": "2025 sample: omitted Item 9A conclusion observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-DISC-021",
+      "layer": "disclosure",
+      "family": "Required content",
+      "name": "Revenue disaggregation disclosure present",
+      "detection_logic": "Test for presence and non-emptiness of the required item, conditioned on filer status and form type.",
+      "authority": [
+        "ASC 606-10-50-5"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Section locator, extracted text and presence test result",
+      "evidence_base": "2025 sample: omitted Item 9A conclusion observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-DISC-022",
+      "layer": "disclosure",
+      "family": "Required content",
+      "name": "Segment measure of profit or loss and CODM identified",
+      "detection_logic": "Test for presence and non-emptiness of the required item, conditioned on filer status and form type.",
+      "authority": [
+        "ASC 280-10-50-22"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K"
+      ],
+      "evidence_captured": "Section locator, extracted text and presence test result",
+      "evidence_base": "2025 sample: omitted Item 9A conclusion observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-DISC-023",
+      "layer": "disclosure",
+      "family": "Required content",
+      "name": "Significant segment expenses disclosed (ASU 2023-07)",
+      "detection_logic": "Test for presence and non-emptiness of the required item, conditioned on filer status and form type.",
+      "authority": [
+        "ASC 280-10-50-26A"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K"
+      ],
+      "evidence_captured": "Section locator, extracted text and presence test result",
+      "evidence_base": "2025 sample: omitted Item 9A conclusion observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-DISC-024",
+      "layer": "disclosure",
+      "family": "Required content",
+      "name": "Income tax rate reconciliation disaggregation (ASU 2023-09)",
+      "detection_logic": "Test for presence and non-emptiness of the required item, conditioned on filer status and form type.",
+      "authority": [
+        "ASC 740-10-50-12"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K"
+      ],
+      "evidence_captured": "Section locator, extracted text and presence test result",
+      "evidence_base": "2025 sample: omitted Item 9A conclusion observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-DISC-025",
+      "layer": "disclosure",
+      "family": "Required content",
+      "name": "Income taxes paid disaggregated by jurisdiction (ASU 2023-09)",
+      "detection_logic": "Test for presence and non-emptiness of the required item, conditioned on filer status and form type.",
+      "authority": [
+        "ASC 740-10-50-22"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K"
+      ],
+      "evidence_captured": "Section locator, extracted text and presence test result",
+      "evidence_base": "2025 sample: omitted Item 9A conclusion observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-DISC-026",
+      "layer": "disclosure",
+      "family": "Required content",
+      "name": "Fair value hierarchy levels disclosed with transfers",
+      "detection_logic": "Test for presence and non-emptiness of the required item, conditioned on filer status and form type.",
+      "authority": [
+        "ASC 820-10-50"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Section locator, extracted text and presence test result",
+      "evidence_base": "2025 sample: omitted Item 9A conclusion observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-DISC-027",
+      "layer": "disclosure",
+      "family": "Required content",
+      "name": "Lease cost components and weighted-average terms disclosed",
+      "detection_logic": "Test for presence and non-emptiness of the required item, conditioned on filer status and form type.",
+      "authority": [
+        "ASC 842-20-50-4"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K"
+      ],
+      "evidence_captured": "Section locator, extracted text and presence test result",
+      "evidence_base": "2025 sample: omitted Item 9A conclusion observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-DISC-028",
+      "layer": "disclosure",
+      "family": "Required content",
+      "name": "Concentrations of credit risk disclosed",
+      "detection_logic": "Test for presence and non-emptiness of the required item, conditioned on filer status and form type.",
+      "authority": [
+        "ASC 275-10-50"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K"
+      ],
+      "evidence_captured": "Section locator, extracted text and presence test result",
+      "evidence_base": "2025 sample: omitted Item 9A conclusion observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-DISC-029",
+      "layer": "disclosure",
+      "family": "Required content",
+      "name": "Related party transactions disclosed",
+      "detection_logic": "Test for presence and non-emptiness of the required item, conditioned on filer status and form type.",
+      "authority": [
+        "ASC 850-10-50",
+        "Reg S-K Item 404"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "High",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-K"
+      ],
+      "evidence_captured": "Section locator, extracted text and presence test result",
+      "evidence_base": "2025 sample: omitted Item 9A conclusion observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-DISC-030",
+      "layer": "disclosure",
+      "family": "Required content",
+      "name": "Interim statements labelled unaudited",
+      "detection_logic": "Test for presence and non-emptiness of the required item, conditioned on filer status and form type.",
+      "authority": [
+        "Reg S-X Rule 10-01"
+      ],
+      "inputs_required": [
+        "I1",
+        "I3",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Low",
+      "blocking": false,
+      "determinism": "deterministic",
+      "form_scope": [
+        "10-Q"
+      ],
+      "evidence_captured": "Section locator, extracted text and presence test result",
+      "evidence_base": "2025 sample: omitted Item 9A conclusion observed",
+      "build_wave": "P0",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-JUDG-001",
+      "layer": "judgment",
+      "family": "Cited prompt (human gate)",
+      "name": "Revenue disaggregation categories may not meet the standard's objective",
+      "detection_logic": "Retrieval over the pinned authority corpus produces a cited question for the preparer. Never emits pass/fail.",
+      "authority": [
+        "ASC 606-10-50-5",
+        "606-10-55-89"
+      ],
+      "inputs_required": [
+        "I1",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "judgment",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Prompt text, retrieved authority passage, confidence band",
+      "evidence_base": "Design — P5 engine",
+      "build_wave": "P2",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-JUDG-002",
+      "layer": "judgment",
+      "family": "Cited prompt (human gate)",
+      "name": "Segment identification may not reflect how the CODM allocates resources",
+      "detection_logic": "Retrieval over the pinned authority corpus produces a cited question for the preparer. Never emits pass/fail.",
+      "authority": [
+        "ASC 280-10-50-1"
+      ],
+      "inputs_required": [
+        "I1",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "judgment",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Prompt text, retrieved authority passage, confidence band",
+      "evidence_base": "Design — P5 engine",
+      "build_wave": "P2",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-JUDG-003",
+      "layer": "judgment",
+      "family": "Cited prompt (human gate)",
+      "name": "Goodwill impairment triggering events discussed in MD&A but no interim test disclosed",
+      "detection_logic": "Retrieval over the pinned authority corpus produces a cited question for the preparer. Never emits pass/fail.",
+      "authority": [
+        "ASC 350-20-35-30"
+      ],
+      "inputs_required": [
+        "I1",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "judgment",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Prompt text, retrieved authority passage, confidence band",
+      "evidence_base": "Design — P5 engine",
+      "build_wave": "P2",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-JUDG-004",
+      "layer": "judgment",
+      "family": "Cited prompt (human gate)",
+      "name": "Going concern indicators present in the narrative but no evaluation disclosed",
+      "detection_logic": "Retrieval over the pinned authority corpus produces a cited question for the preparer. Never emits pass/fail.",
+      "authority": [
+        "ASC 205-40-50-1"
+      ],
+      "inputs_required": [
+        "I1",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "judgment",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Prompt text, retrieved authority passage, confidence band",
+      "evidence_base": "Design — P5 engine",
+      "build_wave": "P2",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-JUDG-005",
+      "layer": "judgment",
+      "family": "Cited prompt (human gate)",
+      "name": "Non-GAAP measure may be presented with greater prominence than GAAP",
+      "detection_logic": "Retrieval over the pinned authority corpus produces a cited question for the preparer. Never emits pass/fail.",
+      "authority": [
+        "Reg S-K Item 10(e)(1)(i)(A)"
+      ],
+      "inputs_required": [
+        "I1",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "judgment",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Prompt text, retrieved authority passage, confidence band",
+      "evidence_base": "Design — P5 engine",
+      "build_wave": "P2",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-JUDG-006",
+      "layer": "judgment",
+      "family": "Cited prompt (human gate)",
+      "name": "Non-GAAP adjustment may represent a normal recurring cash operating expense",
+      "detection_logic": "Retrieval over the pinned authority corpus produces a cited question for the preparer. Never emits pass/fail.",
+      "authority": [
+        "Non-GAAP C&DI 100.01"
+      ],
+      "inputs_required": [
+        "I1",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "judgment",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Prompt text, retrieved authority passage, confidence band",
+      "evidence_base": "Design — P5 engine",
+      "build_wave": "P2",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-JUDG-007",
+      "layer": "judgment",
+      "family": "Cited prompt (human gate)",
+      "name": "Critical accounting estimates may lack the required sensitivity discussion",
+      "detection_logic": "Retrieval over the pinned authority corpus produces a cited question for the preparer. Never emits pass/fail.",
+      "authority": [
+        "Reg S-K Item 303(b)(3)"
+      ],
+      "inputs_required": [
+        "I1",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "judgment",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Prompt text, retrieved authority passage, confidence band",
+      "evidence_base": "Design — P5 engine",
+      "build_wave": "P2",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-JUDG-008",
+      "layer": "judgment",
+      "family": "Cited prompt (human gate)",
+      "name": "Known trends and uncertainties in MD&A may be incomplete relative to risk factors",
+      "detection_logic": "Retrieval over the pinned authority corpus produces a cited question for the preparer. Never emits pass/fail.",
+      "authority": [
+        "Reg S-K Item 303(b)"
+      ],
+      "inputs_required": [
+        "I1",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "judgment",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Prompt text, retrieved authority passage, confidence band",
+      "evidence_base": "Design — P5 engine",
+      "build_wave": "P2",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-JUDG-009",
+      "layer": "judgment",
+      "family": "Cited prompt (human gate)",
+      "name": "Risk factor may be generic rather than specific to the registrant",
+      "detection_logic": "Retrieval over the pinned authority corpus produces a cited question for the preparer. Never emits pass/fail.",
+      "authority": [
+        "Reg S-K Item 105"
+      ],
+      "inputs_required": [
+        "I1",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "judgment",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Prompt text, retrieved authority passage, confidence band",
+      "evidence_base": "Design — P5 engine",
+      "build_wave": "P2",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-JUDG-010",
+      "layer": "judgment",
+      "family": "Cited prompt (human gate)",
+      "name": "Related party disclosure may be incomplete relative to the related-party register",
+      "detection_logic": "Retrieval over the pinned authority corpus produces a cited question for the preparer. Never emits pass/fail.",
+      "authority": [
+        "ASC 850-10-50-1"
+      ],
+      "inputs_required": [
+        "I1",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "judgment",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Prompt text, retrieved authority passage, confidence band",
+      "evidence_base": "Design — P5 engine",
+      "build_wave": "P2",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-JUDG-011",
+      "layer": "judgment",
+      "family": "Cited prompt (human gate)",
+      "name": "Contingency disclosure may not meet the reasonably-possible range requirement",
+      "detection_logic": "Retrieval over the pinned authority corpus produces a cited question for the preparer. Never emits pass/fail.",
+      "authority": [
+        "ASC 450-20-50-4"
+      ],
+      "inputs_required": [
+        "I1",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "judgment",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Prompt text, retrieved authority passage, confidence band",
+      "evidence_base": "Design — P5 engine",
+      "build_wave": "P2",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-JUDG-012",
+      "layer": "judgment",
+      "family": "Cited prompt (human gate)",
+      "name": "Subsequent events cut-off date may precede the filing date without explanation",
+      "detection_logic": "Retrieval over the pinned authority corpus produces a cited question for the preparer. Never emits pass/fail.",
+      "authority": [
+        "ASC 855-10-50-1"
+      ],
+      "inputs_required": [
+        "I1",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "judgment",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Prompt text, retrieved authority passage, confidence band",
+      "evidence_base": "Design — P5 engine",
+      "build_wave": "P2",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-JUDG-013",
+      "layer": "judgment",
+      "family": "Cited prompt (human gate)",
+      "name": "Discount rate disclosure for leases may be insufficient",
+      "detection_logic": "Retrieval over the pinned authority corpus produces a cited question for the preparer. Never emits pass/fail.",
+      "authority": [
+        "ASC 842-20-50-9"
+      ],
+      "inputs_required": [
+        "I1",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "judgment",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Prompt text, retrieved authority passage, confidence band",
+      "evidence_base": "Design — P5 engine",
+      "build_wave": "P2",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-JUDG-014",
+      "layer": "judgment",
+      "family": "Cited prompt (human gate)",
+      "name": "CECL methodology description may not explain the forecast period and reversion",
+      "detection_logic": "Retrieval over the pinned authority corpus produces a cited question for the preparer. Never emits pass/fail.",
+      "authority": [
+        "ASC 326-20-50-10"
+      ],
+      "inputs_required": [
+        "I1",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "judgment",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Prompt text, retrieved authority passage, confidence band",
+      "evidence_base": "Design — P5 engine",
+      "build_wave": "P2",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    },
+    {
+      "rule_id": "R-JUDG-015",
+      "layer": "judgment",
+      "family": "Cited prompt (human gate)",
+      "name": "Share-based compensation valuation assumptions may be incomplete",
+      "detection_logic": "Retrieval over the pinned authority corpus produces a cited question for the preparer. Never emits pass/fail.",
+      "authority": [
+        "ASC 718-10-50-2"
+      ],
+      "inputs_required": [
+        "I1",
+        "I4"
+      ],
+      "min_tier": 0,
+      "severity": "Medium",
+      "blocking": false,
+      "determinism": "judgment",
+      "form_scope": [
+        "10-K",
+        "10-Q"
+      ],
+      "evidence_captured": "Prompt text, retrieved authority passage, confidence band",
+      "evidence_base": "Design — P5 engine",
+      "build_wave": "P2",
+      "status": "Draft",
+      "reviewer": null,
+      "rule_version": "1.0.0"
+    }
+  ]
+}

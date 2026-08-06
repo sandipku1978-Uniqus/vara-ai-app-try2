@@ -7,13 +7,13 @@ import { UI_GLOBAL_ACTION_CONTRACTS, UI_PAGE_CONTRACTS } from './uiPageContracts
 const sorted = (values: readonly string[]) => [...values].sort((a, b) => a.localeCompare(b));
 
 describe('UI page QA contracts', () => {
-  it('covers the 21 registered product routes and four explicit non-product pages', () => {
+  it('covers the 24 registered product routes and five explicit non-product pages', () => {
     const productContracts = UI_PAGE_CONTRACTS.filter(contract => contract.kind === 'product');
     const nonProductPatterns = UI_PAGE_CONTRACTS
       .filter(contract => contract.kind !== 'product')
       .map(contract => contract.routePattern);
 
-    expect(PRODUCT_ROUTES).toHaveLength(21);
+    expect(PRODUCT_ROUTES).toHaveLength(24);
     expect(productContracts).toHaveLength(PRODUCT_ROUTES.length);
     expect(sorted(productContracts.map(contract => contract.routePattern)))
       .toEqual(sorted(PRODUCT_ROUTES.map(route => route.path)));
@@ -22,8 +22,9 @@ describe('UI page QA contracts', () => {
       '/design-gallery',
       '/company/[ticker]',
       '/filing/[...slug]',
+      '/filing-ai/runs/[runId]',
     ]));
-    expect(UI_PAGE_CONTRACTS).toHaveLength(25);
+    expect(UI_PAGE_CONTRACTS).toHaveLength(29);
   });
 
   it('uses unique page, route, representative-path, and action identifiers', () => {
@@ -82,20 +83,24 @@ describe('UI page QA contracts', () => {
     }
   });
 
-  it('provides concrete representative paths for both dynamic route shapes', () => {
+  it('provides concrete representative paths for every dynamic route shape', () => {
     const dynamicContracts = UI_PAGE_CONTRACTS.filter(contract => contract.kind === 'dynamic');
-    expect(dynamicContracts.map(contract => contract.routePattern)).toEqual([
+    expect(sorted(dynamicContracts.map(contract => contract.routePattern))).toEqual(sorted([
       '/company/[ticker]',
       '/filing/[...slug]',
-    ]);
+      '/filing-ai/runs/[runId]',
+    ]));
 
     const company = dynamicContracts.find(contract => contract.routePattern === '/company/[ticker]');
     const filing = dynamicContracts.find(contract => contract.routePattern === '/filing/[...slug]');
+    const filingAiRun = dynamicContracts.find(contract => contract.routePattern === '/filing-ai/runs/[runId]');
 
     expect(company?.representativePath).toMatch(/^\/company\/[A-Za-z0-9.-]+$/);
     expect(filing?.representativePath).toMatch(/^\/filing\/[^/]+(?:\/[^/]+)*$/);
+    expect(filingAiRun?.representativePath).toMatch(/^\/filing-ai\/runs\/run_[A-Za-z0-9-]+$/);
     expect(company?.representativePath).not.toContain('[');
     expect(filing?.representativePath).not.toContain('[');
+    expect(filingAiRun?.representativePath).not.toContain('[');
     expect(findProductRoute(company!.representativePath)?.path).toBe('/company');
     expect(findProductRoute(filing!.representativePath)?.path).toBe('/filing');
   });

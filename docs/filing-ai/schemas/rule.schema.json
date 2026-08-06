@@ -1,0 +1,156 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "Rule",
+ "type": "object",
+ "required": [
+  "rule_id",
+  "layer",
+  "name",
+  "detection_logic",
+  "authority",
+  "inputs_required",
+  "min_tier",
+  "severity",
+  "blocking",
+  "determinism",
+  "rule_version",
+  "status"
+ ],
+ "properties": {
+  "rule_id": {
+   "type": "string",
+   "pattern": "^R-[A-Z]+-",
+   "description": "Stable. Never reused, never deleted (G5)."
+  },
+  "layer": {
+   "enum": [
+    "mechanical",
+    "xbrl",
+    "consistency",
+    "continuity",
+    "disclosure",
+    "judgment"
+   ]
+  },
+  "family": {
+   "type": "string"
+  },
+  "name": {
+   "type": "string"
+  },
+  "detection_logic": {
+   "type": "string"
+  },
+  "authority": {
+   "type": "array",
+   "items": {
+    "type": "string"
+   }
+  },
+  "inputs_required": {
+   "type": "array",
+   "items": {
+    "enum": [
+     "I1",
+     "I2",
+     "I3",
+     "I4",
+     "I5"
+    ]
+   },
+   "description": "Rule executes ONLY if all listed inputs are present and passed their gate."
+  },
+  "min_tier": {
+   "type": "integer",
+   "enum": [
+    0,
+    1,
+    2,
+    3
+   ]
+  },
+  "severity": {
+   "enum": [
+    "Critical",
+    "High",
+    "Medium",
+    "Low"
+   ]
+  },
+  "blocking": {
+   "type": "boolean"
+  },
+  "determinism": {
+   "enum": [
+    "deterministic",
+    "judgment"
+   ]
+  },
+  "form_scope": {
+   "type": "array",
+   "items": {
+    "type": "string"
+   }
+  },
+  "effective_from": {
+   "type": "string",
+   "format": "date",
+   "description": "The REGULATION's effective date, not the release date (G1/G8)."
+  },
+  "effective_to": {
+   "type": [
+    "string",
+    "null"
+   ],
+   "format": "date"
+  },
+  "evidence_captured": {
+   "type": "string"
+  },
+  "build_wave": {
+   "enum": [
+    "P0",
+    "P1",
+    "P2"
+   ]
+  },
+  "status": {
+   "enum": [
+    "Draft",
+    "Back-tested",
+    "Reviewed",
+    "Approved",
+    "Live",
+    "Retired"
+   ]
+  },
+  "reviewer": {
+   "type": [
+    "string",
+    "null"
+   ],
+   "description": "Named Uniqus technical accounting partner. Required before Approved (G1)."
+  },
+  "rule_version": {
+   "type": "string"
+  },
+  "backtest": {
+   "type": "object",
+   "properties": {
+    "recall": {
+     "type": "number"
+    },
+    "precision": {
+     "type": "number"
+    },
+    "corpus_version": {
+     "type": "string"
+    },
+    "last_run": {
+     "type": "string",
+     "format": "date"
+    }
+   }
+  }
+ }
+}
