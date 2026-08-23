@@ -18,7 +18,7 @@
  */
 
 import { describe, expect, test } from 'vitest';
-import { aliasTickerFor, matchCompanyEntry, type CompanyDirectoryEntry } from '../services/secApi';
+import { aliasTickerFor, computeCompanySuggestions, matchCompanyEntry, type CompanyDirectoryEntry } from '../services/secApi';
 import snapshotRows from './fixtures/company-tickers-snapshot.json';
 
 const directory = snapshotRows as CompanyDirectoryEntry[];
@@ -90,6 +90,14 @@ describe('brand aliases — household names that file under another registrant',
       const entry = matchCompanyEntry(directory, ticker!);
       expect(entry?.ticker, `directory row for ${brand} → ${ticker}`).toBe(ticker);
     }
+  });
+
+  test('suggestions rank a name that starts with the text above a mid-word match', () => {
+    // "ENDRA" sits inside ACCENDRA; directory order listed ACH first, and
+    // Enter picks the first suggestion — the screener scoped to the wrong company.
+    const tickers = computeCompanySuggestions(directory, 'ENDRA', 3).map(entry => entry.ticker);
+    expect(tickers[0]).toBe('NDRA');
+    expect(tickers).toContain('ACH');
   });
 
   test('onsemi resolves to ON Semiconductor (the brand is not in the EDGAR name)', () => {
