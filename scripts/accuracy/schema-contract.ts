@@ -223,6 +223,21 @@ const FUNCTION_REQUIREMENTS: FunctionRequirement[] = [
     definitionFragments: ['refresh materialized view concurrently public.urc_auditor_periods_mat'],
   },
   {
+    // 024. ANALYZE requires table ownership, which neither the web nor the
+    // service role holds, so this is SECURITY DEFINER and service-role only —
+    // the same shape as the two refresh routines above. It must be declared
+    // here as well as in schemaContractFixture: this list is the contract,
+    // the fixture is the simulated live inventory, and an undeclared
+    // SECURITY DEFINER function is reported as a backdoor.
+    name: 'urc_refresh_data_stats',
+    arguments: '',
+    anonExecute: false,
+    serviceExecute: true,
+    searchPath: 'search_path=pg_catalog',
+    securityDefiner: true,
+    definitionFragments: ['analyze public.urc_sec_filings'],
+  },
+  {
     name: 'urc_companies_needing_sic',
     arguments: 'integer',
     anonExecute: false,
