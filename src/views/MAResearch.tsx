@@ -34,6 +34,24 @@ const CLAUSE_TYPES = [
   'Conditions to Closing',
 ];
 
+/**
+ * The phrase counterparties use for a resolved issuer: its EDGAR title with
+ * the corporate boilerplate removed, quoted. "ON SEMICONDUCTOR CORP" →
+ * "ON SEMICONDUCTOR", which is how Synaptics' Form 425s refer to onsemi.
+ * Built from the RESOLVED title, never from what was typed — picking a
+ * suggestion hands the view a ticker ("ON"), and a ticker as full text
+ * matches every filing containing the word.
+ */
+export function counterpartyPhrase(title: string): string {
+  const core = title
+    .replace(/\/[^/]*\//g, ' ')
+    .replace(/[,.()]/g, ' ')
+    .replace(/\b(corp|corporation|inc|incorporated|llc|ltd|limited|plc|co|company|holdings?|group|nv|sa|ag|se)\b/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return core.length >= 3 ? `"${core}"` : '';
+}
+
 // Module-level cache
 const dealDetailsCache = new Map<string, DealDetailsResult>();
 const clauseCache = new Map<string, Record<string, { text: string; section: string }>>();
@@ -44,6 +62,12 @@ export default function MAResearch() {
 
   // Deal screener state
   const [dealFilings, setDealFilings] = useState<DealFiling[]>([]);
+  // Whether the rows are the generic recent-deals feed or a server search the
+  // user ran for a company. The two are filtered differently (see
+  // filteredDeals): the feed is narrowed client-side as you type, a server
+  // search already matched the text against filing CONTENT and must not be
+  // second-guessed by filer name.
+  const [dealSource, setDealSource] = useState<'feed' | 'search'>('feed');
   const [dealLoading, setDealLoading] = useState(false);
   const [dealError, setDealError] = useState('');
 
@@ -99,6 +123,7 @@ export default function MAResearch() {
           });
         }
       setDealFilings(filings.sort((a, b) => (b.fileDate || '').localeCompare(a.fileDate || '')));
+      setDealSource('feed');
     } catch (error) {
       console.error('M&A deal screener error:', error);
       setDealFilings([]);
@@ -121,20 +146,32 @@ export default function MAResearch() {
     try {
       const oneYearAgo = new Date();
       oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+      const dateFrom = oneYearAgo.toISOString().split('T')[0];
+      const dateTo = new Date().toISOString().split('T')[0];
+      const forms = '8-K,8-K/A,SC 13D,SC TO-T,DEFM14A,S-4,425';
       const scoped = await resolveEntityScope(trimmed, 'aggressive');
-      const hits = await searchEdgarFilings(
-        scoped.entityName ? (scoped.query || 'merger agreement OR acquisition') : trimmed,
-        '8-K,8-K/A,SC 13D,SC TO-T,DEFM14A,S-4,425',
-        oneYearAgo.toISOString().split('T')[0],
-        new Date().toISOString().split('T')[0],
-        scoped.entityName || undefined,
-        100,
-        scoped.cik ? { entityCik: scoped.cik } : {}
-      );
+      // A deal has two filers. Scoping to the resolved issuer's CIK returns
+      // only what THAT company filed (the target's 8-K and 425s), never the
+      // acquirer's merger 8-K or S-4 — so the issuer-scoped lane runs beside
+      // an unscoped full-text lane for the company's name phrase, which is
+      // how the counterparty's documents refer to it. Both lanes are merged;
+      // the text lane is best-effort and never sinks the scoped one.
+      const phrase = scoped.entityName ? counterpartyPhrase(scoped.entityName) : '';
+      const lanes = scoped.entityName
+        ? [
+            searchEdgarFilings(
+              scoped.query || 'merger agreement OR acquisition',
+              forms, dateFrom, dateTo, scoped.entityName, 100,
+              scoped.cik ? { entityCik: scoped.cik } : {}
+            ),
+            ...(phrase ? [searchEdgarFilings(phrase, forms, dateFrom, dateTo, undefined, 100).catch(() => [])] : []),
+          ]
+        : [searchEdgarFilings(trimmed, forms, dateFrom, dateTo, undefined, 100)];
+      const hits = (await Promise.all(lanes)).flat();
       const seen = new Set<string>();
       const filings: DealFiling[] = [];
       for (const hit of hits) {
-        if (filings.length >= 15) break;
+        if (filings.length >= 30) break;
         const src = hit._source as any;
         const entityName = src?.display_names?.[0] || src?.entity_name || '';
         const accession = src?.adsh || '';
@@ -152,6 +189,7 @@ export default function MAResearch() {
         });
       }
       setDealFilings(filings.sort((a, b) => (b.fileDate || '').localeCompare(a.fileDate || '')));
+      setDealSource('search');
     } catch (error) {
       console.error('M&A entity deal search error:', error);
       setDealError('The entity deal search could not reach SEC EDGAR. No empty-result conclusion can be drawn.');
@@ -210,15 +248,20 @@ export default function MAResearch() {
     }
   }, [dealFilings]);
 
-  // Filter deals by search
-  const filteredDeals = searchQuery.trim()
-    ? dealFilings.filter(d => {
+  // Narrow the generic feed as the user types. NEVER applied to a server
+  // search: those rows already matched the text against filing content, and
+  // re-filtering them by filer name discarded every counterparty document —
+  // "Onsemi" fetched 64 deal filings (filed by SYNAPTICS Inc and ON
+  // SEMICONDUCTOR CORP, neither name containing "onsemi") and rendered
+  // "No M&A filings found".
+  const filteredDeals = dealSource === 'search' || !searchQuery.trim()
+    ? dealFilings
+    : dealFilings.filter(d => {
         const q = searchQuery.toLowerCase();
         return d.entityName.toLowerCase().includes(q) ||
           (d.extractedDetails?.target || '').toLowerCase().includes(q) ||
           (d.extractedDetails?.acquirer || '').toLowerCase().includes(q);
-      })
-    : dealFilings;
+      });
 
   // Search for filings for clause extraction
   const handleClauseFilingSearch = useCallback(async () => {
@@ -326,7 +369,7 @@ export default function MAResearch() {
               <div className="ma-pane-header">
                 <div>
                   <h2>Recent M&A Filings</h2>
-                  <p className="text-sm" style={{ marginTop: '4px', color: 'var(--text-secondary)' }}>8-K, SC 13D, and SC TO-T filings mentioning mergers or acquisitions (past 12 months).</p>
+                  <p className="text-sm" style={{ marginTop: '4px', color: 'var(--text-secondary)' }}>The 15 most recent 8-K, SC 13D, and SC TO-T filings mentioning mergers or acquisitions — search by company for a specific deal.</p>
                 </div>
                 <div className="search-bar-inline">
                   <Search size={16} className="search-bar-icon" />
