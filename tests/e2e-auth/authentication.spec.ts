@@ -47,6 +47,24 @@ test.describe('critical action: global.authentication', () => {
     expect(publicPaths.includes('/privacy'), '/privacy must stay public').toBe(true);
   });
 
+  /**
+   * Clerk carries the return target in two places. The middleware redirect
+   * puts it in the query string (?redirect_url=…); the hosted Account Portal
+   * URL that clerk-js builds for <SignInButton> puts it in the FRAGMENT
+   * (#/?redirect_url=…) — read straight from clerk-js's URL builder, which
+   * assembles `hashSearchParams` for redirect_url and leaves only the dev
+   * session token (__clerk_db_jwt) in the query. Reading searchParams alone
+   * reported "no target" for a flow that always carried one.
+   */
+  function clerkReturnTarget(url: string): string {
+    const parsed = new URL(url);
+    const fromQuery = parsed.searchParams.get('redirect_url');
+    if (fromQuery) return fromQuery;
+    const fragment = parsed.hash.replace(/^#/, '');
+    const fragmentQuery = fragment.includes('?') ? fragment.slice(fragment.indexOf('?') + 1) : '';
+    return new URLSearchParams(fragmentQuery).get('redirect_url') || '';
+  }
+
   test('public Sign In and Get Started controls open Clerk identity surfaces with their return target', async ({ page }) => {
     await setupClerkTestingToken({ page });
 
@@ -54,14 +72,14 @@ test.describe('critical action: global.authentication', () => {
     await clerk.loaded({ page });
     await page.getByRole('button', { name: 'Sign In', exact: true }).click();
     await expect.poll(() => page.url()).toMatch(/clerk\.accounts\.dev|\.clerk\.com|\/sign-in/);
-    const signInTarget = new URL(page.url()).searchParams.get('redirect_url') || '';
+    const signInTarget = clerkReturnTarget(page.url());
     expect(signInTarget, `Sign In did not retain the application target: ${page.url()}`).toContain('/');
 
     await page.goto('/', { waitUntil: 'domcontentloaded' });
     await clerk.loaded({ page });
     await page.getByRole('button', { name: 'Get Started', exact: true }).click();
     await expect.poll(() => page.url()).toMatch(/clerk\.accounts\.dev|\.clerk\.com|\/sign-up/);
-    const signUpTarget = new URL(page.url()).searchParams.get('redirect_url') || '';
+    const signUpTarget = clerkReturnTarget(page.url());
     expect(signUpTarget, `Get Started did not retain the application target: ${page.url()}`).toContain('/');
   });
 
@@ -113,7 +131,10 @@ test.describe('critical action: global.authentication', () => {
     await expect(page).toHaveURL(new RegExp(`${PROTECTED_ROUTE}$`));
     await expect(page.getByRole('heading', { name: 'Overview Dashboard' })).toBeVisible({ timeout: 30_000 });
 
-    await page.getByRole('button', { name: 'Open user button' }).click();
+    // Clerk's UserButton trigger is labelled "Open user menu" today ("Open user
+    // button" in older releases); accept either so a label change in the
+    // hosted UI bundle cannot masquerade as a sign-out regression.
+    await page.getByRole('button', { name: /^Open user (menu|button)$/ }).click();
     await page.getByRole('menuitem', { name: 'Sign out' }).click();
 
     // The claim that matters: access is genuinely revoked, not just hidden.
