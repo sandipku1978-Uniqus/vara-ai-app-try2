@@ -84,12 +84,16 @@ describe('company entity coverage — full SEC directory', () => {
 
 describe('brand aliases — household names that file under another registrant', () => {
   test('every alias target is a live ticker in the directory', () => {
-    for (const brand of ['google', 'YouTube', 'Facebook', 'instagram', 'WhatsApp']) {
+    for (const brand of ['google', 'YouTube', 'Facebook', 'instagram', 'WhatsApp', 'onsemi']) {
       const ticker = aliasTickerFor(brand);
       expect(ticker, `alias for ${brand}`).toBeTruthy();
       const entry = matchCompanyEntry(directory, ticker!);
       expect(entry?.ticker, `directory row for ${brand} → ${ticker}`).toBe(ticker);
     }
+  });
+
+  test('onsemi resolves to ON Semiconductor (the brand is not in the EDGAR name)', () => {
+    expect(matchCompanyEntry(directory, aliasTickerFor('onsemi')!)?.title).toMatch(/ON SEMICONDUCTOR/i);
   });
 
   test('google resolves to Alphabet, facebook to Meta', () => {

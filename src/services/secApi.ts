@@ -391,6 +391,9 @@ export const COMPANY_BRAND_ALIASES: Record<string, string> = {
   // near the bottom of SEC's size-ordered directory, so the name people
   // actually type has to reach it directly.
   SPACEX: 'SPCX',
+  // Registered as ON SEMICONDUCTOR CORP; the company brands itself "onsemi"
+  // and that is the name in every press release and counterparty filing.
+  ONSEMI: 'ON',
 };
 
 export function aliasTickerFor(text: string): string | null {
