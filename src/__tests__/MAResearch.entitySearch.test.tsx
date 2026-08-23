@@ -121,6 +121,40 @@ describe('M&A screener: company search keeps counterparty filings', () => {
     expect(screen.getAllByText(/DOMINION ENERGY, INC/).length).toBeGreaterThanOrEqual(20);
   });
 
+  it('discovers the counterparty from the issuer filings metadata and runs a scoped lane for it', async () => {
+    resolveEntityScope.mockResolvedValue({ entityName: 'DOMINION ENERGY, INC', cik: '715957', query: '' });
+    // Dominion's own 425s carry NextEra's CIK alongside its own.
+    const dominion425s = Array.from({ length: 6 }, (_, i) => ({
+      ...hit('DOMINION ENERGY, INC  (D)', '0000715957', `0000715957-26-00020${i}`, '425', `2026-08-0${1 + i}`),
+      _source: { ...hit('DOMINION ENERGY, INC  (D)', '0000715957', `0000715957-26-00020${i}`, '425', `2026-08-0${1 + i}`)._source, ciks: ['0000715957', '0000753308'] },
+    }));
+    const nextEraOwn = [hit('NEXTERA ENERGY INC  (NEE)', '0000753308', '0000753308-26-000009', 'S-4', '2026-08-11')];
+    searchEdgarFilings.mockImplementation(async (query: string, _f: string, _a: string, _b: string, _e?: string, _m?: number, extended?: { entityCik?: string }) => {
+      if (extended?.entityCik === '715957') return dominion425s;
+      if (extended?.entityCik === '753308') return nextEraOwn;
+      if (query === '"DOMINION ENERGY"') return []; // the name phrase returns nothing useful in a 425 storm
+      return FEED;
+    });
+    const user = userEvent.setup();
+    render(<MAResearch />);
+    await screen.findByText(/Newbury Street II/);
+
+    await user.type(screen.getByRole('combobox', { name: 'Filter M&A filings by entity name' }), 'Dominion Energy{Enter}');
+
+    expect(await screen.findByText(/NEXTERA ENERGY INC/)).toBeInTheDocument();
+    const scopedLanes = searchEdgarFilings.mock.calls.map(call => call[6]?.entityCik).filter(Boolean);
+    expect(scopedLanes).toContain('753308');
+  });
+
+  it('discoverCounterpartCiks excludes the issuer, needs two sightings, caps at two', async () => {
+    const { discoverCounterpartCiks } = await import('../views/MAResearch');
+    const h = (ciks: string[]) => ({ _source: { ciks } });
+    expect(discoverCounterpartCiks([h(['0000715957', '0000753308']), h(['0000715957', '0000753308'])], '715957')).toEqual(['753308']);
+    expect(discoverCounterpartCiks([h(['0000715957', '0000999999'])], '715957')).toEqual([]); // one sighting is noise
+    // '2' and '4' are seen three times, '3' twice — the cap keeps the two most frequent.
+    expect(discoverCounterpartCiks([h(['1', '2', '3']), h(['1', '2', '3']), h(['1', '2', '4']), h(['1', '4']), h(['1', '4'])], '1')).toEqual(['2', '4']);
+  });
+
   it('counterpartyPhrase strips corporate boilerplate and quotes the core name', async () => {
     const { counterpartyPhrase } = await import('../views/MAResearch');
     expect(counterpartyPhrase('ON SEMICONDUCTOR CORP')).toBe('"ON SEMICONDUCTOR"');
