@@ -264,6 +264,31 @@ describe('secApi', () => {
       expect(String(mockFetch.mock.calls[0][0])).not.toContain('/api/es-search?');
     });
 
+    it('an empty-query issuer browse searches the core company name, not the full EDGAR title', async () => {
+      // "ON SEMICONDUCTOR CORP" as a phrase matched only 2008-era filings that
+      // wrote "Corp." — every recent one writes "Corporation". The exhibits
+      // search for onsemi therefore showed nothing newer than 2020.
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({ hits: { hits: [], total: { value: 0, relation: 'eq' } } }),
+      });
+      const { searchEdgarFilings } = await import('../services/secApi');
+      await searchEdgarFilings('', '8-K,S-4', '2024-08-22', '2026-08-22', 'ON SEMICONDUCTOR CORP', 5, { entityCik: '1097864' });
+
+      const url = new URL(String(mockFetch.mock.calls[0][0]), 'http://localhost');
+      expect(url.searchParams.get('q')).toBe('"ON SEMICONDUCTOR"');
+      expect(url.searchParams.get('ciks')).toBe('0001097864');
+    });
+
+    it('companyNamePhrase strips corporate boilerplate and is empty for a degenerate name', async () => {
+      const { companyNamePhrase } = await import('../services/secApi');
+      expect(companyNamePhrase('ON SEMICONDUCTOR CORP')).toBe('"ON SEMICONDUCTOR"');
+      expect(companyNamePhrase('SYNAPTICS Inc')).toBe('"SYNAPTICS"');
+      expect(companyNamePhrase('Ferguson Enterprises Inc. /DE/')).toBe('"Ferguson Enterprises"');
+      expect(companyNamePhrase('Organon & Co.')).toBe('"Organon"');
+      expect(companyNamePhrase('Co')).toBe('');
+    });
+
     it('reports bounded plain-EFTS collection as partial candidate coverage', async () => {
       const onCoverage = vi.fn();
       mockFetch.mockResolvedValue({

@@ -13,7 +13,8 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock('../services/filingResearch', () => ({
   executeFilingResearchSearch: mocks.filingResearch,
 }));
-vi.mock('../services/secApi', () => ({
+vi.mock('../services/secApi', async () => ({
+  companyNamePhrase: (await vi.importActual<typeof import('../services/secApi')>('../services/secApi')).companyNamePhrase,
   searchEdgarFilings: mocks.searchEdgar,
   fetchFilingText: mocks.fetchFilingText,
   getCompanyDirectory: async () => [],

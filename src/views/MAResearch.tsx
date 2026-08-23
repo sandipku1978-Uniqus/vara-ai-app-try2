@@ -3,7 +3,7 @@
 import EntitySearchInput from '../components/filters/EntitySearchInput';
 import { useState, useEffect, useCallback } from 'react';
 import { FileSearch, Scale, Link2, Search, Briefcase, Loader2 } from 'lucide-react';
-import { searchEdgarFilings, fetchFilingText, buildSecFilingIndexUrl } from '../services/secApi';
+import { searchEdgarFilings, fetchFilingText, buildSecFilingIndexUrl, companyNamePhrase } from '../services/secApi';
 import { resolveEntityScope } from '../services/filingResearch';
 import { aiExtractDealDetails, aiExtractClauses, type DealDetailsResult } from '../services/aiApi';
 import ResultsToolbar from '../components/tables/ResultsToolbar';
@@ -34,23 +34,8 @@ const CLAUSE_TYPES = [
   'Conditions to Closing',
 ];
 
-/**
- * The phrase counterparties use for a resolved issuer: its EDGAR title with
- * the corporate boilerplate removed, quoted. "ON SEMICONDUCTOR CORP" →
- * "ON SEMICONDUCTOR", which is how Synaptics' Form 425s refer to onsemi.
- * Built from the RESOLVED title, never from what was typed — picking a
- * suggestion hands the view a ticker ("ON"), and a ticker as full text
- * matches every filing containing the word.
- */
-export function counterpartyPhrase(title: string): string {
-  const core = title
-    .replace(/\/[^/]*\//g, ' ')
-    .replace(/[,.()]/g, ' ')
-    .replace(/\b(corp|corporation|inc|incorporated|llc|ltd|limited|plc|co|company|holdings?|group|nv|sa|ag|se)\b/gi, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-  return core.length >= 3 ? `"${core}"` : '';
-}
+/** Re-exported so the existing unit test and any caller keep one definition. */
+export const counterpartyPhrase = companyNamePhrase;
 
 // Module-level cache
 const dealDetailsCache = new Map<string, DealDetailsResult>();

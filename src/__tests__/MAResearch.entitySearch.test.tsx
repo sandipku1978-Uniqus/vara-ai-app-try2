@@ -12,7 +12,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const searchEdgarFilings = vi.hoisted(() => vi.fn());
 const resolveEntityScope = vi.hoisted(() => vi.fn());
 
-vi.mock('../services/secApi', () => ({
+vi.mock('../services/secApi', async () => ({
+  companyNamePhrase: (await vi.importActual<typeof import('../services/secApi')>('../services/secApi')).companyNamePhrase,
   searchEdgarFilings,
   fetchFilingText: vi.fn(async () => ''),
   buildSecFilingIndexUrl: () => 'https://www.sec.gov/',
