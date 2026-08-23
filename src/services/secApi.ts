@@ -332,6 +332,28 @@ export async function getCompanyDirectory(): Promise<CompanyDirectoryEntry[]> {
  * deduped root forms only; amendments share their root in EFTS, and callers
  * keep exact-form intent via client-side filtering.
  */
+/**
+ * The phrase EDGAR full text actually contains for a registrant: its title
+ * with the corporate boilerplate removed, quoted. Used wherever a company is
+ * the only thing we have to search by — the empty-query issuer browse and
+ * the M&A counterparty lane.
+ *
+ * The full EDGAR title is the wrong phrase: "ON SEMICONDUCTOR CORP" matches
+ * 2008 filings that wrote "Corp." and misses every recent one that writes
+ * "Corporation" (16 hits vs 81 for "ON SEMICONDUCTOR" over 24 months) —
+ * which is how an exhibit search for onsemi showed nothing newer than 2020.
+ */
+export function companyNamePhrase(title: string): string {
+  const core = title
+    .replace(/\/[^/]*\//g, ' ')
+    .replace(/[,.()]/g, ' ')
+    .replace(/\b(corp|corporation|inc|incorporated|llc|ltd|limited|plc|co|company|holdings?|group|nv|sa|ag|se)\b/gi, ' ')
+    .replace(/\s+/g, ' ')
+    .replace(/^[^a-z0-9]+|[^a-z0-9]+$/gi, '')
+    .trim();
+  return core.length >= 3 ? `"${core}"` : '';
+}
+
 export function normalizeEftsForms(forms: string): string {
   return Array.from(new Set(
     forms.split(',').map(form => form.trim().replace(/\/A$/i, '')).filter(Boolean)
@@ -1679,7 +1701,7 @@ export async function searchEdgarFilings(
   // EFTS rejects an empty q: an entity-resolved browse ("OGN 10-K" → issuer
   // + cleared text) reached here as q='' and silently returned zero results.
   // Quote the issuer name as the text query so the legacy lane still works.
-  const effectiveQuery = query.trim() || (entityName ? `"${entityName.trim()}"` : query);
+  const effectiveQuery = query.trim() || (entityName ? (companyNamePhrase(entityName) || `"${entityName.trim()}"`) : query);
   const baseParams = new URLSearchParams({
     q: effectiveQuery,
     forms: normalizeEftsForms(forms),
