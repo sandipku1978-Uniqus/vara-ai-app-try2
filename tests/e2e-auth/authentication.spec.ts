@@ -148,6 +148,13 @@ test.describe('critical action: global.authentication', () => {
       .first()
       .click();
 
+    // Sign-out is an asynchronous request to Clerk. Navigating before it
+    // completes aborts it and the next page load still carries a valid
+    // session — the run's snapshot showed the signed-in dashboard after the
+    // goto. Wait for the signed-out chrome (the public Sign In control) first.
+    await expect(page.getByRole('button', { name: 'Sign In', exact: true })).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByRole('button', { name: /^Open user (menu|button)$/ })).toHaveCount(0);
+
     // The claim that matters: access is genuinely revoked, not just hidden.
     // A fresh navigation must be bounced back to the identity surface.
     await page.goto(PROTECTED_ROUTE, { waitUntil: 'domcontentloaded' });
