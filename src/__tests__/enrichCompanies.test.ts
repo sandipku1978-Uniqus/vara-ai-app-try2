@@ -198,14 +198,42 @@ describe('SIC sentinel persistence', () => {
     expect(mocks.upsert.mock.calls[0][0]).not.toHaveProperty('sic', '0000');
   });
 
-  it.each(failureFixtures)('leaves the database untouched after retry-exhausted $label', async ({ reason, response }) => {
+  it.each(failureFixtures)('skips an issuer after retry-exhausted $label and leaves its row untouched', async ({ reason, response }) => {
     vi.stubGlobal('fetch', vi.fn().mockImplementation(response));
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-    await expect(sicPass(1, {
-      maxAttempts: 2,
-      retryBaseMs: 0,
-      requestDelayMs: 0,
-    })).rejects.toThrow(reason);
+    // One unreadable issuer no longer sinks the pass: it is skipped (no
+    // sentinel, so it stays a candidate for the next run) and the pass
+    // completes.
+    await expect(sicPass(1, { maxAttempts: 2, retryBaseMs: 0, requestDelayMs: 0 })).resolves.toBeUndefined();
+    expect(mocks.upsert).not.toHaveBeenCalled();
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining(`skipped CIK 320193: ${reason}`));
+    warn.mockRestore();
+  });
+
+  it('skips the unreadable issuer and still enriches the rest of the batch', async () => {
+    mocks.rpc.mockResolvedValue({ data: [{ cik: 320193 }, { cik: 789019 }], error: null });
+    vi.stubGlobal('fetch', vi.fn().mockImplementation(async (url: string) =>
+      String(url).includes('CIK0000320193')
+        ? new Response('<html>Request Rate Threshold Exceeded</html>', { status: 200 })
+        : new Response(JSON.stringify({ name: 'Microsoft Corporation', sic: '7372', sicDescription: 'Prepackaged Software' }), { status: 200 })
+    ));
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    await sicPass(2, { maxAttempts: 2, retryBaseMs: 0, requestDelayMs: 0 });
+
+    expect(mocks.upsert).toHaveBeenCalledOnce();
+    expect(mocks.upsert).toHaveBeenCalledWith(expect.objectContaining({ cik: 789019, sic: '7372' }), { onConflict: 'cik' });
+  });
+
+  it('fails the pass when skips exceed the outage threshold', async () => {
+    mocks.rpc.mockResolvedValue({ data: [1, 2, 3, 4, 5].map(cik => ({ cik })), error: null });
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('<html>throttled</html>', { status: 200 })));
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    // Threshold is max(3, 5% of the batch): the fourth skip is one too many.
+    await expect(sicPass(5, { maxAttempts: 1, retryBaseMs: 0, requestDelayMs: 0 }))
+      .rejects.toThrow(/unreadable for 4 of 5 issuers \(limit 3\)/);
     expect(mocks.upsert).not.toHaveBeenCalled();
   });
 });
