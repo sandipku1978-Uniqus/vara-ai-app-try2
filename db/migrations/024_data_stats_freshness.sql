@@ -68,11 +68,23 @@ end $$;
 -- rows whose `content` is non-null, applied to the table's row estimate.
 -- pg_stats.null_frac is exactly that ratio, and is refreshed by the same
 -- ANALYZE the function above runs.
+-- The existing definition (004, restated in 011) declares a different OUT
+-- row type; Postgres refuses CREATE OR REPLACE when the return shape changes
+-- ("cannot change return type of existing function"), so it is dropped and
+-- recreated. Grants are restated below, so nothing is silently lost.
+drop function if exists public.urc_data_stats();
 create or replace function public.urc_data_stats()
 returns table (
-  filings_estimate bigint, filings_through date,
+  filings_estimate bigint,
+  filings_through date,
   auditors_estimate bigint,
-  letters_estimate bigint, letters_with_text bigint, letters_through date
+  letters_estimate bigint,
+  letters_with_text bigint,
+  letters_through date,
+  -- 011's two operational columns are kept: the dashboard reads them
+  -- (last successful text extraction; letters awaiting a fetch retry).
+  letters_last_text_fetch timestamptz,
+  letters_retry_pending bigint
 )
 language sql stable
 set search_path = pg_catalog, public
@@ -96,7 +108,9 @@ as $$
         )::bigint
       )
     ),
-    (select max(date_filed) from urc_comment_letters);
+    (select max(date_filed) from urc_comment_letters),
+    (select max(content_fetched_at) from urc_comment_letters where content is not null),
+    (select count(*) from urc_comment_letters where content is null and content_error = 'fetch_failed');
 $$;
 
 -- Grants unchanged from the 014 read contract; restated so a replaced
@@ -137,7 +151,7 @@ insert into public.urc_schema_version (
   '024',
   26,
   -- URC CHAIN CHECKSUM VALUE
-  '803c4660b2bb1dc79a166fd4afc60551d554dff9c8001d8c76a4eec76182e1b9',
+  'a09e76d7862279ae64ce791120eaf3e372ec3b8d97a09cfc5e95cf844df9500a',
   'sha256-v2'
 )
 on conflict (singleton) do update set
