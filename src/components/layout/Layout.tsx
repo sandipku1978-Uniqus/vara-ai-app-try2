@@ -276,12 +276,15 @@ export function Navbar({ mobileNavOpen, onMobileNavToggle, menuButtonRef }: { mo
         {clerkEnabled ? (
           isLoaded && !isSignedIn ? (
             <div className="nav-auth-actions">
-              <SignInButton>
+              {/* Return to the page the visitor was on. Without a redirect the
+                  hosted Clerk surface carries no return target, and a user who
+                  signs in from /compare lands on the default page instead. */}
+              <SignInButton fallbackRedirectUrl={location || '/'}>
                 <button className="nav-auth-btn nav-auth-btn-secondary" type="button">
                   Sign In
                 </button>
               </SignInButton>
-              <SignUpButton>
+              <SignUpButton fallbackRedirectUrl={location || '/'}>
                 <button className="nav-auth-btn nav-auth-btn-primary" type="button">
                   Get Started
                 </button>

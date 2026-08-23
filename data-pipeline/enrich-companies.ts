@@ -231,6 +231,16 @@ export async function sicPass(limit: number, options: SicPassOptions = {}): Prom
   const ciks: number[] = (candidates ?? []).map((row: { cik: number }) => row.cik);
   console.log(`Enriching SIC/state for ${ciks.length} issuers ...`);
 
+  // One unreadable issuer must not sink the batch. SEC intermittently answers
+  // a submissions request with a 200 that is not JSON (its throttle page), and
+  // the daily refresh failed every day for nineteen days on a DIFFERENT
+  // single CIK each time — aborting the auditor refresh behind it. An
+  // exhausted issuer is left untouched (no sentinel, so it stays a candidate
+  // for the next incremental pass) and skipped; the pass fails only when
+  // skips exceed a threshold, which is what a real SEC outage looks like.
+  const skipped: Array<{ cik: number; reason: string; status: number | null }> = [];
+  const maxSkips = Math.max(3, Math.ceil(ciks.length * 0.05));
+
   let done = 0;
   for (const cik of ciks) {
     const padded = String(cik).padStart(10, '0');
@@ -240,7 +250,15 @@ export async function sicPass(limit: number, options: SicPassOptions = {}): Prom
       validate: isSubmissionsPayload,
     });
     if (fetched.kind === 'retry-exhausted') {
-      throw exhaustedFetchError(`SEC submissions for CIK ${cik}`, fetched);
+      skipped.push({ cik, reason: fetched.reason, status: fetched.status });
+      console.warn(`  skipped CIK ${cik}: ${fetched.reason} (HTTP ${fetched.status ?? 'n/a'}) after ${fetched.attempts} attempts — left for the next pass`);
+      if (skipped.length > maxSkips) {
+        throw new Error(
+          `SEC submissions unreadable for ${skipped.length} of ${ciks.length} issuers (limit ${maxSkips}); ` +
+          `last: ${exhaustedFetchError(`CIK ${cik}`, fetched).message}`
+        );
+      }
+      continue;
     }
 
     let row: Record<string, unknown>;
@@ -273,7 +291,7 @@ export async function sicPass(limit: number, options: SicPassOptions = {}): Prom
     const requestDelayMs = options.requestDelayMs ?? 220;
     if (requestDelayMs > 0) await delay(requestDelayMs); // ~4.5 req/s
   }
-  console.log(`SIC pass done: ${done} issuers enriched.`);
+  console.log(`SIC pass done: ${done} issuers enriched${skipped.length ? `, ${skipped.length} skipped (retried next run)` : ''}.`);
 }
 
 async function main() {
