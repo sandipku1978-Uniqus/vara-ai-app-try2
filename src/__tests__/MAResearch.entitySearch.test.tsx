@@ -94,6 +94,32 @@ describe('M&A screener: company search keeps counterparty filings', () => {
     expect(calls.map(call => call.query)).not.toContain('onsemi');
   });
 
+  it('a prolific filer cannot starve the counterparty lane out of the row cap', async () => {
+    resolveEntityScope.mockResolvedValue({ entityName: 'DOMINION ENERGY, INC', cik: '715957', query: '' });
+    // The issuer lane alone exceeds the 30-row cap (a Form 425 nearly every day).
+    const issuerStorm = Array.from({ length: 40 }, (_, i) =>
+      hit('DOMINION ENERGY, INC  (D)', '0000715957', `0000715957-26-${String(100 + i).padStart(6, '0')}`, '425', `2026-07-${String(1 + (i % 28)).padStart(2, '0')}`)
+    );
+    const counterparty = [
+      hit('NEXTERA ENERGY INC  (NEE)', '0000753308', '0000753308-26-000001', '8-K', '2026-05-18'),
+      hit('NEXTERA ENERGY INC  (NEE)', '0000753308', '0000753308-26-000002', 'S-4', '2026-08-11'),
+    ];
+    searchEdgarFilings.mockImplementation(async (query: string, _f: string, _a: string, _b: string, _e?: string, _m?: number, extended?: { entityCik?: string }) => {
+      if (extended?.entityCik === '715957') return issuerStorm;
+      if (query === '"DOMINION ENERGY"') return counterparty;
+      return FEED;
+    });
+    const user = userEvent.setup();
+    render(<MAResearch />);
+    await screen.findByText(/Newbury Street II/);
+
+    await user.type(screen.getByRole('combobox', { name: 'Filter M&A filings by entity name' }), 'Dominion Energy{Enter}');
+
+    // Both NextEra filings survive the cap; concatenation would have dropped them.
+    expect(await screen.findAllByText(/NEXTERA ENERGY INC/)).toHaveLength(2);
+    expect(screen.getAllByText(/DOMINION ENERGY, INC/).length).toBeGreaterThanOrEqual(20);
+  });
+
   it('counterpartyPhrase strips corporate boilerplate and quotes the core name', async () => {
     const { counterpartyPhrase } = await import('../views/MAResearch');
     expect(counterpartyPhrase('ON SEMICONDUCTOR CORP')).toBe('"ON SEMICONDUCTOR"');

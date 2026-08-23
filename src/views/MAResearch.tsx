@@ -167,7 +167,17 @@ export default function MAResearch() {
             ...(phrase ? [searchEdgarFilings(phrase, forms, dateFrom, dateTo, undefined, 100).catch(() => [])] : []),
           ]
         : [searchEdgarFilings(trimmed, forms, dateFrom, dateTo, undefined, 100)];
-      const hits = (await Promise.all(lanes)).flat();
+      // Interleave the lanes instead of concatenating them. A prolific filer
+      // (Dominion Energy issues a Form 425 almost daily) fills the 30-row cap
+      // from its own lane alone, and the counterparty never gets a slot —
+      // observed in production: "Dominion Energy" showed 30 Dominion rows
+      // and not one NextEra filing. Round-robin gives each side a fair share
+      // and lets either lane take the remainder when the other runs dry.
+      const laneHits = await Promise.all(lanes);
+      const hits: typeof laneHits[number] = [];
+      for (let index = 0; laneHits.some(lane => index < lane.length); index += 1) {
+        for (const lane of laneHits) if (index < lane.length) hits.push(lane[index]);
+      }
       const seen = new Set<string>();
       const filings: DealFiling[] = [];
       for (const hit of hits) {
