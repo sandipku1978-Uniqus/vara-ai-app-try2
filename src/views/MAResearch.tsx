@@ -3,7 +3,7 @@
 import EntitySearchInput from '../components/filters/EntitySearchInput';
 import { useState, useEffect, useCallback } from 'react';
 import { FileSearch, Scale, Link2, Search, Briefcase, Loader2 } from 'lucide-react';
-import { searchEdgarFilings, fetchFilingText, buildSecFilingIndexUrl, companyNamePhrase } from '../services/secApi';
+import { searchEdgarFilings, fetchFilingText, buildSecFilingIndexUrl } from '../services/secApi';
 import { resolveEntityScope } from '../services/filingResearch';
 import { aiExtractDealDetails, aiExtractClauses, type DealDetailsResult } from '../services/aiApi';
 import ResultsToolbar from '../components/tables/ResultsToolbar';
@@ -33,9 +33,6 @@ const CLAUSE_TYPES = [
   'Non-Solicitation / No-Shop',
   'Conditions to Closing',
 ];
-
-/** Re-exported so the existing unit test and any caller keep one definition. */
-export const counterpartyPhrase = companyNamePhrase;
 
 /**
  * Counterparties named in an issuer's own deal filings. A Form 425 (and a
@@ -169,30 +166,29 @@ export default function MAResearch() {
       // an unscoped full-text lane for the company's name phrase, which is
       // how the counterparty's documents refer to it. Both lanes are merged;
       // the text lane is best-effort and never sinks the scoped one.
-      const phrase = scoped.entityName ? counterpartyPhrase(scoped.entityName) : '';
       const DEAL_QUERY = 'merger agreement OR acquisition';
       const run = (q: string, entityName?: string, entityCik?: string, max = 100) =>
         searchEdgarFilings(q, forms, dateFrom, dateTo, entityName, max, entityCik ? { entityCik } : {});
 
-      // A deal has two filers. Scoping to the resolved issuer's CIK returns
-      // only what THAT company filed, never the other side's merger 8-K or
-      // S-4. Three more lanes cover it: the issuer's name as a phrase (how
-      // counterparty documents refer to it), and a scoped lane for each
-      // counterparty named in the issuer's own deal filings — a Form 425
-      // carries both CIKs, which is the only signal that survives a "425
-      // storm" (Dominion filed one almost daily; its name phrase returned
-      // nothing but its own documents). Lanes are interleaved round-robin
-      // so no single prolific filer fills the cap alone; every lane but the
-      // issuer's is best-effort and never sinks the search.
+      // Strictly "filed by a party to the deal". A deal has two filers, and
+      // scoping to the resolved issuer's CIK returns only what THAT company
+      // filed — never the other side's merger 8-K or S-4. The other side is
+      // read off EDGAR's own metadata: a Form 425 (and a co-registrant
+      // merger 8-K) carries both parties' CIKs, so each counterparty named
+      // in the issuer's deal filings gets its own scoped lane. No full-text
+      // name lane: it pulled in filings that merely MENTION the company
+      // (peer banks listing it in S-4 comparables), which is not deal
+      // history. Lanes are interleaved round-robin so a prolific filer
+      // cannot fill the cap alone; counterparty lanes are best-effort.
       let laneHits: Awaited<ReturnType<typeof searchEdgarFilings>>[];
       if (scoped.entityName) {
-        const phraseLane = phrase ? run(phrase).catch(() => []) : Promise.resolve([]);
         const issuerHits = await run(scoped.query || DEAL_QUERY, scoped.entityName, scoped.cik || undefined);
         const counterpartLanes = discoverCounterpartCiks(issuerHits, scoped.cik).map(cik =>
           run(DEAL_QUERY, undefined, cik, 60).catch(() => [])
         );
-        laneHits = [issuerHits, ...(await Promise.all([...counterpartLanes, phraseLane]))];
+        laneHits = [issuerHits, ...(await Promise.all(counterpartLanes))];
       } else {
+        // Unresolved text has no CIK to scope by; full text is all there is.
         laneHits = [await run(trimmed)];
       }
       const hits: typeof laneHits[number] = [];

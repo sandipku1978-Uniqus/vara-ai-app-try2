@@ -36,6 +36,12 @@ function hit(name: string, cik: string, adsh: string, form: string, date: string
   };
 }
 
+/** A deal filing whose EDGAR metadata names both parties (as Form 425s do). */
+function dealHit(name: string, cik: string, otherCik: string, adsh: string, form: string, date: string) {
+  const base = hit(name, cik, adsh, form, date);
+  return { ...base, _source: { ...base._source, ciks: [cik, otherCik] } };
+}
+
 const FEED = [
   hit('Newbury Street II Acquisition Corp', '0001000001', '0001000001-26-000001', '8-K', '2026-08-18'),
   hit('AEVEX Corp.', '0001000002', '0001000002-26-000002', '8-K', '2026-08-12'),
@@ -71,11 +77,17 @@ describe('M&A screener: company search keeps counterparty filings', () => {
     expect(screen.queryByText('No M&A filings found.')).not.toBeInTheDocument();
   });
 
-  it('runs both sides of a resolved company: the issuer lane and the counterparty text lane', async () => {
+  it('runs both sides of a resolved company: the issuer lane and a scoped lane per counterparty named in its filings', async () => {
     resolveEntityScope.mockResolvedValue({ entityName: 'ON SEMICONDUCTOR CORP', cik: '1097864', query: '' });
-    searchEdgarFilings.mockImplementation(async (query: string, _forms: string, _from: string, _to: string, _entity?: string, _max?: number, extended?: { entityCik?: string }) => {
-      if (query === 'merger agreement OR acquisition' && extended?.entityCik === '1097864') return [ONSEMI_TEXT_HITS[1]];
-      if (query === '"ON SEMICONDUCTOR"') return [ONSEMI_TEXT_HITS[0]];
+    searchEdgarFilings.mockImplementation(async (_query: string, _forms: string, _from: string, _to: string, _entity?: string, _max?: number, extended?: { entityCik?: string }) => {
+      if (extended?.entityCik === '1097864') {
+        // onsemi's own merger 8-K and 425s carry Synaptics' CIK too.
+        return [
+          dealHit('ON SEMICONDUCTOR CORP  (ON)', '0001097864', '0000817720', '0001140361-26-026395', '8-K', '2026-06-25'),
+          dealHit('ON SEMICONDUCTOR CORP  (ON)', '0001097864', '0000817720', '0001140361-26-026396', '425', '2026-06-26'),
+        ];
+      }
+      if (extended?.entityCik === '817720') return [ONSEMI_TEXT_HITS[0]];
       return FEED;
     });
     const user = userEvent.setup();
@@ -84,30 +96,28 @@ describe('M&A screener: company search keeps counterparty filings', () => {
 
     await user.type(screen.getByRole('combobox', { name: 'Filter M&A filings by entity name' }), 'onsemi{Enter}');
 
-    expect(await screen.findByText(/ON SEMICONDUCTOR CORP/)).toBeInTheDocument();
-    expect(screen.getByText(/SYNAPTICS Inc/)).toBeInTheDocument();
+    expect(await screen.findByText(/SYNAPTICS Inc/)).toBeInTheDocument();
+    expect(screen.getAllByText(/ON SEMICONDUCTOR CORP/).length).toBeGreaterThanOrEqual(2);
     const calls = searchEdgarFilings.mock.calls.map(call => ({ query: call[0], entityCik: call[6]?.entityCik }));
     expect(calls).toContainEqual({ query: 'merger agreement OR acquisition', entityCik: '1097864' });
-    // The counterparty lane searches the resolved NAME phrase, never the typed
-    // text: picking a suggestion hands the view the ticker, and "ON" as full
-    // text would match every filing containing the word.
-    expect(calls).toContainEqual({ query: '"ON SEMICONDUCTOR"', entityCik: undefined });
-    expect(calls.map(call => call.query)).not.toContain('onsemi');
+    expect(calls).toContainEqual({ query: 'merger agreement OR acquisition', entityCik: '817720' });
+    // Strictly parties to the deal: no full-text name lane, no typed-text lane.
+    expect(calls.filter(call => !call.entityCik)).toHaveLength(1); // the initial feed only
   });
 
   it('a prolific filer cannot starve the counterparty lane out of the row cap', async () => {
     resolveEntityScope.mockResolvedValue({ entityName: 'DOMINION ENERGY, INC', cik: '715957', query: '' });
     // The issuer lane alone exceeds the 30-row cap (a Form 425 nearly every day).
     const issuerStorm = Array.from({ length: 40 }, (_, i) =>
-      hit('DOMINION ENERGY, INC  (D)', '0000715957', `0000715957-26-${String(100 + i).padStart(6, '0')}`, '425', `2026-07-${String(1 + (i % 28)).padStart(2, '0')}`)
+      dealHit('DOMINION ENERGY, INC  (D)', '0000715957', '0000753308', `0000715957-26-${String(100 + i).padStart(6, '0')}`, '425', `2026-07-${String(1 + (i % 28)).padStart(2, '0')}`)
     );
     const counterparty = [
       hit('NEXTERA ENERGY INC  (NEE)', '0000753308', '0000753308-26-000001', '8-K', '2026-05-18'),
       hit('NEXTERA ENERGY INC  (NEE)', '0000753308', '0000753308-26-000002', 'S-4', '2026-08-11'),
     ];
-    searchEdgarFilings.mockImplementation(async (query: string, _f: string, _a: string, _b: string, _e?: string, _m?: number, extended?: { entityCik?: string }) => {
+    searchEdgarFilings.mockImplementation(async (_query: string, _f: string, _a: string, _b: string, _e?: string, _m?: number, extended?: { entityCik?: string }) => {
       if (extended?.entityCik === '715957') return issuerStorm;
-      if (query === '"DOMINION ENERGY"') return counterparty;
+      if (extended?.entityCik === '753308') return counterparty;
       return FEED;
     });
     const user = userEvent.setup();
@@ -153,14 +163,6 @@ describe('M&A screener: company search keeps counterparty filings', () => {
     expect(discoverCounterpartCiks([h(['0000715957', '0000999999'])], '715957')).toEqual([]); // one sighting is noise
     // '2' and '4' are seen three times, '3' twice — the cap keeps the two most frequent.
     expect(discoverCounterpartCiks([h(['1', '2', '3']), h(['1', '2', '3']), h(['1', '2', '4']), h(['1', '4']), h(['1', '4'])], '1')).toEqual(['2', '4']);
-  });
-
-  it('counterpartyPhrase strips corporate boilerplate and quotes the core name', async () => {
-    const { counterpartyPhrase } = await import('../views/MAResearch');
-    expect(counterpartyPhrase('ON SEMICONDUCTOR CORP')).toBe('"ON SEMICONDUCTOR"');
-    expect(counterpartyPhrase('SYNAPTICS Inc')).toBe('"SYNAPTICS"');
-    expect(counterpartyPhrase('Ferguson Enterprises Inc. /DE/')).toBe('"Ferguson Enterprises"');
-    expect(counterpartyPhrase('Co')).toBe('');
   });
 
   it('still narrows the generic feed as the user types, before any search runs', async () => {
