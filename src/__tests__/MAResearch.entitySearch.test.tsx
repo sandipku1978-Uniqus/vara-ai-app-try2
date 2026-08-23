@@ -79,7 +79,7 @@ describe('M&A screener: company search keeps counterparty filings', () => {
 
   it('runs both sides of a resolved company: the issuer lane and a scoped lane per counterparty named in its filings', async () => {
     resolveEntityScope.mockResolvedValue({ entityName: 'ON SEMICONDUCTOR CORP', cik: '1097864', query: '' });
-    searchEdgarFilings.mockImplementation(async (query: string, _forms: string, _from: string, _to: string, _entity?: string, _max?: number, extended?: { entityCik?: string }) => {
+    searchEdgarFilings.mockImplementation(async (_query: string, _forms: string, _from: string, _to: string, _entity?: string, _max?: number, extended?: { entityCik?: string }) => {
       if (extended?.entityCik === '1097864') {
         // onsemi's own merger 8-K and 425s carry Synaptics' CIK too.
         return [
@@ -115,7 +115,7 @@ describe('M&A screener: company search keeps counterparty filings', () => {
       hit('NEXTERA ENERGY INC  (NEE)', '0000753308', '0000753308-26-000001', '8-K', '2026-05-18'),
       hit('NEXTERA ENERGY INC  (NEE)', '0000753308', '0000753308-26-000002', 'S-4', '2026-08-11'),
     ];
-    searchEdgarFilings.mockImplementation(async (query: string, _f: string, _a: string, _b: string, _e?: string, _m?: number, extended?: { entityCik?: string }) => {
+    searchEdgarFilings.mockImplementation(async (_query: string, _f: string, _a: string, _b: string, _e?: string, _m?: number, extended?: { entityCik?: string }) => {
       if (extended?.entityCik === '715957') return issuerStorm;
       if (extended?.entityCik === '753308') return counterparty;
       return FEED;
