@@ -52,6 +52,34 @@ export function counterpartyPhrase(title: string): string {
   return core.length >= 3 ? `"${core}"` : '';
 }
 
+/**
+ * Counterparties named in an issuer's own deal filings. A Form 425 (and a
+ * merger 8-K with a co-registrant) carries BOTH parties' CIKs in EDGAR's
+ * metadata, so the other side of a deal can be read straight off the
+ * issuer lane's hits — no text matching involved. Returns up to two CIKs
+ * that appear at least twice, excluding the issuer itself; the threshold
+ * keeps a stray 425 about an unrelated transaction from becoming a lane.
+ */
+export function discoverCounterpartCiks(
+  hits: ReadonlyArray<{ _source?: { ciks?: readonly string[] } }>,
+  issuerCik: string
+): string[] {
+  const own = String(Number(issuerCik || '0'));
+  const counts = new Map<string, number>();
+  for (const hit of hits) {
+    for (const raw of hit._source?.ciks ?? []) {
+      const cik = String(Number(raw));
+      if (!cik || cik === '0' || cik === own) continue;
+      counts.set(cik, (counts.get(cik) ?? 0) + 1);
+    }
+  }
+  return [...counts.entries()]
+    .filter(([, n]) => n >= 2)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 2)
+    .map(([cik]) => cik);
+}
+
 // Module-level cache
 const dealDetailsCache = new Map<string, DealDetailsResult>();
 const clauseCache = new Map<string, Record<string, { text: string; section: string }>>();
@@ -157,23 +185,31 @@ export default function MAResearch() {
       // how the counterparty's documents refer to it. Both lanes are merged;
       // the text lane is best-effort and never sinks the scoped one.
       const phrase = scoped.entityName ? counterpartyPhrase(scoped.entityName) : '';
-      const lanes = scoped.entityName
-        ? [
-            searchEdgarFilings(
-              scoped.query || 'merger agreement OR acquisition',
-              forms, dateFrom, dateTo, scoped.entityName, 100,
-              scoped.cik ? { entityCik: scoped.cik } : {}
-            ),
-            ...(phrase ? [searchEdgarFilings(phrase, forms, dateFrom, dateTo, undefined, 100).catch(() => [])] : []),
-          ]
-        : [searchEdgarFilings(trimmed, forms, dateFrom, dateTo, undefined, 100)];
-      // Interleave the lanes instead of concatenating them. A prolific filer
-      // (Dominion Energy issues a Form 425 almost daily) fills the 30-row cap
-      // from its own lane alone, and the counterparty never gets a slot —
-      // observed in production: "Dominion Energy" showed 30 Dominion rows
-      // and not one NextEra filing. Round-robin gives each side a fair share
-      // and lets either lane take the remainder when the other runs dry.
-      const laneHits = await Promise.all(lanes);
+      const DEAL_QUERY = 'merger agreement OR acquisition';
+      const run = (q: string, entityName?: string, entityCik?: string, max = 100) =>
+        searchEdgarFilings(q, forms, dateFrom, dateTo, entityName, max, entityCik ? { entityCik } : {});
+
+      // A deal has two filers. Scoping to the resolved issuer's CIK returns
+      // only what THAT company filed, never the other side's merger 8-K or
+      // S-4. Three more lanes cover it: the issuer's name as a phrase (how
+      // counterparty documents refer to it), and a scoped lane for each
+      // counterparty named in the issuer's own deal filings — a Form 425
+      // carries both CIKs, which is the only signal that survives a "425
+      // storm" (Dominion filed one almost daily; its name phrase returned
+      // nothing but its own documents). Lanes are interleaved round-robin
+      // so no single prolific filer fills the cap alone; every lane but the
+      // issuer's is best-effort and never sinks the search.
+      let laneHits: Awaited<ReturnType<typeof searchEdgarFilings>>[];
+      if (scoped.entityName) {
+        const phraseLane = phrase ? run(phrase).catch(() => []) : Promise.resolve([]);
+        const issuerHits = await run(scoped.query || DEAL_QUERY, scoped.entityName, scoped.cik || undefined);
+        const counterpartLanes = discoverCounterpartCiks(issuerHits, scoped.cik).map(cik =>
+          run(DEAL_QUERY, undefined, cik, 60).catch(() => [])
+        );
+        laneHits = [issuerHits, ...(await Promise.all([...counterpartLanes, phraseLane]))];
+      } else {
+        laneHits = [await run(trimmed)];
+      }
       const hits: typeof laneHits[number] = [];
       for (let index = 0; laneHits.some(lane => index < lane.length); index += 1) {
         for (const lane of laneHits) if (index < lane.length) hits.push(lane[index]);
