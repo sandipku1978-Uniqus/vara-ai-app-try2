@@ -135,7 +135,18 @@ test.describe('critical action: global.authentication', () => {
     // button" in older releases); accept either so a label change in the
     // hosted UI bundle cannot masquerade as a sign-out regression.
     await page.getByRole('button', { name: /^Open user (menu|button)$/ }).click();
-    await page.getByRole('menuitem', { name: 'Sign out' }).click();
+    // The account panel is a dialog ("Account panel") whose actions are plain
+    // buttons, not menu items; the run's page snapshot showed two unnamed
+    // buttons in the "Account actions" group. Match the action by its
+    // accessible name when Clerk exposes one, else by Clerk's stable
+    // sign-out action class.
+    const accountPanel = page.getByRole('dialog', { name: 'Account panel' });
+    await expect(accountPanel).toBeVisible({ timeout: 10_000 });
+    await accountPanel
+      .getByRole('button', { name: /sign out/i })
+      .or(accountPanel.locator('.cl-userButtonPopoverActionButton__signOut'))
+      .first()
+      .click();
 
     // The claim that matters: access is genuinely revoked, not just hidden.
     // A fresh navigation must be bounced back to the identity surface.
