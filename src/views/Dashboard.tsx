@@ -279,9 +279,15 @@ export default function Dashboard() {
         {dataStats && (
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '10px' }}>
             {[
-              `Filings: ${dataStats.filings.count.toLocaleString()} through ${dataStats.filings.through ?? '—'} · ${dataStats.filings.source}`,
-              `Auditors: ${dataStats.auditors.count.toLocaleString()} engagements · ${dataStats.auditors.source}`,
-              `Comment letters: ${dataStats.letters.count.toLocaleString()} (${dataStats.letters.withText.toLocaleString()} full-text) · ${dataStats.letters.source}`,
+              // These row counts come from planner statistics (pg_class.reltuples),
+              // not COUNT(*) — an exact count takes ~8s on 6.4M filings and times
+              // out. The "~" says so. Everywhere else this product reports floors
+              // and partial coverage honestly; rendering an estimate as an exact
+              // integer was the one place it implied precision it does not have.
+              // The DATE is exact — it is a real max(date_filed).
+              `Filings: ~${dataStats.filings.count.toLocaleString()} through ${dataStats.filings.through ?? '—'} · ${dataStats.filings.source}`,
+              `Auditors: ~${dataStats.auditors.count.toLocaleString()} engagements · ${dataStats.auditors.source}`,
+              `Comment letters: ~${dataStats.letters.count.toLocaleString()} (~${dataStats.letters.withText.toLocaleString()} full-text) · ${dataStats.letters.source}`,
             ].map(chip => (
               <span key={chip} style={{
                 fontSize: '0.7rem', color: 'var(--text-secondary)', background: 'var(--surface-subtle)',

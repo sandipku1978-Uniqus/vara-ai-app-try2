@@ -84,6 +84,17 @@ jobs:
           URC_SUPABASE_URL: ${{ secrets.URC_SUPABASE_URL }}
           URC_SUPABASE_SERVICE_KEY: ${{ secrets.URC_SUPABASE_SERVICE_KEY }}
 
+      # Last, so it reflects everything the run ingested. urc_data_stats
+      # reports pg_class.reltuples, which only moves on ANALYZE — and
+      # autovacuum needs ~10% of the table to change, i.e. ~646,000 filings.
+      # Without this the dashboard counter freezes at whatever the initial
+      # load produced (observed: 6,428,702 vs a true 6,463,716).
+      - name: Refresh corpus statistics
+        run: npx --no-install tsx data-pipeline/refresh-data-stats.ts
+        env:
+          URC_SUPABASE_URL: ${{ secrets.URC_SUPABASE_URL }}
+          URC_SUPABASE_SERVICE_KEY: ${{ secrets.URC_SUPABASE_SERVICE_KEY }}
+
   # The daily refresh starts retaining these form families once this revision
   # lands. This manual, form-scoped job fills the pre-existing historical gap
   # without reprocessing every other core form. Run bounded date ranges when

@@ -160,6 +160,16 @@ export function validSchemaContractEvidence(expected: ExpectedSchemaIdentity) {
       securityDefiner: true,
       definition: 'refresh materialized view concurrently public.urc_auditor_periods_mat',
     }),
+    // 024. ANALYZE requires table ownership, which neither the web nor the
+    // service role holds — hence SECURITY DEFINER, service-role only, like
+    // its two sibling refresh routines. Without this entry the contract
+    // reports it as an unexpected SECURITY DEFINER function.
+    fn('urc_refresh_data_stats', '', {
+      anon: false,
+      searchPath: 'search_path=pg_catalog',
+      securityDefiner: true,
+      definition: 'analyze public.urc_sec_filings',
+    }),
     fn('urc_companies_needing_sic', 'integer', { anon: false }),
     fn('urc_thread_letters', '', { anon: false }),
     fn('urc_schema_contract_evidence', '', { anon: false }),

@@ -172,6 +172,14 @@ function validEvidence() {
       securityDefiner: true,
       definition: 'refresh materialized view concurrently public.urc_auditor_periods_mat',
     }),
+    // 024 — service-role-only ANALYZE, see migration 024_data_stats_freshness.
+    fn('urc_refresh_data_stats', '', {
+      anon: false,
+      urcWeb: false,
+      searchPath: 'search_path=pg_catalog',
+      securityDefiner: true,
+      definition: 'analyze public.urc_sec_filings',
+    }),
     fn('urc_companies_needing_sic', 'integer', { anon: false, urcWeb: false }),
     fn('urc_thread_letters', '', { anon: false, urcWeb: false }),
     fn('urc_schema_contract_evidence', '', { anon: false, urcWeb: false }),
