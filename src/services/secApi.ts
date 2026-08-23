@@ -368,9 +368,25 @@ export function computeCompanySuggestions(
     if (entry.ticker.startsWith(upper)) push(entry);
   }
   if (lower.length >= 3) {
+    // Rank title matches by how the text sits in the name — a name that
+    // STARTS with it, then a word that starts with it, then any substring —
+    // instead of raw directory order. Directory order put "ACCENDRA Health"
+    // above "ENDRA Life Sciences" for "ENDRA", and Enter picks the first
+    // suggestion, so the M&A screener silently scoped to the wrong company.
+    const prefix: CompanyDirectoryEntry[] = [];
+    const wordStart: CompanyDirectoryEntry[] = [];
+    const substring: CompanyDirectoryEntry[] = [];
     for (const entry of directory) {
+      const title = entry.title.toLowerCase();
+      const at = title.indexOf(lower);
+      if (at < 0) continue;
+      if (at === 0) prefix.push(entry);
+      else if (/[^a-z0-9]/.test(title[at - 1])) wordStart.push(entry);
+      else substring.push(entry);
+    }
+    for (const entry of [...prefix, ...wordStart, ...substring]) {
       if (matches.length >= limit) break;
-      if (entry.title.toLowerCase().includes(lower)) push(entry);
+      push(entry);
     }
   }
   return matches.slice(0, limit);
