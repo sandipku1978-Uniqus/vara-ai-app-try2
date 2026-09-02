@@ -31,7 +31,14 @@ import {
 } from '../../../../services/commentLetterSummary';
 import { withRouteObservability } from '../../../../lib/route-observability';
 
-/** The platform default would kill this route mid-flight; see the in-route budgets. */
+/**
+ * Platform budget (seconds). The generation deadline (270 s) and the
+ * lock/lease TTL (300 s) in services/commentLetterSummary are sized to fit
+ * inside it, so the route's own deadline always fires before the platform's
+ * and every finally-block (lock, lease, cleanup) runs. A literal because
+ * Next extracts segment config statically; lettersSummaryBudgets.test.ts
+ * pins it to COMMENT_LETTER_SUMMARY_PLATFORM_BUDGET_SECONDS.
+ */
 export const maxDuration = 300;
 
 const CLAUDE_MODEL = process.env.ANTHROPIC_MODEL || 'claude-sonnet-5';

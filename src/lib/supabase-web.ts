@@ -1,6 +1,16 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { isProductionDeployment } from './clerk-config';
 import { configuredSupabaseOrigin } from './database-origin';
+import { fetchWithDeadline } from './fetch-with-deadline';
+
+/**
+ * HTTP deadlines for the two database identities, set just above their
+ * Postgres statement budgets (urc_web 20 s per migration 014; the
+ * cache-writer's single upsert is small) so a stalled connection surfaces
+ * as an AbortError the route can classify instead of a platform kill.
+ */
+export const WEB_DB_HTTP_DEADLINE_MS = 25_000;
+export const CACHE_WRITER_HTTP_DEADLINE_MS = 30_000;
 
 let webClient: SupabaseClient | null = null;
 
@@ -64,7 +74,10 @@ export function getWebSupabase(): SupabaseClient | null {
     key = serviceKey;
   }
 
-  webClient = createClient(url, key, { auth: { persistSession: false } });
+  webClient = createClient(url, key, {
+    auth: { persistSession: false },
+    global: { fetch: fetchWithDeadline(WEB_DB_HTTP_DEADLINE_MS) },
+  });
   return webClient;
 }
 
@@ -92,6 +105,9 @@ export function getCacheWriterSupabase(): SupabaseClient | null {
   // back to fetching from SEC rather than failing the request.
   if (!url || !serviceKey) return null;
 
-  cacheWriterClient = createClient(url, serviceKey, { auth: { persistSession: false } });
+  cacheWriterClient = createClient(url, serviceKey, {
+    auth: { persistSession: false },
+    global: { fetch: fetchWithDeadline(CACHE_WRITER_HTTP_DEADLINE_MS) },
+  });
   return cacheWriterClient;
 }

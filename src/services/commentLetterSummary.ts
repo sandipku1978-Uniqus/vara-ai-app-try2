@@ -32,8 +32,20 @@ export const MAX_COMMENT_LETTER_SUMMARY_CHUNKS = Math.ceil(
   MAX_COMMENT_LETTERS_PER_SUMMARY / MAX_CHUNK_LETTERS
 );
 export const MAX_COMMENT_LETTER_SUMMARY_CALLS = MAX_COMMENT_LETTER_SUMMARY_CHUNKS + 1;
-export const COMMENT_LETTER_SUMMARY_GENERATION_BUDGET_MS = 8 * 60 * 1_000;
-export const COMMENT_LETTER_SUMMARY_LOCK_TTL_SECONDS = 10 * 60;
+/**
+ * The route runs under a 300 s platform budget (letters/summary
+ * `maxDuration`). These used to be 480 s and 600 s — longer than the
+ * function was allowed to live — so a slow episode was killed by the
+ * platform mid-generation: the lock then held for ten minutes (every retry
+ * answered 409), the concurrency slot stayed leased, and the token
+ * reservation was never refunded. Both now fit inside the platform budget
+ * so the route's own deadline fires first and every finally-block runs:
+ * 270 s of generation, a 300 s lock/lease that outlives it by the time the
+ * cache write and cleanup need.
+ */
+export const COMMENT_LETTER_SUMMARY_PLATFORM_BUDGET_SECONDS = 300;
+export const COMMENT_LETTER_SUMMARY_GENERATION_BUDGET_MS = 270 * 1_000;
+export const COMMENT_LETTER_SUMMARY_LOCK_TTL_SECONDS = COMMENT_LETTER_SUMMARY_PLATFORM_BUDGET_SECONDS;
 
 export class CommentLetterSummaryLimitError extends Error {
   constructor() {

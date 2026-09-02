@@ -12,6 +12,9 @@ import { getWebSupabase } from '../../../lib/supabase-web';
 import { classifyDbError, dbErrorResponse, newCorrelationId } from '../../../lib/db-observability';
 import { withRouteObservability } from '../../../lib/route-observability';
 
+/** Platform budget (seconds). One planner-estimate RPC; instant when the database answers, bounded when it does not. */
+export const maxDuration = 15;
+
 async function handleGet(request: Request) {
   const access = await requireApiAccess();
   if (access.response) return access.response;

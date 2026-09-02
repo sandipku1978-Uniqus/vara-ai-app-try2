@@ -11,6 +11,9 @@ import {
 } from '../../../lib/sec-upstream';
 import { withRouteObservability } from '../../../lib/route-observability';
 
+/** Platform budget (seconds). One paced EFTS request; pacing waits under load can precede the 12 s fetch and 12 s body read. */
+export const maxDuration = 60;
+
 const USER_AGENT = process.env.NEXT_PUBLIC_EDGAR_USER_AGENT || 'Uniqus Research Center contact@uniqus.com';
 const MAX_RESPONSE_BYTES = 5 * 1024 * 1024;
 

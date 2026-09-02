@@ -65,7 +65,7 @@ describe('restricted Supabase web client', () => {
     expect(createClient).toHaveBeenCalledWith(
       'https://example.supabase.co',
       key,
-      { auth: { persistSession: false } }
+      { auth: { persistSession: false }, global: { fetch: expect.any(Function) } }
     );
   });
 
@@ -83,13 +83,13 @@ describe('restricted Supabase web client', () => {
       1,
       'https://example.supabase.co',
       webKey,
-      { auth: { persistSession: false } },
+      { auth: { persistSession: false }, global: { fetch: expect.any(Function) } },
     );
     expect(createClient).toHaveBeenNthCalledWith(
       2,
       'https://example.supabase.co',
       'server-only-cache-writer-key',
-      { auth: { persistSession: false } },
+      { auth: { persistSession: false }, global: { fetch: expect.any(Function) } },
     );
   });
 
@@ -134,7 +134,7 @@ describe('restricted Supabase web client', () => {
     expect(createClient).toHaveBeenCalledWith(
       'https://example.supabase.co',
       'local-service-key',
-      { auth: { persistSession: false } }
+      { auth: { persistSession: false }, global: { fetch: expect.any(Function) } }
     );
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('local development fallback'));
   });
