@@ -11,6 +11,35 @@ function streamingRequest(stream: ReadableStream<Uint8Array>, signal?: AbortSign
   } as RequestInit & { duplex: 'half' });
 }
 
+describe('grounded chat requests', () => {
+  const post = (body: unknown) => new Request('http://localhost', { method: 'POST', body: JSON.stringify(body) });
+
+  it('accepts a framework knowledge base grounding with an optional ASC topic', async () => {
+    const withTopic = await validateChatRequest(post({ prompt: 'lease question', grounding: { source: 'framework-kb', topic: '842' } }));
+    expect(withTopic.value?.grounding).toEqual({ source: 'framework-kb', topic: '842' });
+
+    const withoutTopic = await validateChatRequest(post({ prompt: 'lease question', grounding: { source: 'framework-kb' } }));
+    expect(withoutTopic.value?.grounding).toEqual({ source: 'framework-kb', topic: null });
+
+    const plain = await validateChatRequest(post({ prompt: 'plain question' }));
+    expect(plain.value?.grounding).toBeNull();
+  });
+
+  it('rejects grounding it cannot honour instead of silently answering ungrounded', async () => {
+    for (const body of [
+      { prompt: 'q', grounding: { source: 'codification' } },
+      { prompt: 'q', grounding: 'framework-kb' },
+      { prompt: 'q', grounding: { source: 'framework-kb', topic: 'leases' } },
+      { prompt: 'q', grounding: { source: 'framework-kb' }, frameworks: ['IFRS'] },
+      { messages: [{ role: 'user', content: 'q' }], grounding: { source: 'framework-kb' } },
+      { prompt: 'q', messages: [{ role: 'user', content: 'q' }], grounding: { source: 'framework-kb' } },
+    ]) {
+      const result = await validateChatRequest(post(body));
+      expect(result.response?.status, JSON.stringify(body)).toBe(400);
+    }
+  });
+});
+
 describe('bounded AI request body reader', () => {
   it('tolerates but does not expose the legacy temperature field for Sonnet 5', async () => {
     const result = await validateChatRequest(new Request('http://localhost', {

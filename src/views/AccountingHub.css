@@ -441,6 +441,131 @@
   box-shadow: none;
 }
 
+.ai-topic-select {
+  flex: 0 1 260px;
+  min-width: 160px;
+}
+
+/* Grounding label: the grounded and model-recall cases must read differently. */
+.ai-grounding-note {
+  margin: 0 0 10px;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.ai-grounding-note--grounded {
+  border: 1px solid color-mix(in srgb, var(--accent-primary) 30%, transparent);
+  background: color-mix(in srgb, var(--accent-primary) 8%, transparent);
+}
+
+.ai-grounding-note--recall {
+  border: 1px solid color-mix(in srgb, var(--status-warning) 30%, transparent);
+  background: color-mix(in srgb, var(--status-warning) 10%, transparent);
+}
+
+.ai-citation-warning {
+  margin: 0 0 10px;
+  padding: 6px 10px;
+  border: 1px solid color-mix(in srgb, var(--status-error) 30%, transparent);
+  border-radius: 4px;
+  background: var(--status-error-bg);
+  color: var(--status-error);
+  font-size: 0.78rem;
+}
+
+.ai-citation {
+  margin-left: 2px;
+  font-size: 0.72em;
+}
+
+.ai-citation-link {
+  color: var(--accent-primary);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.ai-citation-link:hover,
+.ai-citation-link:focus {
+  text-decoration: underline;
+}
+
+.ai-citation-unresolved {
+  color: var(--status-error);
+  font-weight: 600;
+}
+
+.ai-excerpts {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-color);
+}
+
+.ai-excerpts h4 {
+  margin: 0 0 8px;
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ai-excerpt-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ai-excerpt {
+  padding: 8px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--surface-panel);
+  scroll-margin-top: 80px;
+}
+
+.ai-excerpt--cited {
+  border-color: color-mix(in srgb, var(--accent-primary) 40%, transparent);
+}
+
+.ai-excerpt-source {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: baseline;
+  color: var(--text-primary);
+  font-size: 0.82rem;
+}
+
+.ai-excerpt-ref {
+  color: var(--accent-primary);
+  font-family: var(--font-mono);
+  font-weight: 700;
+}
+
+.ai-excerpt-meta {
+  color: var(--text-muted);
+  font-size: 0.74rem;
+}
+
+.ai-excerpt-text {
+  margin: 6px 0 0;
+  color: var(--text-secondary);
+  font-size: 0.84rem;
+  line-height: 1.5;
+  white-space: pre-line;
+}
+
+.memo-scope-note {
+  margin: 10px 0 0;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+}
+
 .fade-in {
   animation: none;
 }

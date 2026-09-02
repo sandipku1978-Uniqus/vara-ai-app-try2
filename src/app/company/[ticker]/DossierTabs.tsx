@@ -260,7 +260,7 @@ export default function DossierTabs({
               const days = Math.max(1, Math.round((Date.parse(thread.last_letter) - Date.parse(thread.first_letter)) / 86_400_000));
               return (
                 <Link key={thread.thread_id}
-                  href={`/comment-letters?company=${encodeURIComponent(companyName)}&thread=${encodeURIComponent(thread.thread_id)}`}
+                  href={`/comment-letters?company=${encodeURIComponent(companyName)}&cik=${cik}&thread=${encodeURIComponent(thread.thread_id)}`}
                   style={{ ...cardStyle, padding: '14px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap', textDecoration: 'none' }}>
                   <span style={{ color: 'var(--text-primary)', fontWeight: 600, fontSize: 14 }}>
                     Review episode · {thread.first_letter} → {thread.last_letter}

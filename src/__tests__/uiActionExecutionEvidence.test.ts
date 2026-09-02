@@ -81,8 +81,8 @@ describe('runtime UI action execution evidence', () => {
     expect(isUserInteractionStep({ category: 'pw:api', title: 'Press "Enter" getByRole("searchbox")' })).toBe(true);
   });
 
-  it('keeps 135 actionable contracts separate from static content and validates exact runtime identities', () => {
-    expect(Object.keys(UI_ACTION_TEST_MAP)).toHaveLength(135);
+  it('keeps 138 actionable contracts separate from static content and validates exact runtime identities', () => {
+    expect(Object.keys(UI_ACTION_TEST_MAP)).toHaveLength(138);
     expect(Object.keys(UI_CONTENT_TEST_MAP)).toHaveLength(1);
     expect(uiActionMappingDigest()).toMatch(/^sha256:[0-9a-f]{64}$/);
     expect(uiContentMappingDigest()).toMatch(/^sha256:[0-9a-f]{64}$/);
@@ -99,8 +99,8 @@ describe('runtime UI action execution evidence', () => {
     });
 
     expect(browser.pass, browser.problems.join('\n')).toBe(true);
-    expect(browser.expectedActionCount).toBe(132);
-    expect(browser.expectedTestReferenceCount).toBe(147);
+    expect(browser.expectedActionCount).toBe(135);
+    expect(browser.expectedTestReferenceCount).toBe(153);
     expect(browser.passedActionCount).toBe(browser.expectedActionCount);
     expect(browser.expectedContentCheckCount).toBe(1);
     expect(browser.passedContentCheckCount).toBe(1);

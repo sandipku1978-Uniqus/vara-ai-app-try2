@@ -2,7 +2,9 @@ import { expect, test, type Page } from '@playwright/test';
 import { defaultSearchFilters } from '../../src/domain/searchFilters';
 import { installBooleanFixtures } from './boolean-fixtures';
 import {
+  COMMENT_BROWSE_THREADS,
   COMMENT_LETTERS,
+  COMMENT_LOOKALIKE_THREAD,
   COMMENT_RETRY_SUMMARY,
   COMMENT_THREAD,
   COMMENT_TOPIC_QUERY,
@@ -238,13 +240,13 @@ test.describe('comment-letter action contracts', () => {
 
     await page.getByRole('button', { name: 'Revenue (ASC 606)' }).click();
     await expect(input).toHaveValue(COMMENT_TOPIC_QUERY);
-    await expect(page.getByText('2 matching letters')).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText('Showing 2 of 2 matching letters')).toBeVisible({ timeout: 20_000 });
     await expect.poll(() => lastParams(stats.searchRequests).get('q')).toBe(COMMENT_TOPIC_QUERY);
 
     await page.getByRole('button', { name: 'Responses', exact: true }).click();
     await expect(page.getByRole('button', { name: 'Responses', exact: true })).toHaveAttribute('aria-pressed', 'true');
     await expect.poll(() => lastParams(stats.searchRequests).get('form')).toBe('CORRESP');
-    await expect(page.getByText('1 matching letters')).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText('Showing 1 of 1 matching letter')).toBeVisible({ timeout: 20_000 });
     await expect(page.getByText('Company response').first()).toBeVisible();
     await expect(page.getByText('SEC Staff')).toHaveCount(0);
     await expect(input).toHaveValue(COMMENT_TOPIC_QUERY);
@@ -280,7 +282,7 @@ test.describe('comment-letter action contracts', () => {
     await openCommentLetters(page);
     await page.getByRole('button', { name: 'Staff letters', exact: true }).click();
     await page.getByRole('button', { name: 'Revenue (ASC 606)' }).click();
-    await expect(page.getByText('1 matching letters')).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText('Showing 1 of 1 matching letter')).toBeVisible({ timeout: 20_000 });
 
     await context.route('https://www.sec.gov/**', route => route.fulfill({
       status: 200,
@@ -335,7 +337,7 @@ test.describe('comment-letter action contracts', () => {
 
     stats.recoverSearch();
     await page.getByRole('button', { name: 'Retry letter search' }).click();
-    await expect(page.getByText('1 matching letters')).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText('Showing 1 of 1 matching letter')).toBeVisible({ timeout: 20_000 });
     await expect(page.getByText('Company response').first()).toBeVisible();
     await expect(input).toHaveValue('revenue recognition');
     await expect(page.getByRole('button', { name: 'Responses', exact: true })).toHaveAttribute('aria-pressed', 'true');
@@ -395,5 +397,98 @@ test.describe('comment-letter action contracts', () => {
     expect(stats.summaryPostRequests).toBe(2);
     expect(stats.threadRequests).toHaveLength(threadRequests);
     expect(stats.searchRequests).toHaveLength(searchRequests);
+  });
+
+  test('comment-letters.scope-company filters episodes by the resolved CIK and labels the registrant-name fallback', async ({ page }) => {
+    const stats = await openCommentLetters(page);
+    await expect(page.getByText('Showing 12 of 14 review episodes')).toBeVisible({ timeout: 20_000 });
+    // The picker cannot resolve a suggestion until the directory is in.
+    await expect(page.getByLabel('Loading company directory')).toHaveCount(0, { timeout: 20_000 });
+
+    // Typed text is a registrant-name match: the look-alike qualifies too,
+    // and the page says that is what happened.
+    const company = page.getByRole('combobox', { name: 'Company name…' });
+    await company.fill('Letterhaven');
+    await expect(page.getByText('Showing 2 of 2 review episodes')).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText(/narrowed to registrant names containing "Letterhaven" — a free-text name match/)).toBeVisible();
+    // Episode cards only — the open suggestion list names the look-alike too.
+    const lookalikeCards = page.locator('[id^="thread-card-"]').filter({ hasText: COMMENT_LOOKALIKE_THREAD.company_name });
+    await expect(lookalikeCards).toHaveCount(1);
+    expect(lastParams(stats.browseRequests).get('company')).toBe('Letterhaven');
+    expect(lastParams(stats.browseRequests).get('cik')).toBeNull();
+
+    // Choosing the suggestion resolves the name to its CIK; the look-alike
+    // (a different CIK) drops out and the chip names what is in force.
+    await page.getByRole('option', { name: /LTHV/ }).click();
+    await expect(page.getByText(`${COMMENT_THREAD.company_name} · CIK ${COMMENT_THREAD.cik}`)).toBeVisible();
+    await expect(page.getByText('Showing 1 of 1 review episode')).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText(`Episodes filtered by CIK ${COMMENT_THREAD.cik} (${COMMENT_THREAD.company_name}).`)).toBeVisible();
+    await expect(lookalikeCards).toHaveCount(0);
+    expect(lastParams(stats.browseRequests).get('cik')).toBe(String(COMMENT_THREAD.cik));
+    expect(lastParams(stats.browseRequests).get('company')).toBeNull();
+
+    // The full-text index has no CIK filter: the search narrows by registrant
+    // name as a labeled stand-in rather than silently ignoring the company.
+    await page.getByRole('button', { name: 'Revenue (ASC 606)' }).click();
+    await expect(page.getByText('Showing 2 of 2 matching letters')).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText(new RegExp(`as a stand-in for CIK ${COMMENT_THREAD.cik}`))).toBeVisible();
+    expect(lastParams(stats.searchRequests).get('company')).toBe(COMMENT_THREAD.company_name);
+    expect(lastParams(stats.searchRequests).get('cik')).toBeNull();
+
+    // Removing the chip reruns the active search unscoped and clears the box.
+    const searchRequests = stats.searchRequests.length;
+    await page.getByRole('button', { name: 'Remove company filter' }).click();
+    await expect(page.getByText(`${COMMENT_THREAD.company_name} · CIK ${COMMENT_THREAD.cik}`)).toHaveCount(0);
+    await expect.poll(() => stats.searchRequests.length).toBeGreaterThan(searchRequests);
+    expect(lastParams(stats.searchRequests).get('company')).toBeNull();
+    await expect(page.getByText(/as a stand-in for CIK/)).toHaveCount(0);
+    await expect(company).toHaveValue('');
+    expect(lastParams(stats.browseRequests).get('cik')).toBeNull();
+    expect(lastParams(stats.browseRequests).get('company')).toBeNull();
+  });
+
+  test('comment-letters.load-more appends the next page of episodes and keeps Showing X of Y honest', async ({ page }) => {
+    const stats = await openCommentLetters(page);
+    const cards = page.locator('[id^="thread-card-"]');
+    await expect(page.getByText('Showing 12 of 14 review episodes')).toBeVisible({ timeout: 20_000 });
+    await expect(cards).toHaveCount(12);
+    await expect(cards.first()).toContainText(COMMENT_THREAD.company_name);
+    const lastEpisode = COMMENT_BROWSE_THREADS[COMMENT_BROWSE_THREADS.length - 1];
+    await expect(page.getByText(lastEpisode.company_name)).toHaveCount(0);
+
+    const loadMore = page.getByRole('button', { name: 'Load more episodes' });
+    await loadMore.click();
+    await expect(page.getByText('Showing 14 of 14 review episodes')).toBeVisible({ timeout: 20_000 });
+    await expect(cards).toHaveCount(14);
+    // The first page stays put; the second is appended in corpus order.
+    await expect(cards.first()).toContainText(COMMENT_THREAD.company_name);
+    await expect(cards.last()).toContainText(lastEpisode.company_name);
+    await expect(loadMore).toHaveCount(0);
+    const params = lastParams(stats.browseRequests);
+    expect(params.get('from')).toBe('12');
+    expect(params.get('size')).toBe('12');
+    expect(stats.searchRequests).toHaveLength(0);
+  });
+
+  test('comment-letters.load-more appends the next page of matches and stops at the reported total', async ({ page }) => {
+    const stats = await openCommentLetters(page, { extraSearchMatches: 60 });
+    await page.getByRole('button', { name: 'Revenue (ASC 606)' }).click();
+    await expect(page.getByText('Showing 50 of 62 matching letters')).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByRole('button', { name: 'View conversation' })).toHaveCount(50);
+    await expect(page.getByText('Filler Match 60 Corp')).toHaveCount(0);
+
+    const loadMore = page.getByRole('button', { name: 'Load more matches' });
+    await loadMore.click();
+    await expect(page.getByText('Showing 62 of 62 matching letters')).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByRole('button', { name: 'View conversation' })).toHaveCount(62);
+    await expect(page.getByRole('link', { name: COMMENT_THREAD.company_name }).first()).toBeVisible();
+    await expect(page.getByText('Filler Match 60 Corp')).toBeVisible();
+    await expect(loadMore).toHaveCount(0);
+    const params = lastParams(stats.searchRequests);
+    expect(params.get('q')).toBe(COMMENT_TOPIC_QUERY);
+    expect(params.get('from')).toBe('50');
+    expect(params.get('size')).toBe('50');
+    expect(stats.searchRequests).toHaveLength(2);
+    expect(stats.threadRequests).toHaveLength(0);
   });
 });

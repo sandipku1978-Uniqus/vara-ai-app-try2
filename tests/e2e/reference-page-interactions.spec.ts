@@ -27,18 +27,52 @@ async function open(page: Page, path: string) {
   await waitForIdentity(page);
 }
 
+interface AccountingAiRequest {
+  prompt: string;
+  grounding?: { source?: string; topic?: string | null };
+}
+
+const GROUNDED_EXCERPT = {
+  n: 1,
+  id: 'IFRS 16',
+  framework: 'IFRS',
+  title: 'Leases',
+  reference: 'ASC 842',
+  text: '- Under IFRS 16, there is a single lessee accounting model where all leases are treated as finance leases (recognizing right-of-use asset and lease liability).\n- Under ASC 842, lessees classify leases as either operating or finance.',
+};
+
+/**
+ * Deterministic stand-in for /api/claude. Grounded requests are answered the
+ * way the route answers them: a knowledge-base hit returns the reply with its
+ * [n] markers AND the excerpt list those markers resolve to; a miss returns
+ * coverage "none", so the page must label that reply as model recall. Memo
+ * requests carry no grounding and get a metadata-only memo.
+ */
 async function installAccountingAiFixture(page: Page) {
-  const prompts: string[] = [];
+  const requests: AccountingAiRequest[] = [];
   await page.route('**/api/claude', async (route: Route) => {
-    const body = JSON.parse(route.request().postData() || '{}') as { prompt?: string };
-    const prompt = body.prompt || '';
-    prompts.push(prompt);
-    const text = prompt.includes('USER QUERY:')
-      ? '## Technical accounting guidance\nASC 842-10-25 provides the recognition starting point. Verify the controlling guidance in the FASB Codification.'
-      : '# Accounting adoption memo\n- Both Holdings reports temporary and mezzanine equity terminology in its filed evidence.';
-    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ text }) });
+    const body = JSON.parse(route.request().postData() || '{}') as AccountingAiRequest;
+    requests.push({ prompt: body.prompt || '', grounding: body.grounding });
+    let payload: Record<string, unknown>;
+    if (body.grounding?.source === 'framework-kb') {
+      const covered = body.grounding.topic === '842' || /\bIFRS 16\b|\blease/i.test(body.prompt || '');
+      payload = covered
+        ? {
+            text: '## Technical accounting guidance\nA lessee applies a single on-balance-sheet model under IFRS 16 [1]. ASC 842 keeps the operating versus finance classification [1].\n\nThe knowledge base excerpts do not cover modification accounting.',
+            grounding: { source: 'framework-kb', coverage: 'grounded', excerpts: [GROUNDED_EXCERPT] },
+          }
+        : {
+            text: 'This reply is model recall, not Codification text. ASC 718-20-35 addresses modifications; confirm it in the FASB Codification.',
+            grounding: { source: 'framework-kb', coverage: 'none', excerpts: [] },
+          };
+    } else {
+      payload = {
+        text: '# Accounting research memo — mezzanine OR temporary\n## Filing inventory (from metadata)\n- **3** matched filings across **3** issuers, all **10-K**.\n## Matched text snippets\n- [3] Both Holdings Ltd, 10-K, 2026-02-12: "Amounts shown as mezzanine equity are presented as temporary equity in the notes."',
+      };
+    }
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(payload) });
   });
-  return prompts;
+  return requests;
 }
 
 async function runAccountingBooleanSearch(page: Page) {
@@ -65,7 +99,7 @@ test.describe('accounting standards interactions', () => {
 
   test('accounting-standards.save-alert-or-memo preserves criteria and grounds the memo in loaded rows', async ({ page }) => {
     await installBooleanFixtures(page);
-    const prompts = await installAccountingAiFixture(page);
+    const requests = await installAccountingAiFixture(page);
     await runAccountingBooleanSearch(page);
 
     await page.getByRole('button', { name: 'Save Alert' }).click();
@@ -75,13 +109,22 @@ test.describe('accounting standards interactions', () => {
     ))).toBe(true);
 
     await page.getByRole('button', { name: 'Generate Memo' }).click();
-    await expect(page.getByRole('heading', { name: 'Accounting Research Memo' })).toBeVisible({ timeout: 20_000 });
-    await expect(page.getByText(/Both Holdings reports temporary and mezzanine equity terminology/)).toBeVisible();
-    expect(prompts.some(prompt => (
-      prompt.includes(FILINGS[2].company)
-      && prompt.includes(FILINGS[2].form)
-      && prompt.includes('mezzanine OR temporary')
-    )), 'memo prompt must be derived from the submitted criteria and loaded filing evidence').toBe(true);
+    // exact: the memo body's own "# Accounting research memo — …" title is a
+    // second heading that would otherwise match this panel heading.
+    await expect(page.getByRole('heading', { name: 'Accounting Research Memo', exact: true })).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText(/Both Holdings Ltd, 10-K, 2026-02-12/)).toBeVisible();
+    await expect(page.getByRole('note').filter({ hasText: 'Built from filing metadata and matched search snippets only' })).toBeVisible();
+
+    const memoPrompt = requests.find(request => !request.grounding)?.prompt || '';
+    expect(
+      memoPrompt.includes(FILINGS[2].company) && memoPrompt.includes(FILINGS[2].form) && memoPrompt.includes('mezzanine OR temporary'),
+      'memo prompt must be derived from the submitted criteria and loaded filing evidence',
+    ).toBe(true);
+    // The rows carry metadata and at most a matched snippet: the prompt must
+    // say so and forbid the wording-trend and adoption claims it once asked for.
+    expect(memoPrompt).toContain('You have NOT been given disclosure text');
+    expect(memoPrompt).toContain('Do not describe disclosure approaches, accounting policy wording, wording trends, adoption methods, or "early adopters"');
+    expect(memoPrompt).not.toContain('early or clearer adopters');
   });
 
   test('accounting-standards.manage-checklist changes only the chosen local item and survives a view switch', async ({ page }) => {
@@ -120,18 +163,67 @@ test.describe('accounting standards interactions', () => {
     await expect(page.getByRole('checkbox', { name: 'Mark Verify ASC 842 lease modification conclusion incomplete' })).toBeChecked();
   });
 
-  test('accounting-standards.ask-guidance submits the exact question and labels source-oriented guidance', async ({ page }) => {
+  test('accounting-standards.ask-guidance renders a grounded reply whose citations resolve to the listed excerpts', async ({ page }) => {
     await installBooleanFixtures(page);
-    const prompts = await installAccountingAiFixture(page);
+    const requests = await installAccountingAiFixture(page);
     await open(page, '/accounting');
     await page.getByRole('button', { name: 'Ask AI for ASCs' }).click();
 
-    const question = 'How should a lessee account for a modification under ASC 842?';
+    const question = 'How does a lessee classify leases under IFRS 16 compared with ASC 842?';
+    await page.getByRole('combobox', { name: 'Codification topic (optional)' }).selectOption('842');
     await page.getByRole('textbox', { name: 'Technical accounting guidance question' }).fill(question);
     await page.getByRole('button', { name: 'Ask Expert' }).click();
-    await expect(page.getByText('ASC 842-10-25 provides the recognition starting point.')).toBeVisible({ timeout: 20_000 });
-    await expect(page.getByText(/Verify the controlling guidance in the FASB Codification/)).toBeVisible();
-    expect(prompts.some(prompt => prompt.includes(`USER QUERY: ${question}`))).toBe(true);
+
+    const reply = page.locator('.ai-response-box[data-grounding="framework-kb"]');
+    await expect(reply).toBeVisible({ timeout: 20_000 });
+    const note = reply.getByRole('note');
+    await expect(note).toContainText('Grounded in the curated framework knowledge base');
+    await expect(note.getByRole('link', { name: 'FASB Codification' })).toHaveAttribute('href', 'https://asc.fasb.org/');
+    await expect(reply.getByText('A lessee applies a single on-balance-sheet model under IFRS 16')).toBeVisible();
+
+    // Every [n] marker is a link to the excerpt it names, and that excerpt
+    // shows its source (standard, title, ASC reference) and its text.
+    const citation = reply.locator('.ai-text').getByRole('link', { name: '[1]', exact: true }).first();
+    await expect(citation).toHaveAttribute('href', '#asc-excerpt-1');
+    const excerpt = reply.locator('#asc-excerpt-1');
+    await expect(excerpt).toContainText('IFRS 16 — Leases');
+    await expect(excerpt).toContainText('equivalent reference ASC 842');
+    await expect(excerpt).toContainText('cited in this reply');
+    await expect(excerpt).toContainText('single lessee accounting model');
+    await expect(reply.getByText('The knowledge base excerpts do not cover modification accounting.')).toBeVisible();
+    await expect(reply.locator('.ai-citation-warning')).toHaveCount(0);
+    await expect(page.getByRole('note').filter({ hasText: 'Model recall' })).toHaveCount(0);
+
+    const request = requests.find(item => item.grounding?.source === 'framework-kb');
+    expect(request?.prompt, 'the question must reach the route unwrapped so the server selects the excerpts').toBe(question);
+    expect(request?.grounding?.topic).toBe('842');
+  });
+
+  test('accounting-standards.ask-guidance labels an uncovered question as model recall with a Codification link', async ({ page }) => {
+    await installBooleanFixtures(page);
+    const requests = await installAccountingAiFixture(page);
+    await open(page, '/accounting');
+    await page.getByRole('button', { name: 'Ask AI for ASCs' }).click();
+
+    const question = 'How do I account for a modification of a stock option under ASC 718?';
+    await page.getByRole('textbox', { name: 'Technical accounting guidance question' }).fill(question);
+    await page.getByRole('button', { name: 'Ask Expert' }).click();
+
+    const reply = page.locator('.ai-response-box[data-grounding="model-recall"]');
+    await expect(reply).toBeVisible({ timeout: 20_000 });
+    const note = reply.getByRole('note');
+    await expect(note).toContainText('Model recall, not a grounded answer');
+    await expect(note.getByRole('link', { name: 'FASB Codification' })).toHaveAttribute('href', 'https://asc.fasb.org/');
+    await expect(reply.getByText('ASC 718-20-35 addresses modifications')).toBeVisible();
+    // The two cases must look different: no grounded label, no citation
+    // links, and no excerpt list when nothing was provided to the model.
+    await expect(page.getByRole('note').filter({ hasText: 'Grounded in the curated framework knowledge base' })).toHaveCount(0);
+    await expect(reply.locator('.ai-citation-link')).toHaveCount(0);
+    await expect(reply.locator('.ai-excerpts')).toHaveCount(0);
+
+    const request = requests.find(item => item.grounding?.source === 'framework-kb');
+    expect(request?.prompt).toBe(question);
+    expect(request?.grounding?.topic ?? null).toBeNull();
   });
 });
 

@@ -241,10 +241,67 @@ describe('aiApi', () => {
   });
 
   describe('aiAscLookup', () => {
+    const groundedPayload = {
+      text: 'Single lessee model [1].',
+      grounding: {
+        source: 'framework-kb',
+        coverage: 'grounded',
+        excerpts: [{ n: 1, id: 'IFRS 16', framework: 'IFRS', title: 'Leases', reference: 'ASC 842', text: '- single model' }],
+      },
+    };
+
     it('rejects when guidance cannot be generated instead of returning a fallback answer', async () => {
       mockFetch.mockRejectedValue(new Error('API down'));
       const { aiAscLookup } = await import('../services/aiApi');
       await expect(aiAscLookup('ASC 606')).rejects.toThrow('API down');
+    });
+
+    it('sends the raw question with a knowledge base grounding request and returns the grounding report', async () => {
+      mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(groundedPayload) });
+      const { aiAscLookup } = await import('../services/aiApi');
+      const result = await aiAscLookup('How are leases classified?', '842');
+
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(body.prompt).toBe('How are leases classified?');
+      expect(body.grounding).toEqual({ source: 'framework-kb', topic: '842' });
+      expect(result.text).toBe('Single lessee model [1].');
+      expect(result.grounding.coverage).toBe('grounded');
+      expect(result.grounding.excerpts).toEqual(groundedPayload.grounding.excerpts);
+    });
+
+    it('accepts a model-recall report and defaults the topic to null', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ text: 'Recall.', grounding: { source: 'framework-kb', coverage: 'none', excerpts: [] } }),
+      });
+      const { aiAscLookup } = await import('../services/aiApi');
+      await expect(aiAscLookup('stock options')).resolves.toEqual({
+        text: 'Recall.',
+        grounding: { source: 'framework-kb', coverage: 'none', excerpts: [] },
+      });
+      expect(JSON.parse(mockFetch.mock.calls[0][1].body).grounding).toEqual({ source: 'framework-kb', topic: null });
+    });
+
+    it('rejects a reply whose grounding report is missing or malformed rather than guessing its label', async () => {
+      const { aiAscLookup } = await import('../services/aiApi');
+
+      mockFetch.mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ text: 'Unlabeled answer.' }) });
+      await expect(aiAscLookup('leases')).rejects.toThrow('did not report how the guidance was grounded');
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({
+          ...groundedPayload,
+          grounding: { ...groundedPayload.grounding, excerpts: [{ ...groundedPayload.grounding.excerpts[0], n: 2 }] },
+        }),
+      });
+      await expect(aiAscLookup('leases')).rejects.toThrow('did not report how the guidance was grounded');
+
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ text: 'Claims grounding with nothing to show.', grounding: { source: 'framework-kb', coverage: 'grounded', excerpts: [] } }),
+      });
+      await expect(aiAscLookup('leases')).rejects.toThrow('did not report how the guidance was grounded');
     });
   });
 

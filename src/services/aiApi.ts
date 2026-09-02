@@ -17,11 +17,11 @@ import {
   buildESGRatingPrompt,
   buildDealExtractionPrompt,
   buildClauseExtractionPrompt,
-  buildAscLookupPrompt,
   REDLINE_SUMMARY_PROMPT,
   CONVERSATION_SUMMARY_PROMPT,
 } from '../lib/systemPrompts';
 import { selectFilingText } from '../utils/filingTextSelection';
+import type { ChatGroundingInput } from '../lib/ai-input';
 
 const CLAUDE_API_ENDPOINT = '/api/claude';
 const CLAUDE_STREAM_ENDPOINT = '/api/stream';
@@ -30,11 +30,13 @@ interface ClaudeRequestOptions {
   maxTokens?: number;
   messages?: Array<{ role: 'user' | 'assistant'; content: string }>;
   frameworks?: string[];
+  grounding?: ChatGroundingInput;
 }
 
 interface ClaudeResponsePayload {
   text?: string;
   error?: string;
+  grounding?: unknown;
 }
 
 // The server intentionally makes exactly one model attempt per request (spend
@@ -44,7 +46,10 @@ interface ClaudeResponsePayload {
 const TRANSIENT_CLAUDE_STATUSES = new Set([500, 502, 503, 504, 529]);
 const TRANSIENT_RETRY_DELAY_MS = process.env.VITEST ? 25 : 1500;
 
-async function callClaude(prompt: string, options: ClaudeRequestOptions = {}): Promise<string> {
+async function callClaudeRaw(
+  prompt: string,
+  options: ClaudeRequestOptions = {}
+): Promise<{ text: string; payload: ClaudeResponsePayload }> {
   let lastError: Error | null = null;
 
   for (let attempt = 0; attempt < 2; attempt += 1) {
@@ -62,6 +67,7 @@ async function callClaude(prompt: string, options: ClaudeRequestOptions = {}): P
           messages: options.messages,
           maxTokens: options.maxTokens,
           frameworks: options.frameworks,
+          grounding: options.grounding,
         }),
       });
     } catch (error) {
@@ -82,10 +88,14 @@ async function callClaude(prompt: string, options: ClaudeRequestOptions = {}): P
       throw new Error('Claude returned an empty response.');
     }
 
-    return text;
+    return { text, payload: payload ?? {} };
   }
 
   throw lastError ?? new Error('Claude request failed.');
+}
+
+async function callClaude(prompt: string, options: ClaudeRequestOptions = {}): Promise<string> {
+  return (await callClaudeRaw(prompt, options)).text;
 }
 
 /**
@@ -303,8 +313,23 @@ export interface BoardDataResult {
   compensation: Array<{ name: string; title: string; salary: string; stockAwards: string; total: string }>;
   boardSize: number | null;
   independencePercent: number | null;
-  diversity: { malePercent: number | null; femalePercent: number | null };
+  diversity: {
+    malePercent: number | null;
+    femalePercent: number | null;
+    /**
+     * Headcounts the proxy STATES ("three of our nine directors are women").
+     * Optional because responses cached before the field existed lack it;
+     * never computed from a percentage — that derivation is the view's, and
+     * it is labelled as such.
+     */
+    maleCount?: number | null;
+    femaleCount?: number | null;
+  };
   ceoPayRatio: string | null;
+  /**
+   * The say-on-pay result the proxy discusses. A proxy is filed before its
+   * meeting, so this is an earlier meeting's vote; lib/boardProxy attributes it.
+   */
   sayOnPayApproval: string | null;
 }
 
@@ -586,7 +611,77 @@ export async function aiExtractClauses(
   return parsed;
 }
 
-export async function aiAscLookup(query: string): Promise<string> {
-  const prompt = buildAscLookupPrompt(query);
-  return callClaude(prompt, { maxTokens: 2400 });
+export interface AscGuidanceExcerpt {
+  /** 1-based number the reply cites as `[n]`. */
+  n: number;
+  id: string;
+  framework: string;
+  title: string;
+  reference: string;
+  text: string;
+}
+
+export interface AscGuidanceGrounding {
+  source: 'framework-kb';
+  /** `grounded`: the model answered from the listed excerpts; `none`: labeled model recall. */
+  coverage: 'grounded' | 'none';
+  excerpts: AscGuidanceExcerpt[];
+}
+
+export interface AscGuidanceResult {
+  text: string;
+  grounding: AscGuidanceGrounding;
+}
+
+function normalizeAscGuidanceGrounding(value: unknown): AscGuidanceGrounding | null {
+  if (!value || typeof value !== 'object') return null;
+  const record = value as Record<string, unknown>;
+  if (record.source !== 'framework-kb') return null;
+  if (record.coverage !== 'grounded' && record.coverage !== 'none') return null;
+  if (!Array.isArray(record.excerpts)) return null;
+
+  const excerpts: AscGuidanceExcerpt[] = [];
+  for (const [index, item] of record.excerpts.entries()) {
+    if (!item || typeof item !== 'object') return null;
+    const excerpt = item as Record<string, unknown>;
+    // Numbering must be dense 1..k, or a `[n]` marker could resolve to the wrong excerpt.
+    if (excerpt.n !== index + 1) return null;
+    if (
+      typeof excerpt.id !== 'string' || typeof excerpt.framework !== 'string' || typeof excerpt.title !== 'string'
+      || typeof excerpt.reference !== 'string' || typeof excerpt.text !== 'string'
+    ) {
+      return null;
+    }
+    excerpts.push({
+      n: excerpt.n,
+      id: excerpt.id,
+      framework: excerpt.framework,
+      title: excerpt.title,
+      reference: excerpt.reference,
+      text: excerpt.text,
+    });
+  }
+  if ((record.coverage === 'grounded') !== (excerpts.length > 0)) return null;
+  return { source: 'framework-kb', coverage: record.coverage, excerpts };
+}
+
+/**
+ * Technical accounting guidance grounded in the curated framework knowledge
+ * base. The server selects the relevant excerpts, puts them and the citation
+ * contract in the model's system prompt, and reports what it used; when the
+ * knowledge base has nothing relevant it answers from the labeled
+ * model-recall prompt instead and says so in `grounding.coverage`.
+ */
+export async function aiAscLookup(question: string, topic: string | null = null): Promise<AscGuidanceResult> {
+  const { text, payload } = await callClaudeRaw(question, {
+    maxTokens: 2400,
+    grounding: { source: 'framework-kb', topic: topic || null },
+  });
+  const grounding = normalizeAscGuidanceGrounding(payload.grounding);
+  if (!grounding) {
+    // Without a grounding report the reply cannot be labeled truthfully; fail
+    // rather than guess whether the model ever saw the excerpts.
+    throw new Error('The AI service did not report how the guidance was grounded.');
+  }
+  return { text, grounding };
 }

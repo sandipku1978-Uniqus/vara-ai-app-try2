@@ -119,6 +119,8 @@ export const UI_PAGE_CONTRACTS = [
     actions: [
       { id: 'comment-letters.run-search', interaction: 'Enter letter text, optionally choose a company and form scope, then search.', expectedOutcome: 'Matching comment-letter passages appear with company, filing, episode, and source context tied to the submitted criteria.' },
       { id: 'comment-letters.apply-example-or-form', interaction: 'Choose a sample query chip or form filter.', expectedOutcome: 'The visible criteria update and an already-active search reruns with the newly selected scope.' },
+      { id: 'comment-letters.scope-company', interaction: 'Type a partial company name, choose the matching suggestion, then remove the company chip.', expectedOutcome: 'Typed text narrows episodes by registrant name and is labeled as that fallback; a chosen suggestion filters episodes by the resolved CIK, shows the registrant and CIK on a removable chip, and narrows full-text matches by registrant name with a label saying so; removing the chip restores the unscoped list.' },
+      { id: 'comment-letters.load-more', interaction: 'Activate Load more beneath the episode list or beneath the search results.', expectedOutcome: 'The next page is appended after the rows already shown, the Showing X of Y count rises to the number now visible, and the control disappears once every reported row is on screen.' },
       { id: 'comment-letters.expand-thread', interaction: 'Activate a result or episode thread expander.', expectedOutcome: 'The complete available staff-and-company conversation expands in place and can be collapsed again.' },
       { id: 'comment-letters.generate-summary', interaction: 'Activate Generate AI summary for an episode.', expectedOutcome: 'A summary grounded in the loaded conversation appears, or a specific retryable error is shown.' },
       { id: 'comment-letters.open-issuer-or-edgar', interaction: 'Activate the issuer dossier or EDGAR source link.', expectedOutcome: 'The issuer link opens the matching dossier and the EDGAR link opens the matching official letter index.' },
@@ -211,12 +213,17 @@ export const UI_PAGE_CONTRACTS = [
     routePattern: '/boards',
     representativePath: '/boards',
     sourceFiles: ['src/app/boards/page.tsx', 'src/views/BoardProfiles.tsx'],
-    intendedJob: 'Review and compare available board, diversity, and compensation disclosure for a selected issuer cohort.',
+    intendedJob: 'Review and compare available board, diversity, and compensation disclosure for a selected issuer cohort, with every value traced to the DEF 14A it came from.',
     actions: [
-      { id: 'board-profiles.load-target', interaction: 'Enter and resolve a target company ticker.', expectedOutcome: 'The target issuer’s available proxy-derived board information loads with a clear missing-data state when unavailable.' },
-      { id: 'board-profiles.manage-comparison', interaction: 'Add, choose, or remove a comparison company.', expectedOutcome: 'The visible target changes or the cohort updates without duplicating companies or discarding unrelated entries.' },
-      { id: 'board-profiles.switch-view', interaction: 'Switch among Directors, Diversity, and Compensation.', expectedOutcome: 'The requested disclosure view becomes active for the current target company.' },
+      // The old outcome allowed one "clear missing-data state". The September
+      // 2026 audit found that state covering a failed SEC lookup, a CIK with
+      // no proxy, and an unreadable document alike — a failure presented as
+      // factual absence. Each is now its own observable outcome.
+      { id: 'board-profiles.load-target', interaction: 'Enter and resolve a target company ticker.', expectedOutcome: 'The target issuer’s proxy-derived board information loads labelled with its source DEF 14A (form, filing date, accession, SEC links) and the annual meeting and fiscal year that filing relates to; a ticker absent from the SEC directory, a failed SEC lookup, a CIK with no DEF 14A on record, and a proxy that is on record but unreadable are each reported as what they are, never as one shared "not found".' },
+      { id: 'board-profiles.manage-comparison', interaction: 'Add, choose, or remove a comparison company.', expectedOutcome: 'The visible target changes or the cohort updates without duplicating companies or discarding unrelated entries, and every comparison column names its own source filing.' },
+      { id: 'board-profiles.switch-view', interaction: 'Switch among Directors, Diversity, and Compensation.', expectedOutcome: 'The requested disclosure view becomes active for the current target company; percentages are shown as disclosed, a headcount is labelled disclosed or derived, and say-on-pay is attributed to an earlier meeting than the proxy’s own.' },
       { id: 'board-profiles.retry-company', interaction: 'Activate Retry after target-company data fails.', expectedOutcome: 'The current ticker is fetched again and the failure region moves to a current loading, result, or error state.' },
+      { id: 'board-profiles.open-proxy-source', interaction: 'Activate the source DEF 14A link or its filing index link.', expectedOutcome: 'The exact official proxy document or filing index for the current target opens on SEC.gov in a separate tab, leaving the board view and comparison cohort in place.' },
     ],
   },
   {
@@ -244,10 +251,10 @@ export const UI_PAGE_CONTRACTS = [
     actions: [
       { id: 'accounting-standards.switch-section', interaction: 'Switch among Research, Standards, Checklist, and AI guidance.', expectedOutcome: 'The selected accounting workspace becomes active without clearing state held by the other workspaces.' },
       { id: 'accounting-standards.run-disclosure-search', interaction: 'Choose semantic or Boolean mode, enter a disclosure query, and submit.', expectedOutcome: 'Matching filing disclosures are returned under the selected search mode with source-identifying context.' },
-      { id: 'accounting-standards.save-alert-or-memo', interaction: 'Save the current research alert or generate a memo from loaded results.', expectedOutcome: 'The alert preserves the research criteria, while the memo is generated only from the loaded evidence.' },
+      { id: 'accounting-standards.save-alert-or-memo', interaction: 'Save the current research alert or generate a memo from loaded results.', expectedOutcome: 'The alert preserves the research criteria, while the memo is built only from the loaded filing metadata and matched snippets, is labeled as such, and asserts no disclosure-wording or adoption trend the rows cannot support.' },
       { id: 'accounting-standards.open-topic-source', interaction: 'Filter standards topics and activate a topic or FASB source link.', expectedOutcome: 'The chosen official standards reference opens and is not represented as locally reproduced authoritative text.' },
       { id: 'accounting-standards.manage-checklist', interaction: 'Add, edit, complete, or delete a checklist item.', expectedOutcome: 'Only the requested browser-local checklist item changes and its saved state survives a view switch.' },
-      { id: 'accounting-standards.ask-guidance', interaction: 'Enter a technical accounting question and submit it.', expectedOutcome: 'A reply labeled as model recall (not Codification-grounded) is displayed with a link to the FASB Codification for verification, or a specific retryable failure appears.' },
+      { id: 'accounting-standards.ask-guidance', interaction: 'Optionally choose a Codification topic, enter a technical accounting question, and submit it.', expectedOutcome: 'A reply is displayed labeled either as grounded in the curated framework knowledge base, with [n] citations that resolve to the listed excerpts, or as model recall (not Codification-grounded); both link to the FASB Codification for verification, or a specific retryable failure appears.' },
     ],
   },
   {

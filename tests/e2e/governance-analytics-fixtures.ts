@@ -35,6 +35,16 @@ export interface GovernanceFixtureOptions {
    * action and leaves the surface to show the rate limit and offer a retry.
    */
   filingTextRateLimitsBeforeSuccess?: Partial<Record<string, number>>;
+  /** Tickers whose submissions carry no DEF 14A: the proxy row is omitted, other rows keep their accessions. */
+  proxylessTickers?: readonly string[];
+  /**
+   * Number of submissions HTTP attempts to answer 503, by ticker.
+   * fetchCompanySubmissions spends three attempts per call, and Board Profiles
+   * makes two calls per target (filing-history verification, then the load).
+   */
+  submissionFailuresBeforeSuccess?: Partial<Record<string, number>>;
+  /** HTTP status the filing-text cache answers with for a ticker's documents, and for how many requests. */
+  filingTextFailures?: Partial<Record<string, { status: number; count: number }>>;
 }
 
 export interface GovernanceFixtureStats {
@@ -63,14 +73,24 @@ function accession(cik: string, sequence: number): string {
   return `${cik.padStart(10, '0')}-26-${String(sequence).padStart(6, '0')}`;
 }
 
-function submissionsPayload(cik: string) {
+function submissionsPayload(cik: string, options: { proxyless?: boolean } = {}) {
   const company = companyForCik(cik) ?? {
     ticker: `T${String(Number(cik)).slice(-4)}`,
     cik: String(Number(cik)),
     name: `Fixture Issuer ${Number(cik)}`,
     sic: '9999',
   };
-  const accessions = [1, 2, 3, 4, 5].map(sequence => accession(company.cik, sequence));
+  const slug = company.ticker.toLowerCase();
+  // Accession sequence is fixed per row BEFORE any row is omitted, so a
+  // proxyless issuer's Form 4 or 8-K keeps the accession other specs expect.
+  // The DEF 14A's period of report is its meeting date, as EDGAR records it.
+  const rows = [
+    { sequence: 1, form: 'DEF 14A', filingDate: '2026-04-10', reportDate: '2026-05-20', document: `${slug}-proxy.htm`, description: 'Proxy statement' },
+    { sequence: 2, form: '10-K', filingDate: '2026-02-20', reportDate: '2025-12-31', document: `${slug}-10k.htm`, description: 'Annual report' },
+    { sequence: 3, form: '4', filingDate: '2026-07-08', reportDate: '2026-07-08', document: `${slug}-form4.htm`, description: 'Form 4' },
+    { sequence: 4, form: '3', filingDate: '2026-06-06', reportDate: '2026-06-06', document: `${slug}-form3.htm`, description: 'Form 3' },
+    { sequence: 5, form: '8-K', filingDate: '2026-05-05', reportDate: '2026-05-05', document: `${slug}-8k.htm`, description: 'Current report' },
+  ].filter(row => !(options.proxyless && row.form === 'DEF 14A'));
   return {
     cik: company.cik,
     name: company.name,
@@ -84,21 +104,15 @@ function submissionsPayload(cik: string) {
     fiscalYearEnd: '1231',
     filings: {
       recent: {
-        accessionNumber: accessions,
-        filingDate: ['2026-04-10', '2026-02-20', '2026-07-08', '2026-06-06', '2026-05-05'],
-        reportDate: ['2025-12-31', '2025-12-31', '2026-07-08', '2026-06-06', '2026-05-05'],
-        acceptanceDateTime: accessions.map(() => '2026-01-01T12:00:00.000Z'),
-        act: accessions.map(() => '34'),
-        form: ['DEF 14A', '10-K', '4', '3', '8-K'],
-        fileNumber: accessions.map(() => '001-00001'),
-        primaryDocument: [
-          `${company.ticker.toLowerCase()}-proxy.htm`,
-          `${company.ticker.toLowerCase()}-10k.htm`,
-          `${company.ticker.toLowerCase()}-form4.htm`,
-          `${company.ticker.toLowerCase()}-form3.htm`,
-          `${company.ticker.toLowerCase()}-8k.htm`,
-        ],
-        primaryDocDescription: ['Proxy statement', 'Annual report', 'Form 4', 'Form 3', 'Current report'],
+        accessionNumber: rows.map(row => accession(company.cik, row.sequence)),
+        filingDate: rows.map(row => row.filingDate),
+        reportDate: rows.map(row => row.reportDate),
+        acceptanceDateTime: rows.map(() => '2026-01-01T12:00:00.000Z'),
+        act: rows.map(() => '34'),
+        form: rows.map(row => row.form),
+        fileNumber: rows.map(() => '001-00001'),
+        primaryDocument: rows.map(row => row.document),
+        primaryDocDescription: rows.map(row => row.description),
       },
       files: [],
     },
@@ -292,6 +306,11 @@ export async function installGovernanceAnalyticsFixtures(
   const factFailures = { ...(options.factFailuresBeforeSuccess ?? {}) };
   const aiFailures = { ...(options.aiFailuresBeforeSuccess ?? {}) };
   const filingTextRateLimits = { ...(options.filingTextRateLimitsBeforeSuccess ?? {}) };
+  const submissionFailures = { ...(options.submissionFailuresBeforeSuccess ?? {}) };
+  const filingTextFailures = Object.fromEntries(
+    Object.entries(options.filingTextFailures ?? {}).flatMap(([ticker, failure]) => failure ? [[ticker, { ...failure }]] : []),
+  ) as Record<string, { status: number; count: number }>;
+  const proxyless = new Set((options.proxylessTickers ?? []).map(ticker => ticker.toUpperCase()));
   let eftsFailures = options.eftsFailuresBeforeSuccess ?? 0;
 
   await page.context().route('https://www.sec.gov/**', route => route.fulfill({ status: 200, contentType: 'text/html', body: '<title>SEC fixture source</title>' }));
@@ -322,7 +341,16 @@ export async function installGovernanceAnalyticsFixtures(
       const company = companyForCik(submissionMatch[1]);
       const ticker = company?.ticker ?? String(Number(submissionMatch[1]));
       stats.submissionRequests[ticker] = (stats.submissionRequests[ticker] ?? 0) + 1;
-      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(submissionsPayload(submissionMatch[1])) });
+      if ((submissionFailures[ticker] ?? 0) > 0) {
+        submissionFailures[ticker] = (submissionFailures[ticker] ?? 0) - 1;
+        await route.fulfill({ status: 503, contentType: 'application/json', body: JSON.stringify({ error: 'fixture submissions outage' }) });
+        return;
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(submissionsPayload(submissionMatch[1], { proxyless: proxyless.has(ticker) })),
+      });
       return;
     }
 
@@ -358,6 +386,12 @@ export async function installGovernanceAnalyticsFixtures(
     const document = url.searchParams.get('document') ?? '';
     stats.filingTextRequests.push({ cik, document });
     const ticker = companyForCik(cik)?.ticker ?? cik;
+    const textFailure = filingTextFailures[ticker];
+    if (textFailure && textFailure.count > 0) {
+      textFailure.count -= 1;
+      await route.fulfill({ status: textFailure.status, contentType: 'application/json', body: JSON.stringify({ error: 'fixture filing-text failure' }) });
+      return;
+    }
     if ((filingTextRateLimits[ticker] ?? 0) > 0) {
       filingTextRateLimits[ticker] = (filingTextRateLimits[ticker] ?? 0) - 1;
       await route.fulfill({ status: 429, contentType: 'application/json', body: JSON.stringify({ ok: false, error: 'fixture rate limit' }) });
