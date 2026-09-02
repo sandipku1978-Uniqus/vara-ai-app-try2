@@ -10,7 +10,9 @@ permissions:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  # Cancel superseded PR runs only. A push to main must keep its run: a
+  # cancelled main run leaves a deployed SHA with no CI verdict at all.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   verify:
@@ -25,15 +27,19 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      # Straight after install so an advisory fails the run in seconds, not
+      # after six minutes of green steps. Blocks on high/critical only; a
+      # moderate advisory on main used to deadlock every PR, including the
+      # Dependabot PR carrying its fix.
+      - run: npm audit --audit-level=high
       - name: Enforce an acyclic source dependency graph
         run: npm run check:cycles
-      - run: npm test -- --no-file-parallelism --maxWorkers=1
+      - run: npm test
       - run: npm run typecheck
       - run: npm run lint
       - run: npm run build
       # Test/build tooling executes in CI and can expose the repository even
       # when it is not shipped to users, so audit the complete dependency tree.
-      - run: npm audit
 
   browser:
     # Deterministic Playwright acceptance: route smoke, neutral visitor,
@@ -159,4 +165,4 @@ jobs:
           cache: npm
       - run: npm ci --ignore-scripts
       - name: Verify proxy, route, bypass, and entitlement contracts without secrets
-        run: npx --no-install vitest run src/__tests__/apiAuth.test.ts --no-file-parallelism --maxWorkers=1
+        run: npx --no-install vitest run src/__tests__/apiAuth.test.ts
