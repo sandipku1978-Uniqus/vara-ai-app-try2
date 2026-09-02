@@ -238,6 +238,16 @@ const FUNCTION_REQUIREMENTS: FunctionRequirement[] = [
     definitionFragments: ['analyze public.urc_sec_filings'],
   },
   {
+    // 025. Refreshes the filing-scope denominator rollup after ingest.
+    name: 'urc_refresh_filing_year_form',
+    arguments: '',
+    anonExecute: false,
+    serviceExecute: true,
+    searchPath: 'search_path=pg_catalog',
+    securityDefiner: true,
+    definitionFragments: ['refresh materialized view concurrently public.urc_filing_year_form'],
+  },
+  {
     name: 'urc_companies_needing_sic',
     arguments: 'integer',
     anonExecute: false,
@@ -547,6 +557,13 @@ export function assessSchemaContractEvidence(
 
   const anon = record(rolesEvidence.find(item => item.name === 'anon'));
   const anonConfig = Array.isArray(anon?.config) ? anon.config.map(normalized) : [];
+  const serviceRole = record(rolesEvidence.find(item => item.name === 'service_role'));
+  const serviceConfig = Array.isArray(serviceRole?.config) ? serviceRole.config.map(normalized) : [];
+  if (!serviceRole || !serviceConfig.includes(normalized('statement_timeout=600s'))) {
+    // 025: the maintenance RPCs' function-level SETs are inert (the timer
+    // is armed at statement start), so the budget must live on the role.
+    problems.push('live service_role lacks the explicit statement_timeout=600s maintenance budget (025)');
+  }
   if (!anon || !anonConfig.includes('statement_timeout=20s')) {
     problems.push('live anon role lacks the bounded statement_timeout=20s contract');
   }

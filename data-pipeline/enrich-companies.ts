@@ -139,8 +139,14 @@ interface SubmissionsPayload {
   exchanges?: string[];
 }
 
-function isStringArray(value: unknown): value is string[] {
-  return Array.isArray(value) && value.every(entry => typeof entry === 'string');
+/**
+ * SEC's submissions feed lists exchanges (and occasionally tickers) with
+ * null entries — `"exchanges": [null]` is the normal shape for an issuer
+ * with a ticker but no listing. A validator that rejected any null made
+ * those registrants fail as "invalid-json" on every run, permanently.
+ */
+function isStringArray(value: unknown): value is Array<string | null> {
+  return Array.isArray(value) && value.every(entry => typeof entry === 'string' || entry === null);
 }
 
 const TICKER_EXCHANGE_FIELDS = ['cik', 'name', 'ticker', 'exchange'] as const;
@@ -264,14 +270,23 @@ export async function sicPass(limit: number, options: SicPassOptions = {}): Prom
     let row: Record<string, unknown>;
     if (fetched.kind === 'success') {
       const submissions = fetched.data as SubmissionsPayload;
+      // A successful fetch must be terminal. An empty SIC used to be stored
+      // as null, which made the issuer a candidate again tomorrow — the
+      // daily 2,000-request budget rotated through insiders (whose SIC is
+      // always empty) while issuers that lack a SIC never got a turn. The
+      // existing '0000' sentinel means "known unknown" and ends the loop.
+      const tickers = (submissions.tickers ?? []).filter((entry): entry is string => Boolean(entry));
+      const exchanges = (submissions.exchanges ?? []).filter((entry): entry is string => Boolean(entry));
       row = {
         cik,
         name: submissions.name,
-        sic: submissions.sic || null,
-        sic_description: submissions.sicDescription || null,
+        sic: submissions.sic || '0000',
+        sic_description: submissions.sic
+          ? (submissions.sicDescription || null)
+          : 'UNKNOWN (registrant reports no SIC)',
         state_of_incorporation: submissions.stateOfIncorporation || null,
-        ...(submissions.tickers?.length ? { tickers: submissions.tickers } : {}),
-        ...(submissions.exchanges?.length ? { exchanges: submissions.exchanges.filter(Boolean) } : {}),
+        ...(tickers.length ? { tickers } : {}),
+        ...(exchanges.length ? { exchanges } : {}),
         updated_at: new Date().toISOString(),
       };
     } else {

@@ -19,6 +19,14 @@ async function main(): Promise<void> {
   const client = createServiceClient();
   const startedAt = Date.now();
 
+  // The filing-scope denominator (urc_filing_year_form) is a materialized
+  // view; 013 asked for a refresh after every ingest and nothing did it.
+  const { error: rollupError } = await client.rpc('urc_refresh_filing_year_form');
+  if (rollupError) {
+    throw new Error(`urc_refresh_filing_year_form failed: ${rollupError.message}`);
+  }
+  console.log('Refreshed the filing-scope rollup (urc_filing_year_form).');
+
   const { error } = await client.rpc('urc_refresh_data_stats');
   if (error) {
     // A stale counter is a visible, quantified inaccuracy on the dashboard —
