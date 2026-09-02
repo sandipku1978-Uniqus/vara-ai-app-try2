@@ -313,8 +313,23 @@ export interface BoardDataResult {
   compensation: Array<{ name: string; title: string; salary: string; stockAwards: string; total: string }>;
   boardSize: number | null;
   independencePercent: number | null;
-  diversity: { malePercent: number | null; femalePercent: number | null };
+  diversity: {
+    malePercent: number | null;
+    femalePercent: number | null;
+    /**
+     * Headcounts the proxy STATES ("three of our nine directors are women").
+     * Optional because responses cached before the field existed lack it;
+     * never computed from a percentage — that derivation is the view's, and
+     * it is labelled as such.
+     */
+    maleCount?: number | null;
+    femaleCount?: number | null;
+  };
   ceoPayRatio: string | null;
+  /**
+   * The say-on-pay result the proxy discusses. A proxy is filed before its
+   * meeting, so this is an earlier meeting's vote; lib/boardProxy attributes it.
+   */
   sayOnPayApproval: string | null;
 }
 

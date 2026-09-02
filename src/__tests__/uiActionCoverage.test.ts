@@ -130,12 +130,12 @@ describe('UI action coverage traceability', () => {
     // Raise this floor as archetype tests land; lowering it means coverage
     // regressed and must fail loudly.
     const content = Object.keys(UI_CONTENT_COVERAGE).length;
-    expect(full).toBeGreaterThanOrEqual(137);
-    expect(full + partial).toBeGreaterThanOrEqual(137);
+    expect(full).toBeGreaterThanOrEqual(138);
+    expect(full + partial).toBeGreaterThanOrEqual(138);
     expect(partial).toBe(0);
     expect(manual).toBe(0);
     expect(allActionIds.length).toBe(Object.keys(UI_ACTION_COVERAGE).length);
     expect(allContentIds.length).toBe(content);
-    expect(allActionIds.length + allContentIds.length).toBe(138);
+    expect(allActionIds.length + allContentIds.length).toBe(139);
   });
 });

@@ -42,6 +42,12 @@ export interface SecSubmission {
   description: string;
   sic: string;
   sicDescription: string;
+  /**
+   * MMDD ("0930"), as SEC sends it. Optional and passed through unvalidated:
+   * consumers parse it themselves (lib/boardProxy) and treat anything
+   * malformed as unknown rather than assuming a calendar year.
+   */
+  fiscalYearEnd?: string;
   filings: {
     recent: SecFilingSeries;
     files?: Array<{

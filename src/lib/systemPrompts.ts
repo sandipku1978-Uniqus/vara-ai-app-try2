@@ -300,7 +300,7 @@ Return ONLY valid JSON (no markdown, no explanation) with this exact schema:
   "compensation": [{"name": "Full Name", "title": "CEO/CFO/etc", "salary": "$X,XXX,XXX", "stockAwards": "$XXM", "total": "$XXM"}],
   "boardSize": <number or null>,
   "independencePercent": <number 0-100, or null>,
-  "diversity": {"malePercent": <number or null>, "femalePercent": <number or null>},
+  "diversity": {"malePercent": <number or null>, "femalePercent": <number or null>, "maleCount": <number of directors or null>, "femaleCount": <number of directors or null>},
   "ceoPayRatio": "e.g. 256:1, or null",
   "sayOnPayApproval": "e.g. 94.2%, or null"
 }
@@ -308,7 +308,10 @@ Return ONLY valid JSON (no markdown, no explanation) with this exact schema:
 CRITICAL: extract ONLY values that actually appear in the text below. If a field
 is not disclosed in the text, use null (or an empty array for lists). NEVER guess,
 estimate, or substitute a default number — a fabricated 0 is indistinguishable
-from real data downstream.
+from real data downstream. maleCount and femaleCount are headcounts the text
+STATES (e.g. "three of our nine directors are women"); never compute a count
+from a percentage. sayOnPayApproval is the vote result the text reports from a
+prior annual meeting, exactly as stated.
 
 DEF 14A TEXT:
 ${proxyText}`;

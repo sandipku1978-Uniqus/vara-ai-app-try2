@@ -213,12 +213,17 @@ export const UI_PAGE_CONTRACTS = [
     routePattern: '/boards',
     representativePath: '/boards',
     sourceFiles: ['src/app/boards/page.tsx', 'src/views/BoardProfiles.tsx'],
-    intendedJob: 'Review and compare available board, diversity, and compensation disclosure for a selected issuer cohort.',
+    intendedJob: 'Review and compare available board, diversity, and compensation disclosure for a selected issuer cohort, with every value traced to the DEF 14A it came from.',
     actions: [
-      { id: 'board-profiles.load-target', interaction: 'Enter and resolve a target company ticker.', expectedOutcome: 'The target issuer’s available proxy-derived board information loads with a clear missing-data state when unavailable.' },
-      { id: 'board-profiles.manage-comparison', interaction: 'Add, choose, or remove a comparison company.', expectedOutcome: 'The visible target changes or the cohort updates without duplicating companies or discarding unrelated entries.' },
-      { id: 'board-profiles.switch-view', interaction: 'Switch among Directors, Diversity, and Compensation.', expectedOutcome: 'The requested disclosure view becomes active for the current target company.' },
+      // The old outcome allowed one "clear missing-data state". The September
+      // 2026 audit found that state covering a failed SEC lookup, a CIK with
+      // no proxy, and an unreadable document alike — a failure presented as
+      // factual absence. Each is now its own observable outcome.
+      { id: 'board-profiles.load-target', interaction: 'Enter and resolve a target company ticker.', expectedOutcome: 'The target issuer’s proxy-derived board information loads labelled with its source DEF 14A (form, filing date, accession, SEC links) and the annual meeting and fiscal year that filing relates to; a ticker absent from the SEC directory, a failed SEC lookup, a CIK with no DEF 14A on record, and a proxy that is on record but unreadable are each reported as what they are, never as one shared "not found".' },
+      { id: 'board-profiles.manage-comparison', interaction: 'Add, choose, or remove a comparison company.', expectedOutcome: 'The visible target changes or the cohort updates without duplicating companies or discarding unrelated entries, and every comparison column names its own source filing.' },
+      { id: 'board-profiles.switch-view', interaction: 'Switch among Directors, Diversity, and Compensation.', expectedOutcome: 'The requested disclosure view becomes active for the current target company; percentages are shown as disclosed, a headcount is labelled disclosed or derived, and say-on-pay is attributed to an earlier meeting than the proxy’s own.' },
       { id: 'board-profiles.retry-company', interaction: 'Activate Retry after target-company data fails.', expectedOutcome: 'The current ticker is fetched again and the failure region moves to a current loading, result, or error state.' },
+      { id: 'board-profiles.open-proxy-source', interaction: 'Activate the source DEF 14A link or its filing index link.', expectedOutcome: 'The exact official proxy document or filing index for the current target opens on SEC.gov in a separate tab, leaving the board view and comparison cohort in place.' },
     ],
   },
   {

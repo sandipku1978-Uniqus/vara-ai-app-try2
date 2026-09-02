@@ -356,15 +356,107 @@ test.describe('comparison and governance interaction evidence', () => {
     await openWorkspace(page, '/boards', 'Board Profiles & Executive Compensation');
     await expect(page.getByRole('heading', { name: 'Board of Directors — Apple Fixture Corp' })).toBeVisible({ timeout: 25_000 });
 
+    // Every value traces to one filing: form, filing date, accession, the
+    // meeting and fiscal year it relates to, and links to that exact document.
+    await expect(page.getByText("AI-extracted from AAPL's DEF 14A filed 2026-04-10 (accession 0000320193-26-000001) for the 2026 annual meeting.").first()).toBeVisible();
+    await expect(page.getByText('Covers the 2026 annual meeting (meeting date 2026-05-20, EDGAR period of report); compensation for fiscal 2025 (fiscal year ended 2025-12-31).').first()).toBeVisible();
+    await expect(page.getByRole('link', { name: 'AAPL proxy on SEC.gov — DEF 14A filed 2026-04-10' }).first())
+      .toHaveAttribute('href', 'https://www.sec.gov/Archives/edgar/data/320193/000032019326000001/aapl-proxy.htm');
+    await expect(page.getByRole('link', { name: 'AAPL DEF 14A filing index — accession 0000320193-26-000001' }).first())
+      .toHaveAttribute('href', 'https://www.sec.gov/Archives/edgar/data/320193/000032019326000001/0000320193-26-000001-index.htm');
+
     const target = page.getByLabel('Target company ticker');
     await target.fill('MSFT');
     await target.press('Enter');
     await expect(page.getByRole('heading', { name: 'Board of Directors — Microsoft Fixture Corp' })).toBeVisible({ timeout: 25_000 });
     await expect(page.getByText('MSFT Independent Director', { exact: true })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'MSFT proxy on SEC.gov — DEF 14A filed 2026-04-10' }).first())
+      .toHaveAttribute('href', 'https://www.sec.gov/Archives/edgar/data/789019/000078901926000001/msft-proxy.htm');
 
+    // A ticker the loaded directory does not have is a truthful absence: a
+    // status naming the directory, not an alert, and nothing to retry.
     await target.fill('ZZZZ');
     await target.press('Enter');
-    await expect(page.getByText(/Ticker "ZZZZ" not found in SEC EDGAR/)).toBeVisible({ timeout: 20_000 });
+    const absence = page.getByRole('status').filter({ hasText: 'No issuer with ticker "ZZZZ" in the SEC company directory' });
+    await expect(absence).toBeVisible({ timeout: 20_000 });
+    await expect(absence).toContainText('Ticker not in SEC directory');
+    await expect(absence.getByRole('button', { name: 'Retry' })).toHaveCount(0);
+    // Scoped to the board workspace: the dev server injects its own alert
+    // region (Next dev tools), which the production build CI runs does not.
+    await expect(page.locator('.board-main').getByRole('alert')).toHaveCount(0);
+  });
+
+  test('board-profiles.load-target distinguishes a failed SEC lookup, a missing proxy, and an unreadable proxy', async ({ page }) => {
+    const stats = await installGovernanceAnalyticsFixtures(page, {
+      proxylessTickers: ['GOOGL'],
+      filingTextFailures: { META: { status: 404, count: 2 } },
+      submissionFailuresBeforeSuccess: { NVDA: 6 },
+    });
+    await openWorkspace(page, '/boards', 'Board Profiles & Executive Compensation');
+    await expect(page.getByRole('heading', { name: 'Board of Directors — Apple Fixture Corp' })).toBeVisible({ timeout: 25_000 });
+    const target = page.getByLabel('Target company ticker');
+
+    // No DEF 14A on record: an absence that names the CIK and what was checked.
+    await target.fill('GOOGL');
+    await target.press('Enter');
+    const missing = page.getByRole('status').filter({ hasText: 'No DEF 14A proxy statement on record for CIK 1652044 (Alphabet Fixture Corp)' });
+    await expect(missing).toBeVisible({ timeout: 20_000 });
+    await expect(missing).toContainText('4 filings from 2026-02-20 to 2026-07-08 were checked');
+    await expect(missing).toContainText('Nothing was extracted');
+    await expect(missing.getByRole('button', { name: 'Retry' })).toHaveCount(0);
+
+    // On record but unreadable: an error that names the filing, the document,
+    // and the reason, and still links the filing index for manual inspection.
+    await target.fill('META');
+    await target.press('Enter');
+    const unreadable = page.getByRole('alert').filter({ hasText: 'DEF 14A filed 2026-04-10 (accession 0001326801-26-000001) is on record, but its document meta-proxy.htm could not be read' });
+    await expect(unreadable).toBeVisible({ timeout: 20_000 });
+    await expect(unreadable).toContainText('SEC returned 404 for the document');
+    await expect(unreadable.getByRole('link', { name: 'META DEF 14A filing index — accession 0001326801-26-000001' }))
+      .toHaveAttribute('href', 'https://www.sec.gov/Archives/edgar/data/1326801/000132680126000001/0001326801-26-000001-index.htm');
+    await expect(unreadable).not.toContainText('No DEF 14A');
+
+    // SEC outage: a lookup failure that denies nothing and can be retried.
+    await target.fill('NVDA');
+    await target.press('Enter');
+    const outage = page.getByRole('alert').filter({ hasText: 'SEC EDGAR submissions could not be loaded for CIK 1045810 (NVDA)' });
+    await expect(outage).toBeVisible({ timeout: 30_000 });
+    await expect(outage).toContainText('not evidence that the issuer has no proxy statement on record');
+    expect(stats.submissionRequests.NVDA).toBe(6);
+
+    await outage.getByRole('button', { name: 'Retry', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Board of Directors — Nvidia Fixture Corp' })).toBeVisible({ timeout: 25_000 });
+    await expect(outage).toHaveCount(0);
+    expect(stats.submissionRequests.NVDA).toBeGreaterThanOrEqual(7);
+    await expect(page.getByRole('link', { name: 'NVDA proxy on SEC.gov — DEF 14A filed 2026-04-10' }).first())
+      .toHaveAttribute('href', 'https://www.sec.gov/Archives/edgar/data/1045810/000104581026000001/nvda-proxy.htm');
+  });
+
+  test('board-profiles.open-proxy-source opens the exact DEF 14A on SEC.gov without losing the board view', async ({ page }) => {
+    await installGovernanceAnalyticsFixtures(page);
+    await openWorkspace(page, '/boards', 'Board Profiles & Executive Compensation');
+    await expect(page.getByRole('heading', { name: 'Board of Directors — Apple Fixture Corp' })).toBeVisible({ timeout: 25_000 });
+
+    const documentUrl = 'https://www.sec.gov/Archives/edgar/data/320193/000032019326000001/aapl-proxy.htm';
+    const source = page.getByRole('link', { name: 'AAPL proxy on SEC.gov — DEF 14A filed 2026-04-10' }).first();
+    await expect(source).toHaveAttribute('href', documentUrl);
+    await expect(source).toHaveAttribute('target', '_blank');
+    await expect(source).toHaveAttribute('rel', /noopener/);
+    const before = page.url();
+    const [popup] = await Promise.all([page.waitForEvent('popup'), source.click()]);
+    await expect.poll(() => popup.url()).toBe(documentUrl);
+    await popup.close();
+    expect(page.url()).toBe(before);
+    await expect(page.getByRole('heading', { name: 'Board of Directors — Apple Fixture Corp' })).toBeVisible();
+
+    const indexUrl = 'https://www.sec.gov/Archives/edgar/data/320193/000032019326000001/0000320193-26-000001-index.htm';
+    const index = page.getByRole('link', { name: 'AAPL DEF 14A filing index — accession 0000320193-26-000001' }).first();
+    await expect(index).toHaveAttribute('href', indexUrl);
+    const [indexPopup] = await Promise.all([page.waitForEvent('popup'), index.click()]);
+    await expect.poll(() => indexPopup.url()).toBe(indexUrl);
+    await indexPopup.close();
+    expect(page.url()).toBe(before);
+    await expect(page.getByText('AAPL Independent Director', { exact: true })).toBeVisible();
   });
 
   test('board-profiles.manage-comparison adds chooses and removes without disturbing neighbours', async ({ page }) => {
@@ -377,6 +469,11 @@ test.describe('comparison and governance interaction evidence', () => {
     await expect(comparison).toBeVisible({ timeout: 30_000 });
     await expect(comparison.getByRole('columnheader', { name: 'Apple Fixture Corp', exact: true })).toHaveCount(1);
     await expect(comparison.getByRole('columnheader', { name: 'Nvidia Fixture Corp', exact: true })).toHaveCount(1);
+    // Each column names its own source filing.
+    await expect(comparison.getByRole('link', { name: 'NVDA proxy on SEC.gov — DEF 14A filed 2026-04-10' }))
+      .toHaveAttribute('href', 'https://www.sec.gov/Archives/edgar/data/1045810/000104581026000001/nvda-proxy.htm', { timeout: 20_000 });
+    await expect(comparison.getByRole('link', { name: 'AAPL proxy on SEC.gov — DEF 14A filed 2026-04-10' }))
+      .toHaveAttribute('href', 'https://www.sec.gov/Archives/edgar/data/320193/000032019326000001/aapl-proxy.htm');
 
     await page.getByRole('button', { name: 'AAPL', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Board of Directors — Apple Fixture Corp' })).toBeVisible({ timeout: 20_000 });
@@ -397,13 +494,23 @@ test.describe('comparison and governance interaction evidence', () => {
     const diversity = page.getByRole('button', { name: 'Board Diversity', exact: true });
     await diversity.click();
     await expect(page.getByRole('heading', { name: 'Board Diversity — Apple Fixture Corp' })).toBeVisible();
-    await expect(page.getByText('All data AI-extracted from AAPL\'s latest DEF 14A proxy statement filed with SEC EDGAR.')).toBeVisible();
+    await expect(page.getByText("AI-extracted from AAPL's DEF 14A filed 2026-04-10 (accession 0000320193-26-000001) for the 2026 annual meeting.")).toBeVisible();
+    // The percentage is the disclosed evidence. The fixture proxy states no
+    // headcount, so the count is offered only as a labelled derivation (both
+    // bars: 50% of eight), never as a fact.
+    await expect(page.getByText('≈ 4 of 8 — derived from a rounded 50% of 8 directors, not a disclosed count')).toHaveCount(2);
+    await expect(page.getByText('count disclosed in the proxy')).toHaveCount(0);
+    // Say-on-pay is attributed to an earlier meeting than the proxy's own.
+    await expect(page.getByText(/an annual meeting no later than 2025 — not the 2026 meeting's vote/)).toBeVisible();
     await expect(diversity).toHaveAttribute('aria-pressed', 'true');
 
     const compensation = page.getByRole('button', { name: 'Executive Comp (PvP)', exact: true });
     await compensation.click();
     await expect(page.getByRole('heading', { name: 'Executive Compensation — Apple Fixture Corp' })).toBeVisible();
     await expect(page.getByText('AAPL Chief Executive', { exact: true }).first()).toBeVisible();
+    await expect(page.getByText('Named Executive Officers (NEOs): fiscal 2025 (fiscal year ended 2025-12-31) compensation, as disclosed in the DEF 14A filed 2026-04-10.')).toBeVisible();
+    await expect(page.getByText('Earlier vote (meeting no later than 2025) as reported in the 2026-meeting proxy filed 2026-04-10; not the 2026 meeting result.')).toBeVisible();
+    await expect(page.getByText('From latest annual shareholder meeting')).toHaveCount(0);
     await expect(compensation).toHaveAttribute('aria-pressed', 'true');
 
     await page.getByRole('button', { name: 'Director Profiles', exact: true }).click();
@@ -416,23 +523,34 @@ test.describe('comparison and governance interaction evidence', () => {
     await expect(page.getByRole('heading', { name: 'Board of Directors — Apple Fixture Corp' })).toBeVisible({ timeout: 25_000 });
 
     const promptsBeforeFailure = stats.claudePrompts.length;
-    // Selecting a new target also adds it to the comparison cohort, so the
-    // page intentionally starts both its target and comparison fetch paths.
-    // Fail both two-attempt Claude calls before proving the explicit retry.
-    stats.failNextAiAttempts('board', 4);
+    // Selecting a new target also adds it to the comparison cohort. Both paths
+    // share one in-flight load, so exactly one two-attempt Claude call fails
+    // before the explicit retry.
+    stats.failNextAiAttempts('board', 2);
     const target = page.getByLabel('Target company ticker');
     await target.fill('MSFT');
     await target.press('Enter');
-    const boardError = page.getByRole('alert').filter({ hasText: 'AI extraction returned no data' });
+    const boardError = page.getByRole('alert').filter({ hasText: 'AI extraction returned no usable data' });
     await expect(boardError).toBeVisible({ timeout: 25_000 });
-    expect(stats.claudePrompts).toHaveLength(promptsBeforeFailure + 4);
+    // The failure names the filing that WAS read and denies nothing about it.
+    await expect(boardError).toContainText('DEF 14A filed 2026-04-10 (accession 0000789019-26-000001) was read');
+    await expect(boardError).toContainText('not evidence that the proxy lacks these disclosures');
+    expect(stats.claudePrompts).toHaveLength(promptsBeforeFailure + 2);
+    // The comparison column reports the same failure in every metric row —
+    // distinctly, never as an absent proxy.
+    const comparison = page.getByRole('table', { name: 'Board governance comparison for selected companies' });
+    await expect(comparison.getByText('Extraction failed', { exact: true }).first()).toBeVisible();
+    await expect(comparison.getByText('No DEF 14A on record', { exact: true })).toHaveCount(0);
 
     await page.getByRole('button', { name: 'Retry', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Board of Directors — Microsoft Fixture Corp' })).toBeVisible({ timeout: 25_000 });
     await expect(boardError).toHaveCount(0);
-    expect(stats.claudePrompts).toHaveLength(promptsBeforeFailure + 5);
+    expect(stats.claudePrompts).toHaveLength(promptsBeforeFailure + 3);
     expect(stats.claudePrompts.at(-1)).toContain('evidence for MSFT');
     expect(stats.submissionRequests.MSFT).toBeGreaterThanOrEqual(2);
+    // The same retry repaired the comparison column, which shares the load.
+    await expect(comparison.getByText('Extraction failed', { exact: true })).toHaveCount(0);
+    await expect(comparison.getByRole('link', { name: 'MSFT proxy on SEC.gov — DEF 14A filed 2026-04-10' })).toBeVisible({ timeout: 20_000 });
   });
 
   test('insider-trading.add-company and insider-trading.remove-company keep only associated filing rows', async ({ page }) => {
