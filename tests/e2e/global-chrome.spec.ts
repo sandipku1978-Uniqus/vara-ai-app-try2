@@ -117,10 +117,17 @@ test.describe('critical action: global application chrome', () => {
 
     // Prove the mechanism claim above rather than only inspecting it: a real
     // link opens a new tab and leaves the current research state in place.
+    // This runs after nineteen client-side transitions; the link must be
+    // settled before the modifier-click, and a new tab on a loaded runner can
+    // take longer than the default 10s event wait (the one flake this test
+    // produced on main was exactly that timeout, on retry it passed).
     const current = page.url();
+    const searchLink = page.locator(`${NAV_ITEMS}[href="/search"]`);
+    await expect(searchLink).toBeVisible();
+    await searchLink.scrollIntoViewIfNeeded();
     const [popup] = await Promise.all([
-      page.context().waitForEvent('page'),
-      page.locator(`${NAV_ITEMS}[href="/search"]`).click({ modifiers: ['ControlOrMeta'] }),
+      page.context().waitForEvent('page', { timeout: 30_000 }),
+      searchLink.click({ modifiers: ['ControlOrMeta'] }),
     ]);
     // A freshly opened tab reports about:blank until the navigation commits.
     await popup.waitForURL(urlEndingIn('/search'), { timeout: 30_000 });
