@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { vi, describe, expect, it } from 'vitest';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
@@ -19,6 +19,12 @@ import {
 import { schemaEvidenceSha256 } from '../../scripts/accuracy/schema-contract';
 import { validSchemaContractEvidence } from './schemaContractFixture';
 import { ISSUERS, TOPIC_CASES } from '../../scripts/accuracy/cases';
+
+// The gate's fixtures build SHA-256 evidence per test; two of these take
+// ~5.5s on a two-core runner once the suite runs in parallel, which is past
+// vitest's 5s default. The right fix is module-scoped fixtures (tracked);
+// until then the budget matches the work.
+vi.setConfig({ testTimeout: 30_000 });
 
 const base = 'https://vara-ai-example-team.vercel.app';
 const repository = 'example/vara-ai-app';
