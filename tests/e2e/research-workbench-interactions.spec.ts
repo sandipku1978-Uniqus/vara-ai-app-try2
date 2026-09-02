@@ -271,6 +271,52 @@ test.describe('research workbench stateful interactions', () => {
     await expect(preview).toContainText(/reported within temporary equity under ASC 480/i);
   });
 
+  test('research-workbench.cite-result cites the exact row filing into the memo tray and removes only it', async ({ page }) => {
+    await runBooleanQuery(page, 'mezzanine OR temporary');
+    const kept = FILINGS[0];
+    const removed = FILINGS[1];
+    const rowCite = (filing: typeof kept) => page.getByRole('button', {
+      name: `Cite ${filing.company} ${filing.form} filed ${filing.filed} in memo tray`,
+      exact: true,
+    });
+    const rowCited = (filing: typeof kept) => page.getByRole('button', {
+      name: `Cited ✓ ${filing.company} ${filing.form} filed ${filing.filed} — remove from memo tray`,
+      exact: true,
+    });
+
+    await rowCite(kept).click();
+    await rowCite(removed).click();
+    await expect(rowCited(kept)).toHaveAttribute('aria-pressed', 'true');
+    await expect(rowCited(removed)).toHaveAttribute('aria-pressed', 'true');
+    await expect(rowCite(FILINGS[2])).toHaveAttribute('aria-pressed', 'false');
+
+    // A row and the preview describe one citation identity per filing, so the
+    // preview control reports the row's citation rather than a second copy.
+    await page.locator('.research-hit-card', { hasText: removed.company }).click();
+    await expect(page.locator('.research-preview').getByRole('button', { name: 'Cited ✓', exact: true }))
+      .toHaveAttribute('aria-pressed', 'true');
+
+    await page.getByRole('button', { name: 'Open memo tray (2 citations)' }).click();
+    const tray = page.getByRole('complementary', { name: 'Memo tray' });
+    const item = tray.locator('.memo-tray-item').filter({ hasText: removed.company });
+    await expect(item).toContainText(removed.form);
+    await expect(item).toContainText(removed.filed);
+    await expect(item.locator('.el-excerpt')).toContainText(/temporary equity/i);
+    await expect(item.getByRole('link', { name: 'SEC.gov source' })).toHaveAttribute(
+      'href',
+      `https://www.sec.gov/Archives/edgar/data/${Number(removed.cik)}/${removed.accession.replace(/-/g, '')}/${removed.document}`
+    );
+    await tray.getByRole('button', { name: 'Close memo tray' }).click();
+
+    await rowCited(removed).click();
+    await expect(rowCite(removed)).toHaveAttribute('aria-pressed', 'false');
+    await expect(rowCited(kept)).toHaveAttribute('aria-pressed', 'true');
+    await page.getByRole('button', { name: 'Open memo tray (1 citation)' }).click();
+    const remaining = page.getByRole('complementary', { name: 'Memo tray' }).locator('.memo-tray-item');
+    await expect(remaining).toHaveCount(1);
+    await expect(remaining).toContainText(kept.company);
+  });
+
   test('research-workbench.open-issuer-or-source targets the chosen issuer and exact SEC document', async ({ page }) => {
     await runBooleanQuery(page, 'mezzanine OR temporary');
     const chosen = FILINGS[1];

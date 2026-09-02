@@ -7,6 +7,7 @@ import { FileSearch, Search, Loader2, ExternalLink, TrendingUp } from 'lucide-re
 import DataTable, { type ColumnDef } from '../components/tables/DataTable';
 import ResultsToolbar from '../components/tables/ResultsToolbar';
 import AskCopilotButton from '../components/tables/AskCopilotButton';
+import CiteButton from '../components/memo/CiteButton';
 import AIResultsSummary from '../components/tables/AIResultsSummary';
 import SearchFilterBar, { type SearchFilters, defaultSearchFilters } from '../components/filters/SearchFilterBar';
 import { executeFilingResearchSearch, matchesDocumentTypePrefixes } from '../services/filingResearch';
@@ -172,6 +173,22 @@ export default function ExhibitSearch() {
             style={{ color: 'var(--accent-primary)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
           >View <ExternalLink size={12} aria-hidden="true" /></a>
           <AskCopilotButton compact prompt={`Analyze exhibit ${row.documentType} attached to ${row.formType} from ${row.entityName}, filed ${row.fileDate}`} />
+          <CiteButton
+            compact
+            citation={{
+              kind: 'filing',
+              cik: row.cik,
+              accessionNumber: row.accessionNumber,
+              company: row.entityName,
+              form: row.formType,
+              fileDate: row.fileDate,
+              excerpt: row.description || '',
+              sourceUrl: url,
+              // The exhibit type scopes the citation to this document, so two
+              // exhibits of one filing stay two citations.
+              section: row.documentType && row.documentType !== row.formType ? row.documentType : undefined,
+            }}
+          />
         </div>
       );
     }},

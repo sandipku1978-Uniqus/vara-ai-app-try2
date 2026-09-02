@@ -1008,7 +1008,22 @@
   line-height: 1.45;
 }
 
+/* A row is the selectable card plus its cite control, which cannot live
+   inside the card because the card is itself a button. */
+.research-hit-row {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.research-hit-row .research-hit-cite {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+}
+
 .research-hit-card {
+  width: 100%;
   text-align: left;
   border: 0;
   border-bottom: 1px solid var(--border-color);
@@ -1018,6 +1033,11 @@
   padding: 9px 10px;
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s;
+}
+
+/* Keep the row's metadata line clear of the overlaid cite control. */
+.research-hit-row .research-hit-card .topline {
+  padding-right: 84px;
 }
 
 .research-hit-card:hover {

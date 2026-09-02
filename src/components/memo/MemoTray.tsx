@@ -161,7 +161,7 @@ export default function MemoTray() {
           {citations.length === 0 ? (
             <div className="el-state memo-tray-empty">
               <strong>No citations yet.</strong>
-              <span>Cite filings from the Research Workbench preview — each citation keeps its excerpt and source link, ready for a memo.</span>
+              <span>Cite evidence from any result row, filing section, selected passage, redline block, or comment letter — each citation keeps its excerpt and source link, ready for a memo.</span>
             </div>
           ) : (
             <>
@@ -172,6 +172,11 @@ export default function MemoTray() {
                       <span className="el-badge el-badge-citation">[{index + 1}]</span>
                       <span className="el-mono">{citation.fileDate}</span>
                       <span className="el-badge el-badge-neutral">{citation.form}</span>
+                      {citation.section && (
+                        <span className="el-badge el-badge-neutral memo-tray-section" title="Section or passage this citation is scoped to">
+                          {citation.section}
+                        </span>
+                      )}
                       <button
                         type="button"
                         className="memo-tray-icon-btn"
@@ -182,6 +187,12 @@ export default function MemoTray() {
                       </button>
                     </div>
                     <div className="memo-tray-company">{citation.company}</div>
+                    {citation.comparedTo && (
+                      <div className="memo-tray-compare">
+                        Compared with Form {citation.comparedTo.form} filed {citation.comparedTo.fileDate} (accession {citation.comparedTo.accessionNumber}) —{' '}
+                        <a className="el-link" href={citation.comparedTo.sourceUrl} target="_blank" rel="noreferrer">prior filing on SEC.gov</a>
+                      </div>
+                    )}
                     {citation.excerpt.trim() && <blockquote className="el-excerpt">{citation.excerpt}</blockquote>}
                     <textarea
                       value={citation.note}

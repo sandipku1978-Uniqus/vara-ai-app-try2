@@ -63,13 +63,17 @@ test.describe('global research interaction archetypes', () => {
     await page.getByRole('button', { name: 'Close copilot' }).click();
     await expect(trigger).toBeFocused();
     const { composer } = await openCopilot(page);
+    // Evidence citations are the panel's own controls. The research session
+    // the action opens renders result rows behind the panel whose cite chips
+    // also name the filing, so the locator must stay inside the assistant.
+    const assistant = page.getByRole('complementary', { name: 'URC Copilot research assistant' });
 
     const filingPrompt = 'Find mezzanine equity';
     await submitCopilot(page, filingPrompt);
     await page.getByRole('button', { name: 'Action Log' }).click();
     await expect(page.getByText('Search filings', { exact: true }).first()).toBeVisible();
     await page.getByRole('button', { name: 'Evidence' }).click();
-    const filingCitation = page.getByRole('button', { name: /Mezz Only Corp 10-K/ });
+    const filingCitation = assistant.getByRole('button', { name: /Mezz Only Corp 10-K/ });
     await expect(filingCitation).toBeVisible();
     // The action also opens a research session. Wait for that route-state sync
     // to settle before activating its evidence link, or the session writer and
@@ -83,7 +87,7 @@ test.describe('global research interaction archetypes', () => {
     await page.getByRole('button', { name: 'Send message to copilot' }).click();
     await expect(page.locator('.run-status')).toContainText('completed', { timeout: 30_000 });
     await page.getByRole('button', { name: 'Evidence' }).click();
-    const letterCitation = page.getByRole('button', { name: new RegExp(`${COMMENT_LETTER.company_name} ${COMMENT_LETTER.form}`) });
+    const letterCitation = assistant.getByRole('button', { name: new RegExp(`${COMMENT_LETTER.company_name} ${COMMENT_LETTER.form}`) });
     await expect(letterCitation).toBeVisible();
     await letterCitation.click();
     await expect(page).toHaveURL(new RegExp(`thread=${COMMENT_LETTER.thread_id}`));

@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { defaultSearchFilters } from '../components/filters/SearchFilterBar';
 import ResearchResultsWorkspace from '../components/research/ResearchResultsWorkspace';
 import type { FilingResearchResult } from '../services/filingResearch';
+import { clearMemoTray, getMemoCitations } from '../services/memoTray';
 
 function filing(overrides: Partial<FilingResearchResult> = {}): FilingResearchResult {
   return {
@@ -103,7 +104,10 @@ describe('ResearchResultsWorkspace', () => {
       />
     );
 
-    fireEvent.click(screen.getByRole('button', { name: /older corp/i }));
+    // The row's cite chip is also named after the issuer; selection is the card.
+    const [card] = screen.getAllByRole('button', { name: /older corp/i })
+      .filter(button => button.classList.contains('research-hit-card'));
+    fireEvent.click(card);
     expect(onSelectResult).toHaveBeenCalledWith(result.id);
 
     fireEvent.click(screen.getByRole('button', { name: /export \.xlsx/i }));
@@ -165,5 +169,55 @@ describe('ResearchResultsWorkspace', () => {
     expect(cite).toBeDisabled();
     fireEvent.click(cite);
     expect(onToggleCitation).not.toHaveBeenCalled();
+  });
+
+  it('cites a result row with its official document and removes only that row again', () => {
+    clearMemoTray();
+    const older = filing();
+    const newer = filing({
+      id: 'filing-2', entityName: 'Newer Corp', companyName: 'Newer Corp', cik: '2',
+      accessionNumber: '0000000002-26-000002', primaryDocument: 'newer.htm', fileDate: '2026-01-01',
+      matchSnippet: 'Revenue is recognized when control transfers.',
+    });
+    render(<ResearchResultsWorkspace {...props({ results: [older, newer] })} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Cite Newer Corp 10-K filed 2026-01-01 in memo tray' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Cite Older Corp 10-K filed 2025-01-01 in memo tray' }));
+    expect(getMemoCitations()).toHaveLength(2);
+    expect(getMemoCitations()[0]).toMatchObject({
+      kind: 'filing',
+      cik: '2',
+      accessionNumber: '0000000002-26-000002',
+      company: 'Newer Corp',
+      form: '10-K',
+      fileDate: '2026-01-01',
+      excerpt: 'Revenue is recognized when control transfers.',
+      sourceUrl: 'https://www.sec.gov/Archives/edgar/data/2/000000000226000002/newer.htm',
+    });
+
+    const cited = screen.getByRole('button', { name: 'Cited ✓ Newer Corp 10-K filed 2026-01-01 — remove from memo tray' });
+    expect(cited).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.click(cited);
+    expect(getMemoCitations().map(item => item.company)).toEqual(['Older Corp']);
+    clearMemoTray();
+  });
+
+  it('disables a row cite until its placeholder document resolves, then cites the resolved document', () => {
+    clearMemoTray();
+    const placeholder = filing({ primaryDocument: 'edgar/data/1/0000000001-25-000001.txt' });
+    const { rerender } = render(<ResearchResultsWorkspace {...props({ results: [placeholder] })} />);
+
+    const pending = screen.getByRole('button', { name: 'Cite Older Corp 10-K filed 2025-01-01 in memo tray' });
+    expect(pending).toBeDisabled();
+    expect(pending).toHaveAttribute('title', 'Locating the official SEC document before it can be cited');
+    fireEvent.click(pending);
+    expect(getMemoCitations()).toHaveLength(0);
+
+    rerender(<ResearchResultsWorkspace {...props({ results: [placeholder], resolvedDocuments: { 'filing-1': 'resolved.htm' } })} />);
+    const ready = screen.getByRole('button', { name: 'Cite Older Corp 10-K filed 2025-01-01 in memo tray' });
+    expect(ready).toBeEnabled();
+    fireEvent.click(ready);
+    expect(getMemoCitations()[0].sourceUrl).toBe('https://www.sec.gov/Archives/edgar/data/1/000000000125000001/resolved.htm');
+    clearMemoTray();
   });
 });

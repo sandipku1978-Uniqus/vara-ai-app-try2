@@ -90,13 +90,18 @@
 }
 .memo-tray-item-top {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
   font-size: 0.72rem;
   color: var(--text-muted);
 }
 .memo-tray-item-top .memo-tray-icon-btn { margin-left: auto; }
+.memo-tray-section { white-space: normal; text-align: left; }
 .memo-tray-company { font-weight: 600; color: var(--text-primary); font-size: 0.88rem; }
+.memo-tray-compare { font-size: 0.72rem; color: var(--text-secondary); line-height: 1.45; }
+/* Redline excerpts quote two filings on separate lines. */
+.memo-tray-item .el-excerpt { white-space: pre-line; }
 .memo-tray-item textarea {
   width: 100%;
   resize: vertical;

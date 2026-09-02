@@ -7,6 +7,7 @@ import { Mic, Search, Loader2, ExternalLink, TrendingUp } from 'lucide-react';
 import DataTable, { type ColumnDef } from '../components/tables/DataTable';
 import ResultsToolbar from '../components/tables/ResultsToolbar';
 import AskCopilotButton from '../components/tables/AskCopilotButton';
+import CiteButton from '../components/memo/CiteButton';
 import AIResultsSummary from '../components/tables/AIResultsSummary';
 import SearchFilterBar, { type SearchFilters, defaultSearchFilters } from '../components/filters/SearchFilterBar';
 import { resolveCompanyInput } from '../services/secApi';
@@ -150,6 +151,22 @@ export default function EarningsTranscripts() {
             style={{ color: 'var(--accent-primary)', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
           >View <ExternalLink size={12} aria-hidden="true" /></a>
           <AskCopilotButton compact prompt={`Analyze earnings-release exhibit ${row.documentType} attached to ${row.formType} from ${row.entityName}, filed ${row.fileDate}`} />
+          <CiteButton
+            compact
+            citation={{
+              kind: 'filing',
+              cik: row.cik,
+              accessionNumber: row.accessionNumber,
+              company: row.entityName,
+              form: row.formType,
+              fileDate: row.fileDate,
+              excerpt: row.description || '',
+              sourceUrl: url,
+              // The exhibit type scopes the citation to this document, so two
+              // exhibits of one 8-K stay two citations.
+              section: row.documentType && row.documentType !== row.formType ? row.documentType : undefined,
+            }}
+          />
         </div>
       );
     }},

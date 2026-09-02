@@ -415,6 +415,172 @@ test.describe('archetype: filing-detail evidence workspace', () => {
     await expect(page.getByText(NOTE)).toHaveCount(0);
   });
 
+  test('filing-detail.cite-evidence cites the active section and a selected passage as distinct memo evidence', async ({ page }) => {
+    await installFilingDetailFixtures(page);
+    await openFiling(page);
+    const identity = `${CURRENT.company} ${CURRENT.form} filed ${CURRENT.filed}`;
+    const sourceUrl = `https://www.sec.gov/Archives/edgar/data/${Number(CURRENT.cik)}/${CURRENT.accession.replace(/-/g, '')}/${CURRENT.document}`;
+    const header = page.locator('.header-actions');
+
+    // With no section or selection, the page-level control cites the filing itself.
+    await expect(header.getByRole('button', { name: `Cite ${identity} in memo tray`, exact: true })).toBeVisible();
+
+    await page.getByRole('button', { name: 'Item 1A. Risk Factors', exact: true }).click();
+    await header.getByRole('button', { name: `Cite ${identity}, Item 1A. Risk Factors in memo tray`, exact: true }).click();
+    await expect(header.getByRole('button', { name: `Cited ✓ ${identity}, Item 1A. Risk Factors — remove from memo tray`, exact: true }))
+      .toHaveAttribute('aria-pressed', 'true');
+
+    await page.getByRole('button', { name: 'Annotate' }).click();
+    const evidence = page.frameLocator('iframe[title="SEC Document View"]').getByText(SELECTED_EVIDENCE);
+    await evidence.evaluate(element => {
+      const selection = element.ownerDocument.getSelection();
+      const range = element.ownerDocument.createRange();
+      range.selectNodeContents(element);
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+      element.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
+    });
+    const composer = page.locator('.annotation-composer-overlay');
+    await expect(composer).toContainText(SELECTED_EVIDENCE);
+    // The same section, but a quoted passage: its own citation, not a no-op.
+    await composer.getByRole('button', { name: `Cite ${identity}, Item 1A. Risk Factors in memo tray`, exact: true }).click();
+    const passageCited = composer.getByRole('button', { name: `Cited ✓ ${identity}, Item 1A. Risk Factors — remove from memo tray`, exact: true });
+    await expect(passageCited).toHaveAttribute('aria-pressed', 'true');
+
+    await page.getByRole('button', { name: 'Open memo tray (2 citations)' }).click();
+    const tray = page.getByRole('complementary', { name: 'Memo tray' });
+    const items = tray.locator('.memo-tray-item');
+    await expect(items).toHaveCount(2);
+    await expect(items.nth(0)).toContainText('Item 1A. Risk Factors');
+    await expect(items.nth(0).locator('.el-excerpt')).toHaveCount(0);
+    await expect(items.nth(1)).toContainText('Item 1A. Risk Factors');
+    await expect(items.nth(1).locator('.el-excerpt')).toHaveText(SELECTED_EVIDENCE);
+    for (const item of [items.nth(0), items.nth(1)]) {
+      await expect(item).toContainText(CURRENT.company);
+      await expect(item).toContainText(CURRENT.form);
+      await expect(item).toContainText(CURRENT.filed);
+      await expect(item.getByRole('link', { name: 'SEC.gov source' })).toHaveAttribute('href', sourceUrl);
+    }
+    await tray.getByRole('button', { name: 'Close memo tray' }).click();
+
+    // Removing the passage leaves the section citation intact.
+    await passageCited.click();
+    await page.getByRole('button', { name: 'Open memo tray (1 citation)' }).click();
+    const remaining = page.getByRole('complementary', { name: 'Memo tray' }).locator('.memo-tray-item');
+    await expect(remaining).toHaveCount(1);
+    await expect(remaining.locator('.el-excerpt')).toHaveCount(0);
+  });
+
+  test('filing-detail.cite-redline cites a changed block against both filings with their accessions', async ({ page, context }) => {
+    await installFilingDetailFixtures(page);
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    const PRIOR = { accession: '0001000003-25-000003', document: 'f3-prior.htm', filed: '2025-02-12', form: CURRENT.form };
+    // Headings flush disclosure blocks, so the diff yields one modified pair
+    // (the mezzanine sentence), one current-only block, and one prior-only block.
+    const CURRENT_TEXT = [
+      'ITEM 1A. RISK FACTORS',
+      'Amounts shown as mezzanine equity are presented as temporary equity in the notes to the financial statements.',
+      'ITEM 7. LIQUIDITY AND CAPITAL RESOURCES',
+      'Deferred revenue is recognized when control of the promised goods transfers to the customer at contract inception.',
+    ].join('\n');
+    const PRIOR_TEXT = [
+      'ITEM 1A. RISK FACTORS',
+      'Amounts shown as mezzanine equity are presented as temporary equity on the consolidated balance sheet.',
+      'ITEM 9. CONTROLS AND PROCEDURES',
+      'Legacy lease commitments were disclosed under the superseded operating lease accounting standard last year.',
+    ].join('\n');
+
+    // Registered after the shared fixtures, so these answer first and only the
+    // two redline documents plus this issuer's submissions are overridden.
+    await page.route('**/api/filing-text**', async (route: Route) => {
+      const document = new URL(route.request().url()).searchParams.get('document') || '';
+      const text = document.includes(PRIOR.document) ? PRIOR_TEXT : document.includes(CURRENT.document) ? CURRENT_TEXT : null;
+      if (text === null) {
+        await route.fallback();
+        return;
+      }
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ ok: true, text, cached: true }) });
+    });
+    await page.route('**/api/sec-proxy**', async (route: Route) => {
+      const path = new URL(route.request().url()).searchParams.get('path') || '';
+      if (!path.includes(`submissions/CIK${CURRENT.cik.padStart(10, '0')}`)) {
+        await route.fallback();
+        return;
+      }
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          cik: CURRENT.cik,
+          name: CURRENT.company,
+          tickers: [],
+          exchanges: [],
+          ein: '',
+          description: '',
+          sic: '',
+          sicDescription: '',
+          filings: {
+            recent: {
+              accessionNumber: [CURRENT.accession, PRIOR.accession],
+              filingDate: [CURRENT.filed, PRIOR.filed],
+              reportDate: [CURRENT.filed, PRIOR.filed],
+              acceptanceDateTime: [`${CURRENT.filed}T12:00:00.000Z`, `${PRIOR.filed}T12:00:00.000Z`],
+              act: ['34', '34'],
+              form: [CURRENT.form, PRIOR.form],
+              fileNumber: ['001-00003', '001-00003'],
+              primaryDocument: [CURRENT.document, PRIOR.document],
+              primaryDocDescription: ['Annual report', 'Annual report'],
+            },
+            files: [],
+          },
+        }),
+      });
+    });
+    await page.route('**/api/claude', async (route: Route) => {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ text: '[]' }) });
+    });
+
+    await openFiling(page);
+    await page.getByRole('button', { name: 'YoY Redline' }).click();
+    const tools = page.getByRole('tabpanel');
+    await expect(tools).toContainText(`Comparing against ${PRIOR.form} filed on ${PRIOR.filed}.`, { timeout: 20_000 });
+    await expect(tools.getByRole('heading', { name: 'Modified disclosure blocks' })).toBeVisible();
+
+    const identity = `${CURRENT.company} ${CURRENT.form} filed ${CURRENT.filed}`;
+    const scope = `Redline vs ${PRIOR.form} filed ${PRIOR.filed}`;
+    await tools.getByRole('button', { name: `Cite ${identity}, ${scope} — modified block 1 in memo tray`, exact: true }).click();
+    await expect(tools.getByRole('button', { name: `Cited ✓ ${identity}, ${scope} — modified block 1 — remove from memo tray`, exact: true }))
+      .toHaveAttribute('aria-pressed', 'true');
+    await expect(tools.getByRole('button', { name: `Cite ${identity}, ${scope} — current-only block 1 in memo tray`, exact: true }))
+      .toHaveAttribute('aria-pressed', 'false');
+    await expect(tools.getByRole('button', { name: `Cite ${identity}, ${scope} — prior-only block 1 in memo tray`, exact: true }))
+      .toHaveAttribute('aria-pressed', 'false');
+
+    await page.getByRole('button', { name: 'Open memo tray (1 citation)' }).click();
+    const tray = page.getByRole('complementary', { name: 'Memo tray' });
+    const item = tray.locator('.memo-tray-item');
+    await expect(item).toHaveCount(1);
+    await expect(item).toContainText(`${scope} — modified block 1`);
+    await expect(item).toContainText(`Compared with Form ${PRIOR.form} filed ${PRIOR.filed} (accession ${PRIOR.accession})`);
+    await expect(item.getByRole('link', { name: 'SEC.gov source' })).toHaveAttribute(
+      'href',
+      `https://www.sec.gov/Archives/edgar/data/${Number(CURRENT.cik)}/${CURRENT.accession.replace(/-/g, '')}/${CURRENT.document}`
+    );
+    await expect(item.getByRole('link', { name: 'prior filing on SEC.gov' })).toHaveAttribute(
+      'href',
+      `https://www.sec.gov/Archives/edgar/data/${Number(CURRENT.cik)}/${PRIOR.accession.replace(/-/g, '')}/${PRIOR.document}`
+    );
+    const excerpt = item.locator('.el-excerpt');
+    await expect(excerpt).toContainText(`Prior filing (Form ${PRIOR.form}, filed ${PRIOR.filed}, accession ${PRIOR.accession})`);
+    await expect(excerpt).toContainText('on the consolidated balance sheet');
+    await expect(excerpt).toContainText('Current filing:');
+    await expect(excerpt).toContainText('in the notes to the financial statements');
+
+    await tray.getByRole('button', { name: 'Copy citations' }).click();
+    await expect.poll(() => page.evaluate(() => navigator.clipboard.readText()))
+      .toContain(`(accession ${CURRENT.accession}), compared with Form ${PRIOR.form} filed ${PRIOR.filed} (accession ${PRIOR.accession})`);
+  });
+
   test('filing-detail.open-assistant retains the source and uses the active filing as action context', async ({ page }) => {
     const stats = await installFilingDetailFixtures(page);
     await openFiling(page);

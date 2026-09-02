@@ -15,16 +15,23 @@ import type { SearchFilters } from '../filters/SearchFilterBar';
 import type { FilingResearchResult, ResearchSearchMode } from '../../services/filingResearch';
 import type { IssuerFreshnessNotice } from '../../services/issuerFreshness';
 import type { ResearchSearchSession } from '../../services/researchSessions';
-import type { SearchCandidateCoverage } from '../../services/secApi';
+import {
+  buildSecDocumentUrl,
+  isPlaceholderPrimaryDocument,
+  type SearchCandidateCoverage,
+} from '../../services/secApi';
 import {
   buildResearchEmptyResultMessage,
   buildResultsHeadline,
   formatUpstreamTotal,
 } from '../../services/searchCoverage';
 import { BRAND } from '../../config/brand';
+import CiteButton from '../memo/CiteButton';
 import ActiveQueryChips from './ActiveQueryChips';
 import SearchScopeBanner from './SearchScopeBanner';
 import { researchTabId } from './ResearchSessionTabs';
+
+const SOURCE_UNRESOLVED_REASON = 'Locating the official SEC document before it can be cited';
 
 type ResultSort = 'relevance' | 'newest';
 
@@ -66,6 +73,25 @@ interface ResearchResultsWorkspaceProps {
   onPreviewError: () => void;
   selectedIsCited: boolean;
   onToggleCitation: () => void;
+  /**
+   * Real primary documents resolved for rows whose search hit only carried a
+   * master.idx placeholder, keyed by result id. Lets a row cite the same
+   * official document the preview resolved instead of an Archives path that
+   * would 404.
+   */
+  resolvedDocuments?: Record<string, string>;
+}
+
+/**
+ * Official SEC document URL for a result row, or '' while the row's document
+ * is still a placeholder. Evidence is cited only against a real source — the
+ * same rule the preview's Cite control follows.
+ */
+function rowSourceUrl(result: FilingResearchResult, resolvedDocuments: Record<string, string>): string {
+  const document = isPlaceholderPrimaryDocument(result.primaryDocument, result.accessionNumber)
+    ? resolvedDocuments[result.id] || ''
+    : result.primaryDocument;
+  return document ? buildSecDocumentUrl(result.cik, result.accessionNumber, document) : '';
 }
 
 function escapeRegex(value: string): string {
@@ -161,6 +187,7 @@ export default function ResearchResultsWorkspace({
   onPreviewError,
   selectedIsCited,
   onToggleCitation,
+  resolvedDocuments = {},
 }: ResearchResultsWorkspaceProps) {
   const [resultSort, setResultSort] = useState<ResultSort>('relevance');
   const [resultPage, setResultPage] = useState(1);
@@ -318,9 +345,14 @@ export default function ResearchResultsWorkspace({
               </div>
             )}
             <div className="research-hit-scroll">
-              {pagedResults.map(result => (
+              {pagedResults.map(result => {
+                const sourceUrl = rowSourceUrl(result, resolvedDocuments);
+                return (
+                // The card is itself a button (row selection), so the cite
+                // control sits beside it in the row wrapper rather than
+                // nested inside — nested buttons are invalid and unreachable.
+                <div key={result.id} className="research-hit-row">
                 <button
-                  key={result.id}
                   className={`research-hit-card ${selectedResult?.id === result.id ? 'active' : ''}`}
                   onClick={() => onSelectResult(result.id)}
                 >
@@ -362,7 +394,24 @@ export default function ResearchResultsWorkspace({
                     {renderHighlightedText(result.matchSnippet || result.description || 'Matched on filing metadata.', previewHighlightTerms)}
                   </div>
                 </button>
-              ))}
+                <CiteButton
+                  compact
+                  className="research-hit-cite"
+                  citation={{
+                    kind: 'filing',
+                    cik: result.cik,
+                    accessionNumber: result.accessionNumber,
+                    company: result.entityName,
+                    form: result.formType,
+                    fileDate: result.fileDate,
+                    excerpt: result.matchSnippet || result.description || '',
+                    sourceUrl,
+                  }}
+                  disabledReason={sourceUrl ? undefined : SOURCE_UNRESOLVED_REASON}
+                />
+                </div>
+                );
+              })}
             </div>
             {resultPageCount > 1 && (
               <nav aria-label="Search result pages" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', padding: '10px 12px 4px' }}>

@@ -8,8 +8,16 @@
  */
 import { scopedStorageKey } from './storageNamespace';
 
+/** The prior filing a year-over-year redline passage was compared against. */
+export interface MemoComparedFiling {
+  accessionNumber: string;
+  form: string;
+  fileDate: string;
+  sourceUrl: string;        // canonical SEC.gov URL of the prior document
+}
+
 export interface MemoCitation {
-  id: string;               // `${cik}:${accession}` — one citation per filing
+  id: string;               // `${cik}:${accession}` plus optional `#section` and `~passage` scopes
   kind: 'filing' | 'letter';
   cik: string;
   accessionNumber: string;
@@ -21,6 +29,14 @@ export interface MemoCitation {
   note: string;             // user's own annotation
   addedAt: string;
   section?: string;         // optional: distinguishes two sections of one filing
+  /**
+   * Optional fingerprint of the quoted passage (see passageKey), so two
+   * passages cited from the same section remain two citations instead of the
+   * second silently collapsing into the first.
+   */
+  passageKey?: string;
+  /** Optional: present only on redline citations, which quote two filings. */
+  comparedTo?: MemoComparedFiling;
 }
 
 const STORAGE_KEY = 'urc.memo.tray.v1';
@@ -90,18 +106,92 @@ export function getMemoCitations(): MemoCitation[] {
   return read();
 }
 
-// An optional section makes two distinct sections of the same filing two
-// distinct citations, instead of colliding to one.
-export function citationId(cik: string, accessionNumber: string, section?: string): string {
-  return section ? `${cik}:${accessionNumber}#${section}` : `${cik}:${accessionNumber}`;
+/**
+ * Stable fingerprint of a quoted passage: two independent 32-bit hashes over
+ * the whitespace-normalized text plus its length. Deterministic across
+ * reloads, and far beyond what one filing's citations could collide on, so a
+ * different passage is never reported as already cited.
+ */
+export function passageKey(quote: string): string {
+  const normalized = quote.replace(/\s+/g, ' ').trim().toLowerCase();
+  let djb2 = 5381;
+  let fnv = 0x811c9dc5;
+  for (let index = 0; index < normalized.length; index += 1) {
+    const code = normalized.charCodeAt(index);
+    djb2 = (Math.imul(djb2, 33) ^ code) >>> 0;
+    fnv = Math.imul(fnv ^ code, 0x01000193) >>> 0;
+  }
+  return `${normalized.length.toString(36)}-${djb2.toString(36)}-${fnv.toString(36)}`;
 }
 
-export function isCited(cik: string, accessionNumber: string, section?: string): boolean {
-  return read().some(item => item.id === citationId(cik, accessionNumber, section));
+// An optional section makes two distinct sections of the same filing two
+// distinct citations, instead of colliding to one; an optional passage key
+// does the same for two quoted passages of one section.
+export function citationId(cik: string, accessionNumber: string, section?: string, passage?: string): string {
+  const scoped = section ? `${cik}:${accessionNumber}#${section}` : `${cik}:${accessionNumber}`;
+  return passage ? `${scoped}~${passage}` : scoped;
+}
+
+export function isCited(cik: string, accessionNumber: string, section?: string, passage?: string): boolean {
+  return read().some(item => item.id === citationId(cik, accessionNumber, section, passage));
+}
+
+/**
+ * Human-readable identity for a citation, used for accessible control names
+ * so a page of cite controls never announces as an undifferentiated "Cite".
+ */
+export function describeCitation(citation: Pick<MemoCitation, 'company' | 'form' | 'fileDate' | 'section'>): string {
+  const identity = [citation.company, citation.form, citation.fileDate ? `filed ${citation.fileDate}` : '']
+    .map(part => part.trim())
+    .filter(Boolean)
+    .join(' ');
+  const scoped = citation.section?.trim() ? `${identity}, ${citation.section.trim()}` : identity;
+  return scoped || 'this filing';
+}
+
+export interface RedlinePassage {
+  previous: string;
+  current: string;
+}
+
+const REDLINE_SIDE_LIMIT = 1500;
+
+/**
+ * Caps a long excerpt and says so in the text itself, so a citation never
+ * looks like the whole passage when it is not. Paragraph breaks survive;
+ * runs of horizontal whitespace collapse.
+ */
+export function boundExcerpt(text: string, limit = REDLINE_SIDE_LIMIT): string {
+  const compact = text.replace(/[ \t\r]+/g, ' ').replace(/ ?\n ?/g, '\n').replace(/\n{2,}/g, '\n').trim();
+  if (compact.length <= limit) return compact;
+  return `${compact.slice(0, limit).trim()} […truncated to ${limit} characters]`;
+}
+
+function redlineSide(text: string): string {
+  return boundExcerpt(text.replace(/\s+/g, ' '), REDLINE_SIDE_LIMIT);
+}
+
+/**
+ * Excerpt for a year-over-year redline citation. Both sides are quoted with
+ * the prior filing identified inline, so an export or memo draft that only
+ * reads the excerpt still sees which filing each text came from. A side with
+ * no matching block says so rather than being left blank.
+ */
+export function buildRedlineExcerpt(
+  passage: RedlinePassage,
+  prior: Pick<MemoComparedFiling, 'form' | 'fileDate' | 'accessionNumber'>
+): string {
+  const previous = passage.previous.trim();
+  const current = passage.current.trim();
+  return [
+    `Prior filing (Form ${prior.form}, filed ${prior.fileDate}, accession ${prior.accessionNumber}): ` +
+      (previous ? `“${redlineSide(previous)}”` : 'no matching disclosure block.'),
+    `Current filing: ${current ? `“${redlineSide(current)}”` : 'no matching disclosure block.'}`,
+  ].join('\n');
 }
 
 export function addCitation(input: Omit<MemoCitation, 'id' | 'note' | 'addedAt'>): void {
-  const id = citationId(input.cik, input.accessionNumber, input.section);
+  const id = citationId(input.cik, input.accessionNumber, input.section, input.passageKey);
   const existing = read();
   if (existing.some(item => item.id === id)) return;
   write([...existing, { ...input, id, note: '', addedAt: new Date().toISOString() }]);
@@ -198,12 +288,19 @@ export function clearMemoDraft(): void {
   draftListeners.forEach(listener => listener());
 }
 
+function describeComparedFiling(compared: MemoComparedFiling): string {
+  return `Form ${compared.form} filed ${compared.fileDate} (accession ${compared.accessionNumber})`;
+}
+
 /** Numbered plain-text citations, ready to paste into a memo or email. */
 export function formatCitationsText(items: MemoCitation[]): string {
   return items
     .map((item, index) =>
-      `[${index + 1}] ${item.company} — Form ${item.form}, filed ${item.fileDate} ` +
-      `(accession ${item.accessionNumber}). ${item.sourceUrl}`)
+      `[${index + 1}] ${item.company} — Form ${item.form}, filed ${item.fileDate}` +
+      `${item.section ? `, ${item.section}` : ''} ` +
+      `(accession ${item.accessionNumber})` +
+      `${item.comparedTo ? `, compared with ${describeComparedFiling(item.comparedTo)}` : ''}. ` +
+      `${item.sourceUrl}${item.comparedTo ? ` | prior: ${item.comparedTo.sourceUrl}` : ''}`)
     .join('\n');
 }
 
@@ -211,9 +308,12 @@ export function formatCitationsText(items: MemoCitation[]): string {
 export function formatMemoMarkdown(items: MemoCitation[]): string {
   const lines: string[] = ['# Research memo — cited evidence', ''];
   items.forEach((item, index) => {
-    lines.push(`## [${index + 1}] ${item.company} — Form ${item.form} (${item.fileDate})`);
+    lines.push(`## [${index + 1}] ${item.company} — Form ${item.form} (${item.fileDate})${item.section ? ` — ${item.section}` : ''}`);
     lines.push(`Source: ${item.sourceUrl}`);
-    if (item.excerpt.trim()) lines.push(`> ${item.excerpt.trim()}`);
+    if (item.comparedTo) lines.push(`Compared with: ${describeComparedFiling(item.comparedTo)} — ${item.comparedTo.sourceUrl}`);
+    // Redline excerpts span several lines; every line needs the quote marker
+    // or the blockquote ends after the first one.
+    if (item.excerpt.trim()) lines.push(...item.excerpt.trim().split('\n').map(line => `> ${line}`));
     if (item.note.trim()) lines.push(`Note: ${item.note.trim()}`);
     lines.push('');
   });

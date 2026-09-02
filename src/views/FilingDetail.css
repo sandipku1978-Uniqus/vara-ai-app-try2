@@ -622,6 +622,13 @@
   flex-wrap: wrap;
 }
 
+/* Cite control under a redline block, aligned with the block's edge. */
+.redline-cite {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 6px;
+}
+
 .annotation-quote {
   color: var(--text-primary);
   font-size: 0.78rem;

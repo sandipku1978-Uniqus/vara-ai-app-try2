@@ -1720,6 +1720,7 @@ export default function SearchPage() {
           onPreviewError={() => setPreviewError(true)}
           selectedIsCited={selectedIsCited}
           onToggleCitation={handleToggleCitation}
+          resolvedDocuments={resolvedPreviewDocs}
         />
       </section>
     </div>
