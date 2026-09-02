@@ -15,6 +15,9 @@ import { checkResourceRateLimit, rateLimitResponse } from '../../../lib/rate-lim
 import { getWebSupabase } from '../../../lib/supabase-web';
 import { withRouteObservability } from '../../../lib/route-observability';
 
+/** Platform budget (seconds). Up to 200 CIKs against the 20 s urc_web statement budget; leaves room for the HTTP deadline. */
+export const maxDuration = 60;
+
 const MAX_CIKS = 200;
 const MAX_FILINGS = 200;
 

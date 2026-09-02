@@ -19,6 +19,9 @@ import { requireApiAccess } from '../../../lib/api-auth';
 import { checkResourceRateLimit, rateLimitResponse } from '../../../lib/rate-limit';
 import { withRouteObservability } from '../../../lib/route-observability';
 
+/** Platform budget (seconds). Accepts one small JSON body and writes one log line. */
+export const maxDuration = 10;
+
 const MAX_FIELD = 512;
 const MAX_STACK = 4_000;
 const MAX_BODY_BYTES = 16_000;

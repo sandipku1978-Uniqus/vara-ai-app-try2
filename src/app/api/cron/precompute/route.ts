@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { withRouteObservability } from '../../../../lib/route-observability';
 
+/** Platform budget (seconds). Tombstone: answers 410 without doing any work. */
+export const maxDuration = 10;
+
 /**
  * Historical endpoint retained as an explicit tombstone so old bookmarks and
  * deployment probes cannot trigger model work. The application proxy applies

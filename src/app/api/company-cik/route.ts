@@ -27,6 +27,9 @@ import {
 } from '../../../lib/sec-upstream';
 import { withRouteObservability } from '../../../lib/route-observability';
 
+/** Platform budget (seconds). One paced SEC request (12 s) plus a bounded body read (12 s). */
+export const maxDuration = 30;
+
 const USER_AGENT = process.env.NEXT_PUBLIC_EDGAR_USER_AGENT || 'Uniqus Research Center contact@uniqus.com';
 const MAX_ATOM_BYTES = 512 * 1024;
 const SEC_ATOM_CONTENT_TYPE = /^(?:application\/atom\+xml|application\/xml|text\/xml)(?:;|$)/i;

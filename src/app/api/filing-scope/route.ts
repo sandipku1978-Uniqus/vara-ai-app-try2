@@ -18,6 +18,9 @@ import { checkResourceRateLimit, rateLimitResponse } from '../../../lib/rate-lim
 import { getWebSupabase } from '../../../lib/supabase-web';
 import { withRouteObservability } from '../../../lib/route-observability';
 
+/** Platform budget (seconds). One restricted RPC under the 20 s urc_web statement budget plus the HTTP deadline. */
+export const maxDuration = 30;
+
 /** Earliest filing in the corpus; anything before this is outside our coverage. */
 export const CORPUS_START = '2010-01-02';
 
