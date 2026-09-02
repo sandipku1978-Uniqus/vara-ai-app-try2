@@ -180,6 +180,13 @@ function validEvidence() {
       securityDefiner: true,
       definition: 'analyze public.urc_sec_filings',
     }),
+    fn('urc_refresh_filing_year_form', '', {
+      anon: false,
+      urcWeb: false,
+      searchPath: 'search_path=pg_catalog',
+      securityDefiner: true,
+      definition: 'refresh materialized view concurrently public.urc_filing_year_form',
+    }),
     fn('urc_companies_needing_sic', 'integer', { anon: false, urcWeb: false }),
     fn('urc_thread_letters', '', { anon: false, urcWeb: false }),
     fn('urc_schema_contract_evidence', '', { anon: false, urcWeb: false }),
@@ -215,7 +222,7 @@ function validEvidence() {
       { name: 'anon', config: ['statement_timeout=20s'] },
       { name: 'authenticated', config: [] },
       { name: 'urc_web', config: ['statement_timeout=20s'] },
-      { name: 'service_role', config: [] },
+      { name: 'service_role', config: ['statement_timeout=600s'] },
     ],
     extensions: [{ name: 'pg_trgm', version: '1.6' }],
     policies: relations

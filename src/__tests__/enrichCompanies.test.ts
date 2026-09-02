@@ -179,6 +179,36 @@ describe('SIC sentinel persistence', () => {
     }), { onConflict: 'cik' });
   });
 
+  it('accepts SEC null array entries and stores only the real values', async () => {
+    // "exchanges": [null] is SEC's normal shape for a ticker with no listing.
+    // Rejecting it made six real issuers fail as "invalid-json" every day.
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      name: 'Turbogen Ltd.', sic: '4931', sicDescription: 'Electric & Other Services Combined',
+      tickers: ['TRBG', null], exchanges: [null],
+    }), { status: 200 })));
+
+    await sicPass(1, { retryBaseMs: 0, requestDelayMs: 0 });
+
+    expect(mocks.upsert).toHaveBeenCalledOnce();
+    const row = mocks.upsert.mock.calls[0][0];
+    expect(row).toMatchObject({ cik: 320193, sic: '4931', tickers: ['TRBG'] });
+    expect(row).not.toHaveProperty('exchanges');
+  });
+
+  it('an empty SIC is terminal: stored as the known-unknown sentinel, not re-fetched tomorrow', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      name: 'Some Insider', sic: '', tickers: [], exchanges: [],
+    }), { status: 200 })));
+
+    await sicPass(1, { retryBaseMs: 0, requestDelayMs: 0 });
+
+    expect(mocks.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      cik: 320193,
+      sic: '0000',
+      sic_description: 'UNKNOWN (registrant reports no SIC)',
+    }), { onConflict: 'cik' });
+  });
+
   it('persists the SEC SIC on a validated successful response', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(JSON.stringify({
       name: 'Apple Inc.',

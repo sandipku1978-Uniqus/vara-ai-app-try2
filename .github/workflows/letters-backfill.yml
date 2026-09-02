@@ -44,7 +44,13 @@ jobs:
       - name: Reconcile current and prior-quarter letter metadata
         # A 90-day overlap catches retroactively disseminated older-quarter
         # records; the accession+CIK upsert makes the scan idempotent.
-        run: npx --no-install tsx data-pipeline/ingest-letters.ts --since 90
+        # 400 days, not 90: the SEC releases UPLOAD/CORRESP letters no earlier
+        # than 20 business days after a review closes, under their ORIGINAL
+        # filing dates — the early rounds of a multi-month review are
+        # routinely older than 90 days at release and were never ingested.
+        # The (accession, cik) upsert is idempotent; the cost is a few more
+        # master.idx fetches per run.
+        run: npx --no-install tsx data-pipeline/ingest-letters.ts --since 400
         env:
           URC_SUPABASE_URL: ${{ secrets.URC_SUPABASE_URL }}
           URC_SUPABASE_SERVICE_KEY: ${{ secrets.URC_SUPABASE_SERVICE_KEY }}
