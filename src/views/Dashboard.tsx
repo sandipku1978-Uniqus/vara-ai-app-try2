@@ -545,7 +545,7 @@ export default function Dashboard() {
                 </button>
               </div>
             ) : (
-              savedAlerts.slice(0, 3).map(alert => {
+              savedAlerts.map(alert => {
                 const isChecking = checkingAlerts.includes(alert.id);
                 const checkError = alertErrors[alert.id];
                 return (
