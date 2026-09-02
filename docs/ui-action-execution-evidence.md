@@ -1,6 +1,6 @@
 # UI action execution evidence
 
-The UI inventory contains 134 actionable-control contracts and one required
+The UI inventory contains 136 actionable-control contracts and one required
 content contract. A source file merely containing a title is not proof that a
 test was discovered or executed, so CI joins both inventories to Playwright's
 runtime reporter output by exact `{file,title}`.
@@ -33,7 +33,7 @@ test; this joins development-only gallery coverage to the production run.
 
 ## CI split
 
-The regular browser job validates 132 actions / 148 exact test references plus
+The regular browser job validates 134 actions / 151 exact test references plus
 1 content contract / 1 exact reference from the development-gallery and
 production-build runs. The protected-main Clerk lifecycle validates the
 remaining 3 actions / 4 exact test references. The

@@ -1,4 +1,5 @@
 import type { Page, Route } from '@playwright/test';
+import { buildCompleteSecCompanyDirectory } from './sec-company-directory-fixture';
 
 /**
  * Deterministic records shared by the dashboard and comment-letter action
@@ -158,6 +159,64 @@ export const COMMENT_LETTERS = [
   },
 ];
 
+/**
+ * A registrant whose name CONTAINS the fixture issuer's name. A name filter
+ * matches both; only a CIK filter keeps them apart — which is the difference
+ * the scope-company journey exists to prove.
+ */
+export const COMMENT_LOOKALIKE_THREAD = {
+  thread_id: 'thread-letterhaven-trust-1',
+  cik: 901,
+  company_name: `${COMMENT_THREAD.company_name} Trust`,
+  letters: 2,
+  uploads: 1,
+  corresps: 1,
+  first_letter: '2026-02-10',
+  last_letter: '2026-03-01',
+};
+
+/** The browse page holds twelve episodes, so fourteen need exactly one Load more. */
+export const COMMENT_BROWSE_THREADS = [
+  COMMENT_THREAD,
+  COMMENT_LOOKALIKE_THREAD,
+  ...Array.from({ length: 12 }, (_, index) => {
+    const ordinal = String(index + 1).padStart(2, '0');
+    return {
+      thread_id: `thread-filler-${ordinal}`,
+      cik: 9_100 + index,
+      company_name: `Filler Episode ${ordinal} Corp`,
+      letters: 2,
+      uploads: 1,
+      corresps: 1,
+      first_letter: '2025-01-01',
+      last_letter: '2025-01-15',
+    };
+  }),
+];
+
+export const COMMENT_DIRECTORY = buildCompleteSecCompanyDirectory([
+  { cik_str: COMMENT_THREAD.cik, ticker: 'LTHV', title: COMMENT_THREAD.company_name },
+  { cik_str: COMMENT_LOOKALIKE_THREAD.cik, ticker: 'LTHT', title: COMMENT_LOOKALIKE_THREAD.company_name },
+]);
+
+/** Deterministic extra matches so a search can span more than one page. */
+export function commentSearchFillers(count: number) {
+  return Array.from({ length: count }, (_, index) => {
+    const ordinal = String(index + 1).padStart(2, '0');
+    return {
+      accession: `0000009200-26-${String(index + 1).padStart(6, '0')}`,
+      cik: 9_200 + index,
+      company_name: `Filler Match ${ordinal} Corp`,
+      form: index % 2 === 0 ? 'UPLOAD' : 'CORRESP',
+      date_filed: '2025-06-01',
+      thread_id: `thread-filler-match-${ordinal}`,
+      filename: `filler-${ordinal}.htm`,
+      headline: `Filler excerpt ${ordinal} on <b>revenue recognition</b>.`,
+      rank: 0.5,
+    };
+  });
+}
+
 export const COMMENT_TOPIC_QUERY = 'revenue recognition performance obligation principal agent';
 export const COMMENT_RETRY_SUMMARY = 'The Staff challenged principal-versus-agent revenue recognition; the company responded with revised disclosure.';
 
@@ -167,6 +226,14 @@ export interface CommentLetterFixtureOptions {
   threadFailures?: number;
   summaryGetFailures?: number;
   summaryPostFailures?: number;
+  /** Filler matches appended to every search answer, for paging journeys. */
+  extraSearchMatches?: number;
+}
+
+function pageOf<T>(rows: T[], requestUrl: URL, defaultSize: number): { total: number; page: T[] } {
+  const from = Math.max(0, Number(requestUrl.searchParams.get('from') || 0));
+  const size = Math.max(1, Number(requestUrl.searchParams.get('size') || defaultSize));
+  return { total: rows.length, page: rows.slice(from, from + size) };
 }
 
 export interface CommentLetterFixtureStats {
@@ -255,8 +322,12 @@ export async function installCommentLetterFixtures(
         return;
       }
       const form = requestUrl.searchParams.get('form');
-      const matches = COMMENT_LETTERS
+      // The search RPC narrows by registrant-name substring only (there is
+      // no CIK parameter), and this fixture models exactly that.
+      const company = (requestUrl.searchParams.get('company') || '').toLowerCase();
+      const matches = [...COMMENT_LETTERS, ...commentSearchFillers(options.extraSearchMatches ?? 0)]
         .filter(letter => !form || letter.form === form)
+        .filter(letter => !company || letter.company_name.toLowerCase().includes(company))
         .map(letter => ({
           accession: letter.accession,
           cik: letter.cik,
@@ -268,7 +339,8 @@ export async function installCommentLetterFixtures(
           headline: letter.headline,
           rank: letter.rank,
         }));
-      await fulfillJson(route, { total: matches.length, matches });
+      const { total, page } = pageOf(matches, requestUrl, 20);
+      await fulfillJson(route, { total, matches: page });
       return;
     }
 
@@ -277,11 +349,26 @@ export async function installCommentLetterFixtures(
       await fulfillJson(route, { error: 'fixture corpus unavailable' }, 503);
       return;
     }
-    const company = requestUrl.searchParams.get('company') || '';
-    const threads = company && !COMMENT_THREAD.company_name.toLowerCase().includes(company.toLowerCase())
-      ? []
-      : [COMMENT_THREAD];
-    await fulfillJson(route, { total: threads.length, threads });
+    // The browse RPC takes either a CIK (exact) or a name substring.
+    const cik = requestUrl.searchParams.get('cik');
+    const company = (requestUrl.searchParams.get('company') || '').toLowerCase();
+    const threads = COMMENT_BROWSE_THREADS
+      .filter(thread => !cik || String(thread.cik) === cik)
+      .filter(thread => !company || thread.company_name.toLowerCase().includes(company));
+    const { total, page } = pageOf(threads, requestUrl, 20);
+    await fulfillJson(route, { total, threads: page });
+  });
+
+  // The company picker resolves suggestions from the SEC directory; the
+  // fixture directory carries the issuer and its look-alike so a pick has a
+  // CIK to resolve to.
+  await page.route('**/api/sec-proxy**', async route => {
+    const path = new URL(route.request().url()).searchParams.get('path') || '';
+    if (!path.includes('company_tickers.json')) {
+      await route.fallback();
+      return;
+    }
+    await fulfillJson(route, COMMENT_DIRECTORY);
   });
 
   await page.route(url => new URL(url).pathname === '/api/letters/summary', async route => {

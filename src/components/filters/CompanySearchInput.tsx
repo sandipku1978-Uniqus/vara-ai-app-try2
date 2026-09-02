@@ -140,8 +140,11 @@ export default function CompanySearchInput({ onSelect, placeholder = 'Search tic
           placeholder={placeholder}
           className="company-search-field"
         />
+        {/* Clearing is a text change too: a host filtering on the typed
+            text must learn the box is empty, or its filter outlives the
+            text that set it. */}
         {query && (
-          <button type="button" className="company-search-clear" aria-label="Clear company search" onClick={() => { setQuery(''); setResults([]); setShowDropdown(false); setActiveIndex(-1); inputRef.current?.focus(); }}>
+          <button type="button" className="company-search-clear" aria-label="Clear company search" onClick={() => { setQuery(''); onTextChange?.(''); setResults([]); setShowDropdown(false); setActiveIndex(-1); inputRef.current?.focus(); }}>
             <X size={14} aria-hidden="true" />
           </button>
         )}

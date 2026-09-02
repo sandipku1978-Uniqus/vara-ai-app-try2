@@ -97,6 +97,11 @@ export const UI_ACTION_COVERAGE: Record<string, UiActionEvidence> = {
   'research-workbench.open-assistant-or-help': { kind: 'automated-full', specs: [{ file: 'tests/e2e/research-workbench-interactions.spec.ts', title: 'research-workbench.open-assistant-or-help preserves a URL-backed search through both guidance paths' }] },
   'comment-letters.run-search': { kind: 'automated-full', specs: [{ file: 'tests/e2e/critical-actions.spec.ts', title: 'comment-letters.run-search renders matches from the letter corpus' }] },
   'comment-letters.apply-example-or-form': { kind: 'automated-full', specs: [{ file: 'tests/e2e/dashboard-comment-letter-interactions.spec.ts', title: 'comment-letters.apply-example-or-form applies the example and reruns an active search in the selected form scope' }] },
+  'comment-letters.scope-company': { kind: 'automated-full', specs: [{ file: 'tests/e2e/dashboard-comment-letter-interactions.spec.ts', title: 'comment-letters.scope-company filters episodes by the resolved CIK and labels the registrant-name fallback' }] },
+  'comment-letters.load-more': { kind: 'automated-full', specs: [
+    { file: 'tests/e2e/dashboard-comment-letter-interactions.spec.ts', title: 'comment-letters.load-more appends the next page of episodes and keeps Showing X of Y honest' },
+    { file: 'tests/e2e/dashboard-comment-letter-interactions.spec.ts', title: 'comment-letters.load-more appends the next page of matches and stops at the reported total' },
+  ] },
   'comment-letters.expand-thread': { kind: 'automated-full', specs: [{ file: 'tests/e2e/dashboard-comment-letter-interactions.spec.ts', title: 'comment-letters.expand-thread expands only the activated sibling result and collapses it again' }] },
   'comment-letters.generate-summary': { kind: 'automated-full', specs: [{ file: 'tests/e2e/critical-actions.spec.ts', title: 'comment-letters.generate-summary POSTs only on explicit click and renders labeled output' }] },
   'comment-letters.open-issuer-or-edgar': { kind: 'automated-full', specs: [{ file: 'tests/e2e/dashboard-comment-letter-interactions.spec.ts', title: 'comment-letters.open-issuer-or-edgar opens the matching official index and issuer route' }] },

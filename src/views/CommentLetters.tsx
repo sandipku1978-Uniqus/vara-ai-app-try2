@@ -1,13 +1,39 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 
-import { Mail, Search, Loader2, ExternalLink, MessageSquare, ChevronDown, ChevronRight } from 'lucide-react';
+import { Mail, Search, Loader2, ExternalLink, MessageSquare, ChevronDown, ChevronRight, X } from 'lucide-react';
 import AskCopilotButton from '../components/tables/AskCopilotButton';
 import CompanySearchInput from '../components/filters/CompanySearchInput';
 import CiteButton from '../components/memo/CiteButton';
 import { useApp } from '../context/AppState';
+import {
+  BROWSE_PAGE_SIZE,
+  DEEP_LINK_BROWSE_PAGE_SIZE,
+  EPISODE_NOUN,
+  MATCH_NOUN,
+  SEARCH_PAGE_SIZE,
+  SEARCH_POOL_DEPTH,
+  appendPagedList,
+  companyScopeFromSelection,
+  companyScopeFromText,
+  companyScopeFromUrl,
+  companyScopeText,
+  describeCompanyScope,
+  describeRemaining,
+  describeShown,
+  emptyPagedList,
+  letterBrowseParams,
+  letterSearchParams,
+  pagingStatus,
+  startPagedList,
+  type CompanyScope,
+  type LetterFormFilter,
+  type LetterSearchCriteria,
+  type PagedList,
+  type PagingStatus,
+} from '../domain/commentLetterPaging';
 
 /** Topic-first entry points — accountants start from an issue, not a query.
  *  Each chip fires a tuned full-text query over the letter corpus. */
@@ -357,21 +383,85 @@ export function ThreadConversation({ threadId }: { threadId: string }) {
   );
 }
 
+/**
+ * The control beneath a list: Load more while the server has rows to give,
+ * otherwise the reason it cannot — the header above never claims rows that
+ * are not on screen, and this explains the gap.
+ */
+function LoadMoreControls({ status, label, loading, error, remaining, cappedNote, onLoadMore }: {
+  status: PagingStatus;
+  label: string;
+  loading: boolean;
+  error: string;
+  remaining: string;
+  cappedNote: string;
+  onLoadMore: () => void;
+}) {
+  if (status === 'complete') return null;
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'flex-start', marginTop: '8px' }}>
+      {status === 'more' && (
+        <button type="button" className="secondary-btn" onClick={onLoadMore} disabled={loading}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+          {loading && <Loader2 size={13} className="spinner" />} {label}
+        </button>
+      )}
+      {status === 'capped' && (
+        <p style={{ margin: 0, fontSize: '0.76rem', color: 'var(--text-secondary)' }}>{cappedNote}</p>
+      )}
+      {status === 'exhausted' && (
+        <p role="status" style={{ margin: 0, fontSize: '0.76rem', color: 'var(--text-secondary)' }}>
+          The corpus returned no further rows for this scope although its total reports {remaining}; the total may have changed since the first page. Rerun to refresh.
+        </p>
+      )}
+      {error && <p role="alert" style={{ margin: 0, fontSize: '0.76rem', color: 'var(--status-error)' }}>{error}</p>}
+    </div>
+  );
+}
+
+const chipStyle: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  gap: '6px',
+  padding: '3px 8px',
+  borderRadius: '4px',
+  fontSize: '0.76rem',
+  color: 'var(--accent-primary)',
+  background: 'var(--interactive-hover-strong)',
+  border: '1px solid var(--accent-primary)',
+};
+
 export default function CommentLetters() {
   const { pendingSearchIntent, setPendingSearchIntent } = useApp();
   const searchParams = useSearchParams();
   const requestedCompany = searchParams?.get('company') || '';
+  const requestedCik = searchParams?.get('cik') || '';
   const requestedThreadId = searchParams?.get('thread') || searchParams?.get('thread_id') || '';
+  const requestedScopeKey = `${requestedCik} ${requestedCompany}`;
   const [keyword, setKeyword] = useState('');
-  const [companyFilter, setCompanyFilter] = useState(() => requestedCompany);
-  const [formFilter, setFormFilter] = useState<'' | 'UPLOAD' | 'CORRESP'>('');
-  const [threads, setThreads] = useState<ThreadSummary[]>([]);
-  const [threadsTotal, setThreadsTotal] = useState(0);
-  const [matches, setMatches] = useState<SearchMatch[]>([]);
-  const [matchesTotal, setMatchesTotal] = useState(0);
-  const [matchesTotalIsFloor, setMatchesTotalIsFloor] = useState(false);
+  const [companyScope, setCompanyScope] = useState<CompanyScope | null>(
+    () => companyScopeFromUrl(requestedCompany, requestedCik)
+  );
+  // A deep link that changes while mounted (one dossier's episode, then
+  // another's) replaces the scope once; everything typed afterwards is the
+  // reader's. Mirroring the URL on every render made the box untypable.
+  const [appliedScopeKey, setAppliedScopeKey] = useState(requestedScopeKey);
+  if (appliedScopeKey !== requestedScopeKey) {
+    setAppliedScopeKey(requestedScopeKey);
+    setCompanyScope(companyScopeFromUrl(requestedCompany, requestedCik));
+  }
+  const [formFilter, setFormFilter] = useState<LetterFormFilter>('');
+  const [threadPage, setThreadPage] = useState<PagedList<ThreadSummary>>(emptyPagedList);
+  const [matchPage, setMatchPage] = useState<PagedList<SearchMatch>>(emptyPagedList);
+  // The criteria the visible matches were fetched with — Load more must page
+  // that search, not whatever the inputs say now.
+  const [activeSearch, setActiveSearch] = useState<LetterSearchCriteria | null>(null);
   const [loading, setLoading] = useState(false);
   const [browseLoading, setBrowseLoading] = useState(true);
+  const [loadingMoreThreads, setLoadingMoreThreads] = useState(false);
+  const [loadingMoreMatches, setLoadingMoreMatches] = useState(false);
+  const [threadPageError, setThreadPageError] = useState('');
+  const [matchPageError, setMatchPageError] = useState('');
   const [searched, setSearched] = useState(false);
   const [expandedThread, setExpandedThread] = useState<string | null>(() => requestedThreadId || null);
   // Search results can contain several letters from the same review thread.
@@ -383,6 +473,11 @@ export default function CommentLetters() {
   const [searchError, setSearchError] = useState('');
   const [requestedThreadError, setRequestedThreadError] = useState('');
   const [requestedThreadLookupFailed, setRequestedThreadLookupFailed] = useState(false);
+  // A page appended after the list it belongs to was replaced (scope changed,
+  // search rerun) would splice stale rows into the new list; each list
+  // generation only accepts its own responses.
+  const browseGeneration = useRef(0);
+  const searchGeneration = useRef(0);
   const [letterStats, setLetterStats] = useState<{
     count: number;
     withText: number;
@@ -390,6 +485,9 @@ export default function CommentLetters() {
     lastTextFetch: string | null;
     retryPending: number;
   } | null>(null);
+
+  const browsePageSize = requestedThreadId ? DEEP_LINK_BROWSE_PAGE_SIZE : BROWSE_PAGE_SIZE;
+  const browseScopeKey = letterBrowseParams(companyScope, { from: 0, size: browsePageSize }).toString();
 
   useEffect(() => {
     let cancelled = false;
@@ -405,13 +503,13 @@ export default function CommentLetters() {
 
   useEffect(() => {
     let cancelled = false;
+    browseGeneration.current += 1;
     setBrowseLoading(true);
     setUnavailable(false);
+    setThreadPageError('');
     setRequestedThreadError('');
     setRequestedThreadLookupFailed(false);
-    const params = new URLSearchParams({ size: requestedThreadId ? '25' : '12' });
-    if (companyFilter.trim()) params.set('company', companyFilter.trim());
-    const browseRequest = fetch(`/api/letters?${params.toString()}`).then(response => {
+    const browseRequest = fetch(`/api/letters?${browseScopeKey}`).then(response => {
       if (!response.ok) throw new Error(String(response.status));
       return response.json();
     });
@@ -431,71 +529,139 @@ export default function CommentLetters() {
     Promise.all([browseRequest, requestedThreadRequest])
       .then(([payload, requestedLookup]) => {
         if (cancelled) return;
+        const rows = (payload.threads ?? []) as ThreadSummary[];
         const merged = mergeRequestedThreadLookup(
           requestedThreadId,
-          (payload.threads ?? []) as ThreadSummary[],
+          rows,
           requestedLookup.summary,
           requestedLookup.failed
         );
         setRequestedThreadError(merged.error);
         setRequestedThreadLookupFailed(merged.retryable);
-        setThreads(merged.threads);
-        setThreadsTotal(Math.max(payload.total ?? 0, merged.threads.length));
+        setThreadPage(startPagedList({ items: merged.threads, fetched: rows.length, total: payload.total ?? 0 }));
       })
       .catch(() => { if (!cancelled) setUnavailable(true); })
       .finally(() => { if (!cancelled) setBrowseLoading(false); });
     return () => { cancelled = true; };
-  }, [browseReloadKey, companyFilter, requestedThreadId]);
+  }, [browseReloadKey, browseScopeKey, requestedThreadId]);
+
+  const loadMoreThreads = useCallback(async () => {
+    const generation = browseGeneration.current;
+    setLoadingMoreThreads(true);
+    setThreadPageError('');
+    try {
+      const params = letterBrowseParams(companyScope, { from: threadPage.fetched, size: browsePageSize });
+      const response = await fetch(`/api/letters?${params.toString()}`);
+      if (!response.ok) throw new Error(String(response.status));
+      const payload = await response.json();
+      if (generation !== browseGeneration.current) return;
+      setThreadPage(current => appendPagedList(
+        current,
+        { items: (payload.threads ?? []) as ThreadSummary[], total: payload.total ?? 0 },
+        thread => thread.thread_id
+      ));
+    } catch {
+      if (generation === browseGeneration.current) {
+        setThreadPageError('The next page of review episodes could not be loaded. The episodes above are unchanged.');
+      }
+    } finally {
+      if (generation === browseGeneration.current) setLoadingMoreThreads(false);
+    }
+  }, [browsePageSize, companyScope, threadPage.fetched]);
 
   useEffect(() => {
-    if (requestedCompany !== companyFilter) setCompanyFilter(requestedCompany);
-  }, [companyFilter, requestedCompany]);
-
-  useEffect(() => {
-    if (!requestedThreadId || !threads.some(thread => thread.thread_id === requestedThreadId)) return;
+    if (!requestedThreadId || !threadPage.items.some(thread => thread.thread_id === requestedThreadId)) return;
     setExpandedThread(requestedThreadId);
     setExpandedSearchMatch(null);
     window.requestAnimationFrame(() => {
       document.getElementById(`thread-card-${requestedThreadId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
-  }, [requestedThreadId, threads]);
+  }, [requestedThreadId, threadPage.items]);
 
-  const runSearch = useCallback(async (query: string, form: '' | 'UPLOAD' | 'CORRESP', company: string) => {
-    if (!query.trim() && !company.trim()) return;
+  const runSearch = useCallback(async (query: string, form: LetterFormFilter, scope: CompanyScope | null) => {
+    const trimmed = query.trim();
+    if (!trimmed && !scope) return;
     setLoading(true);
     setSearchError('');
-    setSearched(Boolean(query.trim()));
+    setMatchPageError('');
+    setSearched(Boolean(trimmed));
     setExpandedThread(null);
     setExpandedSearchMatch(null);
-    if (!query.trim()) { setLoading(false); return; } // company-only filters the browse list via effect
+    if (!trimmed) { setLoading(false); return; } // company-only filters the browse list via effect
+    searchGeneration.current += 1;
+    const generation = searchGeneration.current;
+    const criteria: LetterSearchCriteria = { query: trimmed, form, scope };
+    setActiveSearch(criteria);
     try {
-      const params = new URLSearchParams({ q: query.trim(), size: '50' });
-      if (form) params.set('form', form);
-      if (company.trim()) params.set('company', company.trim());
+      const params = letterSearchParams(criteria, { from: 0, size: SEARCH_PAGE_SIZE });
       const response = await fetch(`/api/letters?${params.toString()}`);
       if (!response.ok) throw new Error(String(response.status));
       const payload = await response.json();
-      setMatches(payload.matches ?? []);
-      setMatchesTotal(payload.total ?? 0);
-      setMatchesTotalIsFloor(Boolean(payload.totalIsFloor));
+      if (generation !== searchGeneration.current) return;
+      setMatchPage(startPagedList({
+        items: (payload.matches ?? []) as SearchMatch[],
+        total: payload.total ?? 0,
+        totalIsFloor: Boolean(payload.totalIsFloor),
+      }));
     } catch {
-      setMatches([]);
-      setMatchesTotal(0);
-      setMatchesTotalIsFloor(false);
+      if (generation !== searchGeneration.current) return;
+      setMatchPage(emptyPagedList());
       setSearchError('The full-text letter search failed. The zero-result state is not authoritative.');
     } finally {
-      setLoading(false);
+      if (generation === searchGeneration.current) setLoading(false);
     }
   }, []);
 
+  const loadMoreMatches = useCallback(async () => {
+    if (!activeSearch) return;
+    const generation = searchGeneration.current;
+    setLoadingMoreMatches(true);
+    setMatchPageError('');
+    try {
+      const params = letterSearchParams(activeSearch, { from: matchPage.fetched, size: SEARCH_PAGE_SIZE });
+      const response = await fetch(`/api/letters?${params.toString()}`);
+      if (!response.ok) throw new Error(String(response.status));
+      const payload = await response.json();
+      if (generation !== searchGeneration.current) return;
+      setMatchPage(current => appendPagedList(
+        current,
+        {
+          items: (payload.matches ?? []) as SearchMatch[],
+          total: payload.total ?? 0,
+          totalIsFloor: Boolean(payload.totalIsFloor),
+        },
+        match => `${match.accession}:${match.cik}`
+      ));
+    } catch {
+      if (generation === searchGeneration.current) {
+        setMatchPageError('The next page of matches could not be loaded. The matches above are unchanged.');
+      }
+    } finally {
+      if (generation === searchGeneration.current) setLoadingMoreMatches(false);
+    }
+  }, [activeSearch, matchPage.fetched]);
+
   useEffect(() => {
     if (!pendingSearchIntent || pendingSearchIntent.surface !== 'comment-letters') return;
+    // An intent from another surface is a fresh search: the visible criteria
+    // are reset to match what actually ran.
     setKeyword(pendingSearchIntent.query);
-    runSearch(pendingSearchIntent.query, '', '');
+    setFormFilter('');
+    setCompanyScope(null);
+    runSearch(pendingSearchIntent.query, '', null);
     setPendingSearchIntent(null);
   }, [pendingSearchIntent, runSearch, setPendingSearchIntent]);
 
+  const clearCompanyScope = useCallback(() => {
+    setCompanyScope(null);
+    if (searched && keyword.trim()) runSearch(keyword, formFilter, null);
+  }, [formFilter, keyword, runSearch, searched]);
+
+  const matches = matchPage.items;
+  const threads = threadPage.items;
   const showBrowse = !searched || (!loading && matches.length === 0 && !keyword.trim());
+  const matchStatus = pagingStatus(matchPage, SEARCH_POOL_DEPTH);
+  const threadStatus = pagingStatus(threadPage);
 
   return (
     <div style={{ width: '100%', padding: 'clamp(14px, 2vw, 20px)', maxWidth: '1440px', margin: '0 auto' }}>
@@ -505,7 +671,7 @@ export default function CommentLetters() {
       </div>
       <p style={{ color: 'var(--text-secondary)', marginBottom: '12px', fontSize: '0.86rem' }}>
         SEC review conversations since 2005 — Staff letters (UPLOAD) threaded with company responses
-        (CORRESP), full-text searchable{threadsTotal > 0 ? ` across ${threadsTotal.toLocaleString()} review episodes` : ''}.
+        (CORRESP), full-text searchable.
       </p>
 
       {letterStats && (
@@ -534,26 +700,28 @@ export default function CommentLetters() {
           <input value={keyword} onChange={e => setKeyword(e.target.value)}
             placeholder='e.g. revenue recognition principal agent, "material weakness", segment reporting'
             aria-label="Search inside SEC comment letters"
-            onKeyDown={e => e.key === 'Enter' && runSearch(keyword, formFilter, companyFilter)}
+            onKeyDown={e => e.key === 'Enter' && runSearch(keyword, formFilter, companyScope)}
             style={{ width: '100%', padding: '7px 10px', background: 'var(--input-bg)', border: '1px solid var(--input-border)', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '0.84rem', outline: 'none' }} />
         </div>
         <div style={{ minWidth: '200px' }}>
-          {/* Letters are keyed by registrant name, so suggestion picks pass
-              the company title; free text still filters as typed. */}
+          {/* A suggestion pick resolves the registrant to its CIK, which is
+              what the episode list filters by. Typed text that is never
+              picked stays a registrant-name match and is labeled as one. */}
           <CompanySearchInput
             selectValue="title"
-            initialValue={companyFilter}
+            initialValue={companyScopeText(companyScope)}
             placeholder="Company name…"
-            onTextChange={text => setCompanyFilter(text)}
-            onSelect={title => {
-              setCompanyFilter(title);
-              if (keyword.trim()) runSearch(keyword, formFilter, title);
+            onTextChange={text => setCompanyScope(current => companyScopeFromText(current, text))}
+            onSelect={(title, cik) => {
+              const scope = companyScopeFromSelection(title, cik);
+              setCompanyScope(scope);
+              if (keyword.trim()) runSearch(keyword, formFilter, scope);
             }}
           />
         </div>
         <div style={{ display: 'flex', gap: '6px' }}>
           {([['', 'All'], ['UPLOAD', 'Staff letters'], ['CORRESP', 'Responses']] as const).map(([value, label]) => (
-            <button key={value} type="button" aria-pressed={formFilter === value} onClick={() => { setFormFilter(value); if (searched && (keyword.trim() || companyFilter.trim())) runSearch(keyword, value, companyFilter); }}
+            <button key={value} type="button" aria-pressed={formFilter === value} onClick={() => { setFormFilter(value); if (searched && (keyword.trim() || companyScope)) runSearch(keyword, value, companyScope); }}
               style={{
                 padding: '5px 9px', borderRadius: '4px', fontSize: '0.76rem', cursor: 'pointer',
                 border: '1px solid ' + (formFilter === value ? 'var(--accent-primary)' : 'var(--input-border)'),
@@ -564,17 +732,29 @@ export default function CommentLetters() {
             </button>
           ))}
         </div>
-        <button type="button" onClick={() => runSearch(keyword, formFilter, companyFilter)} disabled={loading}
+        <button type="button" onClick={() => runSearch(keyword, formFilter, companyScope)} disabled={loading}
           style={{ padding: '7px 14px', background: 'var(--accent-primary)', color: 'white', border: '1px solid var(--accent-primary)', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem' }}>
           {loading ? <Loader2 size={14} className="spinner" /> : <Search size={14} />} Search
         </button>
       </div>
 
+      {companyScope?.kind === 'cik' && (
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap', marginBottom: '8px' }}>
+          <span style={chipStyle}>
+            {companyScope.title} · CIK {companyScope.cik}
+            <button type="button" aria-label="Remove company filter" onClick={clearCompanyScope}
+              style={{ background: 'none', border: 'none', color: 'var(--accent-primary)', cursor: 'pointer', padding: 0, display: 'inline-flex' }}>
+              <X size={11} aria-hidden="true" />
+            </button>
+          </span>
+        </div>
+      )}
+
       {/* Topic-first entry — fires a tuned corpus query per issue */}
       <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '12px' }}>
         {TOPIC_CHIPS.map(chip => (
           <button key={chip.label} type="button"
-            onClick={() => { setKeyword(chip.query); runSearch(chip.query, formFilter, companyFilter); }}
+            onClick={() => { setKeyword(chip.query); runSearch(chip.query, formFilter, companyScope); }}
             style={{
               padding: '4px 8px', borderRadius: '4px', fontSize: '0.73rem', cursor: 'pointer',
               border: '1px solid var(--input-border)', background: 'var(--input-bg)', color: 'var(--text-secondary)',
@@ -593,7 +773,12 @@ export default function CommentLetters() {
         matches.length > 0 ? (
           <div>
             <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: '6px 0 8px' }}>
-              {matchesTotal.toLocaleString()}{matchesTotalIsFloor ? '+' : ''} matching letters — ranked by relevance
+              <div>{describeShown(matchPage, MATCH_NOUN)} — ranked by relevance</div>
+              {activeSearch?.scope && (
+                <div style={{ color: 'var(--text-muted)', fontSize: '0.74rem', marginTop: '2px' }}>
+                  {describeCompanyScope(activeSearch.scope, 'search')}
+                </div>
+              )}
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
               {matches.map(match => {
@@ -647,21 +832,38 @@ export default function CommentLetters() {
                 );
               })}
             </div>
+            <LoadMoreControls
+              status={matchStatus}
+              label="Load more matches"
+              loading={loadingMoreMatches}
+              error={matchPageError}
+              remaining={describeRemaining(matchPage, MATCH_NOUN)}
+              cappedNote={`The ranked pool covers only the ${SEARCH_POOL_DEPTH.toLocaleString()} most recent matches; ${describeRemaining(matchPage, MATCH_NOUN)} exist beyond it. Narrow the query, company, or form scope to reach them.`}
+              onLoadMore={() => void loadMoreMatches()}
+            />
           </div>
         ) : (
           <div role={searchError ? 'alert' : undefined} style={{ textAlign: 'center', padding: '28px', color: searchError ? 'var(--status-error)' : 'var(--text-muted)' }}>
             <p>{searchError || 'No searchable letter text matched. Check the corpus coverage above before treating this as no precedent.'}</p>
-            {searchError && <button type="button" className="secondary-btn" onClick={() => void runSearch(keyword, formFilter, companyFilter)}>Retry letter search</button>}
+            {searchError && <button type="button" className="secondary-btn" onClick={() => void runSearch(keyword, formFilter, companyScope)}>Retry letter search</button>}
           </div>
         )
       ) : null}
 
       {showBrowse && !loading && (
         <div style={{ marginTop: searched ? '6px' : '12px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px', flexWrap: 'wrap' }}>
             <MessageSquare size={16} style={{ color: 'var(--status-warning)' }} />
             <h2 style={{ fontSize: '0.95rem', fontWeight: 600, color: 'var(--text-primary)' }}>Latest review conversations</h2>
+            {!browseLoading && !unavailable && threads.length > 0 && (
+              <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>· {describeShown(threadPage, EPISODE_NOUN)}</span>
+            )}
           </div>
+          {companyScope && !browseLoading && !unavailable && (
+            <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginBottom: '8px' }}>
+              {describeCompanyScope(companyScope, 'browse')}
+            </div>
+          )}
           {browseLoading ? (
             <div role="status" style={{ textAlign: 'center', padding: '24px', color: 'var(--text-muted)' }}>
               <Loader2 size={18} className="spinner" style={{ marginBottom: '6px' }} /><div>Loading conversations…</div>
@@ -678,7 +880,7 @@ export default function CommentLetters() {
               )}
               {threads.length === 0 && (
                 <div role="status" style={{ padding: '20px 16px', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                  No review conversations to show{companyFilter.trim() ? ' for this company filter — try clearing it or picking the issuer from the suggestions' : ' yet; the corpus may still be loading'}.
+                  No review conversations to show{companyScope ? ' for this company filter — remove it or choose the issuer from the suggestions' : ' yet; the corpus may still be loading'}.
                 </div>
               )}
               {threads.map(thread => {
@@ -728,6 +930,15 @@ export default function CommentLetters() {
                   </div>
                 );
               })}
+              <LoadMoreControls
+                status={threadStatus}
+                label="Load more episodes"
+                loading={loadingMoreThreads}
+                error={threadPageError}
+                remaining={describeRemaining(threadPage, EPISODE_NOUN)}
+                cappedNote=""
+                onLoadMore={() => void loadMoreThreads()}
+              />
             </div>
           )}
         </div>

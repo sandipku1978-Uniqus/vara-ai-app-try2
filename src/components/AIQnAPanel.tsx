@@ -274,7 +274,7 @@ export function AIQnAPanel() {
                           companyName: match.company_name,
                           formType: match.form,
                           filingDate: match.date_filed,
-                          route: `/comment-letters?company=${encodeURIComponent(match.company_name)}&thread=${encodeURIComponent(match.thread_id)}`,
+                          route: `/comment-letters?company=${encodeURIComponent(match.company_name)}&cik=${Number(match.cik)}&thread=${encodeURIComponent(match.thread_id)}`,
                           externalUrl: letterAccession
                             ? `https://www.sec.gov/Archives/edgar/data/${Number(match.cik)}/${letterAccession.replace(/-/g, '')}/${letterAccession}-index.htm`
                             : `https://www.sec.gov/Archives/${match.filename}`,
