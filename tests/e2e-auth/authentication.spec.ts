@@ -56,6 +56,19 @@ test.describe('critical action: global.authentication', () => {
    * session token (__clerk_db_jwt) in the query. Reading searchParams alone
    * reported "no target" for a flow that always carried one.
    */
+  /**
+   * What a failure message may say about the current URL. The hosted Clerk
+   * page carries the dev-instance browser token (__clerk_db_jwt) in its
+   * query, and this suite's messages land in PUBLIC Actions logs and
+   * failure artifacts — so messages describe the location (host, path, and
+   * the non-Clerk query keys) and never the raw URL.
+   */
+  function describeLocation(url: string): string {
+    const parsed = new URL(url);
+    const keys = [...parsed.searchParams.keys()].filter(key => !key.startsWith('__clerk')).sort();
+    return `${parsed.host}${parsed.pathname}${keys.length ? `?${keys.join(',')}` : ''}${parsed.hash ? '#…' : ''}`;
+  }
+
   function clerkReturnTarget(url: string): string {
     const parsed = new URL(url);
     const fromQuery = parsed.searchParams.get('redirect_url');
@@ -73,14 +86,14 @@ test.describe('critical action: global.authentication', () => {
     await page.getByRole('button', { name: 'Sign In', exact: true }).click();
     await expect.poll(() => page.url()).toMatch(/clerk\.accounts\.dev|\.clerk\.com|\/sign-in/);
     const signInTarget = clerkReturnTarget(page.url());
-    expect(signInTarget, `Sign In did not retain the application target: ${page.url()}`).toContain('/');
+    expect(signInTarget, `Sign In did not retain the application target: ${describeLocation(page.url())}`).toContain('/');
 
     await page.goto('/', { waitUntil: 'domcontentloaded' });
     await clerk.loaded({ page });
     await page.getByRole('button', { name: 'Get Started', exact: true }).click();
     await expect.poll(() => page.url()).toMatch(/clerk\.accounts\.dev|\.clerk\.com|\/sign-up/);
     const signUpTarget = clerkReturnTarget(page.url());
-    expect(signUpTarget, `Get Started did not retain the application target: ${page.url()}`).toContain('/');
+    expect(signUpTarget, `Get Started did not retain the application target: ${describeLocation(page.url())}`).toContain('/');
   });
 
   test('a signed-out visitor is sent to the identity surface with the intended return URL intact', async ({ page }) => {
@@ -98,14 +111,14 @@ test.describe('critical action: global.authentication', () => {
     // a homegrown form collecting credentials.
     expect(
       /clerk\.accounts\.dev$|\.clerk\.com$|\/sign-in/.test(`${landed.host}${landed.pathname}`),
-      `expected the Clerk identity surface, got ${page.url()}`
+      `expected the Clerk identity surface, got ${describeLocation(page.url())}`
     ).toBe(true);
 
     // "Preserves the exact intended return URL": the destination has to
     // survive, or the visitor signs in and lands somewhere they did not ask
     // for. Clerk carries it as redirect_url.
     const returnTarget = landed.searchParams.get('redirect_url') || '';
-    expect(returnTarget, `no return URL was carried through: ${page.url()}`).toContain(PROTECTED_ROUTE);
+    expect(returnTarget, `no return URL was carried through: ${describeLocation(page.url())}`).toContain(PROTECTED_ROUTE);
   });
 
   test('a different protected destination carries its own return URL, not a shared default', async ({ page }) => {
@@ -115,7 +128,7 @@ test.describe('critical action: global.authentication', () => {
     const returnTarget = new URL(page.url()).searchParams.get('redirect_url') || '';
     // The point of the second route: a hard-coded "/dashboard" return would
     // satisfy the previous test while quietly discarding the real intent.
-    expect(returnTarget, `expected ${DEEP_PROTECTED_ROUTE} to be preserved, got ${page.url()}`)
+    expect(returnTarget, `expected ${DEEP_PROTECTED_ROUTE} to be preserved, got ${describeLocation(page.url())}`)
       .toContain(DEEP_PROTECTED_ROUTE);
   });
 
@@ -183,7 +196,7 @@ test.describe('support-center routes that require sign-in', () => {
     await expect(page).not.toHaveURL(/\/support$/);
     const target = new URL(page.url());
     const carried = target.searchParams.get('redirect_url') || target.pathname;
-    expect(carried, `expected /compare to be the destination, got ${page.url()}`).toContain('/compare');
+    expect(carried, `expected /compare to be the destination, got ${describeLocation(page.url())}`).toContain('/compare');
   });
 
   test('support-center.open-feature-route opens the exact route named by the link', async ({ page }) => {
@@ -206,6 +219,6 @@ test.describe('support-center routes that require sign-in', () => {
     // reader somewhere adjacent is the failure this catches.
     const landed = new URL(page.url());
     const carried = landed.searchParams.get('redirect_url') || landed.pathname;
-    expect(carried, `link said ${href} but landed on ${page.url()}`).toContain(href);
+    expect(carried, `link said ${href} but landed on ${describeLocation(page.url())}`).toContain(href);
   });
 });
