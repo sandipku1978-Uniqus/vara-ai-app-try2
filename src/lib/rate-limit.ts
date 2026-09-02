@@ -72,10 +72,24 @@ export interface ResourceConcurrencyOptions {
   leaseSeconds?: number;
 }
 
+/**
+ * A daily-budget reservation, settled against measured usage once the model
+ * call finishes (audit 2026-09: "AI spend is estimated, never measured;
+ * reservations are never reconciled").
+ */
+export interface AiTokenReservation {
+  userId: string;
+  /** The UTC day whose counters were charged; settlement adjusts the same day. */
+  day: string;
+  tokens: number;
+  settled: boolean;
+}
+
 export interface RateLimitResult {
   allowed: boolean;
   retryAfterSeconds: number;
   reason?: 'rate' | 'budget' | 'concurrency' | 'unavailable';
+  reservation?: AiTokenReservation;
 }
 
 export interface AiConcurrencyLease {
@@ -254,7 +268,11 @@ export async function reserveAiTokenBudget(
       await incrementCounter(budgetKey, -tokenCost, 26 * 60 * 60).catch(() => {});
       return { allowed: false, retryAfterSeconds: secondsUntilWindowReset(24 * 60 * 60), reason: 'budget' };
     }
-    return { allowed: true, retryAfterSeconds: 0 };
+    return {
+      allowed: true,
+      retryAfterSeconds: 0,
+      reservation: { userId: identity.userId, day, tokens: tokenCost, settled: false },
+    };
   } catch (error) {
     console.error('AI budget limiter unavailable:', error);
     if (isProductionDeployment()) {
@@ -262,6 +280,43 @@ export async function reserveAiTokenBudget(
     }
     return { allowed: true, retryAfterSeconds: 0 };
   }
+}
+
+/**
+ * Replace a reservation's estimate with what the model actually billed.
+ *
+ * `billableTokens` null means the cost is unknown (a timeout or an abort
+ * after the request reached the model): the conservative estimate stands.
+ * Zero means the request never reached generation (validation, rate limit,
+ * overload): the whole reservation is refunded. An overage is charged,
+ * never denied — the call already happened. Returns the adjustment applied
+ * (negative = refund), or 0 when nothing changed.
+ */
+export async function settleAiTokenReservation(
+  reservation: AiTokenReservation | undefined,
+  billableTokens: number | null,
+): Promise<number> {
+  if (!reservation || reservation.settled) return 0;
+  reservation.settled = true;
+  if (billableTokens === null || !Number.isFinite(billableTokens)) return 0;
+  const adjustment = Math.max(0, Math.ceil(billableTokens)) - reservation.tokens;
+  if (adjustment === 0) return 0;
+
+  const ttlSeconds = 26 * 60 * 60;
+  try {
+    await incrementCounter(`ai-budget:${opaqueKeyPart(reservation.userId)}:${reservation.day}`, adjustment, ttlSeconds);
+    await incrementCounter(`ai-budget:global:${reservation.day}`, adjustment, ttlSeconds);
+  } catch (error) {
+    // The estimate stays charged; the usage line still records the truth.
+    console.error('AI budget settlement failed:', error);
+    return 0;
+  }
+  return adjustment;
+}
+
+/** Stable, non-reversible key for attributing usage lines to a user. */
+export function opaqueIdentityKey(value: string): string {
+  return opaqueKeyPart(value);
 }
 
 export async function checkResourceRateLimit(

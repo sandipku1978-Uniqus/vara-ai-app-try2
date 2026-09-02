@@ -13,6 +13,7 @@ import { requireApiAccess } from '../../../lib/api-auth';
 import { validateCompareRequest } from '../../../lib/ai-input';
 import crypto from 'crypto';
 import { withRouteObservability } from '../../../lib/route-observability';
+import { classifyAnthropicFailure, recordAiUsage, usageFromMessage } from '../../../lib/ai-usage';
 
 /** The platform default would kill this route mid-flight; see the in-route budgets. */
 export const maxDuration = 180;
@@ -80,9 +81,11 @@ async function handlePost(req: Request) {
       await releaseAiConcurrency(concurrency.lease);
       return rateLimitResponse(budget);
     }
+    const modelCallStartedAt = Date.now();
+    const usageRecord = { route: 'compare', model: CLAUDE_MODEL, userId: access.identity.userId, reservation: budget.reservation, startedAt: modelCallStartedAt };
     const msg = await (async () => {
       try {
-        return await anthropic.messages.create({
+        const message = await anthropic.messages.create({
           model: CLAUDE_MODEL,
           // Thinking spend still comes out of max_tokens — keep 16384 headroom
           // so 10-company comparison tables don't truncate mid-row.
@@ -106,6 +109,14 @@ async function handlePost(req: Request) {
             ].join('\n\n'),
           }],
         }, { signal: req.signal });
+        // The compare reservation is the largest in the platform (~216k of a
+        // 250k daily budget at the cap); settling it against measured usage
+        // is what lets a second comparison run the same day.
+        await recordAiUsage({ ...usageRecord, usage: usageFromMessage(message), outcome: 'completed' });
+        return message;
+      } catch (error) {
+        await recordAiUsage({ ...usageRecord, usage: null, outcome: classifyAnthropicFailure(error) });
+        throw error;
       } finally {
         await releaseAiConcurrency(concurrency.lease);
       }

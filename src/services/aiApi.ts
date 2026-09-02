@@ -42,8 +42,11 @@ interface ClaudeResponsePayload {
 // The server intentionally makes exactly one model attempt per request (spend
 // control), so a single upstream blip becomes a user-visible failure. Retry
 // transient statuses once from here — each attempt re-passes auth, rate
-// limits, and budget. 4xx responses (validation, auth, rate limits) never retry.
-const TRANSIENT_CLAUDE_STATUSES = new Set([500, 502, 503, 504, 529]);
+// limits, and budget. 4xx responses (validation, auth, rate limits) never
+// retry. Neither do 504 (the model already ran for its full timeout; a retry
+// reserves the budget a second time and usually times out again — the
+// double-billing in audit 2026-09) or 500 (a bug, not a blip).
+const TRANSIENT_CLAUDE_STATUSES = new Set([502, 503, 529]);
 const TRANSIENT_RETRY_DELAY_MS = process.env.VITEST ? 25 : 1500;
 
 async function callClaudeRaw(

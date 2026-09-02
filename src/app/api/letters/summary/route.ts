@@ -30,6 +30,14 @@ import {
   type CommentLetterSummaryCoverage,
 } from '../../../../services/commentLetterSummary';
 import { withRouteObservability } from '../../../../lib/route-observability';
+import {
+  addUsage,
+  classifyAnthropicFailure,
+  recordAiUsage,
+  usageFromMessage,
+  type AiCallOutcome,
+  type ModelUsage,
+} from '../../../../lib/ai-usage';
 
 /**
  * Platform budget (seconds). The generation deadline (270 s) and the
@@ -261,11 +269,19 @@ async function handlePost(request: Request): Promise<Response> {
           generationTimedOut = true;
           generationController.abort('Comment-letter summary generation deadline exceeded');
         }, COMMENT_LETTER_SUMMARY_GENERATION_BUDGET_MS);
+        // Up to eleven sequential calls settle as one usage record: the sum
+        // of what each call billed, or "unknown" if any call ended without a
+        // usage report (the reservation then stands for the whole job).
+        const generationStartedAt = Date.now();
+        let observedUsage: ModelUsage | null = null;
+        let modelCalls = 0;
+        let usageOutcome: AiCallOutcome = 'unknown';
         try {
           let synthesisEvidence = summaryPlan.chunks[0] || '';
           if (summaryPlan.chunks.length > 1) {
             const notes: string[] = [];
             for (const [index, chunk] of summaryPlan.chunks.entries()) {
+              modelCalls += 1;
               const chunkMessage = await anthropic.messages.create({
                 model: CLAUDE_MODEL,
                 max_tokens: 800,
@@ -273,6 +289,7 @@ async function handlePost(request: Request): Promise<Response> {
                 system: [{ type: 'text', text: ROUND_NOTES_PROMPT, cache_control: { type: 'ephemeral' } }],
                 messages: [{ role: 'user', content: `Round group ${index + 1} of ${summaryPlan.chunks.length}:\n\n${chunk}` }],
               }, { signal: generationController.signal });
+              observedUsage = addUsage(observedUsage, usageFromMessage(chunkMessage));
               notes.push(chunkMessage.content
                 .filter(block => block.type === 'text')
                 .map(block => block.text)
@@ -282,6 +299,7 @@ async function handlePost(request: Request): Promise<Response> {
             synthesisEvidence = notes.map((note, index) => `--- ROUND GROUP ${index + 1} NOTES ---\n${note}`).join('\n\n');
           }
 
+          modelCalls += 1;
           const finalMessage = await anthropic.messages.create({
               model: CLAUDE_MODEL,
               max_tokens: 1500,
@@ -292,14 +310,31 @@ async function handlePost(request: Request): Promise<Response> {
                 content: `Registrant: ${letters[0].company_name}\nLetters in the episode: ${letters.length}\nInput coverage: ${JSON.stringify(summaryPlan.coverage)}\n\nUntrusted chronological evidence follows:\n\n${synthesisEvidence}`,
               }],
             }, { signal: generationController.signal });
+          observedUsage = addUsage(observedUsage, usageFromMessage(finalMessage));
+          usageOutcome = 'completed';
           summary = finalMessage.content
             .filter(block => block.type === 'text')
             .map(block => block.text)
             .join('')
             .trim();
+        } catch (error) {
+          // A failed call after earlier successful ones: those were billed,
+          // this one's cost is unknown, so the job settles as unknown.
+          usageOutcome = modelCalls > 1 ? 'unknown' : classifyAnthropicFailure(error);
+          throw error;
         } finally {
           clearTimeout(generationDeadline);
           request.signal.removeEventListener('abort', abortFromRequest);
+          await recordAiUsage({
+            route: 'letters/summary',
+            model: CLAUDE_MODEL,
+            userId: prepared.access.userId,
+            reservation: budget.reservation,
+            usage: usageOutcome === 'completed' ? observedUsage : null,
+            outcome: usageOutcome,
+            startedAt: generationStartedAt,
+            calls: modelCalls,
+          });
         }
       } finally {
         await releaseAiConcurrency(concurrency.lease);
