@@ -36,10 +36,12 @@ jobs:
         run: npm run check:cycles
       - run: npm test
       - run: npm run typecheck
+      # The Playwright suites sit outside the app tsconfig. Type-check them
+      # here so a scope or import mistake fails this PR job, not the
+      # post-merge Auth lifecycle run on main.
+      - run: npm run typecheck:tests
       - run: npm run lint
       - run: npm run build
-      # Test/build tooling executes in CI and can expose the repository even
-      # when it is not shipped to users, so audit the complete dependency tree.
 
   browser:
     # Deterministic Playwright acceptance: route smoke, neutral visitor,

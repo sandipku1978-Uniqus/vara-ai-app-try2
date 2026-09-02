@@ -18,6 +18,7 @@
     "test:ui:visitor": "playwright test tests/e2e/neutral-visitor.spec.ts",
     "validate:ui-actions": "tsx scripts/ui-actions/validate.ts",
     "typecheck": "tsc --noEmit",
+    "typecheck:tests": "tsc --noEmit -p tsconfig.tests.json",
     "check:cycles": "node scripts/check-dependency-cycles.mjs",
     "ingest:metadata": "tsx data-pipeline/ingest-metadata.ts",
     "ingest:auditors": "tsx data-pipeline/load-auditors.ts",
