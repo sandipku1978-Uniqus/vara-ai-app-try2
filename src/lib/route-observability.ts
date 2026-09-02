@@ -23,8 +23,11 @@
  * names the three alerts a log drain should raise on them.
  */
 
+// No `next/server` import on purpose: sec-upstream and db-observability
+// import this module, and the Playwright suites load sec-upstream under
+// Node's own resolver, where `next/server` does not resolve (see the note in
+// the auth spec). The Web `Response` API is all the envelope needs.
 import { AsyncLocalStorage } from 'node:async_hooks';
-import { NextResponse } from 'next/server';
 
 /** What a route module implements: Next passes (request, context). */
 export type RouteHandler<Context = unknown> = (
@@ -178,7 +181,7 @@ export function withRouteObservability<Context = unknown>(
           elapsedMs: Date.now() - startedAt,
           ...describeError(error),
         });
-        return NextResponse.json(
+        return Response.json(
           {
             ok: false,
             error: cancelled
