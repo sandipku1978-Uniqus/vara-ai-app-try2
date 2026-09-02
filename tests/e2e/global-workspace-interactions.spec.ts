@@ -63,16 +63,20 @@ test.describe('global research interaction archetypes', () => {
     await page.getByRole('button', { name: 'Close copilot' }).click();
     await expect(trigger).toBeFocused();
     const { composer } = await openCopilot(page);
-    // Evidence citations are the panel's own controls. The research session
-    // the action opens renders result rows behind the panel whose cite chips
-    // also name the filing, so the locator must stay inside the assistant.
+    // Evidence citations and the tab buttons are the panel's own controls.
+    // The research sessions the actions open render result rows behind the
+    // panel whose cite chips name the filing — including the fixture's
+    // "Evidence Ledger Industries" comment letter, which a non-exact
+    // `name: 'Evidence'` also matches — so every locator stays inside the
+    // assistant and tab names match exactly.
     const assistant = page.getByRole('complementary', { name: 'URC Copilot research assistant' });
+    const panelTab = (name: 'Answer' | 'Evidence' | 'Action Log') => assistant.getByRole('button', { name, exact: true });
 
     const filingPrompt = 'Find mezzanine equity';
     await submitCopilot(page, filingPrompt);
-    await page.getByRole('button', { name: 'Action Log' }).click();
+    await panelTab('Action Log').click();
     await expect(page.getByText('Search filings', { exact: true }).first()).toBeVisible();
-    await page.getByRole('button', { name: 'Evidence' }).click();
+    await panelTab('Evidence').click();
     const filingCitation = assistant.getByRole('button', { name: /Mezz Only Corp 10-K/ });
     await expect(filingCitation).toBeVisible();
     // The action also opens a research session. Wait for that route-state sync
@@ -86,7 +90,7 @@ test.describe('global research interaction archetypes', () => {
     await composer.fill(letterPrompt);
     await page.getByRole('button', { name: 'Send message to copilot' }).click();
     await expect(page.locator('.run-status')).toContainText('completed', { timeout: 30_000 });
-    await page.getByRole('button', { name: 'Evidence' }).click();
+    await panelTab('Evidence').click();
     const letterCitation = assistant.getByRole('button', { name: new RegExp(`${COMMENT_LETTER.company_name} ${COMMENT_LETTER.form}`) });
     await expect(letterCitation).toBeVisible();
     await letterCitation.click();
@@ -95,7 +99,7 @@ test.describe('global research interaction archetypes', () => {
     // History selection changes the represented run, not just the chip style.
     await page.getByRole('button', { name: filingPrompt, exact: true }).click();
     await expect(page.locator('.run-prompt')).toHaveText(filingPrompt);
-    await page.getByRole('button', { name: 'Answer' }).click();
+    await panelTab('Answer').click();
     await expect(page.getByText('The result is grounded in the cited SEC evidence packet.')).toBeVisible();
     await page.getByRole('button', { name: new RegExp(`^${letterPrompt.slice(0, 42)}`) }).click();
     await expect(page.locator('.run-prompt')).toHaveText(letterPrompt);
