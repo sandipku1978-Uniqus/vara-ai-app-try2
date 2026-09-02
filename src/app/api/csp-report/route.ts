@@ -1,8 +1,10 @@
 import { sanitizeCspReports } from '../../../lib/csp-report';
-import { checkResourceRateLimit, rateLimitResponse } from '../../../lib/rate-limit';
+import { checkLocalRateLimit, localRateLimitResponse } from '../../../lib/local-rate-limit';
+import { withRouteObservability } from '../../../lib/route-observability';
+
+export const maxDuration = 10;
 
 const MAX_BODY_BYTES = 16_384;
-const REPORTER_IDENTITY = { userId: 'anonymous-csp-reporter', orgId: null };
 const ACCEPTED_CONTENT_TYPES = new Set([
   'application/csp-report',
   'application/reports+json',
@@ -36,15 +38,13 @@ async function readBoundedBody(request: Request): Promise<string | null> {
 /**
  * Public by browser necessity: CSP reports are sent outside application auth.
  * The handler is IP-limited, byte-bounded, and logs only an allowlisted,
- * query-free representation of a violation.
+ * query-free representation of a violation. The limit is per instance, not
+ * KV: browsers send these outside any session, and a KV incident must not
+ * turn violation reports into 503 noise.
  */
-export async function POST(request: Request) {
-  const rate = await checkResourceRateLimit(request, REPORTER_IDENTITY, {
-    operation: 'csp-report',
-    userLimit: 5_000,
-    ipLimit: 120,
-  });
-  if (!rate.allowed) return rateLimitResponse(rate);
+async function handlePost(request: Request) {
+  const rate = checkLocalRateLimit(request, { operation: 'csp-report', ipLimit: 120 });
+  if (!rate.allowed) return localRateLimitResponse(rate);
 
   const contentType = request.headers.get('content-type')?.split(';', 1)[0].trim().toLowerCase() || '';
   if (!ACCEPTED_CONTENT_TYPES.has(contentType)) {
@@ -65,3 +65,5 @@ export async function POST(request: Request) {
 
   return new Response(null, { status: 204, headers: { 'Cache-Control': 'no-store' } });
 }
+
+export const POST = withRouteObservability('csp-report', handlePost);

@@ -20,6 +20,7 @@ import {
   type SupabaseErrorLike,
 } from '../../../lib/db-observability';
 import { getWebSupabase } from '../../../lib/supabase-web';
+import { withRouteObservability } from '../../../lib/route-observability';
 
 function withoutTotalCount(row: Record<string, unknown>): Record<string, unknown> {
   const copy = { ...row };
@@ -27,7 +28,7 @@ function withoutTotalCount(row: Record<string, unknown>): Record<string, unknown
   return copy;
 }
 
-export async function GET(request: Request) {
+async function handleGet(request: Request) {
   const correlationId = newCorrelationId();
   const startedAt = Date.now();
   let completionLogged = false;
@@ -272,3 +273,5 @@ export async function GET(request: Request) {
     );
   }
 }
+
+export const GET = withRouteObservability('letters', handleGet);

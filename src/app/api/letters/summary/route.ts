@@ -7,7 +7,7 @@ import crypto from 'node:crypto';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { kv } from '@vercel/kv';
 import { NextResponse } from 'next/server';
-import { requireApiAccess } from '../../../../lib/api-auth';
+import { requireApiAccess, type ApiIdentity } from '../../../../lib/api-auth';
 import { createAnthropicClient, isAnthropicTimeout } from '../../../../lib/ai-runtime';
 import {
   acquireAiConcurrency,
@@ -29,6 +29,7 @@ import {
   MAX_COMMENT_LETTERS_PER_SUMMARY,
   type CommentLetterSummaryCoverage,
 } from '../../../../services/commentLetterSummary';
+import { withRouteObservability } from '../../../../lib/route-observability';
 
 /** The platform default would kill this route mid-flight; see the in-route budgets. */
 export const maxDuration = 300;
@@ -132,23 +133,27 @@ function episodeTooLargeResponse(): NextResponse {
   }, { status: 422, headers: { 'Cache-Control': 'private, no-store' } });
 }
 
-async function prepare(request: Request) {
+type Prepared =
+  | { response: Response; access?: never; threadId?: never; db?: never }
+  | { response?: never; access: ApiIdentity; threadId: string; db: SupabaseClient };
+
+async function prepare(request: Request): Promise<Prepared> {
   const access = await requireApiAccess();
-  if (access.response) return { response: access.response } as const;
+  if (access.response) return { response: access.response };
   const threadId = threadIdFrom(request);
   if (!threadId) {
-    return { response: NextResponse.json({ error: "Missing or invalid 'thread'" }, { status: 400 }) } as const;
+    return { response: NextResponse.json({ error: "Missing or invalid 'thread'" }, { status: 400 }) };
   }
   const db = getWebSupabase();
   if (!db) {
-    return { response: NextResponse.json({ error: 'Letter corpus not configured' }, { status: 503 }) } as const;
+    return { response: NextResponse.json({ error: 'Letter corpus not configured' }, { status: 503 }) };
   }
-  return { access: access.identity, threadId, db } as const;
+  return { access: access.identity, threadId, db };
 }
 
-export async function GET(request: Request) {
+async function handleGet(request: Request): Promise<Response> {
   const prepared = await prepare(request);
-  if ('response' in prepared) return prepared.response;
+  if (prepared.response) return prepared.response;
   const requestRate = await checkResourceRateLimit(request, prepared.access, {
     operation: 'letter-summary-read',
     userLimit: 120,
@@ -175,9 +180,9 @@ export async function GET(request: Request) {
   }
 }
 
-export async function POST(request: Request) {
+async function handlePost(request: Request): Promise<Response> {
   const prepared = await prepare(request);
-  if ('response' in prepared) return prepared.response;
+  if (prepared.response) return prepared.response;
   const requestRate = await checkAiRateLimit(request, prepared.access, {
     operation: 'letter-summary',
   });
@@ -343,3 +348,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Summary generation failed' }, { status: 502 });
   }
 }
+
+export const GET = withRouteObservability('letters/summary', handleGet);
+export const POST = withRouteObservability('letters/summary', handlePost);

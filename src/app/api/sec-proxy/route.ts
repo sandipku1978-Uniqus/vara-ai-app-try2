@@ -10,6 +10,7 @@ import {
   buildSecTargetUrl,
   bytesToArrayBuffer,
   fetchSecResponse,
+  logSecUpstreamFailure,
   looksLikeSecErrorResponse,
   parseSecJsonResponse,
   readResponseWithLimit,
@@ -19,6 +20,7 @@ import {
   SecUpstreamError,
   type SecUpstream,
 } from '../../../lib/sec-upstream';
+import { withRouteObservability } from '../../../lib/route-observability';
 
 /** The platform default would kill this route mid-flight; see the in-route budgets. */
 export const maxDuration = 60;
@@ -38,7 +40,7 @@ function safeHeaders(contentType: string, html: boolean): Headers {
   return headers;
 }
 
-export async function GET(request: Request) {
+async function handleGet(request: Request) {
   const access = await requireApiAccess();
   if (access.response) return access.response;
 
@@ -99,6 +101,7 @@ export async function GET(request: Request) {
       || contentType.includes('xml');
     const decodedText = textual ? new TextDecoder('utf-8').decode(bytes) : null;
     if (looksLikeSecErrorResponse(bytes)) {
+      logSecUpstreamFailure({ upstream, target: targetUrl, status: upstreamResponse.status, reason: 'error-page' });
       return NextResponse.json({ error: 'SEC upstream returned an error page.' }, { status: 502 });
     }
     if (contentType.includes('text/html') || contentType.includes('application/xhtml+xml')) {
@@ -109,7 +112,7 @@ export async function GET(request: Request) {
       });
     }
     if (contentType.includes('json')) {
-      parseSecJsonResponse(bytes, contentType);
+      parseSecJsonResponse(bytes, contentType, { upstream, target: targetUrl });
       return new NextResponse(bytesToArrayBuffer(bytes), {
         status: 200,
         headers: safeHeaders('application/json; charset=utf-8', false),
@@ -145,3 +148,5 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'SEC proxy request failed.' }, { status: 502 });
   }
 }
+
+export const GET = withRouteObservability('sec-proxy', handleGet);

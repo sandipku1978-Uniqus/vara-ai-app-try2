@@ -232,6 +232,7 @@ describe('protected API authorization matrix', () => {
     const routeExceptions = new Set([
       'cron/precompute/route.ts',
       'csp-report/route.ts',
+      'health/route.ts',
       'version/route.ts',
     ]);
     const routeNames = new Set(routeFiles.map(file => relative(apiRoot, file).replace(/\\/g, '/')));
@@ -250,6 +251,7 @@ describe('protected API authorization matrix', () => {
     expect([...routeExceptions]).toEqual([
       'cron/precompute/route.ts',
       'csp-report/route.ts',
+      'health/route.ts',
       'version/route.ts',
     ]);
   });
@@ -275,7 +277,7 @@ describe('protected API authorization matrix', () => {
     }
 
     expect(config.matcher).toEqual(['/((?!_next/static(?:/|$)|_next/image(?:/|$)).*)']);
-    expect(PUBLIC_API_PATHS).toEqual(['/api/csp-report', '/api/version']);
+    expect(PUBLIC_API_PATHS).toEqual(['/api/csp-report', '/api/health', '/api/version']);
   });
 
   /**

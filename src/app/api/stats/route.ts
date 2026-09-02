@@ -10,8 +10,9 @@ import { requireApiAccess } from '../../../lib/api-auth';
 import { checkResourceRateLimit, rateLimitResponse } from '../../../lib/rate-limit';
 import { getWebSupabase } from '../../../lib/supabase-web';
 import { classifyDbError, dbErrorResponse, newCorrelationId } from '../../../lib/db-observability';
+import { withRouteObservability } from '../../../lib/route-observability';
 
-export async function GET(request: Request) {
+async function handleGet(request: Request) {
   const access = await requireApiAccess();
   if (access.response) return access.response;
   const correlationId = newCorrelationId();
@@ -97,3 +98,5 @@ export async function GET(request: Request) {
     );
   }
 }
+
+export const GET = withRouteObservability('stats', handleGet);

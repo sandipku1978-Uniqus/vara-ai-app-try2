@@ -13,6 +13,7 @@ import { requireApiAccess } from '../../../lib/api-auth';
 import { validateChatRequest } from '../../../lib/ai-input';
 import { buildFrameworkContext } from '../../../lib/framework-context';
 import crypto from 'crypto';
+import { withRouteObservability } from '../../../lib/route-observability';
 
 /** The platform default would kill this route mid-flight; see the in-route budgets. */
 export const maxDuration = 180;
@@ -23,7 +24,7 @@ const anthropic = createAnthropicClient(process.env.ANTHROPIC_API_KEY || '');
 // Model is env-configurable so upgrades are a Vercel env change, not a deploy
 const CLAUDE_MODEL = process.env.ANTHROPIC_MODEL || 'claude-sonnet-5';
 
-export async function POST(req: Request) {
+async function handlePost(req: Request) {
   try {
     const access = await requireApiAccess();
     if (access.response) return access.response;
@@ -129,3 +130,5 @@ export async function POST(req: Request) {
     return new Response(JSON.stringify({ error: 'An error occurred processing your request' }), { status: 500 });
   }
 }
+
+export const POST = withRouteObservability('claude', handlePost);

@@ -12,9 +12,11 @@ vi.mock('../lib/supabase-web', () => ({
   getWebSupabase: () => (mocks.db ? { rpc: mocks.rpc } : null),
 }));
 
-vi.mock('../lib/rate-limit', () => ({
-  checkResourceRateLimit: mocks.checkRate,
-  rateLimitResponse: mocks.rateResponse,
+// Per-instance limiter on purpose: the KV-backed limiter fails closed, and a
+// release verifier must still read provenance during a KV incident.
+vi.mock('../lib/local-rate-limit', () => ({
+  checkLocalRateLimit: mocks.checkRate,
+  localRateLimitResponse: mocks.rateResponse,
 }));
 
 import {
@@ -32,7 +34,8 @@ describe('GET /api/version', () => {
     mocks.db = true;
     mocks.rpc.mockReset();
     mocks.checkRate.mockReset();
-    mocks.checkRate.mockResolvedValue({ allowed: true, retryAfterSeconds: 0 });
+    mocks.checkRate.mockReturnValue({ allowed: true, retryAfterSeconds: 0 });
+    vi.spyOn(console, 'info').mockImplementation(() => {});
     mocks.rateResponse.mockReset();
     mocks.rateResponse.mockReturnValue(new Response(null, {
       status: 429,
@@ -53,6 +56,7 @@ describe('GET /api/version', () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.unstubAllEnvs();
+    vi.restoreAllMocks();
   });
 
   it('lets an anonymous release verifier read only nonsecret provenance', async () => {
@@ -89,9 +93,9 @@ describe('GET /api/version', () => {
     expect(mocks.rpc).toHaveBeenCalledWith('urc_schema_provenance');
     expect(mocks.checkRate).toHaveBeenCalledWith(
       expect.any(Request),
-      { userId: 'anonymous-version-reader', orgId: null },
-      { operation: 'version', userLimit: 5_000, ipLimit: 60 }
+      { operation: 'version', ipLimit: 60 }
     );
+    expect(response.headers.get('x-correlation-id')).toMatch(/^[0-9a-f-]{36}$/);
     expect(Object.keys(body).sort()).toEqual([
       'deploymentId',
       'environment',
@@ -186,7 +190,7 @@ describe('GET /api/version', () => {
   });
 
   it('rejects an over-limit public IP before touching Supabase', async () => {
-    mocks.checkRate.mockResolvedValue({
+    mocks.checkRate.mockReturnValue({
       allowed: false,
       retryAfterSeconds: 30,
       reason: 'rate',

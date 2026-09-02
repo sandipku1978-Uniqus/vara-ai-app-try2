@@ -32,6 +32,7 @@ import {
   SEC_DOCUMENT_CONCURRENCY_OPTIONS,
   SecUpstreamError,
 } from '../../../lib/sec-upstream';
+import { withRouteObservability } from '../../../lib/route-observability';
 
 /** The platform default would kill this route mid-flight; see the in-route budgets. */
 export const maxDuration = 60;
@@ -77,7 +78,7 @@ function badRequest(message: string) {
   return NextResponse.json({ ok: false, error: message }, { status: 400 });
 }
 
-export async function GET(request: Request) {
+async function handleGet(request: Request) {
   const access = await requireApiAccess(true, '/api/filing-text', 'GET');
   if (access.response) return access.response;
 
@@ -216,3 +217,5 @@ export async function GET(request: Request) {
     { headers: { 'Cache-Control': 'private, max-age=3600' } },
   );
 }
+
+export const GET = withRouteObservability('filing-text', handleGet);

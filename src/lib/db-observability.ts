@@ -13,6 +13,7 @@
  */
 
 import { NextResponse } from 'next/server';
+import { currentCorrelationId, generateCorrelationId } from './route-observability';
 
 export type DbErrorClass =
   | 'permission'
@@ -55,12 +56,13 @@ export function classifyDbError(error: SupabaseErrorLike | null | undefined): {
   }
 }
 
+/**
+ * Inside a route wrapped by withRouteObservability this is the request's
+ * correlation ID, so the route line and the db-failure line join on one
+ * value; outside one (tests, scripts) it mints a fresh ID.
+ */
 export function newCorrelationId(): string {
-  try {
-    return crypto.randomUUID();
-  } catch {
-    return `cid-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
-  }
+  return currentCorrelationId() ?? generateCorrelationId();
 }
 
 /**
