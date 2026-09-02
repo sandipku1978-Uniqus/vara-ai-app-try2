@@ -135,7 +135,11 @@ describe('GET /api/letters browse pagination', () => {
 
     expect(response.status).toBe(200);
     expect(body.total).toBe(1);
-    expect(completionSpy).toHaveBeenCalledOnce();
+    // The route's own completion record plus the platform-wide route line
+    // from withRouteObservability, joined by one correlation ID.
+    expect(completionSpy).toHaveBeenCalledTimes(2);
+    const routeLine = JSON.parse(String(completionSpy.mock.calls[1][0]));
+    expect(routeLine).toMatchObject({ kind: 'route', route: 'letters', status: 200, correlationId: completion.correlationId });
     expect(completion).toMatchObject({
       kind: 'route-completion',
       route: 'letters',

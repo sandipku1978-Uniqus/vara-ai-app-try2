@@ -41,6 +41,7 @@ import {
   newCorrelationId,
   type DbErrorClass,
 } from '../../../lib/db-observability';
+import { withRouteObservability } from '../../../lib/route-observability';
 
 /** The platform default would kill this route mid-flight; see the in-route budgets. */
 export const maxDuration = 60;
@@ -265,7 +266,7 @@ async function addEftsErrorMetadata(
   });
 }
 
-export async function GET(request: Request) {
+async function handleGet(request: Request) {
   const access = await requireApiAccess(true, '/api/es-search', 'GET');
   if (access.response) return access.response;
 
@@ -879,3 +880,5 @@ export async function GET(request: Request) {
     });
   }
 }
+
+export const GET = withRouteObservability('es-search', handleGet);

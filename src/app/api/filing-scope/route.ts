@@ -16,6 +16,7 @@ import { NextResponse } from 'next/server';
 import { requireApiAccess } from '../../../lib/api-auth';
 import { checkResourceRateLimit, rateLimitResponse } from '../../../lib/rate-limit';
 import { getWebSupabase } from '../../../lib/supabase-web';
+import { withRouteObservability } from '../../../lib/route-observability';
 
 /** Earliest filing in the corpus; anything before this is outside our coverage. */
 export const CORPUS_START = '2010-01-02';
@@ -37,7 +38,7 @@ export interface FilingScope {
 
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
-export async function GET(request: Request) {
+async function handleGet(request: Request) {
   const access = await requireApiAccess();
   if (access.response) return access.response;
 
@@ -101,3 +102,5 @@ export async function GET(request: Request) {
 
   return NextResponse.json({ ok: true, scope });
 }
+
+export const GET = withRouteObservability('filing-scope', handleGet);

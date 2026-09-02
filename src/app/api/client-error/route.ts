@@ -17,6 +17,7 @@
 import { NextResponse } from 'next/server';
 import { requireApiAccess } from '../../../lib/api-auth';
 import { checkResourceRateLimit, rateLimitResponse } from '../../../lib/rate-limit';
+import { withRouteObservability } from '../../../lib/route-observability';
 
 const MAX_FIELD = 512;
 const MAX_STACK = 4_000;
@@ -33,7 +34,7 @@ function safeText(value: unknown, limit = MAX_FIELD): string {
   return typeof value === 'string' ? value.slice(0, limit) : '';
 }
 
-export async function POST(request: Request) {
+async function handlePost(request: Request) {
   // Authenticated like every other handler — an unauthenticated write endpoint
   // is log-flood surface, and in an internal pilot the errors worth seeing all
   // happen in signed-in views. Entitlement is NOT required: an unentitled user
@@ -76,3 +77,5 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ ok: true });
 }
+
+export const POST = withRouteObservability('client-error', handlePost);

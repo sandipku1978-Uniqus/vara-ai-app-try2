@@ -1,4 +1,5 @@
 import sanitizeHtml from 'sanitize-html';
+import { currentCorrelationId } from './route-observability';
 import {
   paceSecRequestStart,
   SecRequestPacerUnavailableError,
@@ -12,6 +13,40 @@ export {
 } from './efts-response';
 
 export type SecUpstream = 'proxy' | 'data' | 'efts' | 'iapd';
+
+export type SecUpstreamFailureReason =
+  | 'http-status'
+  | 'error-page'
+  | 'non-json'
+  | 'malformed-json'
+  | 'timeout'
+  | 'pacer-unavailable'
+  | 'redirect-rejected';
+
+/**
+ * One structured line per SEC-side failure (audit 2026-09: "SEC throttles,
+ * blocks and error pages produce zero server-side signal"). Host and path
+ * only — the query string can carry search terms. The correlation ID joins
+ * the line to the route line of the request that made the call.
+ */
+export function logSecUpstreamFailure(details: {
+  upstream: SecUpstream;
+  target?: URL | null;
+  status?: number | null;
+  reason: SecUpstreamFailureReason;
+  elapsedMs?: number;
+}): void {
+  console.error(JSON.stringify({
+    kind: 'sec-upstream-failure',
+    upstream: details.upstream,
+    host: details.target?.host ?? null,
+    path: details.target?.pathname ?? null,
+    status: details.status ?? null,
+    reason: details.reason,
+    elapsedMs: details.elapsedMs ?? null,
+    correlationId: currentCorrelationId(),
+  }));
+}
 
 /**
  * One document-level in-flight pool shared by every route that can miss the
@@ -334,11 +369,21 @@ export function looksLikeSecErrorResponse(body: string | Uint8Array): string | n
 
 /** Parse a size-bounded SEC response only after its media type and JSON syntax
  * have been validated. Domain-specific callers must still validate the shape. */
-export function parseSecJsonResponse(bytes: Uint8Array, contentType: string | null): unknown {
+export function parseSecJsonResponse(
+  bytes: Uint8Array,
+  contentType: string | null,
+  /** When given, a rejected body is logged as an SEC upstream failure. */
+  source?: { upstream: SecUpstream; target: URL },
+): unknown {
+  const failure = (reason: SecUpstreamFailureReason) => {
+    if (source) logSecUpstreamFailure({ upstream: source.upstream, target: source.target, status: 200, reason });
+  };
   if (looksLikeSecErrorResponse(bytes)) {
+    failure('error-page');
     throw new SecUpstreamError('SEC upstream returned an error page.', 502);
   }
   if (!contentType || !SEC_JSON_CONTENT_TYPE.test(contentType.trim())) {
+    failure('non-json');
     throw new SecUpstreamError('SEC upstream returned a non-JSON response.', 502);
   }
 
@@ -346,12 +391,14 @@ export function parseSecJsonResponse(bytes: Uint8Array, contentType: string | nu
   try {
     body = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
   } catch {
+    failure('malformed-json');
     throw new SecUpstreamError('SEC upstream returned invalid UTF-8 JSON.', 502);
   }
 
   try {
     return JSON.parse(body.replace(/^\uFEFF/, '')) as unknown;
   } catch {
+    failure('malformed-json');
     throw new SecUpstreamError('SEC upstream returned malformed JSON.', 502);
   }
 }
@@ -389,7 +436,7 @@ export async function fetchSecJson({
     throw new SecUpstreamError('SEC upstream request failed.', status);
   }
   const bytes = await readResponseWithLimit(response, maxBytes, signal);
-  return parseSecJsonResponse(bytes, response.headers.get('content-type'));
+  return parseSecJsonResponse(bytes, response.headers.get('content-type'), { upstream, target });
 }
 
 export function assertSecDocumentResponse(response: Response): void {
@@ -413,6 +460,7 @@ export async function fetchSecResponse(
    * budget instead of learning they overspent after fetch resolves. */
   onRequestAttempt?: () => boolean | void
 ): Promise<Response> {
+  const startedAt = Date.now();
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 12_000);
   const abortFromRequest = () => controller.abort(requestSignal.reason);
@@ -422,6 +470,13 @@ export async function fetchSecResponse(
   if (requestSignal.aborted) controller.abort(requestSignal.reason);
   else requestSignal.addEventListener('abort', abortFromRequest, { once: true });
   let target = initialTarget;
+  const failure = (reason: SecUpstreamFailureReason, status?: number | null) => logSecUpstreamFailure({
+    upstream,
+    target,
+    status: status ?? null,
+    reason,
+    elapsedMs: Date.now() - startedAt,
+  });
 
   try {
     controller.signal.throwIfAborted();
@@ -435,6 +490,7 @@ export async function fetchSecResponse(
         await paceSecRequestStart(controller.signal);
       } catch (error) {
         if (error instanceof SecRequestPacerUnavailableError) {
+          failure('pacer-unavailable');
           throw new SecUpstreamError('SEC request pacing is unavailable.', 503);
         }
         throw error;
@@ -449,14 +505,38 @@ export async function fetchSecResponse(
         cache: 'no-store',
         signal: controller.signal,
       });
-      if (![301, 302, 303, 307, 308].includes(response.status)) return response;
-      if (redirect === 3) throw new SecUpstreamError('Too many SEC redirects.', 502);
+      if (![301, 302, 303, 307, 308].includes(response.status)) {
+        // SEC's throttle (429), block (403) and outage (5xx) answers used to
+        // leave no server-side trace: each caller mapped them to its own
+        // status and moved on. Callers still receive the response unchanged.
+        if (!response.ok) failure('http-status', response.status);
+        return response;
+      }
+      if (redirect === 3) {
+        failure('redirect-rejected', response.status);
+        throw new SecUpstreamError('Too many SEC redirects.', 502);
+      }
       const location = response.headers.get('location');
-      if (!location) throw new SecUpstreamError('SEC redirect was missing a target.', 502);
+      if (!location) {
+        failure('redirect-rejected', response.status);
+        throw new SecUpstreamError('SEC redirect was missing a target.', 502);
+      }
       target = new URL(location, target);
-      validateSecRedirect(target, upstream);
+      try {
+        validateSecRedirect(target, upstream);
+      } catch (error) {
+        failure('redirect-rejected', response.status);
+        throw error;
+      }
     }
     throw new SecUpstreamError('SEC request failed.', 502);
+  } catch (error) {
+    // This function's own 12-second deadline, as opposed to the caller going
+    // away (not a failure of SEC's) or a failure already logged above.
+    if (!requestSignal.aborted && controller.signal.aborted && !(error instanceof SecUpstreamError)) {
+      failure('timeout');
+    }
+    throw error;
   } finally {
     clearTimeout(timeout);
     requestSignal.removeEventListener('abort', abortFromRequest);

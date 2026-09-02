@@ -34,6 +34,7 @@ import {
   readResponseWithLimit,
   SEC_DOCUMENT_CONCURRENCY_OPTIONS,
 } from '../../../lib/sec-upstream';
+import { withRouteObservability } from '../../../lib/route-observability';
 
 const USER_AGENT = process.env.NEXT_PUBLIC_EDGAR_USER_AGENT || 'Uniqus Research Center contact@uniqus.com';
 const MAX_DOCUMENT_BYTES = 25 * 1024 * 1024;
@@ -266,7 +267,7 @@ async function loadText(
   return text;
 }
 
-export async function POST(request: Request) {
+async function handlePost(request: Request) {
   const access = await requireApiAccess(true, '/api/boolean-validate', 'POST');
   if (access.response) return access.response;
 
@@ -366,3 +367,5 @@ export async function POST(request: Request) {
     },
   });
 }
+
+export const POST = withRouteObservability('boolean-validate', handlePost);

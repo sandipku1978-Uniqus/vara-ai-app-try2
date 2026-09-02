@@ -13,11 +13,12 @@ import { requireApiAccess } from '../../../lib/api-auth';
 import { isValidIsoDate, parseCik } from '../../../lib/api-query';
 import { checkResourceRateLimit, rateLimitResponse } from '../../../lib/rate-limit';
 import { getWebSupabase } from '../../../lib/supabase-web';
+import { withRouteObservability } from '../../../lib/route-observability';
 
 const MAX_CIKS = 200;
 const MAX_FILINGS = 200;
 
-export async function GET(request: Request) {
+async function handleGet(request: Request) {
   const access = await requireApiAccess(true, '/api/enrich', 'GET');
   if (access.response) return access.response;
 
@@ -91,7 +92,7 @@ interface FilingEnrichmentInput {
   fileDate?: unknown;
 }
 
-export async function POST(request: Request) {
+async function handlePost(request: Request) {
   const access = await requireApiAccess(true, '/api/enrich', 'POST');
   if (access.response) return access.response;
 
@@ -181,3 +182,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Filing auditor enrichment failed' }, { status: 502 });
   }
 }
+
+export const GET = withRouteObservability('enrich', handleGet);
+export const POST = withRouteObservability('enrich', handlePost);

@@ -1,6 +1,9 @@
 import crypto from 'node:crypto';
 import { kv } from '@vercel/kv';
 import { isLocalE2eBypass, isProductionDeployment } from './clerk-config';
+import { clientIpFrom } from './client-ip';
+
+export { clientIpFrom };
 import {
   configuredReleaseGateNotAfter,
   isReleaseGateWindowActive,
@@ -129,19 +132,6 @@ function noteLocalControlsFallback(): void {
 
 function opaqueKeyPart(value: string): string {
   return crypto.createHash('sha256').update(value).digest('base64url').slice(0, 24);
-}
-
-export function clientIpFrom(request: Request): string {
-  // Vercel overwrites these headers at the trusted edge. Do not trust a raw
-  // caller-supplied x-forwarded-for header in production.
-  const trusted = request.headers.get('x-real-ip')
-    || request.headers.get('x-vercel-forwarded-for')?.split(',')[0]?.trim();
-  if (trusted) return trusted;
-
-  if (!isProductionDeployment()) {
-    return request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'local';
-  }
-  return 'unknown';
 }
 
 function pruneLocalCounters(now: number): void {

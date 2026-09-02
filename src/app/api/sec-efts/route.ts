@@ -9,11 +9,12 @@ import {
   readResponseWithLimit,
   SecUpstreamError,
 } from '../../../lib/sec-upstream';
+import { withRouteObservability } from '../../../lib/route-observability';
 
 const USER_AGENT = process.env.NEXT_PUBLIC_EDGAR_USER_AGENT || 'Uniqus Research Center contact@uniqus.com';
 const MAX_RESPONSE_BYTES = 5 * 1024 * 1024;
 
-export async function GET(request: Request) {
+async function handleGet(request: Request) {
   const access = await requireApiAccess(true, '/api/sec-efts', 'GET');
   if (access.response) return access.response;
 
@@ -64,3 +65,5 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'SEC search proxy request failed.' }, { status: 502 });
   }
 }
+
+export const GET = withRouteObservability('sec-efts', handleGet);

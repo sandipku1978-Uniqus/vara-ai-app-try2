@@ -21,15 +21,17 @@ import { checkResourceRateLimit, rateLimitResponse } from '../../../lib/rate-lim
 import {
   buildSecTargetUrl,
   fetchSecResponse,
+  logSecUpstreamFailure,
   looksLikeSecErrorResponse,
   readResponseWithLimit,
 } from '../../../lib/sec-upstream';
+import { withRouteObservability } from '../../../lib/route-observability';
 
 const USER_AGENT = process.env.NEXT_PUBLIC_EDGAR_USER_AGENT || 'Uniqus Research Center contact@uniqus.com';
 const MAX_ATOM_BYTES = 512 * 1024;
 const SEC_ATOM_CONTENT_TYPE = /^(?:application\/atom\+xml|application\/xml|text\/xml)(?:;|$)/i;
 
-export async function GET(request: Request) {
+async function handleGet(request: Request) {
   const access = await requireApiAccess();
   if (access.response) return access.response;
 
@@ -66,6 +68,7 @@ export async function GET(request: Request) {
 
     const bytes = await readResponseWithLimit(response, MAX_ATOM_BYTES, request.signal);
     if (looksLikeSecErrorResponse(bytes)) {
+      logSecUpstreamFailure({ upstream: 'proxy', target, status: response.status, reason: 'error-page' });
       return NextResponse.json(
         { ok: false, cik: null, error: 'SEC company lookup returned an error page.' },
         { status: 502 },
@@ -97,3 +100,5 @@ export async function GET(request: Request) {
     );
   }
 }
+
+export const GET = withRouteObservability('company-cik', handleGet);
