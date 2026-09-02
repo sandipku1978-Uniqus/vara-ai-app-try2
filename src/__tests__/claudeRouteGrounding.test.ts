@@ -37,6 +37,9 @@ vi.mock('../lib/rate-limit', () => ({
   estimateModelTokenReservation: vi.fn(() => 10_000),
   reserveAiTokenBudget: vi.fn(async () => ({ allowed: true })),
   releaseAiConcurrency: vi.fn(async () => undefined),
+  // Usage metering settles against these after the model call.
+  settleAiTokenReservation: vi.fn(async () => 0),
+  opaqueIdentityKey: vi.fn((value: string) => `key:${value}`),
   rateLimitResponse: vi.fn(() => Response.json({ error: 'rate limited' }, { status: 429 })),
 }));
 

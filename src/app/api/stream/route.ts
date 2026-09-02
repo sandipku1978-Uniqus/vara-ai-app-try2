@@ -14,6 +14,14 @@ import { validateChatRequest } from '../../../lib/ai-input';
 import { buildFrameworkContext } from '../../../lib/framework-context';
 import crypto from 'crypto';
 import { withRouteObservability } from '../../../lib/route-observability';
+import {
+  classifyAnthropicFailure,
+  recordAiUsage,
+  StreamUsageAccumulator,
+  usageFromMessage,
+  type AiCallOutcome,
+  type ModelUsage,
+} from '../../../lib/ai-usage';
 
 /** The platform default would kill this route mid-flight; see the in-route budgets. */
 export const maxDuration = 300;
@@ -87,9 +95,11 @@ async function handlePost(req: Request) {
         await releaseAiConcurrency(concurrency.lease);
         return rateLimitResponse(budget);
       }
+      const modelCallStartedAt = Date.now();
+      const usageRecord = { route: 'stream', model: CLAUDE_MODEL, userId: access.identity.userId, reservation: budget.reservation, startedAt: modelCallStartedAt };
       const msg = await (async () => {
         try {
-          return await anthropic.messages.create({
+          const message = await anthropic.messages.create({
             model: CLAUDE_MODEL,
             max_tokens: 8192,
             // Sonnet 5: adaptive thinking only; temperature must be omitted
@@ -101,6 +111,11 @@ async function handlePost(req: Request) {
             }],
             messages: apiMessages,
           }, { signal: req.signal });
+          await recordAiUsage({ ...usageRecord, usage: usageFromMessage(message), outcome: 'completed' });
+          return message;
+        } catch (error) {
+          await recordAiUsage({ ...usageRecord, usage: null, outcome: classifyAnthropicFailure(error) });
+          throw error;
         } finally {
           await releaseAiConcurrency(concurrency.lease);
         }
@@ -130,6 +145,18 @@ async function handlePost(req: Request) {
       await releaseAiConcurrency(concurrency.lease);
       return rateLimitResponse(budget);
     }
+    // One usage line per streamed request, whichever way it ends: the input
+    // count arrives on message_start, the output count on message_delta.
+    const streamStartedAt = Date.now();
+    const usageRecord = { route: 'stream', model: CLAUDE_MODEL, userId: access.identity.userId, reservation: budget.reservation, startedAt: streamStartedAt };
+    const observedUsage = new StreamUsageAccumulator();
+    let usageRecorded = false;
+    const settleStream = async (usage: ModelUsage | null, outcome: AiCallOutcome) => {
+      if (usageRecorded) return;
+      usageRecorded = true;
+      await recordAiUsage({ ...usageRecord, usage, outcome });
+    };
+
     const stream = await (async () => {
       try {
         return anthropic.messages.stream({
@@ -146,6 +173,7 @@ async function handlePost(req: Request) {
           messages: apiMessages,
         }, { signal: req.signal });
       } catch (error) {
+        await settleStream(null, classifyAnthropicFailure(error));
         await releaseAiConcurrency(concurrency.lease);
         throw error;
       }
@@ -158,6 +186,7 @@ async function handlePost(req: Request) {
       async start(controller) {
         try {
           for await (const event of stream) {
+            observedUsage.observe(event);
             if (
               event.type === 'content_block_delta' &&
               event.delta.type === 'text_delta'
@@ -173,10 +202,13 @@ async function handlePost(req: Request) {
           // Signal completion
           controller.enqueue(encoder.encode('data: [DONE]\n\n'));
           controller.close();
+          await settleStream(observedUsage.current(), 'completed');
 
           // Cache the full response after stream completes
           await cacheService.set(cacheKey, fullText, { ex: 3600 });
         } catch (error) {
+          // Whatever streamed before the failure was generated and billed.
+          await settleStream(observedUsage.current(), classifyAnthropicFailure(error));
           controller.enqueue(
             encoder.encode(`data: ${JSON.stringify({
               error: isAnthropicTimeout(error) ? 'AI generation timed out.' : 'Stream error',
@@ -190,6 +222,9 @@ async function handlePost(req: Request) {
       },
       cancel() {
         stream.abort();
+        // The client went away mid-answer: what was generated so far is
+        // billed, the rest is not — an unknown split, so the estimate stands.
+        void settleStream(observedUsage.current(), 'unknown');
         void releaseAiConcurrency(concurrency.lease);
       },
     });

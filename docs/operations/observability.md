@@ -17,6 +17,7 @@ names, user identities, headers, or credentials.
 | `unhandled-request-error` | `src/instrumentation.ts` (`onRequestError`) | error | Next caught an error outside a wrapped handler: rendering, server actions, the proxy. `path` (no query), `routePath`, `routeType`, `digest` |
 | `db-failure` | `dbErrorResponse` in `lib/db-observability` | error | A Supabase RPC failed. `errorClass` is the operational verdict: `permission` and `missing-rpc` are **deployment defects** (code and schema drifted); `statement-timeout` and `rate-limited` heal by themselves |
 | `sec-upstream-failure` | `lib/sec-upstream` and the SEC routes | error | SEC answered with a throttle/block/outage status, an error page, a bad redirect, or timed out. `upstream`, `host`, `path`, `status`, `reason` |
+| `ai-usage` | `recordAiUsage` in `lib/ai-usage` (claude, compare, stream, letters/summary) | info | One line per model request: `model`, `outcome` (`completed` / `not-billed` / `unknown`), `calls`, `reservedTokens`, measured `inputTokens` / `outputTokens` / cache counts, `billableTokens` (input-rate weighted), `adjustmentTokens` (the refund or overage applied to the daily budget), `userKey` (a hash, not the user ID) |
 | `client-error` | `POST /api/client-error` | error | An unhandled browser error, with Next's `digest` when the cause was server-side |
 | `route-completion` | `stats`, `letters`, `es-search` | info | Older per-route completion line with row counts; superseded by `route`, kept for its counts |
 
@@ -29,6 +30,15 @@ client in the `x-correlation-id` header and in every JSON error envelope, and
 the same value on any `db-failure` or `sec-upstream-failure` line the request
 produced. A user report that quotes it can be joined to the server side in
 one query.
+
+### Reading AI spend
+
+Sum `billableTokens` on `ai-usage` lines per day (and per `userKey` or
+`route`) for measured spend; `reservedTokens` minus `adjustmentTokens` is
+what the daily budget actually charged. Lines with `outcome: "unknown"`
+(timeouts, client aborts) carry no measurement and keep their conservative
+reservation — a rising share of them is itself a signal that calls are
+outrunning their 165 s timeout.
 
 ## The health endpoint
 
