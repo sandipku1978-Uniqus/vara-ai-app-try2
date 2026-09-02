@@ -29,6 +29,12 @@ export interface GovernanceFixtureOptions {
   aiFailuresBeforeSuccess?: Partial<Record<AiKind, number>>;
   /** Number of EFTS HTTP attempts to fail. searchEdgarFilings spends two per load. */
   eftsFailuresBeforeSuccess?: number;
+  /**
+   * Number of /api/filing-text attempts to answer 429 by ticker before serving
+   * text. fetchFilingTextOutcome retries a 429 once, so two exhausts one UI
+   * action and leaves the surface to show the rate limit and offer a retry.
+   */
+  filingTextRateLimitsBeforeSuccess?: Partial<Record<string, number>>;
 }
 
 export interface GovernanceFixtureStats {
@@ -168,6 +174,35 @@ function filingText(cik: string, document: string): string {
   ].join(' ').repeat(3);
 }
 
+/**
+ * The Item structure the Section Matrix slices an annual report at. Only the
+ * shared filing-text route serves it (the sec-proxy HTML fallback keeps the
+ * redline's own heading fixture). Item 1C is deliberately missing, so a
+ * "not found" verdict is a real reading of the text rather than a default.
+ */
+function annualReportSections(cik: string): string {
+  const company = companyForCik(cik);
+  const ticker = company?.ticker ?? 'FIXT';
+  return [
+    'PART I',
+    `Item 1. Business ${ticker} designs, manufactures, and markets fixture products through direct and indirect channels.`,
+    `Item 1A. Risk Factors Investing in ${ticker} involves risks, including supplier concentration and currency movements.`,
+    'Item 1B. Unresolved Staff Comments None.',
+    `Item 2. Properties ${ticker} owns its headquarters and leases regional offices.`,
+    'Item 3. Legal Proceedings A supplier dispute is pending in Delaware.',
+    'PART II',
+    'Item 7. Management’s Discussion and Analysis Revenue increased on volume growth and liquidity remains sufficient.',
+    'Item 8. Financial Statements and Supplementary Data The consolidated statements follow.',
+    'Item 9A. Controls and Procedures Management concluded that internal control over financial reporting was effective.',
+  ].join(' ');
+}
+
+function filingTextForRoute(cik: string, document: string): string {
+  return document.includes('10k')
+    ? `${annualReportSections(cik)} ${filingText(cik, document)}`
+    : filingText(cik, document);
+}
+
 function boardResult(prompt: string) {
   const ticker = GOVERNANCE_COMPANIES.find(company => prompt.includes(`evidence for ${company.ticker}`))?.ticker ?? 'AAPL';
   const boardSize = ticker === 'MSFT' ? 10 : ticker === 'NVDA' ? 7 : 8;
@@ -256,6 +291,7 @@ export async function installGovernanceAnalyticsFixtures(
   };
   const factFailures = { ...(options.factFailuresBeforeSuccess ?? {}) };
   const aiFailures = { ...(options.aiFailuresBeforeSuccess ?? {}) };
+  const filingTextRateLimits = { ...(options.filingTextRateLimitsBeforeSuccess ?? {}) };
   let eftsFailures = options.eftsFailuresBeforeSuccess ?? 0;
 
   await page.context().route('https://www.sec.gov/**', route => route.fulfill({ status: 200, contentType: 'text/html', body: '<title>SEC fixture source</title>' }));
@@ -321,10 +357,16 @@ export async function installGovernanceAnalyticsFixtures(
     const cik = String(Number(url.searchParams.get('cik') ?? '0'));
     const document = url.searchParams.get('document') ?? '';
     stats.filingTextRequests.push({ cik, document });
+    const ticker = companyForCik(cik)?.ticker ?? cik;
+    if ((filingTextRateLimits[ticker] ?? 0) > 0) {
+      filingTextRateLimits[ticker] = (filingTextRateLimits[ticker] ?? 0) - 1;
+      await route.fulfill({ status: 429, contentType: 'application/json', body: JSON.stringify({ ok: false, error: 'fixture rate limit' }) });
+      return;
+    }
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ ok: true, cached: true, text: filingText(cik, document) }),
+      body: JSON.stringify({ ok: true, cached: true, text: filingTextForRoute(cik, document) }),
     });
   });
 

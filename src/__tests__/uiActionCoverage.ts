@@ -119,7 +119,11 @@ export const UI_ACTION_COVERAGE: Record<string, UiActionEvidence> = {
   'benchmarking.choose-years-or-section': { kind: 'automated-full', specs: [{ file: 'tests/e2e/governance-analytics-interactions.spec.ts', title: 'benchmarking.choose-years-or-section recalculates the visible period and disclosure target' }] },
   'benchmarking.build-peer-group': { kind: 'automated-full', specs: [{ file: 'tests/e2e/governance-analytics-interactions.spec.ts', title: 'benchmarking.build-peer-group adds only matching non-duplicate SIC peers' }] },
   'benchmarking.generate-summary-or-memo': { kind: 'automated-full', specs: [{ file: 'tests/e2e/governance-analytics-interactions.spec.ts', title: 'benchmarking.generate-summary-or-memo retries a failed grounded comparison and builds the cohort memo' }] },
-  'benchmarking.export-results': { kind: 'automated-full', specs: [{ file: 'tests/e2e/governance-analytics-interactions.spec.ts', title: 'benchmarking.export-results downloads the visible cohort periods labels and values' }] },
+  'benchmarking.verify-sections': { kind: 'automated-full', specs: [{ file: 'tests/e2e/governance-analytics-interactions.spec.ts', title: 'benchmarking.verify-sections marks sections only from filing text, surfaces a rate limit with retry, and exports states with accessions' }] },
+  'benchmarking.export-results': { kind: 'automated-full', specs: [
+    { file: 'tests/e2e/governance-analytics-interactions.spec.ts', title: 'benchmarking.export-results downloads the visible cohort periods labels and values' },
+    { file: 'tests/e2e/governance-analytics-interactions.spec.ts', title: 'benchmarking.verify-sections marks sections only from filing text, surfaces a rate limit with retry, and exports states with accessions' },
+  ] },
   'accounting-analytics.add-company': { kind: 'automated-full', specs: [{ file: 'tests/e2e/governance-analytics-interactions.spec.ts', title: 'accounting-analytics.add-company and accounting-analytics.remove-company keep XBRL columns exact' }] },
   'accounting-analytics.remove-company': { kind: 'automated-full', specs: [{ file: 'tests/e2e/governance-analytics-interactions.spec.ts', title: 'accounting-analytics.add-company and accounting-analytics.remove-company keep XBRL columns exact' }] },
   'accounting-analytics.retry-facts': { kind: 'automated-full', specs: [{ file: 'tests/e2e/governance-analytics-interactions.spec.ts', title: 'accounting-analytics.retry-facts repeats the selected issuer request and replaces failure' }] },
