@@ -1,0 +1,19 @@
+{
+  // Type-checks the Playwright suites and their configs, which the app
+  // tsconfig deliberately leaves out of `include` (Next's build would
+  // otherwise compile them). Without this, a helper declared in the wrong
+  // scope is a runtime ReferenceError in the Auth lifecycle job, not a
+  // compile error — exactly what took main red on 2026-09-02.
+  // `npm run typecheck:tests`; the CI verify job runs it after `typecheck`.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "incremental": false,
+    "plugins": [],
+    "types": ["node"]
+  },
+  "include": [
+    "tests/**/*.ts",
+    "playwright.config.ts",
+    "playwright.auth.config.ts"
+  ]
+}

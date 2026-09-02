@@ -131,8 +131,9 @@ async function auditRoute(page: Page, contract: RouteContract): Promise<RouteAud
       const parts: string[] = [];
       let current: Element | null = element;
       while (current && current !== document.body && parts.length < 4) {
-        const parent = current.parentElement;
-        const siblings = parent ? Array.from(parent.children).filter(child => child.tagName === current!.tagName) : [];
+        const tagName = current.tagName;
+        const parent: Element | null = current.parentElement;
+        const siblings = parent ? Array.from(parent.children).filter(child => child.tagName === tagName) : [];
         const suffix = siblings.length > 1 ? `:nth-of-type(${siblings.indexOf(current) + 1})` : '';
         parts.unshift(`${current.tagName.toLowerCase()}${suffix}`);
         current = parent;

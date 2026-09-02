@@ -56,8 +56,8 @@ const SAVED_ALERTS = [
     // Keep fixture alerts fresh so opening the Dashboard does not implicitly
     // exercise Check Now; that has its own critical-action journey.
     lastCheckedAt: '2099-01-01T00:00:00.000Z',
-    lastSeenAccessions: [],
-    latestNewAccessions: [],
+    lastSeenAccessions: [] as string[],
+    latestNewAccessions: [] as string[],
     latestResultCount: 2,
     engineVersion: 5,
   },
@@ -70,8 +70,8 @@ const SAVED_ALERTS = [
     defaultForms: '',
     createdAt: '2026-04-02T12:00:00.000Z',
     lastCheckedAt: '2099-01-01T00:00:00.000Z',
-    lastSeenAccessions: [],
-    latestNewAccessions: [],
+    lastSeenAccessions: [] as string[],
+    latestNewAccessions: [] as string[],
     latestResultCount: 1,
     engineVersion: 5,
   },

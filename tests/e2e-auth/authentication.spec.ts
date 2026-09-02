@@ -36,6 +36,23 @@ const DEEP_PROTECTED_ROUTE = '/search';
  */
 const TEST_EMAIL = process.env.CLERK_TEST_EMAIL || '';
 
+/**
+ * What a failure message may say about the current URL. The hosted Clerk
+ * page carries the dev-instance browser token (__clerk_db_jwt) in its
+ * query, and this suite's messages land in PUBLIC Actions logs and
+ * failure artifacts — so messages describe the location (host, path, and
+ * the non-Clerk query keys) and never the raw URL.
+ *
+ * Module scope on purpose: both describe blocks below use it. Playwright
+ * specs are outside tsconfig's `include`, so a helper that is only visible
+ * to one block is a runtime ReferenceError in CI, not a compile error here.
+ */
+function describeLocation(url: string): string {
+  const parsed = new URL(url);
+  const keys = [...parsed.searchParams.keys()].filter(key => !key.startsWith('__clerk')).sort();
+  return `${parsed.host}${parsed.pathname}${keys.length ? `?${keys.join(',')}` : ''}${parsed.hash ? '#…' : ''}`;
+}
+
 test.describe('critical action: global.authentication', () => {
   test('the route inventory agrees with what the middleware protects', () => {
     // Cheap, but it is the premise every other test here rests on: if the
@@ -56,19 +73,6 @@ test.describe('critical action: global.authentication', () => {
    * session token (__clerk_db_jwt) in the query. Reading searchParams alone
    * reported "no target" for a flow that always carried one.
    */
-  /**
-   * What a failure message may say about the current URL. The hosted Clerk
-   * page carries the dev-instance browser token (__clerk_db_jwt) in its
-   * query, and this suite's messages land in PUBLIC Actions logs and
-   * failure artifacts — so messages describe the location (host, path, and
-   * the non-Clerk query keys) and never the raw URL.
-   */
-  function describeLocation(url: string): string {
-    const parsed = new URL(url);
-    const keys = [...parsed.searchParams.keys()].filter(key => !key.startsWith('__clerk')).sort();
-    return `${parsed.host}${parsed.pathname}${keys.length ? `?${keys.join(',')}` : ''}${parsed.hash ? '#…' : ''}`;
-  }
-
   function clerkReturnTarget(url: string): string {
     const parsed = new URL(url);
     const fromQuery = parsed.searchParams.get('redirect_url');
