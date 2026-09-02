@@ -53,10 +53,10 @@ export default function SectionMatrix({ sections, companies, data, onCellClick, 
               {companies.map(c => {
                 const cell = data[section]?.[c.ticker];
                 const cellLabel = cell?.present
-                  ? `Open ${section} disclosure for ${c.ticker}`
-                  : `${section} disclosure not found for ${c.ticker}`;
+                  ? `Open ${c.ticker}'s filing at ${section} (filing on record; section presence not verified)`
+                  : `No filing on record for ${c.ticker} to check ${section}`;
                 return (
-                  <td key={c.ticker} className={`sm-cell ${cell?.present ? 'present' : 'absent'}`} title={cell?.snippet || (cell?.present ? 'Section found' : 'Not found')}>
+                  <td key={c.ticker} className={`sm-cell ${cell?.present ? 'present' : 'absent'}`} title={cell?.snippet || (cell?.present ? 'Filing on record — section presence not verified' : 'No filing on record')}>
                     {cell?.present && onCellClick ? (
                       <button type="button" className="sm-cell-action" aria-label={cellLabel} onClick={() => onCellClick(section, c.ticker)}>
                         <CheckCircle2 size={16} className="sm-check" aria-hidden="true" />

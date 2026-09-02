@@ -452,7 +452,10 @@ export default function Benchmarking() {
           const formType = matrixFormType === 'S-1' ? 'S-1' : matrixFormType;
           const idx = sub.filings.recent.form.findIndex(f => f === formType || f.startsWith(formType));
           if (idx === -1) { data[section][ticker] = { present: false }; continue; }
-          data[section][ticker] = { present: true, snippet: `Found in ${sub.filings.recent.primaryDocument[idx]}` };
+          // This matrix reads filing METADATA only: a cell is marked when a
+          // filing of the form exists, not when the section was found in it.
+          // Section-level detection lives in the YoY Changes view.
+          data[section][ticker] = { present: true, snippet: `${formType} filing on record: ${sub.filings.recent.primaryDocument[idx]} — section presence not verified` };
         }
       }
       setMatrixData(data);
@@ -750,8 +753,11 @@ export default function Benchmarking() {
         }).join('\n\n');
         prompt = `Act as a senior accounting research analyst. Compare the following financial data across companies and fiscal years. Highlight key trends, year-over-year changes, and cross-company differences in margins, leverage, and cash flow quality:\n\n${parts}\n\nProvide a concise 3-paragraph analysis.`;
       } else {
-        // Text compare fallback just in case
-        prompt = `Act as an SEC compliance expert. Compare the following "${comparisonLabel}" disclosure excerpts:\n\n${columns.map(col => `${colTicker(col)}: (text here)`).join('\n\n')}\n\nProvide 3 concise paragraphs.`;
+        // The other views hold no comparable evidence for the model. The
+        // old fallback sent literal "(text here)" placeholders and produced
+        // a confident three-paragraph comparison of nothing.
+        setAiAnalysisError('The financial summary reads the Financials view. Switch to Financials and generate it there.');
+        return;
       }
       const response = await aiSummarize(prompt, { throwOnError: true });
       if (!response.trim()) throw new Error('The AI service returned an empty comparison.');
@@ -1022,7 +1028,7 @@ Keep it crisp and practical.`;
               <Type size={16} /> Text Redline
             </button>
             <button className={`toggle-view-btn ${viewMode === 'audit-matrix' ? 'active' : ''}`} onClick={() => setViewMode('audit-matrix')}>
-              <LayoutGrid size={16} /> Audit Matrix
+              <LayoutGrid size={16} /> Filing Availability
             </button>
             <button className={`toggle-view-btn ${viewMode === 'yoy-changes' ? 'active' : ''}`} onClick={() => setViewMode('yoy-changes')}>
               <Type size={16} /> YoY Changes
@@ -1327,13 +1333,13 @@ Keep it crisp and practical.`;
           )}
           <div style={{ marginTop: '16px' }}><ResponsibleAIBanner /></div>
         </div>
-      ) : (
+      ) : viewMode === 'financials' ? (
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
           <button className="primary-btn sm" onClick={handleAiCompare} disabled={columns.length < 2}>
             <Sparkles size={16} /> Generate Financial Summary
           </button>
         </div>
-      )}
+      ) : null}
       
       {selectedTickers.some(t => unavailablePeers[t]) && (
         <div role="status" style={{ padding: '9px 12px', marginBottom: '10px', borderRadius: '8px', fontSize: '0.8rem', color: 'var(--text-secondary)', background: 'color-mix(in srgb, var(--status-warning) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--status-warning) 30%, transparent)' }}>
@@ -1833,6 +1839,9 @@ Keep it crisp and practical.`;
               {(SECTION_LISTS[matrixFormType] || ALL_SECTIONS).length} sections &middot; {selectedTickers.length} companies
             </span>
           </div>
+          <p role="note" style={{ margin: 0, padding: '10px 14px', borderRadius: '4px', fontSize: '0.8rem', lineHeight: 1.45, color: 'var(--text-secondary)', background: 'color-mix(in srgb, var(--status-warning) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--status-warning) 30%, transparent)' }}>
+            A marked cell means the company has a {matrixFormType} filing on record. It does not verify that the section appears in that filing — no document is read here. For section-level detection use the YoY Changes view, which slices each filing at its Item headings.
+          </p>
 
           <SectionMatrix
             sections={SECTION_LISTS[matrixFormType] || ALL_SECTIONS}

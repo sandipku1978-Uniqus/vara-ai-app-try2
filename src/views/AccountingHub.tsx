@@ -701,7 +701,13 @@ Write a concise memo with:
                 {aiResponse && (
                   <div className="ai-response-box">
                     <div className="ai-avatar">AI</div>
-                    <div className="ai-text md-content" dangerouslySetInnerHTML={{ __html: renderMarkdown(aiResponse) }} />
+                    <div style={{ minWidth: 0, flex: 1 }}>
+                      <p role="note" style={{ margin: '0 0 10px', padding: '8px 12px', borderRadius: '4px', fontSize: '0.78rem', lineHeight: 1.45, color: 'var(--text-secondary)', background: 'color-mix(in srgb, var(--status-warning) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--status-warning) 30%, transparent)' }}>
+                        Model recall, not a grounded answer: this reply is generated from the model&apos;s training, not from Codification text, and any paragraph citations it offers are unverified. Confirm every reference in the{' '}
+                        <a href={FASB_CODIFICATION_URL} target="_blank" rel="noopener noreferrer">FASB Codification</a> before relying on it.
+                      </p>
+                      <div className="ai-text md-content" dangerouslySetInnerHTML={{ __html: renderMarkdown(aiResponse) }} />
+                    </div>
                   </div>
                 )}
 

@@ -246,7 +246,7 @@ export const UI_PAGE_CONTRACTS = [
       { id: 'accounting-standards.save-alert-or-memo', interaction: 'Save the current research alert or generate a memo from loaded results.', expectedOutcome: 'The alert preserves the research criteria, while the memo is generated only from the loaded evidence.' },
       { id: 'accounting-standards.open-topic-source', interaction: 'Filter standards topics and activate a topic or FASB source link.', expectedOutcome: 'The chosen official standards reference opens and is not represented as locally reproduced authoritative text.' },
       { id: 'accounting-standards.manage-checklist', interaction: 'Add, edit, complete, or delete a checklist item.', expectedOutcome: 'Only the requested browser-local checklist item changes and its saved state survives a view switch.' },
-      { id: 'accounting-standards.ask-guidance', interaction: 'Enter a technical accounting question and submit it.', expectedOutcome: 'Grounded guidance is displayed with appropriate source context, or a specific retryable failure appears.' },
+      { id: 'accounting-standards.ask-guidance', interaction: 'Enter a technical accounting question and submit it.', expectedOutcome: 'A reply labeled as model recall (not Codification-grounded) is displayed with a link to the FASB Codification for verification, or a specific retryable failure appears.' },
     ],
   },
   {

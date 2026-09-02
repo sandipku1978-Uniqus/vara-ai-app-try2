@@ -52,7 +52,7 @@ test.describe('comparison and governance interaction evidence', () => {
     await waitForBenchmarkColumns(page, '2 columns: AAPL FY2025 · NVDA FY2025');
     await expect(companyBadge(page, 'MSFT')).toHaveCount(0);
 
-    await page.getByRole('button', { name: 'Audit Matrix', exact: true }).click();
+    await page.getByRole('button', { name: 'Filing Availability', exact: true }).click();
     const matrix = page.getByRole('table', { name: 'Disclosure section availability by company' });
     await expect(matrix).toBeVisible({ timeout: 20_000 });
     await expect(matrix.getByRole('columnheader', { name: 'AAPL', exact: true })).toHaveCount(1);
@@ -78,7 +78,7 @@ test.describe('comparison and governance interaction evidence', () => {
     await expect(page.getByText(/Comparing Revenue recognition.*across: AAPL, MSFT/i)).toBeVisible({ timeout: 20_000 });
     await expect(page.getByText(preserved, { exact: true })).toBeVisible();
 
-    await page.getByRole('button', { name: 'Audit Matrix', exact: true }).click();
+    await page.getByRole('button', { name: 'Filing Availability', exact: true }).click();
     await expect(page.getByRole('table', { name: 'Disclosure section availability by company' })).toBeVisible({ timeout: 20_000 });
     await expect(page.getByText(preserved, { exact: true })).toBeVisible();
 
