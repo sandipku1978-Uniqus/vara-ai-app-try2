@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
@@ -48,6 +48,18 @@ describe('privileged workflow trust boundaries', () => {
     expect(authConfig).not.toMatch(/trace:\s*['"](?:on|retain-on-failure|on-first-retry)['"]/);
     expect(lifecycle).toContain('path: ${{ runner.temp }}/urc-playwright-auth/report');
     expect(lifecycle).not.toMatch(/path:.*(?:results|trace|storage)/i);
+  });
+
+  it('never interpolates a raw page URL into a credentialed-suite failure message', () => {
+    // The hosted Clerk URL carries the dev-instance browser token in its
+    // query; these messages are printed into public Actions logs and
+    // failure artifacts. Messages must go through describeLocation().
+    const specs = readdirSync('tests/e2e-auth').filter(name => name.endsWith('.spec.ts'));
+    expect(specs.length).toBeGreaterThan(0);
+    for (const name of specs) {
+      const source = readFileSync(`tests/e2e-auth/${name}`, 'utf8');
+      expect(source, `${name} interpolates page.url() into a message`).not.toMatch(/\$\{\s*page\.url\(\)\s*\}/);
+    }
   });
 
   it('runs production data jobs only from trusted revisions with inert installs', () => {
