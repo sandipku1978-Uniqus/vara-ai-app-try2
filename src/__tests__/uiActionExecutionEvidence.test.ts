@@ -100,7 +100,7 @@ describe('runtime UI action execution evidence', () => {
 
     expect(browser.pass, browser.problems.join('\n')).toBe(true);
     expect(browser.expectedActionCount).toBe(132);
-    expect(browser.expectedTestReferenceCount).toBe(147);
+    expect(browser.expectedTestReferenceCount).toBe(148);
     expect(browser.passedActionCount).toBe(browser.expectedActionCount);
     expect(browser.expectedContentCheckCount).toBe(1);
     expect(browser.passedContentCheckCount).toBe(1);

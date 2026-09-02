@@ -244,10 +244,10 @@ export const UI_PAGE_CONTRACTS = [
     actions: [
       { id: 'accounting-standards.switch-section', interaction: 'Switch among Research, Standards, Checklist, and AI guidance.', expectedOutcome: 'The selected accounting workspace becomes active without clearing state held by the other workspaces.' },
       { id: 'accounting-standards.run-disclosure-search', interaction: 'Choose semantic or Boolean mode, enter a disclosure query, and submit.', expectedOutcome: 'Matching filing disclosures are returned under the selected search mode with source-identifying context.' },
-      { id: 'accounting-standards.save-alert-or-memo', interaction: 'Save the current research alert or generate a memo from loaded results.', expectedOutcome: 'The alert preserves the research criteria, while the memo is generated only from the loaded evidence.' },
+      { id: 'accounting-standards.save-alert-or-memo', interaction: 'Save the current research alert or generate a memo from loaded results.', expectedOutcome: 'The alert preserves the research criteria, while the memo is built only from the loaded filing metadata and matched snippets, is labeled as such, and asserts no disclosure-wording or adoption trend the rows cannot support.' },
       { id: 'accounting-standards.open-topic-source', interaction: 'Filter standards topics and activate a topic or FASB source link.', expectedOutcome: 'The chosen official standards reference opens and is not represented as locally reproduced authoritative text.' },
       { id: 'accounting-standards.manage-checklist', interaction: 'Add, edit, complete, or delete a checklist item.', expectedOutcome: 'Only the requested browser-local checklist item changes and its saved state survives a view switch.' },
-      { id: 'accounting-standards.ask-guidance', interaction: 'Enter a technical accounting question and submit it.', expectedOutcome: 'A reply labeled as model recall (not Codification-grounded) is displayed with a link to the FASB Codification for verification, or a specific retryable failure appears.' },
+      { id: 'accounting-standards.ask-guidance', interaction: 'Optionally choose a Codification topic, enter a technical accounting question, and submit it.', expectedOutcome: 'A reply is displayed labeled either as grounded in the curated framework knowledge base, with [n] citations that resolve to the listed excerpts, or as model recall (not Codification-grounded); both link to the FASB Codification for verification, or a specific retryable failure appears.' },
     ],
   },
   {

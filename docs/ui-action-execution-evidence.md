@@ -33,7 +33,7 @@ test; this joins development-only gallery coverage to the production run.
 
 ## CI split
 
-The regular browser job validates 131 actions / 145 exact test references plus
+The regular browser job validates 132 actions / 148 exact test references plus
 1 content contract / 1 exact reference from the development-gallery and
 production-build runs. The protected-main Clerk lifecycle validates the
 remaining 3 actions / 4 exact test references. The

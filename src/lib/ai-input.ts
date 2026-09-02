@@ -9,11 +9,22 @@ const BODY_READ_TIMEOUT_MS = 10_000;
 
 export type ChatMessageInput = { role: 'user' | 'assistant'; content: string };
 
+/**
+ * Asks the route to answer only from relevance-selected excerpts of the
+ * curated framework knowledge base (Accounting Hub "Ask AI"). `topic` is an
+ * optional curated ASC topic number ("842") that steers excerpt selection.
+ */
+export interface ChatGroundingInput {
+  source: 'framework-kb';
+  topic: string | null;
+}
+
 export interface ValidatedChatInput {
   prompt: string;
   messages: ChatMessageInput[];
   maxTokens: number;
   frameworks: Array<'IFRS' | 'Ind AS'>;
+  grounding: ChatGroundingInput | null;
 }
 
 export interface FilingContextInput {
@@ -169,9 +180,31 @@ export async function validateChatRequest(request: Request): Promise<ValidationR
   const maxTokensValue = Number(body.maxTokens ?? 4096);
   const maxTokens = Math.min(Math.max(Number.isFinite(maxTokensValue) ? Math.floor(maxTokensValue) : 4096, 1), 16_384);
 
+  let grounding: ChatGroundingInput | null = null;
+  if (body.grounding !== undefined && body.grounding !== null) {
+    const rawGrounding = asRecord(body.grounding);
+    if (!rawGrounding || rawGrounding.source !== 'framework-kb') {
+      return badRequest('Unsupported grounding source.');
+    }
+    const rawTopic = rawGrounding.topic;
+    if (rawTopic !== undefined && rawTopic !== null && (typeof rawTopic !== 'string' || !/^\d{3}$/.test(rawTopic))) {
+      return badRequest('Grounding topic must be a three-digit ASC topic number.');
+    }
+    // A grounded answer is a single question against selected excerpts: a
+    // conversation would carry earlier unguarded turns, and the framework
+    // flag would append the entire knowledge base, defeating the selection.
+    if (!prompt || messages.length > 0) {
+      return badRequest('Grounded requests take a single prompt and no conversation messages.');
+    }
+    if (frameworks.length > 0) {
+      return badRequest('Grounded requests select their own knowledge base excerpts; omit frameworks.');
+    }
+    grounding = { source: 'framework-kb', topic: typeof rawTopic === 'string' ? rawTopic : null };
+  }
+
   // Claude Sonnet 5 rejects non-default sampling parameters. A legacy
   // `temperature` field is tolerated for older clients but has no effect.
-  return { value: { prompt, messages, maxTokens, frameworks } };
+  return { value: { prompt, messages, maxTokens, frameworks, grounding } };
 }
 
 export async function validateCompareRequest(request: Request): Promise<ValidationResult<ValidatedCompareInput>> {

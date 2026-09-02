@@ -145,7 +145,10 @@ export const UI_ACTION_COVERAGE: Record<string, UiActionEvidence> = {
   'accounting-standards.save-alert-or-memo': { kind: 'automated-full', specs: [{ file: 'tests/e2e/reference-page-interactions.spec.ts', title: 'accounting-standards.save-alert-or-memo preserves criteria and grounds the memo in loaded rows' }] },
   'accounting-standards.open-topic-source': { kind: 'automated-full', specs: [{ file: 'tests/e2e/external-source-links.spec.ts', title: 'global.external-source-links names FASB and framework sources by their standard' }] },
   'accounting-standards.manage-checklist': { kind: 'automated-full', specs: [{ file: 'tests/e2e/reference-page-interactions.spec.ts', title: 'accounting-standards.manage-checklist changes only the chosen local item and survives a view switch' }] },
-  'accounting-standards.ask-guidance': { kind: 'automated-full', specs: [{ file: 'tests/e2e/reference-page-interactions.spec.ts', title: 'accounting-standards.ask-guidance submits the exact question and labels source-oriented guidance' }] },
+  'accounting-standards.ask-guidance': { kind: 'automated-full', specs: [
+    { file: 'tests/e2e/reference-page-interactions.spec.ts', title: 'accounting-standards.ask-guidance renders a grounded reply whose citations resolve to the listed excerpts' },
+    { file: 'tests/e2e/reference-page-interactions.spec.ts', title: 'accounting-standards.ask-guidance labels an uncovered question as model recall with a Codification link' },
+  ] },
   'securities-regulation.choose-source': { kind: 'automated-full', specs: [{ file: 'tests/e2e/reference-page-interactions.spec.ts', title: 'securities-regulation.choose-source and securities-regulation.run-search keep category, query, and results aligned' }] },
   'securities-regulation.run-search': { kind: 'automated-full', specs: [{ file: 'tests/e2e/reference-page-interactions.spec.ts', title: 'securities-regulation.choose-source and securities-regulation.run-search keep category, query, and results aligned' }] },
   'securities-regulation.open-source': { kind: 'automated-full', specs: [{ file: 'tests/e2e/external-source-links.spec.ts', title: 'global.external-source-links names each scraped SEC index row by its document' }] },

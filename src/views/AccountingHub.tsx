@@ -6,8 +6,10 @@ import { useRouter } from 'next/navigation';
 import { BookOpen, CheckSquare, Sparkles, Search, ChevronRight, Pencil, Trash2, Loader2, BellRing, Building2 } from 'lucide-react';
 import DataTable, { type ColumnDef } from '../components/tables/DataTable';
 import SearchFilterBar, { defaultSearchFilters, type SearchFilters } from '../components/filters/SearchFilterBar';
-import { aiAscLookup, aiSummarize } from '../services/aiApi';
+import { aiAscLookup, aiSummarize, type AscGuidanceExcerpt, type AscGuidanceResult } from '../services/aiApi';
 import { buildSearchTrendSummary, executeFilingResearchSearch, type FilingResearchResult, type ResearchSearchMode } from '../services/filingResearch';
+import { buildAccountingResearchMemoPrompt } from '../lib/systemPrompts';
+import { linkifyCitationMarkers, parseCitationMarkers } from '../lib/citation-markers';
 import SearchIntegrityNotice, { useSearchIntegrity } from '../components/research/SearchIntegrityNotice';
 import ResponsibleAIBanner from '../components/ResponsibleAIBanner';
 import { renderMarkdown } from '../utils/markdownRenderer';
@@ -16,6 +18,7 @@ import { hasResearchSearchCriteria } from '../services/researchSessions';
 import { describeBooleanQueryIssue } from '../utils/booleanSearch';
 import { scopedStorageKey } from '../services/storageNamespace';
 import {
+  CURATED_ASC_TOPICS,
   FASB_CODIFICATION_URL,
   ascTopicUrl,
   filterCuratedAscTopics,
@@ -32,6 +35,15 @@ const ADOPTION_SEARCHES = [
 const RESEARCH_DEFAULT_FORMS = '10-K,10-Q,20-F,8-K';
 const CHECKLIST_STORAGE_KEY = 'urc.accounting-review-checklist.v1';
 interface ChecklistItem { id: number; text: string; done: boolean }
+
+interface AiRendering {
+  grounded: boolean;
+  html: string;
+  excerpts: AscGuidanceExcerpt[];
+  cited: number[];
+  unresolved: number[];
+  hasMarkers: boolean;
+}
 
 const DEFAULT_CHECKLIST_ITEMS: ChecklistItem[] = [
   { id: 1, text: 'Confirm early adopters disclose transition method and date of adoption', done: false },
@@ -73,7 +85,8 @@ export default function AccountingHub() {
   const [activeTab, setActiveTab] = useState<'standards' | 'checklist' | 'research' | 'ai'>('research');
 
   const [aiQuery, setAiQuery] = useState('');
-  const [aiResponse, setAiResponse] = useState('');
+  const [aiTopic, setAiTopic] = useState('');
+  const [aiResult, setAiResult] = useState<AscGuidanceResult | null>(null);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiError, setAiError] = useState('');
 
@@ -105,6 +118,27 @@ export default function AccountingHub() {
     () => filterCuratedAscTopics(standardsQuery),
     [standardsQuery]
   );
+
+  // Resolve the reply's [n] markers against the excerpts the server reports
+  // it gave the model. A grounded reply with no markers, or with markers that
+  // name excerpts it never received, is flagged rather than shown as cited.
+  const aiRendering = useMemo<AiRendering | null>(() => {
+    if (!aiResult) return null;
+    const grounded = aiResult.grounding.coverage === 'grounded';
+    const excerpts = grounded ? aiResult.grounding.excerpts : [];
+    const markers = parseCitationMarkers(aiResult.text, excerpts.length);
+    const html = grounded
+      ? linkifyCitationMarkers(renderMarkdown(aiResult.text), excerpts.length)
+      : renderMarkdown(aiResult.text);
+    return {
+      grounded,
+      html,
+      excerpts,
+      cited: markers.cited,
+      unresolved: grounded ? markers.unresolved : [],
+      hasMarkers: markers.hasMarkers,
+    };
+  }, [aiResult]);
 
   useEffect(() => {
     const storageKey = scopedStorageKey(CHECKLIST_STORAGE_KEY);
@@ -155,12 +189,12 @@ export default function AccountingHub() {
   const submitAscLookup = async () => {
     if (!aiQuery.trim()) return;
     setIsAiLoading(true);
-    setAiResponse('');
+    setAiResult(null);
     setAiError('');
     try {
-      const response = await aiAscLookup(aiQuery);
-      if (!response.trim()) throw new Error('The AI service returned an empty response.');
-      setAiResponse(response);
+      const result = await aiAscLookup(aiQuery, aiTopic || null);
+      if (!result.text.trim()) throw new Error('The AI service returned an empty response.');
+      setAiResult(result);
     } catch (error) {
       console.error('ASC lookup error:', error);
       setAiError('Technical accounting guidance could not be generated. No answer was saved; retry when the AI service is available.');
@@ -267,22 +301,20 @@ export default function AccountingHub() {
     setResearchMemo('');
     try {
       const statsSummary = await buildSearchTrendSummary(researchResults.slice(0, 20), researchQuery, researchFilters);
+      // The rows are EFTS metadata plus, at most, a short matched snippet; the
+      // prompt confines the memo to what those rows can support and forbids
+      // the wording-trend and adoption claims that would have to be invented.
+      const memoRows = researchResults.slice(0, 12).map(result => ({
+        fileDate: result.fileDate,
+        entityName: result.entityName,
+        formType: result.formType,
+        auditor: result.auditor || '',
+        accessionNumber: result.accessionNumber,
+        matchSnippet: result.matchSnippet || '',
+        matchReason: result.matchReason || '',
+      }));
       const aiResponse = await aiSummarize(
-        `You are a senior accounting research analyst preparing a memo on early adoption and disclosure practice.
-
-Search summary:
-${statsSummary}
-
-Results:
-${researchResults
-  .slice(0, 12)
-  .map(result => `- ${result.fileDate} | ${result.entityName} | ${result.formType} | Auditor: ${result.auditor || 'Unknown'} | ${result.description || 'No description'}`)
-  .join('\n')}
-
-Write a concise memo with:
-1. Which companies appear to be early or clearer adopters.
-2. Common disclosure approaches or accounting policy wording trends.
-3. What a reviewer should dig into next, including SEC comments or auditor filters if relevant.`,
+        buildAccountingResearchMemoPrompt(statsSummary, memoRows, researchQuery),
         { throwOnError: true }
       );
 
@@ -387,7 +419,7 @@ Write a concise memo with:
               <p className="text-sm mt-1">Use Boolean or proximity search to find early filers, then narrow by auditor, SIC, form type, and date range.</p>
             </div>
             <div className="update-item mt-4">
-              <p className="text-sm mt-1">Generate a short memo from the search results so the team does not need to infer trends manually from a result list.</p>
+              <p className="text-sm mt-1">Generate a short memo that inventories the matched filings (forms, dates, issuers, auditors) and quotes any matched text. It does not infer disclosure wording trends, which result metadata cannot support.</p>
             </div>
           </div>
         </aside>
@@ -537,6 +569,9 @@ Write a concise memo with:
                   ) : (
                     <div className="md-content" dangerouslySetInnerHTML={{ __html: renderMarkdown(researchMemo) }} />
                   )}
+                  <p role="note" className="memo-scope-note">
+                    Built from filing metadata and matched search snippets only. No disclosure text was analyzed, so this memo makes no claims about policy wording, adoption method, or wording trends.
+                  </p>
                   <div style={{ marginTop: '14px' }}>
                     <ResponsibleAIBanner />
                   </div>
@@ -687,7 +722,7 @@ Write a concise memo with:
               <div className="ai-intro text-center py-8">
                 <Sparkles size={24} style={{ color: 'var(--accent-primary)', margin: '0 auto 12px' }} />
                 <h2>Ask AI for Accounting Guidance</h2>
-                <p className="text-muted max-w-lg mx-auto">Describe the transaction, accounting issue, or disclosure question and get a fast ASC-oriented starting point.</p>
+                <p className="text-muted max-w-lg mx-auto">Ask a technical accounting question. When the curated framework knowledge base covers the topic, the reply is grounded in its excerpts and cites them; otherwise it is labeled as unverified model recall.</p>
               </div>
 
               <div className="ai-chat-area">
@@ -698,15 +733,54 @@ Write a concise memo with:
                   </div>
                 )}
 
-                {aiResponse && (
-                  <div className="ai-response-box">
+                {aiRendering && (
+                  <div className="ai-response-box" data-grounding={aiRendering.grounded ? 'framework-kb' : 'model-recall'}>
                     <div className="ai-avatar">AI</div>
                     <div style={{ minWidth: 0, flex: 1 }}>
-                      <p role="note" style={{ margin: '0 0 10px', padding: '8px 12px', borderRadius: '4px', fontSize: '0.78rem', lineHeight: 1.45, color: 'var(--text-secondary)', background: 'color-mix(in srgb, var(--status-warning) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--status-warning) 30%, transparent)' }}>
-                        Model recall, not a grounded answer: this reply is generated from the model&apos;s training, not from Codification text, and any paragraph citations it offers are unverified. Confirm every reference in the{' '}
-                        <a href={FASB_CODIFICATION_URL} target="_blank" rel="noopener noreferrer">FASB Codification</a> before relying on it.
-                      </p>
-                      <div className="ai-text md-content" dangerouslySetInnerHTML={{ __html: renderMarkdown(aiResponse) }} />
+                      {aiRendering.grounded ? (
+                        <p role="note" className="ai-grounding-note ai-grounding-note--grounded">
+                          Grounded in the curated framework knowledge base: each [n] marker cites one of the excerpts listed below this reply. Those excerpts are cross-framework summaries, not Codification text, so confirm every reference in the{' '}
+                          <a href={FASB_CODIFICATION_URL} target="_blank" rel="noopener noreferrer">FASB Codification</a> before relying on it.
+                        </p>
+                      ) : (
+                        <p role="note" className="ai-grounding-note ai-grounding-note--recall">
+                          Model recall, not a grounded answer: the curated knowledge base has no excerpt covering this question, so this reply is generated from the model&apos;s training, not from Codification text, and any paragraph citations it offers are unverified. Confirm every reference in the{' '}
+                          <a href={FASB_CODIFICATION_URL} target="_blank" rel="noopener noreferrer">FASB Codification</a> before relying on it.
+                        </p>
+                      )}
+                      {aiRendering.grounded && !aiRendering.hasMarkers && (
+                        <p role="status" className="ai-citation-warning">
+                          This reply cites none of the provided excerpts; treat every statement in it as unverified.
+                        </p>
+                      )}
+                      {aiRendering.unresolved.length > 0 && (
+                        <p role="status" className="ai-citation-warning">
+                          Citation marker{aiRendering.unresolved.length > 1 ? 's' : ''} {aiRendering.unresolved.map(n => `[${n}]`).join(', ')} {aiRendering.unresolved.length > 1 ? 'do' : 'does'} not match any excerpt provided to the model.
+                        </p>
+                      )}
+                      <div className="ai-text md-content" dangerouslySetInnerHTML={{ __html: aiRendering.html }} />
+                      {aiRendering.grounded && (
+                        <section className="ai-excerpts" aria-labelledby="asc-excerpts-heading">
+                          <h4 id="asc-excerpts-heading">Knowledge base excerpts provided to the model</h4>
+                          <ol className="ai-excerpt-list">
+                            {aiRendering.excerpts.map(excerpt => {
+                              const cited = aiRendering.cited.includes(excerpt.n);
+                              return (
+                                <li key={excerpt.n} id={`asc-excerpt-${excerpt.n}`} className={`ai-excerpt${cited ? ' ai-excerpt--cited' : ''}`}>
+                                  <div className="ai-excerpt-source">
+                                    <span className="ai-excerpt-ref">[{excerpt.n}]</span>
+                                    <strong>{excerpt.id} — {excerpt.title}</strong>
+                                    <span className="ai-excerpt-meta">
+                                      equivalent reference {excerpt.reference} · {excerpt.framework} knowledge base · {cited ? 'cited in this reply' : 'provided, not cited'}
+                                    </span>
+                                  </div>
+                                  <p className="ai-excerpt-text">{excerpt.text}</p>
+                                </li>
+                              );
+                            })}
+                          </ol>
+                        </section>
+                      )}
                     </div>
                   </div>
                 )}
@@ -719,6 +793,18 @@ Write a concise memo with:
               </div>
 
               <form className="ai-input-form" onSubmit={handleAiSubmit}>
+                <select
+                  className="ai-input ai-topic-select"
+                  aria-label="Codification topic (optional)"
+                  value={aiTopic}
+                  onChange={event => setAiTopic(event.target.value)}
+                  disabled={isAiLoading}
+                >
+                  <option value="">Any topic</option>
+                  {CURATED_ASC_TOPICS.map(topic => (
+                    <option key={topic.id} value={topic.id}>ASC {topic.id} — {topic.name}</option>
+                  ))}
+                </select>
                 <input
                   type="text"
                   className="ai-input"

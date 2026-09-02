@@ -29,6 +29,12 @@ async function handlePost(req: Request) {
 
     const validation = await validateChatRequest(req);
     if (validation.response) return validation.response;
+    // Excerpt grounding lives in /api/claude, which builds the grounded system
+    // prompt and reports the excerpts; silently answering here would return an
+    // ungrounded reply to a caller that asked for a grounded one.
+    if (validation.value.grounding) {
+      return Response.json({ error: 'Grounded requests must use /api/claude.' }, { status: 400 });
+    }
     const { prompt, messages, maxTokens, frameworks } = validation.value;
     const isComplex = frameworks.length > 0;
     const effectiveMaxTokens = isComplex ? 8192 : maxTokens;

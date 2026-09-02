@@ -1,6 +1,12 @@
 import { cacheService } from '../../../lib/cache';
 import { createAnthropicClient, isAnthropicTimeout } from '../../../lib/ai-runtime';
-import { SEC_RESEARCH_SYSTEM_PROMPT } from '../../../lib/systemPrompts';
+import {
+  SEC_RESEARCH_SYSTEM_PROMPT,
+  buildAscLookupPrompt,
+  buildGroundedAscSystemPrompt,
+  buildGroundedAscUserPrompt,
+} from '../../../lib/systemPrompts';
+import { selectFrameworkExcerpts } from '../../../lib/framework-excerpts';
 import {
   acquireAiConcurrency,
   checkAiRateLimit,
@@ -31,7 +37,7 @@ async function handlePost(req: Request) {
 
     const validation = await validateChatRequest(req);
     if (validation.response) return validation.response;
-    const { prompt, messages, maxTokens, frameworks } = validation.value;
+    const { prompt, messages, maxTokens, frameworks, grounding } = validation.value;
     const isComplex = frameworks.length > 0;
     const effectiveMaxTokens = isComplex ? 8192 : maxTokens;
 
@@ -44,18 +50,40 @@ async function handlePost(req: Request) {
       return Response.json({ error: 'AI service is not configured.' }, { status: 503 });
     }
 
+    // Grounded Accounting Hub questions: pick the knowledge base excerpts that
+    // bear on the question and put them, with the citation contract, in the
+    // system prompt the model actually receives. When nothing in the
+    // knowledge base is relevant the request falls through to the labeled
+    // model-recall prompt — the two paths are never blended, and the reply
+    // reports which one it took so the UI can label it truthfully.
+    const selection = grounding ? selectFrameworkExcerpts(prompt, grounding.topic) : null;
+    const groundedExcerpts = selection?.coverage === 'grounded' ? selection.excerpts : null;
+    const systemPromptText = groundedExcerpts ? buildGroundedAscSystemPrompt(groundedExcerpts) : SEC_RESEARCH_SYSTEM_PROMPT;
+    const groundingReport = grounding && selection
+      ? { source: grounding.source, coverage: selection.coverage, excerpts: selection.excerpts }
+      : null;
+
     // 1. Cache key must cover everything that changes the answer: frameworks
     //    alter both the injected KB context and the model config (isComplex),
     //    so omitting them served one framework's cached answer to another.
-    //    Hash the EFFECTIVE config, not the raw request values.
-    const payloadSignature = JSON.stringify({ prompt, messages, frameworks: [...frameworks].sort() });
+    //    Hash the EFFECTIVE config, not the raw request values. The selected
+    //    excerpts are inputs too: an edited knowledge base must miss the cache
+    //    rather than serve an answer whose [n] markers point at old text.
+    const payloadSignature = JSON.stringify({
+      prompt,
+      messages,
+      frameworks: [...frameworks].sort(),
+      grounding: groundingReport
+        ? { topic: grounding?.topic ?? null, excerpts: groundingReport.excerpts.map(excerpt => [excerpt.n, excerpt.id, excerpt.text]) }
+        : null,
+    });
     const hash = crypto.createHash('sha256').update(`${access.identity.cacheScope}:${payloadSignature}-${effectiveMaxTokens}`).digest('hex');
     const cacheKey = `ai-cache:${hash}`;
 
     // 2. Check Vercel KV Cache
     const cachedResponse = await cacheService.get<string>(cacheKey);
     if (cachedResponse) {
-      return new Response(JSON.stringify({ text: cachedResponse, cached: true }), {
+      return new Response(JSON.stringify({ text: cachedResponse, cached: true, ...(groundingReport ? { grounding: groundingReport } : {}) }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' }
       });
@@ -63,7 +91,10 @@ async function handlePost(req: Request) {
 
     const kbContext = buildFrameworkContext(frameworks);
 
-    const apiMessages = messages.length > 0 ? messages.map(message => ({ ...message })) : [{ role: 'user' as const, content: prompt }];
+    const userContent = grounding
+      ? (groundedExcerpts ? buildGroundedAscUserPrompt(prompt) : buildAscLookupPrompt(prompt))
+      : prompt;
+    const apiMessages = messages.length > 0 ? messages.map(message => ({ ...message })) : [{ role: 'user' as const, content: userContent }];
     if (kbContext && apiMessages.length > 0) {
       // Labeled as reference material so the model can't cite the static KB
       // as if it came from a filing.
@@ -75,7 +106,7 @@ async function handlePost(req: Request) {
     const budget = await reserveAiTokenBudget(
       access.identity,
       estimateModelTokenReservation(
-        SEC_RESEARCH_SYSTEM_PROMPT.length + apiMessages.reduce((total, message) => total + message.content.length, 0),
+        systemPromptText.length + apiMessages.reduce((total, message) => total + message.content.length, 0),
         effectiveMaxTokens
       )
     );
@@ -91,11 +122,13 @@ async function handlePost(req: Request) {
           // Sonnet 5 rejects budget_tokens and non-default temperature (400):
           // adaptive thinking replaces the fixed budget; simple queries stay thinking-off
           thinking: isComplex ? { type: 'adaptive' } : { type: 'disabled' },
-          // Prompt caching: system prompt cached at Anthropic for 90% input token discount
+          // Prompt caching: the static research prompt is cached at Anthropic
+          // for a 90% input token discount. The grounded prompt changes with
+          // every question's excerpt set, so caching it would only add entries.
           system: [{
             type: 'text',
-            text: SEC_RESEARCH_SYSTEM_PROMPT,
-            cache_control: { type: 'ephemeral' },
+            text: systemPromptText,
+            ...(groundedExcerpts ? {} : { cache_control: { type: 'ephemeral' as const } }),
           }],
           messages: apiMessages,
         }, { signal: req.signal });
@@ -114,7 +147,7 @@ async function handlePost(req: Request) {
     // a fictitious request temperature to select or partition the cache.
     await cacheService.set(cacheKey, textPayload, { ex: 3600 });
 
-    return new Response(JSON.stringify({ text: textPayload, cached: false }), {
+    return new Response(JSON.stringify({ text: textPayload, cached: false, ...(groundingReport ? { grounding: groundingReport } : {}) }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' }
     });
