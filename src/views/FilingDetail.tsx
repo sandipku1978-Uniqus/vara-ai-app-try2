@@ -13,6 +13,8 @@ import { createPrintWindow, renderCleanPrintView } from '../services/filingExpor
 import { buildDisclosureDiff, downloadTextFile, extractTablesFromHtml, tablesToCsv, type DisclosureDiffSummary } from '../services/filingDetailTools';
 import { aiSummarizeRedline } from '../services/aiApi';
 import { TextDiffViewer } from '../components/research/TextDiffViewer';
+import CiteButton from '../components/memo/CiteButton';
+import { buildRedlineExcerpt, passageKey, type MemoCitation } from '../services/memoTray';
 import { buildHighlightTerms } from '../services/searchAssist';
 import { clearDocumentHighlights, highlightDocumentSearchTerms } from '../services/filingHighlights';
 import type { ResearchSearchMode } from '../services/filingResearch';
@@ -652,6 +654,63 @@ export default function FilingDetail() {
   const handleRemoveAnnotation = useCallback((annotationId: string) => {
     setAnnotations(prev => prev.filter(note => note.id !== annotationId));
   }, []);
+
+  // Provenance the memo tray requires before anything on this page can be
+  // cited: a real SEC document URL plus the issuer, form, and filing date
+  // (from the route or SEC metadata). Until all of it is known the cite
+  // controls explain why rather than storing a citation with blanks in it.
+  const citationProvenance = useMemo(() => {
+    const company = (filingMeta.companyName || '').trim();
+    const form = (filingMeta.formType || '').trim();
+    const fileDate = (filingMeta.filingDate || '').trim();
+    if (!isValidFilingId || !secUrl || !company || !form || !fileDate) return null;
+    return { kind: 'filing' as const, cik, accessionNumber: accession, company, form, fileDate, sourceUrl: secUrl };
+  }, [accession, cik, filingMeta.companyName, filingMeta.filingDate, filingMeta.formType, isValidFilingId, secUrl]);
+  const citationUnavailableReason = !isValidFilingId || !secUrl
+    ? 'Locating the official SEC document before it can be cited'
+    : 'Resolving the filing’s issuer, form, and date before it can be cited';
+  // What the page-level control cites: the captured passage when there is
+  // one, otherwise the active section, otherwise the filing itself. Each of
+  // those is its own citation identity (see citationId).
+  const activeCitation: Omit<MemoCitation, 'id' | 'note' | 'addedAt'> = {
+    ...(citationProvenance ?? {
+      kind: 'filing' as const,
+      cik,
+      accessionNumber: accession,
+      company: filingMeta.companyName || '',
+      form: filingMeta.formType || '',
+      fileDate: filingMeta.filingDate || '',
+      sourceUrl: secUrl,
+    }),
+    section: activeSection || undefined,
+    excerpt: selectedQuote,
+    passageKey: selectedQuote ? passageKey(selectedQuote) : undefined,
+  };
+  // A redline block is quoted against BOTH filings: the citation carries the
+  // prior filing's accession and document so the comparison can be re-run
+  // from the memo, and the excerpt labels which text came from which filing.
+  const redlineCitation = useCallback((
+    passage: { previous: string; current: string },
+    label: string
+  ): Omit<MemoCitation, 'id' | 'note' | 'addedAt'> | null => {
+    if (!citationProvenance || !comparedFiling) return null;
+    return {
+      ...citationProvenance,
+      section: `Redline vs ${comparedFiling.formType} filed ${comparedFiling.filingDate} — ${label}`,
+      excerpt: buildRedlineExcerpt(passage, {
+        form: comparedFiling.formType,
+        fileDate: comparedFiling.filingDate,
+        accessionNumber: comparedFiling.accessionNumber,
+      }),
+      passageKey: passageKey(`${passage.previous}\n${passage.current}`),
+      comparedTo: {
+        accessionNumber: comparedFiling.accessionNumber,
+        form: comparedFiling.formType,
+        fileDate: comparedFiling.filingDate,
+        sourceUrl: buildSecDocumentUrl(cik, comparedFiling.accessionNumber, comparedFiling.primaryDocument),
+      },
+    };
+  }, [cik, citationProvenance, comparedFiling]);
 
   const handleTableExtract = useCallback(async () => {
     setExtractingTables(true);
@@ -1301,6 +1360,7 @@ export default function FilingDetail() {
         </div>
 
         <div className="header-actions">
+          <CiteButton citation={activeCitation} disabledReason={citationProvenance ? undefined : citationUnavailableReason} />
           <button type="button" className="icon-btn" title="Copy filing citation" aria-label="Copy filing citation" onClick={() => void handleCopyCitation()}><Copy size={18} aria-hidden="true" /></button>
           <button type="button" className="icon-btn" title="Save to Watchlist" aria-label="Save filing to watchlist" onClick={handleAddToWatchlist}><Bookmark size={18} aria-hidden="true" /></button>
           <a href={secUrl} target="_blank" rel="noreferrer" className="icon-btn" title="Open in SEC.gov" aria-label="Open filing on SEC.gov"><ExternalLink size={18} aria-hidden="true" /></a>
@@ -1360,6 +1420,7 @@ export default function FilingDetail() {
               />
               <div className="annotation-actions">
                 <button className="secondary-btn" onClick={handleSaveAnnotation}>Save Note</button>
+                <CiteButton citation={activeCitation} disabledReason={citationProvenance ? undefined : citationUnavailableReason} />
                 <button
                   className="secondary-btn"
                   onClick={() => {
@@ -1625,33 +1686,45 @@ export default function FilingDetail() {
                         {redlineSummary.changedBlocks && redlineSummary.changedBlocks.length > 0 && (
                           <div>
                             <h4 className="tool-subheading">Modified disclosure blocks</h4>
-                            {redlineSummary.changedBlocks.map((block, index) => (
-                              <div key={`changed-${index}`} className="related-card">
-                                <TextDiffViewer oldText={block.previous} newText={block.current} />
-                              </div>
-                            ))}
+                            {redlineSummary.changedBlocks.map((block, index) => {
+                              const citation = redlineCitation(block, `modified block ${index + 1}`);
+                              return (
+                                <div key={`changed-${index}`} className="related-card">
+                                  <TextDiffViewer oldText={block.previous} newText={block.current} />
+                                  {citation && <div className="redline-cite"><CiteButton compact citation={citation} /></div>}
+                                </div>
+                              );
+                            })}
                           </div>
                         )}
 
                         {redlineSummary.addedBlocks.length > 0 && (
                           <div>
                             <h4 className="tool-subheading">Current-only disclosure blocks</h4>
-                            {redlineSummary.addedBlocks.map((block, index) => (
-                              <div key={`added-${index}`} className="related-card tool-positive-card">
-                                <span className="desc">{block}</span>
-                              </div>
-                            ))}
+                            {redlineSummary.addedBlocks.map((block, index) => {
+                              const citation = redlineCitation({ previous: '', current: block }, `current-only block ${index + 1}`);
+                              return (
+                                <div key={`added-${index}`} className="related-card tool-positive-card">
+                                  <span className="desc">{block}</span>
+                                  {citation && <div className="redline-cite"><CiteButton compact citation={citation} /></div>}
+                                </div>
+                              );
+                            })}
                           </div>
                         )}
 
                         {redlineSummary.removedBlocks.length > 0 && (
                           <div>
                             <h4 className="tool-subheading">Prior-only disclosure blocks</h4>
-                            {redlineSummary.removedBlocks.map((block, index) => (
-                              <div key={`removed-${index}`} className="related-card comment-letter">
-                                <span className="desc">{block}</span>
-                              </div>
-                            ))}
+                            {redlineSummary.removedBlocks.map((block, index) => {
+                              const citation = redlineCitation({ previous: block, current: '' }, `prior-only block ${index + 1}`);
+                              return (
+                                <div key={`removed-${index}`} className="related-card comment-letter">
+                                  <span className="desc">{block}</span>
+                                  {citation && <div className="redline-cite"><CiteButton compact citation={citation} /></div>}
+                                </div>
+                              );
+                            })}
                           </div>
                         )}
                       </div>
@@ -1685,6 +1758,17 @@ export default function FilingDetail() {
                             <span className="desc">{note.note}</span>
                             <div className="annotation-meta">
                               <span>{new Date(note.createdAt).toLocaleString()}</span>
+                              {citationProvenance && (
+                                <CiteButton
+                                  compact
+                                  citation={{
+                                    ...citationProvenance,
+                                    section: note.section || undefined,
+                                    excerpt: note.quote,
+                                    passageKey: passageKey(note.quote),
+                                  }}
+                                />
+                              )}
                               <button className="annotation-link" onClick={() => handleRemoveAnnotation(note.id)}>Remove</button>
                             </div>
                           </div>

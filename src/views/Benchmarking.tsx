@@ -4,7 +4,9 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Download, X, ArrowRightLeft, Loader2, Sparkles, LayoutGrid, Type, DollarSign, TrendingUp, TrendingDown, Users, RefreshCw, SearchCheck } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell, RadarChart, PolarGrid, PolarAngleAxis, Radar, Legend } from 'recharts';
-import { fetchCompanySubmissions, fetchCompanySubmissionsBatch, fetchCompanyFacts, extractComparableFinancials, getAvailableYears, formatFinancialValue, CIK_MAP, SecSubmission, FinancialMetric, CompanyFacts, lookupCIK, extractCompanyMetadata, loadTickerMap, buildSecProxyUrl, extractDocumentTextFromHtml, fetchAnnualDisclosureText, fetchFilingTextOutcome } from '../services/secApi';
+import { fetchCompanySubmissions, fetchCompanySubmissionsBatch, fetchCompanyFacts, extractComparableFinancials, getAvailableYears, formatFinancialValue, CIK_MAP, SecSubmission, FinancialMetric, CompanyFacts, lookupCIK, extractCompanyMetadata, loadTickerMap, buildSecProxyUrl, extractDocumentTextFromHtml, fetchAnnualDisclosureText, fetchFilingTextOutcome, buildSecDocumentUrl } from '../services/secApi';
+import CiteButton from '../components/memo/CiteButton';
+import { boundExcerpt } from '../services/memoTray';
 import { aiSummarize } from '../services/aiApi';
 import { generateMemoDocx, generateMemoPdf } from '../services/docExport';
 import { buildCsvRows } from '../utils/csv';
@@ -54,6 +56,14 @@ import '../components/research/TopicPassage.css';
 import './Benchmarking.css';
 
 const CHART_COLORS = ['#B31F7E', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444', '#EC4899', '#06B6D4', '#84CC16', '#F97316', '#6366F1'];
+
+/** The exact annual report a Text Redline column's passage was read from. */
+interface ComparedTextFiling {
+  accessionNumber: string;
+  form: string;
+  filingDate: string;
+  primaryDocument: string;
+}
 
 // ---- Column key helpers ----
 function makeColKey(ticker: string, year: number): string { return `${ticker}|${year}`; }
@@ -193,6 +203,10 @@ export default function Benchmarking() {
   const [unavailablePeers, setUnavailablePeers] = useState<Record<string, string>>({});
   const [loadingFacts, setLoadingFacts] = useState(false);
   const [companyTexts, setCompanyTexts] = useState<Record<string, string>>({});
+  // Which 10-K each column's text came from, recorded only when text was
+  // actually read from it, so a passage is cited with its accession and not
+  // merely a ticker.
+  const [companyTextFilings, setCompanyTextFilings] = useState<Record<string, ComparedTextFiling>>({});
   // Topic passages taken straight from the registrant's tagged XBRL blocks.
   const [topicBlockPassages, setTopicBlockPassages] = useState<Record<string, TopicPassageData>>({});
 
@@ -621,6 +635,7 @@ export default function Benchmarking() {
       const texts: Record<string, string> = {};
       // Passages resolved from the registrant's tagged blocks, keyed by ticker.
       const blocks: Record<string, TopicPassageData> = {};
+      const filings: Record<string, ComparedTextFiling> = {};
       for (const ticker of selectedTickers) {
         const data = companiesData[ticker];
         if (!data) continue;
@@ -643,6 +658,12 @@ export default function Benchmarking() {
         const accession = data.filings.recent.accessionNumber[recentIdx];
         const primaryDoc = data.filings.recent.primaryDocument[recentIdx];
         const cleanAccession = accession.replace(/-/g, '');
+        const sourceFiling: ComparedTextFiling = {
+          accessionNumber: accession,
+          form: data.filings.recent.form[recentIdx] || '',
+          filingDate: data.filings.recent.filingDate?.[recentIdx] || '',
+          primaryDocument: primaryDoc,
+        };
         try {
           // Topic mode searches the whole document, because a policy note is
           // not bounded by any Item — and it follows the statements exhibit
@@ -676,6 +697,7 @@ export default function Benchmarking() {
             // Full text is still fetched: it backs the untagged fallback and
             // the distinctive-vocabulary comparison across peers.
             texts[ticker] = await fetchAnnualDisclosureText(String(data.cik), cleanAccession, primaryDoc);
+            if (block || texts[ticker]) filings[ticker] = sourceFiling;
             continue;
           }
 
@@ -688,6 +710,7 @@ export default function Benchmarking() {
           const structured = extractNamedSectionText(html, selectedSection);
           if (structured) {
             texts[ticker] = structured;
+            filings[ticker] = sourceFiling;
           } else {
             const bodyText = extractDocumentTextFromHtml(html);
             const lowerText = bodyText.toLowerCase();
@@ -705,6 +728,7 @@ export default function Benchmarking() {
               const validIndices = indices.filter(i => i > 8000);
               const sectionIdx = validIndices.length > 0 ? validIndices[0] : indices[indices.length - 1];
               texts[ticker] = bodyText.substring(sectionIdx, sectionIdx + 20000).trim();
+              filings[ticker] = sourceFiling;
             } else {
               texts[ticker] = `Section "${selectedSection}" not found in extracted text.`;
             }
@@ -714,6 +738,7 @@ export default function Benchmarking() {
         }
       }
       setCompanyTexts(texts);
+      setCompanyTextFilings(filings);
       setTopicBlockPassages(blocks);
       setLoadingTexts(false);
     }
@@ -1764,6 +1789,38 @@ Keep it crisp and practical.`;
                     <>
                       <div className="col-name">{data.name}</div>
                       <div className="col-doc">CIK: {data.cik}</div>
+                      {(() => {
+                        // Cite only what is on screen: the located topic
+                        // passage, or the extracted section text, from the
+                        // exact 10-K it was read from. Error placeholders and
+                        // absent passages have nothing to cite.
+                        const filing = companyTextFilings[ticker];
+                        const passage = activeTopic ? topicPassages[ticker] : undefined;
+                        const quoted = activeTopic
+                          ? (passage && passage.matchKind !== 'none' ? passage.text : '')
+                          : (text || '');
+                        if (!filing || !filing.form || !filing.filingDate || loadingTexts || !quoted) return null;
+                        return (
+                          <div style={{ marginTop: '6px' }}>
+                            <CiteButton
+                              compact
+                              citation={{
+                                kind: 'filing',
+                                cik: String(data.cik),
+                                accessionNumber: filing.accessionNumber,
+                                company: data.name,
+                                form: filing.form,
+                                fileDate: filing.filingDate,
+                                section: activeTopic
+                                  ? `${activeTopic.label}${passage?.heading ? ` — ${passage.heading}` : ''}`
+                                  : selectedSection,
+                                excerpt: boundExcerpt(quoted, 2000),
+                                sourceUrl: buildSecDocumentUrl(String(data.cik), filing.accessionNumber, filing.primaryDocument),
+                              }}
+                            />
+                          </div>
+                        );
+                      })()}
                     </>
                   ) : isLoading ? (
                     <div className="col-doc"><Loader2 size={14} className="spinner" style={{ display: 'inline-block' }} /> Loading...</div>

@@ -85,6 +85,7 @@ export const UI_PAGE_CONTRACTS = [
       { id: 'earnings.open-result-source', interaction: 'Activate View on a search result.', expectedOutcome: 'The official SEC source opens in a separate tab without replacing the research state.' },
       { id: 'earnings.open-recent-filing', interaction: 'Activate a recent earnings-release card.', expectedOutcome: 'The selected filing opens in the application filing viewer with its filing locator intact.' },
       { id: 'earnings.retry-failure', interaction: 'Activate a retry control after search or recent-source failure.', expectedOutcome: 'The failed request is attempted again and its loading, success, or error state is updated.' },
+      { id: 'earnings.cite-result', interaction: 'Activate Cite on an earnings-release result row.', expectedOutcome: 'The memo tray receives exactly that exhibit with its issuer, parent form, filing date, accession, exhibit type, description, and the official SEC document link the row’s View control opens.' },
     ],
   },
   {
@@ -106,6 +107,7 @@ export const UI_PAGE_CONTRACTS = [
       { id: 'research-workbench.open-filing', interaction: 'Activate Open filing for the selected result.', expectedOutcome: 'The selected SEC document opens in the internal filing viewer using its CIK, accession number, and document path.' },
       { id: 'research-workbench.open-issuer-or-source', interaction: 'Activate Issuer dossier or the external source link.', expectedOutcome: 'Issuer dossier opens the matching company page; source opens the matching official SEC document.' },
       { id: 'research-workbench.open-assistant-or-help', interaction: 'Activate Ask AI or the full-help control.', expectedOutcome: 'Ask AI opens the research assistant and help navigates to guidance without discarding the current URL-backed search.' },
+      { id: 'research-workbench.cite-result', interaction: 'Activate Cite on a result row, then activate the same control again.', expectedOutcome: 'That row’s filing joins the memo tray with its issuer, form, filing date, accession, matched excerpt, and official SEC document link — the same citation identity the preview reports — and the second activation removes only that citation.' },
     ],
   },
   {
@@ -141,6 +143,7 @@ export const UI_PAGE_CONTRACTS = [
       { id: 'exhibits.open-result-source', interaction: 'Activate View on an exhibit result.', expectedOutcome: 'The result’s official SEC document opens in a separate tab.' },
       { id: 'exhibits.open-recent-filing', interaction: 'Activate a recent exhibit card.', expectedOutcome: 'The corresponding filing opens in the application filing viewer.' },
       { id: 'exhibits.retry-failure', interaction: 'Retry a failed exhibit search or recent-source request.', expectedOutcome: 'The relevant official-source request reruns and updates only that region’s status.' },
+      { id: 'exhibits.cite-result', interaction: 'Activate Cite on an exhibit result row.', expectedOutcome: 'The memo tray receives exactly that exhibit with its issuer, parent form, filing date, accession, exhibit type, description, and the official SEC document link the row’s View control opens.' },
     ],
   },
   {
@@ -173,6 +176,7 @@ export const UI_PAGE_CONTRACTS = [
       { id: 'benchmarking.generate-summary-or-memo', interaction: 'Generate an AI comparison or cohort report.', expectedOutcome: 'The result is grounded in the loaded cohort evidence and exposes a retry path when generation fails.' },
       { id: 'benchmarking.verify-sections', interaction: 'Activate Verify sections in the Section Matrix, and Retry failed filings after a read fails.', expectedOutcome: 'Each cell states whether the section heading was found in the named filing’s text, that the filing is not read yet, that no filing of the form exists, or a retryable failure such as a rate limit — a mark never appears without the document having been read.' },
       { id: 'benchmarking.export-results', interaction: 'Activate CSV or spreadsheet export.', expectedOutcome: 'A file downloads containing the currently visible cohort, periods, labels, and comparison values; the Section Matrix export carries each cell’s state and source accession.' },
+      { id: 'benchmarking.cite-passage', interaction: 'Activate Cite on a Text Redline peer column.', expectedOutcome: 'The compared section or topic passage joins the memo tray with that peer’s exact annual report identity — issuer, form, filing date, accession, section, and official SEC document link — and only that column reports as cited.' },
     ],
   },
   {
@@ -448,6 +452,8 @@ export const UI_PAGE_CONTRACTS = [
       { id: 'filing-detail.navigate-section', interaction: 'Activate a detected table-of-contents section.', expectedOutcome: 'The filing scrolls to the matching section or presents a truthful retry state when detection failed.' },
       { id: 'filing-detail.manage-note', interaction: 'Save or remove an annotation for selected filing text.', expectedOutcome: 'The note is stored or removed only for the current filing evidence and the notes list updates immediately.' },
       { id: 'filing-detail.open-assistant', interaction: 'Activate Ask AI for the loaded filing.', expectedOutcome: 'The assistant opens with the active filing available as context without changing the source document.' },
+      { id: 'filing-detail.cite-evidence', interaction: 'Activate Cite with a table-of-contents section active, then again with a passage selected in the document.', expectedOutcome: 'The memo tray holds distinct citations for the section and for the quoted passage, each carrying the section name, the filing’s issuer, form, filing date, accession, and official SEC document link; removing one leaves the other intact.' },
+      { id: 'filing-detail.cite-redline', interaction: 'Activate Cite on a year-over-year redline block.', expectedOutcome: 'The citation quotes the prior and current text of that block and carries both filings’ accessions and official SEC document links, so the comparison can be traced from the memo.' },
     ],
   },
 ] as const satisfies readonly UiPageContract[];

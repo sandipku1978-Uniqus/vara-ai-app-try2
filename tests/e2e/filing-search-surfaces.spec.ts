@@ -101,6 +101,29 @@ async function assertExactOfficialSourceActivation(
   await popup.close();
 }
 
+/**
+ * Cite one exact row into the memo tray and read the citation back: the
+ * issuer, parent form, filing date, exhibit type, description, and the same
+ * official document the row's View link opens.
+ */
+async function assertExactRowCitation(page: Page, filing: SearchFixtureFiling) {
+  const row = page.locator('tbody tr', { hasText: filing.entity }).first();
+  const identity = `${filing.entity} ${filing.form} filed ${filing.filed}, ${filing.fileType}`;
+  await row.getByRole('button', { name: `Cite ${identity} in memo tray`, exact: true }).click();
+  await expect(row.getByRole('button', { name: `Cited ✓ ${identity} — remove from memo tray`, exact: true }))
+    .toHaveAttribute('aria-pressed', 'true');
+
+  await page.getByRole('button', { name: 'Open memo tray (1 citation)' }).click();
+  const item = page.getByRole('complementary', { name: 'Memo tray' }).locator('.memo-tray-item');
+  await expect(item).toHaveCount(1);
+  await expect(item).toContainText(filing.entity);
+  await expect(item).toContainText(filing.form);
+  await expect(item).toContainText(filing.filed);
+  await expect(item).toContainText(filing.fileType);
+  await expect(item.locator('.el-excerpt')).toHaveText(filing.description);
+  await expect(item.getByRole('link', { name: 'SEC.gov source' })).toHaveAttribute('href', officialDocumentUrl(filing));
+}
+
 test.describe('archetype: form-scoped research surfaces', () => {
   test('exempt-offerings.run-search returns Form D rows with their filing metadata', async ({ page }) => {
     await openWithFixtures(page, '/exempt-offerings');
@@ -153,6 +176,14 @@ test.describe('archetype: form-scoped research surfaces', () => {
       accessibleName: `View exhibit ${filing.fileType} attached to ${filing.form} from ${filing.entity}, filed ${filing.filed}, on SEC.gov`,
       searchLabel: 'Search exhibits',
     });
+  });
+
+  test('exhibits.cite-result cites the exact exhibit row with its filing identity and official document', async ({ page }) => {
+    await openWithFixtures(page, '/exhibits');
+    const filing = EXHIBITS[0];
+    await page.getByLabel('Search exhibits', { exact: true }).fill(filing.entity);
+    await runSearch(page, filing.entity);
+    await assertExactRowCitation(page, filing);
   });
 
   test('exhibits.choose-types re-filters collected rows without another SEC search', async ({ page }) => {
@@ -213,6 +244,14 @@ test.describe('archetype: form-scoped research surfaces', () => {
       accessibleName: `View earnings-release exhibit ${filing.fileType} attached to ${filing.form} from ${filing.entity}, filed ${filing.filed}, on SEC.gov`,
       searchLabel: 'Search earnings-release exhibits',
     });
+  });
+
+  test('earnings.cite-result cites the exact earnings-release row with its filing identity and official exhibit', async ({ page }) => {
+    await openWithFixtures(page, '/earnings');
+    const filing = EARNINGS[0];
+    await page.getByLabel('Search earnings-release exhibits', { exact: true }).fill(filing.entity);
+    await runSearch(page, filing.entity);
+    await assertExactRowCitation(page, filing);
   });
 
   test('earnings.open-recent-filing opens the exact recent release in the filing viewer', async ({ page }) => {

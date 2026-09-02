@@ -104,6 +104,39 @@ test.describe('comparison and governance interaction evidence', () => {
     await expect(page.getByText(/Fixture properties disclosure/).first()).toBeVisible({ timeout: 20_000 });
   });
 
+  test('benchmarking.cite-passage cites the compared section text with that peer’s exact 10-K identity', async ({ page }) => {
+    await installGovernanceAnalyticsFixtures(page);
+    await openWorkspace(page, '/compare', 'Disclosure Benchmarking Matrix');
+    await waitForBenchmarkColumns(page, '2 columns: AAPL FY2025 · MSFT FY2025');
+
+    await page.getByRole('button', { name: 'Text Redline', exact: true }).click();
+    const target = page.getByLabel('Disclosure topic or filing section to compare');
+    await target.selectOption({ label: 'Item 2. Properties' });
+    await expect(page.getByText('Comparing Item 2. Properties across: AAPL, MSFT', { exact: true })).toBeVisible({ timeout: 20_000 });
+    await expect(page.getByText(/Fixture properties disclosure/).first()).toBeVisible({ timeout: 20_000 });
+
+    // Each column names the exact annual report its text came from; citing
+    // one peer must not mark its neighbour as cited.
+    const msft = 'Microsoft Fixture Corp 10-K filed 2026-02-20, Item 2. Properties';
+    const aapl = 'Apple Fixture Corp 10-K filed 2026-02-20, Item 2. Properties';
+    await page.getByRole('button', { name: `Cite ${msft} in memo tray`, exact: true }).click();
+    await expect(page.getByRole('button', { name: `Cited ✓ ${msft} — remove from memo tray`, exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByRole('button', { name: `Cite ${aapl} in memo tray`, exact: true })).toHaveAttribute('aria-pressed', 'false');
+
+    await page.getByRole('button', { name: 'Open memo tray (1 citation)' }).click();
+    const item = page.getByRole('complementary', { name: 'Memo tray' }).locator('.memo-tray-item');
+    await expect(item).toHaveCount(1);
+    await expect(item).toContainText('Microsoft Fixture Corp');
+    await expect(item).toContainText('10-K');
+    await expect(item).toContainText('2026-02-20');
+    await expect(item).toContainText('Item 2. Properties');
+    await expect(item.locator('.el-excerpt')).toContainText('Fixture properties disclosure with sufficient deterministic source evidence.');
+    await expect(item.getByRole('link', { name: 'SEC.gov source' })).toHaveAttribute(
+      'href',
+      'https://www.sec.gov/Archives/edgar/data/789019/000078901926000002/msft-10k.htm',
+    );
+  });
+
   test('benchmarking.build-peer-group adds only matching non-duplicate SIC peers', async ({ page }) => {
     await installGovernanceAnalyticsFixtures(page);
     await openWorkspace(page, '/compare', 'Disclosure Benchmarking Matrix');

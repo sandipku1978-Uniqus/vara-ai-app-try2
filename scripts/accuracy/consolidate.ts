@@ -1581,8 +1581,9 @@ const UI_ACTION_SCOPE_REQUIREMENTS: Record<UiActionScope, {
 }> = {
   // Cumulative with the September 2026 audit packages: Section Matrix
   // (verify-sections), Accounting Hub grounding, Comment Letters paging and
-  // CIK scope, Board Profiles (open-proxy-source and its failure-mode spec).
-  browser: { actions: 135, references: 153, contentChecks: 1, contentReferences: 1 },
+  // CIK scope, Board Profiles (open-proxy-source and its failure-mode spec),
+  // and Cite to memo on every evidence surface (six cite actions).
+  browser: { actions: 141, references: 159, contentChecks: 1, contentReferences: 1 },
   auth: { actions: 3, references: 4, contentChecks: 0, contentReferences: 0 },
 };
 
