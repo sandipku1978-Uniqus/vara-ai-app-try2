@@ -52,8 +52,8 @@ test.describe('comparison and governance interaction evidence', () => {
     await waitForBenchmarkColumns(page, '2 columns: AAPL FY2025 · NVDA FY2025');
     await expect(companyBadge(page, 'MSFT')).toHaveCount(0);
 
-    await page.getByRole('button', { name: 'Filing Availability', exact: true }).click();
-    const matrix = page.getByRole('table', { name: 'Disclosure section availability by company' });
+    await page.getByRole('button', { name: 'Section Matrix', exact: true }).click();
+    const matrix = page.getByRole('table', { name: 'Section presence by company' });
     await expect(matrix).toBeVisible({ timeout: 20_000 });
     await expect(matrix.getByRole('columnheader', { name: 'AAPL', exact: true })).toHaveCount(1);
     await expect(matrix.getByRole('columnheader', { name: 'NVDA', exact: true })).toHaveCount(1);
@@ -78,8 +78,8 @@ test.describe('comparison and governance interaction evidence', () => {
     await expect(page.getByText(/Comparing Revenue recognition.*across: AAPL, MSFT/i)).toBeVisible({ timeout: 20_000 });
     await expect(page.getByText(preserved, { exact: true })).toBeVisible();
 
-    await page.getByRole('button', { name: 'Filing Availability', exact: true }).click();
-    await expect(page.getByRole('table', { name: 'Disclosure section availability by company' })).toBeVisible({ timeout: 20_000 });
+    await page.getByRole('button', { name: 'Section Matrix', exact: true }).click();
+    await expect(page.getByRole('table', { name: 'Section presence by company' })).toBeVisible({ timeout: 20_000 });
     await expect(page.getByText(preserved, { exact: true })).toBeVisible();
 
     await page.getByRole('button', { name: 'Financials', exact: true }).click();
@@ -165,6 +165,58 @@ test.describe('comparison and governance interaction evidence', () => {
     expect(csv).toContain('Metric,AAPL FY2025,MSFT FY2025');
     expect(csv).toContain('Total Revenue,$100.0B,$120.0B');
     expect(csv).toContain('Gross Margin,60.0%,60.0%');
+  });
+
+  test('benchmarking.verify-sections marks sections only from filing text, surfaces a rate limit with retry, and exports states with accessions', async ({ page }) => {
+    // Two 429s exhaust the client's single automatic retry, so the AAPL
+    // column must show the rate limit and the explicit Retry must clear it.
+    const stats = await installGovernanceAnalyticsFixtures(page, { filingTextRateLimitsBeforeSuccess: { AAPL: 2 } });
+    await openWorkspace(page, '/compare', 'Disclosure Benchmarking Matrix');
+    await waitForBenchmarkColumns(page, '2 columns: AAPL FY2025 · MSFT FY2025');
+
+    await page.getByRole('button', { name: 'Section Matrix', exact: true }).click();
+    const matrix = page.getByRole('table', { name: 'Section presence by company' });
+    await expect(matrix).toBeVisible({ timeout: 20_000 });
+    const mark = (name: string) => matrix.getByRole('img', { name, exact: true });
+    const progress = page.getByRole('status').filter({ hasText: /filings/ });
+
+    // Nothing is marked and no filing text is requested until the user asks.
+    await expect(mark('Item 1A. Risk Factors: not checked for AAPL — 10-K 0000320193-26-000002 not read yet')).toBeVisible();
+    await expect(matrix.getByRole('img', { name: /found in/ })).toHaveCount(0);
+    await expect(progress).toHaveText('2 of 2 filings not read yet');
+    expect(stats.filingTextRequests).toHaveLength(0);
+
+    await test.step('ui-action:benchmarking.verify-sections', async () => {
+      await page.getByRole('button', { name: 'Verify sections', exact: true }).click();
+      await expect(mark("Item 1A. Risk Factors: found in MSFT's 10-K 0000789019-26-000002")).toBeVisible({ timeout: 20_000 });
+      await expect(mark("Item 1C. Cybersecurity: not found in MSFT's 10-K 0000789019-26-000002")).toBeVisible();
+      await expect(mark('Item 1A. Risk Factors: could not be checked for AAPL — rate limited — retry')).toBeVisible({ timeout: 20_000 });
+      await expect(progress).toHaveText('1 of 2 filings read · 1 failed');
+      expect(stats.filingTextRequests.filter(request => request.cik === '320193')).toHaveLength(2);
+      expect(stats.filingTextRequests.filter(request => request.cik === '789019')).toHaveLength(1);
+
+      await page.getByRole('button', { name: 'Retry failed filings', exact: true }).click();
+      await expect(mark("Item 1A. Risk Factors: found in AAPL's 10-K 0000320193-26-000002")).toBeVisible({ timeout: 20_000 });
+      await expect(mark("Item 1C. Cybersecurity: not found in AAPL's 10-K 0000320193-26-000002")).toBeVisible();
+      await expect(progress).toHaveText('2 of 2 filings read');
+      // Each filing is read exactly once more; MSFT's cached read is reused.
+      expect(stats.filingTextRequests.filter(request => request.cik === '320193')).toHaveLength(3);
+      expect(stats.filingTextRequests.filter(request => request.cik === '789019')).toHaveLength(1);
+    });
+
+    await test.step('ui-action:benchmarking.export-results', async () => {
+      const [download] = await Promise.all([
+        page.waitForEvent('download'),
+        page.getByRole('button', { name: 'Export', exact: true }).click(),
+      ]);
+      expect(download.suggestedFilename()).toBe('section_matrix_10-K_AAPL_MSFT.csv');
+      const path = await download.path();
+      expect(path).toBeTruthy();
+      const csv = await readFile(path!, 'utf8');
+      expect(csv).toContain('Section,AAPL,AAPL source,MSFT,MSFT source');
+      expect(csv).toContain('Item 1A. Risk Factors,present,10-K 0000320193-26-000002 aapl-10k.htm,present,10-K 0000789019-26-000002 msft-10k.htm');
+      expect(csv).toContain('Item 1C. Cybersecurity,absent,10-K 0000320193-26-000002 aapl-10k.htm,absent,10-K 0000789019-26-000002 msft-10k.htm');
+    });
   });
 
   test('accounting-analytics.add-company and accounting-analytics.remove-company keep XBRL columns exact', async ({ page }) => {

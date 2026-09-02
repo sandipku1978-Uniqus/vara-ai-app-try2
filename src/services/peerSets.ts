@@ -3,7 +3,7 @@
  *
  * A named list of tickers, browser-local like sessions and the memo tray.
  * Loading one re-populates the Benchmarking company selection, which drives
- * every view — financials, redline, audit matrix, YoY changes — so one saved
+ * every view — financials, redline, section matrix, YoY changes — so one saved
  * set serves them all.
  */
 

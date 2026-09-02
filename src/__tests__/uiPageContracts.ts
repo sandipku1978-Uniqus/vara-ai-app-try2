@@ -165,11 +165,12 @@ export const UI_PAGE_CONTRACTS = [
     intendedJob: 'Compare issuer financials, filing language, and audit attributes across a selected peer cohort and export defensible results.',
     actions: [
       { id: 'benchmarking.add-or-remove-company', interaction: 'Add a company to the comparison or remove an existing column.', expectedOutcome: 'The peer set changes by exactly that issuer and all comparison views use the same resulting cohort.' },
-      { id: 'benchmarking.switch-view', interaction: 'Switch among Financials, Text diff, and Audit matrix.', expectedOutcome: 'The selected comparison surface becomes active without losing companies, years, or fetched evidence.' },
+      { id: 'benchmarking.switch-view', interaction: 'Switch among Financials, Text Redline, Section Matrix, and YoY Changes.', expectedOutcome: 'The selected comparison surface becomes active without losing companies, years, or fetched evidence.' },
       { id: 'benchmarking.choose-years-or-section', interaction: 'Select company years or a filing section.', expectedOutcome: 'The comparison recalculates against the visible years or section and clearly identifies missing evidence.' },
       { id: 'benchmarking.build-peer-group', interaction: 'Activate the quick peer-group control.', expectedOutcome: 'Relevant peers are resolved from available company metadata and added without duplicating existing issuers.' },
       { id: 'benchmarking.generate-summary-or-memo', interaction: 'Generate an AI comparison or cohort report.', expectedOutcome: 'The result is grounded in the loaded cohort evidence and exposes a retry path when generation fails.' },
-      { id: 'benchmarking.export-results', interaction: 'Activate CSV or spreadsheet export.', expectedOutcome: 'A file downloads containing the currently visible cohort, periods, labels, and comparison values.' },
+      { id: 'benchmarking.verify-sections', interaction: 'Activate Verify sections in the Section Matrix, and Retry failed filings after a read fails.', expectedOutcome: 'Each cell states whether the section heading was found in the named filing’s text, that the filing is not read yet, that no filing of the form exists, or a retryable failure such as a rate limit — a mark never appears without the document having been read.' },
+      { id: 'benchmarking.export-results', interaction: 'Activate CSV or spreadsheet export.', expectedOutcome: 'A file downloads containing the currently visible cohort, periods, labels, and comparison values; the Section Matrix export carries each cell’s state and source accession.' },
     ],
   },
   {

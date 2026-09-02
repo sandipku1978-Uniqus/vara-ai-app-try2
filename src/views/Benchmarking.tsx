@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { Download, X, ArrowRightLeft, Loader2, Sparkles, LayoutGrid, Type, DollarSign, TrendingUp, TrendingDown, Users } from 'lucide-react';
+import { Download, X, ArrowRightLeft, Loader2, Sparkles, LayoutGrid, Type, DollarSign, TrendingUp, TrendingDown, Users, RefreshCw, SearchCheck } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell, RadarChart, PolarGrid, PolarAngleAxis, Radar, Legend } from 'recharts';
-import { fetchCompanySubmissions, fetchCompanySubmissionsBatch, fetchCompanyFacts, extractComparableFinancials, getAvailableYears, formatFinancialValue, CIK_MAP, SecSubmission, FinancialMetric, CompanyFacts, lookupCIK, extractCompanyMetadata, loadTickerMap, buildSecProxyUrl, extractDocumentTextFromHtml, fetchAnnualDisclosureText } from '../services/secApi';
+import { fetchCompanySubmissions, fetchCompanySubmissionsBatch, fetchCompanyFacts, extractComparableFinancials, getAvailableYears, formatFinancialValue, CIK_MAP, SecSubmission, FinancialMetric, CompanyFacts, lookupCIK, extractCompanyMetadata, loadTickerMap, buildSecProxyUrl, extractDocumentTextFromHtml, fetchAnnualDisclosureText, fetchFilingTextOutcome } from '../services/secApi';
 import { aiSummarize } from '../services/aiApi';
 import { generateMemoDocx, generateMemoPdf } from '../services/docExport';
 import { buildCsvRows } from '../utils/csv';
@@ -14,7 +14,21 @@ import { DisclosureMatrix } from '../components/research/DisclosureMatrix';
 import CompanySearchInput from '../components/filters/CompanySearchInput';
 import SicSearchInput from '../components/filters/SicSearchInput';
 import { loadSicDirectoryIndex } from '../services/referenceData';
-import SectionMatrix, { type MatrixCell } from '../components/tables/SectionMatrix';
+import SectionMatrix from '../components/tables/SectionMatrix';
+import {
+  SECTION_MATRIX_FORMS,
+  SECTION_MATRIX_ROWS,
+  buildSectionMatrixCells,
+  buildSectionMatrixCsvRows,
+  initialVerification,
+  mapWithConcurrency,
+  summarizeVerification,
+  verificationFromOutcome,
+  type CompanyVerification,
+  type FilingTextReadOutcome,
+  type SectionMatrixForm,
+  type SectionMatrixSource,
+} from '../utils/sectionMatrix';
 import { useApp } from '../context/AppState';
 import TopicPassage from '../components/research/TopicPassage';
 import YoYChangeMatrix from '../components/research/YoYChangeMatrix';
@@ -46,90 +60,19 @@ function makeColKey(ticker: string, year: number): string { return `${ticker}|${
 function colTicker(colKey: string): string { return colKey.split('|')[0]; }
 function colYear(colKey: string): number { return Number(colKey.split('|')[1]); }
 function colLabel(colKey: string): string { return `${colTicker(colKey)} '${String(colYear(colKey)).slice(2)}`; }
+/** Section Matrix records are kept per form so switching forms keeps what was read. */
+function matrixKey(form: string, ticker: string): string { return `${form}|${ticker}`; }
 
-const ALL_SECTIONS = [
-  'Item 1. Business',
-  'Item 1A. Risk Factors',
-  'Item 1B. Unresolved Staff Comments',
-  'Item 1C. Cybersecurity',
-  'Item 2. Properties',
-  'Item 3. Legal Proceedings',
-  'Item 4. Mine Safety Disclosures',
-  'Item 5. Market for Registrant\'s Common Equity',
-  'Item 6. [Reserved]',
-  'Item 7. Management\'s Discussion & Analysis',
-  'Item 7A. Quantitative & Qualitative Disclosures About Market Risk',
-  'Item 8. Financial Statements',
-  'Item 9. Changes in and Disagreements With Accountants',
-  'Item 9A. Controls and Procedures',
-  'Item 9B. Other Information',
-  'Item 9C. Disclosure Regarding Foreign Jurisdictions',
-  'Item 10. Directors, Executive Officers and Corporate Governance',
-  'Item 11. Executive Compensation',
-  'Item 12. Security Ownership',
-  'Item 13. Certain Relationships and Related Transactions',
-  'Item 14. Principal Accountant Fees and Services',
-  'Item 15. Exhibits and Financial Statement Schedules',
-  'Signatures',
-];
+/**
+ * Filing sections offered by the Text Redline "Compare" dropdown. The Section
+ * Matrix's rows live in utils/sectionMatrix beside the slicer that verifies
+ * them; Signatures is offered here only because the redline's positional
+ * fallback can still locate it.
+ */
+const ALL_SECTIONS = [...SECTION_MATRIX_ROWS['10-K'], 'Signatures'];
 
 /** Section used when the comparison target is a topic rather than an Item. */
 const DEFAULT_COMPARE_SECTION = 'Item 1A. Risk Factors';
-
-const SECTION_LISTS: Record<string, string[]> = {
-  '10-K': ALL_SECTIONS,
-  '10-Q': [
-    'Part I, Item 1. Financial Statements',
-    'Part I, Item 2. MD&A',
-    'Part I, Item 3. Quantitative & Qualitative Disclosures',
-    'Part I, Item 4. Controls and Procedures',
-    'Part II, Item 1. Legal Proceedings',
-    'Part II, Item 1A. Risk Factors',
-    'Part II, Item 2. Unregistered Sales',
-    'Part II, Item 5. Other Information',
-    'Part II, Item 6. Exhibits',
-    'Signatures',
-  ],
-  '20-F': [
-    'Item 1. Identity of Directors, Senior Management',
-    'Item 2. Offer Statistics and Expected Timetable',
-    'Item 3. Key Information',
-    'Item 4. Information on the Company',
-    'Item 5. Operating and Financial Review',
-    'Item 6. Directors, Senior Management and Employees',
-    'Item 7. Major Shareholders and Related Party Transactions',
-    'Item 8. Financial Information',
-    'Item 9. The Offer and Listing',
-    'Item 10. Additional Information',
-    'Item 11. Quantitative and Qualitative Disclosures',
-    'Item 12. Description of Securities',
-    'Item 15. Controls and Procedures',
-    'Item 16. [Reserved]',
-    'Item 17. Financial Statements',
-    'Item 18. Financial Statements',
-    'Item 19. Exhibits',
-  ],
-  'S-1': [
-    'Part I — Prospectus Summary',
-    'Part I — Risk Factors',
-    'Part I — Use of Proceeds',
-    'Part I — Dividend Policy',
-    'Part I — Capitalization',
-    'Part I — Dilution',
-    'Part I — MD&A',
-    'Part I — Business',
-    'Part I — Management',
-    'Part I — Executive Compensation',
-    'Part I — Principal Stockholders',
-    'Part I — Description of Capital Stock',
-    'Part I — Shares Eligible for Future Sale',
-    'Part I — Underwriting',
-    'Part II — Legal Matters',
-    'Part II — Experts',
-    'Part II — Financial Statements',
-    'Signatures',
-  ],
-};
 
 const FINANCIAL_SECTIONS: { title: string; metrics: { key: string; label: string }[] }[] = [
   {
@@ -230,9 +173,10 @@ export default function Benchmarking() {
 
   const [viewMode, setViewMode] = useState<'financials' | 'text-diff' | 'audit-matrix' | 'yoy-changes'>('financials');
   const [commonSize, setCommonSize] = useState(false);
-  const [matrixFormType, setMatrixFormType] = useState<string>('10-K');
-  const [matrixData, setMatrixData] = useState<Record<string, Record<string, MatrixCell>>>({});
-  const [matrixLoading, setMatrixLoading] = useState(false);
+  const [matrixFormType, setMatrixFormType] = useState<SectionMatrixForm>('10-K');
+  // One record per form and company: which filing was read and what it said.
+  const [matrixVerifications, setMatrixVerifications] = useState<Record<string, CompanyVerification>>({});
+  const [matrixRunning, setMatrixRunning] = useState(false);
   const [peerLoading, setPeerLoading] = useState(false);
   const [peerSicCode, setPeerSicCode] = useState('');
   const [peerDiscoveryMessage, setPeerDiscoveryMessage] = useState('');
@@ -436,34 +380,79 @@ export default function Benchmarking() {
     });
   }, [companiesRawFacts]);
 
-  // Build audit matrix
-  useEffect(() => {
-    if (viewMode !== 'audit-matrix' || selectedTickers.length === 0) return;
-    const sections = SECTION_LISTS[matrixFormType] || ALL_SECTIONS;
-    setMatrixLoading(true);
+  // ---- Section Matrix: verified section presence, one filing per company ----
+  // A company without a record yet starts from its filing index: not-checked
+  // when a filing of the form exists, no-filing otherwise. Nothing is marked
+  // present until that filing's text has been read and sliced.
+  const matrixRows = SECTION_MATRIX_ROWS[matrixFormType];
+  const matrixVerificationFor = useCallback(
+    (ticker: string): CompanyVerification =>
+      matrixVerifications[matrixKey(matrixFormType, ticker)] ?? initialVerification(companiesData[ticker], matrixFormType),
+    [matrixVerifications, matrixFormType, companiesData]
+  );
+  const matrixCells = useMemo(
+    () => buildSectionMatrixCells(matrixRows, selectedTickers, matrixVerificationFor),
+    [matrixRows, selectedTickers, matrixVerificationFor]
+  );
+  const matrixSummary = useMemo(
+    () => summarizeVerification(selectedTickers.map(matrixVerificationFor)),
+    [selectedTickers, matrixVerificationFor]
+  );
 
-    async function buildMatrix() {
-      const data: Record<string, Record<string, MatrixCell>> = {};
-      for (const section of sections) {
-        data[section] = {};
-        for (const ticker of selectedTickers) {
-          const sub = companiesData[ticker];
-          if (!sub) { data[section][ticker] = { present: false }; continue; }
-          const formType = matrixFormType === 'S-1' ? 'S-1' : matrixFormType;
-          const idx = sub.filings.recent.form.findIndex(f => f === formType || f.startsWith(formType));
-          if (idx === -1) { data[section][ticker] = { present: false }; continue; }
-          // This matrix reads filing METADATA only: a cell is marked when a
-          // filing of the form exists, not when the section was found in it.
-          // Section-level detection lives in the YoY Changes view.
-          data[section][ticker] = { present: true, snippet: `${formType} filing on record: ${sub.filings.recent.primaryDocument[idx]} — section presence not verified` };
-        }
+  /**
+   * Read the filings that decide the matrix, two at a time. 'unread' takes
+   * every company whose filing has not been read (retryable failures
+   * included); 'failed' retries only the failures. Each read lands in state
+   * as it completes, so the grid fills in while the progress line moves
+   * rather than blocking on the whole cohort's SEC fetches.
+   */
+  const verifyMatrixSections = useCallback(async (which: 'unread' | 'failed') => {
+    const form = matrixFormType;
+    const rows = SECTION_MATRIX_ROWS[form];
+    const targets: Array<{ ticker: string; source: SectionMatrixSource }> = [];
+    for (const ticker of selectedTickers) {
+      const record = matrixVerificationFor(ticker);
+      if (record.status === 'not-checked' && which === 'unread') {
+        targets.push({ ticker, source: record.source });
+      } else if (record.status === 'failed' && record.retryable && record.source) {
+        targets.push({ ticker, source: record.source });
       }
-      setMatrixData(data);
-      setMatrixLoading(false);
     }
+    if (targets.length === 0) return;
 
-    if (Object.keys(companiesData).length > 0) buildMatrix();
-  }, [viewMode, matrixFormType, selectedTickers, companiesData]);
+    setMatrixRunning(true);
+    setMatrixVerifications(prev => {
+      const next = { ...prev };
+      for (const { ticker, source } of targets) next[matrixKey(form, ticker)] = { status: 'checking', source };
+      return next;
+    });
+    await mapWithConcurrency(targets, 2, async ({ ticker, source }) => {
+      let outcome: FilingTextReadOutcome;
+      try {
+        outcome = await fetchFilingTextOutcome(source.cik, source.accession, source.primaryDocument);
+      } catch {
+        outcome = { ok: false, kind: 'upstream', retryable: true };
+      }
+      const record = verificationFromOutcome(form, rows, source, outcome);
+      setMatrixVerifications(prev => ({ ...prev, [matrixKey(form, ticker)]: record }));
+    });
+    setMatrixRunning(false);
+  }, [matrixFormType, selectedTickers, matrixVerificationFor]);
+
+  const matrixProgress = (() => {
+    if (isLoading) return 'Loading company filing indexes…';
+    if (selectedTickers.length === 0) return '';
+    const { withFiling, read, failed, checking, unread, noFiling, unavailable } = matrixSummary;
+    const notes: string[] = [];
+    if (failed > 0) notes.push(`${failed} failed`);
+    if (noFiling > 0) notes.push(`${noFiling} without a ${matrixFormType} on record`);
+    if (unavailable > 0) notes.push(`${unavailable} filing index not loaded`);
+    const suffix = notes.length > 0 ? ` · ${notes.join(' · ')}` : '';
+    if (withFiling === 0) return `No ${matrixFormType} filings to read${suffix}`;
+    if (checking > 0) return `Reading filings two at a time — ${read + failed} of ${withFiling} done${suffix}`;
+    if (unread === 0) return `${read} of ${withFiling} filings read${suffix}`;
+    return `${unread} of ${withFiling} filings not read yet${suffix}`;
+  })();
 
   // Quick Peer Group
   const handleQuickPeerGroup = async () => {
@@ -543,10 +532,9 @@ export default function Benchmarking() {
       a.href = url; a.download = `benchmarking_${selectedTickers.join('_')}.csv`; a.click();
       URL.revokeObjectURL(url);
     } else if (viewMode === 'audit-matrix') {
-      const sections = SECTION_LISTS[matrixFormType] || ALL_SECTIONS;
-      const headers = ['Section', ...selectedTickers];
-      const rows = sections.map(s => [s, ...selectedTickers.map(t => matrixData[s]?.[t]?.present ? 'Yes' : 'No')]);
-      const csv = buildCsvRows([headers, ...rows]);
+      // Workpaper export: each cell's state next to the accession it was
+      // decided from, so nothing in the file outruns what was actually read.
+      const csv = buildCsvRows(buildSectionMatrixCsvRows(matrixRows, selectedTickers, matrixCells));
       const blob = new Blob([csv], { type: 'text/csv' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -1028,7 +1016,7 @@ Keep it crisp and practical.`;
               <Type size={16} /> Text Redline
             </button>
             <button className={`toggle-view-btn ${viewMode === 'audit-matrix' ? 'active' : ''}`} onClick={() => setViewMode('audit-matrix')}>
-              <LayoutGrid size={16} /> Filing Availability
+              <LayoutGrid size={16} /> Section Matrix
             </button>
             <button className={`toggle-view-btn ${viewMode === 'yoy-changes' ? 'active' : ''}`} onClick={() => setViewMode('yoy-changes')}>
               <Type size={16} /> YoY Changes
@@ -1817,17 +1805,17 @@ Keep it crisp and practical.`;
         </div>
       )}
 
-      {/* ===== AUDIT MATRIX VIEW ===== */}
       {viewMode === 'yoy-changes' && (
         <YoYChangeMatrix tickers={selectedTickers} companiesData={companiesData} />
       )}
 
+      {/* ===== SECTION MATRIX VIEW ===== */}
       {viewMode === 'audit-matrix' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div className="glass-card" style={{ padding: '16px', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
             <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 500 }}>Form Type:</span>
-            {Object.keys(SECTION_LISTS).map(ft => (
-              <button key={ft} onClick={() => setMatrixFormType(ft)} style={{
+            {SECTION_MATRIX_FORMS.map(ft => (
+              <button key={ft} type="button" onClick={() => setMatrixFormType(ft)} aria-pressed={matrixFormType === ft} style={{
                 padding: '6px 16px', borderRadius: '4px', border: '1px solid ' + (matrixFormType === ft ? 'var(--accent-primary)' : 'var(--border-color)'), cursor: 'pointer', fontSize: '0.8rem',
                 background: matrixFormType === ft ? 'var(--accent-primary)' : 'var(--surface-subtle)',
                 color: matrixFormType === ft ? 'var(--surface-panel)' : 'var(--text-secondary)', transition: 'background-color 0.15s, border-color 0.15s, color 0.15s',
@@ -1836,18 +1824,45 @@ Keep it crisp and practical.`;
               </button>
             ))}
             <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginLeft: 'auto' }}>
-              {(SECTION_LISTS[matrixFormType] || ALL_SECTIONS).length} sections &middot; {selectedTickers.length} companies
+              {matrixRows.length} sections &middot; {selectedTickers.length} companies
             </span>
           </div>
           <p role="note" style={{ margin: 0, padding: '10px 14px', borderRadius: '4px', fontSize: '0.8rem', lineHeight: 1.45, color: 'var(--text-secondary)', background: 'color-mix(in srgb, var(--status-warning) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--status-warning) 30%, transparent)' }}>
-            A marked cell means the company has a {matrixFormType} filing on record. It does not verify that the section appears in that filing — no document is read here. For section-level detection use the YoY Changes view, which slices each filing at its Item headings.
+            A check means the section heading was found in the text of the filing named in the cell — the company&rsquo;s latest {matrixFormType} on EDGAR — using the same Item slicer as the YoY Changes view and the section-scope filter. A dash means that heading was not found in that text; open the filing before treating it as an omission, since some filers format headings unusually. Cells stay &ldquo;not checked&rdquo; until you verify them, and the CSV export records each cell&rsquo;s state and source accession.
           </p>
 
+          <div className="glass-card" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+            <button
+              type="button"
+              className="primary-btn sm"
+              onClick={() => void verifyMatrixSections('unread')}
+              disabled={matrixRunning || isLoading || matrixSummary.unread + matrixSummary.retryable === 0}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+            >
+              {matrixRunning ? <Loader2 size={14} className="spinner" /> : <SearchCheck size={14} />}
+              Verify sections
+            </button>
+            {matrixSummary.retryable > 0 && !matrixRunning && (
+              <button
+                type="button"
+                className="secondary-btn"
+                onClick={() => void verifyMatrixSections('failed')}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                <RefreshCw size={14} /> Retry failed filings
+              </button>
+            )}
+            <span role="status" aria-live="polite" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+              {matrixProgress}
+            </span>
+          </div>
+
           <SectionMatrix
-            sections={SECTION_LISTS[matrixFormType] || ALL_SECTIONS}
+            form={matrixFormType}
+            sections={matrixRows}
             companies={selectedTickers.map(t => ({ ticker: t, name: companiesData[t]?.name || t }))}
-            data={matrixData}
-            loading={matrixLoading || isLoading}
+            data={matrixCells}
+            loading={isLoading}
           />
 
           <div className="glass-card" style={{ overflow: 'auto' }}>
