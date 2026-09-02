@@ -57,3 +57,8 @@ updates:
     schedule:
       interval: weekly
       day: monday
+    groups:
+      # init and analyze must move together: a split bump fails with
+      # "Loaded a configuration file for version X, but running version Y".
+      codeql-action:
+        patterns: ["github/codeql-action*"]
