@@ -10,6 +10,16 @@
  * flags come from the gateway's `tags` for each model on that date; a model
  * without `nativeWebSearch` gets web results through `perplexity/sonar`
  * when the user turns web search on.
+ *
+ * `effortLevels` are the levels the gateway catalog lists for the model
+ * (`reasoning_options`) that a live call through the gateway also honoured
+ * on 2026-10-04; the evidence is in
+ * `src/__tests__/fixtures/ai-gateway/effort-matrix.json`. Two catalog
+ * omissions were confirmed by calls rather than taken on trust: Claude Opus
+ * 5.5 accepts `thinking: disabled` but still thinks (no `none`), while
+ * Claude Sonnet 5.5 honours it (zero thinking tokens). Models whose catalog
+ * has no `medium` default to `high`, the level the gateway itself translates
+ * `medium` to on Gemini 3.
  */
 
 export type AiProvider =
@@ -61,7 +71,7 @@ export const AI_MODELS: readonly AiModelDefinition[] = [
     label: 'Claude Opus 5.5',
     shortLabel: 'Opus 5.5',
     supportsReasoning: true,
-    effortLevels: ALL_EFFORTS,
+    effortLevels: NO_NONE,
     defaultEffort: 'medium',
     nativeWebSearch: true,
     contextWindow: 1_000_000,
@@ -103,7 +113,7 @@ export const AI_MODELS: readonly AiModelDefinition[] = [
     label: 'GPT-5.6 Luna',
     shortLabel: 'GPT-5.6 Luna',
     supportsReasoning: true,
-    effortLevels: NO_NONE,
+    effortLevels: ALL_EFFORTS,
     defaultEffort: 'medium',
     nativeWebSearch: true,
     contextWindow: 1_050_000,
@@ -117,8 +127,8 @@ export const AI_MODELS: readonly AiModelDefinition[] = [
     label: 'Kimi K3',
     shortLabel: 'Kimi K3',
     supportsReasoning: true,
-    effortLevels: ALL_EFFORTS,
-    defaultEffort: 'medium',
+    effortLevels: ['none', 'low', 'high', 'max'],
+    defaultEffort: 'high',
     nativeWebSearch: false,
     contextWindow: 1_000_000,
     maxOutputTokens: 131_072,
@@ -131,7 +141,7 @@ export const AI_MODELS: readonly AiModelDefinition[] = [
     label: 'Grok 4.5',
     shortLabel: 'Grok 4.5',
     supportsReasoning: true,
-    effortLevels: ALL_EFFORTS,
+    effortLevels: ['low', 'medium', 'high'],
     defaultEffort: 'medium',
     nativeWebSearch: true,
     contextWindow: 500_000,
@@ -145,7 +155,7 @@ export const AI_MODELS: readonly AiModelDefinition[] = [
     label: 'Grok 4.6',
     shortLabel: 'Grok 4.6',
     supportsReasoning: true,
-    effortLevels: ALL_EFFORTS,
+    effortLevels: NO_NONE,
     defaultEffort: 'medium',
     nativeWebSearch: false,
     contextWindow: 500_000,
@@ -159,7 +169,7 @@ export const AI_MODELS: readonly AiModelDefinition[] = [
     label: 'Grok 4.7',
     shortLabel: 'Grok 4.7',
     supportsReasoning: true,
-    effortLevels: ALL_EFFORTS,
+    effortLevels: NO_NONE,
     defaultEffort: 'medium',
     nativeWebSearch: false,
     contextWindow: 500_000,
@@ -173,8 +183,8 @@ export const AI_MODELS: readonly AiModelDefinition[] = [
     label: 'Gemini 3.8 Flash',
     shortLabel: 'Gemini 3.8',
     supportsReasoning: true,
-    effortLevels: ALL_EFFORTS,
-    defaultEffort: 'medium',
+    effortLevels: ['low', 'high'],
+    defaultEffort: 'high',
     nativeWebSearch: true,
     contextWindow: 1_000_000,
     maxOutputTokens: 65_535,
@@ -187,8 +197,8 @@ export const AI_MODELS: readonly AiModelDefinition[] = [
     label: 'DeepSeek V4.1 Flash',
     shortLabel: 'DS V4.1 Flash',
     supportsReasoning: true,
-    effortLevels: ALL_EFFORTS,
-    defaultEffort: 'medium',
+    effortLevels: ['none', 'low', 'high', 'max'],
+    defaultEffort: 'high',
     nativeWebSearch: false,
     contextWindow: 1_048_576,
     maxOutputTokens: 32_768,
@@ -201,8 +211,8 @@ export const AI_MODELS: readonly AiModelDefinition[] = [
     label: 'DeepSeek V4 Pro',
     shortLabel: 'DS V4 Pro',
     supportsReasoning: true,
-    effortLevels: ALL_EFFORTS,
-    defaultEffort: 'medium',
+    effortLevels: ['none', 'low', 'high', 'max'],
+    defaultEffort: 'high',
     nativeWebSearch: false,
     contextWindow: 1_000_000,
     maxOutputTokens: 384_000,
@@ -215,8 +225,8 @@ export const AI_MODELS: readonly AiModelDefinition[] = [
     label: 'GLM 5.3',
     shortLabel: 'GLM 5.3',
     supportsReasoning: true,
-    effortLevels: ALL_EFFORTS,
-    defaultEffort: 'medium',
+    effortLevels: ['low', 'high', 'max'],
+    defaultEffort: 'high',
     nativeWebSearch: false,
     contextWindow: 1_000_000,
     maxOutputTokens: 1_000_000,
@@ -229,8 +239,8 @@ export const AI_MODELS: readonly AiModelDefinition[] = [
     label: 'GLM 5.3 Flash',
     shortLabel: 'GLM 5.3 Flash',
     supportsReasoning: true,
-    effortLevels: ALL_EFFORTS,
-    defaultEffort: 'medium',
+    effortLevels: ['low', 'high', 'max'],
+    defaultEffort: 'high',
     nativeWebSearch: false,
     contextWindow: 1_000_000,
     maxOutputTokens: 131_000,
