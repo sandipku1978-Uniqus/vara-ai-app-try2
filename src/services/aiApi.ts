@@ -315,6 +315,8 @@ function getUserFacingError(error: unknown, fallback: string): string {
 }
 
 export interface MemoCitationInput {
+  /** 'release' (an AAER) is cited by release number, never as a filing. */
+  kind?: 'filing' | 'letter' | 'release';
   company: string;
   form: string;
   fileDate: string;
@@ -333,7 +335,9 @@ export async function aiDraftMemoFromCitations(
 ): Promise<string> {
   const evidence = citations
     .map((citation, index) =>
-      `[${index + 1}] ${citation.company} — Form ${citation.form}, filed ${citation.fileDate} (accession ${citation.accessionNumber})` +
+      (citation.kind === 'release'
+        ? `[${index + 1}] SEC enforcement release ${citation.accessionNumber}, SEC, ${citation.fileDate} — ${citation.company}`
+        : `[${index + 1}] ${citation.company} — Form ${citation.form}, filed ${citation.fileDate} (accession ${citation.accessionNumber})`) +
       (citation.excerpt.trim() ? `\nCited excerpt: ${citation.excerpt.trim()}` : '') +
       (citation.note.trim() ? `\nResearcher note: ${citation.note.trim()}` : ''))
     .join('\n\n');

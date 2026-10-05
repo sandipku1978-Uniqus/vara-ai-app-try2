@@ -163,6 +163,7 @@ export default function MemoTray() {
           }
         }
         return {
+          kind: citation.kind,
           company: citation.company,
           form: citation.form,
           fileDate: citation.fileDate,
@@ -224,7 +225,7 @@ export default function MemoTray() {
                     <div className="memo-tray-item-top">
                       <span className="el-badge el-badge-citation">[{index + 1}]</span>
                       <span className="el-mono">{citation.fileDate}</span>
-                      <span className="el-badge el-badge-neutral">{citation.form}</span>
+                      <span className="el-badge el-badge-neutral">{citation.kind === 'release' ? citation.accessionNumber : citation.form}</span>
                       {citation.section && (
                         <span className="el-badge el-badge-neutral memo-tray-section" title="Section or passage this citation is scoped to">
                           {citation.section}

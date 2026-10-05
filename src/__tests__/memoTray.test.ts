@@ -11,7 +11,9 @@ import {
   getMemoCitations,
   isCited,
   passageKey,
+  releaseReference,
   removeCitation,
+  upgradeLegacyCitation,
   updateCitationNote,
 } from '../services/memoTray';
 
@@ -55,6 +57,34 @@ describe('memo tray citation ledger', () => {
     expect(text).toMatch(/^\[1\] Organon & Co\. — Form 10-K\/A, filed 2025-11-10/);
     expect(text).toContain('0001193125-26-307767');
     expect(text).toContain('https://www.sec.gov/');
+  });
+
+  it('cites an AAER by its release number, the SEC and its date, never as a filing', () => {
+    const release = {
+      kind: 'release' as const,
+      cik: 'SEC',
+      accessionNumber: 'AAER-4604',
+      company: 'In the Matter of Example Corp.',
+      form: 'AAER',
+      fileDate: '2026-09-30',
+      excerpt: 'AAER-4604 (2026-09-30): In the Matter of Example Corp.',
+      sourceUrl: 'https://www.sec.gov/enforcement-litigation/administrative-proceedings/34-100000',
+    };
+    addCitation(release);
+    expect(releaseReference(release)).toBe('AAER-4604, SEC, 2026-09-30');
+    expect(describeCitation(release)).toBe('AAER-4604, SEC, 2026-09-30 — In the Matter of Example Corp.');
+    expect(formatCitationsText(getMemoCitations())).toBe(
+      '[1] AAER-4604, SEC, 2026-09-30 — In the Matter of Example Corp. https://www.sec.gov/enforcement-litigation/administrative-proceedings/34-100000'
+    );
+    const markdown = formatMemoMarkdown(getMemoCitations());
+    expect(markdown).toContain('## [1] AAER-4604, SEC, 2026-09-30 — In the Matter of Example Corp.');
+    expect(markdown).not.toContain('Form AAER');
+  });
+
+  it('upgrades only legacy AAER "letters", leaving real comment letters alone', () => {
+    const base = { id: 'x', note: '', addedAt: '2026-01-01T00:00:00.000Z', company: 'c', form: 'AAER', fileDate: '2026-01-01', excerpt: '', sourceUrl: 'https://www.sec.gov/' };
+    expect(upgradeLegacyCitation({ ...base, kind: 'letter', cik: 'SEC', accessionNumber: 'AAER-1' }).kind).toBe('release');
+    expect(upgradeLegacyCitation({ ...base, kind: 'letter', cik: '320193', accessionNumber: '0000320193-26-000001', form: 'UPLOAD' }).kind).toBe('letter');
   });
 
   it('markdown export carries excerpt, note, and citation list', () => {

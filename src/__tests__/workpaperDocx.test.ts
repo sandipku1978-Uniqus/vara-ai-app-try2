@@ -129,6 +129,20 @@ describe('memo Word export', () => {
     expect(text).toContain('Model: not reported');
   });
 
+  it('cites an AAER as "AAER-4604, SEC, <date>" in the evidence table and sources, not as a filing', async () => {
+    const release: MemoCitation = {
+      id: 'SEC:AAER-4604', kind: 'release', cik: 'SEC', accessionNumber: 'AAER-4604', company: 'In the Matter of Example Corp.',
+      form: 'AAER', fileDate: '2026-09-30', excerpt: 'AAER-4604 (2026-09-30): In the Matter of Example Corp.',
+      sourceUrl: 'https://www.sec.gov/enforcement-litigation/administrative-proceedings/34-100000', note: '', addedAt: '2026-10-01T00:00:00.000Z',
+    };
+    const { xml } = await unpack(buildMemoDocument(memoInput({ citations: [release], draft: null })));
+    const text = visibleText(xml);
+    expect(text).toContain('[1] AAER-4604, SEC, 2026-09-30 — In the Matter of Example Corp. ');
+    expect(text).toContain('AAER (SEC release)');
+    expect(text).toContain('AAER-4604 (release no.)');
+    expect(text).not.toContain('Form AAER');
+  });
+
   it('names the model, provider and effort the draft was saved with in the appendix', async () => {
     const draft: MemoDraftRecord = {
       ...DRAFT,
