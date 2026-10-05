@@ -872,9 +872,10 @@ export async function runResumableWave<
     },
     hydrateResultSignals: async (result, abortSignal, onUpstreamAttempts) => {
       const loaded = await input.clients.hydrateResultSignals(result, abortSignal, onUpstreamAttempts);
-      if (!loaded.text && loaded.failure) {
-        failureBySignalKey.set(input.clients.getSignalCacheKey(result), loaded.failure);
-      }
+      const key = input.clients.getSignalCacheKey(result);
+      // Only the latest read counts: a retry that succeeds clears the failure.
+      if (!loaded.text && loaded.failure) failureBySignalKey.set(key, loaded.failure);
+      else failureBySignalKey.delete(key);
       return loaded;
     },
   };

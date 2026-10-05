@@ -225,6 +225,20 @@ describe('search job worker (deterministic fixture plan)', () => {
     expect(memory.cursor()?.totals.unvalidatedFailures).toBe(0);
   });
 
+  it('treats a retried filing that reads fine but does not match as a verdict, not a failure', async () => {
+    const plan = jobFor('material W/3 weakness');
+    const hits = Array.from({ length: 6 }, (_, index) => fixtureHit(index));
+    const texts = Object.fromEntries(hits.map((hit, index) => [hit._source.primary_document!, index === 2 ? MISS : MATCH]));
+    const flaky = new Set([hits[2]._source.primary_document!]);
+    const memory = memoryStore(plan, createSearchJobCursor(plan));
+    const { clients } = fixtureClients({ lanes: { [plan.lanes[0]]: hits }, texts, flaky });
+
+    const headlines = await runToCompletion(memory.store, clients);
+    expect(headlines.at(-1)).toBe('5 filings match (verified)');
+    expect(memory.cursor()?.totals.unvalidatedFailures).toBe(0);
+    expect(memory.cursor()?.totals.examined).toBe(6);
+  });
+
   it('counts a permanently unreadable filing and never calls the result verified', async () => {
     const plan = jobFor('material W/3 weakness');
     const hits = Array.from({ length: 10 }, (_, index) => fixtureHit(index));
