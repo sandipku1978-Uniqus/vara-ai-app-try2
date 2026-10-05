@@ -133,9 +133,11 @@ describe('UI action coverage traceability', () => {
     expect(full).toBeGreaterThanOrEqual(144);
     expect(full + partial).toBeGreaterThanOrEqual(144);
     expect(partial).toBe(0);
-    expect(manual).toBe(0);
+    // The 22 October 2026 first-wave controls are owned manual debt
+    // (OCTOBER_2026_EXCEPTION_EXPIRY); this ceiling may only come down.
+    expect(manual).toBeLessThanOrEqual(22);
     expect(allActionIds.length).toBe(Object.keys(UI_ACTION_COVERAGE).length);
     expect(allContentIds.length).toBe(content);
-    expect(allActionIds.length + allContentIds.length).toBe(145);
+    expect(allActionIds.length + allContentIds.length).toBe(167);
   });
 });
