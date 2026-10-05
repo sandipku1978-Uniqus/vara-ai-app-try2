@@ -26,6 +26,7 @@ import {
 } from '../services/userDataCodecs';
 import { USER_DATA_KINDS, type UserDataKind } from '../lib/user-data-kinds';
 import { validateUserDataItem } from '../lib/user-data-input';
+import { loadResearchSessions, saveResearchSessions, type ResearchSearchSession } from '../services/researchSessions';
 
 /** In-memory stand-in for one identity's /api/user/* rows, validating like the route. */
 function fakeServer(initial: Partial<Record<UserDataKind, Array<Record<string, unknown>>>> = {}) {
@@ -148,6 +149,46 @@ describe('signed out', () => {
     } finally {
       unsubscribe();
     }
+  });
+});
+
+function researchTab(id: string): ResearchSearchSession {
+  const filters = {
+    keyword: '', dateFrom: '', dateTo: '', entityName: '', entityCik: '', formTypes: [], sectionKeywords: '',
+    sicCode: '', stateOfInc: '', headquarters: '', exchange: [], acceleratedStatus: [], accountant: '',
+    accessionNumber: '', fileNumber: '', fiscalYearEnd: '', accountingFramework: '', ascReference: '', sectionScope: '',
+  };
+  return {
+    id, title: `Tab ${id}`, query: id, mode: 'semantic', filters, results: [], isRefining: false, searched: true,
+    errorMsg: '', interpretation: [], resolvedSearch: { query: id, mode: 'semantic', filters }, selectedResultId: null,
+    createdAt: '2026-10-01T00:00:00.000Z', updatedAt: '2026-10-01T00:00:00.000Z',
+  } as ResearchSearchSession;
+}
+
+describe('research tabs beyond the tab cap', () => {
+  it('a tab save never deletes account tabs the search page did not load', async () => {
+    const originals = Array.from({ length: 10 }, (_, index) => researchTab(`research-${index}`));
+    const server = fakeServer({
+      'research-tabs': originals.map((tab, position) => ({ clientKey: tab.id, title: tab.title, payload: tab, position })),
+    });
+    window.localStorage.setItem(scopedStorageKey('urc.userdata.migrated.v1', ALICE)!, 'earlier');
+    await signIn(ALICE, server);
+
+    // The search page loads at most 8 tabs and saves them on mount.
+    const loaded = loadResearchSessions();
+    expect(loaded).toHaveLength(8);
+    saveResearchSessions(loaded);
+    // The user closes one tab and opens a new one.
+    const closed = loaded[0].id;
+    saveResearchSessions([...loaded.slice(1), researchTab('research-new')]);
+    await flushUserData();
+
+    const keys = new Set(server.keys('research-tabs'));
+    for (const tab of originals) {
+      if (tab.id === closed) expect(keys.has(tab.id)).toBe(false);
+      else expect(keys.has(tab.id)).toBe(true);
+    }
+    expect(keys.has('research-new')).toBe(true);
   });
 });
 
