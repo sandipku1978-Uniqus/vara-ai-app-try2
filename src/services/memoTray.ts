@@ -14,6 +14,7 @@ import {
   draftToItem,
 } from './userDataCodecs';
 import { onUserDataHydrated, syncUserCollection } from './userData';
+import type { AiAnswerMeta } from './aiApi';
 
 /** The prior filing a year-over-year redline passage was compared against. */
 export interface MemoComparedFiling {
@@ -231,6 +232,12 @@ export interface MemoDraftRecord {
   text: string;
   generatedAt: string;
   citationIds: string[];
+  /**
+   * What the AI route reported about the draft call (model, provider,
+   * effort, usage, web sources), for the evidence package. Absent on drafts
+   * saved before it was recorded, or when the route reported none.
+   */
+  aiMetadata?: AiAnswerMeta;
 }
 
 const DRAFT_STORAGE_KEY = MEMO_DRAFT_STORAGE_KEY;
@@ -301,9 +308,9 @@ export function getMemoDraft(): MemoDraftRecord | null {
   return readDraft();
 }
 
-export function setMemoDraft(text: string, citationIds: string[]): void {
+export function setMemoDraft(text: string, citationIds: string[], aiMetadata?: AiAnswerMeta | null): void {
   readDraft();
-  draftCache = { text, generatedAt: new Date().toISOString(), citationIds };
+  draftCache = { text, generatedAt: new Date().toISOString(), citationIds, ...(aiMetadata ? { aiMetadata } : {}) };
   const key = draftStorageKey();
   draftCacheKey = key;
   if (key && typeof window !== 'undefined') persistDraft(draftCache, key);

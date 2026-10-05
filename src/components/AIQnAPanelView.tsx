@@ -63,7 +63,13 @@ function AnswerExportButton({ run, evidence }: { run: AgentRun; evidence: AgentE
     setFailed(false);
     try {
       const generatedAt = new Date();
-      const evidencePackage = buildAnswerEvidencePackage({ run, evidence, generatedAt, appVersion: await fetchAppVersion() });
+      const evidencePackage = buildAnswerEvidencePackage({
+        run,
+        evidence,
+        generatedAt,
+        appVersion: await fetchAppVersion(),
+        aiMetadata: { response: run.aiMetadata },
+      });
       if (format === 'json') exportEvidencePackageJson(evidencePackage, answerFileStem(run, generatedAt));
       else await exportAnswerDocx({ run, evidence, author: readSessionDisplayName(), generatedAt, evidencePackage });
     } catch (error) {

@@ -1,5 +1,6 @@
 import type { SearchFilters } from '../domain/searchFilters';
 import type { FilingResearchResult, ResearchSearchMode } from '../services/filingResearch';
+import type { AiAnswerMeta } from '../services/aiApi';
 
 export type AgentToolName =
   | 'resolve_company'
@@ -87,6 +88,12 @@ export interface AgentRun {
   actionLog: AgentActionLogEntry[];
   answer: string;
   evidence: AgentEvidencePacket | null;
+  /**
+   * What the AI route reported about the answer (model, provider, effort,
+   * usage, web sources), so the run's export records the model that
+   * actually answered. Absent when the route reported none.
+   */
+  aiMetadata?: AiAnswerMeta;
 }
 
 export interface AgentPromptRequest {

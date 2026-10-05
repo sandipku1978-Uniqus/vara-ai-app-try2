@@ -170,6 +170,8 @@ export interface LocalMemoDraftRecord {
   text: string;
   generatedAt: string;
   citationIds: string[];
+  /** The draft call's reported AI metadata (memoTray), carried as an opaque object. */
+  aiMetadata?: object;
 }
 
 export interface LocalAnnotationRecord {
@@ -352,13 +354,17 @@ export function itemsToCitations(items: UserMemoItem[]): Record<string, unknown>
 export function itemsToDraft(items: UserMemoItem[]): LocalMemoDraftRecord | null {
   const draft = items.find(item => item.itemKind === 'draft' && item.clientKey === MEMO_DRAFT_CLIENT_KEY);
   if (!draft || !isRecord(draft.payload) || typeof draft.payload.text !== 'string') return null;
-  return {
+  const record: LocalMemoDraftRecord = {
     text: draft.payload.text,
     generatedAt: typeof draft.payload.generatedAt === 'string' ? draft.payload.generatedAt : '',
     citationIds: Array.isArray(draft.payload.citationIds)
       ? draft.payload.citationIds.filter((id): id is string => typeof id === 'string')
       : [],
   };
+  // The memo payload is a free-form object on the server (≤ 256 KB), so the
+  // draft's AI metadata travels inside it; readers parse it defensively.
+  if (isRecord(draft.payload.aiMetadata)) record.aiMetadata = draft.payload.aiMetadata;
+  return record;
 }
 
 /** One filing's notes. The client key is scoped by filing so a note id can never move between filings. */

@@ -158,4 +158,17 @@ describe('memo draft persistence', () => {
     clearMemoDraft();
     expect(getMemoDraft()).toBeNull();
   });
+
+  it('keeps the model, provider and effort the draft call reported', async () => {
+    const { setMemoDraft, getMemoDraft, clearMemoDraft } = await import('../services/memoTray');
+    const aiMetadata = {
+      requestedModel: 'anthropic/claude-opus-5.5', requestedEffort: 'medium' as const, model: 'anthropic/claude-opus-5.5',
+      provider: 'anthropic', reasoningEffort: 'medium' as const, webSources: [], usage: { input: 900, output: 410 },
+    };
+    setMemoDraft('# Research memo — test', ['a'], aiMetadata);
+    expect(getMemoDraft()?.aiMetadata).toEqual(aiMetadata);
+    setMemoDraft('# Research memo — unreported', ['a'], null);
+    expect(getMemoDraft()).not.toHaveProperty('aiMetadata');
+    clearMemoDraft();
+  });
 });

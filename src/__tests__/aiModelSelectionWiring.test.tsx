@@ -131,6 +131,14 @@ describe('readAiAnswerMeta', () => {
   it('reads a nested meta object', () => {
     expect(readAiAnswerMeta({ meta: { model: 'zai/glm-5.3' } }, requested)?.model).toBe('zai/glm-5.3');
   });
+
+  it('keeps the reported usage counts, and leaves usage out when none is reported', () => {
+    const meta = readAiAnswerMeta({
+      model: 'openai/gpt-5.6', usage: { input: 1200.7, output: 300, reasoning: 80, webSearchCalls: 2, cacheRead: 5 },
+    }, requested);
+    expect(meta?.usage).toEqual({ input: 1200, output: 300, reasoning: 80, webSearchCalls: 2 });
+    expect(readAiAnswerMeta({ model: 'openai/gpt-5.6', usage: { input: -1, output: 3 } }, requested)).not.toHaveProperty('usage');
+  });
 });
 
 describe('answer footer', () => {

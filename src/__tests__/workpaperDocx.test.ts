@@ -126,6 +126,24 @@ describe('memo Word export', () => {
     expect(text).toContain('Appendix — Evidence package');
     expect(text).toContain('urc.evidence-package.v1');
     expect(text).toContain('commit abc1234');
+    expect(text).toContain('Model: not reported');
+  });
+
+  it('names the model, provider and effort the draft was saved with in the appendix', async () => {
+    const draft: MemoDraftRecord = {
+      ...DRAFT,
+      aiMetadata: {
+        requestedModel: 'openai/gpt-5.6', requestedEffort: 'high', model: 'openai/gpt-5.6', provider: 'openai',
+        reasoningEffort: 'high', webSources: [],
+      },
+    };
+    const evidencePackage = buildMemoEvidencePackage({
+      title: 'Research memo — Supply-chain risk', citations: CITATIONS, draft, generatedAt: NOW, appVersion: VERSION,
+    });
+    const { xml } = await unpack(buildMemoDocument(memoInput({ draft, evidencePackage })));
+    const text = visibleText(xml);
+    expect(text).toContain('Model: openai/gpt-5.6 (openai). Reasoning effort: high (as reported by the AI route response).');
+    expect(text).not.toContain('Model: not reported');
   });
 
   it('keeps [n] markers as superscript references linked to their evidence row, and leaves unresolvable ones as typed', async () => {

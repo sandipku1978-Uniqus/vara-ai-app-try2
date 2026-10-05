@@ -54,6 +54,18 @@ describe('user data codecs', () => {
     expect(itemsToDraft([citation, draft])).toEqual({ text: 'memo', generatedAt: 'g', citationIds: ['c1'] });
   });
 
+  it('keeps the draft call\'s AI metadata through the memo row, and reads older drafts without it', () => {
+    const aiMetadata = {
+      requestedModel: 'openai/gpt-5.6', requestedEffort: 'high', model: 'openai/gpt-5.6', provider: 'openai',
+      reasoningEffort: 'high', webSources: [], usage: { input: 1200, output: 340, reasoning: 90 },
+    };
+    const draft = draftToItem({ text: 'memo', generatedAt: 'g', citationIds: ['c1'], aiMetadata });
+    expect('row' in validateUserDataItem('memo', draft)).toBe(true);
+    expect(itemsToDraft([draft])).toEqual({ text: 'memo', generatedAt: 'g', citationIds: ['c1'], aiMetadata });
+    const malformed = { ...draft, payload: { ...draft.payload, aiMetadata: 'openai/gpt-5.6' } };
+    expect(itemsToDraft([malformed])).toEqual({ text: 'memo', generatedAt: 'g', citationIds: ['c1'] });
+  });
+
   it('scopes annotation keys by filing so a note id never moves between filings', () => {
     const note = { id: 'note-1', quote: 'q', note: 'n', section: 'Item 9A', createdAt: '2026-01-01T00:00:00.000Z' };
     const first = annotationsToItems('320193_0000320193-24-000123_a.htm', [note]);
