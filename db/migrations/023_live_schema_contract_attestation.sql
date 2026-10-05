@@ -103,6 +103,29 @@ alter default privileges revoke all on sequences
 alter default privileges revoke execute on functions
   from public, anon, authenticated, urc_web;
 
+-- Platforms that grant `authenticated` default privileges on every new public
+-- table (Supabase does) leave that role SELECT on relations created before
+-- 014's default-privilege revoke and absent from 010's explicit list (for
+-- example urc_filing_text, 004): 010 revoked only the tables it named and
+-- 014's sweep removed write privileges alone. A replay on such a database
+-- then failed the `authenticated can SELECT` attestation below. The contract
+-- is that authenticated holds nothing on any urc_* relation, so state it here
+-- (found by scripts/db/dry-run-chain.sh). No effect where nothing is granted.
+do $$
+declare r record;
+begin
+  for r in
+    select c.relname
+    from pg_catalog.pg_class c
+    join pg_catalog.pg_namespace n on n.oid = c.relnamespace
+    where n.nspname = 'public'
+      and c.relname like 'urc\_%' escape '\'
+      and c.relkind in ('r', 'p', 'v', 'm')
+  loop
+    execute format('revoke all on table public.%I from authenticated', r.relname);
+  end loop;
+end $$;
+
 -- ── 1. Required relation kinds and RLS boundaries ──────────────────────────
 do $$
 declare missing text[];
