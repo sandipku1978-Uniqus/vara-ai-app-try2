@@ -4,8 +4,8 @@ Uniqus Research is a Next.js application for researching SEC filings, comparing 
 
 ## What is implemented
 
-- SEC filing search with exact Boolean, `NOT`, grouping, and proximity validation against filing text
-- Filing viewer with within-document search, annotations, table extraction, historical redlines, and export
+- SEC filing search with exact Boolean, `NOT`, grouping, and proximity validation against filing text; a text-validated result shows up to three passages from the text that was read, each with its section breadcrumb, the number of hits in that document, and the matched exhibits listed under the parent filing
+- Filing viewer with a find bar (Ctrl/⌘+F while the viewer has focus; case-insensitive, optional whole-word matching, match count, Enter / Shift+Enter to step), an "All hits in this filing" list of every hit of the search that opened the filing (Boolean phrases and `W/n` / `P/n` proximity as the engine evaluates them) with section breadcrumbs, annotations, table extraction, historical redlines, and export. Find and the hit list work on HTML documents rendered in the viewer, not on PDF or XML documents or the parsed Form 3/4/5 view
 - Company dossiers, XBRL financial comparisons, PCAOB auditor information, and comment-letter review episodes
 - Disclosure benchmarking, board, ESG, M&A, IPO, earnings, exhibit, exempt-offering, and accounting research workflows
 - Evidence-linked Claude analysis through authenticated server routes
