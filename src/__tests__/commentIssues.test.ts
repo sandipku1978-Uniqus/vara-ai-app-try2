@@ -131,7 +131,7 @@ describe('buildEpisodeIssues on real episodes', () => {
     expect(first.statusBasis).toContain('2024-05-16 states the review is complete');
 
     const second = issue(result, 2, 2);
-    expect(second.followsUp).toEqual([{ staffAccession: '0000000000-24-002512', issueNumber: 2 }]);
+    expect(second.followsUp).toEqual([{ staffAccession: '0000000000-24-002512', staffDate: '2024-03-06', issueNumber: 2 }]);
     // The extension letter of 2024-04-05 answers nothing; the 2024-04-29 letter does.
     expect(second.response?.accession).toBe('0000320193-24-000061');
     expect(second.response?.excerpt).toMatch(/^The Company respectfully advises the Staff that expanded descriptions/);
@@ -147,7 +147,7 @@ describe('buildEpisodeIssues on real episodes', () => {
     expect(issue(result, 1, 1).response?.excerpt).toMatch(/^We acknowledge the Staff’s comment and as requested revised our disclosure/);
     expect(issue(result, 1, 2).response?.excerpt).toMatch(/^We respectfully advise the Staff that we considered both positive and negative evidence/);
     const followUp = issue(result, 2, 1);
-    expect(followUp.followsUp).toEqual([{ staffAccession: '0000000000-23-010608', issueNumber: 3 }]);
+    expect(followUp.followsUp).toEqual([{ staffAccession: '0000000000-23-010608', staffDate: '2023-09-26', issueNumber: 3 }]);
     // The December response recites the comment without its number; it is
     // found by the comment's text and flagged as such.
     expect(followUp.response?.accession).toBe('0001193125-23-296911');
@@ -162,9 +162,9 @@ describe('buildEpisodeIssues on real episodes', () => {
     expect(issue(result, 1, 1).response?.excerpt).toMatch(/^As you noted from our 2020 Sustainability Report/);
     // "Your\nresponse should address ..." inside the recited comment is prose, not a label.
     expect(issue(result, 2, 1).response?.excerpt).toMatch(/^Discrete capital expenditures in support of The Climate Pledge/);
-    expect(issue(result, 2, 1).followsUp).toEqual([{ staffAccession: '0000000000-21-011629', issueNumber: 2 }]);
+    expect(issue(result, 2, 1).followsUp).toEqual([{ staffAccession: '0000000000-21-011629', staffDate: '2021-09-23', issueNumber: 2 }]);
     expect(issue(result, 1, 3).followUp.map(follow => `${follow.staffDate}#${follow.issueNumber}`)).toEqual(['2021-11-08#2', '2021-11-08#3']);
-    expect(issue(result, 3, 2).followsUp).toEqual([{ staffAccession: '0000000000-21-013530', issueNumber: 4 }]);
+    expect(issue(result, 3, 2).followsUp).toEqual([{ staffAccession: '0000000000-21-013530', staffDate: '2021-11-08', issueNumber: 4 }]);
     expect(issue(result, 2, 2).filingSectionRef).not.toMatch(/Olsavsky|November/);
     expect(result.letters.flatMap(letter => letter.issues).every(item => item.status === 'resolved')).toBe(true);
   });

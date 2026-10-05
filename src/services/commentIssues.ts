@@ -89,7 +89,7 @@ export interface CommentIssue {
   response: IssueResponse | null;
   followUp: IssueFollowUp[];
   /** Earlier issues this comment continues (resolved from "prior comment N"). */
-  followsUp: Array<{ staffAccession: string; issueNumber: number }>;
+  followsUp: Array<{ staffAccession: string; staffDate: string; issueNumber: number }>;
   status: IssueStatus;
   statusBasis: string;
 }
@@ -771,7 +771,7 @@ export function buildEpisodeIssues(input: IssueLetter[]): EpisodeIssues {
             staffComment: thisIssue.staffComment,
           });
         }
-        thisIssue.followsUp.push({ staffAccession: targetIssue.staffAccession, issueNumber: targetIssue.issueNumber });
+        thisIssue.followsUp.push({ staffAccession: targetIssue.staffAccession, staffDate: targetIssue.staffDate, issueNumber: targetIssue.issueNumber });
       }
     });
   });

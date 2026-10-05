@@ -95,6 +95,10 @@ create table if not exists public.urc_letter_issues (
   staff_accession     text not null,
   cik                 bigint not null,
   staff_date          date not null,
+  -- 1-based position of this Staff letter in the episode.
+  round               int not null,
+  -- comments | review-complete | no-review | no-comments-found | text-missing
+  letter_kind         text not null,
   -- CommentIssue[] (src/services/commentIssues.ts) for this Staff letter.
   issues              jsonb not null,
   parser_version      smallint not null,
@@ -104,6 +108,9 @@ create table if not exists public.urc_letter_issues (
   generated_at        timestamptz not null default now(),
   primary key (thread_id, staff_accession),
   constraint urc_letter_issues_array check (jsonb_typeof(issues) = 'array'),
+  constraint urc_letter_issues_kind check (
+    letter_kind in ('comments', 'review-complete', 'no-review', 'no-comments-found', 'text-missing')
+  ),
   constraint urc_letter_issues_fingerprint check (episode_fingerprint ~ '^[0-9a-f]{64}$')
 );
 
@@ -371,7 +378,7 @@ insert into public.urc_schema_version (
   '027',
   28,
   -- URC CHAIN CHECKSUM VALUE
-  '99cc91f73d7b38e972426441cc130d499813676c54430cd5e55aefcf74b016a3',
+  '33a2985f9e2d13f240d64eefe98677f56139bf81ba243bb7a8d9a2e0ea3846fa',
   'sha256-v2'
 )
 on conflict (singleton) do update set

@@ -153,6 +153,71 @@ describe('GET /api/letters browse pagination', () => {
     expect(String(completionSpy.mock.calls[0][0])).not.toContain('thread-1');
   });
 
+  it('sends exactly the original seven arguments for an unfiltered text search', async () => {
+    mocks.rpc.mockResolvedValue({ data: [{ accession: 'a', total_count: 1 }], error: null });
+
+    const response = await GET(get('q=segment%20reporting&size=10'));
+
+    expect(response.status).toBe(200);
+    expect(Object.keys(mocks.rpc.mock.calls[0][1]).sort()).toEqual([
+      'p_company', 'p_end', 'p_form', 'p_limit', 'p_offset', 'p_query', 'p_start',
+    ]);
+    expect(await response.json()).toMatchObject({ total: 1, ordering: 'relevance' });
+  });
+
+  it('passes date, CIK, industry and reviewed-form filters to urc_search_letters', async () => {
+    mocks.rpc.mockResolvedValue({ data: [{ accession: 'a', total_count: 10001 }], error: null });
+
+    const response = await GET(get(
+      'q=segment&form=UPLOAD&startdt=2024-01-01&enddt=2025-12-31&cik=320193&sic=3571&forms=10-K,10-Q,10-K&size=50'
+    ));
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(mocks.rpc).toHaveBeenCalledWith('urc_search_letters', {
+      p_query: 'segment',
+      p_form: 'UPLOAD',
+      p_start: '2024-01-01',
+      p_end: '2025-12-31',
+      p_limit: 50,
+      p_offset: 0,
+      p_company: null,
+      p_cik: 320193,
+      p_sic: '3571',
+      p_reviewed_forms: ['10-K', '10-Q'],
+    });
+    expect(body).toMatchObject({ total: 10000, totalIsFloor: true });
+  });
+
+  it('runs a filter-only search, newest first, when a structured filter has no query text', async () => {
+    mocks.rpc.mockResolvedValue({ data: [], error: null });
+
+    const response = await GET(get('forms=S-1&sic=2834&size=50'));
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(mocks.rpc).toHaveBeenCalledWith('urc_search_letters', expect.objectContaining({
+      p_query: '', p_sic: '2834', p_reviewed_forms: ['S-1'],
+    }));
+    expect(body).toEqual({ total: 0, totalIsFloor: false, ordering: 'newest', matches: [] });
+  });
+
+  it('keeps a company-only request on the episode browse', async () => {
+    mocks.rpc.mockResolvedValue({ data: [], error: null });
+    await GET(get('cik=320193&size=12'));
+    expect(mocks.rpc.mock.calls[0][0]).toBe('urc_recent_threads');
+  });
+
+  it.each([
+    ['sic=12a4'],
+    ['forms=' + Array.from({ length: 13 }, (_, index) => `F${index}`).join(',')],
+    ['forms=10-K;drop'],
+  ])('rejects malformed filter %s before any database call', async query => {
+    const response = await GET(get(`q=x&${query}`));
+    expect(response.status).toBe(400);
+    expect(mocks.rpc).not.toHaveBeenCalled();
+  });
+
   it('returns a safe correlated generic envelope when the RPC throws', async () => {
     const secretQuery = 'private-query-must-not-be-logged';
     mocks.rpc.mockRejectedValue(new Error(`failure while processing ${secretQuery}`));

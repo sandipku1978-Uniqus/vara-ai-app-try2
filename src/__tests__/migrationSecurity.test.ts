@@ -57,7 +57,7 @@ describe('database security migration chain', () => {
     }
   });
 
-  it('limits the privileged cache-writer helper to the three audited server routes', () => {
+  it('limits the privileged cache-writer helper to the four audited server routes', () => {
     const sourceRoot = resolve(process.cwd(), 'src');
     const callers = runtimeSources(sourceRoot)
       .filter(file => readFileSync(file, 'utf8').includes('getCacheWriterSupabase'))
@@ -67,6 +67,8 @@ describe('database security migration chain', () => {
     expect(callers).toEqual([
       'app/api/boolean-validate/route.ts',
       'app/api/filing-text/route.ts',
+      // 027: the deterministic issue split, stored like episode summaries.
+      'app/api/letters/issues/route.ts',
       'app/api/letters/summary/route.ts',
       'lib/supabase-web.ts',
     ]);
