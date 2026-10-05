@@ -448,16 +448,17 @@ declare
   current_alert public.urc_user_alerts;
   inserted integer := 0;
 begin
-  if jsonb_typeof(p_seen) <> 'array' or jsonb_array_length(p_seen) > 5000 then
+  if p_seen is null or jsonb_typeof(p_seen) <> 'array' or jsonb_array_length(p_seen) > 5000 then
     raise exception 'seen accessions must be an array of at most 5000 entries';
   end if;
-  if jsonb_typeof(p_latest_new) <> 'array' or jsonb_array_length(p_latest_new) > 5000 then
+  if p_latest_new is null or jsonb_typeof(p_latest_new) <> 'array' or jsonb_array_length(p_latest_new) > 5000 then
     raise exception 'new accessions must be an array of at most 5000 entries';
   end if;
-  if jsonb_typeof(p_hits) <> 'array' or jsonb_array_length(p_hits) > 100 then
+  if p_hits is null or jsonb_typeof(p_hits) <> 'array' or jsonb_array_length(p_hits) > 100 then
     raise exception 'hits must be an array of at most 100 entries';
   end if;
-  if jsonb_typeof(p_coverage) <> 'object' or octet_length(p_coverage::text) > 65536 then
+  -- `jsonb_typeof(null)` is null, so a bare `<>` test would wave a SQL NULL through.
+  if p_coverage is null or jsonb_typeof(p_coverage) <> 'object' or octet_length(p_coverage::text) > 65536 then
     raise exception 'coverage must be an object of at most 64 KB';
   end if;
 
@@ -621,7 +622,7 @@ insert into public.urc_schema_version (
   '029',
   31,
   -- URC CHAIN CHECKSUM VALUE
-  '4e87b93fd717fb335782948c6fef8dcdeac9c3bb67a4b112f3ac05e090caf28e',
+  '71ac971d148eba2bd5b6497a30247995befb73b4519d4f624d20ac4f12ba07b6',
   'sha256-v2'
 )
 on conflict (singleton) do update set
