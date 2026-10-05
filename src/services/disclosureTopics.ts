@@ -13,6 +13,8 @@
  * it was found so the reader can judge the match rather than trust it.
  */
 
+import { SECTION_CONCEPTS } from '../utils/sectionTaxonomy';
+
 export interface DisclosureTopic {
   id: string;
   label: string;
@@ -31,154 +33,29 @@ export interface DisclosureTopic {
   terms: string[];
 }
 
-export const DISCLOSURE_TOPICS: DisclosureTopic[] = [
-  {
-    id: 'revenue-recognition',
-    label: 'Revenue recognition policy',
-    asc: 'ASC 606',
-    // Most specific first. A bare 'revenue' is kept LAST because some issuers
-    // (Apple) title the policy note exactly that — the confirmation step below
-    // is what rejects the identically-titled income-statement line item.
-    // Revenue recognition is not only ASC 606. An insurer earns premiums under
-    // ASC 944 and a REIT recognises rents as lessor under ASC 842, and those
-    // notes are titled accordingly — so an accountant benchmarking revenue
-    // policy across an insurance or property peer group got MD&A noise instead
-    // of the policy that governs them.
-    headings: [
-      'revenue recognition', 'revenue from contracts with customers', 'revenue recognition policy',
-      // Only headings that unambiguously title a revenue policy. A generic
-      // "lease income" belongs to the lease topic and collided here: Target's
-      // "Sublease income (c)" table row was matched as its revenue note.
-      'insurance premiums and receivables', 'insurance premiums', 'premiums earned',
-      'revenue',
-    ],
-    terms: [
-      'performance obligation', 'transaction price', 'contract with customer', 'variable consideration',
-      'standalone selling price', 'over time', 'point in time', 'contract asset', 'contract liability',
-      'deferred revenue', 'asc 606', 'topic 606',
-      // How filings outside software and industrials actually word the policy.
-      // The list above is ASC 606 jargon, and a plainly-written retail note
-      // ("revenue is recognized at the point of sale, net of returns") matched
-      // none of it — so Walmart, Costco and Target failed confirmation on a
-      // correctly-located "Revenue Recognition" heading and fell through to a
-      // density match somewhere in the MD&A.
-      'revenue is recognized', 'recognizes revenue', 'recognize revenue',
-      'control of the promised', 'point of sale', 'sales returns', 'net of returns',
-      'when control', 'revenue recognition',
-      // ASC 944 (insurers) and ASC 842 lessors state the same policy in their
-      // own terms: "premiums written are earned into income on a pro rata
-      // basis", "we accrue fixed lease income on a straight-line basis".
-      'premiums are earned', 'premiums written are earned', 'earned into income',
-      'unearned premium', 'pro rata basis over the period',
-      'as a lessor', 'lease income', 'straight-line basis', 'minimum rent',
-    ],
-  },
-  {
-    id: 'stock-compensation',
-    label: 'Stock-based compensation policy',
-    asc: 'ASC 718',
-    headings: ['stock-based compensation', 'share-based compensation', 'share-based payment', 'stock based compensation'],
-    terms: [
-      'restricted stock unit', 'stock option', 'grant date fair value', 'vesting period', 'forfeiture',
-      'black-scholes', 'performance share', 'employee stock purchase', 'asc 718', 'topic 718',
-    ],
-  },
-  {
-    id: 'leases',
-    label: 'Lease accounting policy',
-    asc: 'ASC 842',
-    headings: ['leases', 'lease accounting', 'right-of-use'],
-    terms: [
-      'right-of-use asset', 'lease liability', 'operating lease', 'finance lease', 'incremental borrowing rate',
-      'lease term', 'short-term lease', 'asc 842', 'topic 842',
-    ],
-  },
-  {
-    id: 'goodwill-impairment',
-    label: 'Goodwill & intangibles impairment',
-    asc: 'ASC 350',
-    headings: ['goodwill', 'goodwill and intangible assets', 'impairment of goodwill', 'intangible assets'],
-    terms: [
-      'reporting unit', 'impairment test', 'carrying amount', 'quantitative assessment', 'qualitative assessment',
-      'indefinite-lived', 'triggering event', 'asc 350', 'topic 350',
-    ],
-  },
-  {
-    id: 'income-taxes',
-    label: 'Income taxes policy',
-    asc: 'ASC 740',
-    headings: ['income taxes', 'income tax'],
-    terms: [
-      'deferred tax asset', 'deferred tax liability', 'valuation allowance', 'unrecognized tax benefit',
-      'effective tax rate', 'uncertain tax position', 'asc 740', 'topic 740',
-    ],
-  },
-  {
-    id: 'business-combinations',
-    label: 'Business combinations',
-    asc: 'ASC 805',
-    headings: ['business combinations', 'acquisitions', 'business combination'],
-    terms: [
-      'purchase price allocation', 'acquisition date fair value', 'contingent consideration', 'measurement period',
-      'identifiable intangible', 'asc 805', 'topic 805',
-    ],
-  },
-  {
-    id: 'segment-reporting',
-    label: 'Segment reporting',
-    asc: 'ASC 280',
-    headings: ['segment information', 'segment reporting', 'reportable segments', 'segments'],
-    terms: [
-      'chief operating decision maker', 'reportable segment', 'operating segment', 'segment profit',
-      'significant segment expense', 'asc 280', 'topic 280',
-    ],
-  },
-  {
-    id: 'credit-losses',
-    label: 'Credit losses / allowance',
-    asc: 'ASC 326',
-    headings: ['credit losses', 'allowance for credit losses', 'allowance for doubtful accounts'],
-    terms: [
-      'expected credit loss', 'current expected credit loss', 'cecl', 'allowance for doubtful', 'charge-off',
-      'asc 326', 'topic 326',
-    ],
-  },
-  {
-    id: 'fair-value',
-    label: 'Fair value measurement',
-    asc: 'ASC 820',
-    headings: ['fair value measurements', 'fair value', 'fair value measurement'],
-    terms: ['level 1', 'level 2', 'level 3', 'observable input', 'unobservable input', 'asc 820', 'topic 820'],
-  },
-  {
-    id: 'going-concern',
-    label: 'Going concern',
-    asc: 'ASC 205-40',
-    headings: ['going concern', 'liquidity and going concern'],
-    terms: ['substantial doubt', 'ability to continue as a going concern', 'management’s plans', 'liquidity'],
-  },
-  {
-    id: 'material-weakness',
-    label: 'Material weakness / ICFR',
-    headings: ['controls and procedures', 'internal control over financial reporting', 'material weakness'],
-    terms: [
-      'material weakness', 'internal control over financial reporting', 'disclosure controls', 'remediation plan',
-      'not effective', 'significant deficiency',
-    ],
-  },
-  {
-    id: 'critical-audit-matters',
-    label: 'Critical audit matters',
-    headings: ['critical audit matters', 'critical audit matter'],
-    terms: ['critical audit matter', 'especially challenging', 'subjective', 'complex judgment'],
-  },
-  {
-    id: 'use-of-estimates',
-    label: 'Use of estimates',
-    headings: ['use of estimates', 'critical accounting estimates', 'critical accounting policies'],
-    terms: ['significant estimate', 'actual results could differ', 'judgment', 'assumption'],
-  },
-];
+/**
+ * The curated topics, read from the section taxonomy: each topic is a concept
+ * there (the notes by ASC topic, plus material weakness, critical audit
+ * matters and use of estimates), and its heading list is the SAME list the
+ * taxonomy's note slicer, the footnote comparison and the XBRL block ranker
+ * use. A heading learned for one surface is learned for all of them — the
+ * lists used to be duplicated here and drifted.
+ */
+export const DISCLOSURE_TOPICS: DisclosureTopic[] = SECTION_CONCEPTS
+  .filter(concept => concept.topic)
+  .sort((a, b) => a.topic!.order - b.topic!.order)
+  .map(concept => ({
+    id: concept.topic!.id,
+    label: concept.topic!.label,
+    ...(concept.topic!.asc ? { asc: concept.topic!.asc } : {}),
+    headings: concept.headings,
+    terms: concept.topic!.terms,
+  }));
+
+/** The taxonomy concept behind a curated topic, when there is one. */
+export function topicConceptKey(topicId: string): string | undefined {
+  return SECTION_CONCEPTS.find(concept => concept.topic?.id === topicId)?.key;
+}
 
 export function findDisclosureTopic(id: string): DisclosureTopic | undefined {
   return DISCLOSURE_TOPICS.find(topic => topic.id === id);

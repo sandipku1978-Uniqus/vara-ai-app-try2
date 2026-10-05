@@ -62,7 +62,7 @@ const ITEM_TITLES: Record<string, string> = {
 };
 
 /** Words that mark an "item N" occurrence as a cross-reference, not a heading. */
-const REFERRING_WORDS = new Set(['see', 'refer', 'in', 'under', 'to', 'of', 'per', 'and', 'through']);
+const REFERRING_WORDS = new Set(['see', 'refer', 'in', 'under', 'to', 'of', 'per', 'and', 'through', 'with', 'within']);
 
 const ITEM_RE = /(?:^| )item (\d{1,2}(?:\.\d{2})?[abc]?)(?= |$)/g;
 
@@ -81,12 +81,37 @@ function findItemHeadings(normalizedText: string): ItemHeading[] {
   const headings: ItemHeading[] = [];
   ITEM_RE.lastIndex = 0;
   for (let hit = ITEM_RE.exec(normalizedText); hit; hit = ITEM_RE.exec(normalizedText)) {
-    const before = normalizedText.slice(0, hit.index).trimEnd().split(' ');
-    const wordBefore = before[before.length - 1] || '';
-    if (REFERRING_WORDS.has(wordBefore)) continue;
+    if (isItemCrossReference(normalizedText, hit.index, hit[0].length)) continue;
     headings.push({ number: hit[1], index: hit.index });
   }
   return headings;
+}
+
+/**
+ * Words that, right AFTER an item number, mark a reference rather than a
+ * heading: "Part I, Item 1A of this Form 10-K", "Item 7 and Item 8". A real
+ * heading is followed by its title.
+ */
+const FOLLOWING_REFERENCE_WORDS = new Set(['of', 'in', 'and', 'or', 'to', 'above', 'below', 'herein', 'hereof', 'thereof', 'which']);
+
+/**
+ * Is the "item N" at this offset a cross-reference? The word before it
+ * decides ("see Item 1A"); when that word is a part number, the word before
+ * the PART decides — "in conjunction with Part II, Item 7, “Management’s
+ * Discussion…”" carries the title right after the number and still is not
+ * the section (observed live: it cut Apple's Risk Factors to one paragraph).
+ * The word after the number catches the rest ("Part I, Item 1A of this Form
+ * 10-K").
+ */
+function isItemCrossReference(normalizedText: string, index: number, matchLength: number): boolean {
+  const before = normalizedText.slice(Math.max(0, index - 80), index).trimEnd().split(' ');
+  let wordBefore = before[before.length - 1] || '';
+  if (/^(i|ii|iii|iv)$/.test(wordBefore) && before[before.length - 2] === 'part') {
+    wordBefore = before[before.length - 3] || '';
+  }
+  if (REFERRING_WORDS.has(wordBefore)) return true;
+  const after = normalizedText.slice(index + matchLength, index + matchLength + 24).trimStart().split(' ')[0] || '';
+  return FOLLOWING_REFERENCE_WORDS.has(after);
 }
 
 /** "Item 1A" / "1a" / "9A" / "2.02" → the normalized heading number, or ''. */
@@ -96,26 +121,48 @@ export function normalizeItemNumber(raw: string): string {
 }
 
 /**
- * Where "Part I" / "Part II" begin in the normalized text — needed because a
- * 10-Q reuses item numbers across parts (Part I Item 2 is MD&A, Part II
- * Item 2 is Unregistered Sales). Cross-references ("in part ii, item 1")
- * are excluded the same way item cross-references are. The LAST occurrence
- * of each part marker wins: the table of contents lists both parts first.
+ * Where "Part I" / "Part II" begin and end in the normalized text — needed
+ * because a 10-Q reuses item numbers across parts (Part I Item 2 is MD&A,
+ * Part II Item 2 is Unregistered Sales). Cross-references ("in part ii,
+ * item 1") are excluded the same way item cross-references are.
+ *
+ * Markers come in runs: the table of contents lists both parts, the body
+ * opens Part I, and many filers repeat "PART I" as a running page header on
+ * every page until Part II begins. A part's body is the run of its own
+ * markers that spans the most text before the other part's next marker. The
+ * old rule — the LAST occurrence — landed on the final running header of the
+ * part and lost every item before it (observed live on Microsoft's 10-Q,
+ * where Risk Factors and MD&A both read as absent).
  */
 const PART_RE = /(?:^| )part (i{1,3}|iv)(?= |$)/g;
 
-function findPartStart(normalizedText: string, part: 1 | 2): number {
-  const roman = part === 1 ? 'i' : 'ii';
-  let found = -1;
+function findPartRange(normalizedText: string, part: 1 | 2): { start: number; end: number } | null {
+  const markers: Array<{ part: string; index: number }> = [];
   PART_RE.lastIndex = 0;
   for (let hit = PART_RE.exec(normalizedText); hit; hit = PART_RE.exec(normalizedText)) {
-    if (hit[1] !== roman) continue;
-    const before = normalizedText.slice(0, hit.index).trimEnd().split(' ');
+    const before = normalizedText.slice(Math.max(0, hit.index - 40), hit.index).trimEnd().split(' ');
     const wordBefore = before[before.length - 1] || '';
     if (REFERRING_WORDS.has(wordBefore)) continue;
-    found = hit.index;
+    // "(Part II, Item 1A of this Form 10-Q)" mid-MD&A is a reference too: a
+    // part marker that leads straight into a referenced item, or into "of
+    // this report", is not where the part begins.
+    const after = normalizedText.slice(hit.index + hit[0].length, hit.index + hit[0].length + 60).trimStart();
+    if (/^of /.test(after)) continue;
+    const itemAfter = after.match(/^item \d{1,2}(?:\.\d{2})?[abc]? (\S+)/);
+    if (itemAfter && FOLLOWING_REFERENCE_WORDS.has(itemAfter[1])) continue;
+    markers.push({ part: hit[1], index: hit.index });
   }
-  return found;
+  const roman = part === 1 ? 'i' : 'ii';
+  let best: { start: number; end: number } | null = null;
+  for (let index = 0; index < markers.length; index += 1) {
+    const marker = markers[index];
+    // Only the first marker of a run opens a candidate body.
+    if (marker.part !== roman || (index > 0 && markers[index - 1].part === roman)) continue;
+    const next = markers.slice(index + 1).find(other => other.part !== roman);
+    const end = next ? next.index : normalizedText.length;
+    if (!best || end - marker.index > best.end - best.start) best = { start: marker.index, end };
+  }
+  return best;
 }
 
 export interface SectionSliceOptions {
@@ -145,9 +192,39 @@ export function extractHeadingSection(
   targetAliases: string[],
   boundaryVocabulary: string[]
 ): string {
-  if (!filingText || targetAliases.length === 0) return '';
-  const normalizedText = normalizeForMatch(filingText);
-  if (!normalizedText) return '';
+  const range = headingSectionRange(filingText, targetAliases, boundaryVocabulary);
+  return range ? range.normalizedText.slice(range.start, range.end) : '';
+}
+
+/**
+ * Where a normalized slice sits: offsets into the engine-normalized text,
+ * already trimmed. Callers that need the filing's own words map these back
+ * through normalizedTokenOffsets (sectionOriginalText).
+ */
+export interface NormalizedSliceRange {
+  normalizedText: string;
+  start: number;
+  end: number;
+}
+
+function trimmedRange(normalizedText: string, start: number, end: number): NormalizedSliceRange | null {
+  let from = start;
+  let to = end;
+  while (from < to && normalizedText[from] === ' ') from += 1;
+  while (to > from && normalizedText[to - 1] === ' ') to -= 1;
+  return to > from ? { normalizedText, start: from, end: to } : null;
+}
+
+/** extractHeadingSection, as offsets into the normalized text. */
+export function headingSectionRange(
+  filingText: string,
+  targetAliases: string[],
+  boundaryVocabulary: string[],
+  normalized?: string
+): NormalizedSliceRange | null {
+  if (!filingText || targetAliases.length === 0) return null;
+  const normalizedText = normalized ?? normalizeForMatch(filingText);
+  if (!normalizedText) return null;
 
   const targets = targetAliases.map(alias => normalizeForMatch(alias)).filter(Boolean);
   const boundaries = boundaryVocabulary
@@ -197,9 +274,9 @@ export function extractHeadingSection(
       if (!best || end - start > best.end - best.start) best = { start, end };
     }
   }
-  if (!best) return '';
+  if (!best) return null;
 
-  return normalizedText.slice(best.start, best.end).trim();
+  return trimmedRange(normalizedText, best.start, best.end);
 }
 
 /**
@@ -220,10 +297,21 @@ export function extractItemSection(
   itemNumber: string,
   options: SectionSliceOptions = {}
 ): string {
-  const target = normalizeItemNumber(itemNumber);
-  if (!filingText || !target) return '';
+  const range = itemSectionRange(filingText, itemNumber, options);
+  return range ? range.normalizedText.slice(range.start, range.end) : '';
+}
 
-  const normalizedText = normalizeForMatch(filingText);
+/** extractItemSection, as offsets into the normalized text. */
+export function itemSectionRange(
+  filingText: string,
+  itemNumber: string,
+  options: SectionSliceOptions = {},
+  normalized?: string
+): NormalizedSliceRange | null {
+  const target = normalizeItemNumber(itemNumber);
+  if (!filingText || !target) return null;
+
+  const normalizedText = normalized ?? normalizeForMatch(filingText);
   const headings = findItemHeadings(normalizedText);
 
   // Part scoping: only occurrences at or after the requested part's own
@@ -232,13 +320,10 @@ export function extractItemSection(
   let rangeStart = 0;
   let rangeEnd = normalizedText.length;
   if (options.part) {
-    const partStart = findPartStart(normalizedText, options.part);
-    if (partStart < 0) return '';
-    rangeStart = partStart;
-    if (options.part === 1) {
-      const nextPart = findPartStart(normalizedText, 2);
-      if (nextPart > partStart) rangeEnd = nextPart;
-    }
+    const range = findPartRange(normalizedText, options.part);
+    if (!range) return null;
+    rangeStart = range.start;
+    rangeEnd = range.end;
   }
 
   const inRange = headings.filter(h => h.index >= rangeStart && h.index < rangeEnd);
@@ -257,9 +342,9 @@ export function extractItemSection(
       best = { start: heading.index, end };
     }
   }
-  if (!best) return '';
+  if (!best) return null;
 
-  return normalizedText.slice(best.start, best.end).trim();
+  return trimmedRange(normalizedText, best.start, best.end);
 }
 
 function formatItemNumber(raw: string): string {

@@ -1,0 +1,2492 @@
+[Fixture: Apple Inc. DEF 14A filed 2026-01-08, accession 0001308179-26-000008, aapl014016-def14a.htm. Extracted with src/lib/filingText; trimmed to heading lines plus the opening of each section.]
+Table of Contents
+UNITED STATES
+SECURITIES AND EXCHANGE COMMISSION
+PROXY STATEMENT PURSUANT TO SECTION 14(a)
+(Amendment No. )
+Filed by the Registrant
+Filed by a Party other than the Registrant
+Check the appropriate box:
+Preliminary Proxy Statement
+Definitive Proxy Statement
+Definitive Additional Materials
+Apple Inc.
+(Name of Registrant as Specified in Its Charter)
+Payment of Filing Fee (Check all boxes that apply):
+No fee required.
+Fee paid previously with preliminary materials.
+Fee computed on table in […].
+Table of Contents
+Table of Contents
+Attending the Annual Meeting
+We are pleased to welcome shareholders to the 2026 Annual Meeting,
+to be held virtually on […].
+In the Proxy Statement, the terms “Apple,”
+is based on Apple’s fiscal calendar, other than references to particular years in […].
+prog […].
+This document includes
+forward-looking statements within the meaning of the Private Securities Litigation Reform […].
+These materials were first
+sent or made available to shareholders on January 8, 2026.
+Table of Contents
+Table of Contents
+Notice of 2026 Annual Meeting of Shareholders
+3
+Message from our Chief Executive Officer
+5
+Proxy Statement Summary
+7
+2025
+Business Highlights
+8
+Executive
+Compensation
+9
+Shareholder
+Engagement
+9
+Nominees
+to Apple’s Board of Directors
+10
+Progress
+Across our Values
+11
+Items
+of Business and Board Voting Recommendations
+12
+Corporate Governance
+13
+Our
+Corporate Governance Framework
+14
+Role
+of the Board of Directors
+15
+Board
+Independence
+15
+Board
+and Committee Structure
+15
+Board
+Oversight
+17
+Board
+Meetings and Attendance
+20
+Annual
+Board and Committee Self-Evaluations
+20
+Related
+Party Policy and Transactions
+20
+Business
+Conduct Policy
+21
+Communications
+with the Board
+21
+Directors
+23
+Board Composition and Evaluation of Candidates
+24
+Nominees
+for Election
+25
+Compensation
+of Directors
+31
+Executive Officers
+33
+Executive Compensation
+35
+Message
+from the People and Compensation Committee
+37
+Compensation
+Discussion and Analysis
+38
+People
+and Compensation Committee Report
+51
+Executive
+Compensation Tables
+52
+Management Proposals
+63
+Proposal
+No. 1 - Election of Directors
+64
+Proposal
+65
+Proposal
+No. 3 - Advisory Vote to Approve Executive Compensation
+67
+Proposal
+No. 4 - Approval of the Apple Inc. Non-Employee Director Stock Plan, as Amended and […].
+68
+Shareholder Proposals
+73
+Shareholder
+Proposals
+74
+Identification
+of Proponents
+74
+Vote
+Required
+74
+Proposal
+75
+Other Information
+79
+Audit
+and Finance Committee Report
+80
+Security
+Ownership of Certain Beneficial Owners and Management
+81
+Equity
+Compensation Plan Information
+83
+General
+Information
+84
+Annex A
+Table of Contents
+Notice of 2026 Annual Meeting of Shareholders
+Date
+and Time
+Virtual
+Meeting Site
+Who
+Can Vote
+February 24, 2026
+www.virtualshareholdermeeting.com/AAPL2026
+Items of Business and Board Voting Recommendations
+1
+Election of Directors: Wanda Austin, Tim Cook, Alex Gorsky, Andrea Jung, Art Levinson, […].
+FOR
+2
+Ratification of Appointment of Independent Registered Public Accounting Firm
+FOR
+3
+Advisory Vote to Approve Executive Compensation
+FOR
+4
+FOR
+5
+Shareholder Proposal if properly presented
+AGAINST
+And other business as may properly come before the Annual Meeting.
+Sincerely,
+Kate Adams
+Senior Vice President,
+General Counsel and Secretary
+Cupertino, California
+Important notice regarding the Availability
+of Proxy Materials for the Annual Meeting of Shareholders to be held on February 24, 2026. […].
+“We’re continuously inspired by the
+imaginative
+ways people are using our
+technology to build new businesses, create
+beautiful […].
+Tim Cook, CEO
+Message from our
+Chief Executive Officer
+To our shareholders,
+This has been an exceptional year at Apple.
+We are so excited about all […].
+This is an ideal moment to reflect on where
+we are today, and in that spirit, I’d invite you to join us for the 2026 Annual Meeting of […].
+Our latest iPhone lineup features the
+most powerful iPhone we’ve ever made with iPhone 17 Pro, and the thinnest iPhone we’ve […].
+It’s a powerful example of the incredible
+possibilities we’re unlocking with AI, which we see as one of the most profound […].
+why, […].
+As always, we’ve continued to build
+our values into everything we do — from our commitment to protecting people’s privacy and […].
+And we’re continuously inspired by
+the imaginative ways people are using our technology to build new businesses, create […].
+On behalf of everyone at Apple, thank you
+for your engagement, your confidence, and your belief in our mission. We’ve accomplished […].
+Tim Cook
+Summary
+Governance
+Directors
+Compensation
+Proposals
+Other
+Information
+Proxy
+Statement
+Summary
+8
+Executive Compensation
+9
+Shareholder Engagement
+9
+Nominees to Apple’s Board of Directors
+10
+Progress Across our Values
+11
+Items of Business and Board Voting Recommendations
+12
+7
+Summary
+Governance
+Directors
+Compensation
+Proposals
+Other
+Information
+At Apple, we work to push the limits of
+what’s possible, and make technology that empowers people and enriches their lives. 2025 […].
+Net Sales ($B)
+Operating Income ($B)
+Achievements and Milestones
+Business Highlights
+Products and Services Innovation
+●
+●
+year-over-year Services revenue growth, surpassing $100B in revenue for the first time
+●
+R […].
+America, and the Middle East
+●
+Delivered company
+gross margin of 46.9%, an increase of 70 basis points year-over-year
+●
+Achieved all-time diluted earnings per share record of $7.46
+●
+Reached new
+all-time highs in our installed base across all major product categories and geographic […].
+Reached all-time
+high in paid and transacting customer accounts across our Services
+●
+Returned over
+$110B to shareholders
+●
+Introduced our most powerful lineup of products ever, including […].
+Introduced dozens of new features
+with Apple Intelligence that are powerful, intuitive, private, and deeply integrated into […].
+Introduced
+our broadest software design update ever with Liquid Glass, a beautiful new design that […].
+Continued to
+advance groundbreaking health features, introducing hypertension notifications on Apple […].
+Summary
+Governance
+Directors
+Compensation
+Proposals
+Other
+Information
+Executive Compensation
+Motivating and retaining an
+exceptional leadership team is a key factor in enabling of Apple’s long-term success. Our […].
+Aligned with Shareholder Interests
+92%
+●
+Annual cash incentive opportunities are capped and have
+challenging goals tied to key financial performance measures representing overall Company […].
+Performance-based RSUs generally
+vest based on Apple’s total shareholder return relative to companies in the S&P 500 over a […].
+Shareholders have an opportunity
+to cast an advisory say on pay vote each year on the compensation of our named executive […].
+For more information on our executive compensation
+program and the 2025 compensation of our named executive officers, see the section […].
+Ana […].
+Shareholder Engagement
+We proactively engage with shareholders
+throughout the year to better understand their priorities and perspectives on significant […].
+Annual Meeting Engagement
+●
+Leading up to our annual
+meeting, we engage with shareholders to seek feedback on our initiatives, disclosures, and […].
+Following
+our annual meeting, we reach out to investors to better understand their votes
+Year-round Engagement
+●
+We speak with proxy advisory
+firms to discuss our programs and shareholder feedback, and learn about key focus areas […].
+Our quarterly
+earnings calls provide shareholders with an opportunity to hear about our financial […].
+Off-season Engagement
+●
+Throughout the year, we meet with investors to discuss executive compensation, board […].
+Summary
+Governance
+Directors
+Proposals
+Other
+Information
+Nominees to Apple’s Board of Directors
+Apple is overseen by directors with a
+broad range of skills and experiences to address the Company’s evolving needs and […].
+inte […].
+Name
+Occupation
+Independent
+Age
+Director Since
+Audit
+Committee
+People and
+Committee
+Nominating
+Committee
+Art Levinson
+Board Chair
+Founder and CEO, Calico
+75
+2000
+Tim Cook
+CEO, Apple
+65
+2011
+Wanda Austin
+Former President and CEO,
+The Aerospace Corporation
+71
+2024
+Alex Gorsky
+Former Chair and CEO,
+Johnson & Johnson
+65
+2021
+Andrea Jung
+President and CEO,
+Grameen America
+67
+2008
+Monica Lozano
+Former President and CEO,
+College Futures Foundation
+69
+2021
+Ron Sugar
+Former Chair and CEO,
+Northrop Grumman Corporation
+77
+2010
+Sue Wagner
+Co-founder and Director,
+BlackRock
+64
+2014
+●
+Chair ●
+Member
+Nominee Skills and Board Composition
+The information presented in this chart is based on
+voluntary self-identification by each nominee.
+“Directors” beginning on page 23.
+10
+Summary
+Governance
+Directors
+Proposals
+Other
+Information
+Progress Across our Values
+At Apple, we lead with our values in the
+technology we make, the way we make it, and how we treat people and the planet we all […].
+We believe the best technology should work
+for everyone, so we build accessibility into all our products from the ground up. That’s […].
+We also believe privacy is a fundamental
+human right, and we continue to design our products to protect it from the start. That […].
+Our values also shape our impact on the
+communities we’re a part of. We work to expand access to education and opportunity with […].
+From the technology we make, to the communities
+we serve, teams at Apple are dedicated to leaving the world better than we found it and […].
+40 years of accessibility innovation at Apple
+For 40 years, accessibility has been built
+into the foundation of everything we make. That commitment began in 1985, when Apple […].
+a […].
+This year, we introduced new
+features that build on that legacy in meaningful ways. The all-new Magnifier for Mac gives […].
+These advances — along with many
+others across our ecosystem — reflect our belief that technology should work for everyone. […].
+Governance
+Other
+Items of Business and Board Voting Recommendations
+Proposal
+Board Recommendation
+Page Reference
+1
+Election of Directors
+● All of our directors are elected annually for
+a one-year term.
+● Our Board is made up of […].
+FOR
+64
+2
+Ratification of Appointment of Independent Registered
+Public Accounting Firm
+● Ernst & Young LLP is an independent auditing
+firm with the required knowledge and […].
+● […].
+FOR
+65
+3
+Advisory Vote to Approve Executive Compensation
+● Our executive compensation program is designed
+to align pay with shareholder interests […].
+China Entanglement Audit
+● The requested report is unnecessary given we
+already provide extensive information on our […].
+AGAINST
+75
+12
+Corporate
+Our Corporate Governance Framework
+14
+Role of the Board of Directors
+15
+Board Independence
+15
+Board and Committee Structure
+15
+Board Oversight
+17
+Board Meetings and Attendance
+20
+Annual Board and Committee Self-Evaluations
+20
+Related Party Policy and Transactions
+20
+Business Conduct Policy
+21
+Communications with the Board
+21
+13
+Our Corporate Governance Framework
+Apple operates under a
+corporate governance framework designed to be a flexible working structure for principled […].
+One share equals one vote
+We have a single class of shares with equal voting rights.
+Annual director elections
+All directors are elected annually for a one-year term.
+Majority voting
+We have a majority voting standard for uncontested elections of directors.
+Separation of Chair and CEO roles
+Our CEO is focused on managing Apple and our independent Chair drives accountability at […].
+Stock ownership guidelines
+We have robust stock ownership guidelines for our directors and executive officers.
+Shareholder engagement
+We have a comprehensive year-round shareholder engagement program.
+Access to management
+Our Board has significant interaction with senior management and access to other […].
+Time commitment policy
+time commitments.
+Financial expertise
+The Board has determined that each Audit and Finance Committee member qualifies as an […].
+Continuing education
+topics relevant to the evolving needs of the Company.
+Succession planning
+Our Board regularly reviews Board and executive succession planning.
+Executive sessions
+of management are present.
+Board, committee, and individual self-evaluations
+led by our independent Chair, including one-on-one interviews.
+Prohibitions on hedging, pledging, and other transactions
+We prohibit short sales, transactions in derivatives, and hedging of Apple securities by […].
+Special meetings
+Shareholders owning at least 10% of our outstanding shares have the right to call a […].
+me […].
+Proxy access
+for three years may nominate up to 20% of our Board.
+14
+Role of the Board of Directors
+Apple’s Board oversees the CEO and other
+senior management in the competent and ethical operation of Apple and seeks to ensure that […].
+Board Independence
+Apple’s Corporate Governance Guidelines
+require a majority of Board members to be independent. The Board has determined that all […].
+Apple’s Board has a standing Audit
+and Finance Committee (the “Audit Committee”), People and Compensation Committee (the […].
+Board and Committee Structure
+Apple regularly reviews the Board’s leadership
+structure and the responsibilities and composition of its standing committees. The […].
+and […].
+The Board believes its current leadership
+structure, in which the roles of Chair and CEO are separated, best serves Apple’s overall […].
+The current membership and function of each
+standing committee is described on the following page. Each committee operates under a […].
+Audit Committee
+Ron Sugar (Chair)
+Wanda Austin
+Monica Lozano
+Sue Wagner
+Audit Committee Report: page 80
+Primary Responsibilities:
+●
+Assist the Board in oversight and monitoring of Apple’s financial statements and other […].
+Oversee compliance with legal, regulatory, and public disclosure requirements
+●
+Appoint and oversee Apple’s independent registered public accounting firm, including […].
+Oversee treasury and finance matters
+●
+Oversee enterprise risk management
+●
+Oversee privacy and data security
+●
+Oversee the auditing, accounting, and financial reporting process
+People and Compensation Committee
+Andrea Jung (Chair)
+Alex Gorsky
+Art Levinson
+People and Compensation Committee Report: page 51
+Primary Responsibilities:
+●
+Review and approve the compensation arrangements for the CEO, Apple’s other executive […].
+Administer Apple’s equity compensation and other incentive plans
+●
+Review and make recommendations to the Board regarding the compensation of members of the […].
+Nominating Committee
+Sue Wagner (Chair)
+Alex Gorsky
+Andrea Jung
+Primary Responsibilities:
+●
+Assist the Board on matters relating to the identification, evaluation, and selection of […].
+Oversee the annual Board performance self-evaluation process
+16
+Board Oversight
+The Board takes an active role in overseeing
+corporate and product strategy and seeks to ensure the long-term interests of Apple and […].
+Board of Directors
+Directly oversees corporate and product strategy, executive succession planning,
+and other […].
+Audit Committee
+Oversees financial matters, business conduct, legal and regulatory compliance, privacy, […].
+People and Compensation
+Committee
+Oversees the design and administration of equity plans and executive compensation programs […].
+Nominating Committee
+Oversees Board structure, governance, and independence, and has primary responsibility for […].
+Management
+strategy, manages operations, implements and supervises day-to-day risk management […].
+Boa […].
+Internal Audit
+Directly overseen by the Audit Committee and operating pursuant to a charter,
+which is […].
+Enterprise Risk Management Program
+financial, operational, compliance, and reputational risks.
+Supported by a Risk Oversight Committee, consisting of our
+Chief Financial Officer, General Counsel, Head of Business Assurance, and other senior […].
+Selected Areas of Oversight
+Board
+and Executive Succession Planning
+The Board regularly reviews Board and executive […].
+plann […].
+People and Teams
+to inclusion and diversity, culture and employee engagement, talent recruitment, […].
+direc […].
+Compliance
+and Business Conduct
+The Audit Committee regularly reviews and discusses with management […].
+Privacy and Data Security
+The Audit Committee regularly reviews and discusses with
+management Apple’s privacy and data security risks. The Audit Committee receives regular […].
+Online Safety
+The Board reviews regular updates from management relating to online safety.
+These updates […].
+Artificial Intelligence
+receives regular updates on emerging technologies, including artificial intelligence. […].
+Human Rights
+The Board has adopted a human rights policy for Apple — Our Commitment to Human Rights. […].
+Environment and Climate
+management responsible for the development, review, and execution of plans designed to […].
+Supply Chain
+The Board and its committees review and discuss with management reports regarding Apple’s […].
+Board Meetings and Attendance
+The
+Board met four times during 2025. Each member of the Board who served during 2025 attended […].
+Apple
+expects all of its directors to attend the Annual Meeting. All directors attended the 2025 […].
+Annual Board and Committee Self-Evaluations
+The
+Board conducts an annual self-evaluation to assess whether the Board, its committees, and […].
+The
+Nominating Committee designs and establishes the overall evaluation framework, and Dr. […].
+Each
+committee conducts its own annual self-evaluation and reports the results to the Board. […].
+Related Party Policy and Transactions
+The Board has adopted a written policy for
+approval of transactions between Apple and its directors, director nominees, executive […].
+The nature and extent of the related person’s interest
+in the transaction;
+●
+The approximate dollar value involved in the transaction;
+●
+the […].
+●
+bus […].
+Required public disclosure, if any; and
+●
+in the context of the proposed transaction that would be material to the Audit […].
+judgme […].
+Several of Apple’s Board members and executive
+officers serve as directors or executive officers of other organizations, including […].
+an […].
+A family member of our former Chief Operating
+Officer is employed by Apple and received total compensation in excess of $120,000 for the […].
+Business Conduct Policy
+Apple seeks to conduct business ethically, honestly,
+and in compliance with applicable […].
+Apple’s code is managed by the Business
+Conduct organization, under the oversight of Apple’s Chief Compliance Officer. Employees […].
+Additionally, Apple has an insider trading policy
+governing the purchase, sale, and other dispositions of Apple’s securities that applies to […].
+Communications with the Board
+Any matter intended for the Board, or for any
+individual member of the Board, should be directed to Apple’s Secretary at One Apple Park […].
+Board Composition and Evaluation of Candidates
+24
+Nominees for Election
+25
+Compensation of Directors
+31
+23
+Board Composition and Evaluation of Candidates
+Board Composition
+Apple’s Board consists of a highly qualified
+group of leaders from a broad range of fields and backgrounds. All of our directors have […].
+The Board and the Nominating Committee believe
+the skills and experiences of our directors provide Apple with business acumen and a broad […].
+Evaluation of Candidates
+The Board regularly evaluates its composition in the context of Apple’s long-term […].
+cand […].
+Nominee Selection Process
+The Nominating Committee oversees board succession
+planning and recruitment of potential candidates. The Nominating Committee considers […].
+m […].
+The Nominating Committee evaluates candidates
+recommended by shareholders using the same criteria it applies to evaluate other […].
+a […].
+Nominees for Election
+The matrix on the following page highlights
+the mix of key skills and experiences of the nominees that, among other factors, led the […].
+Nominee Skills
+Levinson
+Cook
+Austin
+Gorsky
+Jung
+Lozano
+Sugar
+Wagner
+Core
+Leadership
+Experience serving in a significant leadership position, including as a chief executive […].
+Corporate Governance
+Experience on public company boards promotes an understanding of the dynamics and […].
+Risk Management
+Experience identifying, managing, or mitigating risks develops a director’s ability to […].
+Financial
+Knowledge of financial markets, financing, and financial reporting processes helps our […].
+Strategic
+People and Culture
+Because Apple operates in a competitive talent market, directors with experience managing […].
+Global Business and Operations
+Experience in global business and operations, including exposure to global business […].
+Innovation and Technology
+Directors with an understanding of innovation and technology, through experience in […].
+Brand and Marketing
+Experience with the marketing and branding of products, building brand awareness, and […].
+Privacy and Security
+At Apple, we believe privacy is a fundamental human right. Directors with experience in […].
+Public Policy and Government
+Experience in government relations, regulatory matters, or regulated industries provides a […].
+Environment and Climate
+At Apple, we believe business can and should be a force for good. Directors with […].
+26
+Art Levinson
+Chair of the Board
+People and Compensation Committee
+Key Skills and Qualifications
+through his service as a chairman and chief executive officer of a large international […].
+Career Highlights
+focused on health, aging, and well-being, since September 2013.
+Dr. Levinson previously […].
+Other Public Company Boards:
+None
+Tim Cook
+Chief Executive Officer
+Key Skills and Qualifications
+technology industry, including the management of worldwide operations, sales, service, and […].
+Career Highlights
+2011, having previously served as Apple’s Chief Operating Officer from October 2005.
+Presid […].
+Other Public Company Boards:
+Current: NIKE, Inc.
+27
+Wanda Austin
+Audit Committee
+Key Skills and Qualifications
+as president and chief executive officer of a large research and development organization, […].
+Career Highlights
+Corporation, an independent, non-profit organization performing objective technical […].
+go […].
+Other Public Company Boards:
+Current: Amgen Inc.; Chevron Corporation
+Within Last Five Years: Virgin Galactic Holdings, Inc.
+Alex Gorsky
+Nominating Committee
+People and Compensation Committee
+Key Skills and Qualifications
+expertise and extensive experience in the fields of health and technology through his […].
+Career Highlights
+of Johnson & Johnson, a global healthcare products company. Mr. Gorsky served as Executive […].
+Other Public Company Boards:
+Current: International Business Machines Corporation; JPMorgan Chase & Co.
+Within Last Five Years: Johnson & Johnson
+28
+Andrea Jung
+Nominating Committee
+People and Compensation Committee (Chair)
+Key Skills and Qualifications
+perspective, and extensive brand marketing and consumer products experience, including […].
+Career Highlights
+Ms. Jung, 67, has served as the President and Chief Executive Officer and a member
+of the […].
+Other Public Company Boards:
+Current: Wayfair Inc.
+Within Last Five Years: Unilever PLC
+Monica Lozano
+Audit Committee
+Key Skills and Qualifications
+in operations, strategic planning, media and marketing, including through her service as a […].
+Career Highlights
+the College Futures Foundation, a charitable foundation working to increase the rate of […].
+Other Public Company Boards:
+Current: Bank of America Corporation; Target Corporation
+29
+Ron Sugar
+Audit Committee (Chair)
+Ron Sugar brings to the Board executive leadership
+experience as a chairman and chief executive officer of a large international public […].
+f […].
+Dr. Sugar, 77, is the retired Chairman and Chief
+Executive Officer of Northrop Grumman Corporation, a global security company. Dr. Sugar […].
+Dr. Sugar serves on the Board of Trustees of
+the University of Southern California and on the Board of the Los Angeles Philharmonic […].
+Within Last Five Years: Amgen
+Inc.; Chevron Corporation
+Sue Wagner
+Audit Committee
+Nominating Committee (Chair)
+Sue Wagner brings to the Board operational experience
+and a global business perspective, including through her service as chief operating […].
+as […].
+Ms. Wagner also serves on the Board of Directors
+of Color Health, Inc., a privately held health technology company.
+Current: BlackRock, […].
+Within Last Five Years: Swiss
+Re Ltd.
+30
+Compensation of Directors
+Members of the Board who are not Apple employees
+(“Non-Employee Directors”) receive compensation for their service on the Board. As an […].
+Director compensation after reviewing the People and Compensation Committee’s recommendation. The Apple Inc. Non-Employee
+Director Stock Plan (the “Director Plan”) has an annual limit of $1.5 million for all […].
+Cash Retainers
+Our Non-Employee Directors receive an annual
+cash retainer of $100,000. In 2025, the Chair of the Board, Dr. Levinson, received an […].
+Equity-Based Awards
+A substantial portion of each Non-Employee Director’s
+annual retainer is in the form of equity awards. Under the Director Plan, Non-Employee […].
+A Non-Employee Director who is newly appointed
+to the Board other than in connection with an annual meeting of shareholders will receive […].
+Each RSU award granted under the Director Plan
+is credited with an amount equal to any ordinary dividend paid by Apple, multiplied by the […].
+Equipment and Other Business-Related Programs
+Apple has an equipment program for the Board
+under which each Non-Employee Director is eligible to receive, upon request and free of […].
+Deferred Compensation Plan
+We maintain the Apple Inc. Deferred Compensation
+Plan (the “Deferred Compensation Plan”), under which eligible participants, including our […].
+Stock Ownership Guidelines
+Apple has stock ownership guidelines for our
+CEO, executive officers, and Non-Employee Directors. Under the guidelines, each […].
+years […].
+Director Compensation—2025
+The following table shows information regarding
+the compensation earned or paid during 2025 to Non-Employee Directors who served on the […].
+Name
+Fees Earned or
+Paid in Cash
+($)
+Stock Awards
+All Other
+Total
+($)
+Wanda Austin
+100,000
+310,035
+2,815
+412,850
+Alex Gorsky
+100,000
+310,035
+6,457
+416,492
+Andrea Jung
+140,000
+310,035
+7,985
+458,020
+Art Levinson
+275,000
+274,956
+7,275
+557,231
+Monica Lozano
+100,000 (3)
+310,035
+2,921
+412,956
+Ron Sugar
+145,000
+310,035
+16,248
+471,283
+Sue Wagner
+135,000
+310,035
+338
+445,373
+fair value of RSUs granted to Non-Employee Directors during 2025, […].
+Executive
+Officers
+33
+Kate Adams
+Senior Vice President, General Counsel and Secretary
+corporate governance, intellectual property, litigation, compliance, global security, and […].
+Sabih Khan
+Chief Operating Officer
+Mr. Khan, 59, oversees Apple’s
+entire worldwide operations, environmental and social initiatives, as well as AppleCare […].
+Deirdre O’Brien
+Senior Vice President,
+Retail + People
+Ms. O’Brien, 59, oversees Apple’s retail stores and
+online teams, and Apple’s People team. As the leader of Apple’s retail and online teams, […].
+Kevan Parekh
+Senior Vice President,
+Chief Financial Officer
+Mr. Parekh, 54, oversees Apple’s
+accounting, business support, financial planning and analysis, treasury, investor […].
+func […].
+Executive
+Message from the People and Compensation Committee
+37
+Compensation Discussion and Analysis
+38
+People and Compensation Committee Report
+51
+Executive Compensation Tables
+52
+35
+Andrea Jung (Chair)
+Alex Gorsky
+Art Levinson
+Message from the
+People and Compensation Committee
+Dear Fellow Shareholders,
+in Apple, and for your support of its leadership, its people, and […].
+In addition, the People and Compensation Committee maintains its
+oversight of Apple’s executive compensation program, built to reward leaders for their […].
+Andrea Jung Alex
+Gorsky Art Levinson
+37
+Compensation Discussion and Analysis
+This Compensation Discussion and Analysis (“CD&A”)
+explains the guiding principles, policies, and practices upon which our executive […].
+comp […].
+Summary of Named Executive Officer Compensation
+$416.2 billion with growth in iPhone, Mac, iPad, and Services, and all-time records in the […].
+Executive Officers
+Tim Cook
+Chief Executive Officer
+Kevan Parekh
+Senior Vice President,
+Chief Financial Officer
+Kate Adams
+Senior Vice President,
+General Counsel and Secretary
+Sabih Khan
+Senior Vice President,
+Chief Operating Officer
+Luca Maestri
+Former Senior Vice President,
+Chief Financial Officer
+Deirdre O’Brien
+Senior Vice President,
+Retail + People
+their contributions to Apple’s success and continues to demonstrate alignment with Apple’s […].
+Say on Pay Advisory Vote Results
+At the 2025 Annual Meeting, 92% of votes cast on the Say on Pay advisory
+proposal were in […].
+Executive Compensation Policies and Practices
+We are committed to sound executive compensation policies and practices,
+as highlighted in […].
+Stock ownership guidelines
+We have robust stock ownership guidelines for our named executive officers, including a […].
+Compensation recoupment policies
+We have a policy for the recovery of any erroneously awarded performance-based incentive […].
+No repricing
+We do not allow repricing of stock options without shareholder approval.
+Limited perquisites
+We provide limited perquisites to our named executive officers. For example, for security […].
+No tax gross-ups on perquisites
+We do not provide tax gross-ups for the limited perquisites provided to our named […].
+No change of control payments
+We do not provide change of control payments or gross-ups of related excise taxes.
+Vesting requirements for dividend equivalents
+Dividend equivalents will not be paid unless and until the vesting and performance […].
+At-will employment
+Our named executive officers do not have employment contracts and are employed at will.
+No pension or other supplemental benefits
+We do not provide pension, supplemental executive health, or insurance benefits.
+Annual compensation risk assessment
+The People and Compensation Committee oversees an annual risk assessment of our […].
+Independent compensation consultant
+The People and Compensation Committee directly retains an independent compensation […].
+39
+Guiding Compensation Principles
+outstanding financial performance, retain talented, values-driven leaders, and promote […].
+Team-Based Approach
+named executive officers to emphasize their shared responsibility for Apple’s overall […].
+Performance Expectations
+performance to ensure alignment with the long-term interests of shareholders. Each year, […].
+Emphasis on Long-Term Equity Awards
+We emphasize long-term performance, retention, and alignment between
+the interests of our named executive officers and those of our shareholders by allocating […].
+People and Compensation Committee Considerations When Setting
+Executive Compensation
+●
+Managing Apple for the long term
+●
+Aligning pay with performance
+●
+Retaining exceptional, values-driven leaders
+●
+Considering shareholder interests and feedback
+●
+Maintaining Apple’s unique team-based approach
+Executive Compensation Decision-Making Process
+Establishing appropriate compensation and incentive opportunities
+for our named executive officers is a core responsibility of the People and Compensation […].
+The Role of the Compensation Consultant
+of its own independent compensation consultant and annually reviews the consultant’s […].
+t […].
+During 2025, the People and Compensation Committee’s independent
+compensation consultant, Pay Governance, provided no services to Apple other than services […].
+Role of Peer Groups
+of a primary peer group each year to serve as the market reference point for compensation […].
+Apple remains significantly larger than most other companies with
+$416.2 billion in revenue for 2025 and market capitalization of $3.8 trillion, as of the […].
+Market Capitalization
+Revenue
+Market capitalization for our primary peers is the amount reported by Bloomberg L.P. as of […].
+The threshold revenue and market capitalization requirements for
+a company to be considered for the primary peer group for 2025 were $20 billion and $100 […].
+Alphabet
+Cisco
+Mastercard
+NVIDIA
+Verizon
+Amazon
+Comcast
+Meta
+Oracle
+Visa
+AT&T
+Disney
+Microsoft
+Qualcomm
+Warner Bros. Discovery
+Broadcom
+Intel
+Netflix
+Salesforce
+For many years, a secondary peer group of companies was developed as an additional […].
+not […].
+CEO Peer Pay Positioning
+The People and Compensation Committee reviewed Mr. Cook’s performance
+and the annualized total target compensation of CEOs in our primary peer group, and […].
+co […].
+To determine Mr. Cook’s total target compensation relative
+to other CEOs in our primary peer group, the People and Compensation Committee considered […].
+The Role of the Chief Executive Officer
+At the People and Compensation Committee’s request, Mr. Cook
+provides input regarding the performance and compensation of the other named executive […].
+The Role of Shareholders
+Pay advisory vote on the compensation of our named executive officers. Shareholder […].
+pro […].
+Components of Named Executive Officer Total Target Compensation
+three basic components: annual base salary, annual cash incentive, and long-term equity […].
+Annual Base Salary
+to attract and retain executives. When setting the annual base salaries of our named […].
+C […].
+Annual Cash Incentive
+Our annual cash incentive program is a performance-based, at-risk
+component of our named executive officers’ compensation. Short-term cash incentive awards […].
+2025 Financial Performance Measures and Payout Opportunities.”
+Long-Term Equity Awards
+with this approach and our guiding compensation principles, the vast majority of our named […].
+RSU awards with performance-based vesting are a substantial, at-risk
+component of our named executive officers’ compensation tied to Apple’s long-term […].
+RSUs […].
+Summary of CEO Total Target Compensation
+The People and Compensation Committee evaluates our executive compensation
+program and the total target value of Mr. Cook’s compensation prior to the start of each […].
+Base Salary: $3 million
+Target Cash Incentive Plan Opportunity: $6 million
+Mr. Cook’s target Cash Incentive Plan opportunity for 2025
+remained at 200% of his base salary
+Target Equity Award Value: $50 million
+Mr. Cook was granted an equity award with 25% subject to time-based vesting and 75% […].
+No […].
+Cumulative TSR, includes reinvestment
+of dividends
+benchmark data and considered Mr. Cook’s continued exceptional performance […].
+Summary of Other Named Executive Officer Total Target Compensation
+The total target compensation of our five other named executive officers, Kevan Parekh, […].
+Additional details regarding our named executive officers’
+2025 compensation can be found below in the sections entitled “Cash Incentive Plan — 2025 […].
+Cash Incentive Plan – 2025 Financial Performance Measures
+and Payout Opportunities
+our named executive officers for delivering strong performance […].
+Net Sales ($B)
+Operating Income ($B)
+of $133.1 billion, representing a year-over-year increase of six percent ($25.2 billion) […].
+2025 Long-Term Equity Awards and Results
+When setting the value of equity awards for our named executive officers, the People and […].
+Performance-based RSUs are a substantial, at-risk component of our
+named executive officers’ compensation tied to Apple’s long-term performance. The number […].
+TSR percentile ranking for the performance period, as follows:
+Relative TSR Percentile v.
+Performance-Based RSUs
+Vesting as a Percentage of Target
+or Above
+200%
+100%
+25%
+0%
+number of performance-based RSUs that vest will be capped at 100% of […].
+Named Executive Officer
+Target Performance-Based RSU Value
+Tim Cook
+$37,500,000
+Kevan Parekh
+$8,375,000
+Kate Adams
+$10,000,000
+Sabih Khan
+$10,000,000
+Luca Maestri
+$2,500,000
+Deirdre O’Brien
+$10,000,000
+Ms. O’Brien each vested in performance-based RSUs that were granted on […].
+numb […].
+Relative TSR Percentile Ranking for
+Three-Year Performance Period
+TSR Results for
+Three-Year Performance Period
+Apple
+57.88%
+S&P 500
+Companies
+65.57%
+20.99%
+-9.41%
+Below
+25th
+<
+-9.41%
+named executive officers with the interests of our shareholders by promoting […].
+Named Executive Officer
+Target Time-Based RSU Value
+Tim Cook
+$12,500,000
+Kevan Parekh
+$8,375,000
+Kate Adams
+$10,000,000
+Sabih Khan
+$10,000,000
+Luca Maestri
+$2,500,000
+$7,500,000
+Deirdre O’Brien
+$10,000,000
+Dividend Equivalents
+equivalent rights. The dividend equivalents will only pay out if and to the extent that […].
+Other Compensation and Benefits
+our Apple Inc. Employee Stock Purchase Plan (“ESPP”), health and welfare programs, 401(k) […].
+Deferred Compensation Plan
+base salary and their annual Cash Incentive Plan payout under the terms of the Deferred […].
+“Non-Qualified Deferred Compensation—2025.”
+Other Personal Benefits
+We provide risk-based security services for our employees, including
+our named executive officers, as determined to be necessary by our security team. We […].
+o […].
+Compensation Upon Termination of Employment
+guaranteed cash severance arrangements and are not entitled to acceleration of their […].
+c […].
+The time-based and performance-based RSU agreements for Mr. Cook
+provide for continued full vesting upon a termination due to disability, with settlement […].
+Governance and Other Considerations
+Recoupment of Compensation
+The terms of all outstanding time-based and performance-based RSU
+awards held by our named executive officers in 2025 allow us to recoup any shares or other […].
+Prohibition on Hedging, Pledging, and Short Sales
+We prohibit short sales, hedging, and transactions in derivatives
+of Apple securities for all Apple personnel, including directors, officers, employees, […].
+Stock Ownership Guidelines
+shares of Apple stock that have a value equal to 10 times his annual base salary. All […].
+Equity Award Grant Practices
+named executive officers on the
+first day of the applicable fiscal year. In certain […].
+of […].
+The People and Compensation Committee did
+not take material non-public information into account when determining the timing and […].
+Apple
+does not time the disclosure of material non-public information for the purpose of […].
+Risk Considerations
+In establishing and reviewing Apple’s executive compensation
+program, the People and Compensation Committee considers whether the program encourages […].
+People and Compensation Committee Report
+The People and Compensation Committee has reviewed and discussed
+with management the disclosures contained in the Compensation Discussion and Analysis. […].
+Members of the People and Compensation Committee
+Andrea Jung (Chair) Alex
+Gorsky Art Levinson
+51
+Executive Compensation Tables
+Summary Compensation Table—2025, 2024, and 2023
+The following table, footnotes, and related narrative
+show information regarding the total compensation of each named executive officer for […].
+Name and Principal Position
+Year
+Salary
+($)
+Stock Awards(1)
+($)
+Non-Equity Incentive
+Plan Compensation(2)
+($)
+All Other
+($)
+Total
+Chief Executive Officer
+2025
+3,000,000
+57,535,293
+12,000,000
+1,759,518
+74,294,811
+2024
+3,000,000
+58,088,946
+12,000,000
+1,520 […].
+Kevan Parekh
+Senior Vice President, Chief Financial Officer
+2025
+891,519
+18,433,135
+3,120,317
+22,338
+22,467,309
+Kate Adams
+Senior Vice President, General Counsel and Secretary
+2025
+1,000,000
+22,009,766
+4,000,000
+22,482
+27,032,248
+2024
+1,000,000
+22,157,075
+4,000,000
+22,182
+27,1 […].
+Sabih Khan
+Senior Vice President, Chief Operating Officer
+2025
+1,000,000
+22,009,766
+4,000,000
+21,905
+27,031,671
+Luca Maestri
+Former Senior Vice President, Chief Financial Officer
+2025
+819,231
+13,003,031
+1,638,462
+22,204
+15,482,928
+2024
+1,000,000
+22,157,075
+4,000,000
+22,182
+27,179 […].
+Deirdre O’Brien
+Senior Vice President, Retail + People
+2025
+1,000,000
+22,009,766
+4,000,000
+37,867
+27,047,633
+2024
+1,000,000
+22,157,075
+4,000,000
+22,182
+27,1 […].
+The amounts in the salary and non-equity incentive
+plan compensation columns of the “Summary Compensation Table—2025, 2024, and 2023” reflect […].
+The following table shows information regarding
+the incentive awards granted to the named executive officers for 2025.
+Estimated
+Future Payouts
+Under Non-Equity Incentive
+Plan Awards
+Estimated
+Future Payouts
+Under Equity Incentive
+Plan Awards
+All
+Stock
+Awards:
+Number
+of Shares
+of Stock
+or Units
+(#)
+Grant
+Date
+Fair Value of
+Stock
+Name
+Award
+Type
+Grant Date
+Threshold
+Target
+Maximum
+Threshold
+(#)
+Target
+(#)
+Maximum
+(#)
+Tim
+Cook
+Cash Incentive
+—
+3,000,000
+6,000,000
+12,000,000
+—
+—
+—
+—
+—
+Performance-
+based RSUs
+09/29/2024
+—
+—
+—
+41,157
+164,626
+329,252
+—
+45,035,089
+Time-based
+RSUs
+09/29/2024
+—
+—
+—
+—
+—
+—
+54,876
+12,500,204
+Kevan
+Parekh
+Cash Incentive
+—
+780,079
+1,560,158
+3,120,317
+—
+—
+—
+—
+—
+Performance-based
+RSUs
+09/29/2024
+—
+—
+—
+9,192
+36,767
+73,534
+—
+10,057,981
+Time-based
+RSUs
+09/29/2024
+—
+—
+—
+—
+—
+—
+36,767
+8,375,155
+Kate
+Adams
+Cash Incentive
+—
+1,000,000
+2,000,000
+4,000,000
+—
+—
+—
+—
+—
+Performance-
+based RSUs
+09/29/2024
+—
+—
+—
+10,975
+43,901
+87,802
+—
+12,009,558
+Time-based
+RSUs
+09/29/2024
+—
+—
+—
+—
+—
+—
+43,901
+10,000,209
+Sabih
+Khan
+Cash Incentive
+—
+1,000,000
+2,000,000
+4,000,000
+—
+—
+—
+—
+—
+Performance-based
+RSUs
+09/29/2024
+—
+—
+—
+10,975
+43,901
+87,802
+—
+12,009,558
+Time-based
+RSUs
+09/29/2024
+—
+—
+—
+—
+—
+—
+43,901
+10,000,209
+Luca
+Maestri
+Cash Incentive
+—
+409,616
+819,231
+1,638,462
+—
+—
+—
+—
+—
+Performance-based
+09/29/2024
+—
+—
+—
+2,744
+10,976
+21,952
+—
+3,002,595
+Time-based
+09/29/2024
+—
+—
+—
+—
+—
+—
+43,902
+10,000,437
+Deirdre
+O’Brien
+Cash Incentive
+—
+1,000,000
+2,000,000
+4,000,000
+—
+—
+—
+—
+—
+Performance-
+based RSUs
+09/29/2024
+—
+—
+—
+10,975
+43,901
+87,802
+—
+12,009,558
+Time-based
+09/29/2024
+—
+—
+—
+—
+—
+—
+43,901
+10,000,209
+The grant date fair value for time-based RSUs is […].
+718 […].
+Assumptions
+Grant
+Date
+Performance
+Period
+End Date
+Expected Term
+(years)
+Expected
+Volatility
+Risk-Free
+Interest Rate
+09/29/2024
+9/25/2027
+2.99
+27.49%
+3.46%
+assumptions. The risk-free interest rate was based on […].
+The following table shows information regarding
+the vesting during 2025 of RSUs previously granted to the named executive officers.
+Stock Awards
+Name
+Number of Shares
+Acquired on Vesting
+(#)
+Value Realized
+on Vesting
+695,869
+158,898,772
+Kevan Parekh
+40,152
+8,965,991
+201,817
+46,039,611
+Sabih Khan
+201,817
+46,039,611
+Luca Maestri
+205,933
+46,873,677
+Deirdre O’Brien
+201,817
+46,039,611
+the number of shares acquired on vesting by the per-share closing price […].
+The following table shows information regarding the outstanding equity
+awards held by each of the named executive officers as of September 27, 2025.
+Name
+Grant Date
+Number of Shares or
+Units of Stock That
+Have Not Vested
+(#)
+Market Value of
+Shares or Units of
+Stock That Have Not
+Equity
+Incentive Plan
+Awards: Number of
+Unearned Shares,
+Units or Other Rights
+That
+Have Not Vested
+Equity Incentive Plan
+Awards: Market or
+Payout Value of
+Unearned Shares, Units
+or Other Rights That
+Have Not Vested(1)
+9/26/2021
+85,080 (2)
+21,734,537
+—
+—
+9/25/2022
+44,318 (3)
+11,321,476
+199,429 (4)
+50,946,132
+10/01/202 […].
+Luca Maestri
+9/26/2021
+22,688 (11)
+5,795,876
+—
+—
+9/25/2022
+44,318 (12)
+11,321,476
+66,477 (13)
+16,982,214
+10/01/20 […].
+Non-Qualified Deferred Compensation—2025
+The following table shows information regarding
+the participation of our named executive officers in the Deferred Compensation Plan as of […].
+Name
+Executive
+Contributions
+Apple
+Contributions
+Aggregate
+Earnings
+Aggregate
+Withdrawals/
+Distributions
+Aggregate
+Balance at
+1,624,038(1)
+—
+202,660
+—
+2,083,918(3)
+2,400,000(2)
+—
+1,226,962
+—
+14,497,897(3)
+Reflects $424,038 of […].
+Reflects
+the portion of Ms. Adams’ annual cash incentive payout for 2024 deferred and contributed […].
+Description of Non-Qualified Deferred Compensation
+Our named executive officers and Non-Employee
+Directors are eligible to participate in the Deferred Compensation Plan.
+Deferred Compensation Plan participants
+may elect to defer up to 50% of their annual base salary and commissions and up to 90% of […].
+Deferred Compensation Plan participants
+may elect to receive distributions of their deferred amounts either upon separation from […].
+Potential Payments Upon Termination or Change of Control
+We do not have any cash severance arrangements with our named executive officers and none […].
+Equity Award Treatment Upon Termination of Employment
+CEO Awards
+Subject to the terms of the award agreements, Mr. Cook’s time-based RSUs provide for […].
+d […].
+Mr. Cook’s outstanding performance-based
+RSUs provide for a continued right to receive shares that are earned based upon full or […].
+Other Named Executive Officer Awards
+The time-based RSUs held by our other
+named executive officers, subject to the terms of the award agreements, provide for […].
+to […].
+Estimated Total Value of Hypothetical Equity Acceleration
+The following table shows the estimated
+amounts that the named executive officers would have become entitled to under the terms of […].
+Estimated Total Value
+upon Retirement(1)
+Estimated Total Value
+upon Death(1)
+Estimated Total Value
+upon Disability(1)
+256,459,589
+366,679,154
+366,679,154
+—
+28,175,626
+11,357,950
+—
+105,569,664
+73,177 […].
+The dollar
+amounts are determined by (i) multiplying the number of RSUs that would have been subject […].
+Pay versus Performance
+The information below is provided pursuant
+to the SEC pay versus performance disclosure requirements set forth in Item 402(v) of SEC […].
+Investment Based On:
+Fiscal
+Year(a)
+Table Total for
+Mr. Cook($)(b)
+Actually Paid to
+Mr. Cook($)(c)
+Average Summary
+Table Total for
+Other NEOs($)(d)
+Average
+Actually Paid to
+Other NEOs($)(e)
+Total
+Shareholder
+Return($)(f)
+Peer Group
+Total
+Shareholder
+Return($)(g)
+Net
+Income
+($M)(h)
+Net Sales
+($M)(i)
+2025
+74,294,811
+108,423,733
+23,812,358
+34,125,743
+233.88
+279.51
+112,010
+416,161
+2024
+74,609,802
+168,9 […].
+The dollar
+amounts in column (b) represent the compensation reported for Mr. Cook for each […].
+column […].
+The dollar amounts
+in columns (c) and (e) represent the amount of “Compensation Actually Paid” (otherwise […].
+Cook
+Average
+for
+Other NEO
+Compensation Table (“SCT”) Total
+74,294,811
+23,812,358
+Grant
+Date Fair Value of Stock Awards from SCT
+(57,535,293)
+(19,493,093)
+Fair
+68,598,728
+22,569,203
+Change
+in Fair Value from Prior Year End of Outstanding and Unvested Awards Granted in Prior […].
+Fair
+0
+166,813
+Change
+in Fair Value from Prior Year End of Vested(a) Awards Granted in Prior Years
+(1,650,010)
+(45 […].
+Fair
+0
+0
+Actually Paid
+108,423,733
+34,125,743
+(a)
+The fair values of the RSUs included in the compensation actually paid to our CEO and the […].
+The
+dollar amounts in column (d) represent the average amounts of compensation reported for […].
+Apple’s
+TSR in column (f) was determined based on the value of an initial fixed investment of […].
+The
+peer group used to calculate Peer Group TSR in column (g) is our 2025 primary peer group […].
+In
+addition to Relative TSR and Operating Income, Net Sales in column (i) represents the most […].
+Relationship Between Compensation Actually Paid and Net Income
+Net Income is generally a key indicator of company profitability and, for Apple, can […].
+w […].
+Relationship Between Compensation Actually Paid and Net Sales
+Net Sales is the financial measure, in addition to Operating Income, that the People and […].
+Other Relevant Financial Performance Measures
+For 2025, the following list represented
+the most important financial performance measures used by Apple to link Compensation […].
+Net
+Sales
+Operating Income
+Relative TSR
+61
+We offer a wide range of benefits to our
+global employee population, and we are committed to paying our employees competitively and […].
+We calculated the median compensated employee’s
+2025 annual total compensation using the same methodology that is used to calculate our […].
+Management
+Proposal No. 1 -
+Election of Directors
+64
+Proposal No. 2 -
+Ratification of Appointment of Independent Registered Public Accounting Firm
+65
+Proposal No. 3 -
+Advisory Vote to Approve Executive Compensation
+67
+Proposal No. 4 -
+68
+63
+Proposal No. 1
+Election of Directors
+The Board has nominated Wanda Austin, Tim
+Cook, Alex Gorsky, Andrea Jung, Art Levinson, Monica Lozano, Ron Sugar, and Sue Wagner to […].
+Holders of proxies solicited by this Proxy
+Statement will vote the proxies received by them as directed on the proxy card or, if no […].
+The term of any incumbent director who
+does not receive the affirmative vote of (i) a majority of the shares present or […].
+Meeti […].
+Each of the director nominees has consented
+to serving as a nominee, being named in this Proxy Statement, and serving on the Board if […].
+There are no family relationships among
+Apple’s executive officers, directors, and nominees.
+For more information on the director
+nominees, please see the section entitled “Directors” beginning on page 23.
+The Board
+recommends
+a vote FOR each
+of the nominees
+Vote Required
+Apple has implemented majority
+voting in uncontested elections of directors. Accordingly, Apple’s bylaws provide that in […].
+Proposal No. 2
+Ratification of Appointment of Independent Registered Public
+Accounting Firm
+The Audit Committee has re-appointed
+Ernst & Young LLP as Apple’s independent registered public accounting firm and as auditors […].
+At the Annual Meeting, our shareholders
+are being asked to ratify the appointment of Ernst & Young as Apple’s independent […].
+firm […].
+Fees Paid to Auditors
+The following table shows the fees
+billed by Apple’s independent registered public accounting firm for the years ended […].
+20 […].
+Ernst &
+Young
+2025
+2024
+Audit
+24,703
+22,381
+Audit-Related
+2,274
+2,418
+Tax
+4,533
+3,435
+All
+Other Fees(4)
+2,767
+2,037
+Total
+34,277
+30,271
+Audit
+fees relate to professional services rendered in connection with the audits of Apple’s […].
+Audit-related
+fees relate to professional services that are reasonably related to the performance of the […].
+Tax
+fees relate to professional services rendered in connection with tax compliance and […].
+ta […].
+All
+other fees relate to professional services not included in the categories above, including […].
+Policy on Audit Committee Pre-Approval of Audit and Non-Audit
+Services Performed by the Independent Registered Public Accounting Firm
+Apple maintains an auditor independence
+policy that, among other things, prohibits Apple’s independent registered public […].
+consu […].
+The Board
+recommends
+a vote FOR
+Proposal No. 2
+Vote Required
+Approval of Proposal No. 2
+requires the affirmative vote of (i) a majority of the shares present or represented by […].
+Proposal No. 3
+Advisory Vote to Approve Executive Compensation
+In accordance with the requirements of
+Section 14A of the Exchange Act and the related rules of the SEC, our shareholders have […].
+Motivating and retaining an exceptional
+leadership team is a key factor in enabling Apple’s long-term success. Our executive […].
+r […].
+Shareholders are being asked to approve
+the following resolution at the Annual Meeting:
+RESOLVED, that the compensation paid to
+the named executive officers, as disclosed in this Proxy Statement pursuant to the SEC’s […].
+As an advisory vote, this proposal is not
+binding on Apple, the Board, or the People and Compensation Committee. However, the People […].
+We expect the next advisory Say on Pay
+vote will occur at the 2027 annual meeting of shareholders.
+The Board
+recommends
+a vote FOR
+Proposal No. 3
+Vote Required
+Approval of Proposal No. 3 requires
+the affirmative vote of (i) a majority of the shares present or represented by proxy and […].
+Proposal No. 4
+At the Annual Meeting, shareholders
+are being asked to approve the Apple Inc. Non-Employee Director Stock Plan, as amended and […].
+The Director Plan was last approved by
+shareholders at the 2018 annual meeting of shareholders. We are asking shareholders to […].
+Description of Non-Employee Director Stock Plan
+The following is a summary of the principal
+features of the Director Plan. This summary does not purport to be a complete description […].
+Purpose
+The purposes of the Director Plan are to
+retain the services of qualified individuals who are not employees of the Company to serve […].
+Eligibility
+Only directors who are not employees of
+Apple or any of its subsidiaries may participate in the Director Plan. All seven of […].
+pa […].
+Shares Reserve
+Authorized and unissued shares of Apple’s
+common stock will be issued under the Director Plan.
+Maximum Share Reserve. A cumulative
+total of 44,800,000 shares of Apple’s common stock may be delivered pursuant to awards […].
+Other Share Counting Rules. Shares
+issued pursuant to restricted stock unit awards shall count against the share limit as two […].
+Limit on Compensation
+In no event shall the compensation payable
+by the Company to a Non-Employee Director for services performed as a Non-Employee […].
+und […].
+Administration
+The Administrator of the Plan is the Board. The Board has full authority to take any […].
+f […].
+Restricted Stock Units
+Restricted stock units may be granted under
+the Director Plan. A restricted stock unit or “RSU” is a bookkeeping entry representing […].
+Stock Options
+The Director Plan permits the grant of
+stock options if the Board determines that the grant of stock options is in the best […].
+I […].
+Restrictions on Transfer
+Except as described below, awards under
+the Director Plan generally are not transferable by the recipient other than by will or […].
+No Repricing
+No adjustment may be made to the plan or
+any stock option under the Director Plan (by amendment, substitution, cancellation and […].
+Termination of Service
+If a Non-Employee Director ceases to serve as a member of the Board for any reason other […].
+Adjustments; Corporate Transactions; Change of Control
+The share limit and the number and kind
+of shares available under the Director Plan and any outstanding awards, as well as the […].
+Amendment and Termination
+The Board has the authority to amend or
+terminate the Director Plan at any time, including the authority to prospectively change […].
+Term
+The amended and restated Director
+Plan will become effective upon shareholder approval. If shareholders approve this […].
+Boa […].
+Federal Income Tax Consequences
+The following is a brief summary of the
+U.S. federal income tax consequences applicable to awards granted under the Director Plan […].
+A recipient of a stock option will not
+have taxable income upon the grant of the stock option. A participant will recognize […].
+o […].
+A participant is not deemed to receive
+any taxable income at the time an award of restricted stock unit is granted. When vested […].
+Apple will be allowed a tax deduction for
+the amount recognized as ordinary income by a Non-Employee Director upon vesting or […].
+Future Plan Benefits
+None of Apple’s employees, including
+its executive officers and the named executive officers, are eligible to participate in […].
+Aggregate Past Grants Under the Director Plan
+Since the inception of the Director Plan,
+the following equity awards have been granted to […].
+Stock
+Options
+(# of shares)
+Restricted
+Stock
+Units (# of shares)
+Total
+(# of shares)
+Wanda
+Austin
+-
+2,771
+2,771
+-
+6,794
+6,794
+Andrea Jung
+878,360
+105,386
+983,746
+Art Levinson
+3,789,576
+132,964
+3,992,540
+Monica Lozano
+-
+8,575
+8,575
+Ron Sugar
+-
+110,566
+110,566
+Sue Wagner
+-
+55,746
+55,746
+71
+No other equity awards have been granted under the Director Plan to any […].
+The Board
+recommends
+a vote FOR
+Proposal No. 4
+Vote Required
+Approval of Proposal No. 4 requires
+the affirmative vote of (i) a majority of the shares present or represented by proxy and […].
+Shareholder
+Shareholder Proposals
+74
+Identification of Proponents
+74
+Vote Required
+74
+75
+73
+Shareholder Proposals
+At Apple, we believe business can and should be a force for good. Our teams around the […].
+The proposal below was submitted by a
+shareholder under Rule 14a-8 under the Exchange Act. This proposal, and the supporting […].
+Board Voting
+Recommendation
+5
+China Entanglement Audit
+● The requested report is unnecessary given we
+already provide extensive information on our […].
+AGAINST
+no-action requests to the Staff of the SEC’s Division of Corporation Finance asking the […].
+Identification of Proponents
+Proposal No. 5 was submitted for the Annual Meeting by a shareholder who has represented […].
+Vote Required
+(i) a majority of the shares present or represented by proxy and voting at the Annual […].
+Proposal No. 5
+Shareholder Proposal
+Apple has been advised that the National
+Center for Public Policy Research intends to submit the following proposal at the Annual […].
+China Entanglement Audit
+Whereas:
+●
+With escalating U.S.–China trade tensions, Apple could face steep tariff increases.
+Analys […].
+Resolved: Shareholders request that
+the Board of Directors of Apple conduct an evaluation and issue a report within the next […].
+Supporting Statement:
+Shareholders need clear, quantified information on:
+1.
+The financial exposure under high-tariff scenarios and mitigation strategies.
+2.
+The […].
+3 […].
+A transparent, scenario-based analysis will help shareholders
+assess whether current strategies are sufficient to protect Apple’s profitability and […].
+Apple’s Statement in Opposition to Proposal No. 5
+AGAINST
+Proposal No. 5
+●
+the requested report is unnecessary given we already provide extensive information on
+our […].
+Apple products are designed in California
+and made all over the world, with manufacturing, sales, and operations extending to over […].
+The requested report is unnecessary
+given we already provide extensive information on our international operations. As a […].
+i […].
+We also voluntarily provide additional
+information relating to our global supply chain and operations. For example, we have […].
+o […].
+Our Board and management maintain active
+oversight of our global operations. The Board oversees this important work, and reviews […].
+Apple’s Enterprise Risk Management
+Program is designed to identify, assess, and monitor our significant business risks, […].
+o […].
+Other Matters
+Apple knows of no other matters to be submitted
+to shareholders at the Annual Meeting, other than the proposals identified in this Proxy […].
+Audit and Finance Committee Report
+80
+Security Ownership of Certain Beneficial Owners and Management
+81
+Equity Compensation Plan Information
+83
+General Information
+84
+79
+Audit and Finance Committee Report
+Finance Committee consisted of four members: Ron Sugar, who serves as the Chair of the […].
+Committee assists the Board’s oversight and monitoring of:
+● Apple’s financial statements and other financial
+information provided by Apple to its […].
+Ernst & Young has served as Apple’s independent registered
+public accounting firm since 2009 and rotates its lead audit engagement partner every five […].
+Apple maintains an auditor independence policy that, among other
+things, prohibits Apple’s independent registered public accounting firm from performing […].
+Members of the Audit and Finance Committee
+Ron Sugar (Chair)
+Wanda Austin
+Monica Lozano
+Sue Wagner
+80
+Security Ownership of Certain Beneficial Owners and Management
+The following table shows information as of January 2, 2026 (the “Table Date”), unless […].
+Name of Beneficial Owner
+Shares of Common
+Stock Beneficially
+Percent of
+Common Stock
+Outstanding
+The Vanguard Group
+1,415,826,462(2)
+9.63%
+BlackRock, Inc.
+1,043,713,019(3)
+7.10%
+175,408(4)
+*
+Wanda Austin
+2,843(5)
+*
+3,280,295(6)
+*
+6,794(7)
+*
+Andrea Jung
+77,664(8)
+*
+1,074,404(9)
+*
+4,126,689(10)
+*
+9,862(11)
+*
+91,304(12)
+*
+136,687(13)
+*
+8,765(14)
+*
+Ron Sugar
+110,566(15)
+*
+69,788(16)
+*
+9,079,765(17)
+*
+Represents shares of Apple’s common stock held, and […].
+Excludes
+369,488 RSUs held by Ms. O’Brien that are not scheduled to vest within 60 days after the […].
+Equity Compensation Plan Information
+The following table shows information, as of September 27, 2025,
+regarding shares of […].
+27 […].
+Number of Securities to be Issued
+Upon Exercise of Outstanding
+Options, Warrants and Rights (a)
+Weighted-Average Exercise Price of
+Outstanding Options, Warrants and
+Rights(1)($)(b)
+Number of Securities Remaining
+Available for Future Issuance Under
+Equity Compensation Plans
+(Excluding Securities Reflected in
+Column (a)(c))
+Equity compensation plans approved by shareholders(2)
+151,604,285(3)
+14.12
+1,051,241,204(4)
+The weighted-average exercise price is calculated based […].
+General Information
+Date and Time:
+February 24, 2026
+Virtual Meeting Site:
+www.virtualshareholdermeeting.com/AAPL2026
+shareholders of record as of the close of […].
+St […].
+Attending the Annual Meeting
+To attend, vote, and submit questions during the Annual Meeting, visit […].
+the control […].
+Proxy Materials
+on January 8, 2026, and include:
+●
+The Notice of 2026 Annual Meeting of Shareholders;
+●
+This Proxy Statement for the Annual Meeting; and
+●
+Apple’s Annual Report on Form 10-K for the year ended September 27, 2025.
+also include the […].
+Forward-looking Statements
+This document includes forward-looking statements within the meaning of the Private […].
+in […].
+Proxy Materials are Available on the Internet
+materials to shareholders. We are sending a Notice of Internet Availability of Proxy […].
+t […].
+Eliminating Duplicate Mailings
+Apple has adopted a procedure called “householding.”
+Under this procedure, Apple may deliver a single copy of the Notice of Internet […].
+by […].
+Apple Investor Relations
+One Apple Park Way
+MS 927-4INV
+Phone: (408) 974-3123
+Email: investor_relations@apple.com
+a single address and would like to participate in householding, please contact the bank, […].
+Quorum for the Annual Meeting
+Meeting must be present at the Annual Meeting or represented by proxy for the transaction […].
+Inspector of Election
+A representative of Broadridge Investor Communication Solutions, Inc.
+will serve as the […].
+Proxy Solicitation Costs
+retained Georgeson LLC to assist in the distribution of proxy materials and the […].
+as […].
+Apple’s Fiscal Year
+on the last Saturday of September. Apple’s 2025 fiscal year included 52 weeks and ended on […].
+Voting
+Each share of Apple’s common stock has one vote on each matter. Only “shareholders of […].
+Shareholders of Record
+transfer agent, Computershare Trust Company, N.A., you are the shareholder of record with […].
+Beneficial Owners of Shares Held in Street Name
+organization, then you are the “beneficial owner of shares held in street name.” As a […].
+Voting Procedures
+There are four ways to vote:
+●
+Online Prior to the Annual Meeting. You may vote by proxy by visiting proxyvote.com and
+en […].
+Annual Meeting by visiting www.virtualshareholdermeeting.com/AAPL2026, entering the control
+number found in your Notice of Internet Availability, voting instruction form, or proxy […].
+Changing your Vote
+the taking of the vote at the Annual Meeting.
+●
+the online voting method described above, in […].
+Uninstructed Shares
+Shareholders of Record
+If you are a shareholder of record and you:
+●
+Indicate when voting online or by phone that you wish to vote as recommended by the […].
+●
+Beneficial Owners of Shares Held in Street Name
+not provide the organization that holds your shares with specific voting instructions, […].
+Routine and Non-Routine Proposals
+The following proposal is considered a routine matter:
+●
+public accounting firm for 2026 (Proposal No. 2).
+on routine matters, and, therefore, no […].
+The following proposals are considered non-routine matters:
+●
+Election of directors (Proposal No. 1);
+●
+Advisory vote to approve executive compensation (Proposal No. 3);
+●
+Approval of the Apple Inc. Non-Employee Director Stock Plan, as amended and restated […].
+Vote Required to Approve a Proposal
+With respect to the election of directors (Proposal No. 1),
+Apple’s bylaws provide that, in […].
+Broker Non-Votes and Abstentions
+whether a quorum is present. Only “FOR” and “AGAINST” votes are counted for purposes of […].
+Confidentiality of Votes
+Proxy instructions, ballots, and voting tabulations that identify
+individual shareholders are handled in a manner that protects your voting privacy. Apple […].
+To defend claims against Apple; and
+●
+As necessary to meet applicable legal requirements.
+or ballot may be forwarded to Apple’s […].
+Tabulation and Reporting of Voting Results
+Preliminary voting results will be announced at the Annual Meeting.
+Final voting results […].
+Meeting of Shareholders
+meeting of shareholders, other than nominations of directors, must be received on or […].
+1 […].
+Matters for consideration at the 2027 annual meeting of
+shareholders, but not for inclusion in the proxy materials, must be received no earlier […].
+Annual Meeting of Shareholders Using Proxy Access
+continuously for at least three years shares of Apple stock representing an aggregate of […].
+Annual Meeting of Shareholders (other than through Proxy Access)
+Under Apple’s bylaws, notice by
+shareholders who intend to nominate directors at the 2027 annual meeting of shareholders […].
+Solicitation of Proxies for 2027 Annual Meeting of Shareholders
+SEC in connection with our solicitation of proxies for our 2027 annual meeting of […].
+our […].
+One Apple Park Way
+Phone: (408) 996-1010
+90
+Annex A
+APPLE INC.
+NON-EMPLOYEE DIRECTOR STOCK PLAN
+(as amended and restated on November 4,
+2025)
+Apple Inc. Non-Employee Director Plan (the […].
+ADMINISTRATION. The Administrator shall be responsible for administering
+the Plan. Subject to the provisions of the Plan, the Administrator shall have the full […].
+(a)
+determining the Fair Market Value for purposes of any Award;
+(b)
+approving any forms of Award Agreements to be used under the Plan;
+(c)
+amending any outstanding Awards;
+(d)
+construing and interpreting the Plan and any agreements defining the rights and […].
+Direct […].
+(e)
+correcting any defect, supplying any omission or reconciling any inconsistency in the Plan […].
+(f)
+adopting such rules or guidelines as it deems appropriate to implement the Plan;
+(g)
+authorizing any person to execute on behalf of the Company any instrument required to […].
+(h)
+adjusting the number of shares subject to any Award, adjusting the price of any or all […].
+(i)
+determining whether, and the extent to which, adjustments are required pursuant to Section […].
+(j)
+making all other decisions relating to the operation of the Plan.
+Each interpretation, determination, or other action made or taken
+by the Administrator pursuant to the Plan shall be final and binding on all persons, and […].
+(a)
+SHARE LIMIT. Subject to the provisions of Section 7, the maximum number of Shares that may […].
+(b)
+SHARE COUNT. Shares issued pursuant to Restricted Stock Unit Awards shall count against […].
+(c)
+LIMIT ON COMPENSATION. In no event shall the compensation payable by the Company to a […].
+(a)
+ANNUAL GRANTS. On the date of each Annual Meeting immediately following which a […].
+on the […].
+(b)
+INITIAL GRANTS. Each Non-Employee Director who first becomes a Non-Employee Director at […].
+(c)
+VESTING; TERMINATION OF SERVICE. Except as otherwise provided in an Award Agreement at the […].
+(d)
+SETTLEMENT OF RESTRICTED STOCK UNITS. On or as soon as administratively practical […].
+Date […].
+(e)
+SHAREHOLDER RIGHTS. A Non-Employee Director shall have no rights as a shareholder of the […].
+(f)
+DIVIDEND EQUIVALENT RIGHTS DISTRIBUTIONS. As of any date that the Company pays an ordinary […].
+(a)
+NO ADDITIONAL GRANTS. No Options shall be granted under the Plan unless and until the […].
+(b)
+EXERCISE PRICE. The per share exercise price of each Option shall not be less than 100% of […].
+(c)
+VESTING. Except as otherwise provided in an Award Agreement at the time of grant, Options […].
+(d)
+TERM OF OPTIONS.
+i.
+TEN-YEAR TERM. Each Option shall expire ten (10) years from its date of […].
+(e)
+TIME AND MANNER OF EXERCISE OF OPTIONS.
+i.
+may exercise any Option, to the extent such […].
+h […].
+(f)
+after its receipt of a proper notice of exercise and, if applicable, payment of the […].
+of […].
+(a)
+Upon (or, as may be necessary to effect the adjustment, immediately prior to) any […].
+reca […].
+(b)
+It is intended that, unless otherwise determined by the Administrator, any adjustments […].
+(c)
+Any adjustment under this Section 7 need not be the same for all persons or Awards.
+8.
+CHANG […].
+Shares subject to such Award, determined as follows:
+CLIFF-VESTING AWARDS. If the Award has one scheduled Vesting Date, the portion of the […].
+(b)
+INSTALLMENT-VESTING AWARDS. If the Award has multiple scheduled Vesting Dates, the portion […].
+(c)
+or terminate the Plan, or amend the terms of any outstanding Award, without the consent of […].
+(d)
+NO REPRICING. In no case (except due to an adjustment contemplated by Section 7 or any […].
+(d)
+APPLICABLE LAW. Except as to matters of federal law, the Plan and all actions taken […].
+by […].
+(e)
+SEVERABILITY. If a court of competent jurisdiction holds any provision invalid and […].
+pro […].
+(f)
+SECTION HEADINGS; INTERPRETATION. Captions and headings are given to the sections and […].
+(g)
+AUTHORITY OF THE COMPANY AND SHAREHOLDERS. The existence of the Plan shall not affect or […].
+“ADMINISTRATOR” means the Board. The Board may delegate
+ministerial, non-discretionary functions to individuals who are officers or employees of […].
+“ANNUAL MEETING” means the first annual meeting of the
+Company’s shareholders at which members of the Board are elected following the applicable […].
+“AWARD” means an award of Options or Restricted Stock
+Units under the Plan.
+“AWARD AGREEMENT” means any agreement that evidences
+an Award granted under the Plan. Award Agreements shall consist of either (1) a written […].
+“BENEFICIARY” means an individual or entity designated
+by a Non-Employee Director on a Beneficiary Designation Form to exercise Options or […].
+of […].
+“BENEFICIARY DESIGNATION FORM” means a document, in
+a form approved by the Administrator to be used by Non-Employee Directors to name their […].
+“CHANGE OF CONTROL” means the occurrence of any one
+or more of the following events:
+(i)
+An acquisition by any individual, entity or group (within the meaning of Section 13(d)(3) […].
+(ii)
+A change in the composition of the Board such that the individuals who, as of February 13, […].
+(iii)
+The consummation of a reorganization, merger, statutory share exchange or consolidation or […].
+(iv)
+The approval by the shareholders of the Company of a complete liquidation or dissolution […].
+“COMMON STOCK” means the common stock of the Company
+or any other class of securities of the Company or any successor in interest thereto to […].
+“FAIR MARKET VALUE” means, unless otherwise
+determined or provided by the Administrator in the circumstances, the last price (in […].
+S […].
+“NET EXERCISED” shall
+mean the exercise of an Option or any portion thereof by the delivery to the person […].
+nu […].
+“NON-EMPLOYEE DIRECTOR” means a member of the Board
+who is not an employee of the Company or any of its Subsidiaries.
+“OPTION” means an option to purchase Shares awarded
+to a Non-Employee Director under the Plan.
+“RESTRICTED STOCK UNIT” means a bookkeeping entry representing
+the equivalent of one Share, subject to the terms and conditions hereof, and represents an […].
+“SUBSIDIARY” means any corporation or other entity a
+majority of whose outstanding voting stock or voting power is beneficially owned directly […].
+C/O PROXY SERVICES
+VOTE BY INTERNET
+Use the Internet to transmit your voting instructions and for electronic delivery of […].
+u […].
+During The Meeting - Go to www.virtualshareholdermeeting.com/AAPL2026
+You may attend the meeting via the Internet and vote during the meeting when the
+polls are […].
+ELECTRONIC DELIVERY OF FUTURE PROXY MATERIALS
+If you would like to reduce the costs incurred by our company in mailing proxy materials, […].
+VOTE BY MAIL
+Mark, sign, and date your proxy card and either return it in the postage-paid envelope we […].
+DETACH AND RETURN THIS PORTION ONLY
+THIS
+PROXY CARD IS VALID ONLY WHEN SIGNED AND DATED.
+APPLE INC.
+The
+Board of Directors recommends a vote FOR all the listed nominees.
+1.
+named in the Proxy […].
+Nominees:
+For
+Against
+Abstain
+1a.
+☐
+☐
+☐
+1b.
+☐
+☐
+☐
+1c.
+☐
+☐
+☐
+1d.
+☐
+☐
+☐
+1e.
+☐
+☐
+☐
+1f.
+☐
+☐
+☐
+1g.
+Ron Sugar
+☐
+☐
+☐
+1h.
+☐
+☐
+☐
+The Board of Directors recommends a vote FOR Proposals 2 to 4.
+For
+Against
+Abstain
+2.
+independent registered public accounting firm for fiscal 2026
+☐
+☐
+☐
+3.
+Advisory vote to approve executive compensation
+☐
+☐
+☐
+4.
+Approval of the Apple Inc. Non-Employee Director Stock Plan,
+as Amended and Restated
+☐
+☐
+The Board of Directors
+recommends a vote AGAINST Proposal 5.
+For
+Against
+Abstain
+5.
+A shareholder proposal entitled “China Entanglement Audit”
+☐
+☐
+☐
+NOTE: Such other business as may properly come before the meeting or any postponements
+or adjournments thereof.
+Against
+Abstain
+Yes
+No
+HOUSEHOLDING
+ELECTION - Please indicate if you consent to receive certain future investor […].
+☐
+☐
+Please […].
+Signature [PLEASE SIGN WITHIN BOX]
+Date
+Signature (Joint Owners)
+Date
+Apple Inc.
+February 24, 2026
+www.virtualshareholdermeeting.com/AAPL2026
+Attending the Annual
+Meeting
+We are pleased to welcome shareholders to the 2026 Annual Meeting, to be held virtually on […].
