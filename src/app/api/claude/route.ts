@@ -1,5 +1,24 @@
 import { cacheService } from '../../../lib/cache';
-import { createAnthropicClient, isAnthropicTimeout } from '../../../lib/ai-runtime';
+import {
+  aiErrorResponse,
+  complete,
+  isAiServiceConfigured,
+  modelUsageFromAiUsage,
+  outputTokenBudget,
+  planAiCall,
+  type AiCompletion,
+} from '../../../lib/ai-gateway';
+import { findAiModel } from '../../../lib/ai-models';
+import {
+  answerMetadata,
+  NATIVE_WEB_SEARCH_MAX_USES,
+  prepareWebSearch,
+  WEB_SEARCH_OFF,
+  webSearchReservationTokens,
+  withWebAddendum,
+  type AiAnswerMetadata,
+  type WebSearchPreparation,
+} from '../../../lib/ai-web-search';
 import {
   SEC_RESEARCH_SYSTEM_PROMPT,
   buildAscLookupPrompt,
@@ -11,6 +30,7 @@ import {
   acquireAiConcurrency,
   checkAiRateLimit,
   estimateModelTokenReservation,
+  modelCostWeights,
   rateLimitResponse,
   releaseAiConcurrency,
   reserveAiTokenBudget,
@@ -20,16 +40,17 @@ import { validateChatRequest } from '../../../lib/ai-input';
 import { buildFrameworkContext } from '../../../lib/framework-context';
 import crypto from 'crypto';
 import { withRouteObservability } from '../../../lib/route-observability';
-import { classifyAnthropicFailure, recordAiUsage, usageFromMessage } from '../../../lib/ai-usage';
+import { classifyAiFailure, recordAiUsage } from '../../../lib/ai-usage';
 
 /** The platform default would kill this route mid-flight; see the in-route budgets. */
 export const maxDuration = 180;
 
+/** What the KV cache keeps for an answer: the text and how it was produced. */
+type CachedAnswer = AiAnswerMetadata & { text: string };
 
-const anthropic = createAnthropicClient(process.env.ANTHROPIC_API_KEY || '');
-
-// Model is env-configurable so upgrades are a Vercel env change, not a deploy
-const CLAUDE_MODEL = process.env.ANTHROPIC_MODEL || 'claude-sonnet-5';
+function isCachedAnswer(value: unknown): value is CachedAnswer {
+  return Boolean(value && typeof value === 'object' && typeof (value as CachedAnswer).text === 'string' && typeof (value as CachedAnswer).model === 'string');
+}
 
 async function handlePost(req: Request) {
   try {
@@ -38,18 +59,24 @@ async function handlePost(req: Request) {
 
     const validation = await validateChatRequest(req);
     if (validation.response) return validation.response;
-    const { prompt, messages, maxTokens, frameworks, grounding } = validation.value;
+    const { prompt, messages, maxTokens, frameworks, grounding, reasoningEffort, webSearch } = validation.value;
     const isComplex = frameworks.length > 0;
-    const effectiveMaxTokens = isComplex ? 8192 : maxTokens;
 
     const rate = await checkAiRateLimit(req, access.identity, {
       operation: 'claude',
     });
     if (!rate.allowed) return rateLimitResponse(rate);
 
-    if (!process.env.ANTHROPIC_API_KEY) {
+    if (!isAiServiceConfigured()) {
       return Response.json({ error: 'AI service is not configured.' }, { status: 503 });
     }
+    // A model this deployment cannot serve (no gateway key) is a 503 before
+    // any budget is touched.
+    const plan = planAiCall(validation.value.model);
+    const model = findAiModel(validation.value.model)!;
+    // Reasoning shares the output allowance, so effort adds headroom on top
+    // of the answer length the caller asked for.
+    const effectiveMaxTokens = outputTokenBudget(model, isComplex ? 8192 : maxTokens, reasoningEffort);
 
     // Grounded Accounting Hub questions: pick the knowledge base excerpts that
     // bear on the question and put them, with the citation contract, in the
@@ -69,7 +96,9 @@ async function handlePost(req: Request) {
     //    so omitting them served one framework's cached answer to another.
     //    Hash the EFFECTIVE config, not the raw request values. The selected
     //    excerpts are inputs too: an edited knowledge base must miss the cache
-    //    rather than serve an answer whose [n] markers point at old text.
+    //    rather than serve an answer whose [n] markers point at old text. The
+    //    model that runs (and on which transport), its effort and web search
+    //    change the answer as well.
     const payloadSignature = JSON.stringify({
       prompt,
       messages,
@@ -77,14 +106,18 @@ async function handlePost(req: Request) {
       grounding: groundingReport
         ? { topic: grounding?.topic ?? null, excerpts: groundingReport.excerpts.map(excerpt => [excerpt.n, excerpt.id, excerpt.text]) }
         : null,
+      model: plan.wireModel,
+      transport: plan.transport,
+      reasoningEffort,
+      webSearch,
     });
     const hash = crypto.createHash('sha256').update(`${access.identity.cacheScope}:${payloadSignature}-${effectiveMaxTokens}`).digest('hex');
-    const cacheKey = `ai-cache:${hash}`;
+    const cacheKey = `ai-cache:v2:${hash}`;
 
     // 2. Check Vercel KV Cache
-    const cachedResponse = await cacheService.get<string>(cacheKey);
-    if (cachedResponse) {
-      return new Response(JSON.stringify({ text: cachedResponse, cached: true, ...(groundingReport ? { grounding: groundingReport } : {}) }), {
+    const cachedResponse = await cacheService.get<unknown>(cacheKey);
+    if (isCachedAnswer(cachedResponse)) {
+      return new Response(JSON.stringify({ ...cachedResponse, cached: true, ...(groundingReport ? { grounding: groundingReport } : {}) }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' }
       });
@@ -104,59 +137,88 @@ async function handlePost(req: Request) {
 
     const concurrency = await acquireAiConcurrency(access.identity);
     if (!concurrency.allowed) return rateLimitResponse(concurrency);
+    const weights = modelCostWeights(model.pricing);
+    const webReservation = webSearchReservationTokens(model, webSearch);
     const budget = await reserveAiTokenBudget(
       access.identity,
       estimateModelTokenReservation(
         systemPromptText.length + apiMessages.reduce((total, message) => total + message.content.length, 0),
-        effectiveMaxTokens
-      )
+        effectiveMaxTokens,
+        1,
+        { weights, webSearchCalls: webReservation.webSearchCalls }
+      ) + webReservation.extraTokens
     );
     if (!budget.allowed) {
       await releaseAiConcurrency(concurrency.lease);
       return rateLimitResponse(budget);
     }
     const modelCallStartedAt = Date.now();
-    const usageRecord = { route: 'claude', model: CLAUDE_MODEL, userId: access.identity.userId, reservation: budget.reservation, startedAt: modelCallStartedAt };
-    const msg = await (async () => {
+    const usageRecord = {
+      route: 'claude',
+      model: plan.transport === 'direct-anthropic' ? plan.wireModel : model.id,
+      provider: model.provider,
+      reasoningEffort,
+      weights,
+      userId: access.identity.userId,
+      reservation: budget.reservation,
+      startedAt: modelCallStartedAt,
+    };
+    let web: WebSearchPreparation = WEB_SEARCH_OFF;
+    const completion: AiCompletion = await (async () => {
       try {
-        const message = await anthropic.messages.create({
-          model: CLAUDE_MODEL,
-          max_tokens: effectiveMaxTokens,
-          // Sonnet 5 rejects budget_tokens and non-default temperature (400):
-          // adaptive thinking replaces the fixed budget; simple queries stay thinking-off
-          thinking: isComplex ? { type: 'adaptive' } : { type: 'disabled' },
+        // Web search runs only when the request asked for it — the grounded
+        // Accounting Hub path included.
+        web = await prepareWebSearch({
+          model,
+          webSearch,
+          question: prompt || apiMessages[apiMessages.length - 1].content,
+          contextSummary: grounding ? `Accounting standards question${grounding.topic ? ` (ASC ${grounding.topic})` : ''}.` : null,
+          signal: req.signal,
+        });
+        const result = await complete({
+          model: model.id,
+          system: withWebAddendum(systemPromptText, web.systemAddendum),
+          messages: apiMessages,
+          maxTokens: effectiveMaxTokens,
+          reasoningEffort,
+          webSearch: web.nativeSearch,
+          maxWebSearches: NATIVE_WEB_SEARCH_MAX_USES,
           // Prompt caching: the static research prompt is cached at Anthropic
           // for a 90% input token discount. The grounded prompt changes with
-          // every question's excerpt set, so caching it would only add entries.
-          system: [{
-            type: 'text',
-            text: systemPromptText,
-            ...(groundedExcerpts ? {} : { cache_control: { type: 'ephemeral' as const } }),
-          }],
-          messages: apiMessages,
-        }, { signal: req.signal });
+          // every question's excerpt set, and so does a prompt carrying
+          // retrieved web results, so caching those would only add entries.
+          cacheSystemPrompt: !groundedExcerpts && web.report.mode !== 'retrieval' && web.report.mode !== 'unavailable',
+          signal: req.signal,
+        });
         // Settle the reservation against what the API actually billed.
-        await recordAiUsage({ ...usageRecord, usage: usageFromMessage(message), outcome: 'completed' });
-        return message;
+        await recordAiUsage({
+          ...usageRecord,
+          usage: modelUsageFromAiUsage(result.usage),
+          outcome: 'completed',
+          additionalBillableTokens: web.retrievalBillableTokens,
+        });
+        return result;
       } catch (error) {
-        await recordAiUsage({ ...usageRecord, usage: null, outcome: classifyAnthropicFailure(error) });
+        await recordAiUsage({
+          ...usageRecord,
+          usage: modelUsageFromAiUsage((error as { usage?: AiCompletion['usage'] | null }).usage),
+          outcome: classifyAiFailure(error),
+          additionalBillableTokens: web.retrievalBillableTokens,
+        });
         throw error;
       } finally {
         await releaseAiConcurrency(concurrency.lease);
       }
     })();
 
-    const textPayload = msg.content
-      .filter((block) => block.type === 'text')
-      .map((block) => block.text)
-      .join('');
+    const answer: CachedAnswer = { text: completion.text, ...answerMetadata(completion, reasoningEffort, web) };
 
     // Sonnet 5 rejects caller-selected temperatures, so every generation uses
     // the model default. Keep these variable outputs briefly rather than using
     // a fictitious request temperature to select or partition the cache.
-    await cacheService.set(cacheKey, textPayload, { ex: 3600 });
+    await cacheService.set(cacheKey, answer, { ex: 3600 });
 
-    return new Response(JSON.stringify({ text: textPayload, cached: false, ...(groundingReport ? { grounding: groundingReport } : {}) }), {
+    return new Response(JSON.stringify({ ...answer, cached: false, ...(groundingReport ? { grounding: groundingReport } : {}) }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' }
     });
@@ -165,9 +227,8 @@ async function handlePost(req: Request) {
     if (req.signal.aborted) {
       return Response.json({ error: 'Request cancelled.' }, { status: 499 });
     }
-    if (isAnthropicTimeout(error)) {
-      return Response.json({ error: 'AI generation timed out.' }, { status: 504 });
-    }
+    const mapped = aiErrorResponse(error);
+    if (mapped) return mapped;
     console.error('Claude API Route Error:', error);
     return new Response(JSON.stringify({ error: 'An error occurred processing your request' }), { status: 500 });
   }

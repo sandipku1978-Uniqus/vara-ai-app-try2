@@ -173,7 +173,7 @@ describe('AI spend reservations', () => {
       const source = readFileSync(resolve(process.cwd(), route), 'utf8');
       const cacheCheck = route.includes('letters/summary')
         ? source.lastIndexOf('if (cached && isCommentLetterSummaryCacheCurrent')
-        : source.indexOf('if (cachedResponse)');
+        : source.search(/if \((?:isCached\w+\()?cachedResponse\)?\)/);
       const capacity = source.indexOf('acquireAiConcurrency(', cacheCheck);
       const reservation = source.indexOf('reserveAiTokenBudget(', cacheCheck);
       expect(cacheCheck, `${route} must check its cache`).toBeGreaterThanOrEqual(0);

@@ -22,6 +22,7 @@ import {
 } from '../lib/systemPrompts';
 import { selectFilingText } from '../utils/filingTextSelection';
 import type { ChatGroundingInput } from '../lib/ai-input';
+import type { AiModelSelection } from '../lib/ai-models';
 
 const CLAUDE_API_ENDPOINT = '/api/claude';
 const CLAUDE_STREAM_ENDPOINT = '/api/stream';
@@ -31,6 +32,12 @@ interface ClaudeRequestOptions {
   messages?: Array<{ role: 'user' | 'assistant'; content: string }>;
   frameworks?: string[];
   grounding?: ChatGroundingInput;
+  /** Registry model id (lib/ai-models); the server default when absent. */
+  model?: AiModelSelection['model'];
+  /** One of the model's `effortLevels`; the model's default when absent. */
+  reasoningEffort?: AiModelSelection['reasoningEffort'];
+  /** Off unless true. */
+  webSearch?: AiModelSelection['webSearch'];
 }
 
 interface ClaudeResponsePayload {

@@ -8,12 +8,27 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { kv } from '@vercel/kv';
 import { NextResponse } from 'next/server';
 import { requireApiAccess, type ApiIdentity } from '../../../../lib/api-auth';
-import { createAnthropicClient, isAnthropicTimeout } from '../../../../lib/ai-runtime';
+import {
+  addAiUsage,
+  aiErrorResponse,
+  complete,
+  findCallableModel,
+  isAiServiceConfigured,
+  isAiTimeout,
+  lowestEffort,
+  modelUsageFromAiUsage,
+  outputTokenBudget,
+  planAiCall,
+  type AiUsage,
+} from '../../../../lib/ai-gateway';
+import { findAiModel } from '../../../../lib/ai-models';
+import { validateOptionalModelSelection } from '../../../../lib/ai-input';
 import {
   acquireAiConcurrency,
   checkAiRateLimit,
   checkResourceRateLimit,
   estimateModelTokenReservation,
+  modelCostWeights,
   rateLimitResponse,
   releaseAiConcurrency,
   reserveAiTokenBudget,
@@ -31,12 +46,9 @@ import {
 } from '../../../../services/commentLetterSummary';
 import { withRouteObservability } from '../../../../lib/route-observability';
 import {
-  addUsage,
-  classifyAnthropicFailure,
+  classifyAiFailure,
   recordAiUsage,
-  usageFromMessage,
   type AiCallOutcome,
-  type ModelUsage,
 } from '../../../../lib/ai-usage';
 
 /**
@@ -49,7 +61,6 @@ import {
  */
 export const maxDuration = 300;
 
-const CLAUDE_MODEL = process.env.ANTHROPIC_MODEL || 'claude-sonnet-5';
 const THREAD_ID_PATTERN = /^[A-Za-z0-9:._-]{1,160}$/;
 
 interface LetterRow {
@@ -136,6 +147,13 @@ function cachedResponse(threadId: string, cached: CachedSummary): NextResponse {
     thread: threadId,
     summary: cached.summary,
     model: cached.model,
+    // A stored summary records only its model; the effort and usage of the
+    // generation that produced it were not kept, so they are reported as
+    // unknown rather than guessed.
+    provider: findCallableModel(cached.model)?.provider ?? (cached.model.startsWith('claude') ? 'anthropic' : null),
+    reasoningEffort: null,
+    usage: null,
+    webSources: [],
     generatedAt: cached.generated_at,
     coverage: cached.input_coverage,
     cached: true,
@@ -203,6 +221,12 @@ async function handlePost(request: Request): Promise<Response> {
   });
   if (!requestRate.allowed) return rateLimitResponse(requestRate);
 
+  // Optional `{ model, reasoningEffort }` body. Summaries have always run with
+  // reasoning off, so an unspecified effort is the model's lowest level.
+  const selection = await validateOptionalModelSelection(request, lowestEffort);
+  if (selection.response) return selection.response;
+  const { reasoningEffort } = selection.value;
+
   let generationTimedOut = false;
   try {
     const { letters, cached } = await loadLettersAndCache(prepared.db, prepared.threadId);
@@ -220,9 +244,15 @@ async function handlePost(request: Request): Promise<Response> {
         { status: 409 }
       );
     }
-    if (!process.env.ANTHROPIC_API_KEY) {
+    if (!isAiServiceConfigured()) {
       return NextResponse.json({ error: 'AI service is not configured.' }, { status: 503 });
     }
+    const plan = planAiCall(selection.value.model);
+    const model = findAiModel(selection.value.model)!;
+    const reportedModel = plan.transport === 'direct-anthropic' ? plan.wireModel : model.id;
+    const notesMaxTokens = outputTokenBudget(model, 800, reasoningEffort);
+    const synthesisMaxTokens = outputTokenBudget(model, 1500, reasoningEffort);
+    const weights = modelCostWeights(model.pricing);
     const lock = await acquireGenerationLock(prepared.threadId);
     if (!lock) {
       return NextResponse.json(
@@ -233,7 +263,11 @@ async function handlePost(request: Request): Promise<Response> {
 
     try {
       const chunkCount = summaryPlan.chunks.length;
-      const outputTokens = getCommentLetterSummaryTokenCost(chunkCount);
+      // The plan's output cost assumes reasoning off; effort adds the same
+      // headroom to every call.
+      const callCount = getCommentLetterSummaryCallCount(chunkCount);
+      const outputTokens = getCommentLetterSummaryTokenCost(chunkCount)
+        + (synthesisMaxTokens - 1500) * callCount;
       const estimatedNoteInputCharacters = chunkCount > 1 ? chunkCount * 800 * 3 : 0;
       const estimatedInputCharacters = summaryPlan.chunks.reduce((total, chunk) => total + chunk.length, 0)
         + ROUND_NOTES_PROMPT.length * (chunkCount > 1 ? chunkCount : 0)
@@ -249,18 +283,19 @@ async function handlePost(request: Request): Promise<Response> {
       );
       if (!concurrency.allowed) return rateLimitResponse(concurrency);
       let summary = '';
+      let observedUsage: AiUsage | null = null;
       try {
         const budget = await reserveAiTokenBudget(
           prepared.access,
           estimateModelTokenReservation(
             estimatedInputCharacters,
             outputTokens,
-            getCommentLetterSummaryCallCount(chunkCount)
+            callCount,
+            { weights }
           )
         );
         if (!budget.allowed) return rateLimitResponse(budget);
 
-        const anthropic = createAnthropicClient(process.env.ANTHROPIC_API_KEY);
         const generationController = new AbortController();
         const abortFromRequest = () => generationController.abort(request.signal.reason);
         if (request.signal.aborted) generationController.abort(request.signal.reason);
@@ -273,7 +308,6 @@ async function handlePost(request: Request): Promise<Response> {
         // of what each call billed, or "unknown" if any call ended without a
         // usage report (the reservation then stands for the whole job).
         const generationStartedAt = Date.now();
-        let observedUsage: ModelUsage | null = null;
         let modelCalls = 0;
         let usageOutcome: AiCallOutcome = 'unknown';
         try {
@@ -282,55 +316,52 @@ async function handlePost(request: Request): Promise<Response> {
             const notes: string[] = [];
             for (const [index, chunk] of summaryPlan.chunks.entries()) {
               modelCalls += 1;
-              const chunkMessage = await anthropic.messages.create({
-                model: CLAUDE_MODEL,
-                max_tokens: 800,
-                thinking: { type: 'disabled' },
-                system: [{ type: 'text', text: ROUND_NOTES_PROMPT, cache_control: { type: 'ephemeral' } }],
+              const chunkNotes = await complete({
+                model: model.id,
+                maxTokens: notesMaxTokens,
+                reasoningEffort,
+                system: ROUND_NOTES_PROMPT,
                 messages: [{ role: 'user', content: `Round group ${index + 1} of ${summaryPlan.chunks.length}:\n\n${chunk}` }],
-              }, { signal: generationController.signal });
-              observedUsage = addUsage(observedUsage, usageFromMessage(chunkMessage));
-              notes.push(chunkMessage.content
-                .filter(block => block.type === 'text')
-                .map(block => block.text)
-                .join('')
-                .trim());
+                signal: generationController.signal,
+              });
+              observedUsage = addAiUsage(observedUsage, chunkNotes.usage);
+              notes.push(chunkNotes.text.trim());
             }
             synthesisEvidence = notes.map((note, index) => `--- ROUND GROUP ${index + 1} NOTES ---\n${note}`).join('\n\n');
           }
 
           modelCalls += 1;
-          const finalMessage = await anthropic.messages.create({
-              model: CLAUDE_MODEL,
-              max_tokens: 1500,
-              thinking: { type: 'disabled' },
-              system: [{ type: 'text', text: SUMMARY_PROMPT, cache_control: { type: 'ephemeral' } }],
-              messages: [{
-                role: 'user',
-                content: `Registrant: ${letters[0].company_name}\nLetters in the episode: ${letters.length}\nInput coverage: ${JSON.stringify(summaryPlan.coverage)}\n\nUntrusted chronological evidence follows:\n\n${synthesisEvidence}`,
-              }],
-            }, { signal: generationController.signal });
-          observedUsage = addUsage(observedUsage, usageFromMessage(finalMessage));
+          const finalSummary = await complete({
+            model: model.id,
+            maxTokens: synthesisMaxTokens,
+            reasoningEffort,
+            system: SUMMARY_PROMPT,
+            messages: [{
+              role: 'user',
+              content: `Registrant: ${letters[0].company_name}\nLetters in the episode: ${letters.length}\nInput coverage: ${JSON.stringify(summaryPlan.coverage)}\n\nUntrusted chronological evidence follows:\n\n${synthesisEvidence}`,
+            }],
+            signal: generationController.signal,
+          });
+          observedUsage = addAiUsage(observedUsage, finalSummary.usage);
           usageOutcome = 'completed';
-          summary = finalMessage.content
-            .filter(block => block.type === 'text')
-            .map(block => block.text)
-            .join('')
-            .trim();
+          summary = finalSummary.text.trim();
         } catch (error) {
           // A failed call after earlier successful ones: those were billed,
           // this one's cost is unknown, so the job settles as unknown.
-          usageOutcome = modelCalls > 1 ? 'unknown' : classifyAnthropicFailure(error);
+          usageOutcome = modelCalls > 1 ? 'unknown' : classifyAiFailure(error);
           throw error;
         } finally {
           clearTimeout(generationDeadline);
           request.signal.removeEventListener('abort', abortFromRequest);
           await recordAiUsage({
             route: 'letters/summary',
-            model: CLAUDE_MODEL,
+            model: reportedModel,
+            provider: model.provider,
+            reasoningEffort,
+            weights,
             userId: prepared.access.userId,
             reservation: budget.reservation,
-            usage: usageOutcome === 'completed' ? observedUsage : null,
+            usage: usageOutcome === 'completed' ? modelUsageFromAiUsage(observedUsage) : null,
             outcome: usageOutcome,
             startedAt: generationStartedAt,
             calls: modelCalls,
@@ -356,7 +387,7 @@ async function handlePost(request: Request): Promise<Response> {
           thread_id: prepared.threadId,
           summary,
           letters_count: letters.length,
-          model: CLAUDE_MODEL,
+          model: reportedModel,
           generated_at: generatedAt,
           input_coverage: summaryPlan.coverage,
         }, { onConflict: 'thread_id' });
@@ -368,7 +399,11 @@ async function handlePost(request: Request): Promise<Response> {
       return NextResponse.json({
         thread: prepared.threadId,
         summary,
-        model: CLAUDE_MODEL,
+        model: reportedModel,
+        provider: model.provider,
+        reasoningEffort,
+        usage: observedUsage,
+        webSources: [],
         generatedAt,
         coverage: summaryPlan.coverage,
         cached: false,
@@ -383,9 +418,11 @@ async function handlePost(request: Request): Promise<Response> {
     if (generationTimedOut) {
       return NextResponse.json({ error: 'Summary generation exceeded its bounded time limit. Retry later.' }, { status: 504 });
     }
-    if (isAnthropicTimeout(error)) {
+    if (isAiTimeout(error)) {
       return NextResponse.json({ error: 'AI generation timed out.' }, { status: 504 });
     }
+    const mapped = aiErrorResponse(error);
+    if (mapped) return mapped;
     console.error('[letters/summary] generation failed:', error);
     return NextResponse.json({ error: 'Summary generation failed' }, { status: 502 });
   }

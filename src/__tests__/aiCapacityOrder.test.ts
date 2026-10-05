@@ -11,6 +11,7 @@ vi.mock('@anthropic-ai/sdk', () => ({
   Anthropic: class MockAnthropic {
     messages = { create: mocks.createMessage };
   },
+  APIConnectionTimeoutError: class MockTimeout extends Error {},
 }));
 
 vi.mock('../lib/api-auth', () => ({
@@ -29,6 +30,9 @@ vi.mock('../lib/ai-input', () => ({
         { ticker: 'AAPL', companyName: 'Apple', text: 'Evidence A' },
         { ticker: 'MSFT', companyName: 'Microsoft', text: 'Evidence B' },
       ],
+      model: 'anthropic/claude-sonnet-5.5',
+      reasoningEffort: 'medium',
+      webSearch: false,
     },
   })),
 }));
@@ -44,6 +48,9 @@ vi.mock('../lib/rate-limit', () => ({
   checkAiRateLimit: vi.fn(async () => ({ allowed: true })),
   acquireAiConcurrency: mocks.acquire,
   estimateModelTokenReservation: vi.fn(() => 10_000),
+  modelCostWeights: vi.fn(() => ({ input: 1, output: 1 })),
+  DEFAULT_MODEL_COST_WEIGHTS: { input: 1, output: 1 },
+  WEB_SEARCH_CALL_TOKEN_EQUIVALENT: 1_000,
   reserveAiTokenBudget: mocks.reserve,
   releaseAiConcurrency: mocks.release,
   rateLimitResponse: vi.fn((result: { reason?: string }) => Response.json(
@@ -56,6 +63,9 @@ describe('AI capacity and spend ordering', () => {
   beforeEach(() => {
     vi.resetModules();
     vi.stubEnv('ANTHROPIC_API_KEY', 'test-key');
+    vi.stubEnv('VERCEL_AI_GATEWAY_KEY', '');
+    vi.stubEnv('AI_GATEWAY_API_KEY', '');
+    vi.stubEnv('ANTHROPIC_MODEL', '');
     mocks.acquire.mockReset().mockResolvedValue({
       allowed: false,
       reason: 'concurrency',

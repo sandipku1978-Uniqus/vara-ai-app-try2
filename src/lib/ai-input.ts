@@ -1,4 +1,8 @@
+import { findAiModel, isReasoningEffort, REASONING_EFFORTS, type AiModelDefinition, type ReasoningEffort } from './ai-models';
+import { defaultAiModelId } from './ai-gateway';
+
 const CHAT_BODY_LIMIT = 256 * 1024;
+const OPTIONAL_SELECTION_BODY_LIMIT = 4 * 1024;
 const COMPARE_BODY_LIMIT = 768 * 1024;
 const MAX_PROMPT_CHARS = 60_000;
 const MAX_MESSAGE_CHARS = 40_000;
@@ -19,7 +23,18 @@ export interface ChatGroundingInput {
   topic: string | null;
 }
 
-export interface ValidatedChatInput {
+/**
+ * The model a request runs, resolved against the registry: the requested
+ * model or the deployment default, the requested effort or that model's
+ * default, and web search (off unless the request turns it on).
+ */
+export interface ResolvedModelSelection {
+  model: string;
+  reasoningEffort: ReasoningEffort;
+  webSearch: boolean;
+}
+
+export interface ValidatedChatInput extends ResolvedModelSelection {
   prompt: string;
   messages: ChatMessageInput[];
   maxTokens: number;
@@ -33,7 +48,7 @@ export interface FilingContextInput {
   text: string;
 }
 
-export interface ValidatedCompareInput {
+export interface ValidatedCompareInput extends ResolvedModelSelection {
   tickers: string[];
   section: string;
   filingContexts: FilingContextInput[];
@@ -131,6 +146,75 @@ function asRecord(value: unknown): Record<string, unknown> | null {
   return value as Record<string, unknown>;
 }
 
+/**
+ * Validate `model`, `reasoningEffort` and `webSearch` against the registry.
+ * An unknown model, an effort that is not a level, an effort the chosen
+ * model does not offer, or a non-boolean webSearch is a 400 — never a silent
+ * substitution, because the answer reports which model and effort ran.
+ */
+export function validateModelSelection(
+  body: Record<string, unknown>,
+  defaultModel: string = defaultAiModelId(),
+  defaultEffortFor: (model: AiModelDefinition) => ReasoningEffort = model => model.defaultEffort
+): ValidationResult<ResolvedModelSelection> {
+  const rawModel = body.model;
+  if (rawModel !== undefined && rawModel !== null && typeof rawModel !== 'string') {
+    return badRequest('Model must be a string model id.');
+  }
+  const modelId = typeof rawModel === 'string' && rawModel.trim() ? rawModel.trim() : defaultModel;
+  const model = findAiModel(modelId);
+  if (!model) return badRequest(`Unknown model "${modelId.slice(0, 80)}".`);
+
+  const rawEffort = body.reasoningEffort;
+  let reasoningEffort: ReasoningEffort = defaultEffortFor(model);
+  if (rawEffort !== undefined && rawEffort !== null) {
+    if (!isReasoningEffort(rawEffort)) {
+      return badRequest(`Reasoning effort must be one of ${REASONING_EFFORTS.join(', ')}.`);
+    }
+    if (!model.effortLevels.includes(rawEffort)) {
+      return badRequest(`${model.label} does not offer "${rawEffort}" reasoning effort; choose one of ${model.effortLevels.join(', ')}.`);
+    }
+    reasoningEffort = rawEffort;
+  }
+
+  const rawWebSearch = body.webSearch;
+  if (rawWebSearch !== undefined && rawWebSearch !== null && typeof rawWebSearch !== 'boolean') {
+    return badRequest('webSearch must be true or false.');
+  }
+
+  return { value: { model: model.id, reasoningEffort, webSearch: rawWebSearch === true } };
+}
+
+/**
+ * For routes whose POST body is otherwise empty (comment-letter summaries):
+ * an absent or empty body selects the defaults; a JSON object may name a
+ * model and effort. Web search is not offered there.
+ */
+export async function validateOptionalModelSelection(
+  request: Request,
+  defaultEffortFor?: (model: AiModelDefinition) => ReasoningEffort
+): Promise<ValidationResult<ResolvedModelSelection>> {
+  const parsed = await readOptionalJsonBody(request, OPTIONAL_SELECTION_BODY_LIMIT);
+  if (parsed.response) return parsed;
+  if (parsed.value === undefined) return validateModelSelection({}, undefined, defaultEffortFor);
+  const body = asRecord(parsed.value);
+  if (!body) return badRequest('Request body must be a JSON object.');
+  if (body.webSearch === true) return badRequest('Web search is not available for this request.');
+  return validateModelSelection(body, undefined, defaultEffortFor);
+}
+
+async function readOptionalJsonBody(request: Request, maxBytes: number): Promise<ValidationResult<unknown>> {
+  try {
+    const bytes = await readBodyBytes(request, maxBytes, BODY_READ_TIMEOUT_MS);
+    const text = new TextDecoder('utf-8', { fatal: true }).decode(bytes).trim();
+    if (!text) return { value: undefined };
+    return { value: JSON.parse(text) as unknown };
+  } catch (error) {
+    if (error instanceof BodyReadError) return badRequest(error.message, error.status);
+    return badRequest('Request body must be valid UTF-8 JSON.');
+  }
+}
+
 export async function validateChatRequest(request: Request): Promise<ValidationResult<ValidatedChatInput>> {
   const parsed = await readJsonBody(request, CHAT_BODY_LIMIT);
   if (parsed.response) return parsed;
@@ -202,9 +286,12 @@ export async function validateChatRequest(request: Request): Promise<ValidationR
     grounding = { source: 'framework-kb', topic: typeof rawTopic === 'string' ? rawTopic : null };
   }
 
+  const selection = validateModelSelection(body);
+  if (selection.response) return selection;
+
   // Claude Sonnet 5 rejects non-default sampling parameters. A legacy
   // `temperature` field is tolerated for older clients but has no effect.
-  return { value: { prompt, messages, maxTokens, frameworks, grounding } };
+  return { value: { prompt, messages, maxTokens, frameworks, grounding, ...selection.value } };
 }
 
 export async function validateCompareRequest(request: Request): Promise<ValidationResult<ValidatedCompareInput>> {
@@ -255,5 +342,8 @@ export async function validateCompareRequest(request: Request): Promise<Validati
     return badRequest(`Filing contexts exceed ${MAX_TOTAL_COMPARISON_CHARS} total characters.`);
   }
 
-  return { value: { tickers, section, filingContexts } };
+  const selection = validateModelSelection(body);
+  if (selection.response) return selection;
+
+  return { value: { tickers, section, filingContexts, ...selection.value } };
 }
