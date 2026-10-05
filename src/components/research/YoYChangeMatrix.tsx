@@ -23,11 +23,15 @@ import { fetchFilingText, type SecSubmission } from '../../services/secApi';
 import { extractResolvedSection, resolveSectionScope, SECTION_CONCEPT_LIST } from '../../utils/sectionTaxonomy';
 import { CHANGE_BUCKET_LABELS, computeSectionChange, type SectionChange } from '../../utils/sectionDiff';
 import { TextDiffViewer } from './TextDiffViewer';
+import CartToggle from '../cart/CartToggle';
+import { buildSecDocumentUrl } from '../../services/secApi';
 
 interface AnnualPeriod {
   accession: string;
   primaryDocument: string;
   reportDate: string;
+  form: string;
+  filingDate: string;
 }
 
 interface MatrixCell {
@@ -42,6 +46,8 @@ interface MatrixColumn {
   headerSub: string;
   cells: Record<string, MatrixCell>;
   error?: string;
+  /** The later filing of the pair — the one a cart selection on this column adds. */
+  filing?: { ticker: string; company: string; cik: string; period: AnnualPeriod };
 }
 
 /** The filer's most recent annual periods, amendments winning their period. */
@@ -61,6 +67,8 @@ export function pickAnnualPeriods(submission: SecSubmission, limit = 2): AnnualP
         accession: recent.accessionNumber[index],
         primaryDocument: recent.primaryDocument[index],
         reportDate,
+        form,
+        filingDate: recent.filingDate?.[index] || '',
       });
     }
   });
@@ -147,6 +155,7 @@ export default function YoYChangeMatrix({
           headerSub: `${ordered[i].reportDate}`,
           cells: prior && current ? cellsForPair(prior, current) : {},
           error: prior && current ? undefined : 'Filing text could not be retrieved',
+          filing: { ticker, company: submission.name || ticker, cik, period: ordered[i] },
         });
         setColumns([...next]);
       }
@@ -178,6 +187,7 @@ export default function YoYChangeMatrix({
             headerTop: ticker,
             headerSub: `${prior.reportDate.slice(0, 4)} → ${current.reportDate.slice(0, 4)}`,
             cells: cellsForPair(sliceConcepts(priorText), sliceConcepts(currentText)),
+            filing: { ticker, company: submission.name || ticker, cik, period: current },
           });
         }
         setColumns([...next]);
@@ -244,6 +254,22 @@ export default function YoYChangeMatrix({
                   <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 400 }}>
                     {column.error || column.headerSub}
                   </div>
+                  {column.filing && column.filing.period.filingDate && (
+                    <CartToggle
+                      className="matrix-column-select"
+                      filing={{
+                        cik: column.filing.cik,
+                        accessionNumber: column.filing.period.accession,
+                        company: column.filing.company,
+                        form: column.filing.period.form,
+                        fileDate: column.filing.period.filingDate,
+                        ticker: column.filing.ticker,
+                        primaryDocument: column.filing.period.primaryDocument,
+                        sourceUrl: buildSecDocumentUrl(column.filing.cik, column.filing.period.accession, column.filing.period.primaryDocument),
+                        origin: 'yoy',
+                      }}
+                    />
+                  )}
                 </th>
               ))}
             </tr>

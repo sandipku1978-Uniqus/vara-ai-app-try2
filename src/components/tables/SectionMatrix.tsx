@@ -7,6 +7,8 @@ import {
   type SectionMatrixForm,
   type SectionMatrixState,
 } from '../../utils/sectionMatrix';
+import CartToggle from '../cart/CartToggle';
+import { buildSecDocumentUrl } from '../../services/secApi';
 import './SectionMatrix.css';
 
 interface SectionMatrixProps {
@@ -42,6 +44,15 @@ function MarkIcon({ state, checking }: { state: SectionMatrixState; checking?: b
   }
 }
 
+/** The filing a company's column was read from, if any cell names one. */
+function columnSource(sections: readonly string[], data: SectionMatrixProps['data'], ticker: string) {
+  for (const section of sections) {
+    const source = data[section]?.[ticker]?.source;
+    if (source) return source;
+  }
+  return undefined;
+}
+
 export default function SectionMatrix({ form, sections, companies, data, loading }: SectionMatrixProps) {
   if (loading) {
     return (
@@ -67,9 +78,32 @@ export default function SectionMatrix({ form, sections, companies, data, loading
           <thead>
             <tr>
               <th scope="col" className="sm-section-col">Section</th>
-              {companies.map(c => (
-                <th key={c.ticker} scope="col" className="sm-company-col">{c.ticker}</th>
-              ))}
+              {companies.map(c => {
+                const source = columnSource(sections, data, c.ticker);
+                return (
+                  <th key={c.ticker} scope="col" className="sm-company-col">
+                    {c.ticker}
+                    {source && (
+                      <div>
+                        <CartToggle
+                          className="matrix-column-select"
+                          filing={{
+                            cik: source.cik,
+                            accessionNumber: source.accession,
+                            company: c.name || c.ticker,
+                            form: source.form,
+                            fileDate: source.filingDate,
+                            ticker: c.ticker,
+                            primaryDocument: source.primaryDocument,
+                            sourceUrl: buildSecDocumentUrl(source.cik, source.accession, source.primaryDocument),
+                            origin: 'section-matrix',
+                          }}
+                        />
+                      </div>
+                    )}
+                  </th>
+                );
+              })}
             </tr>
           </thead>
           <tbody>
