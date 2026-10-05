@@ -1,3 +1,4 @@
+import type { AiAnswerMeta } from '../types/aiMeta';
 import { describe, expect, it } from 'vitest';
 import {
   MAX_ALERT_ACCESSIONS,
@@ -55,7 +56,7 @@ describe('user data codecs', () => {
   });
 
   it('keeps the draft call\'s AI metadata through the memo row, and reads older drafts without it', () => {
-    const aiMetadata = {
+    const aiMetadata: AiAnswerMeta = {
       requestedModel: 'openai/gpt-5.6', requestedEffort: 'high', model: 'openai/gpt-5.6', provider: 'openai',
       reasoningEffort: 'high', webSources: [], usage: { input: 1200, output: 340, reasoning: 90 },
     };

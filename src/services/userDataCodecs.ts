@@ -13,6 +13,7 @@
  * dependency-cycle check counts type imports.
  */
 
+import type { AiAnswerMeta } from '../types/aiMeta';
 import {
   ACCESSION_PATTERN,
   CIK_PATTERN,
@@ -170,8 +171,8 @@ export interface LocalMemoDraftRecord {
   text: string;
   generatedAt: string;
   citationIds: string[];
-  /** The draft call's reported AI metadata (memoTray), carried as an opaque object. */
-  aiMetadata?: object;
+  /** The draft call's reported AI metadata (memoTray), carried through unchanged. */
+  aiMetadata?: AiAnswerMeta;
 }
 
 export interface LocalAnnotationRecord {
@@ -363,7 +364,9 @@ export function itemsToDraft(items: UserMemoItem[]): LocalMemoDraftRecord | null
   };
   // The memo payload is a free-form object on the server (≤ 256 KB), so the
   // draft's AI metadata travels inside it; readers parse it defensively.
-  if (isRecord(draft.payload.aiMetadata)) record.aiMetadata = draft.payload.aiMetadata;
+  // A record-shaped value is what the tray wrote (AiAnswerMeta); anything else
+  // is dropped so a malformed payload cannot masquerade as model metadata.
+  if (isRecord(draft.payload.aiMetadata)) record.aiMetadata = draft.payload.aiMetadata as unknown as AiAnswerMeta;
   return record;
 }
 
