@@ -63,6 +63,13 @@ import BooleanSyntaxHelp, { BooleanSyntaxHelpTrigger } from '../components/resea
 import ResearchSessionTabs from '../components/research/ResearchSessionTabs';
 import ResearchResultsWorkspace from '../components/research/ResearchResultsWorkspace';
 import type { OpenFilingOptions } from '../components/research/ResultEvidenceDetails';
+import SearchJobPanel from '../components/research/SearchJobPanel';
+import {
+  buildSearchJobHeadline,
+  shouldOfferSearchContinuation,
+  type SearchJobPlanInput,
+  type SearchJobSummary,
+} from '../services/searchJobs';
 import { generateSearchTrendReport, SEARCH_TREND_AI_FALLBACK } from '../services/searchTrendReport';
 import { planResearchSearch } from '../services/researchSearchPlan';
 import { canUseInstantEnrichedSearch } from '../services/filingResearch';
@@ -80,6 +87,7 @@ const INITIAL_RESEARCH_RESULT_LIMIT = 80;
 const INITIAL_BOOLEAN_RESULT_LIMIT = 40;
 const RESEARCH_RESULTS_PAGE_SIZE = 50;
 const RESEARCH_SEARCH_USES_ENRICHED_RESULTS = true;
+const SEARCH_JOB_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const SAMPLE_SEARCHES = [
   'ASC 842 adoption w/10 lease',
   'ASR w/5 derivative',
@@ -176,6 +184,9 @@ export default function SearchPage() {
   );
   const initialQuery = initialRouteSearch?.query || '';
   const activeTabId = searchParams?.get('tab');
+  // A continuation job attached to the results pane. The Dashboard links
+  // here with ?searchJob=<id>; "Keep validating" attaches a new one.
+  const routeSearchJobId = searchParams?.get('searchJob') || '';
 
   const setSearchParams = useCallback((params: Record<string, string> | URLSearchParams, options?: { replace?: boolean }) => {
     let nextParams: URLSearchParams;
@@ -253,6 +264,14 @@ export default function SearchPage() {
   // the activation effect from clobbering a live run's fresher accumulator.
   const coverageRestoredForSessionRef = useRef<string | null>(null);
   const [libraryOpen, setLibraryOpen] = useState(false);
+
+  const [searchJobId, setSearchJobId] = useState<string | null>(
+    () => (SEARCH_JOB_ID.test(routeSearchJobId) ? routeSearchJobId : null)
+  );
+  const [searchJob, setSearchJob] = useState<SearchJobSummary | null>(null);
+  useEffect(() => {
+    if (SEARCH_JOB_ID.test(routeSearchJobId)) setSearchJobId(routeSearchJobId);
+  }, [routeSearchJobId]);
 
   const captureCandidateCoverage = useCallback((coverage: SearchCandidateCoverage) => {
     setCandidateCoverage(current => mergeCandidateCoverage(current, coverage));
@@ -480,6 +499,40 @@ export default function SearchPage() {
     if (!search || search.mode !== 'boolean') return false;
     return isEftsExactCountEquivalent(search.query, search.filters);
   }, [candidateCoverage, lastResolvedSearch]);
+
+  // Offer a continuation job only for the run on screen, once it has settled
+  // with partial coverage that EDGAR's own count cannot answer.
+  const searchJobOffer = useMemo<SearchJobPlanInput | null>(() => {
+    if (searchJobId || loading || isRefiningResults || !activeSession?.searched) return null;
+    const { query: jobQuery, mode, filters: jobFilters } = activeResolvedSearch;
+    const hydrateTextSignals = shouldHydrateSearchSignals(mode, jobFilters);
+    if (!shouldOfferSearchContinuation(candidateCoverage, mode, hydrateTextSignals)) return null;
+    return {
+      query: jobQuery,
+      mode,
+      filters: jobFilters,
+      defaultForms: DEFAULT_FORM_SCOPE,
+      includeExhibits: false,
+      hydrateTextSignals,
+    };
+  }, [searchJobId, loading, isRefiningResults, activeSession?.searched, activeResolvedSearch, candidateCoverage]);
+
+  // The job's headline supersedes the bounded run's only when the job is
+  // answering the search on screen.
+  const searchJobHeadline = useMemo(() => {
+    if (!searchJob) return null;
+    const { input } = searchJob.plan;
+    const sameSearch =
+      buildSearchSignature(input.query, input.mode, input.filters) ===
+      buildSearchSignature(activeResolvedSearch.query, activeResolvedSearch.mode, activeResolvedSearch.filters);
+    return sameSearch ? buildSearchJobHeadline(searchJob) : null;
+  }, [searchJob, activeResolvedSearch]);
+
+  const detachSearchJob = useCallback(() => {
+    setSearchJobId(null);
+    setSearchJob(null);
+    if (routeSearchJobId) setSearchParams({ searchJob: '' }, { replace: true });
+  }, [routeSearchJobId, setSearchParams]);
 
   const handleCountExactly = useCallback(async () => {
     const search = lastResolvedSearch;
@@ -1732,6 +1785,17 @@ export default function SearchPage() {
           selectedIsCited={selectedIsCited}
           onToggleCitation={handleToggleCitation}
           resolvedDocuments={resolvedPreviewDocs}
+          headlineOverride={searchJobHeadline}
+          jobStatusRegion={
+            <SearchJobPanel
+              jobId={searchJobId}
+              offerSearch={searchJobOffer}
+              onAttach={setSearchJobId}
+              onDetach={detachSearchJob}
+              onOpenFiling={openFiling}
+              onJobChange={setSearchJob}
+            />
+          }
         />
       </section>
     </div>

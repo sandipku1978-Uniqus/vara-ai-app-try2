@@ -12,6 +12,7 @@ import { fetchCompanySubmissions, type SecSubmission, lookupCIK } from '../servi
 import { defaultSearchFilters } from '../components/filters/SearchFilterBar';
 import CompanySearchInput from '../components/filters/CompanySearchInput';
 import ProjectSelector from '../components/projects/ProjectSelector';
+import SearchJobsCard from '../components/research/SearchJobsCard';
 import { describeForm } from '../lib/formLabels';
 import { buildResearchRouteParams } from '../services/researchSessions';
 import { BOOLEAN_ENGINE_VERSION } from '../utils/booleanSearch';
@@ -588,6 +589,8 @@ export default function Dashboard() {
             )}
           </div>
         </section>
+
+        <SearchJobsCard />
       </div>
     </div>
   );

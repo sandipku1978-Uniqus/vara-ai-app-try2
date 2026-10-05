@@ -14,7 +14,10 @@ export const PUBLIC_PAGE_PATHS = ['/', '/support', '/privacy', '/terms'] as cons
 // Machine-facing exceptions stay separate from public pages so they cannot
 // accidentally appear in the sitemap or crawler allow-list. /api/health is
 // the uptime monitor's endpoint; /api/version is the release runbook's.
-export const PUBLIC_API_PATHS = ['/api/csp-report', '/api/health', '/api/version'] as const;
+// /api/search-jobs/continue is the search-job worker: Vercel Cron cannot
+// present a session, so the handler itself authenticates (CRON_SECRET for
+// GET, the owner's session for POST) and fails closed.
+export const PUBLIC_API_PATHS = ['/api/csp-report', '/api/health', '/api/version', '/api/search-jobs/continue'] as const;
 
 export const PRODUCT_ROUTES: ProductRoute[] = [
   { path: '/dashboard', label: 'Dashboard', group: 'Monitor', keywords: 'home monitor overview', palette: true },

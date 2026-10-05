@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, type RefObject, type SyntheticEvent } from 'react';
+import { useEffect, useMemo, useState, type ReactNode, type RefObject, type SyntheticEvent } from 'react';
 import {
   BookMarked,
   ChevronLeft,
@@ -83,6 +83,12 @@ interface ResearchResultsWorkspaceProps {
    * would 404.
    */
   resolvedDocuments?: Record<string, string>;
+  /** Search-continuation status region (SearchJobPanel), rendered in its own
+   *  slot under the pane header, apart from the run's result rows. */
+  jobStatusRegion?: ReactNode;
+  /** The continuation job's headline, when the attached job answers the
+   *  search on screen — it supersedes the bounded run's headline. */
+  headlineOverride?: string | null;
 }
 
 /**
@@ -191,6 +197,8 @@ export default function ResearchResultsWorkspace({
   selectedIsCited,
   onToggleCitation,
   resolvedDocuments = {},
+  jobStatusRegion = null,
+  headlineOverride = null,
 }: ResearchResultsWorkspaceProps) {
   const [resultSort, setResultSort] = useState<ResultSort>('relevance');
   const [resultPage, setResultPage] = useState(1);
@@ -227,7 +235,7 @@ export default function ResearchResultsWorkspace({
         <div className="pane-header">
           <div>
             <div className="eyebrow">Search hits</div>
-            <h2>{results.length > 0 ? buildResultsHeadline(results.length, candidateCoverage, resultLimit) : 'No results yet'}</h2>
+            <h2>{headlineOverride || (results.length > 0 ? buildResultsHeadline(results.length, candidateCoverage, resultLimit) : 'No results yet')}</h2>
           </div>
           {results.length > 1 && (
             <div style={{ display: 'flex', gap: '6px' }}>
@@ -265,6 +273,8 @@ export default function ResearchResultsWorkspace({
           )}
           <div className="pane-hint">Select a filing to preview it here, then open the full workspace only when you need the full toolset.</div>
         </div>
+
+        {jobStatusRegion}
 
         {!loading && degradedNotice && (
           <div role="status" className="research-refining-banner" style={{ justifyContent: 'space-between' }}>
