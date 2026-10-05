@@ -476,9 +476,9 @@ insert into public.urc_schema_version (
 ) values (
   true,
   '028',
-  29,
+  30,
   -- URC CHAIN CHECKSUM VALUE
-  '58704c3e41ece1517ee161075d7b3364eb3baf08e2d476bfef8e459e742b2654',
+  'af53aa75ff7a3c48b9f6815ae01d92dacd12d5c978559066d1ccb2d0992e0913',
   'sha256-v2'
 )
 on conflict (singleton) do update set
