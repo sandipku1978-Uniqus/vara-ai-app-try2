@@ -190,7 +190,30 @@ function validEvidence() {
     fn('urc_companies_needing_sic', 'integer', { anon: false, urcWeb: false }),
     fn('urc_thread_letters', '', { anon: false, urcWeb: false }),
     fn('urc_schema_contract_evidence', '', { anon: false, urcWeb: false }),
+    fn('urc_user_list', 'text, text, text, bigint, text', {
+      securityDefiner: true, definition: "perform public.urc_user_assume('list', p_kind)",
+    }),
+    fn('urc_user_upsert', 'text, jsonb, text, text, bigint, text', {
+      securityDefiner: true,
+      definition: "perform public.urc_user_assume('upsert', p_kind) on conflict (owner_user_id, org_scope, client_key)",
+    }),
+    fn('urc_user_delete', 'text, text[], text, text, bigint, text', {
+      securityDefiner: true, definition: "perform public.urc_user_assume('delete', p_kind)",
+    }),
+    fn('urc_user_assume', 'text, text, text, text, bigint, text', { anon: false, urcWeb: false, service: false }),
+    fn('urc_user_kind', 'text', { anon: false, urcWeb: false, service: false }),
   ];
+  const userDataRelations = [
+    'urc_user_projects', 'urc_user_saved_searches', 'urc_user_alerts',
+    'urc_user_peer_sets', 'urc_user_memo_items', 'urc_user_annotations',
+    'urc_user_research_tabs', 'urc_user_watchlist', 'urc_user_checklists',
+    'urc_user_signing_key',
+  ].map(name => ({
+    name, kind: 'r', rls: true, forceRls: true, populated: true,
+    anonSelect: false, anonInsert: false, anonUpdate: false, anonDelete: false,
+    authenticatedSelect: false, authenticatedInsert: false, authenticatedUpdate: false, authenticatedDelete: false,
+    urcWebSelect: false, urcWebInsert: false, urcWebUpdate: false, urcWebDelete: false,
+  }));
 
   return {
     registry: {
@@ -213,7 +236,7 @@ function validEvidence() {
       { owner: 'postgres', objectType: 'S', grantee: 'postgres', privilege: 'USAGE', grantable: false },
       { owner: 'postgres', objectType: 'f', grantee: 'postgres', privilege: 'EXECUTE', grantable: false },
     ],
-    relations,
+    relations: [...relations, ...userDataRelations],
     columns,
     views,
     indexes,
@@ -224,7 +247,7 @@ function validEvidence() {
       { name: 'urc_web', config: ['statement_timeout=20s'] },
       { name: 'service_role', config: ['statement_timeout=600s'] },
     ],
-    extensions: [{ name: 'pg_trgm', version: '1.6' }],
+    extensions: [{ name: 'pg_trgm', version: '1.6' }, { name: 'pgcrypto', version: '1.3' }],
     policies: relations
       .filter(relation => relation.rls)
       .map(relation => ({
@@ -242,6 +265,28 @@ function validEvidence() {
 describe('independent live schema contract assessment', () => {
   it('accepts complete raw catalog evidence that matches the declared identity', () => {
     expect(assessSchemaContractEvidence(validEvidence(), expected)).toEqual([]);
+  });
+
+  it('reports a 026 user table that loses forced RLS or gains a web-role grant', () => {
+    const evidence = validEvidence();
+    const watchlist = evidence.relations.find(relation => relation.name === 'urc_user_watchlist') as Record<string, unknown>;
+    watchlist.forceRls = false;
+    watchlist.anonSelect = true;
+    const problems = assessSchemaContractEvidence(evidence, expected);
+    expect(problems).toContain('user-data table urc_user_watchlist does not force row-level security');
+    expect(problems).toContain('unexpected relation urc_user_watchlist is readable by anon');
+  });
+
+  it('requires the 026 user RPCs to be security-definer functions that verify the identity assertion', () => {
+    const evidence = validEvidence();
+    const upsert = evidence.functions.find(fn => fn.name === 'urc_user_upsert') as Record<string, unknown>;
+    upsert.securityDefiner = false;
+    upsert.definition = 'insert into public.urc_user_watchlist select * from jsonb_populate_recordset(null, $1)';
+    const problems = assessSchemaContractEvidence(evidence, expected);
+    expect(problems).toContain(
+      'live function urc_user_upsert(text,jsonb,text,text,bigint,text) security-definer is false, expected true',
+    );
+    expect(problems.some(problem => problem.includes("lacks contract fragment: public.urc_user_assume('upsert'"))).toBe(true);
   });
 
   it('fails on registry, index, and function-semantic drift', () => {
