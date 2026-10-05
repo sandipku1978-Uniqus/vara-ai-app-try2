@@ -1,0 +1,104 @@
+{
+  "totalRecords": 3,
+  "data": [
+    {
+      "node": {
+        "itemId": 425426,
+        "title": "Proposed Accounting Standards Update—Codification Improvements",
+        "lastPublishDate": "2026-09-02T19:18:49.102Z",
+        "itemType": 16,
+        "multiMedia": false,
+        "content": {
+          "data": {
+            "$type": "Fields",
+            "document_description": "<p class=\"mb-0\">Proposed Accounting Standards Update, <em>Codification Improvements</em></p>\n<a href=\"/Page/Document?pdf=Proposed Accounting Standards Update—Codification%20Improvements.pdf&amp;title=Proposed%20Accounting%20Standards%20Update,%20Codification%20Improvements\">Download</a>\n<p><strong><span style=\"color: #800000;\">Refer to the</span> <a href=\"https://survey.accountingfoundation.org/survey/form?k=SsRXPWRXsQQPsPsPsP&amp;lang=0\" target=\"_blank\"><span style=\"color: #800000;\">Electronic Feedback Form</span></a> <span style=\"color: #800000;\">to provide comments on the Exposure Draft.</span></strong></p>",
+            "date": "2026-11-19T12:43:57.321",
+            "comment_letters": {
+              "$type": "Fields",
+              "linkText": "2026-ED500",
+              "linkTitle": "2026-ED500",
+              "linkTarget": "_blank",
+              "externalLink": "/page/commentletterspage?metadata=fasb_CodificationImprovementssep2026&PageId=/projects/commentletter.html&documentType=Exposure%20Draft"
+            },
+            "xbrl": {
+              "$type": "Fields",
+              "linkText": "2026-ED500",
+              "linkTitle": "2026-ED500",
+              "linkTarget": "_blank",
+              "externalLink": "https://xbrl.fasb.org/resources/proposed_updates/Codification_Improvements_2026-ED500_Release_Notes.pdf"
+            }
+          }
+        }
+      },
+      "cursor": "Mg==",
+      "totalRecords": 3,
+      "pageNumber": 1
+    },
+    {
+      "node": {
+        "itemId": 425275,
+        "title": "Proposed ASU—Statement of Cash Flows (Topic 230):  Cash Equivalents—Disclosure Enhancement and Evaluation of Certain Digital Assets",
+        "lastPublishDate": "2026-08-18T17:27:37.257Z",
+        "itemType": 16,
+        "multiMedia": false,
+        "content": {
+          "data": {
+            "$type": "Fields",
+            "document_description": "<p class=\"mb-0\">Proposed Accounting Standards Update, <em>Statement of Cash Flows (Topic 230): Cash Equivalents—Disclosure Enhancement and Evaluation of Certain Digital Assets</em></p>\n<a href=\"/Page/Document?pdf=Proposed ASU Statement of Cash Flows (Topic 230).pdf&amp;title=Proposed%20Accounting%20Standards%20Update,%20Statement of Cash Flows (Topic 230):  Cash Equivalents—Disclosure Enhancement and Evaluation of Certain Digital Assets\">Download</a>\n<p><strong><span style=\"color: #800000;\">Refer to the</span> <a href=\"https://survey.accountingfoundation.org/survey/form?k=SsRXPWRXsQPXsPsPsP&amp;lang=0\" target=\"_blank\"><span style=\"color: #800000;\">Electronic Feedback Form</span></a> <span style=\"color: #800000;\">to provide comments on the Exposure Draft.</span></strong></p>",
+            "date": "2026-11-19T12:43:57.321",
+            "comment_letters": {
+              "$type": "Fields",
+              "linkText": "2026-ED400",
+              "linkTitle": "2026-ED400",
+              "linkTarget": "_blank",
+              "externalLink": "/page/commentletterspage?metadata=fasb_CashEquivalentsDisclosureEnhancementandEvaluationofCertainDigitalAssets&PageId=/projects/commentletter.html&documentType=Exposure%20Draft"
+            },
+            "xbrl": {
+              "$type": "Fields",
+              "linkText": "2026-ED400",
+              "linkTitle": "2026-ED400",
+              "linkTarget": "_blank",
+              "externalLink": "https://xbrl.fasb.org/resources/proposed_updates/Cash_Equivalents_Disclosure_Enhancement_and_Evaluation_of_Certain_Digital_Assets_2026-ED400_Release_Notes.pdf"
+            }
+          }
+        }
+      },
+      "cursor": "Mw==",
+      "totalRecords": 3,
+      "pageNumber": 2
+    },
+    {
+      "node": {
+        "itemId": 425524,
+        "title": "Proposed Accounting Standards Update—Transfers and Servicing—Servicing Assets and Liabilities (Subtopic 860-50): Mortgage Servicing Rights—Recapture",
+        "lastPublishDate": "2026-09-24T13:26:02.438Z",
+        "itemType": 16,
+        "multiMedia": false,
+        "content": {
+          "data": {
+            "$type": "Fields",
+            "document_description": "<p class=\"mb-0\">Proposed Accounting Standards Update, <em>Transfers and Servicing—Servicing Assets and Liabilities (Subtopic 860-50): Mortgage Servicing Rights—Recapture</em></p>\n<a href=\"/Page/Document?pdf=Proposed ASU Transfers and Servicing—Servicing Assets and Liabilities (Subtopic 860-50).pdf&amp;title=Proposed%20Accounting%20Standards%20Update,%20Transfers and Servicing—Servicing Assets and Liabilities (Subtopic 860-50): Mortgage Servicing Rights—Recapture\">Download</a>\n<p><strong><span style=\"color: #800000;\">Refer to the</span> <a href=\"https://survey.accountingfoundation.org/survey/form?k=SsRXPWRXsQQTsPsPsP&amp;lang=0\" target=\"_blank\"><span style=\"color: #800000;\">Electronic Feedback Form</span></a> <span style=\"color: #800000;\">to provide comments on the Exposure Draft.</span></strong></p>",
+            "date": "2026-11-09T13:15:26.735",
+            "comment_letters": {
+              "$type": "Fields",
+              "linkText": "2026-ED600",
+              "linkTitle": "2026-ED600",
+              "linkTarget": "_blank",
+              "externalLink": "/page/commentletterspage?metadata=fasb_MortgageServicingRights—Recapture&PageId=/projects/commentletter.html&documentType=Exposure%20Draft"
+            },
+            "xbrl": {
+              "$type": "Fields",
+              "linkText": "2026-ED600",
+              "linkTitle": "2026-ED600",
+              "linkTarget": "_blank",
+              "externalLink": "https://xbrl.fasb.org/resources/proposed_updates/Transfers_and_Servicing_Mortgage_Serving_Rights_Recapture_2026-ED600_Release_Notes.pdf"
+            }
+          }
+        }
+      },
+      "cursor": "MQ==",
+      "totalRecords": 3,
+      "pageNumber": 3
+    }
+  ]
+}
