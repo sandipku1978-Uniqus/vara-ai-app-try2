@@ -22,7 +22,7 @@ import {
 } from '../lib/systemPrompts';
 import { selectFilingText } from '../utils/filingTextSelection';
 import type { ChatGroundingInput } from '../lib/ai-input';
-import { isReasoningEffort, type AiModelSelection, type ReasoningEffort } from '../lib/ai-models';
+import { isReasoningEffort, type AiModelSelection } from '../lib/ai-models';
 import { currentAiModelSelection, groundedAiModelSelection } from './aiModelPreference';
 
 const CLAUDE_API_ENDPOINT = '/api/claude';
@@ -54,35 +54,8 @@ interface ClaudeResponsePayload {
   webSources?: unknown;
 }
 
-/** A web page the model read when web search was on — never an SEC filing citation. */
-export interface AiWebSource {
-  url: string;
-  title: string | null;
-}
-
-/**
- * What the server says actually answered. Every field is as reported; a field
- * the server did not report stays null rather than being filled from the
- * request, so the UI never claims a model it was not told about.
- */
-export interface AiAnswerMeta {
-  requestedModel: string | null;
-  requestedEffort: ReasoningEffort | null;
-  model: string | null;
-  provider: string | null;
-  reasoningEffort: ReasoningEffort | null;
-  webSources: AiWebSource[];
-  /** Token usage as the route reported it; absent when it reported none. */
-  usage?: AiReportedUsage;
-}
-
-/** The route's `usage` (lib/ai-gateway AiUsage), reduced to finite counts. */
-export interface AiReportedUsage {
-  input: number;
-  output: number;
-  reasoning?: number;
-  webSearchCalls?: number;
-}
+export type { AiWebSource, AiAnswerMeta, AiReportedUsage } from '../types/aiMeta';
+import type { AiWebSource, AiAnswerMeta, AiReportedUsage } from '../types/aiMeta';
 
 function normalizeUsage(value: unknown): AiReportedUsage | null {
   if (!value || typeof value !== 'object') return null;

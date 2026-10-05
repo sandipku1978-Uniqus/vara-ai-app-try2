@@ -1,6 +1,6 @@
 import type { SearchFilters } from '../domain/searchFilters';
 import type { FilingResearchResult, ResearchSearchMode } from '../services/filingResearch';
-import type { AiAnswerMeta } from '../services/aiApi';
+import type { AiAnswerMeta } from './aiMeta';
 
 export type AgentToolName =
   | 'resolve_company'
