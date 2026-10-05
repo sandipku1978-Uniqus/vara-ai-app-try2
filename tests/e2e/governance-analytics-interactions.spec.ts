@@ -143,14 +143,21 @@ test.describe('comparison and governance interaction evidence', () => {
     await waitForBenchmarkColumns(page, '2 columns: AAPL FY2025 · MSFT FY2025');
     await expect(page.getByLabel('Peer group industry (SIC code or name)')).toHaveValue('3571', { timeout: 20_000 });
 
-    await page.getByRole('button', { name: 'Find SIC Peers', exact: true }).click();
-    await expect(page.getByText('Added 1 peers for SIC 3571 (Electronic Computers).', { exact: true })).toBeVisible({ timeout: 25_000 });
+    const sicColumn = page.getByRole('region', { name: 'Same SIC, sized like AAPL' });
+    await sicColumn.getByRole('button', { name: 'Find', exact: true }).click();
+    const candidates = sicColumn.getByRole('list', { name: 'Same-SIC candidates, closest in size first' });
+    await expect(candidates.getByRole('listitem')).toHaveCount(2, { timeout: 25_000 });
+    // MSFT is already in the comparison; only NVDA (0.80x AAPL's public float) is offered.
+    await expect(sicColumn.getByRole('button', { name: 'MSFT is in the peer set', exact: true })).toBeDisabled();
+    await expect(candidates.getByRole('listitem').filter({ hasText: 'NVDA' })).toContainText('0.80x');
+    await sicColumn.getByRole('button', { name: 'Add in band (1)', exact: true }).click();
     await waitForBenchmarkColumns(page, '3 columns: AAPL FY2025 · MSFT FY2025 · NVDA FY2025');
     await expect(companyBadge(page, 'NVDA')).toHaveCount(1);
 
-    await page.getByRole('button', { name: 'Find SIC Peers', exact: true }).click();
-    await expect(page.getByText(/No peers found yet for SIC 3571/)).toBeVisible({ timeout: 20_000 });
+    // Nothing left to add: the same peer is never added twice.
+    await expect(sicColumn.getByRole('button', { name: 'Add in band (0)', exact: true })).toBeDisabled();
     await expect(companyBadge(page, 'NVDA')).toHaveCount(1);
+    await expect(page.getByRole('region', { name: 'Manual' })).toContainText(/Same SIC 3571 as AAPL; public float 0\.80x AAPL/);
   });
 
   test('benchmarking.generate-summary-or-memo retries a failed grounded comparison and builds the cohort memo', async ({ page }) => {

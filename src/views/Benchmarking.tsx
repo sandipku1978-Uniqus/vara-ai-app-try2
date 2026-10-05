@@ -2,9 +2,9 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { Download, X, ArrowRightLeft, Loader2, Sparkles, LayoutGrid, Type, DollarSign, TrendingUp, TrendingDown, Users, RefreshCw, SearchCheck } from 'lucide-react';
+import { Download, X, ArrowRightLeft, Loader2, Sparkles, LayoutGrid, Type, DollarSign, TrendingUp, TrendingDown, RefreshCw, SearchCheck } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell, RadarChart, PolarGrid, PolarAngleAxis, Radar, Legend } from 'recharts';
-import { fetchCompanySubmissions, fetchCompanySubmissionsBatch, fetchCompanyFacts, extractComparableFinancials, getAvailableYears, formatFinancialValue, CIK_MAP, SecSubmission, FinancialMetric, CompanyFacts, lookupCIK, extractCompanyMetadata, loadTickerMap, buildSecProxyUrl, extractDocumentTextFromHtml, fetchAnnualDisclosureText, fetchFilingTextOutcome, buildSecDocumentUrl } from '../services/secApi';
+import { fetchCompanySubmissions, fetchCompanyFacts, extractComparableFinancials, getAvailableYears, formatFinancialValue, CIK_MAP, SecSubmission, FinancialMetric, CompanyFacts, lookupCIK, extractCompanyMetadata, buildSecProxyUrl, extractDocumentTextFromHtml, fetchAnnualDisclosureText, fetchFilingTextOutcome, buildSecDocumentUrl } from '../services/secApi';
 import CiteButton from '../components/memo/CiteButton';
 import { boundExcerpt } from '../services/memoTray';
 import { aiSummarize } from '../services/aiApi';
@@ -14,8 +14,8 @@ import ResponsibleAIBanner from '../components/ResponsibleAIBanner';
 import { renderMarkdown } from '../utils/markdownRenderer';
 import { DisclosureMatrix } from '../components/research/DisclosureMatrix';
 import CompanySearchInput from '../components/filters/CompanySearchInput';
-import SicSearchInput from '../components/filters/SicSearchInput';
-import { loadSicDirectoryIndex } from '../services/referenceData';
+import PeerGroupBuilder, { type PeerAddition } from '../components/research/PeerGroupBuilder';
+import type { PeerSourceTag } from '../services/peerProvenance';
 import SectionMatrix from '../components/tables/SectionMatrix';
 import {
   SECTION_MATRIX_FORMS,
@@ -54,6 +54,9 @@ import {
 } from '../services/disclosureTopics';
 import '../components/research/TopicPassage.css';
 import './Benchmarking.css';
+
+/** Companies one comparison holds; every add path respects it. */
+const MAX_PEERS = 20;
 
 const CHART_COLORS = ['#B31F7E', '#8B5CF6', '#10B981', '#F59E0B', '#EF4444', '#EC4899', '#06B6D4', '#84CC16', '#F97316', '#6366F1'];
 
@@ -187,7 +190,9 @@ export default function Benchmarking() {
   // One record per form and company: which filing was read and what it said.
   const [matrixVerifications, setMatrixVerifications] = useState<Record<string, CompanyVerification>>({});
   const [matrixRunning, setMatrixRunning] = useState(false);
-  const [peerLoading, setPeerLoading] = useState(false);
+  // Why each selected company is in the set (proxy accession, SIC + size
+  // band, or manual). Session state: the saved-set store keeps tickers only.
+  const [peerSources, setPeerSources] = useState<Record<string, PeerSourceTag>>({});
   const [peerSicCode, setPeerSicCode] = useState('');
   const [peerDiscoveryMessage, setPeerDiscoveryMessage] = useState('');
   const [cohortReport, setCohortReport] = useState('');
@@ -255,7 +260,8 @@ export default function Benchmarking() {
   useEffect(() => {
     if (!pendingCompareIntent) return;
 
-    setSelectedTickers(pendingCompareIntent.tickers.slice(0, 20));
+    setSelectedTickers(pendingCompareIntent.tickers.slice(0, MAX_PEERS));
+    setPeerSources({});
     if (pendingCompareIntent.sicCode) {
       setPeerSicCode(pendingCompareIntent.sicCode);
     }
@@ -468,55 +474,28 @@ export default function Benchmarking() {
     return `${unread} of ${withFiling} filings not read yet${suffix}`;
   })();
 
-  // Quick Peer Group
-  const handleQuickPeerGroup = async () => {
-    if (selectedTickers.length === 0) return;
-    const sub = companiesData[selectedTickers[0]];
-    if (!sub) return;
-    const meta = extractCompanyMetadata(sub);
-    const targetSic = peerSicCode.trim() || meta.sic;
-    if (!targetSic) return;
-
-    setPeerLoading(true);
-    setPeerDiscoveryMessage('');
-    try {
-      const tickerMap = await loadTickerMap();
-      const candidates = Object.entries(tickerMap)
-        .map(([ticker, cik]) => ({ ticker, cik }))
-        .filter(candidate => !selectedTickers.includes(candidate.ticker))
-        .slice(0, 400);
-      const peers: string[] = [];
-      for (let index = 0; index < candidates.length && peers.length < 5; index += 20) {
-        const batch = candidates.slice(index, index + 20);
-        const submissions = await fetchCompanySubmissionsBatch(batch.map(candidate => candidate.cik.padStart(10, '0')), 5);
-        for (let batchIndex = 0; batchIndex < submissions.length; batchIndex++) {
-          const peerSub = submissions[batchIndex];
-          const ticker = batch[batchIndex]?.ticker;
-          if (!peerSub || !ticker) continue;
-          if (extractCompanyMetadata(peerSub).sic === targetSic) {
-            peers.push(ticker);
-          }
-          if (peers.length >= 5) break;
-        }
-      }
-      // Describe the TARGET SIC, not the seed company — when the user typed a
-      // different industry, meta.sicDescription is the seed's industry, not
-      // the one they asked for.
-      const sicIndex = await loadSicDirectoryIndex();
-      const targetSicLabel = sicIndex[targetSic]?.title
-        || (targetSic === meta.sic ? meta.sicDescription : '');
-      if (peers.length > 0) {
-        setSelectedTickers(prev => [...new Set([...prev, ...peers])].slice(0, 20));
-        setPeerDiscoveryMessage(`Added ${peers.length} peers for SIC ${targetSic}${targetSicLabel ? ` (${targetSicLabel})` : ''}.`);
-      } else {
-        setPeerDiscoveryMessage(`No peers found yet for SIC ${targetSic}${targetSicLabel ? ` (${targetSicLabel})` : ''}. Try a broader seed company or add peers manually.`);
-      }
-    } catch (err) {
-      console.error('Peer group error:', err);
-      setPeerDiscoveryMessage('Peer discovery failed. The SEC submissions feed may be temporarily unavailable.');
+  // Peer builder: every source (proxy, SIC band, manual) adds through here,
+  // up to the comparison cap, recording why each company was added.
+  const handleAddPeers = useCallback((additions: PeerAddition[]) => {
+    const fresh: PeerAddition[] = [];
+    const seen = new Set(selectedTickers);
+    for (const addition of additions) {
+      const ticker = addition.ticker.trim().toUpperCase();
+      if (!ticker || seen.has(ticker) || seen.size >= MAX_PEERS) continue;
+      seen.add(ticker);
+      fresh.push({ ...addition, ticker });
     }
-    setPeerLoading(false);
-  };
+    if (fresh.length === 0) return;
+    setSelectedTickers(prev => [...prev, ...fresh.map(addition => addition.ticker).filter(ticker => !prev.includes(ticker))].slice(0, MAX_PEERS));
+    setPeerSources(prev => {
+      const next = { ...prev };
+      for (const addition of fresh) next[addition.ticker] = addition.source;
+      return next;
+    });
+  }, [selectedTickers]);
+
+  const seedSubmission = selectedTickers[0] ? companiesData[selectedTickers[0]] : undefined;
+  const seedCik = seedSubmission?.cik ? String(Number(seedSubmission.cik)) : null;
 
   // CSV Export
   const handleCsvExport = () => {
@@ -1063,24 +1042,10 @@ Keep it crisp and practical.`;
             <p style={{ margin: '6px 0 0', color: 'var(--text-muted)', fontSize: '0.84rem', maxWidth: '760px' }}>
               {/* The second half explained the feature's rationale to ourselves,
                   not the task to the reader. */}
-              Build a peer set by SIC code, then generate a short memo on how the cohort stacks up.
+              Build the peer set from the first company&apos;s proxy, its SIC industry sized by public float or revenue, or by hand; then generate a short memo on how the cohort stacks up.
             </p>
           </div>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-            <SicSearchInput
-              value={peerSicCode}
-              onChange={setPeerSicCode}
-              ariaLabel="Peer group industry (SIC code or name)"
-            />
-            <button
-              className="add-ticker-btn"
-              onClick={handleQuickPeerGroup}
-              disabled={peerLoading || selectedTickers.length === 0}
-              style={{ whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '6px' }}
-            >
-              {peerLoading ? <Loader2 size={14} className="spinner" /> : <Users size={14} />}
-              Find SIC Peers
-            </button>
             <button
               className="primary-btn sm"
               onClick={handleGenerateCohortReport}
@@ -1092,6 +1057,17 @@ Keep it crisp and practical.`;
             </button>
           </div>
         </div>
+
+        <PeerGroupBuilder
+          seedTicker={selectedTickers[0] ?? null}
+          seedCik={seedCik}
+          sicCode={peerSicCode}
+          onSicChange={setPeerSicCode}
+          selectedTickers={selectedTickers}
+          maxTickers={MAX_PEERS}
+          sources={peerSources}
+          onAdd={handleAddPeers}
+        />
 
         {peerDiscoveryMessage && (
           <div style={{ color: 'var(--text-primary)', fontSize: '0.82rem', background: 'var(--surface-accent)', border: '1px solid color-mix(in srgb, var(--accent-primary) 22%, var(--border-color))', borderRadius: '4px', padding: '10px 12px' }}>
@@ -1230,27 +1206,13 @@ Keep it crisp and practical.`;
                 </div>
               );
             })}
-            {selectedTickers.length < 10 && (
+            {selectedTickers.length < MAX_PEERS && (
               <div className="ticker-input-wrap" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                 <CompanySearchInput
-                  onSelect={(ticker) => {
-                    if (!selectedTickers.includes(ticker) && selectedTickers.length < 10) {
-                      setSelectedTickers(prev => [...prev, ticker]);
-                    }
-                  }}
+                  onSelect={(ticker) => handleAddPeers([{ ticker, source: { kind: 'manual' } }])}
                   placeholder="Type ticker & press Enter"
                   className="benchmark-company-search"
                 />
-                <button
-                  className="add-ticker-btn"
-                  onClick={handleQuickPeerGroup}
-                  disabled={peerLoading || selectedTickers.length === 0}
-                  title="Add companies sharing the first company's SIC industry"
-                  style={{ whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '4px' }}
-                >
-                  {peerLoading ? <Loader2 size={14} className="spinner" /> : <Users size={14} />}
-                  Add industry peers
-                </button>
               </div>
             )}
           </div>
@@ -1266,7 +1228,7 @@ Keep it crisp and practical.`;
               <span key={set.name} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', border: '1px solid var(--border-color)', borderRadius: '999px', padding: '2px 4px 2px 10px', background: 'var(--surface-subtle)' }}>
                 <button
                   type="button"
-                  onClick={() => setSelectedTickers(set.tickers.slice(0, 20))}
+                  onClick={() => { setSelectedTickers(set.tickers.slice(0, MAX_PEERS)); setPeerSources({}); }}
                   title={set.tickers.join(', ')}
                   style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '0.75rem', padding: 0 }}
                 >
