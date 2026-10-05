@@ -39,7 +39,7 @@ export function validSchemaContractEvidence(expected: ExpectedSchemaIdentity) {
     'urc_user_projects', 'urc_user_saved_searches', 'urc_user_alerts',
     'urc_user_peer_sets', 'urc_user_memo_items', 'urc_user_annotations',
     'urc_user_research_tabs', 'urc_user_watchlist', 'urc_user_checklists',
-    'urc_user_signing_key',
+    'urc_user_signing_key', 'urc_user_alert_hits',
   ].map(name => ({
     name,
     kind: 'r',
@@ -220,6 +220,12 @@ export function validSchemaContractEvidence(expected: ExpectedSchemaIdentity) {
     }),
     fn('urc_user_assume', 'text, text, text, text, bigint, text', { anon: false, service: false }),
     fn('urc_user_kind', 'text', { anon: false, service: false }),
+    fn('urc_user_alert_hits_page', 'text, boolean, timestamp with time zone, integer, integer, text, text, bigint, text', {
+      securityDefiner: true, definition: "perform public.urc_user_assume('list', 'alert-hits', p_user_id)",
+    }),
+    fn('urc_user_alert_hits_mark_seen', 'uuid[], text, boolean, text, text, bigint, text', {
+      securityDefiner: true, definition: "perform public.urc_user_assume('upsert', 'alert-hits', p_user_id)",
+    }),
   ];
 
   return {

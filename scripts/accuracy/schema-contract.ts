@@ -51,6 +51,8 @@ const USER_DATA_RELATIONS = [
   'urc_user_peer_sets', 'urc_user_memo_items', 'urc_user_annotations',
   'urc_user_research_tabs', 'urc_user_watchlist', 'urc_user_checklists',
   'urc_user_signing_key',
+  // 029: alert hits recorded by the scheduled evaluator.
+  'urc_user_alert_hits',
 ];
 
 const REQUIRED_COLUMNS: Record<string, string[]> = {
@@ -317,6 +319,25 @@ const FUNCTION_REQUIREMENTS: FunctionRequirement[] = [
     searchPath: 'search_path=pg_catalog, public',
     securityDefiner: true,
     definitionFragments: ["public.urc_user_assume('delete'"],
+  },
+  // 029. The owner's alert hits: same signed-assertion contract as 026.
+  {
+    name: 'urc_user_alert_hits_page',
+    arguments: 'text,boolean,timestamp with time zone,integer,integer,text,text,bigint,text',
+    anonExecute: true,
+    serviceExecute: true,
+    searchPath: 'search_path=pg_catalog, public',
+    securityDefiner: true,
+    definitionFragments: ["public.urc_user_assume('list', 'alert-hits'"],
+  },
+  {
+    name: 'urc_user_alert_hits_mark_seen',
+    arguments: 'uuid[],text,boolean,text,text,bigint,text',
+    anonExecute: true,
+    serviceExecute: true,
+    searchPath: 'search_path=pg_catalog, public',
+    securityDefiner: true,
+    definitionFragments: ["public.urc_user_assume('upsert', 'alert-hits'"],
   },
 ];
 
