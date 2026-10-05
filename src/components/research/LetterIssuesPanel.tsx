@@ -77,7 +77,7 @@ function IssueRow({ issue, company }: { issue: CommentIssue; company: string }) 
       <button
         type="button"
         aria-expanded={open}
-        aria-controls={detailId}
+        aria-controls={open ? detailId : undefined}
         onClick={() => setOpen(value => !value)}
         style={{ display: 'flex', alignItems: 'center', gap: '7px', width: '100%', background: 'none', border: 'none', padding: 0, cursor: 'pointer', textAlign: 'left', color: 'var(--text-primary)' }}
       >
@@ -251,7 +251,7 @@ export default function LetterIssuesPanel({ threadId, company, letters }: {
         <button
           type="button"
           aria-expanded={open}
-          aria-controls={bodyId}
+          aria-controls={open ? bodyId : undefined}
           onClick={() => {
             const next = !open;
             setOpen(next);
