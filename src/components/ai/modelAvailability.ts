@@ -4,6 +4,20 @@ import { useEffect, useState } from 'react';
 
 export const AI_MODELS_ENDPOINT = '/api/ai/models';
 
+/** Shown in the model selector when the gateway's listing could not be read. */
+export const MODEL_AVAILABILITY_UNKNOWN_NOTE = 'Model availability could not be checked just now, so every model is listed.';
+
+/**
+ * What the selector needs: the servable ids (null = unknown, grey nothing
+ * out) and a short note to show when that is because the listing failed.
+ */
+export interface ModelAvailability {
+  ids: Set<string> | null;
+  note: string | null;
+}
+
+const UNKNOWN: ModelAvailability = { ids: null, note: null };
+
 /**
  * Read the ids out of a `/api/ai/models` body. Accepts the registry list
  * directly or wrapped as `{ models }` / `{ data }`, with entries as ids or as
@@ -32,32 +46,50 @@ export function parseAvailableModelIds(body: unknown): Set<string> | null {
 }
 
 /**
- * The model ids the gateway can serve right now, or null when that is not
- * known (route missing, request failed, unreadable body) — null means "offer
- * the full registry", because the server still validates and falls back.
+ * Read a `/api/ai/models` body. When the route says the gateway listing was
+ * unavailable (`gateway.listing: 'unavailable'`), the models it lists are a
+ * stale copy or the whole registry, not a current answer: nothing is greyed
+ * out, and the note says availability could not be checked.
  */
-export async function fetchAvailableModelIds(signal?: AbortSignal): Promise<Set<string> | null> {
+export function parseModelAvailability(body: unknown): ModelAvailability {
+  const record = body && typeof body === 'object' && !Array.isArray(body) ? body as Record<string, unknown> : null;
+  const gateway = record?.gateway && typeof record.gateway === 'object' ? record.gateway as Record<string, unknown> : null;
+  if (gateway?.listing === 'unavailable') return { ids: null, note: MODEL_AVAILABILITY_UNKNOWN_NOTE };
+  return { ids: parseAvailableModelIds(body), note: null };
+}
+
+/**
+ * Model availability right now. Unknown (route missing, request failed,
+ * unreadable body) is `{ ids: null }` — "offer the full registry", because
+ * the server still validates and falls back.
+ */
+export async function fetchModelAvailability(signal?: AbortSignal): Promise<ModelAvailability> {
   try {
     const response = await fetch(AI_MODELS_ENDPOINT, { signal, headers: { Accept: 'application/json' } });
-    if (!response.ok) return null;
-    return parseAvailableModelIds(await response.json().catch(() => null));
+    if (!response.ok) return UNKNOWN;
+    return parseModelAvailability(await response.json().catch(() => null));
   } catch {
-    return null;
+    return UNKNOWN;
   }
 }
 
+/** The model ids the gateway can serve right now, or null when that is not known. */
+export async function fetchAvailableModelIds(signal?: AbortSignal): Promise<Set<string> | null> {
+  return (await fetchModelAvailability(signal)).ids;
+}
+
 /** Loads availability each time `enabled` turns true (the panel opening). */
-export function useAiModelAvailability(enabled: boolean): Set<string> | null {
-  const [available, setAvailable] = useState<Set<string> | null>(null);
+export function useAiModelAvailability(enabled: boolean): ModelAvailability {
+  const [availability, setAvailability] = useState<ModelAvailability>(UNKNOWN);
 
   useEffect(() => {
     if (!enabled) return;
     const controller = new AbortController();
-    void fetchAvailableModelIds(controller.signal).then(ids => {
-      if (!controller.signal.aborted) setAvailable(ids);
+    void fetchModelAvailability(controller.signal).then(next => {
+      if (!controller.signal.aborted) setAvailability(next);
     });
     return () => controller.abort();
   }, [enabled]);
 
-  return available;
+  return availability;
 }

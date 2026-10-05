@@ -2,12 +2,14 @@
  * /api/alerts/evaluate — checks saved alerts while the user is away
  * (gap analysis row 2, recommendation 3).
  *
- *   GET  — Vercel Cron, hourly (vercel.json), authenticated with
+ *   GET  — Vercel Cron, four times an hour at :07, :22, :37 and :52
+ *          (vercel.json), authenticated with
  *          `Authorization: Bearer $CRON_SECRET` exactly as the search-job
  *          worker is. Claims due alerts (daily: >20 h since the last check;
  *          weekly: >6 days), stalest first, and checks each with one bounded
  *          wave of the server executor over filings filed since its last
- *          check. Stops after 25 alerts or 50 seconds; the next tick continues.
+ *          check. Stops after 25 alerts or 50 seconds; the next pass, 15
+ *          minutes later, continues.
  *   POST — the alert's owner: {"alertKey"} checks that alert now, due or
  *          not (session-authenticated, owner- and org-scoped).
  *

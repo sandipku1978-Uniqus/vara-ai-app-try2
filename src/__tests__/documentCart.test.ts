@@ -201,12 +201,13 @@ describe('cart bulk section download', () => {
   it('exports the section in the filing\'s own case, punctuation and line breaks', () => {
     const slice = sliceFilingSection(filing(), 'risk-factors', { ok: true, text: TEN_K }, 'aapl-2026.htm');
     expect(slice.textForm).toBe('original');
-    // The as-filed span ends at the section's last token (P3's exact mapping).
-    expect(slice.text).toContain('Item 1A. Risk Factors\nOur supply chain is concentrated in a small number of regions');
+    // The as-filed span ends after the section's last word and the punctuation
+    // that closes it, so the final sentence keeps its full stop.
+    expect(slice.text).toContain('Item 1A. Risk Factors\nOur supply chain is concentrated in a small number of regions.');
     expect(slice.text).not.toContain('Item 1B');
     expect(sliceTextBlocks(slice.text, 'original')).toEqual([
       'Item 1A. Risk Factors',
-      'Our supply chain is concentrated in a small number of regions',
+      'Our supply chain is concentrated in a small number of regions.',
     ]);
   });
 

@@ -360,6 +360,8 @@ export interface AIQnAPanelViewProps {
   answerMeta?: AiAnswerMeta | null;
   /** Model ids the gateway can serve; null/undefined = unknown, offer the full registry. */
   availableModelIds?: Set<string> | null;
+  /** Shown in the model selector when availability could not be checked. */
+  modelAvailabilityNote?: string | null;
   onResizeStart: MouseEventHandler<HTMLDivElement>;
   onResizeKeyDown: KeyboardEventHandler<HTMLDivElement>;
   onClearRuns: () => void;
@@ -390,6 +392,7 @@ export function AIQnAPanelView({
   suggestions,
   answerMeta = null,
   availableModelIds = null,
+  modelAvailabilityNote = null,
   onResizeStart,
   onResizeKeyDown,
   onClearRuns,
@@ -535,7 +538,7 @@ export function AIQnAPanelView({
           placeholder={`Ask ${BRAND.shortName} to open filings, compare peers, find comment letters, or draft alerts...`}
           disabled={running}
         />
-        <ModelSelector availableModelIds={availableModelIds} />
+        <ModelSelector availableModelIds={availableModelIds} availabilityNote={modelAvailabilityNote} />
         <button type="submit" disabled={!inputValue.trim() || running} className="send-btn" aria-label={running ? 'Copilot is working' : 'Send message to copilot'}>
           {running ? <Loader2 size={16} className="spinner" /> : <Send size={16} />}
         </button>

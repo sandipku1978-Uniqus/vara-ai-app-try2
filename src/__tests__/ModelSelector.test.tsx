@@ -9,10 +9,12 @@ import { defaultAiModelPreference, type AiModelPreference } from '../services/ai
 function Harness({
   initial = defaultAiModelPreference(),
   available,
+  note,
   onChange,
 }: {
   initial?: AiModelPreference;
   available?: Set<string> | null;
+  note?: string | null;
   onChange?: (next: AiModelPreference) => void;
 }) {
   const [preference, setPreference] = useState(initial);
@@ -20,6 +22,7 @@ function Harness({
     <ModelSelector
       preference={preference}
       availableModelIds={available}
+      availabilityNote={note}
       onChange={next => {
         setPreference(next);
         onChange?.(next);
@@ -157,6 +160,19 @@ describe('ModelSelector', () => {
     render(<Harness available={null} />);
     const { listbox } = openSelector();
     expect(within(listbox).getAllByRole('option').filter(option => option.getAttribute('aria-disabled') === 'true')).toHaveLength(0);
+  });
+
+  it('shows a note and greys nothing out when availability could not be checked', () => {
+    render(<Harness available={null} note="Model availability could not be checked just now, so every model is listed." />);
+    const { listbox } = openSelector();
+    expect(screen.getByRole('note')).toHaveTextContent('Model availability could not be checked just now');
+    expect(within(listbox).getAllByRole('option').filter(option => option.getAttribute('aria-disabled') === 'true')).toHaveLength(0);
+  });
+
+  it('shows no note when availability is known', () => {
+    render(<Harness available={new Set(['anthropic/claude-sonnet-5.5'])} />);
+    openSelector();
+    expect(screen.queryByRole('note')).not.toBeInTheDocument();
   });
 
   it('closes on an outside pointer press without stealing focus', () => {

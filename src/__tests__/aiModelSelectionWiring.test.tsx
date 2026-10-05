@@ -2,7 +2,13 @@ import { render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { AnswerModelLine, WebSourcesList } from '../components/ai/AnswerModelMeta';
-import { fetchAvailableModelIds, parseAvailableModelIds } from '../components/ai/modelAvailability';
+import {
+  MODEL_AVAILABILITY_UNKNOWN_NOTE,
+  fetchAvailableModelIds,
+  fetchModelAvailability,
+  parseAvailableModelIds,
+  parseModelAvailability,
+} from '../components/ai/modelAvailability';
 import {
   aiDraftMemoFromCitations,
   answeredByFallback,
@@ -193,5 +199,21 @@ describe('model availability', () => {
     mockFetch.mockResolvedValueOnce(jsonResponse({ models: [{ id: 'anthropic/claude-sonnet-5.5' }] }));
     await expect(fetchAvailableModelIds()).resolves.toEqual(new Set(['anthropic/claude-sonnet-5.5']));
     expect(mockFetch).toHaveBeenLastCalledWith('/api/ai/models', expect.anything());
+  });
+
+  it('greys nothing out and carries a note when the gateway listing was unavailable', async () => {
+    const stale = {
+      models: [{ id: 'anthropic/claude-sonnet-5.5' }],
+      gateway: { configured: true, listing: 'unavailable', checkedAt: null },
+    };
+    expect(parseModelAvailability(stale)).toEqual({ ids: null, note: MODEL_AVAILABILITY_UNKNOWN_NOTE });
+    expect(parseModelAvailability({ ...stale, gateway: { configured: true, listing: 'cached', checkedAt: 'x' } }))
+      .toEqual({ ids: new Set(['anthropic/claude-sonnet-5.5']), note: null });
+    mockFetch.mockResolvedValueOnce(jsonResponse(stale));
+    await expect(fetchModelAvailability()).resolves.toEqual({ ids: null, note: MODEL_AVAILABILITY_UNKNOWN_NOTE });
+    mockFetch.mockResolvedValueOnce(jsonResponse(stale));
+    await expect(fetchAvailableModelIds()).resolves.toBeNull();
+    mockFetch.mockRejectedValueOnce(new Error('offline'));
+    await expect(fetchModelAvailability()).resolves.toEqual({ ids: null, note: null });
   });
 });

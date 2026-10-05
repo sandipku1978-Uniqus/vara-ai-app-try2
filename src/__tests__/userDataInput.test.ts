@@ -65,6 +65,13 @@ describe('identity assertion format', () => {
     expect(assertion.p_signature).toBe(createHmac('sha256', 's'.repeat(40)).update(message).digest('hex'));
   });
 
+  it('compares fixed-length digests of the presented and expected signatures, never the strings', () => {
+    const assume = migration.slice(migration.indexOf('function public.urc_user_assume('));
+    const body = assume.slice(0, assume.indexOf('end $$;'));
+    expect(body).not.toMatch(/p_signature\)?\s*<>\s*v_expected/);
+    expect(body).toContain("extensions.digest(lower(p_signature), 'sha256') <> extensions.digest(v_expected, 'sha256')");
+  });
+
   it('binds the org, the operation and the kind', () => {
     const base = { userId: 'user_abc', secret: 'k'.repeat(40), nowMs: 0 } as const;
     const personal = signUserDataAssertion({ ...base, operation: 'list', kind: 'alerts', orgId: null });

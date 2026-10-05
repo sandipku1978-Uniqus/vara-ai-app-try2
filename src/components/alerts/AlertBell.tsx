@@ -15,7 +15,7 @@ import {
 import '../../styles/evidence-ledger.css';
 import './Alerts.css';
 
-/** How often an open tab re-reads the unread count (the evaluator runs hourly). */
+/** How often an open tab re-reads the unread count (the evaluator runs every 15 minutes). */
 const SUMMARY_REFRESH_MS = 5 * 60 * 1000;
 const PANEL_PAGE_SIZE = 100;
 

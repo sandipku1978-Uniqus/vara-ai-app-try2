@@ -217,6 +217,8 @@ interface ScopeState {
   hydrated: Set<UserDataKind>;
   outbox: Outbox;
   projects: UserProjectItem[];
+  /** For windowed kinds: every clientKey the local store has handed to syncUserCollection on this page. */
+  held: Map<UserDataKind, Set<string>>;
 }
 
 const OUTBOX_KEY = 'urc.userdata.outbox.v1';
@@ -230,6 +232,15 @@ const FLUSH_ORDER: UserDataKind[] = [
   'projects', 'saved-searches', 'alerts', 'peer-sets', 'memo', 'annotations', 'research-tabs', 'watchlist', 'checklists',
 ];
 const MIGRATION_KINDS = USER_DATA_KINDS.filter(kind => kind !== 'projects');
+/**
+ * Kinds whose local store holds only a window of the account's rows: the
+ * search page keeps at most MAX_RESEARCH_TABS tabs, while the account may
+ * hold more (tabs from another device, or restored from a project). A row
+ * absent from such a store's collection is deleted only when the store held
+ * it earlier on this page, i.e. the user closed it; a row the store never
+ * loaded is left alone.
+ */
+const WINDOWED_KINDS: ReadonlySet<UserDataKind> = new Set<UserDataKind>(['research-tabs']);
 
 let state: ScopeState | null = null;
 let status: UserDataStatus = {
@@ -252,7 +263,22 @@ function reportInvalid(message: string): void {
 let notifyQueued = false;
 
 function setStatus(update: Partial<UserDataStatus>): void {
-  status = { ...status, ...update };
+  // Publish only a real change: the object identity is the snapshot that
+  // useSyncExternalStore compares, and ensureState() re-prepares a signed-out
+  // scope on every call, so an unchanged status must stay the same object.
+  const changed = (Object.keys(update) as Array<keyof UserDataStatus>)
+    .some(key => !Object.is(update[key], status[key]));
+  if (!changed) return;
+  publishStatus({ ...status, ...update });
+}
+
+/**
+ * Replace the status object and notify subscribers. Also used directly when
+ * the project list or active project changed: those live outside the status
+ * fields, so a fresh object is what makes subscribers re-read them.
+ */
+function publishStatus(next: UserDataStatus): void {
+  status = next;
   // Deferred: prepareUserDataScope runs while the AppProvider renders, and a
   // subscriber must not be updated in the middle of another component's render.
   if (notifyQueued) return;
@@ -344,6 +370,7 @@ export function prepareUserDataScope(scope: string | null): void {
     hydrated: new Set(),
     outbox: loadOutbox(scope),
     projects: [],
+    held: new Map(),
   };
   for (const kind of USER_DATA_KINDS) {
     const items = LOCAL_CODECS[kind].read(scope) as object[] | null;
@@ -430,7 +457,7 @@ export function setActiveProject(projectId: string): void {
   const current = ensureState();
   if (!current || !current.projects.some(project => project.id === projectId)) return;
   writeScoped(ACTIVE_PROJECT_KEY, current.scope, projectId);
-  setStatus({});
+  publishStatus({ ...status });
 }
 
 function newUuid(): string {
@@ -476,6 +503,11 @@ export function syncUserCollection<K extends UserDataKind>(
     if (typeof record.clientKey === 'string') next.set(record.clientKey, record);
   }
   const inPartition = options.partition || (() => true);
+  // Keys from earlier collections only: this collection's keys are added
+  // after the diff (a key it contains is never deleted by it anyway).
+  const windowed = WINDOWED_KINDS.has(kind);
+  const held = current.held.get(kind) || new Set<string>();
+  if (windowed) current.held.set(kind, held);
 
   // A cold kind (nothing was stored here) is not diffed until the server has
   // answered: the store's first collection is defaults, not the user's work,
@@ -495,6 +527,7 @@ export function syncUserCollection<K extends UserDataKind>(
       if (!baseline.has(clientKey)) pending.set(clientKey, item);
     }
     current.coldPending.set(kind, pending);
+    if (windowed) for (const clientKey of next.keys()) held.add(clientKey);
     return;
   }
 
@@ -520,10 +553,13 @@ export function syncUserCollection<K extends UserDataKind>(
   }
   for (const [clientKey, entry] of [...snapshot.entries()]) {
     if (next.has(clientKey) || !inPartition(entry.item)) continue;
+    if (windowed && !held.has(clientKey)) continue;
     snapshot.delete(clientKey);
+    held.delete(clientKey);
     enqueue(current, kind, clientKey, { op: 'delete' });
     changed = true;
   }
+  if (windowed) for (const clientKey of next.keys()) held.add(clientKey);
   if (changed) {
     persistOutbox(current);
     scheduleFlush();
