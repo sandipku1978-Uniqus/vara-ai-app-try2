@@ -29,6 +29,7 @@ import { BRAND } from '../../config/brand';
 import CiteButton from '../memo/CiteButton';
 import CartToggle from '../cart/CartToggle';
 import ActiveQueryChips from './ActiveQueryChips';
+import AsuCitationChips from './AsuCitationChips';
 import ResultEvidenceDetails, { type OpenFilingOptions } from './ResultEvidenceDetails';
 import SearchScopeBanner from './SearchScopeBanner';
 import { researchTabId } from './ResearchSessionTabs';
@@ -436,6 +437,7 @@ export default function ResearchResultsWorkspace({
                   }}
                   disabledReason={sourceUrl ? undefined : SOURCE_UNRESOLVED_REASON}
                 />
+                <AsuCitationChips text={result.matchSnippet} />
                 </div>
                 );
               })}
