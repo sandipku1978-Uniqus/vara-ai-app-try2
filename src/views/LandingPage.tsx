@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { URCBrandLockup } from '../components/brand/URCBrand';
 import { BRAND } from '../config/brand';
-import { ENFORCEMENT_LANDING_CAPABILITY } from '../config/enforcement';
+import { ENFORCEMENT_LANDING_CAPABILITY, ENFORCEMENT_ROUTE_LABEL } from '../config/enforcement';
 import './LandingPage.css';
 
 const audienceLabels = [
@@ -104,7 +104,7 @@ const capabilityGroups = [
     eyebrow: 'Regulation & Transactions',
     title: 'Handle letters, rules, deals, and IPO work',
     description:
-      'Specialized workspaces cover SEC correspondence, litigation releases and civil actions, S-1 analysis, M&A research, exhibits, exempt offerings, and ADV registrations.',
+      'Specialized workspaces cover SEC correspondence, litigation releases, civil actions and AAERs, S-1 analysis, M&A research, exhibits, exempt offerings, and ADV registrations.',
     modules: [
       'Regulation, comment letters, and no-action letters',
       ENFORCEMENT_LANDING_CAPABILITY,
@@ -176,7 +176,7 @@ const marqueeModules = [
   'Insider Trading',
   'Securities Regulation',
   'Comment Letters',
-  'SEC Litigation Releases',
+  ENFORCEMENT_ROUTE_LABEL,
   'IPO Center',
   'M&A Research',
   'Exhibits & Agreements',
@@ -279,7 +279,7 @@ function LandingSignalCanvas() {
         <ul className="landing-brief-list">
           <li>Peer language is converging around AI governance and vendor concentration.</li>
           <li>Redline mode exposes new cyber and model-risk disclosure blocks immediately.</li>
-          <li>Best next stops: Benchmarking, IPO Center, and SEC Litigation Releases.</li>
+          <li>Best next stops: Benchmarking, IPO Center, and {ENFORCEMENT_ROUTE_LABEL}.</li>
         </ul>
       </div>
 

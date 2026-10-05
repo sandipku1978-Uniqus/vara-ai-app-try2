@@ -8,7 +8,7 @@ import {
   Gavel, Globe, HelpCircle, LayoutDashboard, LineChart, Mail,
   Mic, Scale, Search, Shield, TrendingUp, UserCheck, Users
 } from 'lucide-react';
-import { ENFORCEMENT_SCOPE_LIMITATION } from '../config/enforcement';
+import { ENFORCEMENT_ROUTE_LABEL, ENFORCEMENT_ROUTE_LIMITATION } from '../config/enforcement';
 import { EARNINGS_SCOPE_LABEL, EARNINGS_SCOPE_LIMITATION } from '../config/earnings';
 import { BRAND } from '../config/brand';
 import './SupportCenter.css';
@@ -52,7 +52,7 @@ const PLATFORM_LINKS = [
     { label: 'Securities Regulation', href: '/regulation', icon: Scale },
     { label: 'Comment Letters', href: '/comment-letters', icon: Mail },
     { label: 'No-Action Letters', href: '/no-action-letters', icon: FileText },
-    { label: 'SEC Litigation Releases', href: '/enforcement', icon: Gavel },
+    { label: ENFORCEMENT_ROUTE_LABEL, href: '/enforcement', icon: Gavel },
   ]},
   { group: 'Transactions', items: [
     { label: 'IPO Center', href: '/ipo', icon: TrendingUp },
@@ -209,23 +209,23 @@ const GUIDE_SECTIONS: GuideSection[] = [
   },
   {
     id: 'regulation-compliance',
-    title: 'Regulation, Comment Letters & Litigation Releases',
-    summary: 'Research SEC securities regulation, track comment letter correspondence between the SEC and registrants, review no-action letters, and monitor official SEC litigation releases.',
+    title: 'Regulation, Comment Letters & Enforcement Releases',
+    summary: 'Research SEC securities regulation, track comment letter correspondence between the SEC and registrants, review no-action letters, and monitor official SEC litigation releases and AAERs.',
     steps: [
       'Use Securities Regulation to browse and search current SEC rules and regulations.',
       'Search Comment Letters to see what the SEC staff has asked specific companies or industries about.',
       'Browse No-Action Letters for SEC staff guidance on specific regulatory questions.',
-      'Monitor SEC litigation releases for civil actions filed by the Commission.',
+      'Monitor SEC litigation releases for civil actions filed by the Commission, and Accounting and Auditing Enforcement Releases (AAERs) for actions involving accountants, auditors and financial reporting.',
     ],
     notes: [
       'Comment letter searches work best with company name or specific disclosure topic keywords.',
-      ENFORCEMENT_SCOPE_LIMITATION,
+      ENFORCEMENT_ROUTE_LIMITATION,
     ],
     links: [
       { label: 'Securities Regulation', href: '/regulation' },
       { label: 'Comment Letters', href: '/comment-letters' },
       { label: 'No-Action Letters', href: '/no-action-letters' },
-      { label: 'SEC Litigation Releases', href: '/enforcement' },
+      { label: ENFORCEMENT_ROUTE_LABEL, href: '/enforcement' },
     ],
   },
   {
