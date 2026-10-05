@@ -10,8 +10,9 @@ import { useRouter } from 'next/navigation';
 import { Building2, FileSearch, Navigation } from 'lucide-react';
 import { resolveCompanyEntity, type CompanyDirectoryEntry } from '../../services/secApi';
 import { PRODUCT_ROUTES } from '../../config/routes';
+import { ACCOUNTING_ISSUES, accountingIssueHref } from '../../config/accountingTopics';
 
-interface PaletteItem {
+export interface PaletteItem {
   kind: 'page' | 'company' | 'search';
   label: string;
   hint: string;
@@ -38,6 +39,39 @@ export function trapCommandPaletteFocus(
     event.preventDefault();
     first.focus();
   }
+}
+
+/**
+ * Accounting issue pages and ASU index entries for a palette query: an issue
+ * matches on its label, ASC reference ("842", "asc 606"), or one of its
+ * headings; "asu" opens the ASU index; an Update number ("2023-07",
+ * "ASU 2023-07") jumps to that row.
+ */
+export function accountingPaletteItems(normalized: string): PaletteItem[] {
+  const query = normalized.trim().toLowerCase();
+  if (query.length < 2) return [];
+  const items: PaletteItem[] = [];
+
+  const asu = query.match(/^(?:asu\s*(?:no\.\s*)?)?((?:19|20)\d{2})-(\d{1,2})$/);
+  if (asu) {
+    const number = `${asu[1]}-${asu[2].padStart(2, '0')}`;
+    items.push({ kind: 'page', label: `ASU ${number}`, hint: 'ASU index row — PDF · citing filings', href: `/accounting?${new URLSearchParams({ tab: 'asu', asu: number }).toString()}#asu-${number}` });
+  } else if ('asu index'.startsWith(query) || query === 'asus' || query.includes('standards update')) {
+    items.push({ kind: 'page', label: 'ASU Index', hint: 'FASB Accounting Standards Updates', href: '/accounting?tab=asu' });
+  }
+
+  const ascQuery = query.replace(/^asc\s*/, '');
+  for (const issue of ACCOUNTING_ISSUES) {
+    const asc = (issue.asc || '').toLowerCase();
+    const matches = issue.label.toLowerCase().includes(query)
+      || (asc && (asc.includes(query) || (/^\d{3}/.test(ascQuery) && asc.replace(/^asc\s*/, '').startsWith(ascQuery))))
+      || issue.codificationTopics.some(topic => /^\d{3}/.test(ascQuery) && topic.startsWith(ascQuery))
+      || issue.topic.headings.some(heading => heading.includes(query));
+    if (matches) {
+      items.push({ kind: 'page', label: `Accounting issue: ${issue.label}`, hint: 'Precedents · staff comments · ASUs · guidance', href: accountingIssueHref(issue.id) });
+    }
+  }
+  return items;
 }
 
 export default function CommandPalette() {
@@ -117,6 +151,7 @@ export default function CommandPalette() {
       items.push({ kind: 'page', label: page.label, hint: 'Go to page', href: page.path });
     }
   }
+  items.push(...accountingPaletteItems(normalized));
   if (normalized) {
     items.push({
       kind: 'search',
