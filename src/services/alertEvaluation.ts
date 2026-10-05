@@ -51,9 +51,15 @@ import { BOOLEAN_ENGINE_VERSION } from '../utils/booleanSearch';
 // ── Limits ───────────────────────────────────────────────────────────────────
 
 export const ALERT_EVALUATION_LIMITS = {
+  /** The cron starts a pass four times an hour (vercel.json
+   *  "7,22,37,52 * * * *"). A pass, including its last check's hard stop and
+   *  recording, ends well inside the route's maxDuration, which is itself well
+   *  inside this interval, so passes never overlap. */
+  passIntervalMs: 15 * 60 * 1000,
   /** One evaluator pass stops claiming after this many alerts… */
   maxAlertsPerRun: 25,
-  /** …or once this much wall time has passed; the next tick continues. */
+  /** …or once this much wall time has passed; the next pass, 15 minutes
+   *  later, continues with the stalest due alert. */
   runBudgetMs: 50_000,
   /** Alerts evaluated side by side in one pass (the deployment-wide
    *  concurrency limit still applies on top). */

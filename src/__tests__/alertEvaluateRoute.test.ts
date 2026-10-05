@@ -32,7 +32,10 @@ vi.mock('../services/alertEvaluation', async importOriginal => {
   return { ...actual, evaluateClaimedAlert: (...args: unknown[]) => mocks.evaluate(...args) };
 });
 
-import { GET, POST } from '../app/api/alerts/evaluate/route';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import { GET, POST, maxDuration } from '../app/api/alerts/evaluate/route';
+import { ALERT_EVALUATION_LIMITS } from '../services/alertEvaluation';
 
 const SECRET = 'a-long-enough-cron-secret';
 const ALERT_ID = '00000000-0000-4000-8000-0000000000a1';
@@ -78,6 +81,28 @@ beforeEach(() => {
   mocks.identity = { userId: 'user_1', orgId: 'org_1', cacheScope: 'user_1:org_1' };
 });
 afterEach(() => vi.unstubAllEnvs());
+
+describe('alert evaluation schedule', () => {
+  const crons = (JSON.parse(readFileSync(resolve(process.cwd(), 'vercel.json'), 'utf8')) as {
+    crons: Array<{ path: string; schedule: string }>;
+  }).crons;
+
+  it('runs the alert pass four times an hour, evenly spaced, and leaves the search-job worker every minute', () => {
+    expect(crons.find(cron => cron.path === '/api/alerts/evaluate')?.schedule).toBe('7,22,37,52 * * * *');
+    expect(crons.find(cron => cron.path === '/api/search-jobs/continue')?.schedule).toBe('* * * * *');
+    const minutes = '7,22,37,52'.split(',').map(Number);
+    const gaps = minutes.map((minute, index) => ((minutes[(index + 1) % minutes.length] - minute + 60) % 60) * 60_000);
+    expect(new Set(gaps)).toEqual(new Set([ALERT_EVALUATION_LIMITS.passIntervalMs]));
+  });
+
+  it('finishes a pass, its last check and the recording well before the next pass starts', () => {
+    const recordDeadlineMs = 15_000;
+    const worstCaseMs = ALERT_EVALUATION_LIMITS.runBudgetMs + ALERT_EVALUATION_LIMITS.waveHardDeadlineMs + recordDeadlineMs;
+    expect(worstCaseMs).toBeLessThanOrEqual(maxDuration * 1000);
+    expect(maxDuration * 1000).toBeLessThan(ALERT_EVALUATION_LIMITS.passIntervalMs);
+    expect(ALERT_EVALUATION_LIMITS.leaseSeconds * 1000).toBeLessThan(ALERT_EVALUATION_LIMITS.passIntervalMs);
+  });
+});
 
 describe('GET /api/alerts/evaluate (Vercel Cron)', () => {
   it('fails closed without a configured secret, or with the wrong one', async () => {

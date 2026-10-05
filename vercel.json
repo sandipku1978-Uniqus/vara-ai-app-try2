@@ -7,7 +7,7 @@
     },
     {
       "path": "/api/alerts/evaluate",
-      "schedule": "7 * * * *"
+      "schedule": "7,22,37,52 * * * *"
     }
   ]
 }
