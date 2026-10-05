@@ -273,6 +273,16 @@ export default function Benchmarking() {
     setPendingCompareIntent(null);
   }, [pendingCompareIntent, setPendingCompareIntent]);
 
+  // /compare?topic=<id> — an accounting issue page's peer-comparison link —
+  // opens the disclosure comparison with that topic selected, through the
+  // same control the dropdown writes.
+  useEffect(() => {
+    const topic = new URLSearchParams(window.location.search).get('topic');
+    if (!topic || !DISCLOSURE_TOPICS.some(candidate => candidate.id === topic)) return;
+    setComparisonTarget(`topic:${topic}`);
+    setViewMode('text-diff');
+  }, []);
+
   useEffect(() => {
     setActiveCompareContext({
       tickers: selectedTickers,

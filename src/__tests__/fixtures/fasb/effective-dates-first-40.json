@@ -1,0 +1,1491 @@
+{
+  "totalRecords": 86,
+  "data": [
+    {
+      "node": {
+        "itemId": 425453,
+        "title": "ASU 2026-03—Fair Value Measurement (Topic 820): Investment Companies with Equity Securities Subject to Contractual Sale Restrictions",
+        "lastPublishDate": "2026-09-09T13:52:39.941Z",
+        "itemType": 16,
+        "multiMedia": false,
+        "content": {
+          "data": {
+            "$type": "Fields",
+            "date": "2026-09-09T10:00:10",
+            "effective_dates": "<p>The amendments in this Update are effective for all entities for annual reporting periods beginning after December 15, 2027, and interim reporting periods within those annual reporting periods. Early adoption is permitted on any date that is on or after the issuance date of this Update.</p>",
+            "final_document": "Accounting Standards Update 2026-03—<em>Fair Value Measurement (Topic 820): Investment Companies with Equity Securities Subject to Contractual Sale Restrictions</em>",
+            "downloadLink": "/Page/Document?pdf=ASU%202026-03.pdf&title=Accounting Standards Update 2026-03—Fair Value Measurement (Topic 820): Investment Companies with Equity Securities Subject to Contractual Sale Restrictions"
+          }
+        },
+        "customMetas": {
+          "edges": [
+            {
+              "node": {
+                "key": "schema_name",
+                "value": "Accordion"
+              }
+            },
+            {
+              "node": {
+                "key": "type",
+                "value": "ASU-Effective Dates"
+              }
+            }
+          ]
+        }
+      },
+      "cursor": "MQ==",
+      "totalRecords": 86,
+      "pageNumber": 1
+    },
+    {
+      "node": {
+        "itemId": 424360,
+        "title": "ASU 2026-02—Environmental Credits and Environmental Credit Obligations (Topic 818)",
+        "lastPublishDate": "2026-07-08T20:30:44.639Z",
+        "itemType": 16,
+        "multiMedia": false,
+        "content": {
+          "data": {
+            "$type": "Fields",
+            "date": "2026-05-19T10:00:00",
+            "effective_dates": "<p>The amendments in this Update are effective for public business entities for annual reporting periods beginning after December 15, 2027, and interim reporting periods within those annual reporting periods. For entities other than public business entities, the amendments are effective for annual reporting periods beginning after December 15, 2028, and interim reporting periods within those annual reporting periods. Early adoption is permitted as of the beginning of an annual reporting period.</p>",
+            "final_document": "Accounting Standards Update 2026-02—<em>Environmental Credits and Environmental Credit Obligations (Topic 818)</em>",
+            "downloadLink": "/Page/Document?pdf=ASU%202026-02.pdf&title=Accounting%20Standards%20Update%202026-02%E2%80%94Environmental Credits and Environmental Credit Obligations (Topic 818)"
+          }
+        },
+        "customMetas": {
+          "edges": [
+            {
+              "node": {
+                "key": "schema_name",
+                "value": "Accordion"
+              }
+            },
+            {
+              "node": {
+                "key": "type",
+                "value": "ASU-Effective Dates"
+              }
+            }
+          ]
+        }
+      },
+      "cursor": "Mg==",
+      "totalRecords": 86,
+      "pageNumber": 2
+    },
+    {
+      "node": {
+        "itemId": 424162,
+        "title": "ASU 2026-01—Equity (Topic 505): Initial Measurement of Paid-in-Kind Dividends on Equity-Classified Preferred Stock",
+        "lastPublishDate": "2026-04-23T13:54:15.479Z",
+        "itemType": 16,
+        "multiMedia": false,
+        "content": {
+          "data": {
+            "$type": "Fields",
+            "date": "2026-04-23T09:51:10",
+            "effective_dates": "<p>The amendments in this Update are effective for all entities for annual reporting periods beginning after December 15, 2026, and interim reporting periods within those annual reporting periods. Early adoption is permitted in an interim or annual reporting period in which financial statements have not yet been issued or made available for issuance. An entity adopting the amendments in an interim reporting period should apply them as of the beginning of the annual reporting period that includes that interim reporting period.</p>",
+            "final_document": "Accounting Standards Update 2026-01—<em>Equity (Topic 505): Initial Measurement of Paid-in-Kind Dividends on Equity-Classified Preferred Stock</em>",
+            "downloadLink": "/Page/Document?pdf=ASU%202026-01.pdf&title=Accounting%20Standards%20Update%202026-01%E2%80%94Equity (Topic 505): Initial Measurement of Paid-in-Kind Dividends on Equity-Classified Preferred Stock"
+          }
+        },
+        "customMetas": {
+          "edges": [
+            {
+              "node": {
+                "key": "schema_name",
+                "value": "Accordion"
+              }
+            },
+            {
+              "node": {
+                "key": "type",
+                "value": "ASU-Effective Dates"
+              }
+            }
+          ]
+        }
+      },
+      "cursor": "Mw==",
+      "totalRecords": 86,
+      "pageNumber": 3
+    },
+    {
+      "node": {
+        "itemId": 423462,
+        "title": "ASU 2025-12—Codification Improvements",
+        "lastPublishDate": "2025-12-17T17:38:58.318Z",
+        "itemType": 16,
+        "multiMedia": false,
+        "content": {
+          "data": {
+            "$type": "Fields",
+            "date": "2025-12-17T09:51:10",
+            "effective_dates": "<p>The amendments in this Update are effective for all entities for annual reporting periods beginning after December 15, 2026, and interim reporting periods within those annual reporting periods. Early adoption is permitted in both interim and annual reporting periods in which financial statements have not yet been issued or made available for issuance. If an entity adopts the amendments in this Update in an interim period, it must adopt them as of the beginning of the annual reporting period that includes that interim reporting period. An entity may elect to early adopt the amendments on an issue-by-issue basis.</p>",
+            "final_document": "Accounting Standards Update 2025-12—<em>Codification Improvements</em>",
+            "downloadLink": "/Page/Document?pdf=ASU%202025-12.pdf&title=Accounting Standards Update 2025-12—Codification Improvements"
+          }
+        },
+        "customMetas": {
+          "edges": [
+            {
+              "node": {
+                "key": "schema_name",
+                "value": "Accordion"
+              }
+            },
+            {
+              "node": {
+                "key": "type",
+                "value": "ASU-Effective Dates"
+              }
+            }
+          ]
+        }
+      },
+      "cursor": "NA==",
+      "totalRecords": 86,
+      "pageNumber": 4
+    },
+    {
+      "node": {
+        "itemId": 423438,
+        "title": "ASU 2025-11—Interim Reporting (Topic 270): Narrow-Scope Improvements",
+        "lastPublishDate": "2025-12-08T16:26:08.329Z",
+        "itemType": 16,
+        "multiMedia": false,
+        "content": {
+          "data": {
+            "$type": "Fields",
+            "date": "2025-12-08T09:12:16",
+            "effective_dates": "<p>The amendments in this Update are effective for interim reporting periods within annual reporting periods beginning after December 15, 2027, for public business entities and for interim reporting periods within annual reporting periods beginning after December 15, 2028, for entities other than public business entities. Early adoption is permitted for all entities.</p>\n<p>The amendments in this Update can be applied either (1) prospectively or (2) retrospectively to any or all prior periods presented in the financial statements.</p>",
+            "final_document": "Accounting Standards Update 2025-11—<em>Interim Reporting (Topic 270): Narrow-Scope Improvements</em>",
+            "downloadLink": "/Page/Document?pdf=ASU%202025-11.pdf&title=Accounting Standards Update 2025-11—Interim Reporting (Topic 270): Narrow-Scope Improvements"
+          }
+        },
+        "customMetas": {
+          "edges": [
+            {
+              "node": {
+                "key": "schema_name",
+                "value": "Accordion"
+              }
+            },
+            {
+              "node": {
+                "key": "type",
+                "value": "ASU-Effective Dates"
+              }
+            }
+          ]
+        }
+      },
+      "cursor": "NQ==",
+      "totalRecords": 86,
+      "pageNumber": 5
+    },
+    {
+      "node": {
+        "itemId": 423397,
+        "title": "ASU 2025-10—Government Grants (Topic 832): Accounting for Government Grants Received by Business Entities",
+        "lastPublishDate": "2025-12-04T15:53:07.105Z",
+        "itemType": 16,
+        "multiMedia": false,
+        "content": {
+          "data": {
+            "$type": "Fields",
+            "date": "2025-12-04T08:53:24",
+            "effective_dates": "<p>For public business entities, the amendments in this Update are effective for annual reporting periods beginning after December 15, 2028, and interim reporting periods within those annual reporting periods. For entities other than public business entities, the amendments are effective for annual reporting periods beginning after December 15, 2029, and interim reporting periods within those annual reporting periods.</p>",
+            "final_document": "Accounting Standards Update 2025-10—<em>Government Grants (Topic 832): Accounting for Government Grants Received by Business Entities</em>",
+            "downloadLink": "/Page/Document?pdf=ASU%202025-10.pdf&title=Accounting Standards Update 2025-10—Government Grants (Topic 832): Accounting for Government Grants Received by Business Entities"
+          }
+        },
+        "customMetas": {
+          "edges": [
+            {
+              "node": {
+                "key": "schema_name",
+                "value": "Accordion"
+              }
+            },
+            {
+              "node": {
+                "key": "type",
+                "value": "ASU-Effective Dates"
+              }
+            }
+          ]
+        }
+      },
+      "cursor": "Ng==",
+      "totalRecords": 86,
+      "pageNumber": 6
+    },
+    {
+      "node": {
+        "itemId": 423384,
+        "title": "ASU 2025-09—Derivatives and Hedging (Topic 815): Hedge Accounting Improvements",
+        "lastPublishDate": "2025-11-25T14:59:23.459Z",
+        "itemType": 16,
+        "multiMedia": false,
+        "content": {
+          "data": {
+            "$type": "Fields",
+            "date": "2025-11-25T17:04:18",
+            "effective_dates": "<p>For public business entities, the amendments in this Update are effective for annual reporting periods beginning after December 15, 2026, and interim periods within those annual reporting periods. For entities other than public business entities, the amendments are effective for annual reporting periods beginning after December 15, 2027, and interim periods within those annual reporting periods. Early adoption is permitted on any date on or after the issuance of this Update.</p>\n<p>Entities should apply the amendments in this Update on a prospective basis for all hedging relationships. An entity may elect to adopt the amendments in this Update for hedging relationships that exist as of the date of adoption.</p>\n<p>Upon adoption of the amendments in this Update, entities are permitted to modify certain critical terms of certain existing hedging relationships without dedesignating the hedge.</p>",
+            "final_document": "Accounting Standards Update 2025-09—<em>Derivatives and Hedging (Topic 815): Hedge Accounting Improvements</em>",
+            "downloadLink": "/Page/Document?pdf=ASU%202025-09.pdf&title=Accounting Standards Update 2025-09—Derivatives and Hedging (Topic 815): Hedge Accounting Improvements"
+          }
+        },
+        "customMetas": {
+          "edges": [
+            {
+              "node": {
+                "key": "schema_name",
+                "value": "Accordion"
+              }
+            },
+            {
+              "node": {
+                "key": "type",
+                "value": "ASU-Effective Dates"
+              }
+            }
+          ]
+        }
+      },
+      "cursor": "Nw==",
+      "totalRecords": 86,
+      "pageNumber": 7
+    },
+    {
+      "node": {
+        "itemId": 423317,
+        "title": "ASU 2025-08—Financial Instruments—Credit Losses (Topic 326): Purchased Loans",
+        "lastPublishDate": "2025-11-12T22:05:35.198Z",
+        "itemType": 16,
+        "multiMedia": false,
+        "content": {
+          "data": {
+            "$type": "Fields",
+            "date": "2025-11-12T10:57:24",
+            "effective_dates": "<p>The amendments in this Update are effective for all entities for annual reporting periods beginning after December 15, 2026, and interim reporting periods within those annual reporting periods. Early adoption is permitted in an interim or annual reporting period in which financial statements have not yet been issued or made available for issuance. If an entity adopts the amendments in an interim reporting period, it should apply the amendments as of the beginning of that interim reporting period or the beginning of the annual reporting period that includes that interim reporting period.</p>",
+            "final_document": "Accounting Standards Update 2025-08—<em>Financial Instruments—Credit Losses (Topic 326): Purchased Loans</em>",
+            "downloadLink": "/Page/Document?pdf=ASU%202025-08.pdf&title=Accounting%20Standards%20Update%202025-08%E2%80%94Financial%20Instruments%E2%80%94Credit%20Losses%20(Topic%20326):%20Purchased%20Loans"
+          }
+        },
+        "customMetas": {
+          "edges": [
+            {
+              "node": {
+                "key": "schema_name",
+                "value": "Accordion"
+              }
+            },
+            {
+              "node": {
+                "key": "type",
+                "value": "ASU-Effective Dates"
+              }
+            }
+          ]
+        }
+      },
+      "cursor": "OA==",
+      "totalRecords": 86,
+      "pageNumber": 8
+    },
+    {
+      "node": {
+        "itemId": 423098,
+        "title": "ASU 2025-07—Derivatives and Hedging (Topic 815) and Revenue from Contracts with Customers (Topic 606) Derivatives Scope Refinements and Scope Clarification for Share-Based Noncash Consideration from a Customer in a Revenue Contract",
+        "lastPublishDate": "2025-11-12T12:42:49.436Z",
+        "itemType": 16,
+        "multiMedia": false,
+        "content": {
+          "data": {
+            "$type": "Fields",
+            "date": "2025-09-18T15:52:02",
+            "effective_dates": "<p>The amendments in this Update are effective for all entities for annual reporting periods beginning after December 15, 2026, and interim reporting periods within those annual reporting periods. Early adoption is permitted as of the beginning of an annual reporting period.</p>",
+            "final_document": "Accounting Standards Update 2025-07—<em>Derivatives and Hedging (Topic 815) and Revenue from Contracts with Customers (Topic 606): Derivatives Scope Refinements and Scope Clarification for Share-Based Noncash Consideration from a Customer in a Revenue Contract</em>",
+            "downloadLink": "/Page/Document?pdf=ASU%202025-07.pdf&title=Accounting Standards Update 2025-07—Derivatives and Hedging (Topic 815) and Revenue from Contracts with Customers (Topic 606): Derivatives Scope Refinements and Scope Clarification for Share-Based Noncash Consideration from a Customer in a Revenue Contract"
+          }
+        },
+        "customMetas": {
+          "edges": [
+            {
+              "node": {
+                "key": "schema_name",
+                "value": "Accordion"
+              }
+            },
+            {
+              "node": {
+                "key": "type",
+                "value": "ASU-Effective Dates"
+              }
+            }
+          ]
+        }
+      },
+      "cursor": "OQ==",
+      "totalRecords": 86,
+      "pageNumber": 9
+    },
+    {
+      "node": {
+        "itemId": 423044,
+        "title": "ASU 2025-06—Intangibles—Goodwill and Other—Internal-Use Software (Subtopic 350-40): Targeted Improvements to the Accounting for Internal-Use Software",
+        "lastPublishDate": "2025-11-12T12:41:21.409Z",
+        "itemType": 16,
+        "multiMedia": false,
+        "content": {
+          "data": {
+            "$type": "Fields",
+            "date": "2025-09-18T15:52:02",
+            "effective_dates": "<p>The amendments in this Update are effective for all entities for annual reporting periods beginning after December 15, 2027, and interim reporting periods within those annual reporting periods. Early adoption is permitted as of the beginning of an annual reporting period.</p>",
+            "final_document": "Accounting Standards Update 2025-06—<em>Intangibles—Goodwill and Other—Internal-Use Software (Subtopic 350-40): Targeted Improvements to the Accounting for Internal-Use Software</em>",
+            "downloadLink": "/Page/Document?pdf=ASU%202025-06.pdf&title=Accounting Standards Update 2025-06—Intangibles—Goodwill and Other—Internal-Use Software (Subtopic 350-40): Targeted Improvements to the Accounting for Internal-Use Software"
+          }
+        },
+        "customMetas": {
+          "edges": [
+            {
+              "node": {
+                "key": "schema_name",
+                "value": "Accordion"
+              }
+            },
+            {
+              "node": {
+                "key": "type",
+                "value": "ASU-Effective Dates"
+              }
+            }
+          ]
+        }
+      },
+      "cursor": "MTA=",
+      "totalRecords": 86,
+      "pageNumber": 10
+    },
+    {
+      "node": {
+        "itemId": 422502,
+        "title": "ASU 2025-05—Financial Instruments—Credit Losses (Topic 326): Measurement of Credit Losses for Accounts Receivable and Contract Assets for Private Companies and Certain Not-for-Profit Entities (PCC)",
+        "lastPublishDate": "2025-11-12T12:36:54.418Z",
+        "itemType": 16,
+        "multiMedia": false,
+        "content": {
+          "data": {
+            "$type": "Fields",
+            "date": "2025-07-30T10:14:06",
+            "effective_dates": "<p>The amendments will be effective for annual reporting periods beginning after December 15, 2025, and interim reporting periods within those annual reporting periods. Early adoption is permitted in both interim and annual reporting periods in which financial statements have not yet been issued or made available for issuance.</p>\n<p>An entity other than a public business entity that elects the practical expedient and, if applicable, the accounting policy election after the effective date would not need to perform a preferability assessment in accordance with paragraph 250-10-45-2.</p>",
+            "final_document": "Accounting Standards Update 2025-05—<em>Financial Instruments—Credit Losses (Topic 326): Measurement of Credit Losses for Accounts Receivable and Contract Assets</em>",
+            "downloadLink": "/Page/Document?pdf=ASU%202025-05.pdf&title=Accounting Standards Update 2025-05—Financial Instruments—Credit Losses (Topic 326): Measurement of Credit Losses for Accounts Receivable and Contract Assets"
+          }
+        },
+        "customMetas": {
+          "edges": [
+            {
+              "node": {
+                "key": "schema_name",
+                "value": "Accordion"
+              }
+            },
+            {
+              "node": {
+                "key": "type",
+                "value": "ASU-Effective Dates"
+              }
+            }
+          ]
+        }
+      },
+      "cursor": "MTE=",
+      "totalRecords": 86,
+      "pageNumber": 11
+    },
+    {
+      "node": {
+        "itemId": 421944,
+        "title": "ASU 2025-04—Compensation—Stock Compensation (Topic 718) and Revenue from Contracts with Customers (Topic 606): Clarifications to Share-Based Consideration Payable to a Customer",
+        "lastPublishDate": "2025-05-15T13:59:03.303Z",
+        "itemType": 16,
+        "multiMedia": false,
+        "content": {
+          "data": {
+            "$type": "Fields",
+            "date": "2025-05-15T11:00:00",
+            "effective_dates": "<p>The amendments in this Update are effective for all entities for annual reporting periods (including interim reporting periods within annual reporting periods) beginning after December 15, 2026. Early adoption is permitted for all entities.</p>",
+            "final_document": "Accounting Standards Update 2025-04—<em>Compensation—Stock Compensation (Topic 718) and Revenue from Contracts with Customers (Topic 606): Clarifications to Share-Based Consideration Payable to a Customer</em>",
+            "downloadLink": "/Page/Document?pdf=ASU 2025-04.pdf&title=Accounting Standards Update No. 2025-04 Compensation—Stock Compensation (Topic 718) and Revenue from Contracts with Customers (Topic 606): Clarifications to Share-Based Consideration Payable to a Customer"
+          }
+        },
+        "customMetas": {
+          "edges": [
+            {
+              "node": {
+                "key": "schema_name",
+                "value": "Accordian"
+              }
+            },
+            {
+              "node": {
+                "key": "type",
+                "value": "ASU-Effective Dates"
+              }
+            }
+          ]
+        }
+      },
+      "cursor": "MTI=",
+      "totalRecords": 86,
+      "pageNumber": 12
+    },
+    {
+      "node": {
+        "itemId": 421866,
+        "title": "ASU 2025-03—Business Combinations (Topic 805) and Consolidation (Topic 810): Determining the Accounting Acquirer in the Acquisition of a Variable Interest Entity",
+        "lastPublishDate": "2025-05-12T15:26:49.723Z",
+        "itemType": 16,
+        "multiMedia": false,
+        "content": {
+          "data": {
+            "$type": "Fields",
+            "date": "2025-05-12T09:00:00",
+            "effective_dates": "<p>The amendments in this Update are effective for all entities for annual reporting periods beginning after December 15, 2026, and interim reporting periods within those annual reporting periods.</p>\n<p>Early adoption is permitted as of the beginning of an interim or annual reporting period.</p>",
+            "final_document": "Accounting Standards Update 2025-03—<em>Business Combinations (Topic 805) and Consolidation (Topic 810): Determining the Accounting Acquirer in the Acquisition of a Variable Interest Entity</em>",
+            "downloadLink": "/Page/Document?pdf=ASU 2025-03.pdf&title=Accounting Standards Update No. 2025-03 Business Combinations (Topic 805) and Consolidation (Topic 810): Determining the Accounting Acquirer in the Acquisition of a Variable Interest Entity"
+          }
+        },
+        "customMetas": {
+          "edges": [
+            {
+              "node": {
+                "key": "schema_name",
+                "value": "Accordian"
+              }
+            },
+            {
+              "node": {
+                "key": "type",
+                "value": "ASU-Effective Dates"
+              }
+            }
+          ]
+        }
+      },
+      "cursor": "MTM=",
+      "totalRecords": 86,
+      "pageNumber": 13
+    },
+    {
+      "node": {
+        "itemId": 421252,
+        "title": "ASU 2025-02—Liabilities (405)—Amendments to SEC Paragraphs Pursuant to SEC Staff Accounting Bulletin No. 122",
+        "lastPublishDate": "2025-03-18T14:05:09.674Z",
+        "itemType": 16,
+        "multiMedia": false,
+        "content": {
+          "data": {
+            "$type": "Fields",
+            "date": "2025-03-18T08:00:00",
+            "effective_dates": "<p>The amendments in this Update are effective immediately and on a fully retrospective basis to annual periods beginning after December 15, 2024.</p>",
+            "final_document": "Accounting Standards Update 2025-02—<em>Liabilities (405): Amendments to SEC Paragraphs Pursuant to SEC Staff Accounting Bulletin No. 122</em>",
+            "downloadLink": "/Page/Document?pdf=ASU%202025-02.pdf&title=Accounting%20Standards%20Update%202025-02%E2%80%94Liabilities (405)—Amendments to SEC Paragraphs Pursuant to SEC Staff Accounting Bulletin No. 122"
+          }
+        },
+        "customMetas": {
+          "edges": [
+            {
+              "node": {
+                "key": "schema_name",
+                "value": "Accordian"
+              }
+            },
+            {
+              "node": {
+                "key": "type",
+                "value": "ASU-Effective Dates"
+              }
+            }
+          ]
+        }
+      },
+      "cursor": "MTQ=",
+      "totalRecords": 86,
+      "pageNumber": 14
+    },
+    {
+      "node": {
+        "itemId": 420524,
+        "title": "ASU 2025-01—Income Statement—Reporting Comprehensive Income—Expense Disaggregation Disclosures (Subtopic 220-40): Clarifying the Effective Date",
+        "lastPublishDate": "2025-11-13T06:40:19.39Z",
+        "itemType": 16,
+        "multiMedia": false,
+        "content": {
+          "data": {
+            "$type": "Fields",
+            "date": "2025-01-06T08:00:00",
+            "effective_dates": "<p>The amendments in this Update are effective for annual reporting periods beginning after December 15, 2026, and interim reporting periods within annual reporting periods beginning after December 15, 2027. Early adoption is permitted.</p>",
+            "final_document": "Accounting Standards Update 2025-01—<em>Income Statement—Reporting Comprehensive Income—Expense Disaggregation Disclosures (Subtopic 220-40): Clarifying the Effective Date</em>",
+            "downloadLink": "/Page/Document?pdf=ASU 2025-01.pdf&title=Income Statement—Reporting Comprehensive Income—Expense Disaggregation Disclosures (Subtopic 220-40): Clarifying the Effective Date"
+          }
+        },
+        "customMetas": {
+          "edges": [
+            {
+              "node": {
+                "key": "schema_name",
+                "value": "Accordion"
+              }
+            },
+            {
+              "node": {
+                "key": "type",
+                "value": "ASU-Effective Dates"
+              }
+            }
+          ]
+        }
+      },
+      "cursor": "MTU=",
+      "totalRecords": 86,
+      "pageNumber": 15
+    },
+    {
+      "node": {
+        "itemId": 420171,
+        "title": "ASU 2024-04—Debt—Debt with Conversion and Other Options (Subtopic 470-20): Induced Conversions of Convertible Debt Instruments",
+        "lastPublishDate": "2025-11-12T13:00:13.506Z",
+        "itemType": 16,
+        "multiMedia": false,
+        "content": {
+          "data": {
+            "$type": "Fields",
+            "date": "2024-11-26T17:23:48",
+            "effective_dates": "<p>The amendments in this Update are effective for all entities for annual reporting periods beginning after December 15, 2025, and interim reporting periods within those annual reporting periods.</p>\n<p>Early adoption is permitted as of the beginning of the annual reporting period for all entities that have adopted the amendments in Update 2020-06, <em>Debt—Debt with Conversion and Other Options (Subtopic 470-20) and Derivatives and Hedging—Contracts in Entity’s Own Equity (Subtopic 815-40): Accounting for Convertible Instruments and Contracts in an Entity’s Own Equity</em>.</p>",
+            "final_document": "Accounting Standards Update 2024-04—<em>Debt—Debt with Conversion and Other Options (Subtopic 470-20): Induced Conversions of Convertible Debt Instruments</em>",
+            "downloadLink": "/Page/Document?pdf=ASU%202024-04.pdf&title=Accounting%20Standards%20Update%202024-04%E2%80%94Debt%E2%80%94Debt%20with%20Conversion%20and%20Other%20Options%20(Subtopic%20470-20):%20Induced%20Conversions%20of%20Convertible%20Debt%20Instruments"
+          }
+        },
+        "customMetas": {
+          "edges": [
+            {
+              "node": {
+                "key": "schema_name",
+                "value": "Accordion"
+              }
+            },
+            {
+              "node": {
+                "key": "type",
+                "value": "ASU-Effective Dates"
+              }
+            }
+          ]
+        }
+      },
+      "cursor": "MTY=",
+      "totalRecords": 86,
+      "pageNumber": 16
+    },
+    {
+      "node": {
+        "itemId": 419860,
+        "title": "ASU 2024-03—Income Statement—Reporting Comprehensive Income—Expense Disaggregation Disclosures (Subtopic 220-40): Disaggregation of Income Statement Expenses",
+        "lastPublishDate": "2025-11-13T06:40:26.336Z",
+        "itemType": 16,
+        "multiMedia": false,
+        "content": {
+          "data": {
+            "$type": "Fields",
+            "date": "2024-11-04T15:46:31",
+            "effective_dates": "<p>The amendments in this Update are effective for annual reporting periods beginning after December 15, 2026, and interim reporting periods within annual reporting periods beginning after December 15, 2027. Early adoption is permitted.</p>\n<p>*The interim effective date was amended by Update 2025-01.</p>",
+            "final_document": "Accounting Standards Update 2024-03—<em>Income Statement—Reporting Comprehensive Income—Expense Disaggregation Disclosures (Subtopic 220-40): Disaggregation of Income Statement Expenses</em>",
+            "downloadLink": "/Page/Document?pdf=ASU%202024-03.pdf&title=ACCOUNTING%20STANDARDS%20UPDATE%202024-03%E2%80%94Income%20Statement%E2%80%94Reporting%20Comprehensive%20Income%E2%80%94Expense%20Disaggregation%20Disclosures%20(Subtopic%20220-40):%20Disaggregation%20of%20Income%20Statement%20Expenses"
+          }
+        },
+        "customMetas": {
+          "edges": [
+            {
+              "node": {
+                "key": "schema_name",
+                "value": "Accordion"
+              }
+            },
+            {
+              "node": {
+                "key": "type",
+                "value": "ASU-Effective Dates"
+              }
+            }
+          ]
+        }
+      },
+      "cursor": "MTc=",
+      "totalRecords": 86,
+      "pageNumber": 17
+    },
+    {
+      "node": {
+        "itemId": 418344,
+        "title": "Accounting Standards Update 2024-02—Codification Improvements—Amendments to Remove References to the Concepts Statements",
+        "lastPublishDate": "2025-11-13T06:35:20.358Z",
+        "itemType": 16,
+        "multiMedia": false,
+        "content": {
+          "data": {
+            "$type": "Fields",
+            "date": "2024-03-29T17:19:24",
+            "effective_dates": "<p>The amendments in this Update are effective for public business entities for fiscal years beginning after December 15, 2024. For all other entities, the amendments are effective for fiscal years beginning after December 15, 2025.</p>\n<p>Early application of the amendments in this Update is permitted for all entities, for any fiscal year or interim period for which financial statements have not yet been issued (or made available for issuance). If an entity adopts the amendments in an interim period, it must adopt them as of the beginning of the fiscal year that includes that interim period.</p>",
+            "final_document": "Accounting Standards Update 2024-02—<em>Codification Improvements—Amendments to Remove References to the Concepts Statements</em>",
+            "downloadLink": "/Page/Document?pdf=ASU%202024-02.pdf&title=ACCOUNTING%20STANDARDS%20UPDATE%202024-02%E2%80%94Codification Improvements—Amendments to Remove References to the Concepts Statements"
+          }
+        },
+        "customMetas": {
+          "edges": [
+            {
+              "node": {
+                "key": "schema_name",
+                "value": "Accordion"
+              }
+            },
+            {
+              "node": {
+                "key": "type",
+                "value": "ASU-Effective Dates"
+              }
+            }
+          ]
+        }
+      },
+      "cursor": "MTg=",
+      "totalRecords": 86,
+      "pageNumber": 18
+    },
+    {
+      "node": {
+        "itemId": 418254,
+        "title": "Accounting Standards Update 2024-01—Compensation—Stock Compensation (Topic 718): Scope Application of Profits Interest and Similar Awards",
+        "lastPublishDate": "2025-11-13T06:35:23.35Z",
+        "itemType": 16,
+        "multiMedia": false,
+        "content": {
+          "data": {
+            "$type": "Fields",
+            "date": "2024-03-21T10:39:51",
+            "effective_dates": "<p>For public business entities, the amendments in this Update are effective for annual periods beginning after December 15, 2024, and interim periods within those annual periods. For all other entities, the amendments are effective for annual periods beginning after December 15, 2025, and interim periods within those annual periods.</p>\n<p>Early adoption is permitted for both interim and annual financial statements that have not yet been issued or made available for issuance. If an entity adopts the amendments in an interim period, it should adopt them as of the beginning of the annual period that includes that interim period.</p>",
+            "final_document": "Accounting Standards Update 2024-01—<em>Compensation—Stock Compensation (Topic 718): Scope Application of Profits Interest and Similar Awards</em>",
+            "downloadLink": "/Page/Document?pdf=ASU%202024-01.pdf&title=ACCOUNTING%20STANDARDS%20UPDATE%202024-01%E2%80%94Compensation%E2%80%94Stock%20Compensation%20(Topic%20718):%20Scope%20Application%20of%20Profits%20Interest%20and%20Similar%20Awards"
+          }
+        },
+        "customMetas": {
+          "edges": [
+            {
+              "node": {
+                "key": "schema_name",
+                "value": "Accordion"
+              }
+            },
+            {
+              "node": {
+                "key": "type",
+                "value": "ASU-Effective Dates"
+              }
+            }
+          ]
+        }
+      },
+      "cursor": "MTk=",
+      "totalRecords": 86,
+      "pageNumber": 19
+    },
+    {
+      "node": {
+        "itemId": 399513,
+        "title": "Accounting Standards Update 2023-09—Income Taxes (Topic 740)",
+        "lastPublishDate": "2025-11-13T08:35:26.917Z",
+        "itemType": 16,
+        "multiMedia": false,
+        "content": {
+          "data": {
+            "$type": "Fields",
+            "date": "2023-12-14T16:12:23",
+            "effective_dates": "\n            <p>For public business entities, the amendments in this Update are effective for annual periods beginning after December 15, 2024. For entities other than public business entities, the amendments are effective for annual periods beginning after December 15, 2025.</p>\n<p>Early adoption is permitted for annual financial statements that have not yet been issued or made available for issuance.</p>",
+            "final_document": "Accounting Standards Update 2023-09—<em>Income Taxes (Topic 740): Improvements to Income Tax Disclosures</em>",
+            "downloadLink": "/page/Document?pdf=ASU%202023-09.pdf&title=ACCOUNTING%20STANDARDS%20UPDATE%202023-09%E2%80%94Income%20Taxes%20(Topic%20740):%20Improvements%20to%20Income%20Tax%20Disclosures"
+          }
+        },
+        "customMetas": {
+          "edges": [
+            {
+              "node": {
+                "key": "schema_name",
+                "value": "Accordion"
+              }
+            },
+            {
+              "node": {
+                "key": "type",
+                "value": "ASU-Effective Dates"
+              }
+            }
+          ]
+        }
+      },
+      "cursor": "NTc=",
+      "totalRecords": 86,
+      "pageNumber": 20
+    },
+    {
+      "node": {
+        "itemId": 397879,
+        "title": "Accounting Standards Update 2023-08—Intangibles—Goodwill and Other—Crypto Assets (Subtopic 350-60)",
+        "lastPublishDate": "2024-01-20T10:10:42Z",
+        "itemType": 16,
+        "multiMedia": false,
+        "content": {
+          "data": {
+            "$type": "Fields",
+            "date": "2023-12-14T16:12:23",
+            "effective_dates": "\n            <p>The amendments in this Update are effective for all entities for fiscal years beginning after December 15, 2024, including interim periods within those fiscal years. Early adoption is permitted for both interim and annual financial statements that have not yet been issued (or made available for issuance). If an entity adopts the amendments in an interim period, it must adopt them as of the beginning of the fiscal year that includes that interim period.</p>\n<p>The amendments in this Update require a cumulative-effect adjustment to the opening balance of retained earnings (or other appropriate components of equity or net assets) as of the beginning of the annual reporting period in which an entity adopts the amendments.</p>",
+            "final_document": "Accounting Standards Update 2023-08—<em>Intangibles—Goodwill and Other—Crypto Assets (Subtopic 350-60): Accounting for and Disclosure of Crypto Assets</em>",
+            "downloadLink": "/page/Document?pdf=ASU%202023-08.pdf&title=ACCOUNTING%20STANDARDS%20UPDATE%202023-08%E2%80%94Intangibles%E2%80%94Goodwill%20and%20Other%E2%80%94Crypto%20Assets%20(Subtopic%20350-60):%20Accounting%20for%20and%20Disclosure%20of%20Crypto%20Assets"
+          }
+        },
+        "customMetas": {
+          "edges": [
+            {
+              "node": {
+                "key": "schema_name",
+                "value": "Accordian"
+              }
+            },
+            {
+              "node": {
+                "key": "type",
+                "value": "ASU-Effective Dates"
+              }
+            }
+          ]
+        }
+      },
+      "cursor": "ODM=",
+      "totalRecords": 86,
+      "pageNumber": 21
+    },
+    {
+      "node": {
+        "itemId": 398273,
+        "title": "Accounting Standards Update 2023-07—Segment Reporting (Topic 280)",
+        "lastPublishDate": "2025-11-13T07:40:28.612Z",
+        "itemType": 16,
+        "multiMedia": false,
+        "content": {
+          "data": {
+            "$type": "Fields",
+            "date": "2023-11-01T13:19:50",
+            "effective_dates": "The amendments apply to all public entities that are required to report segment information in accordance with Topic 280. All public entities will be required to report segment information in accordance with the new guidance starting in annual periods beginning after December 15, 2023.",
+            "final_document": "Accounting Standards Update 2023-07—<em>Segment Reporting (Topic 280): Improvements to Reportable Segment Disclosures</em>",
+            "downloadLink": "/Page/Document?pdf=ASU%202023-07.pdf&title=ACCOUNTING%20STANDARDS%20UPDATE%202023-07%E2%80%94Segment%20Reporting%20(Topic%20280):%20Improvements%20to%20Reportable%20Segment%20Disclosures"
+          }
+        },
+        "customMetas": {
+          "edges": [
+            {
+              "node": {
+                "key": "schema_name",
+                "value": "Accordion"
+              }
+            },
+            {
+              "node": {
+                "key": "type",
+                "value": "ASU-Effective Dates"
+              }
+            }
+          ]
+        }
+      },
+      "cursor": "Nzc=",
+      "totalRecords": 86,
+      "pageNumber": 22
+    },
+    {
+      "node": {
+        "itemId": 401639,
+        "title": "Accounting Standards Update 2023-06—Disclosure Improvements",
+        "lastPublishDate": "2024-01-20T10:10:14Z",
+        "itemType": 16,
+        "multiMedia": false,
+        "content": {
+          "data": {
+            "$type": "Fields",
+            "date": "2023-10-01T17:14:54",
+            "effective_dates": "For entities subject to the SEC’s existing disclosure requirements and for entities required to file or furnish financial statements with or to the SEC in preparation for the sale of or for purposes of issuing securities that are not subject to contractual restrictions on transfer, the effective date for each amendment will be the date on which the SEC’s removal of that related disclosure from Regulation S-X or Regulation S-K becomes effective, with early adoption prohibited. For all other entities, the amendments will be effective two years later.",
+            "final_document": "Accounting Standards Update 2023-06—<em>Disclosure Improvements: Codification Amendments in Response to the SEC’s Disclosure Update and Simplification Initiative</em>",
+            "downloadLink": "/page/Document?pdf=ASU%202023-06.pdf&title=ACCOUNTING%20STANDARDS%20UPDATE%202023-06%E2%80%94Disclosure%20Improvements:%20Codification%20Amendments%20in%20Response%20to%20the%20SEC%E2%80%99s%20Disclosure%20Update%20and%20Simplification%20Initiative"
+          }
+        },
+        "customMetas": {
+          "edges": [
+            {
+              "node": {
+                "key": "schema_name",
+                "value": "ASU-Effective Dates"
+              }
+            },
+            {
+              "node": {
+                "key": "type",
+                "value": "ASU-Effective Dates"
+              }
+            }
+          ]
+        }
+      },
+      "cursor": "MzQ=",
+      "totalRecords": 86,
+      "pageNumber": 23
+    },
+    {
+      "node": {
+        "itemId": 401637,
+        "title": "Accounting Standards Update 2023-05—Business Combinations—Joint Venture Formations (Subtopic 805-60)",
+        "lastPublishDate": "2025-11-13T07:39:41.614Z",
+        "itemType": 16,
+        "multiMedia": false,
+        "content": {
+          "data": {
+            "$type": "Fields",
+            "date": "2023-08-14T13:05:58",
+            "effective_dates": "The amendments in this Update are effective prospectively for all joint venture formations with a formation date on or after January 1, 2025. Early adoption is permitted in any interim or annual period in which financial statements have not yet been issued (or made available for issuance), either prospectively or retrospectively.",
+            "final_document": "Accounting Standards Update 2023-05—<em>Business Combinations—Joint Venture Formations (Subtopic 805-60): Recognition and Initial Measurement</em>",
+            "downloadLink": "/Page/Document?pdf=ASU%202023-05.pdf&title=ACCOUNTING%20STANDARDS%20UPDATE%202023-05%E2%80%94Business%20Combinations%E2%80%94Joint%20Venture%20Formations%20(Subtopic%20805-60):%20Recognition%20and%20Initial%20Measurement"
+          }
+        },
+        "customMetas": {
+          "edges": [
+            {
+              "node": {
+                "key": "schema_name",
+                "value": "Accordion"
+              }
+            },
+            {
+              "node": {
+                "key": "type",
+                "value": "ASU-Effective Dates"
+              }
+            }
+          ]
+        }
+      },
+      "cursor": "MzU=",
+      "totalRecords": 86,
+      "pageNumber": 24
+    },
+    {
+      "node": {
+        "itemId": 401936,
+        "title": "Accounting Standards Update 2023-02—Investments",
+        "lastPublishDate": "2024-01-20T10:09:11Z",
+        "itemType": 16,
+        "multiMedia": false,
+        "content": {
+          "data": {
+            "$type": "Fields",
+            "date": "2023-03-14T12:44:11",
+            "effective_dates": "For public business entities, the amendments are effective for fiscal years beginning after December 15, 2023, including interim periods within those fiscal years. For all other entities, the amendments are effective for fiscal years beginning after December 15, 2024, including interim periods within those fiscal years. Early adoption is permitted for all entities in any interim period.",
+            "final_document": "Accounting Standards Update 2023-02—<em>Investments—Equity Method and Joint Ventures (Topic 323): Accounting for Investments in Tax Credit Structures Using the Proportional Amortization Method</em> (a consensus of the Emerging Issues Task Force)",
+            "downloadLink": "/Page/Document?pdf=ASU%202023-02%E2%80%94Investments%E2%80%94Equity%20Method%20and%20Joint%20Ventures%20(Topic%20323)%E2%80%94Accounting%20for%20Investments%20in%20Tax%20Credit%20Structures%20Using%20the%20Proportional%20Amortization%20Method.pdf&title=ACCOUNTING%20STANDARDS%20UPDATE%202023-02%E2%80%94Investments%E2%80%94Equity%20Method%20and%20Joint%20Ventures%20(Topic%20323):%20Accounting%20for%20Investments%20in%20Tax%20Credit%20Structures%20Using%20the%20Proportional%20Amortization%20Method%20(a%20consensus%20of%20the%20Emerging%20Issues%20Task%20Force)"
+          }
+        },
+        "customMetas": {
+          "edges": [
+            {
+              "node": {
+                "key": "schema_name",
+                "value": "Accordian"
+              }
+            },
+            {
+              "node": {
+                "key": "type",
+                "value": "ASU-Effective Dates"
+              }
+            }
+          ]
+        }
+      },
+      "cursor": "MjM=",
+      "totalRecords": 86,
+      "pageNumber": 25
+    },
+    {
+      "node": {
+        "itemId": 398745,
+        "title": "Accounting Standards Update 2023-01—Leases",
+        "lastPublishDate": "2025-04-01T15:31:46.013Z",
+        "itemType": 16,
+        "multiMedia": false,
+        "content": {
+          "data": {
+            "$type": "Fields",
+            "date": "2023-03-01T16:30:02",
+            "effective_dates": "The amendments in this Update are effective for fiscal years beginning after December 15, 2023, including interim periods within those fiscal years. Early adoption is permitted for both interim and annual financial statements that have not yet been made available for issuance.",
+            "final_document": "Accounting Standards Update 2023-01—<em>Leases (Topic 842): Common Control Arrangements</em>",
+            "downloadLink": "/page/Document?pdf=ASU%202023-01—Leases%20(Topic%20842)—Common%20Control%20Arrangements.pdf&title=ACCOUNTING%20STANDARDS%20UPDATE%202023-01—Leases%20(Topic%20842):%20Common%20Control%20Arrangements"
+          }
+        },
+        "customMetas": {
+          "edges": [
+            {
+              "node": {
+                "key": "schema_name",
+                "value": "Accordian"
+              }
+            },
+            {
+              "node": {
+                "key": "type",
+                "value": "ASU-Effective Dates"
+              }
+            }
+          ]
+        }
+      },
+      "cursor": "Njk=",
+      "totalRecords": 86,
+      "pageNumber": 26
+    },
+    {
+      "node": {
+        "itemId": 400056,
+        "title": "Accounting Standards Update 2022-06",
+        "lastPublishDate": "2025-11-13T07:32:08.614Z",
+        "itemType": 16,
+        "multiMedia": false,
+        "content": {
+          "data": {
+            "$type": "Fields",
+            "date": "2022-12-01T16:36:52",
+            "effective_dates": "The amendments in this Update are effective for all entities upon issuance of this Update.",
+            "final_document": "Accounting Standards Update 2022-06—<em>Reference Rate Reform (Topic 848): Deferral of the Sunset Date of Topic 848</em>",
+            "downloadLink": "/page/Document?pdf=ASU%202022-06.pdf&title=ACCOUNTING%20STANDARDS%20UPDATE%202022-06%E2%80%94Reference%20Rate%20Reform%20(Topic%20848):%20Deferral%20of%20the%20Sunset%20Date%20of%20Topic%20848"
+          }
+        },
+        "customMetas": {
+          "edges": [
+            {
+              "node": {
+                "key": "schema_name",
+                "value": "Accordion"
+              }
+            },
+            {
+              "node": {
+                "key": "type",
+                "value": "ASU-Effective Dates"
+              }
+            }
+          ]
+        }
+      },
+      "cursor": "NTI=",
+      "totalRecords": 86,
+      "pageNumber": 27
+    },
+    {
+      "node": {
+        "itemId": 400732,
+        "title": "Accounting Standards Update 2022-05—Financial Services—Insurance (Topic 944)",
+        "lastPublishDate": "2025-11-13T07:44:50.641Z",
+        "itemType": 16,
+        "multiMedia": false,
+        "content": {
+          "data": {
+            "$type": "Fields",
+            "date": "2022-12-01T16:35:46",
+            "effective_dates": "The effective dates of the amendments in this Update are consistent with the effective dates of the amendments in Update 2020-11.",
+            "final_document": "Accounting Standards Update 2022-05—<em>Financial Services—Insurance (Topic 944): Transition for Sold Contracts</em>",
+            "downloadLink": "/page/Document?pdf=ASU%202022-05.pdf&title=ACCOUNTING%20STANDARDS%20UPDATE%202022-05%E2%80%94Financial%20Services%E2%80%94Insurance%20(Topic%20944):%20Transition%20for%20Sold%20Contracts"
+          }
+        },
+        "customMetas": {
+          "edges": [
+            {
+              "node": {
+                "key": "schema_name",
+                "value": "Accordion"
+              }
+            },
+            {
+              "node": {
+                "key": "type",
+                "value": "ASU-Effective Dates"
+              }
+            }
+          ]
+        }
+      },
+      "cursor": "NDU=",
+      "totalRecords": 86,
+      "pageNumber": 28
+    },
+    {
+      "node": {
+        "itemId": 399529,
+        "title": "Accounting Standards Update 2022-04—Liabilities—Supplier Finance Programs (Subtopic 405-50)",
+        "lastPublishDate": "2025-11-13T07:45:33.638Z",
+        "itemType": 16,
+        "multiMedia": false,
+        "content": {
+          "data": {
+            "$type": "Fields",
+            "date": "2022-09-01T16:38:06",
+            "effective_dates": "The amendments in this Update are effective for fiscal years beginning after December 15, 2022, including interim periods within those fiscal years, except for the amendment on rollforward information, which is effective for fiscal years beginning after December 15, 2023. Early adoption is permitted.",
+            "final_document": "Accounting Standards Update 2022-04—<em>Liabilities—Supplier Finance Programs (Subtopic 405-50): Disclosure of Supplier Finance Program Obligations</em>",
+            "downloadLink": "/page/Document?pdf=ASU%202022-04.pdf&title=ACCOUNTING%20STANDARDS%20UPDATE%202022-04%E2%80%94LIABILITIES%E2%80%94SUPPLIER%20FINANCE%20PROGRAMS%20(SUBTOPIC%20405-50):%20DISCLOSURE%20OF%20SUPPLIER%20FINANCE%20PROGRAM%20OBLIGATIONS"
+          }
+        },
+        "customMetas": {
+          "edges": [
+            {
+              "node": {
+                "key": "schema_name",
+                "value": "Accordion"
+              }
+            },
+            {
+              "node": {
+                "key": "type",
+                "value": "ASU-Effective Dates"
+              }
+            }
+          ]
+        }
+      },
+      "cursor": "NTU=",
+      "totalRecords": 86,
+      "pageNumber": 29
+    },
+    {
+      "node": {
+        "itemId": 401656,
+        "title": "Accounting Standards Update 2022-03—Fair Value Measurement (Topic 820)",
+        "lastPublishDate": "2024-01-20T10:06:34Z",
+        "itemType": 16,
+        "multiMedia": false,
+        "content": {
+          "data": {
+            "$type": "Fields",
+            "date": "2022-06-01T16:41:38",
+            "effective_dates": "For public business entities, the amendments in this Update are effective for fiscal years beginning after December 15, 2023, and interim periods within those fiscal years. For all other entities, the amendments are effective for fiscal years beginning after December 15, 2024, and interim periods within those fiscal years. Early adoption is permitted for both interim and annual financial statements that have not yet been issued or made available for issuance.",
+            "final_document": "Accounting Standards Update 2022-03—<em>Fair Value Measurement (Topic 820): Fair Value Measurement of Equity Securities Subject to Contractual Sale Restrictions</em>",
+            "downloadLink": "/page/Document?pdf=ASU%202022-03.pdf&title=Accounting%20Standards%20Update%202022-03%E2%80%94Fair%20Value%20Measurement%20(Topic%20820):%20Fair%20Value%20Measurement%20of%20Equity%20Securities%20Subject%20to%20Contractual%20Sale%20Restrictions"
+          }
+        },
+        "customMetas": {
+          "edges": [
+            {
+              "node": {
+                "key": "schema_name",
+                "value": "Accordian"
+              }
+            },
+            {
+              "node": {
+                "key": "type",
+                "value": "ASU-Effective Dates"
+              }
+            }
+          ]
+        }
+      },
+      "cursor": "MzM=",
+      "totalRecords": 86,
+      "pageNumber": 30
+    },
+    {
+      "node": {
+        "itemId": 400948,
+        "title": "Accounting Standards Update 2022-02—Financial Instruments—Credit Losses (Topic 326)",
+        "lastPublishDate": "2024-01-20T10:06:22Z",
+        "itemType": 16,
+        "multiMedia": false,
+        "content": {
+          "data": {
+            "$type": "Fields",
+            "date": "2022-03-16T19:06:18",
+            "effective_dates": "\n            <p>For entities that have adopted the amendments in Update 2016-13, the amendments in this Update are effective for fiscal years beginning after December 15, 2022, including interim periods within those fiscal years.</p>\n<p>For entities that have not yet adopted the amendments in Update 2016-13, the effective dates for the amendments in this Update are the same as the effective dates in Update 2016-13.</p>",
+            "final_document": "Accounting Standards Update 2022-02—<em>Financial Instruments—Credit Losses (Topic 326): Troubled Debt Restructurings and Vintage Disclosures</em>",
+            "downloadLink": "/page/Document?pdf=ASU%202022-02.pdf&title=Accounting%20Standards%20Update%202022-02%E2%80%94Financial%20Instruments%E2%80%94Credit%20Losses%20(Topic%20326):%20Troubled%20Debt%20Restructurings%20and%20Vintage%20Disclosures"
+          }
+        },
+        "customMetas": {
+          "edges": [
+            {
+              "node": {
+                "key": "schema_name",
+                "value": "Accordian"
+              }
+            },
+            {
+              "node": {
+                "key": "type",
+                "value": "ASU-Effective Dates"
+              }
+            }
+          ]
+        }
+      },
+      "cursor": "NDM=",
+      "totalRecords": 86,
+      "pageNumber": 31
+    },
+    {
+      "node": {
+        "itemId": 398938,
+        "title": "Accounting Standards Update 2022-01—Derivatives and Hedging (Topic 815)",
+        "lastPublishDate": "2025-11-13T07:32:21.593Z",
+        "itemType": 16,
+        "multiMedia": false,
+        "content": {
+          "data": {
+            "$type": "Fields",
+            "date": "2022-03-02T18:55:36",
+            "effective_dates": "For public business entities, the amendments in this Update are effective for fiscal years beginning after December 15, 2022, and interim periods within those fiscal years. For all other entities, the amendments are effective for fiscal years beginning after December 15, 2023, and interim periods within those fiscal years. Early adoption is permitted.",
+            "final_document": "Accounting Standards Update 2022-01—<em>Derivatives and Hedging (Topic 815): Fair Value Hedging—Portfolio Layer Method</em>",
+            "downloadLink": "/page/Document?pdf=ASU_2022-01.pdf&title=Accounting%20Standards%20Update%202022-01%E2%80%94Derivatives%20and%20Hedging%20(Topic%20815):%20Fair%20Value%20Hedging%E2%80%94Portfolio%20Layer%20Method"
+          }
+        },
+        "customMetas": {
+          "edges": [
+            {
+              "node": {
+                "key": "schema_name",
+                "value": "Accordion"
+              }
+            },
+            {
+              "node": {
+                "key": "type",
+                "value": "ASU-Effective Dates"
+              }
+            }
+          ]
+        }
+      },
+      "cursor": "NjU=",
+      "totalRecords": 86,
+      "pageNumber": 32
+    },
+    {
+      "node": {
+        "itemId": 401850,
+        "title": "Accounting Standards Update 2021-10—Government Assistance (Topic 832)",
+        "lastPublishDate": "2025-11-13T08:34:30.005Z",
+        "itemType": 16,
+        "multiMedia": false,
+        "content": {
+          "data": {
+            "$type": "Fields",
+            "date": "2021-11-16T19:08:46",
+            "effective_dates": "The amendments in this Update are effective for all entities within their scope for financial statements issued for annual periods beginning after December 15, 2021. Early application of the amendments is permitted.",
+            "final_document": "Accounting Standards Update 2021-10—<em>Government Assistance (Topic 832): Disclosures by Business Entities about Government Assistance</em>",
+            "downloadLink": "/Page/Document?pdf=ASU_2021-10.pdf&title=Accounting%20Standards%20Update%202021-10%E2%80%94Government%20Assistance%20(Topic%20832):%20Disclosures%20by%20Business%20Entities%20about%20Government%20Assistance"
+          }
+        },
+        "customMetas": {
+          "edges": [
+            {
+              "node": {
+                "key": "schema_name",
+                "value": "Accordion"
+              }
+            },
+            {
+              "node": {
+                "key": "type",
+                "value": "ASU-Effective Dates"
+              }
+            }
+          ]
+        }
+      },
+      "cursor": "Mjc=",
+      "totalRecords": 86,
+      "pageNumber": 33
+    },
+    {
+      "node": {
+        "itemId": 401115,
+        "title": "Accounting Standards Update 2021-09—Leases (Topic 842)",
+        "lastPublishDate": "2024-01-20T10:04:23Z",
+        "itemType": 16,
+        "multiMedia": false,
+        "content": {
+          "data": {
+            "$type": "Fields",
+            "date": "2021-11-01T16:49:53",
+            "effective_dates": "\n            <p>Entities that have not yet adopted Topic 842 as of November 11, 2021 are required to adopt the amendments in this Update at the same time that they adopt Topic 842 using the existing transition provisions.</p>\n<p>For entities that have adopted Topic 842 as of November 11, 2021, the amendments in this Update are effective for fiscal years beginning after December 15, 2021, and interim periods within fiscal years beginning after December 15, 2022. Earlier application is permitted. Entities are required to apply the amendments on a modified retrospective basis to leases that exist at the beginning of the fiscal year of adoption of a final Update. The adoption of the amendments should not be considered an event that would cause remeasurement and reallocation of the consideration in the contract (including lease payments) or reassessment of lease term or classification.</p>",
+            "final_document": "Accounting Standards Update 2021-09—<em>Leases (Topic 842): Discount Rate for Lessees That Are Not Public Business Entities</em>",
+            "document": {
+              "$type": "Link",
+              "id": "tcm:22-397494",
+              "title": "News",
+              "documentUrlS3": "https://storage.fasb.org/Sample%20News.pdf"
+            },
+            "downloadLink": "/Page/Document?pdf=ASU_2021-09.pdf&title=Accounting%20Standards%20Update%202021-09%E2%80%94Leases%20(Topic%20842):%20Discount%20Rate%20for%20Lessees%20That%20Are%20Not%20Public%20Business%20Entities"
+          }
+        },
+        "customMetas": {
+          "edges": [
+            {
+              "node": {
+                "key": "schema_name",
+                "value": "Accordian"
+              }
+            },
+            {
+              "node": {
+                "key": "type",
+                "value": "ASU-Effective Dates"
+              }
+            }
+          ]
+        }
+      },
+      "cursor": "NDI=",
+      "totalRecords": 86,
+      "pageNumber": 34
+    },
+    {
+      "node": {
+        "itemId": 399220,
+        "title": "Accounting Standards Update 2021-08—Business Combinations (Topic 805)",
+        "lastPublishDate": "2024-01-20T10:04:22Z",
+        "itemType": 16,
+        "multiMedia": false,
+        "content": {
+          "data": {
+            "$type": "Fields",
+            "date": "2021-10-16T19:09:41",
+            "effective_dates": "For public business entities, the amendments in this Update are effective for fiscal years beginning after December 15, 2022, including interim periods within those fiscal years. For all other entities, the amendments are effective for fiscal years beginning after December 15, 2023, including interim periods within those fiscal years. Early adoption of the amendments is permitted, including adoption in an interim period.",
+            "final_document": "Accounting Standards Update 2021-08—<em>Business Combinations (Topic 805): Accounting for Contract Assets and Contract Liabilities from Contracts with Customers</em>",
+            "downloadLink": "/Page/Document?pdf=ASU_2021-08.pdf&title=Accounting%20Standards%20Update%202021-08%E2%80%94Business%20Combinations%20(Topic%20805):%20Accounting%20for%20Contract%20Assets%20and%20Contract%20Liabilities%20from%20Contracts%20with%20Customers"
+          }
+        },
+        "customMetas": {
+          "edges": [
+            {
+              "node": {
+                "key": "schema_name",
+                "value": "Accordian"
+              }
+            },
+            {
+              "node": {
+                "key": "type",
+                "value": "ASU-Effective Dates"
+              }
+            }
+          ]
+        }
+      },
+      "cursor": "NjA=",
+      "totalRecords": 86,
+      "pageNumber": 35
+    },
+    {
+      "node": {
+        "itemId": 399522,
+        "title": "Accounting Standards Update 2021-07—Compensation—Stock Compensation (Topic 718)",
+        "lastPublishDate": "2024-01-20T10:03:47Z",
+        "itemType": 16,
+        "multiMedia": false,
+        "content": {
+          "data": {
+            "$type": "Fields",
+            "date": "2021-10-01T16:54:10",
+            "effective_dates": "The practical expedient is effective prospectively for all qualifying awards granted or modified during fiscal years beginning after December 15, 2021, and interim periods within fiscal years beginning after December 15, 2022. Early application, including application in an interim period, is permitted for financial statements that have not yet been issued or made available for issuance as of October 25, 2021.",
+            "final_document": "Accounting Standards Update 2021-07—<em>Compensation—Stock Compensation (Topic 718): Determining the Current Price of an Underlying Share for Equity-Classified Share-Based Awards (a consensus of the Private Company Council)</em>",
+            "downloadLink": "/page/Document?pdf=ASU_2021-08.pdf&title=Accounting%20Standards%20Update%202021-08%E2%80%94Business%20Combinations%20(Topic%20805):%20Accounting%20for%20Contract%20Assets%20and%20Contract%20Liabilities%20from%20Contracts%20with%20Customers"
+          }
+        },
+        "customMetas": {
+          "edges": [
+            {
+              "node": {
+                "key": "schema_name",
+                "value": "Accordian"
+              }
+            },
+            {
+              "node": {
+                "key": "type",
+                "value": "ASU-Effective Dates"
+              }
+            }
+          ]
+        }
+      },
+      "cursor": "NTY=",
+      "totalRecords": 86,
+      "pageNumber": 36
+    },
+    {
+      "node": {
+        "itemId": 397799,
+        "title": "Accounting Standards Update 2021-05—Leases",
+        "lastPublishDate": "2025-11-13T08:39:02.897Z",
+        "itemType": 16,
+        "multiMedia": false,
+        "content": {
+          "data": {
+            "$type": "Fields",
+            "date": "2021-07-01T18:20:45",
+            "effective_dates": "Effective for fiscal years beginning after December 15, 2021, for all entities, and interim periods within those fiscal years for public business entities and interim periods within fiscal years beginning after December 15, 2022, for all other entities.",
+            "final_document": "Accounting Standards Update 2021-05—<em>Leases (Topic 842): Lessors—Certain Leases with Variable Lease Payments.</em>",
+            "downloadLink": "/Page/Document?pdf=ASU+2021-05.pdf&title=Accounting%20Standards%20Update%202021-05%E2%80%94Leases%20(Topic%20842):%20Lessors%E2%80%94Certain%20Leases%20with%20Variable%20Lease%20Payments"
+          }
+        },
+        "customMetas": {
+          "edges": [
+            {
+              "node": {
+                "key": "schema_name",
+                "value": "Accordion"
+              }
+            },
+            {
+              "node": {
+                "key": "type",
+                "value": "ASU-Effective Dates"
+              }
+            }
+          ]
+        }
+      },
+      "cursor": "ODQ=",
+      "totalRecords": 86,
+      "pageNumber": 37
+    },
+    {
+      "node": {
+        "itemId": 398751,
+        "title": "Accounting Standards Update 2021-05—Leases (Topic 842):",
+        "lastPublishDate": "2025-11-13T07:39:30.607Z",
+        "itemType": 16,
+        "multiMedia": false,
+        "content": {
+          "data": {
+            "$type": "Fields",
+            "date": "2021-07-01T18:11:40",
+            "effective_dates": "Effective for fiscal years beginning after December 15, 2021, for all entities, and interim periods within those fiscal years for public business entities and interim periods within fiscal years beginning after December 15, 2022, for all other entities.",
+            "final_document": "Accounting Standards Update 2021-05—<em>Leases (Topic 842): Lessors—Certain Leases with Variable Lease Payments</em>",
+            "downloadLink": "/page/Document?pdf=ASU+2021-05.pdf&title=Accounting%20Standards%20Update%202021-05%E2%80%94Leases%20(Topic%20842):%20Lessors%E2%80%94Certain%20Leases%20with%20Variable%20Lease%20Payments"
+          }
+        },
+        "customMetas": {
+          "edges": [
+            {
+              "node": {
+                "key": "schema_name",
+                "value": "Accordion"
+              }
+            },
+            {
+              "node": {
+                "key": "type",
+                "value": "ASU-Effective Dates"
+              }
+            }
+          ]
+        }
+      },
+      "cursor": "Njg=",
+      "totalRecords": 86,
+      "pageNumber": 38
+    },
+    {
+      "node": {
+        "itemId": 399108,
+        "title": "Accounting Standards Update 2021-04—Earnings Per Share (Topic 260), Debt—Modifications and Extinguishments",
+        "lastPublishDate": "2024-01-20T10:02:54Z",
+        "itemType": 16,
+        "multiMedia": false,
+        "content": {
+          "data": {
+            "$type": "Fields",
+            "date": "2021-05-01T17:01:09",
+            "effective_dates": "The amendments in this Update are effective for all entities for fiscal years beginning after December 15, 2021, including interim periods within those fiscal years. Early adoption is permitted for all entities, including adoption in an interim period.",
+            "final_document": "Accounting Standards Update 2021-04—<em>Earnings Per Share (Topic 260), Debt—Modifications and Extinguishments (Subtopic 470-50), Compensation—Stock Compensation (Topic 718), and Derivatives and Hedging—Contracts in Entity’s Own Equity (Subtopic 815-40): Issuer’s Accounting for Certain Modifications or Exchanges of Freestanding Equity-Classified Written Call Options</em> (a consensus of the FASB Emerging Issues Task Force)",
+            "downloadLink": "/page/Document?pdf=ASU+2021-05.pdf&title=Accounting%20Standards%20Update%202021-05%E2%80%94Leases%20(Topic%20842):%20Lessors%E2%80%94Certain%20Leases%20with%20Variable%20Lease%20Payments"
+          }
+        },
+        "customMetas": {
+          "edges": [
+            {
+              "node": {
+                "key": "schema_name",
+                "value": "Accordian"
+              }
+            },
+            {
+              "node": {
+                "key": "type",
+                "value": "ASU-Effective Dates"
+              }
+            }
+          ]
+        }
+      },
+      "cursor": "NjM=",
+      "totalRecords": 86,
+      "pageNumber": 39
+    },
+    {
+      "node": {
+        "itemId": 399147,
+        "title": "Accounting Standards Update 2021-03—Intangibles—Goodwill and Other (Topic 350)",
+        "lastPublishDate": "2024-01-20T10:02:54Z",
+        "itemType": 16,
+        "multiMedia": false,
+        "content": {
+          "data": {
+            "$type": "Fields",
+            "date": "2021-03-01T13:51:44",
+            "effective_dates": "\n            <p>The amendments in this Update are effective on a prospective basis for fiscal years beginning after December 15, 2019. Early adoption is permitted for both interim and annual financial statements that have not yet been issued or made available for issuance as of March 30, 2021. An entity should not retroactively adopt the amendments in this Update for interim financial statements already issued in the year of adoption.</p>\n<p>The amendments in this Update also include an unconditional one-time option for entities to adopt the alternative prospectively after its effective date without assessing preferability Accounting Changes and Error Corrections.</p>",
+            "final_document": "Accounting Standards Update 2021-03—<em>Intangibles—Goodwill and Other (Topic 350): Accounting Alternative for Evaluating Triggering Events</em>",
+            "downloadLink": "/Page/Document?pdf=ASU+2021-03.pdf&title=Accounting%20Standards%20Update%202021-03%E2%80%94Intangibles%E2%80%94Goodwill%20and%20Other%20(Topic%20350):%20Accounting%20Alternative%20for%20Evaluating%20Triggering%20Events"
+          }
+        },
+        "customMetas": {
+          "edges": [
+            {
+              "node": {
+                "key": "schema_name",
+                "value": "Accordian"
+              }
+            },
+            {
+              "node": {
+                "key": "type",
+                "value": "ASU-Effective Dates"
+              }
+            }
+          ]
+        }
+      },
+      "cursor": "NjE=",
+      "totalRecords": 86,
+      "pageNumber": 40
+    }
+  ]
+}
