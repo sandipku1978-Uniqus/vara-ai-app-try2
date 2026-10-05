@@ -1,0 +1,184 @@
+{
+  "id": "segment-asu-2023-07-10k-fy2024",
+  "description": "Segment within ten words of ASU 2023-07 in FY2024 primary 10-Ks filed March 24–25, 2025.",
+  "query": "\"segment\" W/10 \"ASU 2023-07\"",
+  "mode": "boolean",
+  "filters": {
+    "formTypes": [
+      "10-K"
+    ],
+    "dateFrom": "2025-03-24",
+    "dateTo": "2025-03-25",
+    "fiscalYear": 2024
+  },
+  "expected": [
+    {
+      "accession": "0001641172-25-000565",
+      "cik": "0001828748",
+      "companyName": "ASIAFIN HOLDINGS CORP.  (ASFH)  (CIK 0001828748)",
+      "form": "10-K",
+      "fileDate": "2025-03-25",
+      "document": "form10-k.htm",
+      "evidence": "uncements\n\nIn\nNovember 2023, the FASB issued ASU 2023-07, “Segment Reporting (Topic 280): Improvements to Reportable Segment Disclosures”,\nwhich expands annual and interim disclosure requirements for",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1828748/000164117225000565/form10-k.htm"
+    },
+    {
+      "accession": "0001013762-25-001600",
+      "cik": "0001355839",
+      "companyName": "INTELLIGENT PROTECTION MANAGEMENT CORP.  (IPM)  (CIK 0001355839)",
+      "form": "10-K",
+      "fileDate": "2025-03-24",
+      "document": "ea0233784-10k_intelligent.htm",
+      "evidence": "ed financial\nstatements, the Company adopted ASU 2023-07, Segment Reporting (Topic 280) as of December 31, 2024 on a retrospective basis. We\nhave audited the Company’s implementation of ASU 2023-07 an",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1355839/000101376225001600/ea0233784-10k_intelligent.htm"
+    },
+    {
+      "accession": "0001013762-25-002287",
+      "cik": "0002023676",
+      "companyName": "Launch Two Acquisition Corp.  (LPBB, LPBBU, LPBBW)  (CIK 0002023676)",
+      "form": "10-K",
+      "fileDate": "2025-03-25",
+      "document": "ea0234914-10k_launch2.htm",
+      "evidence": "vements to Reportable Segment Disclosures” (“ASU 2023-07”). The amendments in\nASU 2023-07 require disclosures, on an annual and interim basis, of significant segment expenses that are regularly provid",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/2023676/000101376225002287/ea0234914-10k_launch2.htm"
+    },
+    {
+      "accession": "0001013762-25-002139",
+      "cik": "0001934945",
+      "companyName": "Trailblazer Merger Corp I  (TBMC, TBMCR)  (CIK 0001934945)",
+      "form": "10-K",
+      "fileDate": "2025-03-25",
+      "document": "ea0234234-10k_trail1.htm",
+      "evidence": "ear ended December 31,\n2024. The adoption of ASU 2023-09 did not have a material effect on the Company’s financial statements.\n\nIn November 2023, the FASB issued ASU 2023-07, Segment\nReporting (Topic",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1934945/000101376225002139/ea0234234-10k_trail1.htm"
+    },
+    {
+      "accession": "0001013762-25-001662",
+      "cik": "0001854795",
+      "companyName": "INTEGRATED RAIL & RESOURCES ACQUISITION CORP  (IRRX, IRRXU, IRRXW)  (CIK 0001854795)",
+      "form": "10-K",
+      "fileDate": "2025-03-24",
+      "document": "ea0233338-10k_integrated.htm",
+      "evidence": "The company is still reviewing the impact of ASU 2023-09.\n\nIn November 2023, the FASB\nissued ASU 2023-07, Segment Reporting (Topic 280): Improvements to Reportable Segment Disclosures. The amendments",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1854795/000101376225001662/ea0233338-10k_integrated.htm"
+    },
+    {
+      "accession": "0001641172-25-000208",
+      "cik": "0001335105",
+      "companyName": "LIXTE BIOTECHNOLOGY HOLDINGS, INC.  (LIXT, LIXTW)  (CIK 0001335105)",
+      "form": "10-K",
+      "fileDate": "2025-03-24",
+      "document": "form10-k.htm",
+      "evidence": "provements to Reportable Segment Disclosure. ASU 2023-07 amends the FASB Accounting Standards\nCodification to require additional reportable segment disclosures of a public entity by requiring disclosu",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1335105/000164117225000208/form10-k.htm"
+    },
+    {
+      "accession": "0001437749-25-008997",
+      "cik": "0000914139",
+      "companyName": "PARKERVISION INC  (PRKR)  (CIK 0000914139)",
+      "form": "10-K",
+      "fileDate": "2025-03-24",
+      "document": "prkr20241231_10k.htm",
+      "evidence": "Accounting Standards Update (\"ASU\") 2023-07, Segment Reporting (Topic 280) - Improvements to Reportable Segment Disclosures. This update modifies reportable segment disclosure requirements, primarily",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/914139/000143774925008997/prkr20241231_10k.htm"
+    },
+    {
+      "accession": "0001437749-25-009048",
+      "cik": "0000868082",
+      "companyName": "EVERFLOW EASTERN PARTNERS LP  (CIK 0000868082)",
+      "form": "10-K",
+      "fileDate": "2025-03-25",
+      "document": "eepl20241231_10k.htm",
+      "evidence": "ovement to Reportable Segment Disclosures” (“ASU 2023-07”). ASU 2023-07 expands annual and interim disclosure requirements for reportable segments, primarily through enhanced disclosures about signifi",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/868082/000143774925009048/eepl20241231_10k.htm"
+    },
+    {
+      "accession": "0001171843-25-001658",
+      "cik": "0000806517",
+      "companyName": "PSYCHEMEDICS CORP  (PMDI)  (CIK 0000806517)",
+      "form": "10-K",
+      "fileDate": "2025-03-24",
+      "document": "pmd20241231_10k.htm",
+      "evidence": "vements to Reportable Segment Disclosures” (“ASU 2023-07”), which expands a public entity’s annual and interim disclosure requirements about their reportable segments, primarily through more detailed",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/806517/000117184325001658/pmd20241231_10k.htm"
+    },
+    {
+      "accession": "0000950170-25-043370",
+      "cik": "0000013156",
+      "companyName": "Galaxy Gaming, Inc.  (GLXZ)  (CIK 0000013156)",
+      "form": "10-K",
+      "fileDate": "2025-03-24",
+      "document": "glxz-20241231.htm",
+      "evidence": "ements to Reportable Segment Disclosures,” (“ASU 2023-07”), which is effective for fiscal years beginning after December 15, 2023, and interim periods within fiscal years beginning after December 15,",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/13156/000095017025043370/glxz-20241231.htm"
+    },
+    {
+      "accession": "0001628280-25-014738",
+      "cik": "0001776909",
+      "companyName": "CuriosityStream Inc.  (CURI, CURIW)  (CIK 0001776909)",
+      "form": "10-K",
+      "fileDate": "2025-03-25",
+      "document": "curi-20241231.htm",
+      "evidence": "ired to apply the disclosure requirements in ASU 2023-07, as well as all existing segment disclosures and reconciliation requirements in ASC 280 on an interim and annual basis. The Company adopted ASU",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1776909/000162828025014738/curi-20241231.htm"
+    },
+    {
+      "accession": "0000892626-25-000011",
+      "cik": "0001230058",
+      "companyName": "KAANAPALI LAND LLC  (KANP)  (CIK 0001230058)",
+      "form": "10-K",
+      "fileDate": "2025-03-24",
+      "document": "kaa-k24.htm",
+      "evidence": "mber 2023, the FASB issued\nASU No. 2023-07 (“ASU 2023-07”), Segment Reporting (Topic 280): Improvements to Reportable Segment Disclosures to\nimprove reportable segment disclosure requirements, primari",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1230058/000089262625000011/kaa-k24.htm"
+    },
+    {
+      "accession": "0001641172-25-000608",
+      "cik": "0001392694",
+      "companyName": "SurgePays, Inc.  (SURG)  (CIK 0001392694)",
+      "form": "10-K",
+      "fileDate": "2025-03-25",
+      "document": "form10-k.htm",
+      "evidence": ".\n\nIn\nline with the amendments introduced by ASU 2023-07, Segment Reporting (Topic 280): Improvements to Reportable Segment Disclosures, (adopted\nJanuary 1, 2024), the Company has evaluated the impact",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1392694/000164117225000608/form10-k.htm"
+    },
+    {
+      "accession": "0001641172-25-000274",
+      "cik": "0001081745",
+      "companyName": "INTELLINETICS, INC.  (INLX)  (CIK 0001081745)",
+      "form": "10-K",
+      "fileDate": "2025-03-24",
+      "document": "form10-k.htm",
+      "evidence": "ovements to Reportable Segment Disclosures (“ASU\n2023-07”). ASU 2023-07 requires disclosure of significant segment expenses that are regularly provided to the chief operating decision\nmaker (“CODM”) a",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1081745/000164117225000274/form10-k.htm"
+    },
+    {
+      "accession": "0001437749-25-009075",
+      "cik": "0000352955",
+      "companyName": "CKX LANDS, INC.  (CKX)  (CIK 0000352955)",
+      "form": "10-K",
+      "fileDate": "2025-03-25",
+      "document": "ckx20241231_10k.htm",
+      "evidence": "l Accounting Standards Board (\"FASB\") issued ASU 2023-07, Segment Reporting (Topic 280): Improvements to Reportable Segment Disclosures, which requires public entities to disclose information about th",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/352955/000143774925009075/ckx20241231_10k.htm"
+    }
+  ],
+  "recallFloor": 0.5,
+  "floorRationale": "UNMEASURED: conservative placeholder floor 0.50; no immutable candidate product URL available on 2026-10-05. Set a measured floor only after an actual product sample-recall run; never lower a floor to make a run pass.",
+  "notes": "Verified SAMPLE, not the complete true-positive universe. Sample recall = found/sample expected; a lower-bound-type regression check, not a statistical bound or corpus recall estimate. Selected the first 15 distinct matching primary documents in official EFTS relevance order, dropping failures of local verification. Source query \"segment\" AND \"ASU 2023-07\" returned 109 document hits in this bounded window, of which 98 were calendar-year FY2024 primary candidates; the proximity true-positive universe can be smaller. FY2024 is independently confirmed by the primary document's dei:DocumentFiscalYearFocus=2024 and EFTS period_ending=2024-12-31. Product applies form/date filters, with no fiscal-year filter; only the expected sample is constrained to FY2024. The full extracted primary text satisfies the complete product Boolean expression. Evidence is a verbatim <=200-character local window; when AND terms are distant it shows a focal query phrase, not every operand. These are textual co-occurrences, not assertions that a company has a material weakness, substantial doubt, a goodwill CAM, or any particular accounting outcome. Non-GAAP coverage uses 10-K primary text only, not earnings-release exhibits. Raw official responses are cached with URL and SHA-256 under os.tmpdir()/urc-recall-sec-documents-v1; --refresh downloads anew."
+}

@@ -1,0 +1,184 @@
+{
+  "id": "critical-audit-matter-goodwill-impairment-10k-fy2024",
+  "description": "Critical audit matter, goodwill and impairment in FY2024 primary 10-Ks filed March 24–25, 2025.",
+  "query": "\"critical audit matter\" AND \"goodwill\" AND \"impairment\"",
+  "mode": "boolean",
+  "filters": {
+    "formTypes": [
+      "10-K"
+    ],
+    "dateFrom": "2025-03-24",
+    "dateTo": "2025-03-25",
+    "fiscalYear": 2024
+  },
+  "expected": [
+    {
+      "accession": "0001137091-25-000005",
+      "cik": "0001137091",
+      "companyName": "POWER SOLUTIONS INTERNATIONAL, INC.  (PSIX)  (CIK 0001137091)",
+      "form": "10-K",
+      "fileDate": "2025-03-24",
+      "document": "psix-20241231.htm",
+      "evidence": "provide a reasonable basis for our opinion.\n\nCritical Audit Matter\n\nThe critical audit matter communicated below is a matter arising from the current period audit of the consolidated financial stateme",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1137091/000113709125000005/psix-20241231.htm"
+    },
+    {
+      "accession": "0001641172-25-000608",
+      "cik": "0001392694",
+      "companyName": "SurgePays, Inc.  (SURG)  (CIK 0001392694)",
+      "form": "10-K",
+      "fileDate": "2025-03-25",
+      "document": "form10-k.htm",
+      "evidence": "form the more detailed quantitative goodwill impairment test. Management\nassessment included significant judgment and is subject to various risks and uncertainties.\n\nHow\nthe Critical Audit Matters Wer",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1392694/000164117225000608/form10-k.htm"
+    },
+    {
+      "accession": "0001410578-25-000439",
+      "cik": "0001417892",
+      "companyName": "Emeren Group Ltd  (SOL)  (CIK 0001417892)",
+      "form": "10-K",
+      "fileDate": "2025-03-25",
+      "document": "tmb-20241231x10k.htm",
+      "evidence": "provide a reasonable basis for our opinion.\n\nCritical Audit Matter\n\nThe critical audit matter communicated below is a matter arising from the current period audit of the consolidated financial stateme",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1417892/000141057825000439/tmb-20241231x10k.htm"
+    },
+    {
+      "accession": "0001751783-25-000012",
+      "cik": "0001751783",
+      "companyName": "Rhinebeck Bancorp, Inc.  (RBKB)  (CIK 0001751783)",
+      "form": "10-K",
+      "fileDate": "2025-03-25",
+      "document": "rbkb-20241231x10k.htm",
+      "evidence": "provide a reasonable basis for our opinion.\n\nCritical Audit Matter\n\nThe critical audit matter communicated below is a matter arising from the current period audit of the financial statements that were",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1751783/000175178325000012/rbkb-20241231x10k.htm"
+    },
+    {
+      "accession": "0001641172-25-000643",
+      "cik": "0001141688",
+      "companyName": "LANDMARK BANCORP INC  (LARK)  (CIK 0001141688)",
+      "form": "10-K",
+      "fileDate": "2025-03-25",
+      "document": "form10-k.htm",
+      "evidence": "provide a\nreasonable basis for our opinion.\n\nCritical\nAudit Matter\n\nThe\ncritical audit matter communicated below is a matter arising from the current period audit of the financial statements that was",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1141688/000164117225000643/form10-k.htm"
+    },
+    {
+      "accession": "0001641172-25-000612",
+      "cik": "0002030763",
+      "companyName": "Wellgistics Health, Inc.  (WGRX)  (CIK 0002030763)",
+      "form": "10-K",
+      "fileDate": "2025-03-25",
+      "document": "form10-k.htm",
+      "evidence": "es a reasonable basis for our opinion.\n\nF-2\n\nCritical\nAudit Matter\n\nThe\ncritical audit matter communicated below is the matter arising from the current period audit of the consolidated financial state",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/2030763/000164117225000612/form10-k.htm"
+    },
+    {
+      "accession": "0001641172-25-000596",
+      "cik": "0001295514",
+      "companyName": "MDWerks, Inc.  (MDWK)  (CIK 0001295514)",
+      "form": "10-K",
+      "fileDate": "2025-03-25",
+      "document": "form10-k.htm",
+      "evidence": "rovides a reasonable basis for our opinion.\n\nCritical\nAudit Matter\n\nThe critical audit matter communicated below is a\nmatter arising from the current period audits of the financial statements that wer",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1295514/000164117225000596/form10-k.htm"
+    },
+    {
+      "accession": "0001641172-25-000632",
+      "cik": "0000714256",
+      "companyName": "Sanara MedTech Inc.  (SMTI)  (CIK 0000714256)",
+      "form": "10-K",
+      "fileDate": "2025-03-25",
+      "document": "form10-k.htm",
+      "evidence": "provide a reasonable basis for our opinion.\n\nCritical Audit Matters\n\nThe critical audit matter communicated below\nis a matter arising from the current period audit of the financial statements that wer",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/714256/000164117225000632/form10-k.htm"
+    },
+    {
+      "accession": "0001662774-25-000012",
+      "cik": "0001662774",
+      "companyName": "Quince Therapeutics, Inc.  (QNCX)  (CIK 0001662774)",
+      "form": "10-K",
+      "fileDate": "2025-03-24",
+      "document": "qncx-20241231.htm",
+      "evidence": "provide a reasonable basis for our opinion.\n\nCritical Audit Matter\n\nThe critical audit matter communicated below is a matter arising from the current period audit of the consolidated financial stateme",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1662774/000166277425000012/qncx-20241231.htm"
+    },
+    {
+      "accession": "0000950170-25-044487",
+      "cik": "0001469443",
+      "companyName": "Arcadia Biosciences, Inc.  (RKDA)  (CIK 0001469443)",
+      "form": "10-K",
+      "fileDate": "2025-03-25",
+      "document": "rkda-20241231.htm",
+      "evidence": "provide a reasonable basis for our opinion.\n\nCritical Audit Matter\n\nThe critical audit matter communicated below is a matter arising from the current-period audit of the financial statements that was",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1469443/000095017025044487/rkda-20241231.htm"
+    },
+    {
+      "accession": "0001477932-25-001897",
+      "cik": "0001437925",
+      "companyName": "Golden Matrix Group, Inc.  (GMGI)  (CIK 0001437925)",
+      "form": "10-K",
+      "fileDate": "2025-03-24",
+      "document": "gmgi_10k.htm",
+      "evidence": "Refer to Note 8 to the financial statements\n\nCritical Audit Matter Description\n\nThe Company’s evaluation of goodwill for impairment involves the comparison of the fair value of each reporting unit to",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1437925/000147793225001897/gmgi_10k.htm"
+    },
+    {
+      "accession": "0001140361-25-010065",
+      "cik": "0001017303",
+      "companyName": "TRANSACT TECHNOLOGIES INC  (TACT)  (CIK 0001017303)",
+      "form": "10-K",
+      "fileDate": "2025-03-24",
+      "document": "ef20039038_10k.htm",
+      "evidence": "provide a reasonable basis for our opinion.\n\nCritical Audit Matters\n\nThe critical audit matters communicated below are matters arising from the current period audit of the financial statements that we",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1017303/000114036125010065/ef20039038_10k.htm"
+    },
+    {
+      "accession": "0000706863-25-000044",
+      "cik": "0000706863",
+      "companyName": "UNION BANKSHARES INC  (UNB)  (CIK 0000706863)",
+      "form": "10-K",
+      "fileDate": "2025-03-25",
+      "document": "unb-20241231.htm",
+      "evidence": "provide a reasonable basis for our opinion.\n\nCritical Audit Matter\n\nThe critical audit matter communicated below is a matter arising from the current period audit of the consolidated financial stateme",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/706863/000070686325000044/unb-20241231.htm"
+    },
+    {
+      "accession": "0001372514-25-000012",
+      "cik": "0001372514",
+      "companyName": "KIORA PHARMACEUTICALS INC  (KPRX, KPHMW)  (CIK 0001372514)",
+      "form": "10-K",
+      "fileDate": "2025-03-25",
+      "document": "kprx-20241231.htm",
+      "evidence": "provide a reasonable basis for our opinion.\n\nCritical Audit Matter\n\nThe critical audit matters communicated below is a matter arising from the current period audit of the consolidated financial statem",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1372514/000137251425000012/kprx-20241231.htm"
+    },
+    {
+      "accession": "0001437749-25-008787",
+      "cik": "0001058307",
+      "companyName": "NextPlat Corp  (NXPL, NXPLW)  (CIK 0001058307)",
+      "form": "10-K",
+      "fileDate": "2025-03-24",
+      "document": "nxpl20241231_10k.htm",
+      "evidence": "is for our opinion.\n\nF-2\n\nTable of Contents\n\nCritical Audit Matters\n\nThe critical audit matters communicated below are matters arising from the current period audit of the consolidated financial state",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1058307/000143774925008787/nxpl20241231_10k.htm"
+    }
+  ],
+  "recallFloor": 0.5,
+  "floorRationale": "UNMEASURED: conservative placeholder floor 0.50; no immutable candidate product URL available on 2026-10-05. Set a measured floor only after an actual product sample-recall run; never lower a floor to make a run pass.",
+  "notes": "Verified SAMPLE, not the complete true-positive universe. Sample recall = found/sample expected; a lower-bound-type regression check, not a statistical bound or corpus recall estimate. Selected the first 15 distinct matching primary documents in official EFTS relevance order, dropping failures of local verification. Source query \"critical audit matter\" AND \"goodwill\" AND \"impairment\" returned 37 document hits in this bounded window, of which 25 were calendar-year FY2024 primary candidates; the proximity true-positive universe can be smaller. FY2024 is independently confirmed by the primary document's dei:DocumentFiscalYearFocus=2024 and EFTS period_ending=2024-12-31. Product applies form/date filters, with no fiscal-year filter; only the expected sample is constrained to FY2024. The full extracted primary text satisfies the complete product Boolean expression. Evidence is a verbatim <=200-character local window; when AND terms are distant it shows a focal query phrase, not every operand. These are textual co-occurrences, not assertions that a company has a material weakness, substantial doubt, a goodwill CAM, or any particular accounting outcome. Non-GAAP coverage uses 10-K primary text only, not earnings-release exhibits. Raw official responses are cached with URL and SHA-256 under os.tmpdir()/urc-recall-sec-documents-v1; --refresh downloads anew."
+}

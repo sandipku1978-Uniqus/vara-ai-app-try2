@@ -1,0 +1,184 @@
+{
+  "id": "non-gaap-adjusted-ebitda-reconciliation-10k-fy2024",
+  "description": "Non-GAAP, adjusted EBITDA and reconciliation in FY2024 primary 10-Ks filed March 24–28, 2025 (no exhibits).",
+  "query": "\"non-GAAP\" AND \"adjusted EBITDA\" AND \"reconciliation\"",
+  "mode": "boolean",
+  "filters": {
+    "formTypes": [
+      "10-K"
+    ],
+    "dateFrom": "2025-03-24",
+    "dateTo": "2025-03-28",
+    "fiscalYear": 2024
+  },
+  "expected": [
+    {
+      "accession": "0001683168-25-001932",
+      "cik": "0001013706",
+      "companyName": "Wilhelmina International, Inc.  (WHLM)  (CIK 0001013706)",
+      "form": "10-K",
+      "fileDate": "2025-03-27",
+      "document": "wilhelmina_i10k-123124.htm",
+      "evidence": "ross billings\n67,222\n65,936\n\nEBITDA\n870\n830\n\nAdjusted EBITDA\n888\n1,020\n\nPre-Corporate EBITDA\n1,767\n1,985\n\n(See page 13) for a reconciliation\nof these non-GAAP financial measures to the most comparable",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1013706/000168316825001932/wilhelmina_i10k-123124.htm"
+    },
+    {
+      "accession": "0001628280-25-015336",
+      "cik": "0001753162",
+      "companyName": "Fathom Holdings Inc.  (FTHM)  (CIK 0001753162)",
+      "form": "10-K",
+      "fileDate": "2025-03-28",
+      "document": "fthm-20241231.htm",
+      "evidence": "AAP operating performance, as reported using Adjusted EBITDA, which is not equivalent to net income (loss) as determined under GAAP;\n\n•our ability to protect the privacy of employees, independent cont",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1753162/000162828025015336/fthm-20241231.htm"
+    },
+    {
+      "accession": "0001814287-25-000006",
+      "cik": "0001814287",
+      "companyName": "Abacus Global Management, Inc.  (ABL, ABLLL, ABLLW)  (CIK 0001814287)",
+      "form": "10-K",
+      "fileDate": "2025-03-28",
+      "document": "abl-20241231.htm",
+      "evidence": "e attributable to Common Stockholders,\n\nEPS\n\nAdjusted EBITDA\nNet (Loss) Income\n\nAdjusted Net Income, Adjusted EPS, Adjusted EBITDA, and Adjusted EBITDA Margin, are not measures of financial performanc",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1814287/000181428725000006/abl-20241231.htm"
+    },
+    {
+      "accession": "0001437749-25-009646",
+      "cik": "0001140102",
+      "companyName": "HireQuest, Inc.  (HQI)  (CIK 0001140102)",
+      "form": "10-K",
+      "fileDate": "2025-03-27",
+      "document": "hqi20241231_10k.htm",
+      "evidence": "672\n\n10.6\n%\n\n$\n6,135\n\n16.2\n%\n\nNon-GAAP data\n\nAdjusted EBITDA\n\n$\n16,129\n\n46.6\n%\n\n$\n16,487\n\n43.5\n%\n\n1.\n\nSee the definition and reconciliation of Adjusted EBITDA within the immediately following section",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1140102/000143774925009646/hqi20241231_10k.htm"
+    },
+    {
+      "accession": "0001628280-25-015331",
+      "cik": "0001785424",
+      "companyName": "Katapult Holdings, Inc.  (KPLT, KPLTW)  (CIK 0001785424)",
+      "form": "10-K",
+      "fileDate": "2025-03-28",
+      "document": "kplt-20241231.htm",
+      "evidence": "igation settlement expenses. We believe that adjusted EBITDA provides a meaningful understanding of our operating performance. See “—Non-GAAP Financial Measures” section below for a reconciliation of",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1785424/000162828025015331/kplt-20241231.htm"
+    },
+    {
+      "accession": "0001641172-25-000737",
+      "cik": "0001615063",
+      "companyName": "Inspired Entertainment, Inc.  (INSE)  (CIK 0001615063)",
+      "form": "10-K",
+      "fileDate": "2025-03-26",
+      "document": "form10-k.htm",
+      "evidence": "rest, taxes, depreciation and amortization (“Adjusted EBITDA”) of $100.1 million for the\nyear ended December 31, 2024.\n\nThe\nCompany’s common stock is listed on the NASDAQ Capital Market under the symb",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1615063/000164117225000737/form10-k.htm"
+    },
+    {
+      "accession": "0001641172-25-001000",
+      "cik": "0001948864",
+      "companyName": "HEALTHY CHOICE WELLNESS CORP.  (HCWC)  (CIK 0001948864)",
+      "form": "10-K",
+      "fileDate": "2025-03-28",
+      "document": "form10-k.htm",
+      "evidence": "erest income. Our management recognizes that Adjusted EBITDA has inherent limitations\nbecause of the excluded items.\n\nWe\nhave included a reconciliation of our non-GAAP financial measure to net loss as",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1948864/000164117225001000/form10-k.htm"
+    },
+    {
+      "accession": "0000843006-25-000012",
+      "cik": "0000843006",
+      "companyName": "ACCESS Newswire Inc.  (ACCS)  (CIK 0000843006)",
+      "form": "10-K",
+      "fileDate": "2025-03-25",
+      "document": "accs_10k.htm",
+      "evidence": ", non-GAAP adjusted free cash flow, non-GAAP adjusted EBITDA (“adjusted EBITDA”), and non-GAAP adjusted net income (“adjusted net income”) provide useful information about our operating results and en",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/843006/000084300625000012/accs_10k.htm"
+    },
+    {
+      "accession": "0001437749-25-009368",
+      "cik": "0001088034",
+      "companyName": "Usio, Inc.  (USIO)  (CIK 0001088034)",
+      "form": "10-K",
+      "fileDate": "2025-03-26",
+      "document": "usio20241231_10k.htm",
+      "evidence": "ulation G adopted by the Commission: EBITDA, adjusted EBITDA, and adjusted EBITDA margins. The Company reports its financial results in compliance with GAAP, but believes that also discussing non-GAAP",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1088034/000143774925009368/usio20241231_10k.htm"
+    },
+    {
+      "accession": "0001437749-25-009139",
+      "cik": "0001757715",
+      "companyName": "Aterian, Inc.  (ATER)  (CIK 0001757715)",
+      "form": "10-K",
+      "fileDate": "2025-03-25",
+      "document": "ater20241231_10k.htm",
+      "evidence": "percentage of net revenue; (iii) EBITDA (iv) Adjusted EBITDA; and (v) Adjusted EBITDA as a percentage of net revenue. These non-GAAP financial measures may also assist investors in making comparisons",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1757715/000143774925009139/ater20241231_10k.htm"
+    },
+    {
+      "accession": "0001842356-25-000029",
+      "cik": "0001842356",
+      "companyName": "Wag! Group Co.  (PET, PETWW)  (CIK 0001842356)",
+      "form": "10-K",
+      "fileDate": "2025-03-24",
+      "document": "pet-20241231.htm",
+      "evidence": "(loss) and Adjusted EBITDA (loss) margin are non-GAAP measures which may not be comparable to similarly-titled measures used by other companies. See below for a reconciliation of Adjusted EBITDA (loss",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1842356/000184235625000029/pet-20241231.htm"
+    },
+    {
+      "accession": "0001820566-25-000031",
+      "cik": "0001820566",
+      "companyName": "Inspirato Inc  (ISPO, ISPOW)  (CIK 0001820566)",
+      "form": "10-K",
+      "fileDate": "2025-03-26",
+      "document": "ispo-20241231.htm",
+      "evidence": "l revenues, net loss and comprehensive loss, Adjusted EBITDA and Free Cash Flow are also impacted by the timing of holidays and other events. Holidays and other events generally increase the rates we",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1820566/000182056625000031/ispo-20241231.htm"
+    },
+    {
+      "accession": "0001137091-25-000005",
+      "cik": "0001137091",
+      "companyName": "POWER SOLUTIONS INTERNATIONAL, INC.  (PSIX)  (CIK 0001137091)",
+      "form": "10-K",
+      "fileDate": "2025-03-24",
+      "document": "psix-20241231.htm",
+      "evidence": "%\n\nEBITDA * $ 86,843 $ 49,875 $ 36,968 74 %\n\nAdjusted EBITDA * $ 82,239 $ 50,121 $ 32,118 64 %\n\nNM Not meaningful\n\n* See reconciliation of non-GAAP financial measures to GAAP results below\n\nNet Sales",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1137091/000113709125000005/psix-20241231.htm"
+    },
+    {
+      "accession": "0001437749-25-009645",
+      "cik": "0001902314",
+      "companyName": "M-tron Industries, Inc.  (MPTI)  (CIK 0001902314)",
+      "form": "10-K",
+      "fileDate": "2025-03-27",
+      "document": "mpti20241231_10k.htm",
+      "evidence": "e Before Income Taxes to EBITDA and Non-GAAP Adjusted EBITDA\n\nThe following table presents a reconciliation of income before income taxes to Adjusted EBITDA, a non-GAAP measure:\n\nThree Months Ended De",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1902314/000143774925009645/mpti20241231_10k.htm"
+    },
+    {
+      "accession": "0001013762-25-002871",
+      "cik": "0001844392",
+      "companyName": "Marpai, Inc.  (MRAI)  (CIK 0001844392)",
+      "form": "10-K",
+      "fileDate": "2025-03-27",
+      "document": "ea0235056-10k_marpai.htm",
+      "evidence": "y diluted\n$ (1.92 )\n$ (4.14 )\n$ 2.22\n(54 )%\n\nAdjusted EBITDA\n$ (9,057 )\n$ (20,181 )\n$ 11,124\n(55 )%\n\nComparison\nof the Years December 31, 2024 and 2023\n\nRevenue\nand Cost of Revenue\n\nDuring\nthe years e",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1844392/000101376225002871/ea0235056-10k_marpai.htm"
+    }
+  ],
+  "recallFloor": 0.5,
+  "floorRationale": "UNMEASURED: conservative placeholder floor 0.50; no immutable candidate product URL available on 2026-10-05. Set a measured floor only after an actual product sample-recall run; never lower a floor to make a run pass.",
+  "notes": "Verified SAMPLE, not the complete true-positive universe. Sample recall = found/sample expected; a lower-bound-type regression check, not a statistical bound or corpus recall estimate. Selected the first 15 distinct matching primary documents in official EFTS relevance order, dropping failures of local verification. Source query \"non-GAAP\" AND \"adjusted EBITDA\" AND \"reconciliation\" returned 67 document hits in this bounded window, of which 52 were calendar-year FY2024 primary candidates; the proximity true-positive universe can be smaller. FY2024 is independently confirmed by the primary document's dei:DocumentFiscalYearFocus=2024 and EFTS period_ending=2024-12-31. Product applies form/date filters, with no fiscal-year filter; only the expected sample is constrained to FY2024. The full extracted primary text satisfies the complete product Boolean expression. Evidence is a verbatim <=200-character local window; when AND terms are distant it shows a focal query phrase, not every operand. These are textual co-occurrences, not assertions that a company has a material weakness, substantial doubt, a goodwill CAM, or any particular accounting outcome. Non-GAAP coverage uses 10-K primary text only, not earnings-release exhibits. Raw official responses are cached with URL and SHA-256 under os.tmpdir()/urc-recall-sec-documents-v1; --refresh downloads anew."
+}
