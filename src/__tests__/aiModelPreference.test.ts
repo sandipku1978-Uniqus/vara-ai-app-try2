@@ -46,7 +46,8 @@ describe('aiModelPreference', () => {
     // GPT-6.1 Sol offers low..max, not none.
     expect(validateAiModelPreference({ modelId: 'openai/gpt-6.1-sol', effort: 'none', webSearch: false }).effort).toBe('medium');
     expect(validateAiModelPreference({ modelId: 'openai/gpt-6.1-sol', effort: 'extreme', webSearch: false }).effort).toBe('medium');
-    expect(validateAiModelPreference({ modelId: 'anthropic/claude-opus-5.5', effort: 'none', webSearch: false }).effort).toBe('none');
+    // Sonnet 5.5 is the registry model that offers "none" (Opus 5.5 still thinks with thinking off, so it does not).
+    expect(validateAiModelPreference({ modelId: 'anthropic/claude-sonnet-5.5', effort: 'none', webSearch: false }).effort).toBe('none');
   });
 
   it('only a literal true turns web search on', () => {

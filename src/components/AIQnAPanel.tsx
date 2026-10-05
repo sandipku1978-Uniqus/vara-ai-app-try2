@@ -70,7 +70,6 @@ export function AIQnAPanel() {
   const [streamingText, setStreamingText] = useState('');
   const [loadingStage, setLoadingStage] = useState('');
   // What the server reported answering each run (model, effort, web sources).
-  const [answerMetaByRun, setAnswerMetaByRun] = useState<Record<string, AiAnswerMeta>>({});
   const availableModelIds = useAiModelAvailability(isChatOpen);
   const { panelWidth, handleResizeStart, handleResizeKeyDown } = useResizablePanel();
   const processingRequestIdRef = useRef<string | null>(null);
@@ -589,16 +588,16 @@ export function AIQnAPanel() {
         );
       }
 
+      // The run keeps what the route reported, so the answer's model line
+      // and its evidence-package export both name the model that answered.
       const reportedMeta = answerMeta.current;
-      if (reportedMeta) {
-        setAnswerMetaByRun(current => ({ ...current, [runId]: reportedMeta }));
-      }
 
       updateAgentRun(runId, {
         status: 'completed',
         completedAt: new Date().toISOString(),
         answer: finalAnswer,
         evidence: evidencePacket,
+        ...(reportedMeta ? { aiMetadata: reportedMeta } : {}),
       });
       setStreamingText('');
       setTab('answer');
@@ -691,7 +690,7 @@ export function AIQnAPanel() {
       inputValue={inputValue}
       pendingAlertDraft={pendingAlertDraft}
       suggestions={suggestions}
-      answerMeta={activeRun ? answerMetaByRun[activeRun.id] ?? null : null}
+      answerMeta={activeRun?.aiMetadata ?? null}
       availableModelIds={availableModelIds}
       onResizeStart={handleResizeStart}
       onResizeKeyDown={handleResizeKeyDown}

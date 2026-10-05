@@ -14,6 +14,7 @@ import {
   draftToItem,
 } from './userDataCodecs';
 import { onUserDataHydrated, syncUserCollection } from './userData';
+import type { AiAnswerMeta } from './aiApi';
 
 /** The prior filing a year-over-year redline passage was compared against. */
 export interface MemoComparedFiling {
@@ -23,9 +24,17 @@ export interface MemoComparedFiling {
   sourceUrl: string;        // canonical SEC.gov URL of the prior document
 }
 
+/**
+ * filing: an EDGAR filing. letter: an SEC comment letter. release: an SEC
+ * enforcement release (an AAER), which is not an EDGAR filing — `cik` is
+ * 'SEC', `accessionNumber` the release number (AAER-4604), `form` 'AAER',
+ * `fileDate` the release date and `company` its title.
+ */
+export type MemoCitationKind = 'filing' | 'letter' | 'release';
+
 export interface MemoCitation {
   id: string;               // `${cik}:${accession}` plus optional `#section` and `~passage` scopes
-  kind: 'filing' | 'letter';
+  kind: MemoCitationKind;
   cik: string;
   accessionNumber: string;
   company: string;
@@ -60,6 +69,28 @@ function storageKey(): string | null {
   return scopedStorageKey(STORAGE_KEY);
 }
 
+/**
+ * Before the release kind existed, an AAER was cited as a "letter" with cik
+ * 'SEC' and its release number as the accession. Read those as releases; the
+ * id (`SEC:AAER-…`) is unchanged, so they stay cited and deduplicated.
+ */
+export function upgradeLegacyCitation(item: MemoCitation): MemoCitation {
+  return item.kind === 'letter' && item.cik === 'SEC' && /^AAER-/i.test(item.accessionNumber || '')
+    ? { ...item, kind: 'release' }
+    : item;
+}
+
+/** "AAER-4604, SEC, 2026-09-30" — how a release is cited. */
+export function releaseReference(citation: Pick<MemoCitation, 'accessionNumber' | 'fileDate'>): string {
+  return [citation.accessionNumber, 'SEC', citation.fileDate].map(part => (part || '').trim()).filter(Boolean).join(', ');
+}
+
+/** Text ending in exactly one full stop (a title may already end in one). */
+export function sentence(text: string): string {
+  const trimmed = text.trim();
+  return trimmed ? `${trimmed.replace(/\.+$/, '')}.` : '';
+}
+
 function read(): MemoCitation[] {
   if (typeof window === 'undefined') return cache || [];
   const key = storageKey();
@@ -77,7 +108,7 @@ function read(): MemoCitation[] {
   const carried = cacheKey === null ? (cache || []) : [];
   try {
     const raw = window.localStorage.getItem(key);
-    const stored = raw ? (JSON.parse(raw) as MemoCitation[]) : [];
+    const stored = raw ? (JSON.parse(raw) as MemoCitation[]).map(upgradeLegacyCitation) : [];
     const pending = carried.filter(item => !stored.some(existing => existing.id === item.id));
     cache = [...stored, ...pending];
     cacheKey = key;
@@ -153,7 +184,14 @@ export function isCited(cik: string, accessionNumber: string, section?: string, 
  * Human-readable identity for a citation, used for accessible control names
  * so a page of cite controls never announces as an undifferentiated "Cite".
  */
-export function describeCitation(citation: Pick<MemoCitation, 'company' | 'form' | 'fileDate' | 'section'>): string {
+export function describeCitation(
+  citation: Pick<MemoCitation, 'company' | 'form' | 'fileDate' | 'section'> & Partial<Pick<MemoCitation, 'kind' | 'accessionNumber'>>
+): string {
+  if (citation.kind === 'release') {
+    const reference = releaseReference({ accessionNumber: citation.accessionNumber || '', fileDate: citation.fileDate });
+    const title = citation.company.trim();
+    return [reference, title].filter(Boolean).join(' — ') || 'this release';
+  }
   const identity = [citation.company, citation.form, citation.fileDate ? `filed ${citation.fileDate}` : '']
     .map(part => part.trim())
     .filter(Boolean)
@@ -231,6 +269,12 @@ export interface MemoDraftRecord {
   text: string;
   generatedAt: string;
   citationIds: string[];
+  /**
+   * What the AI route reported about the draft call (model, provider,
+   * effort, usage, web sources), for the evidence package. Absent on drafts
+   * saved before it was recorded, or when the route reported none.
+   */
+  aiMetadata?: AiAnswerMeta;
 }
 
 const DRAFT_STORAGE_KEY = MEMO_DRAFT_STORAGE_KEY;
@@ -301,9 +345,9 @@ export function getMemoDraft(): MemoDraftRecord | null {
   return readDraft();
 }
 
-export function setMemoDraft(text: string, citationIds: string[]): void {
+export function setMemoDraft(text: string, citationIds: string[], aiMetadata?: AiAnswerMeta | null): void {
   readDraft();
-  draftCache = { text, generatedAt: new Date().toISOString(), citationIds };
+  draftCache = { text, generatedAt: new Date().toISOString(), citationIds, ...(aiMetadata ? { aiMetadata } : {}) };
   const key = draftStorageKey();
   draftCacheKey = key;
   if (key && typeof window !== 'undefined') persistDraft(draftCache, key);
@@ -326,8 +370,9 @@ function describeComparedFiling(compared: MemoComparedFiling): string {
 /** Numbered plain-text citations, ready to paste into a memo or email. */
 export function formatCitationsText(items: MemoCitation[]): string {
   return items
-    .map((item, index) =>
-      `[${index + 1}] ${item.company} — Form ${item.form}, filed ${item.fileDate}` +
+    .map((item, index) => item.kind === 'release'
+      ? `[${index + 1}] ${releaseReference(item)} — ${sentence(item.company)} ${item.sourceUrl}`
+      : `[${index + 1}] ${item.company} — Form ${item.form}, filed ${item.fileDate}` +
       `${item.section ? `, ${item.section}` : ''} ` +
       `(accession ${item.accessionNumber})` +
       `${item.comparedTo ? `, compared with ${describeComparedFiling(item.comparedTo)}` : ''}. ` +
@@ -339,7 +384,9 @@ export function formatCitationsText(items: MemoCitation[]): string {
 export function formatMemoMarkdown(items: MemoCitation[]): string {
   const lines: string[] = ['# Research memo — cited evidence', ''];
   items.forEach((item, index) => {
-    lines.push(`## [${index + 1}] ${item.company} — Form ${item.form} (${item.fileDate})${item.section ? ` — ${item.section}` : ''}`);
+    lines.push(item.kind === 'release'
+      ? `## [${index + 1}] ${releaseReference(item)} — ${item.company}`
+      : `## [${index + 1}] ${item.company} — Form ${item.form} (${item.fileDate})${item.section ? ` — ${item.section}` : ''}`);
     lines.push(`Source: ${item.sourceUrl}`);
     if (item.comparedTo) lines.push(`Compared with: ${describeComparedFiling(item.comparedTo)} — ${item.comparedTo.sourceUrl}`);
     // Redline excerpts span several lines; every line needs the quote marker

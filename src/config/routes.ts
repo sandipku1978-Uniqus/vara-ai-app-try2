@@ -1,5 +1,5 @@
 import { EARNINGS_SCOPE_LABEL } from './earnings';
-import { ENFORCEMENT_SCOPE_LABEL } from './enforcement';
+import { ENFORCEMENT_ROUTE_KEYWORDS, ENFORCEMENT_ROUTE_LABEL } from './enforcement';
 
 export interface ProductRoute {
   path: string;
@@ -33,7 +33,7 @@ export const PRODUCT_ROUTES: ProductRoute[] = [
   { path: '/insiders', label: 'Insider Trading', group: 'Benchmark', keywords: 'form 3 form 4 form 5', palette: true },
   { path: '/accounting', label: 'Accounting Standards', group: 'Reference', keywords: 'asc asu ifrs ind as', palette: true },
   { path: '/regulation', label: 'Securities Regulation', group: 'Reference', keywords: 'rules releases', palette: true },
-  { path: '/enforcement', label: ENFORCEMENT_SCOPE_LABEL, group: 'Reference', keywords: 'litigation releases civil actions', palette: true },
+  { path: '/enforcement', label: ENFORCEMENT_ROUTE_LABEL, group: 'Reference', keywords: ENFORCEMENT_ROUTE_KEYWORDS, palette: true },
   { path: '/ipo', label: 'IPO Center', group: 'Transactions', keywords: 's-1 f-1 offering', palette: true },
   { path: '/mna', label: 'M&A Research', group: 'Transactions', keywords: 'merger deals tender', palette: true },
   { path: '/exempt-offerings', label: 'Exempt Offerings', group: 'Transactions', keywords: 'form d regulation d', palette: true },

@@ -9,6 +9,7 @@ import DataTable, { type ColumnDef } from '../components/tables/DataTable';
 import SearchFilterBar, { defaultSearchFilters, type SearchFilters } from '../components/filters/SearchFilterBar';
 import { aiAscLookup, aiSummarize, type AscGuidanceExcerpt, type AscGuidanceResult } from '../services/aiApi';
 import { buildSearchTrendSummary, executeFilingResearchSearch, type FilingResearchResult, type ResearchSearchMode } from '../services/filingResearch';
+import { SEARCH_MODE_LABEL } from '../services/filingResearchPlan';
 import { buildAccountingResearchMemoPrompt } from '../lib/systemPrompts';
 import { linkifyCitationMarkers, parseCitationMarkers } from '../lib/citation-markers';
 import SearchIntegrityNotice, { useSearchIntegrity } from '../components/research/SearchIntegrityNotice';
@@ -524,7 +525,7 @@ export default function AccountingHub() {
                     onClick={() => setResearchMode('semantic')}
                     style={{ borderColor: researchMode === 'semantic' ? 'var(--accent-primary)' : undefined }}
                   >
-                    Filing Research
+                    {SEARCH_MODE_LABEL.semantic}
                   </button>
                   <button
                     type="button"

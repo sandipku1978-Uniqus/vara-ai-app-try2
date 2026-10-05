@@ -10,7 +10,7 @@
  * read document.xml; exportMemoDocx is the client-only download wrapper.
  */
 import { HeadingLevel, Paragraph, TextRun, type Document } from 'docx';
-import type { MemoCitation, MemoDraftRecord } from './memoTray';
+import { releaseReference, sentence, type MemoCitation, type MemoDraftRecord } from './memoTray';
 import type { EvidencePackage } from './evidencePackage';
 import { evidencePackageBlob } from './evidencePackage';
 import {
@@ -83,9 +83,9 @@ function evidenceTable(citations: MemoCitation[]): DocxBlock {
     citations.map((citation, index) => [
       { text: `[${index + 1}]`, bookmark: evidenceAnchor(index + 1) },
       citation.company,
-      citation.form,
+      citation.kind === 'release' ? 'AAER (SEC release)' : citation.form,
       citation.fileDate,
-      citation.accessionNumber,
+      citation.kind === 'release' ? `${citation.accessionNumber} (release no.)` : citation.accessionNumber,
       citation.section || '—',
       // Plain text, never re-parsed as Markdown: an excerpt is a quotation.
       { text: citation.excerpt.trim() || '— (metadata-only citation)' },
@@ -98,7 +98,12 @@ function evidenceTable(citations: MemoCitation[]): DocxBlock {
 function sourcesBlocks(citations: MemoCitation[]): DocxBlock[] {
   return citations.map((citation, index) => new Paragraph({
     children: [
-      new TextRun({ text: `[${index + 1}] ${citation.company} — Form ${citation.form}, filed ${citation.fileDate}${citation.section ? `, ${citation.section}` : ''} (accession ${citation.accessionNumber}). ` }),
+      new TextRun({
+        text: citation.kind === 'release'
+          // An enforcement release is cited by its own number, not as a filing.
+          ? `[${index + 1}] ${releaseReference(citation)} — ${sentence(citation.company)} `
+          : `[${index + 1}] ${citation.company} — Form ${citation.form}, filed ${citation.fileDate}${citation.section ? `, ${citation.section}` : ''} (accession ${citation.accessionNumber}). `,
+      }),
       externalLink(citation.sourceUrl, citation.sourceUrl),
       ...(citation.comparedTo
         ? [

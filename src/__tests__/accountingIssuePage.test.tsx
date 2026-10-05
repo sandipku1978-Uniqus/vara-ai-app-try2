@@ -78,7 +78,7 @@ async function renderIssue(topic: string) {
 describe('/accounting/[topic] issue pages', () => {
   it('prerenders exactly one page per disclosure topic', () => {
     expect(generateStaticParams().map(params => params.topic)).toEqual(DISCLOSURE_TOPICS.map(topic => topic.id));
-    expect(ACCOUNTING_ISSUES).toHaveLength(13);
+    expect(ACCOUNTING_ISSUES).toHaveLength(DISCLOSURE_TOPICS.length);
   });
 
   it('rejects an unknown issue as not found', async () => {

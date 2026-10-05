@@ -32,6 +32,20 @@ afterEach(() => {
   setActiveBrowserStorageScope(null);
 });
 
+describe('legacy AAER citations', () => {
+  it('reads an AAER stored as a "letter" as a release, still cited under the same id', () => {
+    const CAROL = buildStorageScope('user_carol', null);
+    const legacy = {
+      id: 'SEC:AAER-4604', kind: 'letter', cik: 'SEC', accessionNumber: 'AAER-4604', company: 'In the Matter of Example Corp.',
+      form: 'AAER', fileDate: '2026-09-30', excerpt: 'AAER-4604 (2026-09-30): In the Matter of Example Corp.',
+      sourceUrl: 'https://www.sec.gov/enforcement-litigation/administrative-proceedings/34-100000', note: 'kept', addedAt: '2026-10-01T00:00:00.000Z',
+    };
+    window.localStorage.setItem(scopedStorageKey(MEMO_TRAY_STORAGE_KEY, CAROL)!, JSON.stringify([legacy]));
+    setActiveBrowserStorageScope(CAROL);
+    expect(getMemoCitations()).toEqual([{ ...legacy, kind: 'release' }]);
+  });
+});
+
 describe('memo tray identity switch', () => {
   it("never carries user A's citations or draft into user B's tray", () => {
     setActiveBrowserStorageScope(ALICE);

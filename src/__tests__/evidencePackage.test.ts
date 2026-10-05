@@ -46,11 +46,23 @@ describe('evidence package readers', () => {
 
   it('prefers model metadata from the response, then the request, else says not reported', () => {
     expect(readAiStepMetadata({ model: 'claude-x', reasoningEffort: 'high' }, { model: 'claude-y' }))
-      .toEqual({ model: 'claude-x', reasoningEffort: 'high', metadataSource: 'response' });
-    expect(readAiStepMetadata({ text: 'hi' }, { model: 'claude-y', effort: 'medium' }))
-      .toEqual({ model: 'claude-y', reasoningEffort: 'medium', metadataSource: 'request' });
+      .toEqual({ model: 'claude-x', provider: null, reasoningEffort: 'high', metadataSource: 'response', webSources: [] });
+    expect(readAiStepMetadata({ text: 'hi' }, { model: 'claude-y', effort: 'medium', provider: 'anthropic' }))
+      .toEqual({ model: 'claude-y', provider: null, reasoningEffort: 'medium', metadataSource: 'request', webSources: [] });
     expect(readAiStepMetadata(undefined, undefined))
-      .toEqual({ model: null, reasoningEffort: null, metadataSource: 'not-reported' });
+      .toEqual({ model: null, provider: null, reasoningEffort: null, metadataSource: 'not-reported', webSources: [] });
+  });
+
+  it('reads the provider and web sources from the AI route\'s answer metadata', () => {
+    const meta = {
+      requestedModel: 'google/gemini-3.5-pro', requestedEffort: 'high', model: 'google/gemini-3.5-pro', provider: 'google',
+      reasoningEffort: 'high', usage: { input: 10, output: 5 },
+      webSources: [{ url: 'https://www.fasb.org/page', title: 'FASB' }, { url: 'javascript:alert(1)', title: 'x' }, 'not-an-object'],
+    };
+    expect(readAiStepMetadata(meta)).toEqual({
+      model: 'google/gemini-3.5-pro', provider: 'google', reasoningEffort: 'high', metadataSource: 'response',
+      webSources: [{ url: 'https://www.fasb.org/page', title: 'FASB' }],
+    });
   });
 
   it('reads the app version from /api/version and records a failure instead of throwing', async () => {
@@ -113,6 +125,29 @@ describe('memo evidence package', () => {
     expect(pkg.aiStep).toMatchObject({ model: 'claude-x', reasoningEffort: 'low', metadataSource: 'response', generatedAt: '2026-10-03T00:00:00.000Z' });
     expect(JSON.parse(evidencePackageJson(pkg))).toEqual(pkg);
   });
+
+  it('records the model and effort the draft was saved with, instead of "not reported"', () => {
+    const pkg = buildMemoEvidencePackage({
+      title: 'Memo',
+      citations: CITATIONS,
+      draft: {
+        text: '# Memo', generatedAt: '2026-10-03T00:00:00.000Z', citationIds: ['a'],
+        aiMetadata: {
+          requestedModel: 'openai/gpt-5.6', requestedEffort: 'high', model: 'openai/gpt-5.6', provider: 'openai',
+          reasoningEffort: 'high', webSources: [], usage: { input: 1200, output: 300 },
+        },
+      },
+      generatedAt: NOW,
+      appVersion: VERSION,
+    });
+    expect(pkg.aiStep).toMatchObject({ model: 'openai/gpt-5.6', provider: 'openai', reasoningEffort: 'high', metadataSource: 'response' });
+
+    const older = buildMemoEvidencePackage({
+      title: 'Memo', citations: CITATIONS, generatedAt: NOW, appVersion: VERSION,
+      draft: { text: '# Memo', generatedAt: '2026-10-03T00:00:00.000Z', citationIds: ['a'] },
+    });
+    expect(older.aiStep).toMatchObject({ model: null, provider: null, reasoningEffort: null, metadataSource: 'not-reported' });
+  });
 });
 
 describe('copilot answer evidence package', () => {
@@ -156,6 +191,26 @@ describe('copilot answer evidence package', () => {
     expect(pkg.aiStep).toMatchObject({ metadataSource: 'not-reported', model: null, generatedAt: '2026-10-04T11:01:00.000Z' });
     expect(pkg.coverage).toMatchObject({ status: 'not-recorded' });
     expect(pkg.coverage.note).toMatch(/returned 2 filings/);
+  });
+
+  it('records the model, effort and web sources the run kept, apart from filing sources', () => {
+    const pkg = buildAnswerEvidencePackage({
+      run: {
+        ...run,
+        aiMetadata: {
+          requestedModel: 'anthropic/claude-sonnet-5.5', requestedEffort: 'medium', model: 'anthropic/claude-sonnet-5.5',
+          provider: 'anthropic', reasoningEffort: 'medium', webSources: [{ url: 'https://www.sec.gov/news/press-release/2026-1', title: 'SEC press release' }],
+        },
+      },
+      evidence,
+      generatedAt: NOW,
+      appVersion: VERSION,
+    });
+    expect(pkg.aiStep).toMatchObject({
+      model: 'anthropic/claude-sonnet-5.5', provider: 'anthropic', reasoningEffort: 'medium', metadataSource: 'response',
+      webSources: [{ url: 'https://www.sec.gov/news/press-release/2026-1', title: 'SEC press release' }],
+    });
+    expect(pkg.sources.some(source => source.secUrl.includes('press-release'))).toBe(false);
   });
 
   it('uses captured coverage when the caller has it, and says when no search ran', () => {

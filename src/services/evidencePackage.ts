@@ -51,8 +51,16 @@ export interface EvidenceCoverage {
 export interface EvidenceAiStep {
   purpose: string;
   model: string | null;
+  /** Provider that served the model (anthropic, openai, …), when reported. */
+  provider: string | null;
   reasoningEffort: string | null;
   metadataSource: 'response' | 'request' | 'not-reported';
+  /**
+   * Web pages the model drew on (web search on), as the route reported them.
+   * Kept apart from `sources`, which are SEC filings only. Empty when web
+   * search was off or returned nothing.
+   */
+  webSources: Array<{ url: string; title: string | null }>;
   generatedAt: string | null;
 }
 
@@ -178,20 +186,38 @@ export function describeFilters(filters: Record<string, unknown> | null | undefi
 export function readAiStepMetadata(
   response: unknown,
   request?: unknown,
-): Pick<EvidenceAiStep, 'model' | 'reasoningEffort' | 'metadataSource'> {
+): Pick<EvidenceAiStep, 'model' | 'provider' | 'reasoningEffort' | 'metadataSource' | 'webSources'> {
+  const text = (raw: unknown) => (typeof raw === 'string' && raw.trim() ? raw.trim() : null);
   const pick = (value: unknown) => {
-    if (!value || typeof value !== 'object') return { model: null, reasoningEffort: null };
+    if (!value || typeof value !== 'object') return { model: null, provider: null, reasoningEffort: null };
     const record = value as Record<string, unknown>;
-    const model = typeof record.model === 'string' && record.model.trim() ? record.model.trim() : null;
-    const effortRaw = record.reasoningEffort ?? record.effort;
-    const reasoningEffort = typeof effortRaw === 'string' && effortRaw.trim() ? effortRaw.trim() : null;
-    return { model, reasoningEffort };
+    return {
+      model: text(record.model),
+      provider: text(record.provider),
+      reasoningEffort: text(record.reasoningEffort ?? record.effort),
+    };
   };
   const fromResponse = pick(response);
-  if (fromResponse.model || fromResponse.reasoningEffort) return { ...fromResponse, metadataSource: 'response' };
+  if (fromResponse.model || fromResponse.reasoningEffort) {
+    return { ...fromResponse, metadataSource: 'response', webSources: readWebSources(response) };
+  }
   const fromRequest = pick(request);
-  if (fromRequest.model || fromRequest.reasoningEffort) return { ...fromRequest, metadataSource: 'request' };
-  return { model: null, reasoningEffort: null, metadataSource: 'not-reported' };
+  // A request names what was asked for, never who answered or what it read.
+  if (fromRequest.model || fromRequest.reasoningEffort) {
+    return { ...fromRequest, provider: null, metadataSource: 'request', webSources: [] };
+  }
+  return { model: null, provider: null, reasoningEffort: null, metadataSource: 'not-reported', webSources: [] };
+}
+
+function readWebSources(value: unknown): EvidenceAiStep['webSources'] {
+  const list = value && typeof value === 'object' ? (value as Record<string, unknown>).webSources : null;
+  if (!Array.isArray(list)) return [];
+  return list.flatMap(item => {
+    if (!item || typeof item !== 'object') return [];
+    const record = item as Record<string, unknown>;
+    if (typeof record.url !== 'string' || !/^https?:\/\//i.test(record.url)) return [];
+    return [{ url: record.url, title: typeof record.title === 'string' && record.title.trim() ? record.title.trim() : null }];
+  });
 }
 
 /** GET /api/version, reduced to the provenance fields. A failure is recorded, not thrown. */
@@ -236,7 +262,10 @@ export interface MemoEvidenceInput {
   draft: MemoDraftRecord | null;
   generatedAt: Date;
   appVersion: EvidenceAppVersion;
-  /** Response/request metadata of the draft call, when the caller has it. */
+  /**
+   * Response/request metadata of the draft call. Defaults to the metadata
+   * the draft was saved with (`draft.aiMetadata`).
+   */
   aiMetadata?: { response?: unknown; request?: unknown };
 }
 
@@ -276,7 +305,7 @@ export function buildMemoEvidencePackage(input: MemoEvidenceInput): EvidencePack
   const aiStep: EvidenceAiStep | null = input.draft
     ? {
         purpose: `AI memo draft grounded in ${citedIds.size || input.citations.length} cited excerpt${(citedIds.size || input.citations.length) === 1 ? '' : 's'}`,
-        ...readAiStepMetadata(input.aiMetadata?.response, input.aiMetadata?.request),
+        ...readAiStepMetadata(input.aiMetadata?.response ?? input.draft.aiMetadata, input.aiMetadata?.request),
         generatedAt: input.draft.generatedAt,
       }
     : null;
@@ -313,6 +342,7 @@ export interface AnswerEvidenceInput {
   evidence: AgentEvidencePacket | null;
   generatedAt: Date;
   appVersion: EvidenceAppVersion;
+  /** Response/request metadata of the answer call. Defaults to `run.aiMetadata`. */
   aiMetadata?: { response?: unknown; request?: unknown };
   /** Coverage of the search the run executed, when the caller captured it. */
   coverage?: SearchCandidateCoverage | null;
@@ -379,7 +409,7 @@ export function buildAnswerEvidencePackage(input: AnswerEvidenceInput): Evidence
   const aiStep: EvidenceAiStep | null = run.answer
     ? {
         purpose: `Copilot answer generated from the run's evidence packet (${evidence?.citations.length || 0} citation${(evidence?.citations.length || 0) === 1 ? '' : 's'})`,
-        ...readAiStepMetadata(input.aiMetadata?.response, input.aiMetadata?.request),
+        ...readAiStepMetadata(input.aiMetadata?.response ?? run.aiMetadata, input.aiMetadata?.request),
         generatedAt: run.completedAt || null,
       }
     : null;

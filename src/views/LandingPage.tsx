@@ -1,6 +1,6 @@
 'use client';
 
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import {
@@ -19,7 +19,13 @@ import {
 } from 'lucide-react';
 import { URCBrandLockup } from '../components/brand/URCBrand';
 import { BRAND } from '../config/brand';
-import { ENFORCEMENT_LANDING_CAPABILITY } from '../config/enforcement';
+import { ENFORCEMENT_LANDING_CAPABILITY, ENFORCEMENT_ROUTE_LABEL } from '../config/enforcement';
+import { useUserDataStatus } from '../hooks/useUserDataStatus';
+import {
+  isResearchAccountSynced,
+  researchStorageCopy,
+  type ResearchStorageCopy,
+} from '../components/projects/researchStorageCopy';
 import './LandingPage.css';
 
 const audienceLabels = [
@@ -49,7 +55,8 @@ const proofPoints = [
   },
 ] as const;
 
-const capabilityGroups = [
+// Storage claims follow getUserDataStatus(): see researchStorageCopy.
+const capabilityGroupsFor = (copy: ResearchStorageCopy) => [
   {
     icon: Search,
     tone: 'cobalt',
@@ -71,8 +78,7 @@ const capabilityGroups = [
     tone: 'amber',
     eyebrow: 'Benchmarking & Monitoring',
     title: 'Compare peers and keep themes on watch',
-    description:
-      'Use dedicated workspaces for peer benchmarking, watchlist filing-volume charts, and browser-local saved searches.',
+    description: copy.landingBenchmarkingDescription,
     modules: [
       'Disclosure Benchmarking Matrix',
       'Overview dashboard',
@@ -104,7 +110,7 @@ const capabilityGroups = [
     eyebrow: 'Regulation & Transactions',
     title: 'Handle letters, rules, deals, and IPO work',
     description:
-      'Specialized workspaces cover SEC correspondence, litigation releases and civil actions, S-1 analysis, M&A research, exhibits, exempt offerings, and ADV registrations.',
+      'Specialized workspaces cover SEC correspondence, litigation releases, civil actions and AAERs, S-1 analysis, M&A research, exhibits, exempt offerings, and ADV registrations.',
     modules: [
       'Regulation, comment letters, and no-action letters',
       ENFORCEMENT_LANDING_CAPABILITY,
@@ -119,8 +125,7 @@ const capabilityGroups = [
     tone: 'slate',
     eyebrow: 'Platform & Enablement',
     title: 'Make individual research easier to repeat',
-    description:
-      'Use the integrated copilot and support center within an individual, browser-local research workflow.',
+    description: copy.landingPlatformDescription,
     modules: [
       'URC Copilot',
       'Source-grounded Copilot prompts',
@@ -176,7 +181,7 @@ const marqueeModules = [
   'Insider Trading',
   'Securities Regulation',
   'Comment Letters',
-  'SEC Litigation Releases',
+  ENFORCEMENT_ROUTE_LABEL,
   'IPO Center',
   'M&A Research',
   'Exhibits & Agreements',
@@ -279,7 +284,7 @@ function LandingSignalCanvas() {
         <ul className="landing-brief-list">
           <li>Peer language is converging around AI governance and vendor concentration.</li>
           <li>Redline mode exposes new cyber and model-risk disclosure blocks immediately.</li>
-          <li>Best next stops: Benchmarking, IPO Center, and SEC Litigation Releases.</li>
+          <li>Best next stops: Benchmarking, IPO Center, and {ENFORCEMENT_ROUTE_LABEL}.</li>
         </ul>
       </div>
 
@@ -362,6 +367,9 @@ function LandingSignalCanvas() {
 export default function LandingPage() {
   const navigate = useRouter();
   const [query, setQuery] = useState('');
+  const accountSynced = isResearchAccountSynced(useUserDataStatus());
+  const storageCopy = researchStorageCopy(accountSynced);
+  const capabilityGroups = useMemo(() => capabilityGroupsFor(researchStorageCopy(accountSynced)), [accountSynced]);
 
   const handleSearch = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -507,7 +515,7 @@ export default function LandingPage() {
           <h2>A repeatable path through individual research.</h2>
           <p>
             Start with search, move to benchmarking, use AI against selected evidence, and
-            continue in a specialist workspace. Saved research state remains browser-local.
+            continue in a specialist workspace. {storageCopy.landingWorkflowStorage}
           </p>
         </div>
 

@@ -22,7 +22,7 @@ import {
 } from '../lib/systemPrompts';
 import { selectFilingText } from '../utils/filingTextSelection';
 import type { ChatGroundingInput } from '../lib/ai-input';
-import { isReasoningEffort, type AiModelSelection, type ReasoningEffort } from '../lib/ai-models';
+import { isReasoningEffort, type AiModelSelection } from '../lib/ai-models';
 import { currentAiModelSelection, groundedAiModelSelection } from './aiModelPreference';
 
 const CLAUDE_API_ENDPOINT = '/api/claude';
@@ -54,24 +54,22 @@ interface ClaudeResponsePayload {
   webSources?: unknown;
 }
 
-/** A web page the model read when web search was on — never an SEC filing citation. */
-export interface AiWebSource {
-  url: string;
-  title: string | null;
-}
+export type { AiWebSource, AiAnswerMeta, AiReportedUsage } from '../types/aiMeta';
+import type { AiWebSource, AiAnswerMeta, AiReportedUsage } from '../types/aiMeta';
 
-/**
- * What the server says actually answered. Every field is as reported; a field
- * the server did not report stays null rather than being filled from the
- * request, so the UI never claims a model it was not told about.
- */
-export interface AiAnswerMeta {
-  requestedModel: string | null;
-  requestedEffort: ReasoningEffort | null;
-  model: string | null;
-  provider: string | null;
-  reasoningEffort: ReasoningEffort | null;
-  webSources: AiWebSource[];
+function normalizeUsage(value: unknown): AiReportedUsage | null {
+  if (!value || typeof value !== 'object') return null;
+  const record = value as Record<string, unknown>;
+  const count = (raw: unknown) => (typeof raw === 'number' && Number.isFinite(raw) && raw >= 0 ? Math.floor(raw) : null);
+  const input = count(record.input);
+  const output = count(record.output);
+  if (input === null || output === null) return null;
+  const usage: AiReportedUsage = { input, output };
+  const reasoning = count(record.reasoning);
+  const webSearchCalls = count(record.webSearchCalls);
+  if (reasoning !== null) usage.reasoning = reasoning;
+  if (webSearchCalls !== null) usage.webSearchCalls = webSearchCalls;
+  return usage;
 }
 
 function normalizeWebSources(value: unknown): AiWebSource[] {
@@ -117,7 +115,7 @@ export function readAiAnswerMeta(
   const record = outer.meta && typeof outer.meta === 'object' ? outer.meta as Record<string, unknown> : outer;
   if (!hasMetaFields(record)) return previous;
   const webSources = normalizeWebSources(record.webSources);
-  return {
+  const meta: AiAnswerMeta = {
     requestedModel: requested.model ?? null,
     requestedEffort: requested.reasoningEffort ?? null,
     model: typeof record.model === 'string' && record.model.trim() ? record.model.trim() : previous?.model ?? null,
@@ -125,6 +123,9 @@ export function readAiAnswerMeta(
     reasoningEffort: isReasoningEffort(record.reasoningEffort) ? record.reasoningEffort : previous?.reasoningEffort ?? null,
     webSources: webSources.length > 0 ? webSources : previous?.webSources ?? [],
   };
+  const usage = normalizeUsage(record.usage) ?? previous?.usage ?? null;
+  if (usage) meta.usage = usage;
+  return meta;
 }
 
 /** True when the server answered with a different model from the one requested. */
@@ -287,6 +288,8 @@ function getUserFacingError(error: unknown, fallback: string): string {
 }
 
 export interface MemoCitationInput {
+  /** 'release' (an AAER) is cited by release number, never as a filing. */
+  kind?: 'filing' | 'letter' | 'release';
   company: string;
   form: string;
   fileDate: string;
@@ -299,10 +302,15 @@ export interface MemoCitationInput {
  * Draft a research memo grounded strictly in the tray's cited evidence.
  * The model is told to cite by [n] and to flag gaps rather than fill them.
  */
-export async function aiDraftMemoFromCitations(citations: MemoCitationInput[]): Promise<string> {
+export async function aiDraftMemoFromCitations(
+  citations: MemoCitationInput[],
+  options: { onMeta?: (meta: AiAnswerMeta) => void } = {}
+): Promise<string> {
   const evidence = citations
     .map((citation, index) =>
-      `[${index + 1}] ${citation.company} — Form ${citation.form}, filed ${citation.fileDate} (accession ${citation.accessionNumber})` +
+      (citation.kind === 'release'
+        ? `[${index + 1}] SEC enforcement release ${citation.accessionNumber}, SEC, ${citation.fileDate} — ${citation.company}`
+        : `[${index + 1}] ${citation.company} — Form ${citation.form}, filed ${citation.fileDate} (accession ${citation.accessionNumber})`) +
       (citation.excerpt.trim() ? `\nCited excerpt: ${citation.excerpt.trim()}` : '') +
       (citation.note.trim() ? `\nResearcher note: ${citation.note.trim()}` : ''))
     .join('\n\n');
@@ -326,7 +334,7 @@ export async function aiDraftMemoFromCitations(citations: MemoCitationInput[]): 
     evidence,
   ].join('\n');
 
-  return callClaude(prompt, { maxTokens: 2048 });
+  return callClaude(prompt, { maxTokens: 2048, onMeta: options.onMeta });
 }
 
 export async function askAi(

@@ -17,7 +17,7 @@ names, user identities, headers, or credentials.
 | `unhandled-request-error` | `src/instrumentation.ts` (`onRequestError`) | error | Next caught an error outside a wrapped handler: rendering, server actions, the proxy. `path` (no query), `routePath`, `routeType`, `digest` |
 | `db-failure` | `dbErrorResponse` in `lib/db-observability` | error | A Supabase RPC failed. `errorClass` is the operational verdict: `permission` and `missing-rpc` are **deployment defects** (code and schema drifted); `statement-timeout` and `rate-limited` heal by themselves |
 | `sec-upstream-failure` | `lib/sec-upstream` and the SEC routes | error | SEC answered with a throttle/block/outage status, an error page, a bad redirect, or timed out. `upstream`, `host`, `path`, `status`, `reason` |
-| `ai-usage` | `recordAiUsage` in `lib/ai-usage` (claude, compare, stream, letters/summary) | info | One line per model request: `model`, `outcome` (`completed` / `not-billed` / `unknown`), `calls`, `reservedTokens`, measured `inputTokens` / `outputTokens` / cache counts, `billableTokens` (input-rate weighted), `adjustmentTokens` (the refund or overage applied to the daily budget), `userKey` (a hash, not the user ID) |
+| `ai-usage` | `recordAiUsage` in `lib/ai-usage` (claude, compare, stream, letters/summary) | info | One line per model request: `model` (registry id, e.g. `anthropic/claude-sonnet-5.5`), `provider` (the registry provider that answered: `anthropic`, `openai`, `google`, …; `null` when the route did not report one), `reasoningEffort` (the effort the call ran at, `null` when none was chosen), `outcome` (`completed` / `not-billed` / `unknown`), `calls`, `reservedTokens`, measured `inputTokens` / `outputTokens` / cache counts, `reasoningTokens` (the part of `outputTokens` spent reasoning, `null` when the provider does not report it), `webSearchCalls` (billable provider web-search tool uses, `null` when none were reported), `billableTokens` (input-rate weighted, plus 1,000 default-model tokens per web search and any web-retrieval call made on another model for this request), `adjustmentTokens` (the refund or overage applied to the daily budget), `userKey` (a hash, not the user ID) |
 | `client-error` | `POST /api/client-error` | error | An unhandled browser error, with Next's `digest` when the cause was server-side |
 | `route-completion` | `stats`, `letters`, `es-search` | info | Older per-route completion line with row counts; superseded by `route`, kept for its counts |
 
@@ -40,6 +40,31 @@ what the daily budget actually charged. Lines with `outcome: "unknown"`
 reservation — a rising share of them is itself a signal that calls are
 outrunning their 165 s timeout.
 
+Group by `model` and `provider` to see which models users actually pick,
+and by `reasoningEffort` to see what effort costs: `reasoningTokens` is
+already inside `outputTokens`, so do not add it twice. `webSearchCalls`
+counts searches the answering model ran itself (native search); a request
+whose model cannot search natively pays for a separate retrieval call
+(Perplexity Sonar, or GPT-5.6 Luna when the gateway refuses Sonar under zero
+data retention), and that charge is folded into the same line's
+`billableTokens` rather than written as a second line.
+
+### Which models the deployment can run
+
+`GET /api/ai/models` (authenticated, 60 requests a minute per user) returns
+the registry (`src/lib/ai-models.ts`) filtered to the models this deployment
+can call right now, the `defaultModelId` (`ANTHROPIC_MODEL` when it is a
+registry id and is listed, otherwise the first available model), and
+`gateway: { configured, listing, checkedAt }`. `listing` is `live` (the
+gateway's public `/v1/models` was just read), `cached` (KV copy, one hour),
+`unavailable` (the listing could not be read, so only the default model is
+offered rather than guessing), or `not-configured` (no gateway key: only the
+default model runs, directly on Anthropic, and with no key at all the list
+is empty). A selector that shows only the default model on a gateway
+deployment is the signal to check `listing`. The route is
+`route: "ai/models"` on `route` lines; a listing failure also writes
+`[ai/models] gateway listing unavailable` to stderr.
+
 ## The health endpoint
 
 `GET /api/health` is public and needs no session. It answers **200** when the
@@ -54,7 +79,7 @@ platform can serve product requests and **503** when it cannot:
   "checks": {
     "database": { "ok": true, "latencyMs": 84, "schemaVersion": "025" },
     "kv":       { "configured": true, "ok": true, "latencyMs": 21 },
-    "ai":       { "configured": true }
+    "ai":       { "configured": true, "path": "gateway", "keys": ["VERCEL_AI_GATEWAY_KEY", "ANTHROPIC_API_KEY"] }
   }
 }
 ```
@@ -66,8 +91,12 @@ platform can serve product requests and **503** when it cannot:
   means every authenticated route is answering 503 (the limiters fail closed
   by design), and a missing store means SEC fetches are refused, so both are
   reported as `ok: false`.
-- `ai.configured` only says whether a model key is present. It never calls
-  the model.
+- `ai.configured` only says whether a model key is present: a gateway key
+  (`VERCEL_AI_GATEWAY_KEY` or `AI_GATEWAY_API_KEY`) or `ANTHROPIC_API_KEY`.
+  `ai.path` is `gateway` (every registry model can run), `anthropic-direct`
+  (only the default model, directly on Anthropic) or `none`, and `ai.keys`
+  names the key variables that are set — names only, never values. It never
+  calls the model and does not affect the 200/503 verdict.
 
 A passing response is cacheable for 30 s; a failing one is never cached. The
 endpoint is limited per instance (60 requests per minute per address) and

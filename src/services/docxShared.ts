@@ -231,14 +231,17 @@ function describeCoverage(pkg: EvidencePackage): string {
 function describeAiStep(pkg: EvidencePackage): string {
   const step = pkg.aiStep;
   if (!step) return 'No AI step ran for this output.';
-  const model = step.model || 'not reported';
+  const model = step.model ? `${step.model}${step.provider ? ` (${step.provider})` : ''}` : 'not reported';
   const effort = step.reasoningEffort || 'not reported';
   const source = step.metadataSource === 'response'
     ? 'as reported by the AI route response'
     : step.metadataSource === 'request'
       ? 'as sent in the request (the response did not report it)'
       : 'the AI route did not report the model or reasoning effort';
-  return `${step.purpose}. Model: ${model}. Reasoning effort: ${effort} (${source}).`;
+  const webSources = step.webSources?.length
+    ? ` Web sources (public web, not SEC filings): ${step.webSources.map(source => source.url).join(', ')}.`
+    : '';
+  return `${step.purpose}. Model: ${model}. Reasoning effort: ${effort} (${source}).${webSources}`;
 }
 
 function describeAppVersion(pkg: EvidencePackage): string {

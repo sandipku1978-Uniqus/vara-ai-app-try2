@@ -38,7 +38,7 @@ export const STATIC_ROUTE_CONTRACTS: readonly RouteContract[] = [
   h1('/insiders', /^Insider Trading$/),
   h1('/accounting', /^Accounting Research Hub$/),
   h1('/regulation', /^Securities Regulation$/),
-  h1('/enforcement', /^SEC Litigation Releases$/),
+  h1('/enforcement', /^SEC Enforcement: Litigation Releases and AAERs$/),
   h1('/ipo', /^IPO & Pre-IPO Readiness Center$/),
   h1('/mna', /^M&A and Transactional Research$/),
   h1('/exempt-offerings', /^Exempt Offerings$/),

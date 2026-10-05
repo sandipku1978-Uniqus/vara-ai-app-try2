@@ -15,6 +15,7 @@ import {
   MessageSquare,
   Search,
   Sparkles,
+  Type,
 } from 'lucide-react';
 import SearchFilterBar, { defaultSearchFilters, type SearchFilters } from '../components/filters/SearchFilterBar';
 import { useApp } from '../context/AppState';
@@ -72,6 +73,7 @@ import {
 } from '../services/searchJobs';
 import { generateSearchTrendReport, SEARCH_TREND_AI_FALLBACK } from '../services/searchTrendReport';
 import { planResearchSearch } from '../services/researchSearchPlan';
+import { SEARCH_MODE_LABEL } from '../services/filingResearchPlan';
 import { canUseInstantEnrichedSearch } from '../services/filingResearch';
 import { BRAND } from '../config/brand';
 import './SearchPage.css';
@@ -361,8 +363,8 @@ export default function SearchPage() {
   }, [displayResults]);
 
   const activeFilterCount = useMemo(() => countAppliedFilters(filters), [filters]);
-  const searchModeLabel = searchMode === 'semantic' ? 'Filing research' : 'Boolean / proximity';
-  const searchModeShortLabel = searchMode === 'semantic' ? 'FR' : 'BQ';
+  const searchModeLabel = SEARCH_MODE_LABEL[searchMode];
+  const searchModeShortLabel = searchMode === 'semantic' ? 'PL' : 'BQ';
   const resultCountLabel = displayResults.length >= RESEARCH_RESULT_LIMIT ? `${RESEARCH_RESULT_LIMIT}+` : displayResults.length.toString();
   const isResearchFocusMode = isRailCollapsed && displayResults.length > 0;
   const lastUpdatedLabel = useMemo(() => {
@@ -1373,7 +1375,7 @@ export default function SearchPage() {
               <span>{activeFilterCount}</span>
             </div>
             <div className="research-rail-collapsed-badge" title={searchModeLabel}>
-              {searchMode === 'semantic' ? <Sparkles size={15} /> : <Hash size={15} />}
+              {searchMode === 'semantic' ? <Type size={15} /> : <Hash size={15} />}
               <span>{searchModeShortLabel}</span>
             </div>
           </div>
@@ -1415,7 +1417,7 @@ export default function SearchPage() {
               onClick={() => setSearchMode('semantic')}
               aria-pressed={searchMode === 'semantic'}
             >
-              <Sparkles size={16} /> Filing Research
+              <Type size={16} /> {SEARCH_MODE_LABEL.semantic}
             </button>
             <button
               type="button"
@@ -1423,7 +1425,7 @@ export default function SearchPage() {
               onClick={() => setSearchMode('boolean')}
               aria-pressed={searchMode === 'boolean'}
             >
-              <Hash size={16} /> Boolean / Proximity
+              <Hash size={16} /> {SEARCH_MODE_LABEL.boolean}
             </button>
           </div>
 

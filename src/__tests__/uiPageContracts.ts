@@ -70,6 +70,7 @@ export const UI_PAGE_CONTRACTS = [
       { id: 'dashboard.open-recent-filing', interaction: 'Activate a recent filing row.', expectedOutcome: 'The exact selected filing opens, preserving its issuer, form, filing date, accession number, and source document rather than falling back to a generic issuer search.' },
       { id: 'dashboard.check-saved-alert', interaction: 'Activate Check now for a saved alert.', expectedOutcome: 'The alert reruns with its saved criteria and exposes a progress or completion state.' },
       { id: 'dashboard.open-or-remove-alert', interaction: 'Activate Open or Remove on a saved alert.', expectedOutcome: 'Open restores the alert criteria in research, while Remove deletes only that saved alert.' },
+      { id: 'dashboard.open-search-job', interaction: 'Activate a continued search listed on the dashboard search-jobs card.', expectedOutcome: 'The Research Workbench opens that server-side search job by its id, with its query, filters, progress and verified total, rather than starting a new search.' },
     ],
   },
   {
@@ -108,6 +109,7 @@ export const UI_PAGE_CONTRACTS = [
       { id: 'research-workbench.open-issuer-or-source', interaction: 'Activate Issuer dossier or the external source link.', expectedOutcome: 'Issuer dossier opens the matching company page; source opens the matching official SEC document.' },
       { id: 'research-workbench.open-assistant-or-help', interaction: 'Activate Ask AI or the full-help control.', expectedOutcome: 'Ask AI opens the research assistant and help navigates to guidance without discarding the current URL-backed search.' },
       { id: 'research-workbench.cite-result', interaction: 'Activate Cite on a result row, then activate the same control again.', expectedOutcome: 'That row’s filing joins the memo tray with its issuer, form, filing date, accession, matched excerpt, and official SEC document link — the same citation identity the preview reports — and the second activation removes only that citation.' },
+      { id: 'research-workbench.continue-search-job', interaction: 'After a run that read only a bounded candidate window, activate Keep validating, then page the verified filings, cancel, or hide the panel.', expectedOutcome: 'A server-side job keeps validating the same query and filters, reports progress and a verified match total, lists only verified filings page by page with their SEC source, and keeps running if the page is left; Cancel stops it and Hide only detaches the panel.' },
     ],
   },
   {
@@ -127,6 +129,9 @@ export const UI_PAGE_CONTRACTS = [
       { id: 'comment-letters.generate-summary', interaction: 'Activate Generate AI summary for an episode.', expectedOutcome: 'A summary grounded in the loaded conversation appears, or a specific retryable error is shown.' },
       { id: 'comment-letters.open-issuer-or-edgar', interaction: 'Activate the issuer dossier or EDGAR source link.', expectedOutcome: 'The issuer link opens the matching dossier and the EDGAR link opens the matching official letter index.' },
       { id: 'comment-letters.retry-source', interaction: 'Activate a retry control for corpus, episode, search, or summary failure.', expectedOutcome: 'Only the failed operation reruns and reports its next observable state without clearing unrelated criteria.' },
+      { id: 'comment-letters.filter-letters', interaction: 'Set the filing-date range, the form under review, and the issuer industry (SIC) in the comment-letter filter bar, with or without a text query.', expectedOutcome: 'Episodes and matches narrow to letters filed in that range about that form from issuers in that industry; a filter-only search lists the newest matching letters, and clearing a filter restores the wider list.' },
+      { id: 'comment-letters.review-comment-issues', interaction: 'Expand an episode’s numbered comments, open one comment, toggle its full response, and open Similar comments.', expectedOutcome: 'Each Staff comment appears by its number with its resolution status, section reference, the paired company response excerpt and both SEC letter links; Similar comments lists labelled text-search matches from other letters, each linking to its thread.' },
+      { id: 'comment-letters.export-letters', interaction: 'Activate Export as CSV or Export as Word on the search results or on an episode’s numbered comments.', expectedOutcome: 'A CSV or Word file downloads containing exactly the listed letters, or the episode’s numbered comments and paired responses, each with its SEC letter link.' },
     ],
   },
   {
@@ -177,6 +182,10 @@ export const UI_PAGE_CONTRACTS = [
       { id: 'benchmarking.verify-sections', interaction: 'Activate Verify sections in the Section Matrix, and Retry failed filings after a read fails.', expectedOutcome: 'Each cell states whether the section heading was found in the named filing’s text, that the filing is not read yet, that no filing of the form exists, or a retryable failure such as a rate limit — a mark never appears without the document having been read.' },
       { id: 'benchmarking.export-results', interaction: 'Activate CSV or spreadsheet export.', expectedOutcome: 'A file downloads containing the currently visible cohort, periods, labels, and comparison values; the Section Matrix export carries each cell’s state and source accession.' },
       { id: 'benchmarking.cite-passage', interaction: 'Activate Cite on a Text Redline peer column.', expectedOutcome: 'The compared section or topic passage joins the memo tray with that peer’s exact annual report identity — issuer, form, filing date, accession, section, and official SEC document link — and only that column reports as cited.' },
+      { id: 'benchmarking.compare-footnotes', interaction: 'Open the Footnotes view, choose a note topic and a fiscal period for the selected companies.', expectedOutcome: 'Each company’s note on that topic for that period appears side by side with its filing identity, or says the note was not disclosed or could not be extracted, never an empty column.' },
+      { id: 'benchmarking.choose-yoy-form', interaction: 'In YoY Changes, choose 10-K, 20-F or DEF 14A in the Form to compare control.', expectedOutcome: 'The change matrix is rebuilt from filings of the chosen form only, the chosen form shows as pressed, and sections that form does not carry are not shown as unchanged.' },
+      { id: 'benchmarking.explain-yoy-change', interaction: 'In YoY Changes, select a changed cell, review its redline, and activate Explain changes.', expectedOutcome: 'The section redline for that company and year opens, and Explain changes adds an AI explanation of that specific change; an unchanged cell cannot be explained and says so.' },
+      { id: 'benchmarking.build-peers-from-sources', interaction: 'In the peer builder, read the seed company’s proxy peer group, find same-SIC registrants with a size measure and band, and add a company manually.', expectedOutcome: 'Each column lists its candidates with why they qualify (the proxy accession, the size band and measure, or a manual pick); adding puts a company in the peer set once with that reason, up to the 20-company cap.' },
     ],
   },
   {
@@ -242,6 +251,7 @@ export const UI_PAGE_CONTRACTS = [
       { id: 'insider-trading.add-company', interaction: 'Choose a company from the company search.', expectedOutcome: 'The issuer is added once and its recent insider filings are loaded into the combined results table.' },
       { id: 'insider-trading.remove-company', interaction: 'Activate Remove for a monitored issuer.', expectedOutcome: 'The issuer and only its associated filing rows are removed from the current monitor.' },
       { id: 'insider-trading.open-source', interaction: 'Activate View on an insider filing row.', expectedOutcome: 'The exact official filing source opens in a separate tab.' },
+      { id: 'insider-trading.view-transactions', interaction: 'Switch to the Transactions view and choose a company, then export the rows or cite a transaction.', expectedOutcome: 'One row per Form 3/4/5 transaction appears with a plain-language code, "not reported" for undisclosed shares or price, an owner net-shares summary and the read coverage; each row links to its Form 3/4/5 document, and the CSV and citation carry that filing.' },
     ],
   },
   {
@@ -259,6 +269,7 @@ export const UI_PAGE_CONTRACTS = [
       { id: 'accounting-standards.open-topic-source', interaction: 'Filter standards topics and activate a topic or FASB source link.', expectedOutcome: 'The chosen official standards reference opens and is not represented as locally reproduced authoritative text.' },
       { id: 'accounting-standards.manage-checklist', interaction: 'Add, edit, complete, or delete a checklist item.', expectedOutcome: 'Only the requested browser-local checklist item changes and its saved state survives a view switch.' },
       { id: 'accounting-standards.ask-guidance', interaction: 'Optionally choose a Codification topic, enter a technical accounting question, and submit it.', expectedOutcome: 'A reply is displayed labeled either as grounded in the curated framework knowledge base, with [n] citations that resolve to the listed excerpts, or as model recall (not Codification-grounded); both link to the FASB Codification for verification, or a specific retryable failure appears.' },
+      { id: 'accounting-standards.browse-asu-index', interaction: 'Open the ASU index tab, filter by number, title or ASC topic and by status, and follow a row’s links.', expectedOutcome: 'The tab lists FASB Accounting Standards Updates with status and dates; filters narrow the rows; each row links its PDF on fasb.org, a search for 10-K filings citing it, and its accounting issue page, and a deep link focuses one Update.' },
     ],
   },
   {
@@ -283,11 +294,13 @@ export const UI_PAGE_CONTRACTS = [
     routePattern: '/enforcement',
     representativePath: '/enforcement',
     sourceFiles: ['src/app/enforcement/page.tsx', 'src/views/SECEnforcement.tsx'],
-    intendedJob: 'Browse current SEC litigation releases and quickly narrow them by party name or release number.',
+    intendedJob: 'Browse current SEC litigation releases and Accounting and Auditing Enforcement Releases, and quickly narrow either by party, title or release number.',
     actions: [
       { id: 'sec-enforcement.filter-releases', interaction: 'Enter a party name or litigation-release number in the filter.', expectedOutcome: 'The already-loaded official release rows narrow immediately to records matching the entered text.' },
       { id: 'sec-enforcement.open-source', interaction: 'Activate View on a litigation release.', expectedOutcome: 'The exact official SEC litigation release opens in a separate tab.' },
       { id: 'sec-enforcement.retry-source', interaction: 'Activate Retry official source after the feed fails.', expectedOutcome: 'The official litigation-release feed is requested again and the page reports its current state.' },
+      { id: 'sec-enforcement.open-aaer-tab', interaction: 'Activate the Accounting and Auditing Enforcement Releases tab with pointer or arrow keys, then return to litigation releases.', expectedOutcome: 'The AAER index loads once and lists releases with respondents, dates, SEC links, related actions and its coverage line; returning to litigation releases keeps that list and its filter intact.' },
+      { id: 'sec-enforcement.filter-export-cite-aaers', interaction: 'Filter AAERs by respondent or title text and by year range, export the CSV, and cite a release.', expectedOutcome: 'Rows narrow to matching releases; the CSV holds the visible rows; Cite adds the release to the memo tray cited as "AAER-nnnn, SEC, date", not as a filing or comment letter.' },
     ],
   },
   {
@@ -431,6 +444,7 @@ export const UI_PAGE_CONTRACTS = [
       { id: 'company-dossier.open-filing-source', interaction: 'Activate an official filing source in the filings view.', expectedOutcome: 'The exact SEC filing document for this issuer opens in a separate tab.' },
       { id: 'company-dossier.open-comment-thread', interaction: 'Activate a comment-letter episode.', expectedOutcome: 'Comment Letters opens with this issuer and thread encoded in the destination URL.' },
       { id: 'company-dossier.retry-dataset', interaction: 'Retry comment-letter history or XBRL facts after failure.', expectedOutcome: 'Only the failed issuer dataset is fetched again and the other dossier data remains available.' },
+      { id: 'company-dossier.view-insider-transactions', interaction: 'Open the Insider Transactions tab of a company dossier.', expectedOutcome: 'The issuer’s Form 3/4/5 transactions load one row per reported transaction with plain-language codes, "not reported" for undisclosed values and the read coverage, each linking to its Form 3/4/5 document.' },
     ],
   },
   {
@@ -454,6 +468,22 @@ export const UI_PAGE_CONTRACTS = [
       { id: 'filing-detail.open-assistant', interaction: 'Activate Ask AI for the loaded filing.', expectedOutcome: 'The assistant opens with the active filing available as context without changing the source document.' },
       { id: 'filing-detail.cite-evidence', interaction: 'Activate Cite with a table-of-contents section active, then again with a passage selected in the document.', expectedOutcome: 'The memo tray holds distinct citations for the section and for the quoted passage, each carrying the section name, the filing’s issuer, form, filing date, accession, and official SEC document link; removing one leaves the other intact.' },
       { id: 'filing-detail.cite-redline', interaction: 'Activate Cite on a year-over-year redline block.', expectedOutcome: 'The citation quotes the prior and current text of that block and carries both filings’ accessions and official SEC document links, so the comparison can be traced from the memo.' },
+      { id: 'filing-detail.find-in-document', interaction: 'Open Find in document, type a term, step with Enter, Shift+Enter or the Previous and Next buttons, toggle whole words, and close with Escape.', expectedOutcome: 'Matches in the inline filing text are highlighted with a current-match position and count; stepping moves to and scrolls the next or previous match, and closing removes the highlights.' },
+      { id: 'filing-detail.review-search-hits', interaction: 'Open a filing from a search result and activate the All hits in this filing tab, then a listed hit.', expectedOutcome: 'The tab lists every hit of the originating keyword or Boolean query in the document with its section path and excerpt, or says there are none or the query could not be read; activating a hit scrolls the document to that match.' },
+    ],
+  },
+  {
+    id: 'accounting-issue',
+    kind: 'dynamic',
+    access: 'authenticated',
+    routePattern: '/accounting/[topic]',
+    representativePath: '/accounting/revenue-recognition',
+    sourceFiles: ['src/app/accounting/[topic]/page.tsx', 'src/views/AccountingIssuePage.tsx'],
+    intendedJob: 'Bring together precedent filings, SEC staff comments, the governing ASC topic and ASUs, internal guidance and peer comparison for one accounting issue.',
+    actions: [
+      { id: 'accounting-issue.open-evidence', interaction: 'Follow a precedent filing, a staff comment thread, an ASU chip or row, and the Research Workbench and comment-letter search links on an issue page.', expectedOutcome: 'Each link opens the exact filing, comment thread, ASU index row or prefilled search for this issue, and ASC topic links open the official Codification page in a separate tab.' },
+      { id: 'accounting-issue.ask-question', interaction: 'Type a question about the issue and submit it.', expectedOutcome: 'An answer about this issue appears with its grounding stated, the question stays editable, and an empty question cannot be submitted.' },
+      { id: 'accounting-issue.compare-peers', interaction: 'Activate Compare peers on the issue.', expectedOutcome: 'Benchmarking opens scoped to this issue’s disclosure topic so peers can be compared on it.' },
     ],
   },
 ] as const satisfies readonly UiPageContract[];
@@ -475,4 +505,7 @@ export const UI_GLOBAL_ACTION_CONTRACTS = [
   { id: 'global.tabs', interaction: 'Change and close tabs using pointer, Arrow keys, Home, End, Enter, and Space where applicable.', expectedOutcome: 'Exactly one tab is selected and tabbable, every controlled panel relationship is valid, and focus survives selection or removal.' },
   { id: 'global.external-source-links', interaction: 'Activate representative SEC, IAPD, FASB, and framework source links.', expectedOutcome: 'Each link names enough row context, opens the exact official source safely, and leaves the current research state available.' },
   { id: 'global.async-and-retry', interaction: 'Exercise loading, success, legitimate-empty, partial-data, failure, and retry states for every remote action.', expectedOutcome: 'The control keeps a stable name, only the latest request can update the view, failures are not presented as factual absence, and Retry repeats the same criteria.' },
+  { id: 'global.select-to-cart', interaction: 'Tick and untick the select box on a filing row in research results, exhibits, the Section Matrix, the YoY matrix and a company dossier.', expectedOutcome: 'Ticking adds that exact filing to the document cart once and the cart count changes; unticking removes only that filing, and the box reflects the cart on every surface.' },
+  { id: 'global.document-cart', interaction: 'Open the document cart, choose a section and download it, export the list, add all to memo, compare selected, remove one filing, and clear.', expectedOutcome: 'The section download reads the selected filings one at a time and yields a Word file with a page per filing, in the filing’s own words with an explicit status for any filing it could not slice, plus a CSV index; list export, memo and compare act on exactly the selected filings.' },
+  { id: 'global.model-selector', interaction: 'In the Copilot panel, open the model control, choose a model and a reasoning effort, and toggle web search, then ask a question.', expectedOutcome: 'Only models this deployment can run are offered with the efforts each honours; the answer is requested with that model, effort and web-search setting, and its footer names the model that actually answered, its effort, and any web sources kept apart from filing citations.' },
 ] as const satisfies readonly UiActionContract[];
