@@ -64,6 +64,15 @@ describe('YoYChangeMatrix', () => {
     await screen.findByText('FY2024 → FY2025');
   });
 
+  it('names each company column by its heading only; the cart checkbox inside keeps its own label', async () => {
+    render(<YoYChangeMatrix tickers={['AAPL']} companiesData={{ AAPL: submission }} />);
+    await screen.findByText('FY2024 → FY2025');
+    const header = screen.getByRole('columnheader', { name: 'FY2024 → FY2025 period of report 2025-09-27' });
+    const toggle = within(header).getByRole('checkbox');
+    expect(toggle).toHaveAccessibleName('Select Apple Inc. Form 10-K filed 2025-10-31 for the document cart');
+    expect(toggle).not.toBeDisabled();
+  });
+
   it('explains one cell on demand through the redline-summary path, and cites both filings', async () => {
     let resolveSummary: (value: string) => void = () => {};
     mocks.aiSummarizeRedline.mockImplementation(() => new Promise<string>(resolve => { resolveSummary = resolve; }));
