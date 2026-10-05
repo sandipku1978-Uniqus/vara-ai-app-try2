@@ -55,8 +55,8 @@ const SAVED_ALERTS = [
     },
     defaultForms: '',
     createdAt: '2026-04-01T12:00:00.000Z',
-    // Keep fixture alerts fresh so opening the Dashboard does not implicitly
-    // exercise Check Now; that has its own critical-action journey.
+    // A stamp no later check could precede, so any rewrite of the record is
+    // visible. (The Dashboard never checks alerts itself; Run now asks the server.)
     lastCheckedAt: '2099-01-01T00:00:00.000Z',
     lastSeenAccessions: [] as string[],
     latestNewAccessions: [] as string[],
@@ -184,30 +184,46 @@ test.describe('dashboard action contracts', () => {
     await expect(page.getByText(SAVED_ALERTS[1].name)).toBeVisible();
   });
 
-  test('dashboard.check-saved-alert rejects an unmeasured run without replacing prior alert evidence', async ({ page }) => {
-    await installDashboardFixtures(page);
+  test('dashboard.check-saved-alert says checks are unavailable here without replacing prior alert evidence', async ({ page }) => {
+    const stats = await installBooleanFixtures(page);
+    await installWatchlistFixtures(page);
+    await installDashboardActionFixtures(page);
     const previousCoverage = {
       complete: true,
       examined: 7,
       upstreamTotal: 7,
       upstreamTotalIsFloor: false,
     };
-    const invalidAlert = {
+    const priorAlert = {
       ...SAVED_ALERTS[0],
-      id: 'alert-invalid-plan',
+      id: 'alert-prior-evidence',
       name: 'Prior evidence must survive',
-      query: 'temporary AND (',
       lastSeenAccessions: ['0000320193-26-000101'],
       latestNewAccessions: ['0000320193-26-000101'],
       latestResultCount: 7,
       lastCheckCoverage: previousCoverage,
     };
-    const storageKey = await seedSavedAlerts(page, [invalidAlert]);
-    const card = page.locator('.rss-news-card').filter({ hasText: invalidAlert.name });
+    const storageKey = await seedSavedAlerts(page, [priorAlert]);
+    const card = page.locator('.rss-news-card').filter({ hasText: priorAlert.name });
     await expect(card).toBeVisible({ timeout: 20_000 });
+    // The prior evidence, as recorded by the alert's last check.
+    await expect(card).toContainText('7 matched in the last check window');
+    await expect(card).toContainText('coverage complete');
+    await expect(card).toContainText('Examined 7 of 7 upstream candidates');
+    // No unread count is claimed where nothing checks the alert.
+    await expect(card).not.toContainText('new since you last looked');
+    await expect(page.getByRole('note').filter({ hasText: 'Background checks are not available in this environment' })).toBeVisible();
 
-    await card.getByRole('button', { name: 'Check Now' }).click();
-    await expect(card.getByRole('alert')).toContainText('Existing counts were not replaced', { timeout: 20_000 });
+    const queriesBeforeRun = stats.eftsQueries.length;
+    await card.getByRole('button', { name: 'Run now' }).click();
+    await expect(card.getByRole('alert')).toHaveText(
+      'Not checked: background checks are not available in this environment. The counts shown are from before and were not changed.'
+    );
+    await expect(card.getByText(/^Checked:/)).toHaveCount(0);
+    await expect(card).toContainText('7 matched in the last check window');
+    await expect(card).toContainText('coverage complete');
+    // The browser re-ran nothing.
+    expect(stats.eftsQueries.length).toBe(queriesBeforeRun);
     await expect.poll(() => page.evaluate(
       ({ key, id }) => {
         const alerts = JSON.parse(localStorage.getItem(key) || '[]') as Array<Record<string, unknown>>;
@@ -221,13 +237,13 @@ test.describe('dashboard action contracts', () => {
           lastCheckCoverage: alert.lastCheckCoverage,
         };
       },
-      { key: storageKey, id: invalidAlert.id }
+      { key: storageKey, id: priorAlert.id }
     )).toEqual({
-      lastCheckedAt: invalidAlert.lastCheckedAt,
-      lastSeenAccessions: invalidAlert.lastSeenAccessions,
-      latestNewAccessions: invalidAlert.latestNewAccessions,
-      latestResultCount: invalidAlert.latestResultCount,
-      engineVersion: invalidAlert.engineVersion,
+      lastCheckedAt: priorAlert.lastCheckedAt,
+      lastSeenAccessions: priorAlert.lastSeenAccessions,
+      latestNewAccessions: priorAlert.latestNewAccessions,
+      latestResultCount: priorAlert.latestResultCount,
+      engineVersion: priorAlert.engineVersion,
       lastCheckCoverage: previousCoverage,
     });
   });
