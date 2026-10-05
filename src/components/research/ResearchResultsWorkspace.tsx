@@ -27,6 +27,7 @@ import {
 } from '../../services/searchCoverage';
 import { BRAND } from '../../config/brand';
 import CiteButton from '../memo/CiteButton';
+import CartToggle from '../cart/CartToggle';
 import ActiveQueryChips from './ActiveQueryChips';
 import SearchScopeBanner from './SearchScopeBanner';
 import { researchTabId } from './ResearchSessionTabs';
@@ -351,7 +352,25 @@ export default function ResearchResultsWorkspace({
                 // The card is itself a button (row selection), so the cite
                 // control sits beside it in the row wrapper rather than
                 // nested inside — nested buttons are invalid and unreachable.
-                <div key={result.id} className="research-hit-row">
+                <div key={result.id} className="research-hit-row has-cart-select">
+                <CartToggle
+                  className="research-hit-select"
+                  filing={{
+                    cik: result.cik,
+                    accessionNumber: result.accessionNumber,
+                    company: result.entityName,
+                    form: result.formType,
+                    fileDate: result.fileDate,
+                    ticker: result.tickers?.[0],
+                    primaryDocument: result.filingPrimaryDocument && !isPlaceholderPrimaryDocument(result.filingPrimaryDocument, result.accessionNumber)
+                      ? result.filingPrimaryDocument
+                      : undefined,
+                    description: result.matchSnippet || result.description || '',
+                    sourceUrl,
+                    origin: 'search',
+                  }}
+                  disabledReason={sourceUrl ? undefined : 'Locating the official SEC document before it can be selected'}
+                />
                 <button
                   className={`research-hit-card ${selectedResult?.id === result.id ? 'active' : ''}`}
                   onClick={() => onSelectResult(result.id)}
