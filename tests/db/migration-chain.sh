@@ -399,6 +399,91 @@ begin
   select count(*) into c from urc_search_letters('zebra polymorphic', null, null, null, 10, 500, null);
   if c <> 0 then raise exception 'expected empty page, got % rows', c; end if;
 end $$;
+
+-- 027: date, CIK, industry and reviewed-form filters; filter-only mode.
+-- The 30 rare letters are filed 2024-01-02 .. 2024-01-31 by CIKs
+-- 2000001 .. 2000030. Ten of those issuers are SIC 2834; five letters were
+-- read as S-1 reviews and one as a 10-K review.
+insert into urc_sec_companies (cik, name, sic)
+select 2000000 + i, 'Rare Issuer ' || i, '2834'
+from generate_series(1, 10) as g(i)
+on conflict (cik) do update set sic = excluded.sic;
+
+insert into urc_letter_facets (accession, cik, reviewed_forms, reviewed_forms_basis, derivation_version)
+select 'rare-' || lpad(i::text, 4, '0'), 2000000 + i,
+       case when i <= 5 then array['S-1'] else array['10-K'] end,
+       'Registration Statement on Form S-1', 1
+from generate_series(1, 6) as g(i);
+
+do $$
+declare c int; t bigint; oldest date; ranks real; o text;
+begin
+  if to_regprocedure('urc_search_letters(text,text,date,date,integer,integer,text)') is not null then
+    raise exception '027: seven-argument overload still present (PostgREST would be ambiguous)';
+  end if;
+
+  select count(*), max(total_count), min(date_filed) into c, t, oldest
+  from urc_search_letters('zebra polymorphic', null, '2024-01-15', null, 100, 0, null);
+  if c <> 17 or t <> 17 or oldest < date '2024-01-15' then
+    raise exception '027 date filter: % rows, total %, oldest %', c, t, oldest;
+  end if;
+
+  select count(*) into c from urc_search_letters('zebra polymorphic', null, null, null, 100, 0, null, 2000005);
+  if c <> 1 then raise exception '027 CIK filter: expected 1 row, got %', c; end if;
+
+  select count(*) into c from urc_search_letters('zebra polymorphic', null, null, null, 100, 0, null, null, '2834');
+  if c <> 10 then raise exception '027 SIC filter: expected 10 rows, got %', c; end if;
+
+  select count(*) into c from urc_search_letters(
+    p_query => 'zebra polymorphic', p_reviewed_forms => array['S-1']);
+  if c <> 5 then raise exception '027 reviewed-form filter: expected 5 rows, got %', c; end if;
+
+  -- Filter-only mode: no text, newest first, rank 0, still capped/counted.
+  select count(*), max(total_count), max(rank) into c, t, ranks
+  from urc_search_letters('', 'UPLOAD', null, null, 100, 0, null, null, '2834', null);
+  if c <> 10 or t <> 10 or ranks <> 0 then
+    raise exception '027 filter-only mode: % rows, total %, max rank %', c, t, ranks;
+  end if;
+  select string_agg(accession, ',' order by rn) into o from (
+    select accession, row_number() over () as rn
+    from urc_search_letters('', 'UPLOAD', null, null, 3, 0, null, null, '2834', null)
+  ) x;
+  if o is distinct from 'rare-0010,rare-0009,rare-0008' then
+    raise exception '027 filter-only mode is not newest first: %', o;
+  end if;
+
+  -- A blank query with no filter is not a request for the whole corpus.
+  select count(*) into c from urc_search_letters('   ', null, null, null, 100, 0, null);
+  if c <> 0 then raise exception '027 blank unfiltered query returned % rows', c; end if;
+
+  -- Filter-only mode keeps the 10,000+ sentinel on a broad filter.
+  select max(total_count) into t from urc_search_letters('', null, '2019-01-01', null, 1, 0, null);
+  if t <> 10001 then raise exception '027 filter-only sentinel: expected 10001, got %', t; end if;
+
+  -- Facet backfill reader: skips letters already read at this version and
+  -- pages newest-first by keyset.
+  select count(*) into c
+  from urc_letters_needing_facets(2000, 1::smallint, date '2024-02-01', null, null) r
+  where r.accession like 'rare-%';
+  if c <> 24 then raise exception '027 facet reader: expected 24 unread rare letters, got %', c; end if;
+  -- Same date, next accession: rare-0030 and test-001491 share 2024-01-31.
+  select string_agg(r.accession, ',') into o
+  from urc_letters_needing_facets(1, 1::smallint, date '2024-01-31', 'rare-0030', 2000030) r;
+  if o is distinct from 'test-001491' then raise exception '027 facet reader keyset (tie step): %', o; end if;
+  -- Past the last accession of a date, the next older date starts over.
+  select string_agg(r.accession, ',') into o
+  from urc_letters_needing_facets(1, 1::smallint, date '2024-01-31', 'zzzz', null) r;
+  if o is distinct from 'rare-0029' then raise exception '027 facet reader keyset (date step): %', o; end if;
+
+  if has_function_privilege('anon', 'urc_letters_needing_facets(integer,smallint,date,text,bigint)', 'execute') then
+    raise exception '027: anon can execute the facet backfill reader';
+  end if;
+  if not has_table_privilege('anon', 'public.urc_letter_issues', 'select')
+     or has_table_privilege('anon', 'public.urc_letter_issues', 'insert')
+     or has_table_privilege('urc_web', 'public.urc_letter_facets', 'update') then
+    raise exception '027: new-table web privileges are wrong';
+  end if;
+end $$;
 SQL
 
 echo "── Independent live-schema evidence and drift rejection ──"
