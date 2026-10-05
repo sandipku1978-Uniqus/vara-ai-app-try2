@@ -209,6 +209,13 @@ const ISSUE_CONFIG: Record<string, AccountingIssueConfig> = {
       { id: 'AS 3101', title: 'The Auditor’s Report on an Audit of Financial Statements When the Auditor Expresses an Unqualified Opinion', publisher: 'PCAOB', relevance: 'Requires and defines the communication of critical audit matters in the auditor’s report.', url: 'https://pcaobus.org/oversight/standards/auditing-standards/details/AS3101' },
     ],
   },
+  'significant-accounting-policies': {
+    id: 'significant-accounting-policies',
+    codificationTopics: ['235'],
+    precedent: issuePrecedent('Summary of significant accounting policies', 'Notes that summarize the registrant’s significant accounting policies', '"significant accounting policies"'),
+    letterQuery: '"significant accounting policies"',
+    references: [],
+  },
   'use-of-estimates': {
     id: 'use-of-estimates',
     codificationTopics: ['275'],

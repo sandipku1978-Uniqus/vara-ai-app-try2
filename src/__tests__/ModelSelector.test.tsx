@@ -103,7 +103,7 @@ describe('ModelSelector', () => {
   });
 
   it('offers only the chosen model’s effort levels', () => {
-    render(<Harness initial={{ modelId: 'anthropic/claude-opus-5.5', effort: 'none', webSearch: false }} />);
+    render(<Harness initial={{ modelId: 'anthropic/claude-sonnet-5.5', effort: 'none', webSearch: false }} />);
     openSelector();
     let radios = within(screen.getByRole('radiogroup')).getAllByRole('radio');
     expect(radios.map(radio => radio.textContent)).toEqual(['Off', 'Low', 'Med', 'High', 'Max']);
