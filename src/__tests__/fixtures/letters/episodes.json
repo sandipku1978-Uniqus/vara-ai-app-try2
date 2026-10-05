@@ -1,0 +1,293 @@
+{
+  "apple-10k-fy2023": {
+    "company": "Apple Inc.",
+    "cik": 320193,
+    "review": "Form 10-K for the fiscal year ended September 30, 2023 (File No. 001-36743)",
+    "letters": [
+      {
+        "accession": "0000000000-24-002512",
+        "form": "UPLOAD",
+        "date_filed": "2024-03-06",
+        "source": "https://www.sec.gov/Archives/edgar/data/320193/000000000024002512/0000000000-24-002512-index.htm"
+      },
+      {
+        "accession": "0000320193-24-000042",
+        "form": "CORRESP",
+        "date_filed": "2024-03-20",
+        "source": "https://www.sec.gov/Archives/edgar/data/320193/000032019324000042/0000320193-24-000042-index.htm"
+      },
+      {
+        "accession": "0000000000-24-003505",
+        "form": "UPLOAD",
+        "date_filed": "2024-04-02",
+        "source": "https://www.sec.gov/Archives/edgar/data/320193/000000000024003505/0000000000-24-003505-index.htm"
+      },
+      {
+        "accession": "0001140361-24-018378",
+        "form": "CORRESP",
+        "date_filed": "2024-04-05",
+        "source": "https://www.sec.gov/Archives/edgar/data/320193/000114036124018378/0001140361-24-018378-index.htm"
+      },
+      {
+        "accession": "0000320193-24-000061",
+        "form": "CORRESP",
+        "date_filed": "2024-04-29",
+        "source": "https://www.sec.gov/Archives/edgar/data/320193/000032019324000061/0000320193-24-000061-index.htm"
+      },
+      {
+        "accession": "0000000000-24-005673",
+        "form": "UPLOAD",
+        "date_filed": "2024-05-16",
+        "source": "https://www.sec.gov/Archives/edgar/data/320193/000000000024005673/0000000000-24-005673-index.htm"
+      }
+    ]
+  },
+  "tesla-10k-fy2022": {
+    "company": "Tesla, Inc.",
+    "cik": 1318605,
+    "review": "Form 10-K for the fiscal year ended December 31, 2022 (File No. 001-34756)",
+    "letters": [
+      {
+        "accession": "0000000000-23-010608",
+        "form": "UPLOAD",
+        "date_filed": "2023-09-26",
+        "source": "https://www.sec.gov/Archives/edgar/data/1318605/000000000023010608/0000000000-23-010608-index.htm"
+      },
+      {
+        "accession": "0001193125-23-249271",
+        "form": "CORRESP",
+        "date_filed": "2023-10-02",
+        "source": "https://www.sec.gov/Archives/edgar/data/1318605/000119312523249271/0001193125-23-249271-index.htm"
+      },
+      {
+        "accession": "0001193125-23-265032",
+        "form": "CORRESP",
+        "date_filed": "2023-10-27",
+        "source": "https://www.sec.gov/Archives/edgar/data/1318605/000119312523265032/0001193125-23-265032-index.htm"
+      },
+      {
+        "accession": "0000000000-23-012801",
+        "form": "UPLOAD",
+        "date_filed": "2023-11-22",
+        "source": "https://www.sec.gov/Archives/edgar/data/1318605/000000000023012801/0000000000-23-012801-index.htm"
+      },
+      {
+        "accession": "0001193125-23-284505",
+        "form": "CORRESP",
+        "date_filed": "2023-11-28",
+        "source": "https://www.sec.gov/Archives/edgar/data/1318605/000119312523284505/0001193125-23-284505-index.htm"
+      },
+      {
+        "accession": "0001193125-23-296911",
+        "form": "CORRESP",
+        "date_filed": "2023-12-15",
+        "source": "https://www.sec.gov/Archives/edgar/data/1318605/000119312523296911/0001193125-23-296911-index.htm"
+      },
+      {
+        "accession": "0000000000-24-001022",
+        "form": "UPLOAD",
+        "date_filed": "2024-01-25",
+        "source": "https://www.sec.gov/Archives/edgar/data/1318605/000000000024001022/0000000000-24-001022-index.htm"
+      }
+    ]
+  },
+  "amazon-10k-fy2020": {
+    "company": "Amazon.com, Inc.",
+    "cik": 1018724,
+    "review": "Form 10-K for the fiscal year ended December 31, 2020 (File No. 000-22513)",
+    "letters": [
+      {
+        "accession": "0000000000-21-011629",
+        "form": "UPLOAD",
+        "date_filed": "2021-09-23",
+        "source": "https://www.sec.gov/Archives/edgar/data/1018724/000000000021011629/0000000000-21-011629-index.htm"
+      },
+      {
+        "accession": "0001018724-21-000024",
+        "form": "CORRESP",
+        "date_filed": "2021-10-21",
+        "source": "https://www.sec.gov/Archives/edgar/data/1018724/000101872421000024/0001018724-21-000024-index.htm"
+      },
+      {
+        "accession": "0000000000-21-013530",
+        "form": "UPLOAD",
+        "date_filed": "2021-11-08",
+        "source": "https://www.sec.gov/Archives/edgar/data/1018724/000000000021013530/0000000000-21-013530-index.htm"
+      },
+      {
+        "accession": "0001193125-21-350307",
+        "form": "CORRESP",
+        "date_filed": "2021-12-07",
+        "source": "https://www.sec.gov/Archives/edgar/data/1018724/000119312521350307/0001193125-21-350307-index.htm"
+      },
+      {
+        "accession": "0000000000-22-000935",
+        "form": "UPLOAD",
+        "date_filed": "2022-01-25",
+        "source": "https://www.sec.gov/Archives/edgar/data/1018724/000000000022000935/0000000000-22-000935-index.htm"
+      },
+      {
+        "accession": "0001018724-22-000007",
+        "form": "CORRESP",
+        "date_filed": "2022-02-18",
+        "source": "https://www.sec.gov/Archives/edgar/data/1018724/000101872422000007/0001018724-22-000007-index.htm"
+      },
+      {
+        "accession": "0000000000-22-002109",
+        "form": "UPLOAD",
+        "date_filed": "2022-02-24",
+        "source": "https://www.sec.gov/Archives/edgar/data/1018724/000000000022002109/0000000000-22-002109-index.htm"
+      }
+    ]
+  },
+  "uber-10k-fy2022": {
+    "company": "Uber Technologies, Inc.",
+    "cik": 1543151,
+    "review": "Form 10-K for the fiscal year ended December 31, 2022 (File No. 001-38902)",
+    "letters": [
+      {
+        "accession": "0000000000-23-007750",
+        "form": "UPLOAD",
+        "date_filed": "2023-07-20",
+        "source": "https://www.sec.gov/Archives/edgar/data/1543151/000000000023007750/0000000000-23-007750-index.htm"
+      },
+      {
+        "accession": "0001543151-23-000030",
+        "form": "CORRESP",
+        "date_filed": "2023-08-07",
+        "source": "https://www.sec.gov/Archives/edgar/data/1543151/000154315123000030/0001543151-23-000030-index.htm"
+      },
+      {
+        "accession": "0000000000-23-009142",
+        "form": "UPLOAD",
+        "date_filed": "2023-08-22",
+        "source": "https://www.sec.gov/Archives/edgar/data/1543151/000000000023009142/0000000000-23-009142-index.htm"
+      }
+    ]
+  },
+  "nvidia-10k-fy2023": {
+    "company": "NVIDIA Corporation",
+    "cik": 1045810,
+    "review": "Form 10-K for the fiscal year ended January 29, 2023 (File No. 0-23985)",
+    "letters": [
+      {
+        "accession": "0000000000-23-006470",
+        "form": "UPLOAD",
+        "date_filed": "2023-06-15",
+        "source": "https://www.sec.gov/Archives/edgar/data/1045810/000000000023006470/0000000000-23-006470-index.htm"
+      },
+      {
+        "accession": "0001045810-23-000160",
+        "form": "CORRESP",
+        "date_filed": "2023-06-29",
+        "source": "https://www.sec.gov/Archives/edgar/data/1045810/000104581023000160/0001045810-23-000160-index.htm"
+      },
+      {
+        "accession": "0000000000-23-007034",
+        "form": "UPLOAD",
+        "date_filed": "2023-07-03",
+        "source": "https://www.sec.gov/Archives/edgar/data/1045810/000000000023007034/0000000000-23-007034-index.htm"
+      }
+    ]
+  },
+  "microsoft-8k-2024": {
+    "company": "Microsoft Corporation",
+    "cik": 789019,
+    "review": "Form 8-K filed January 19, 2024 and Form 8-K/A filed March 8, 2024 (File No. 001-37845)",
+    "letters": [
+      {
+        "accession": "0000000000-24-006936",
+        "form": "UPLOAD",
+        "date_filed": "2024-06-17",
+        "source": "https://www.sec.gov/Archives/edgar/data/789019/000000000024006936/0000000000-24-006936-index.htm"
+      },
+      {
+        "accession": "0001193125-24-172450",
+        "form": "CORRESP",
+        "date_filed": "2024-06-28",
+        "source": "https://www.sec.gov/Archives/edgar/data/789019/000119312524172450/0001193125-24-172450-index.htm"
+      },
+      {
+        "accession": "0000000000-24-011502",
+        "form": "UPLOAD",
+        "date_filed": "2024-10-10",
+        "source": "https://www.sec.gov/Archives/edgar/data/789019/000000000024011502/0000000000-24-011502-index.htm"
+      }
+    ]
+  },
+  "microsoft-s4-2024": {
+    "company": "Microsoft Corporation",
+    "cik": 789019,
+    "review": "Registration Statement on Form S-4 (File No. 333-278958)",
+    "letters": [
+      {
+        "accession": "0000000000-24-004905",
+        "form": "UPLOAD",
+        "date_filed": "2024-05-01",
+        "source": "https://www.sec.gov/Archives/edgar/data/789019/000000000024004905/0000000000-24-004905-index.htm"
+      }
+    ]
+  },
+  "palantir-10k-fy2021": {
+    "company": "Palantir Technologies Inc.",
+    "cik": 1321655,
+    "review": "Form 10-K for the year ended December 31, 2021 and Form 10-Q for the interim period ended June 30, 2022",
+    "letters": [
+      {
+        "accession": "0000000000-22-009132",
+        "form": "UPLOAD",
+        "date_filed": "2022-08-24",
+        "source": "https://www.sec.gov/Archives/edgar/data/1321655/000000000022009132/0000000000-22-009132-index.htm"
+      },
+      {
+        "accession": "0001193125-22-237809",
+        "form": "CORRESP",
+        "date_filed": "2022-09-02",
+        "source": "https://www.sec.gov/Archives/edgar/data/1321655/000119312522237809/0001193125-22-237809-index.htm"
+      },
+      {
+        "accession": "0001193125-22-248335",
+        "form": "CORRESP",
+        "date_filed": "2022-09-21",
+        "source": "https://www.sec.gov/Archives/edgar/data/1321655/000119312522248335/0001193125-22-248335-index.htm"
+      },
+      {
+        "accession": "0000000000-22-010967",
+        "form": "UPLOAD",
+        "date_filed": "2022-10-05",
+        "source": "https://www.sec.gov/Archives/edgar/data/1321655/000000000022010967/0000000000-22-010967-index.htm"
+      }
+    ]
+  },
+  "coinbase-round-2025": {
+    "company": "Coinbase Global, Inc.",
+    "cik": 1679788,
+    "review": "Forms 10-K and 10-Q under review since 2024; only the January 2025 round is included, so its references to earlier comments have no target here",
+    "letters": [
+      {
+        "accession": "0000000000-25-000773",
+        "form": "UPLOAD",
+        "date_filed": "2025-01-24",
+        "source": "https://www.sec.gov/Archives/edgar/data/1679788/000000000025000773/0000000000-25-000773-index.htm"
+      },
+      {
+        "accession": "0001193125-25-020223",
+        "form": "CORRESP",
+        "date_filed": "2025-02-04",
+        "source": "https://www.sec.gov/Archives/edgar/data/1679788/000119312525020223/0001193125-25-020223-index.htm"
+      },
+      {
+        "accession": "0001193125-25-026373",
+        "form": "CORRESP",
+        "date_filed": "2025-02-13",
+        "source": "https://www.sec.gov/Archives/edgar/data/1679788/000119312525026373/0001193125-25-026373-index.htm"
+      },
+      {
+        "accession": "0000000000-25-002910",
+        "form": "UPLOAD",
+        "date_filed": "2025-03-17",
+        "source": "https://www.sec.gov/Archives/edgar/data/1679788/000000000025002910/0000000000-25-002910-index.htm"
+      }
+    ]
+  }
+}

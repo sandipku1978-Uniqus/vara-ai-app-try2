@@ -1,0 +1,159 @@
+United States securities and exchange commission logo
+
+ September 26, 2023
+
+ Zachary Kirkhorn
+ Chief Financial Officer
+ Tesla, Inc.
+ 1 Tesla Road
+ Austin, TX 78725
+
+ Re: Tesla, Inc.
+ Form 10-K for the
+fiscal year ended December 31, 2022
+ Filed January 31,
+2023
+ File No. 001-34756
+
+ Dear Zachary Kirkhorn:
+
+ We have limited our review of your filing to the financial
+statements and related
+ disclosures and have the following comments. In some of our comments, we
+may ask you to
+ provide us with information so we may better understand your disclosure.
+
+ Please respond to these comments within ten business days by
+providing the requested
+ information or advise us as soon as possible when you will respond. If
+you do not believe our
+ comments apply to your facts and circumstances, please tell us why in
+your response.
+
+ After reviewing your
+response to these comments, we may have additional comments.
+
+ Form 10-K for the fiscal year ended December 31, 2022
+
+ Management's Discussion and Analysis of Financial Condition and Results
+of Operations
+ Critical Accounting Policies and Estimates
+ Income Taxes, page 36
+
+ 1. We note your critical
+accounting estimate for income taxes and that significant judgment
+ is required in
+determining your provision for income taxes, deferred tax assets and
+ liabilities, and any
+valuation allowance recorded against your net deferred tax assets. We
+ also note your
+disclosure on page 82 (Note 14 Income Taxes) that you continue to
+ monitor the
+realizability of the U.S. deferred tax assets, taking into account multiple
+ objective and
+subjective factors. Please revise your future filings to address the following:
+
+ Expand your
+disclosure to provide greater insight into the quality and variability of
+ information
+regarding financial condition and operating performance. While your
+ accounting policy
+notes in the financial statements generally describe the method
+ Zachary Kirkhorn
+Tesla, Inc.
+September 26, 2023
+Page 2
+ used to apply an accounting principle, the discussion here should
+present qualitative
+ and quantitative information necessary to understand the
+estimation uncertainty and
+ the impact the critical accounting estimate has had or is
+reasonably likely to have on
+ financial condition or results of operations.
+
+ We note you reference numerous factors considered in your
+assessment of the
+ realizability of your U.S. deferred tax assets, including but not
+limited to, a history of
+ losses in prior years, excess tax benefits related to stock-based
+compensation, future
+ reversal of existing temporary differences, and tax planning
+strategies. Revise to
+ provide an analysis of the factors considered, such as how you
+arrived at the estimate,
+ how accurate the estimate/assumption has been in the past, how
+much the
+ estimate/assumption has changed in the past, and whether the
+estimate/assumption is
+ reasonably likely to change in the future. Since critical
+accounting estimates and
+ assumptions are based on matters that are highly uncertain, you
+should analyze their
+ specific sensitivity to change, based on other outcomes that are
+reasonably likely to
+ occur and would have a material effect. Where applicable, provide
+quantitative as
+ well as qualitative disclosure when quantitative information is
+reasonably available
+ and will provide material information for investors.
+
+Financial Statements
+Notes to Consolidated Financial Statements
+Note 14 - Income Taxes, page 81
+
+2. We note your earnings history, including significant pre-tax income in
+each of the three
+ years presented within your consolidated statements of operations. We
+also note your
+ disclosure on page 82 that you intend to continue maintaining a full
+valuation allowance
+ on your U.S. deferred tax assets until there is sufficient evidence to
+support the reversal of
+ all, or some portion, of your valuation allowance. Please tell us, and
+revise your
+ disclosure in future filings to clarify, what you mean when you state
+ ... we intend to
+ continue maintaining a full valuation allowance on our U.S. deferred
+tax assets until there
+ is sufficient evidence to support the reversal of all or some portion
+of these allowances."
+ In this regard, reconcile your disclosure to the
+more-likely-than-not recognition
+ threshold within ASC 740-10-30, or revise to eliminate the ambiguity.
+
+3. Please provide to us supplementally your analysis of the factors you
+considered (i.e., those
+FirstName LastNameZachary Kirkhorn
+ factors referenced on page 82) supporting your conclusions as of
+December 31, 2022, and
+Comapany
+ 2021,NameTesla, Inc.likely than not that your U.S. deferred tax assets
+will not be realized.
+ that it is more
+September 26, 2023 Page 2
+FirstName LastName
+ Zachary Kirkhorn
+FirstName
+Tesla, Inc. LastNameZachary Kirkhorn
+Comapany 26,
+September NameTesla,
+ 2023 Inc.
+September
+Page 3 26, 2023 Page 3
+FirstName LastName
+ In closing, we remind you that the company and its management are
+responsible for the
+accuracy and adequacy of their disclosures, notwithstanding any review,
+comments, action or
+absence of action by the staff.
+
+ You may contact Kevin Stertzel at (202) 551-3723 or Hugh West at (202)
+551-3872 with
+any questions.
+
+ Sincerely,
+
+ Division of
+Corporation Finance
+ Office of
+Manufacturing

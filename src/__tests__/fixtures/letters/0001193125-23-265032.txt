@@ -1,0 +1,340 @@
+CORRESP
+
+ 
+
+ 
+ 
+1 Tesla Road, Austin, TX 78725
+
+P 650 681 5100  F 650 681 5101
+ 
+October 27, 2023 
+
+VIA EDGAR 
+United States Securities and Exchange
+Commission 
+Division of Corporation Finance 
+100 F Street,
+N.E. 
+Washington, D.C. 20549-7010 
+Attention: Kevin Stertzel;
+Hugh West 
+ 
+
+Re:
+ 
+Tesla, Inc. 
+
+Form 10-K for Fiscal Year Ended December 31, 2022 
+
+Filed January 31, 2023 
+
+File No. 001-34756 
+
+Dear Mr. Stertzel and Mr. West: 
+On behalf of Tesla,
+Inc. (“Tesla,” “us,” “we” or “our”), we submit this letter in response to comments received from the staff (the “Staff”) of the Securities and Exchange Commission
+contained in its letter dated September 26, 2023, relating to the above-referenced filing. In this letter, we have recited the comments from the Staff in italicized, bold type and have followed this with Tesla’s response thereto. 
+
+Form 10-K for the fiscal year ended December 31, 2022 
+
+Management’s Discussion and Analysis of Financial Condition and Results of Operations Critical Accounting Policies and Estimates 
+
+Income Taxes, page 36 
+1. We note your critical
+accounting estimate for income taxes and that significant judgment is required in determining your provision for income taxes, deferred tax assets and liabilities, and any valuation allowance recorded against your net deferred tax assets. We also
+note your disclosure on page 82 (Note 14 – Income Taxes) that you continue to monitor the realizability of the U.S. deferred tax assets, taking into account multiple objective and subjective factors. Please revise your future filings to address
+the following: 
+ 
+
+ 
+•
+ 
+ 
+Expand your disclosure to provide greater insight into the quality and variability of information regarding
+financial condition and operating performance. While your accounting policy notes in the financial statements generally describe the method used to apply an accounting principle, the discussion here should present qualitative and quantitative
+information necessary to understand the estimation uncertainty and the impact the critical accounting estimate has had or is reasonably likely to have on financial condition or results of operations. 
+
+ 
+
+ 
+•
+ 
+ 
+We note you reference numerous factors considered in your assessment of the realizability of your U.S.
+deferred tax assets, including but not limited to, a history of losses in prior years, excess tax benefits related to stock-based compensation, future reversal of existing temporary differences, and tax planning strategies. Revise to provide an
+analysis of the factors considered, such as how you arrived at the estimate, how accurate the estimate/assumption has been in the past, how much the estimate/assumption has changed in the past, and whether the estimate/assumption is reasonably
+likely to change in the future. Since critical accounting estimates and assumptions are based on matters that are highly uncertain, you should analyze their specific sensitivity to change, based on other outcomes that are reasonably likely to occur
+and would have a material effect. Where applicable, provide quantitative as well as qualitative disclosure when quantitative information is reasonably available and will provide material information for investors. 
+ 
+ 
+1 
+
+ 
+
+ 
+ 
+1 Tesla Road, Austin, TX 78725
+
+P 650 681 5100  F 650 681 5101 
+ 
+ 
+We acknowledge the Staff’s comment and as requested revised our disclosure (beginning
+with our Form 10-Q filing for the quarter ended September 30, 2023) to expand on the uncertain and variable nature of the information related to our financial condition, available tax deductions and the
+macroeconomic environment which could significantly impact our judgement regarding the realizability of our U.S. deferred tax assets. Set forth below is our existing December 31, 2022, disclosure and our revised disclosure which is included
+with our Form 10-Q filing for the quarter ended September 30, 2023. 
+Disclosure as of
+December 31, 2022 
+“We are subject to income taxes in the U.S. and in many foreign jurisdictions. Significant judgment is
+required in determining our provision for income taxes, our deferred tax assets and liabilities and any valuation allowance recorded against our net deferred tax assets. We make these estimates and judgments about our future taxable income that are
+based on assumptions that are consistent with our future plans. Tax laws, regulations and administrative practices may be subject to change due to economic or political conditions including fundamental changes to the tax laws applicable to corporate
+multinationals. The U.S., many countries in the European Union and a number of other countries are actively considering changes in this regard. As of December 31, 2022, we had recorded a full valuation allowance on our net U.S. deferred tax
+assets because we expect that it is more-likely-than-not our U.S. deferred tax assets will not be realized. Should the actual amounts differ from our estimates, the amount of our valuation allowance could be
+materially impacted.” 
+Note 1--Summary of Significant Accounting Policies Disclosure as
+of September 30, 2023 
+“We are subject to income taxes in the U.S. and in many foreign jurisdictions. Significant
+judgment is required in determining our provision for income taxes, our deferred tax assets and liabilities and any valuation allowance recorded against our net deferred tax assets that are not more likely than not to be realized. The determination
+of the realizability of deferred tax assets requires significant judgment in assessing the likelihood of future tax consequences. In completing our assessment of realizability of our deferred tax assets, we consider our history of losses measured at
+pre-tax income (loss) adjusted for permanent book-tax differences on a jurisdictional basis, volatility in actual earnings, excess tax benefits related to stock-based
+compensation in recent prior years, and impacts of the timing of reversal of existing temporary differences. We also rely on our assessment of the Company’s projected future results of business operations, including uncertainty in future
+operating results relative to historical results, volatility in the market price of our common stock and its performance over time, variable macroeconomic conditions impacting our ability to forecast future taxable income, and changes in business
+that may affect the existence and magnitude of future taxable income. Our valuation allowance assessment is based on our best estimate of future results considering all available information. 
+
+We monitor the realizability of the U.S. deferred tax assets taking into account all relevant factors. As of September 30, 2023, we
+continued to maintain a full valuation allowance on our U.S. deferred tax assets. We will release the valuation allowance when there is sufficient positive evidence to support a conclusion that it is more likely than not the deferred tax assets will
+be realized. Depending on our operating results and the amount of stock-based compensation tax deductions available in the future, we may release the valuation allowance associated with the U.S. deferred tax assets within the next year. The timing
+and amount of the valuation allowance release could vary based on our assessment of all available evidence. Release of all, or a portion, of the valuation allowance would result in the recognition of certain deferred tax assets and may result in a
+material decrease to income tax expense for the period the release is recorded.” 
+The revised disclosure may change from time-to-time as we evaluate all available evidence, both positive and negative, to determine whether, based on the weight of that evidence, a valuation allowance on our U.S.
+deferred tax assets is needed. 
+In respect of your the second bullet to your question 1, as noted above, our analysis regarding whether a
+valuation allowance on our U.S. deferred tax assets is required involves a mixture of both objective and subjective evidence and considerable judgment. Although the ability to utilize the U.S. deferred tax assets is generally positively correlated
+to increases in our U.S. taxable income1, as noted in detail below, such income is highly volatile. Tesla’s future U.S. taxable income is subject to a myriad of factors (many of which are
+subjective and do not lend themselves to 
+ 
+
+1 
+ 
+For purposes of this letter the term taxable income (or loss) means
+pre-tax income (or loss) adjusted for permanent book-tax differences on a jurisdictional basis. 
+ 
+ 
+2 
+
+ 
+
+ 
+ 
+1 Tesla Road, Austin, TX 78725
+
+P 650 681 5100  F 650 681 5101 
+ 
+ 
+
+quantitative analysis) as highlighted in our revised disclosure above, which was included in the Summary of Significant Accounting policies footnote of our
+Form-10 Q filing for the quarter ended September 30, 2023. The relationships among these various factors are not linear, nor are they generally susceptible to conventional statistical correlation or
+sensitivity assessment. Most importantly, as explained in detail below we earned net U.S. taxable income for the first time in our year ended December 31, 2022, after a history of U.S. taxable loss in every prior year. Given the year ended
+December 31, 2022, was our first year of net U.S. taxable income, there has previously not been a need for a formal retrospective review of prior estimates or changes to the prior valuation assessments. When considering the potential for
+changes to the future, the revised disclosure above (which was included in our Form10-Q filing for the quarter ended September 30, 2023) includes the potential timing for a release of the valuation
+allowance and that such release may result in a material decrease to our income tax expense for the period the release is recorded. 
+Financial
+Statements 
+Notes to Consolidated Financial Statements 
+
+Note 14—Income Taxes, page 81 
+2. We note your
+earnings history, including significant pre-tax income in each of the three years presented within your consolidated statements of operations. We also note your disclosure on page 82 that you intend to
+continue maintaining a full valuation allowance on your U.S. deferred tax assets until there is sufficient evidence to support the reversal of all, or some portion, of your valuation allowance. Please tell us, and revise your disclosure in future
+filings to clarify, what you mean when you state “... we intend to continue maintaining a full valuation allowance on our U.S. deferred tax assets until there is sufficient evidence to support the reversal of all or some portion of these
+allowances.” In this regard, reconcile your disclosure to the “more-likely-than-not” recognition threshold within ASC
+740-10-30, or revise to eliminate the ambiguity. 
+
+We respectfully advise the Staff that we considered both positive and negative evidence in assessing whether a valuation allowance is required
+on our U.S. deferred tax assets. This assessment requires significant judgement in considering the relative impact of positive and negative evidence. Consistent with the requirements prescribed by ASC 740-10-30-23, the weight given to the potential effect of positive and negative evidence in our assessment is commensurate with the extent to which we can objectively
+verify the evidence. Additionally, although we recorded pre-tax income in each of the three years presented within our most recent consolidated statements of operations, ASC 740 makes it clear that our
+analysis should look to taxable income (or loss).2 As discussed in detail below, the year ended December 31, 2022, was the first year in which we had net U.S. taxable income. Based on
+the weight of the available evidence as of December 31, 2022, and 2021, it was more-likely-than-not that these U.S. deferred tax assets would not be realized. We continue to maintain a full valuation
+allowance on our U.S. deferred tax assets until there is sufficient positive evidence to support a conclusion that our U.S. deferred tax assets are more-likely-than-not to be realized. We will release all or
+part of our valuation allowance if and when the positive evidence overcomes and outweighs the negative evidence to support a conclusion that our U.S. deferred tax assets are more-likely-than-not to be
+realized. We have revised our disclosure and included this in our Form 10-Q filing for the quarter ended September 30, 2023, as follows, shown in underline for additions and strike through for deletions:
+ 
+“... We monitor the realizability of the U.S. deferred tax assets taking into account all relevant factors. As of
+September 30, 2023, we intend to continued maintaining to maintain a full valuation allowance on our U.S. deferred tax assets. We will release the valuation allowance when
+until there is sufficient positive evidence to support the reversal of all or some portion of these allowances a conclusion that it is more likely than not the deferred tax assets will be
+realized.” 
+ 
+ 
+
+2 
+ 
+ASC
+740-10-30-18. 
+ 
+ 
+3 
+
+ 
+
+ 
+ 
+1 Tesla Road, Austin, TX 78725
+
+P 650 681 5100  F 650 681 5101 
+ 
+ 
+3. Please provide to us supplementally your analysis of the factors you considered (i.e., those factors
+referenced on page 82) supporting your conclusions as of December 31, 2022, and 2021, that it is more likely than not that your U.S. deferred tax assets will not be realized. 
+
+We respectfully submit the following analysis regarding factors we considered in our assessment that as of December 31, 2022, and 2021 it
+is more-likely-than-not that our U.S. deferred tax assets will not be realized. ASC 740 stipulates that in assessing the valuation allowance “[a]ll available evidence, both positive and negative, shall be
+considered to determine whether, based on the weight of that evidence, a valuation allowance for deferred tax assets is needed.”3 Based upon our history of U.S. taxable losses in every
+year of our corporate existence before 2022 as well as our 12 quarter cumulative U.S. taxable loss for the periods ending December 31, 2022 and 2021 we concluded that it was more-likely-than-not that we
+will not realize our U.S. deferred tax assets. 
+Consideration of Objective Evidence 
+
+Tesla incurred a significant rolling 12 quarter cumulative U.S. taxable loss in each of the 12 quarter periods ending December 31,
+2021, and 2022. Although we recorded pre-tax income in our consolidated statements of operations for each of the years ended December 31, 2021, and December 31, 2022, ASC 740 makes it clear that it
+looks to taxable income.4 And as noted in footnote 1 above, for these purposes “taxable income (loss)” is measured by pre-tax income (loss)
+adjusted for permanent book-tax differences on a jurisdictional basis. 
+Focusing upon taxable
+income as prescribed by the guidance, ASC 740-10-30-21 expressly provides that a “cumulative loss in recent years is
+a significant piece of negative evidence that is difficult to overcome.”5 A cumulative loss may be overcome by evidence of a strong earnings history coupled with evidence that the loss is
+an aberration rather than a continuing condition.6 Although we earned U.S. taxable income in 2022 for the first time, we incurred a U.S. taxable loss in every year prior to 2022. When evaluated in
+light of this history Tesla’s positive U.S. taxable income for the year ended December 31, 2022, represents the only significant positive objective evidence and thus is insufficient to overcome the negative presumption of ASC 740-10-30-21. 
+
+Consideration of Subjective Evidence 
+
+ASC 740-10-30-17 provides that currently available information with respect to future years may “supplement” historical evidence. We
+therefore considered in our analysis various forecasts prepared in 2022 projecting 2023 U.S. taxable income (or taxable loss). Although these forecasts generally projected positive 2023 U.S. taxable income they were highly variable. This variability
+stemmed from numerous factors. As noted below, increasing interest rates had an impact on the affordability of our vehicles, leading us to institute some price cuts. To offset the impact to margin, we focused on achieving cost reductions; however,
+the amount and timing of cost reductions involve considerable uncertainty. While we continued ramping production at our factories in Berlin, Germany and Austin, Texas (each of which commenced operations in 2022), considerable uncertainty remained
+regarding the timing and extent of efficiencies to be gained from the ramps. Additionally, inflationary pressures on, and volatility of, key raw materials (such as lithium) introduced further uncertainty to our forecasts. 
+
+In addition, certain risk factors unique to the auto industry, the EV industry, and Tesla in particular (e.g., the detrimental impact
+of rising interest rates and the possibility of adverse legal guidance under the Inflation Reduction Act (“IRA”)) became considerably more acute in late 2022 and early 2023. These risks, which among other things caused us to reduce EV
+prices, added considerably more volatility to the already variable 2023 forecasts. We discuss some of these more specific risks in detail below. 
+
+Therefore, in considering the weight to afford the forecasts as of December 31, 2022, we considered the variability in the forecasts as
+noted above. This variability caused us to ascribe less weight to the 2023 subjective information than we did to the considerable objective negative evidence (i.e., the cumulative U.S. taxable losses and long history of taxable losses)
+described above, and this was particularly true given the ongoing macroeconomic outlook which continued to deteriorate late in 2022 and which we expected to negatively impact our operating margin. 
+
+ 
+
+3 
+ 
+ASC
+740-10-30-17. [emphasis added]. 
+
+4 
+ 
+ASC
+740-10-30-18. 
+
+5 
+ 
+ASC
+740-10-30-16. [emphasis added]. See also ASC 740-10-30-21 (“forming a conclusion that a valuation allowance is not needed is difficult when there is negative evidence such as cumulative losses in recent years.”)
+
+6 
+ 
+ASC
+740-10-30-22 
+ 
+ 
+4 
+
+ 
+
+ 
+ 
+1 Tesla Road, Austin, TX 78725
+
+P 650 681 5100  F 650 681 5101 
+ 
+ 
+Rising Interest Rates—Negative Correlation with EV Demand in General and Specific
+Illustration of Interest Rate Impact on Price of Tesla Products. 
+The impact of rising interest rates is particularly relevant to auto
+manufacturers. The vast majority of auto purchasers finance their purchase through either loans (which have an explicit annual percentage rate (“APR”) financing charge) or through leases which have an implicit APR financing charge.
+Experian estimates that 80% of new car purchases are done with credit.7 Moreover, purchasers are often significantly more sensitive to the monthly payment amount than to the actual
+“purchase price” when purchasing or leasing an automobile. As a result, automobile demand in general is extremely sensitive (and negatively correlated) to interest rates. Beginning in March of 2022, the U.S. Federal Reserve began
+significant interest rate increases in response to rising inflation. In particular, the U.S. Federal Reserve raised the Federal Funds Rate from 0.25%-0.50% in March of 2022 to
+4.5-4.75% in February of 2023 with further rate increases anticipated during the year.8 These systemic interest rate increases have significantly increased
+the financing cost paid by customers purchasing or leasing Tesla’s automobiles. As noted above, because customers are extremely sensitive to monthly payments, the only way to maintain a similar monthly payment amount for a similar vehicle in a
+rising interest environment is to reduce the purchase price of the vehicle. Predictably, Tesla has reduced EV prices in response to higher interest rates in order to stimulate demand. For example, in January 2023, we took one of the
+largest price cuts in our history at that time reducing the price of the Model Y by up to $13,000 or 20%. This is consistent with our Q4 earnings call held on January 25, 2023, where we noted “that in 2022, rising interest rates alone
+had effectively increased the price of our cars in the U.S. by nearly 10%”. 
+Potential Loss of IRA Credits. 
+
+Included in the IRA’s passage in 2022 were possible EV tax credits to customers and certain manufactures which were meant to increase
+customer demand for EVs. As of December 31, 2022, and even today the IRA’s application has been subject to considerable uncertainty. For example, early IRS guidance excluded Tesla’s most popular 5 seat Model Y from qualification for
+the new clean vehicle credits which were up to $7,500 per EV (approximately 15% of the then-purchase price of our Model Y). Although the IRS modified this guidance in February of 2023 to include the 5 seat Model Y market confusion in the interim
+period between the original and modified guidance may have adversely affected demand. Similarly, it was not clear at the end of 2022 and into early 2023 whether certain Model 3 trims qualified for the full $7,500 EV credit. The language on our
+webpage from the January 2023 time frame (set forth in the first example below) described that uncertainty. If a portion of our EVs did not qualify for the EV credit it could result in a significant competitive disadvantage compared to other
+competitor’s EVs as the credit can be as much as 20% and 15% or more of the purchase price of a Model 3 and Y, respectively. Additional statutory rules enacted as part of the IRA in 2022 requiring certain levels of domestic content and critical
+minerals will become effective in 2024 and may cause some Tesla EVs (possibly including certain Models 3, Y and X) to be ineligible for the full credit. As of the date of this letter, a description of the impact that these rules will have on our
+vehicles going forward is contained on our webpage (set forth in the second example below). A loss (or decrease) of these EV credits effectively increases the cost to our customers which can potentially decrease demand. 
+
+ 
+ 
+
+7 
+ 
+This information is sourced from
+https://www.experian.com/blogs/ask-experian/research/auto-loan-debt- 
+
+study/#:~:text=In%202022%2C%20most%20new%20car,research%20conducted%20by%20Experian%20Automotive. 
+
+8 
+ 
+In particular, the Federal Reserve signaled that it would continue to pursue an aggressive rate hike posture in
+its Summary of Economic Projections dated December 14, 2022 (“Minutes of the Federal Open Market Committee December 13-24, 2022” released on January 4, 2023). 
+ 
+ 
+5 
+
+ 
+
+ 
+ 
+1 Tesla Road, Austin, TX 78725
+
+P 650 681 5100  F 650 681 5101 
+ 
+ 
+Example 1 – January 2023 
+
+ 
+
+ 
+Example 2 – October 2023 
+
+ 
+
+ 
+Based on our careful consideration and weighting of the available evidence, we concluded that our positive
+taxable income for the one year ended December 31, 2022, does not carry sufficient weight to overcome the objective negative evidence of the cumulative losses, measured including permanent book-tax
+differences, and the inability to rely on future forecasts of taxable income is not sufficient to realize our U.S. deferred tax assets. Further, as of December 31, 2022, and December 31, 2021, we did not identify any available tax-planning strategies that are prudent and feasible and would result in realization of U.S. deferred tax assets. Accordingly, we maintained a valuation allowance on our U.S. deferred tax assets, after
+consideration of future reversals of existing taxable temporary differences, as of December 31, 2022, and December 31, 2021. 
+We
+appreciate the Staff’s comments and request that the Staff contact the undersigned with any questions regarding this letter at 512-516-8177. 
+
+ 
+
+Sincerely,
+
+/s/ Derek Windham
+
+Derek Windham
+
+Senior Director and Deputy General Counsel
+ 
+ 
+
+cc:
+ 
+Vaibhav Taneja, Chief Financial Officer 
+ 
+ 
+6

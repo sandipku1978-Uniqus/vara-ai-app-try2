@@ -10,9 +10,14 @@
  * those are marked content_error='pdf_only' rather than stored as garbage
  * (OCR is a later, deliberate step).
  *
+ * Before fetching new text, it reads the reviewed filing form of stored
+ * letters into urc_letter_facets (migration 027) — the "Form 10-K" filter
+ * on the Comment Letters page — newest first, --facet-limit per run.
+ *
  * Usage:
  *   npx tsx data-pipeline/fetch-letter-text.ts --limit 200
  *   npx tsx data-pipeline/fetch-letter-text.ts --max-minutes 300   # nightly cron
+ *   npx tsx data-pipeline/fetch-letter-text.ts --max-minutes 30 --facet-limit 500000   # one-off facet catch-up
  */
 
 import { createServiceClient } from './supabase';
@@ -25,6 +30,10 @@ import {
   readResponseWithLimit,
   SecUpstreamError,
 } from '../src/lib/sec-upstream';
+import {
+  deriveReviewedForms,
+  REVIEWED_FORMS_DERIVATION_VERSION,
+} from '../src/services/commentLetterForms';
 
 const EDGAR_BASE = 'https://www.sec.gov';
 const USER_AGENT =
@@ -304,6 +313,79 @@ export async function updateCommentLetterWithRetry(
   return false;
 }
 
+export interface LetterFacetSourceRow {
+  accession: string;
+  cik: number;
+  date_filed: string;
+  head: string | null;
+}
+
+/** The urc_letter_facets row (migration 027) for one letter's stored text. */
+export function deriveLetterFacetRow(row: LetterFacetSourceRow, derivedAt: string) {
+  const { forms, basis } = deriveReviewedForms(row.head);
+  return {
+    accession: row.accession,
+    cik: row.cik,
+    reviewed_forms: forms,
+    reviewed_forms_basis: basis,
+    derivation_version: REVIEWED_FORMS_DERIVATION_VERSION,
+    derived_at: derivedAt,
+  };
+}
+
+export interface FacetBackfillStats {
+  derived: number;
+  withForms: number;
+  failedBatches: number;
+}
+
+/**
+ * Read the reviewed filing form of every letter with text that has no facet
+ * row at the current derivation version, newest first, by keyset through
+ * urc_letters_needing_facets (service role only). Facets are derived data:
+ * a failed batch is reported (and fails the run at the end) but never
+ * blocks text ingestion, which has already run.
+ */
+export async function backfillLetterFacets(
+  client: SupabaseClient,
+  deadline: number,
+  limit: number
+): Promise<FacetBackfillStats> {
+  const stats: FacetBackfillStats = { derived: 0, withForms: 0, failedBatches: 0 };
+  let cursor: { date: string; accession: string; cik: number } | null = null;
+  while (Date.now() < deadline && stats.derived < limit) {
+    const { data, error } = await client.rpc('urc_letters_needing_facets', {
+      p_limit: Math.min(BATCH, limit - stats.derived),
+      p_version: REVIEWED_FORMS_DERIVATION_VERSION,
+      p_before_date: cursor?.date ?? null,
+      p_after_accession: cursor?.accession ?? null,
+      p_after_cik: cursor?.cik ?? null,
+    });
+    if (error) {
+      stats.failedBatches += 1;
+      console.error(`Facet reader failed: ${error.message}`);
+      break;
+    }
+    const rows = (data || []) as LetterFacetSourceRow[];
+    if (rows.length === 0) break;
+    const derivedAt = new Date().toISOString();
+    const facetRows = rows.map(row => deriveLetterFacetRow(row, derivedAt));
+    const { error: upsertError } = await client
+      .from('urc_letter_facets')
+      .upsert(facetRows, { onConflict: 'accession,cik' });
+    if (upsertError) {
+      stats.failedBatches += 1;
+      console.error(`Facet upsert failed: ${upsertError.message}`);
+      break;
+    }
+    stats.derived += facetRows.length;
+    stats.withForms += facetRows.filter(row => row.reviewed_forms.length > 0).length;
+    const last = rows[rows.length - 1];
+    cursor = { date: last.date_filed, accession: last.accession, cik: last.cik };
+  }
+  return stats;
+}
+
 export async function rethreadLetterDerivations(client: SupabaseClient): Promise<number> {
   const { data, error } = await client.rpc('urc_thread_letters');
   if (error) {
@@ -399,6 +481,10 @@ async function main() {
   const maxMinutes = Number(getArg('max-minutes') || 0);
   const identifierLimit = Math.max(0, Number(getArg('identifier-limit') ?? 20_000));
   const identifierRefetchLimit = Math.max(0, Number(getArg('identifier-refetch-limit') ?? 5_000));
+  // Reviewed-form facets (migration 027) read stored text only — no SEC
+  // traffic — so a generous nightly slice is cheap. Letters stored tonight
+  // are picked up by tomorrow's pass (newest first).
+  const facetLimit = Math.max(0, Number(getArg('facet-limit') ?? 60_000));
   const deadline = maxMinutes > 0 ? Date.now() + maxMinutes * 60_000 : Infinity;
 
   const client = createServiceClient();
@@ -419,6 +505,12 @@ async function main() {
       console.log(`Threading: ${threaded} rows (re)assigned after partial identifier reconciliation.`);
     }
     throw new Error(`${identifierWriteFailure}; successful writes were retained and the remaining rows are resumable.`);
+  }
+  const facetStats = facetLimit > 0
+    ? await backfillLetterFacets(client, deadline, facetLimit)
+    : { derived: 0, withForms: 0, failedBatches: 0 };
+  if (facetStats.derived > 0 || facetStats.failedBatches > 0) {
+    console.log(`Reviewed-form facets: ${facetStats.derived} letters read, ${facetStats.withForms} name a form, ${facetStats.failedBatches} failed batches.`);
   }
   let fetched = 0;
   let errored = 0;
@@ -519,6 +611,9 @@ async function main() {
   const writeFailure = authoritativeWriteFailureReason(writeHealth);
   if (writeFailure) {
     throw new Error(`${writeFailure}; successful writes were retained and the remaining rows are resumable.`);
+  }
+  if (facetStats.failedBatches > 0) {
+    throw new Error('Reviewed-form facet backfill failed (is migration 027 applied?); letter text ingestion completed and facets resume next run.');
   }
   console.log(
     `Done. ${identifierStats.updated} legacy identifiers reconciled, ${fetched} letters stored, ` +

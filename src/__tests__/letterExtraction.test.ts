@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   authoritativeWriteFailureReason,
+  backfillLetterFacets,
+  deriveLetterFacetRow,
   extractLetterIdentifiers,
   deriveStoredLetterIdentifierPatch,
   fetchSubmission,
@@ -226,5 +228,62 @@ describe('comment-letter review identity and retry policy', () => {
     expect(patch.review_key).toMatch(/^review-/);
     expect(shouldRethreadLetters(1, 0)).toBe(true);
     expect(shouldRethreadLetters(0, 0)).toBe(false);
+  });
+});
+
+describe('reviewed-form facet backfill (migration 027)', () => {
+  it('derives a facet row from the stored text head with its basis and version', () => {
+    const row = deriveLetterFacetRow({
+      accession: '0000000000-24-002512',
+      cik: 320193,
+      date_filed: '2024-03-06',
+      head: 'March 6, 2024\n\nRe: Apple Inc.\n Form 10-K for the\nfiscal year ended September 30, 2023\n File No. 001-36743\n\n Dear Luca Maestri:\n In the December 30, 2023 Form 10-Q, you state',
+    }, '2026-10-04T00:00:00.000Z');
+    expect(row).toEqual({
+      accession: '0000000000-24-002512',
+      cik: 320193,
+      reviewed_forms: ['10-K'],
+      reviewed_forms_basis: 'Apple Inc. Form 10-K for the fiscal year ended September 30, 2023 File No. 001-36743',
+      derivation_version: 1,
+      derived_at: '2026-10-04T00:00:00.000Z',
+    });
+  });
+
+  it('pages the reader by keyset and upserts each batch', async () => {
+    const pages = [
+      [
+        { accession: 'a-2', cik: 2, date_filed: '2026-02-02', head: 'Re: B\nForm S-1\nDear X:' },
+        { accession: 'a-1', cik: 1, date_filed: '2026-02-01', head: 'no reference block' },
+      ],
+      [],
+    ];
+    const rpc = vi.fn().mockImplementation(async () => ({ data: pages.shift(), error: null }));
+    const upsert = vi.fn().mockResolvedValue({ error: null });
+    const client = { rpc, from: vi.fn(() => ({ upsert })) } as unknown as Parameters<typeof backfillLetterFacets>[0];
+
+    const stats = await backfillLetterFacets(client, Number.POSITIVE_INFINITY, 1_000);
+
+    expect(stats).toEqual({ derived: 2, withForms: 1, failedBatches: 0 });
+    expect(rpc).toHaveBeenNthCalledWith(1, 'urc_letters_needing_facets', expect.objectContaining({
+      p_version: 1, p_before_date: null, p_after_accession: null, p_after_cik: null,
+    }));
+    expect(rpc).toHaveBeenNthCalledWith(2, 'urc_letters_needing_facets', expect.objectContaining({
+      p_before_date: '2026-02-01', p_after_accession: 'a-1', p_after_cik: 1,
+    }));
+    expect(upsert.mock.calls[0][0].map((row: { reviewed_forms: string[] }) => row.reviewed_forms)).toEqual([['S-1'], []]);
+    expect(upsert.mock.calls[0][1]).toEqual({ onConflict: 'accession,cik' });
+  });
+
+  it('reports a failed batch instead of claiming the facets were read', async () => {
+    const client = {
+      rpc: vi.fn().mockResolvedValue({ data: null, error: { message: 'function urc_letters_needing_facets does not exist' } }),
+      from: vi.fn(),
+    } as unknown as Parameters<typeof backfillLetterFacets>[0];
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+    try {
+      expect(await backfillLetterFacets(client, Number.POSITIVE_INFINITY, 1_000)).toEqual({ derived: 0, withForms: 0, failedBatches: 1 });
+    } finally {
+      errorSpy.mockRestore();
+    }
   });
 });

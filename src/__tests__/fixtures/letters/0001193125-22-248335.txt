@@ -1,0 +1,257 @@
+CORRESP
+
+ 
+
+ 
+
+ 
+September 21, 2022 
+VIA
+EDGAR SUBMISSION 
+Securities and Exchange Commission 
+
+Division of Corporation Finance 
+Office of Technology 
+
+100 F Street, N.E. 
+Washington, D.C. 20549 
+
+ 
+
+Attention:
+ 
+Lisa Etheredge 
+
+ 
+ 
+Robert S. Littlepage 
+
+ 
+
+ 
+Re:
+ 
+Palantir Technologies Inc. 
+
+ 
+ 
+ 
+Form 10-K for the Year Ended December 31, 2021
+
+ 
+ 
+ 
+Form 10-Q for the Interim Period Ended June 30, 2022
+
+ 
+ 
+ 
+File No. 001-39540 
+
+Ladies and Gentlemen: 
+On behalf of Palantir
+Technologies Inc. (the “Company”), we are responding to the comments of the staff (the “Staff”) of the Securities and Exchange Commission (the “Commission”) contained in its letter dated
+August 24, 2022, to David Glazer, the Company’s Chief Financial Officer, regarding the above referenced Form 10-K (the “Form 10-K”)
+filed on February 24, 2022 (File No. 001-39540) and the above referenced Form 10-Q (the “Form 10-Q”)
+filed on August 8, 2022 (File No. 001-39540). 
+In this letter, we have recited the
+comments from the Staff in bold and italicized type and have followed each comment with the Company’s response. References to “we,” “our” or “us” mean the Company or its advisors, as the context may require. 
+
+Form 10-K for the Year Ended December 31, 2021 
+
+4. Investments and Fair Value Measurements 
+
+Investments, page 119 
+ 
+
+ 
+1.
+ 
+We note that you disclose the total value of the commercial contracts associated with your investments.
+In future filings, please revise to distinguish between the portion of total contract value has already been recognized as revenue and the remaining amount left to be recognized as revenue in future periods. 
+
+ 
+Securities and Exchange Commission 
+
+September 21, 2022 
+ Page
+ 2
+ 
+ 
+ 
+We acknowledge the Staff’s comment and respectfully advise the Staff
+that in future filings, we will distinguish between the portion of total contract value that has already been recognized as revenue and the remaining amount left to be recognized as revenue in future periods. 
+
+ 
+
+ 
+2.
+ 
+So that we may understand you investment agreements better, please tell us more specifically how you
+assess the concurrent agreements under the non-monetary guidance within ASC 606. Please also tell us the relationship, if any, between the Investment Agreement and the commercial contract for access to your
+products and services. For example, please clarify if you are required to hold your investment in the investee for the duration of the commercial contract. Please also clarify if investees are required to continue paying for products and service if
+you sell your investment prior to the end of the term of the commercial contract. 
+We acknowledge
+the Staff’s comment and respectfully advise the Staff that the Company assessed the Investment Agreements (as defined in the Form 10-K) and commercial contracts under the noncash and consideration paid or
+payable to a customer guidance within ASC 606—Revenue from Contracts with Customers to determine whether and, if so, how the Investment Agreement would affect the commercial contract to provide access to our products and services to a
+given customer. Specifically, we have assessed whether we have met the definition of a contract as outlined in ASC 606-10-25-1
+including whether the Investment Agreements and commercial contracts have commercial substance. Additionally, we have considered the guidance in ASC
+606-10-32-25 to 27 in our consideration as to whether the Company’s Investment Agreements are distinct from the commercial
+contracts. The Investment Agreements created a binding obligation for the Company to purchase for cash, or commit to purchase for cash, shares in the Investees (as defined in the Form 10-K) in a private
+placement or in connection with a private investment in public equity (“PIPE”) transaction on substantially the same rights and privileges as any other third-party investors. The closing of the PIPE Investment Agreements were contingent
+upon the applicable closing conditions, including the successful merger of the Investee with the applicable special purpose acquisition company (“SPAC”). To the Company’s knowledge, the Company’s shares hold the same risks as
+with any other shareholder. The amount of cash payable by the Company per the terms of the Investment Agreements represents fair market value for the purchased shares as evidenced by the existence of other third-party investors paying the same price
+for the same instruments in either the PIPE or based on recent third-party investor transactions. The agreed upon prices also approximate the fair market value of the SPAC shares being publicly traded at the time of execution of the Investment
+Agreements. The Company therefore concluded that the 
+
+ 
+Securities and Exchange Commission 
+
+September 21, 2022 
+ Page
+ 3
+ 
+ 
+ 
+
+Investment Agreements were priced at fair market value. In addition, the Company concluded that the cash consideration received from the Investee, in their capacity as a customer, in exchange for
+rights to our products and services approximates fair market value for those products and services determined based on estimated standalone selling prices. 
+
+The Investment Agreements do not impact the rights to our products and services provided under the commercial contracts. The
+Investment Agreements and commercial contracts do not obligate the Company to hold its shares in the Investee throughout the duration of the commercial contracts1. The Investees are required to
+continue paying for products and services pursuant to the commercial contracts even if the Company sells its shares prior to the end of the commercial contract term (ranging from three to ten years inclusive of contractual options). 
+
+In some cases, prior to the successful merger of the Investee with the applicable SPAC, Investees had the contractual right to
+terminate the commercial agreement if the Company’s proposed investment was not closed. However, after closing, the sale of such purchased shares by the Company prior to the end of the term of the commercial contract would not impact the
+Investees’ contractual obligations under the commercial contracts, including each Investee’s obligation to continue paying for products and services. The total value of the commercial contracts were materially in excess of the
+Company’s total purchases or commitments to purchase shares under the Investment Agreements. 
+Therefore, based on the
+terms of the Investment Agreements and the enforceable rights and obligations of the commercial contracts, as well as the fact that the Company paid fair market value in cash to Investees for shares received and the customers received access to our
+products and services in exchange for cash consideration that approximates the fair market value for those products and services, we determined the Investment Agreements and commercial contracts should be accounted for as separate transactions. 
+
+Form 10-Q for the Interim Period Ended June 30, 2022 
+
+Management’s Discussion and Analysis 
+Russia
+Invasion of Ukraine, page 23 
+ 
+
+1 
+ 
+In one case, investors who committed to purchase shares to be issued by an Investee in a PIPE transaction,
+including the Company, subsequently entered into a lock-up agreement with such Investee to restrict the sale of certain of such investor’s shares in such Investee for 180 days after the issuance of such
+shares. Such lock-up agreements covered over 80% of the shares to be issued by such Investee in the PIPE transaction, including 50% of the shares to be purchased by the Company. Such lock-up agreement was unrelated to the Company’s commercial agreement with the Investee and no compensation was paid by the Investee to the Company or any other investors in connection with their entry into
+such lock-up agreement. 
+
+ 
+Securities and Exchange Commission 
+
+September 21, 2022 
+ Page
+ 4
+ 
+ 
+
+ 
+3.
+ 
+You disclose on page 23 that in June 2022, your CEO met with the President of Ukraine and other senior
+officials to discuss opening an office in Ukraine. Please ensure that future filings address your progress, if any, on opening an office in Ukraine. Your disclosures should address the materiality of any operations within Ukraine and disclose any
+material direct or indirect risks to your business due to having a presence in Ukraine (for example relating to security, internet accessibility or other infrastructure concerns). Please also disclose any steps you have taken or may take to address
+those risks. 
+We acknowledge the Staff’s comment and respectfully advise the Staff that our
+future filings will address, to the extent material, our operations within Ukraine, including relevant updates regarding opening an office, as well as material direct or indirect risks to our business due to having a presence in Ukraine, if any, and
+any steps taken to address such risks. 
+Results of Operations, page 28 
+ 
+
+ 
+4.
+ 
+In your August 8, 2022 Form 8-K, you disclosed downward
+revisions to expected revenue and adjusted income from operations for fiscal 2022. You also disclosed expectations for adjusted income from operations for the third quarter of 2022 that were approximately half of adjusted income from operations for
+the quarter ended June 30, 2022. Finally, we noted that you did not re-affirm your long-term annual revenue guidance of 30% or more through 2025 in that Form 8-K.
+It does not appear that your MD&A for the period ended June 30, 2022 sufficiently addressed these material changes in outlook. Please revise your future filings to describe, in detail, the nature of any material disruptions to your outlook
+and business goals. Please also revise to specifically quantify the impact of these disruptions on your results of operations and/or capital resources. Please refer to Items 303(a) and (c) of Regulation
+S-K. 
+We acknowledge the Staff’s comment and
+respectfully advise the Staff that the Company routinely considers Items 303(a) and (c) of Regulation S-K when updating its MD&A disclosure in its periodic reports to ensure, among other things, that
+its disclosure accurately reflects current period operating results as well as material trends and uncertainties. 
+For
+instance, the Company disclosed in its second quarter earnings call held on August 8, 2022 that it made downward revisions to its guidance in part due to the timing of large contracts in the U.S. government business. In its corresponding
+Form 10-Q, it added disclosure to the “Our Customers” section at the forepart of the MD&A that, though the Company continues to view its U.S. government business as an important source of
+revenue, “large government customers in particular are generally subject to a number of uncertainties regarding budgets and spending levels, changes in timing and spending priorities, and 
+
+ 
+Securities and Exchange Commission 
+
+September 21, 2022 
+ Page
+ 5
+ 
+ 
+ 
+
+regulatory and policy changes, which can make it difficult to predict when, or if, [the Company] will make sales to such customers or the size and scope of any contract awards.” To the
+extent that any disruptions have, or are reasonably likely to have, a material adverse effect on the Company’s business, financial condition and results of operations in future periods, the Company will continue to include disclosure about
+known trends and uncertainties related to such disruptions in future filings. 
+The Company further acknowledges the
+Staff’s comment with respect to quantifying the impact of business disruptions to its results of operations and/or capital resources. Changes to the Company’s outlook and business goals are often due to a multitude of factors and
+their effects in future periods cannot always be reasonably or accurately estimated or quantified. In such instances, the Company believes that trend information is sufficiently addressed through a narrative discussion but respectfully advises
+the Staff that it will provide quantitative disclosure to the extent possible. 
+Comparison of the Three and Six Months Ended
+June 30, 2022 and 2021, page 29 
+ 
+
+ 
+5.
+ 
+We note that in your Form 8-K dated August 8, 2022, you
+disclose the total percentage increase in US government revenues year over year, but not the dollar amount. At the February 2022 Morgan Stanley Technology Conference, your Chief Operating Officer expressed the Company’s ambition to become the
+U.S. government’s sixth prime contractor and first software prime contractor. This view was expressed again during the August 8, 2022 earnings call. In light of this operational goal and the fact that you have cited delays in U.S.
+government contract awards as a reason for material changes to your fiscal 2022 guidance, please tell us how you considered providing greater transparency to investors by disclosing total revenue from the U.S. government for each period presented.
+ 
+We acknowledge the Staff’s comment and respectfully advise the Staff that in future
+filings, the Company will provide greater transparency around U.S. government revenue by disclosing the total revenue from the U.S. government for each period presented, in addition to its current disclosure of growth in U.S. government revenue by
+percentage and its discussion of total government revenue in its Form 10-Q Management’s Discussion and Analysis of Financial Condition and Results of Operations. 
+
+* * * * * 
+
+ 
+Securities and Exchange Commission 
+
+September 21, 2022 
+ Page
+ 6
+ 
+ 
+ 
+Please direct any questions or comments with respect to the Company’s responses to me at
+dglazer@palantir.com or (650) 888-9947. Thank you for your assistance. 
+ 
+
+Very truly yours,
+
+/s/ David Glazer
+
+David Glazer
+
+Chief Financial Officer
+ 
+ 
+
+cc:
+ 
+Alexander C. Karp, Palantir Technologies Inc. 
+
+Ryan D. Taylor, Palantir Technologies Inc. 
+
+Justin Laubach, Palantir Technologies Inc. 
+
+Scott Hsu, Palantir Technologies Inc. 
+
+Deeptha Mathavan, Palantir Technologies Inc. 
+
+Allison B. Spinner, Wilson Sonsini Goodrich & Rosati, P.C. 
+
+Shannon R. Delahaye, Wilson Sonsini Goodrich & Rosati, P.C.

@@ -1,0 +1,122 @@
+Document
+
+FOIA Confidential Treatment Requested Under 17 C.F.R. § 200.83 by Uber Technologies, Inc.
+
+UBER TECHNOLOGIES, INC.
+1515 3rd STREET
+SAN FRANCISCO, CA 94158
+UBER.COM
+
+August 7, 2023
+VIA EDGAR
+
+U.S. Securities and Exchange Commission
+Division of Corporation Finance
+Office of Trade & Services
+100 F Street, NE
+Washington, DC 20549
+ 
+
+Attn:James Giugliano
+Adam Phippen
+
+Re:Uber Technologies, Inc.
+Annual Report on Form 10-K
+Filed February 21, 2023
+File No. 001-38902
+
+Dear Mr. Giugliano and Mr. Phippen:
+Uber Technologies, Inc. (the “Company”, “we”, “our”) is submitting this letter in response to a letter, dated July 20, 2023, from the staff (the “Staff”) of the U.S. Securities and Exchange Commission (the “Commission”) with respect to the Company’s Annual Report on Form 10-K for the year ended December 31, 2022, filed with the Commission on February 21, 2023 (the “Form 10-K”).
+The numbering of the paragraphs below corresponds to the numbering of the comments in the letter from the Staff. For the Staff’s convenience, we have incorporated the text of the Staff’s comments into this response letter in italics.
+Please note that the Company is requesting confidential treatment pursuant to Rule 83 of the Commission’s Rules Concerning Information and Requests, 17 C.F.R. § 200.83 with respect to portions of the Company’s response that have been redacted from the version of this letter filed via EDGAR and marked by bracketed asterisks (“[***]”). An unredacted version of this letter is being provided to the Commission under separate cover along with the request for confidential treatment.
+
+U.S. Securities and Exchange CommissionFOIA Confidential Treatment Requested
+Division of Corporation FinanceUnder 17 C.F.R. § 200.83 by Uber Technologies, Inc.
+Office of Trade & Services
+August 7, 2023
+
+Page 2
+Form 10-K for the Fiscal Year Ended December 31, 2022
+Management's Discussion and Analysis of Financial Condition and Results of Operations
+Adjusted EBITDA, page 60
+1.We note one of the adjustments to your non-GAAP measure removes “certain legal, tax, and regulatory reserve changes and settlements.” Please explain to us and quantify each component within this non-GAAP adjustment, including your basis for concluding each component of this adjustment is consistent with the Commission’s Compliance and Disclosure Interpretations for Non-GAAP Financial Measures and Item 10(e) of Regulation S-K. With regards to your adjustment including “certain” reserve changes and settlements, please tell us how you determine which reserve changes and settlements are included and which are excluded.
+Response to Comment No. 1:
+In response to the Staff’s comment, the Company respectfully advises the Staff that, in drafting the Form 10-K, it considered the Commission’s Compliance and Disclosure Interpretations (“C&DIs”) for Non-GAAP Financial Measures and Item 10(e) of Regulation S-K, and the Company believes that its presentation of Adjusted EBITDA, including adjustments for certain legal, tax and regulatory reserve changes and settlements, is consistent with this guidance.
+The Company advises the Staff that “certain legal, tax, and regulatory reserve changes and settlements” relate to specific accruals (or reversals of accruals) for contingencies in accordance with Accounting Standards Codification Topic 450 for certain legal, tax and regulatory matters. Below is the quantification of each component within the adjustment for “certain legal, tax, and regulatory reserve changes and settlements” to arrive at Adjusted EBITDA:
+
+Year Ended December 31,
+(In millions)20212022
+
+Legal reserve changes and settlements[***][***]
+Tax reserve changes and settlements[***][***]
+Regulatory reserve changes and settlements[***][***]
+Total$526 $732 
+Legal reserve changes and settlements
+Legal reserve changes and settlements primarily relate to significant legal proceedings or claims in various jurisdictions around the world related to matters such as worker classification claims by non-governmental individuals challenging the Company’s application of laws and regulations related to whether the drivers and couriers on the Uber platform are treated as employees versus independent contractors. These matters are non-ordinary course legal matters, as they often involve plaintiff attorneys gathering potential plaintiffs, similar to class action cases, to represent their claims. Such matters normally cover several years of historical exposure that are accrued for in a single period; therefore, the amount of the claims 
+
+U.S. Securities and Exchange CommissionFOIA Confidential Treatment Requested
+Division of Corporation FinanceUnder 17 C.F.R. § 200.83 by Uber Technologies, Inc.
+Office of Trade & Services
+August 7, 2023
+
+Page 3
+can be significant and unpredictable, in both magnitude and timing. Given the historical exposure and unpredictability of these matters, they do not reflect ongoing operations and performance, and create a lack of comparability between periods when they arise.
+Additionally, these matters are separate and distinct from normal, recurring legal expenses incurred in the ordinary course of the Company’s business operations (for which the Company does not adjust any of its financial measures), which include, but are not limited to, legal expenses for numerous legal matters related to intellectual property, breach of contract, unfair competition, consumer protection, privacy, cargo liability, bodily injury, employee wrongful termination, retaliation, harassment, securities and derivative litigation as well as worker classification matters that are below the consistent quantitative threshold used for significant adjustments that the Company uses that is mentioned below.
+These normal, recurring, external legal expenses averaged [***] per quarter during fiscal years 2021 and 2022. There were only three distinct legal matters that the Company determined to be non-ordinary amounting to [***] and [***] for fiscal years 2021 and 2022, respectively.
+Tax reserve changes and settlements
+Tax reserve changes and settlements primarily relate to significant non-income tax matters that are under audit by various domestic and foreign tax authorities such as domestic state sales taxes and international value-added taxes. These matters are non-ordinary course non-income tax matters, as they involve government tax authorities attempting to apply non-income tax rules and regulations that did not have a clear application to the Company’s business model. Such matters normally cover several years of historical exposure that are accrued for in a single period; therefore, the amount of the claims can be significant and unpredictable, in both magnitude and timing. Given the historical exposure and unpredictability of these matters, they do not reflect ongoing operations and performance, and create a lack of comparability between periods when they arise.
+Additionally, these matters are separate and distinct from normal, recurring non-income tax expenses incurred in the ordinary course of the Company’s business operations (for which the Company does not adjust any of its financial measures), which include, but are not limited to, numerous jurisdictional business taxes (for example, gross receipts, business license, digital service taxes) and reserves for state sales taxes and international value-added tax exposures that are clearly applicable to the Company or non-ordinary, non-income tax exposures below the consistent quantitative threshold used for significant adjustments that the Company uses that is mentioned below.
+These normal, recurring non-income tax expenses, which exclude sales, withholding and value-added taxes that have no net impact on non-income tax expense due to the pass-through nature of these taxes, averaged [***] per quarter during fiscal years 2021 and 2022. There were only three distinct non-income tax jurisdictional matters that the Company determined to be non-ordinary amounting to [***] and [***] for fiscal years 2021 and 2022, respectively.
+
+U.S. Securities and Exchange CommissionFOIA Confidential Treatment Requested
+Division of Corporation FinanceUnder 17 C.F.R. § 200.83 by Uber Technologies, Inc.
+Office of Trade & Services
+August 7, 2023
+
+Page 4
+Regulatory reserve changes and settlements
+Regulatory reserve changes and settlements primarily relate to investigations and audits from domestic and foreign governmental agencies into matters such as social security or unemployment contributions based upon challenges to the Company’s application of laws and regulations related to whether the drivers and couriers on the Uber platform are treated as employees versus independent contractors. These matters are non-ordinary course regulatory matters, as they involve government agencies attempting to apply their social welfare rules and regulations that did not have a clear application to the Company’s business model in an attempt to claim social security or unemployment contributions, and such matters normally cover several years of historical exposure that are accrued for in a single period; therefore, the amount of the claims can be significant and unpredictable, in both magnitude and timing. Given the historical exposure and unpredictability of these matters, they do not reflect ongoing operations and performance, and create a lack of comparability between periods when they arise.
+Additionally, these matters are separate and distinct from normal, recurring regulatory expenses incurred in the ordinary course of the Company’s business operations (for which the Company does not adjust any of its financial measures), which include, but are not limited to, regulatory matters related to a variety of U.S. federal, state, local and foreign laws, rules, and regulations, including those related to Internet activities, privacy, cybersecurity, data protection, intellectual property, competition, consumer protection, payments, labor and employment, transportation services, transportation network companies and licensing regulations, and other regulatory exposures that may be non-ordinary yet are below the consistent quantitative threshold used for significant adjustments that the Company uses that is mentioned below.
+These normal, recurring regulatory expenses, which exclude regulatory fees such as transportation and congestion fees that have no net impact on regulatory expenses due to the pass-through nature of these fees, averaged [***] per quarter during fiscal years 2021 and 2022. There were only six distinct regulatory matters that the Company determined to be non-ordinary amounting to [***] and [***] for fiscal years 2021 and 2022, respectively.
+For each matter included in the legal, non-income tax and regulatory adjustment to arrive at Adjusted EBITDA, the Company determines which reserve changes and settlements are included and which are excluded based upon (1) an examination of the facts and circumstance of each matter underlying a legal, non-income tax or regulatory contingency to determine if it is consistent with those as described above for each category and (2) the use of a consistent quantitative threshold, which is applied to the quarterly impact of an individual matter. The consistent quantitative threshold is applied to (i) the initial recognition of a reserve in a quarter and (ii) any subsequent increase or decrease in a reserve in a particular quarter. Any matter below the quantitative threshold does not qualify to be included within the adjustment “certain legal, tax, and regulatory reserve changes and settlements” to arrive at Adjusted EBITDA, regardless of any non-ordinary attributes of the matter.
+
+U.S. Securities and Exchange CommissionFOIA Confidential Treatment Requested
+Division of Corporation FinanceUnder 17 C.F.R. § 200.83 by Uber Technologies, Inc.
+Office of Trade & Services
+August 7, 2023
+
+Page 5
+In summary, the Company believes the legal, tax and regulatory adjustments made to arrive at Adjusted EBITDA are not reflective of its ongoing operations and performance and create a lack of comparability between periods when they arise. Accordingly, the Company believes that excluding the amount of these reserves and settlements from Adjusted EBITDA continues to be appropriate in providing a reliable and meaningful supplemental presentation to investors and does not result in a measure that is inconsistent with the Non-GAAP C&DIs and Item 10(e) of Regulation S-K.
+In light of this comment however, beginning with the Company’s quarterly report on Form 10-Q for the third quarter of 2023, the Company will update the disclosure within Management’s Discussion and Analysis (“MD&A”), in the section titled “Reconciliations of Non-GAAP Financial Measures—Adjusted EBITDA” to include the following information:
+Certain legal, tax, and regulatory reserve changes and settlements
+Certain legal, tax, and regulatory reserve changes and settlements are primarily related to significant legal proceedings or governmental investigations related to worker classification definitions, or tax agencies challenging our non-income tax positions. These matters have limited precedent, cover extended historical periods and are unpredictable in both magnitude and timing, therefore are distinct from normal, recurring legal, tax and regulatory matters and related expenses incurred in the Company's ongoing operating performance.
+Notes to Consolidated Financial Statements
+Note 1 - Description of Business and Summary of Significant Accounting Policies
+Revenue Recognition - Mobility and Delivery Agreements, page 86
+2.We note your disclosure that modifications to your Delivery and Mobility arrangements in certain markets in 2020 and 2022 resulted in the recognition of revenue on a gross basis as a principal. With reference to ASC 606-10-50-5 and ASC 606-10-55-89 through 91, and to the extent material, please tell us your consideration of disclosing the amounts of revenues recognized on a gross basis as a principal and the amounts recognized on a net basis as an agent.
+Response to Comment No. 2:
+The Company respectfully advises the Staff that the Company believes it has complied with the disaggregated revenue disclosure requirements in accordance with ASC 606-10-50-5 and ASC 606-10-55-89 through 55-91, resulting in the disclosure of disaggregated revenues in the notes to the consolidated financial statements, Note 2 - Revenue, on page 94, in its Form 10-K, which reflects the Company’s determination that the appropriate basis for disaggregating revenues to depict the nature, amount, timing, and uncertainty of its revenues and cash flows is by (1) type of offering aligned with its operating segments and (2) geographical region.
+Based on the Company’s specific facts and circumstances, the Company determined that disaggregating revenue recognized as a principal on a gross basis or revenue recognized as an agent on a net basis is not required by ASC 606-10-50-5 and ASC 606-10-55-89 through 55-91. The Company’s disaggregation of revenues by type of offering and geographical region is consistent with 
+
+U.S. Securities and Exchange CommissionFOIA Confidential Treatment Requested
+Division of Corporation FinanceUnder 17 C.F.R. § 200.83 by Uber Technologies, Inc.
+Office of Trade & Services
+August 7, 2023
+
+Page 6
+information regularly reviewed by the Company’s chief operating decision maker for managing the business, allocating resources, making operating decisions and evaluating operating performance. In contrast, revenues disaggregated by gross or net basis is not information regularly reviewed by the Company’s chief operating decision maker.
+The Company notes the Staff’s reference to the Company’s disclosure in Note 1 - Description of Business and Summary of Significant Accounting Policies Revenue Recognition - Mobility and Delivery Agreements, on page 86, in the Company’s Form 10-K. This disclosure was not specifically included to satisfy the requirements of ASC 606-10-50-5 and ASC 606-10-55-89 through 55-91, rather, it was voluntarily included as supplemental information to provide further insight into amounts that impact the Company’s period over period Delivery revenue, cost of revenue, exclusive of depreciation and amortization, and take rate (an operating metric defined as revenue as a percentage of Gross Bookings).
+Beginning with the Company’s Form 10-Q for the three months ended March 31, 2023, the Company removed, from the notes to its consolidated financial statements, the amounts of revenues recognized on a gross basis from modified Delivery arrangements and the related impacts to cost of revenue, exclusive of depreciation and amortization, and began to include these disclosures, to the extent the impact of the changes are material or it is determined to be helpful supplemental disclosure, within MD&A, in the sections titled “Results of Operations” and “Segment Results of Operations”. The Company believes that such supplemental disclosure is more appropriate within MD&A as it is disclosed in context of the Company’s disclosures of financial statement line period-over-period fluctuations and trends.
+*****
+Please contact me or Elizabeth Coleman using the contact information previously provided with any questions or further comments regarding the Company’s responses to the Staff’s comments.
+
+Sincerely,
+
+/s/ Glen Ceremony
+Glen Ceremony
+Chief Accounting Officer and Global Corporate Controller
+Uber Technologies, Inc.
+
+cc:Tony West, Senior Vice President, Chief Legal Officer and Corporate Secretary
+Nelson Chai, Chief Financial Officer
+Kerry S. Burke, Covington & Burling LLP

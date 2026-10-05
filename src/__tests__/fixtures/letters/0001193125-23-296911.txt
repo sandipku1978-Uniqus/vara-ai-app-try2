@@ -1,0 +1,473 @@
+CORRESP
+
+ 
+
+ 
+FOIA Confidential Treatment Requested Under 17 C.F.R. § 200.83 by Tesla, Inc.
+ 
+ 
+
+ 
+ 
+1 Tesla Road, Austin, TX 78725
+
+P 650 681 5100 F 650 681 5101 
+ 
+ 
+December 15, 2023 
+
+VIA EDGAR 
+United States Securities and Exchange
+Commission 
+Division of Corporation Finance 
+100 F Street,
+N.E. 
+Washington, D.C. 20549-7010 
+Attention: Kevin Stertzel,
+Hugh West 
+Re: 
+Tesla, Inc.
+ 
+Form 10-K for Fiscal Year Ended December 31, 2022 
+
+Filed January 31, 2023 
+
+File No. 001-34756 
+
+Dear Messrs. Stertzel and West: 
+On behalf of
+Tesla, Inc. (“Tesla,” “us,” “we” or “our”), we submit this letter in response to comments received from the staff (the “Staff”) of the Securities and Exchange
+Commission (the “Commission”) contained in its letter dated November 22, 2023, relating to the above-referenced filing. In this letter, we have recited the comment from the Staff in italicized, bold type and have followed this
+with Tesla’s response thereto. 
+Please note that Tesla is requesting confidential treatment pursuant to Rule 83 of the
+Commission’s Rules Concerning Information and Requests, 17 C.F.R. § 200.83 with respect to portions of our response. Redacted material is marked by bracketed asterisks (“[***]”). An unredacted version of this letter is being
+provided to the Commission under separate cover along with the request for confidential treatment. 
+Form 10-K
+for the fiscal year ended December 31, 2022 
+Response dated October 27, 2023 
+
+File No. 001-34756 
+
+We note your response to our prior comment number three in your letter dated October 27, 2023. As previously requested, please provide us with your
+detailed and comprehensive quantitative analysis supporting your conclusions that it is more likely than not that your U.S. deferred tax assets will not be realized. In addition please address the following: 
+
+ 
+
+ 
+•
+ 
+ 
+Tell us what consideration you gave to future taxable income in years beyond 2023. If no
+other future periods were considered, explain why you believe that a one year forecast is adequate in your assessment of deferred tax asset realization. It is unclear how you considered ASC 740-10-30-21b, which contemplates a multiple year forecast. 
+
+Overview. As noted in our October 27, 2023 letter Tesla was in an $18 billion cumulative three-year loss
+position in the US as of December 31, 2022. This cumulative loss position reflects a history of taxable losses (including losses incurred after Tesla emerged from its development stage and began large-scale EV production and sales) and a
+single year (2022) of positive US taxable income. In connection with its analysis of the US valuation allowance (“VA”) as of December 31, 2022, Tesla prepared detailed forecasts of 2023 financial results. These forecasts
+projected positive levels of US taxable income in 2023, but also projected that Tesla would remain in a significant US cumulative three-year loss position for the year ended December 31, 2023. Tesla considered its historical losses, the one
+year of positive US taxable income in 2022 and the 2023 forecast in undertaking its VA analysis. 
+ 
+ 
+1 
+
+ 
+
+ 
+FOIA Confidential Treatment Requested Under 17 C.F.R. § 200.83 by Tesla, Inc.
+ 
+ 
+
+ 
+ 
+1 Tesla Road, Austin, TX 78725
+
+P 650 681 5100 F 650 681 5101 
+ 
+ 
+Tesla prepares comprehensive projections which seek to forecast its business on a [***]
+basis. Given the nascent stage of the EV industry (Tesla’s primary business), the company has found it problematic to rely solely upon projections extending beyond that [***] time frame due to the increased volatility in the outer year results.
+The processes used in EV manufacturing differ considerably from those used to build traditional internal combustion engine (“ICE”) vehicles in certain cases resulting in higher costs per vehicle. This has been one of the key reasons for
+even traditional automakers struggling to manufacture EVs at a low cost. Tesla and other EV manufacturers continuously seek enhancements to existing vehicle designs and battery technologies and the infrastructure for EVs (including the type and
+location of charging stations) which is in its infancy. Tesla’s unique business model also makes it difficult to reliably project future taxable income. As explained in detail below a significant part of Tesla’s long-term strategy is to
+achieve competitive advantage by increasing EV production and thus reducing per-unit costs. That strategy requires both the increased utilization of its four existing factories as well as the construction of
+new factories using newer manufacturing techniques, each of which is difficult to project with great certainty. In addition, Tesla’s strategy is unique since unlike other automakers, Tesla relies heavily upon the continued development and
+commercial introduction of technologies such as autonomous driving, the DOJO supercomputer, and other technologies. Tesla faces significant challenges obtaining regulatory and other approvals to get these technologies to market and hence it creates
+additional complexity which is unique to Tesla. All of these factors make it difficult to rely upon projected future financial to overcome the negative evidence of cumulative losses for ASC 740 purposes. As a result, for the ASC 740 valuation
+allowance assessment we considered our forecast but did not attribute significant weight, for the reasons discussed above. 
+The confluence
+of, on the one hand, generally positive macroeconomic forces throughout 2022 and, on the other hand, negative macroeconomic forces commencing towards the end of 2022 and continuing throughout all of 2023, also exacerbated the ability to rely upon
+projected future Tesla results to overcome the negative evidence of cumulative losses for ASC 740 purposes. For example, as the macroeconomic situation changed substantially over 2022, certain projections prepared in early 2022 significantly
+understated the economic results that Tesla actually achieved for the full calendar year ending 2022. Conversely, certain projections prepared in mid 2022 seeking to project 2023 results, while initially quite positive, decreased later in 2022 as
+Tesla was able to process and include in the forecasts the increasingly negative macroeconomic data.1 
+
+ASC 740-10-30-21
+expressly states that “[f]orming a conclusion that a valuation allowance is not needed is difficult when there is negative evidence such as cumulative losses in recent years.” Objective evidence (such as cumulative losses) generally
+outweighs subjective evidence (such as projections, particularly when those projections are highly variable). As a result, Tesla concluded that a single year of US taxable income and a highly variable projection of taxable income for 2023 did not
+constitute sufficient objectively verifiable positive evidence to outweigh its deep, and current, history of cumulative losses, and therefore did not support a VA release as of December 31, 2022. Moreover, for the reasons noted above, Tesla did
+not believe that projections beyond calendar year 2023 would be sufficiently reliable to be considered and heavily weighted for ASC 740 purposes. 
+
+ 
+
+1 
+ 
+Because Tesla does not have a traditional third-party dealer network (but rather sells its EVs directly to
+consumers often through its online configurator application) it obtains, [***] significant data regarding EV sales. [***] Tesla utilizes this real time information to form the basis of its projections and that data (particularly because it is
+obtained regularly) may be quite variable. Because this data is a significant input to Tesla’s forecasts the variability in the data necessarily is reflected in Tesla’s forecasts. 
+ 
+ 
+2 
+
+ 
+
+ 
+FOIA Confidential Treatment Requested Under 17 C.F.R. § 200.83 by Tesla, Inc.
+ 
+ 
+
+ 
+ 
+1 Tesla Road, Austin, TX 78725
+
+P 650 681 5100 F 650 681 5101 
+ 
+ 
+Detailed Discussion. 
+
+ 
+
+ 
+•
+ 
+ 
+Footnote 14 Disclosure in 2022 Form 10-K. As a
+threshold matter, we note that although Tesla recorded positive consolidated “Income before income taxes” amounts in each of its years ending December 31, 2020, 2021, and 2022, not all amounts included in those figures were earned in
+the US. Only amounts earned in the US are relevant for evaluating the US valuation allowance. Specifically, as noted in footnote 14 to our 2022 Form 10-K, Domestic income before taxes was negative for each of
+the years ending December 31, 2020, and December 31, 2021. The first-year domestic income before taxes was positive is the year ending December 31, 2022, when Tesla earned $5.524 billion.2 
+ 
+
+ 
+•
+ 
+ 
+Cumulative Loss Defined—Adjustments for Permanent Differences. Relevant interpretations of the
+term “cumulative losses in recent years” typically refer to losses over the current year and preceding two years. 3 Moreover, the interpretations provide that “cumulative
+losses” for these purposes are determined by reference to the aggregate pre-tax income shown in the financial statements for the relevant period adjusted for the aggregate permanent book-tax differences for such period (such amounts are sometimes referred to as “Financial Taxable Income”). Tesla’s permanent book-tax differences include,
+among other things, differences related to Tesla’s computation of its Global Intangible Low Tax Income (“GILTI”), excess tax deductions related to U.S. stock-based compensation, and various other items. These book-tax adjustments are determined on a jurisdictional basis. The GILTI-related permanent book-tax differences result from the use of the “GILTI deferred” method of
+evaluating GILTI inclusions. Under this method, Tesla calculates its GILTI taxable income and adjusts that income for permanent book-tax differences such as the GILTI high taxed exception, stock-based
+compensation related to non-US employees, and the Internal Revenue Code section 250 deduction.4 The permanent
+book-tax difference calculation for these purposes is complex and not relevant in the context of this letter.5 However, our $18 billion US cumulative
+loss for the three year period ending December 31 2022 (the “Three Year Period”) may be reconciled as the sum of: (i) the cumulative amount of domestic income before taxes for the Three Year Period equaled approximately [***]
+billion6; and (ii) the cumulative net permanent adjustments for the Three Year Period equaled approximately [***] billion.7 This
+resulted in an approximately ($18) billion US cumulative loss for the Three Year Period. 
+ 
+
+ 
+•
+ 
+ 
+Tesla’s US $18 billion Cumulative Loss as
+of December 31, 2022. Applying the guidance above, Tesla had a US cumulative loss $18 billion for the three-year period ending December 31, 2022 and it projected that it would remain in a
+significant three-year cumulative loss for the three-year period ending December 31, 2023. After considering the permanent book-tax differences Tesla incurred annual losses in its Financial
+Taxable Income in the US in each of its years ended December 31, 2020 and 2021. Moreover, Tesla had cumulative losses for the each of the three-year periods ending December 31, 2020, 2021 and 2022 and projected cumulative losses for
+the period ending December 31, 2023. Tesla’s cumulative loss as of the year ending December 31, 2021 totaled [***] billion. This cumulative loss was reduced to $18.1 billion as of the year ending December 31, 2022,
+reflecting approximately $7.5 billion of US Financial Taxable Income earned in 2022. The $7.5 billion of US Financial Taxable Income earned in 2022 was the first time that Tesla had earned positive Financial Taxable income for a calendar
+year in its corporate history. 
+ 
+
+2 
+ 
+Please see Footnote 14 of our 2022 Form 10-K for the chart reconciling
+our “Income before income taxes” 
+
+3 
+ 
+The three-year period is generally considered long enough to not be unduly influenced by one-time events, but short enough that it would not be irrelevant for gauging the future. 
+
+4 
+ 
+The tax effect of our stock-based-compensation benefit and GILTI inclusion are disclosed in the reconciliation
+of taxes at the federal statutory rate to our provision for income taxes in Footnote 14 of our 2022 Form 10-K 
+
+5 
+ 
+Among other items it requires an analysis of the GILTI rules which are particularly complex in the context of
+NOLs, application of the foreign tax credit rules, the foreign currency rules, and various estimates. 
+
+6 
+ 
+See Footnote 14 of our 2022 Form 10-K. 
+
+7 
+ 
+This correlates to the tax-effected impact of the reconciliation items
+in Footnote 14 of our 2022 Form 10-K. 
+ 
+ 
+3 
+
+ 
+
+ 
+FOIA Confidential Treatment Requested Under 17 C.F.R. § 200.83 by Tesla, Inc.
+ 
+ 
+
+ 
+ 
+1 Tesla Road, Austin, TX 78725
+
+P 650 681 5100 F 650 681 5101 
+ 
+
+ 
+•
+ 
+ 
+Future Forecasts and the Start-Up Nature of the EV
+Industry. ASC 740-10-30-17 provides that “[a]ll available evidence, both positive and negative, shall be
+considered to determine whether, based on the weight of that evidence, a valuation allowance for deferred tax assets is needed.” [emphasis added].. Tesla prepared (and considered in its decision regarding the VA release) detailed
+forecasts of future Financial Taxable Income. As noted above Tesla forecasted positive Financial Taxable Income for 2023, but the amount forecasted would not have eliminated Tesla’s cumulative loss. More importantly, the start-up nature of the EV industry combined with Tesla’s unique business model make forecasting within a year or beyond a one-year period highly variable. As a result, we
+concluded that forecasts beyond 2023 were not sufficiently reliable to be considered as part of our VA analysis. ASC 740 guidance generally considers projections of future taxable income the most subjective evidence in analyzing a VA release. This
+is logical given the subjective nature and possibility for significant variations in the projected outcomes. This variability is particularly acute in a start-up industry like the EV industry. Although EV
+sales have grown significantly in recent years, EVs still comprise a comparatively minor percentage of new automobiles sold in the US.8 The manufacturing processes used to build an EV differ
+considerably from those to build an ICE vehicle in certain cases resulting in higher costs per vehicle. The key cost drivers which are unique to the EV industry are around battery costs, which has seen significant fluctuation over the years with
+certain metals like Lithium price increasing multi fold. This becomes challenging since the competition is ICE vehicles which do not have such costs. Tesla, and other EV manufacturers, continuously seek enhancements to existing vehicle designs and
+battery technologies and the infrastructure for EVs (including the type and location of charging stations) is in its infancy. Moreover, EVs in general face significant competition from traditional ICE vehicles as well as from hybrids combing ICE and
+EV technologies. 
+ 
+
+ 
+•
+ 
+ 
+Considerable EV-Related Volatility at Traditional
+OEMs. Note that the difficulty in establishing EV production and accurately predicting future EV profitability is not unique to newer companies like Tesla. More traditional and well-established automobile manufacturers
+have also sought to enter into the EV market. Such companies have long operating histories and significant experience with forecasting future cash flows and profitability. Notwithstanding their considerable experience, the traditional automobile
+manufacturers have encountered significant difficulties in profitably ramping up their EV businesses. Additionally, there is an inverse correlation between gas prices and EV demand. As noted below in 2022, when gas prices surged, EV demand
+increased. And when gas prices came down, ICE vehicles again became competitive, and the traditional automakers decided to slow down their EV investments. These fluctuations and broader industry movements make it extremely hard to accurately predict
+the market for EVs. 
+ 
+
+ 
+•
+ 
+ 
+Tesla’s Business Model Also Makes Future Projections Variable. Part of Tesla’s long-term
+strategy is to gain competitive advantage over other EV manufacturers by increasing manufacturing capacity which we believe will lead to increased manufacturing efficiency and thus decrease the higher per unit costs when compared to traditional ICE
+and hybrids.9 Because increasing an EV company’s manufacturing capacity is a 
+
+ 
+
+8 
+ 
+Although it has grown significantly in recent years the EV industry still represents a small portion of the
+domestic auto industry. For example, in the US the percentage of new car sales comprised of EV increased by 55% in 2022, but still totaled only 8% of US new car sales. Global EV Outlook 2023, International Energy Agency.
+
+9 
+ 
+We stated this in our Q4 2021 Shareholder Letter where we noted that “[w]e aim to increase our production
+as quickly as we can, not only through ramping production at new factories in Austin and Berlin, but also by maximizing output from our established factories in Fremont and Shanghai. We believe competitiveness in the EV market will be determined by
+the ability to add capacity across the supply chain and ramp production.” Consistent with this general strategy Tesla incurred $6.5 billion of capital expenditures in 2022. Similarly in early 2023 Tesla announced plans to build a new
+factory in Mexico. 
+ 
+ 
+4 
+
+ 
+
+ 
+FOIA Confidential Treatment Requested Under 17 C.F.R. § 200.83 by Tesla, Inc.
+ 
+ 
+
+ 
+ 
+1 Tesla Road, Austin, TX 78725
+
+P 650 681 5100 F 650 681 5101 
+ 
+
+ 
+ 
+
+complex undertaking, involving a myriad of factors (for example growing the battery capacity from both internal and external vendors including the related supply chain management is extremely
+complex) the ability to project with great precision the number of vehicles which will be manufactured is complex and highly variable. Moreover, the ability to project production volumes is the starting point to projecting product and geographic
+mix, as well as sale prices, costs, and profit margins. Thus, the inability to project production volumes beyond a 12-month range with the degree of reliability necessary for ASC 740 purposes makes forecasts
+of taxable income beyond that range also difficult. 
+ 
+
+ 
+•
+ 
+ 
+Tesla’s Technology Business. Tesla’s businesses include not only what could be termed its
+“historical” EV and its energy businesses (which involves the design, development, manufacturing, sales, leasing and servicing of high-performance fully electric vehicles as well as energy generation and storage systems), but also its
+technology business. Tesla’s autonomous driving technology is critical to its business model. As we stated in our Q4 2021 shareholder letter “[f]ull Self-Driving (FSD) software remains one of our primary areas of focus. Over time, our
+software-related profit should accelerate our overall profitability. More importantly, FSD is a key component to improve automobile safety as well as further accelerating the world’s transition to sustainable energy through higher utilization
+of our vehicles.” Because Tesla is not solely an EV OEM it is a technology company its future taxable income will be materially impacted by the technology business. Among other things that business requires significant investments in developing
+such technologies and still faces significant regulatory hurdles that are beyond Tesla’s control. These uncertainties also make projecting “objectively verifiable” future taxable income related to Tesla’s technology business very
+difficult. 
+ 
+
+ 
+•
+ 
+ 
+Macroeconomic Circumstances in 2022 . The difficulties in accurately forecasting Tesla’s US
+taxable income beyond a 12-month period outlined above were exacerbated by the confluence of certain positive macroeconomic developments in calendar year 2022 (which contributed to higher-than-expected taxable
+income in the US) followed immediately thereafter by particularly negative macroeconomic developments in calendar year 2023. The positive events arguably made 2022 somewhat of an outlier in a positive way regarding the auto industry in general and
+the EV market in particular. These events included the following: 
+ 
+
+ 
+•
+ 
+ 
+interest rates remained at historically low levels through most of 2022 making monthly automobile payments more
+affordable (which correlates to generally higher prices)10; 
+ 
+
+ 
+•
+ 
+ 
+EVs gained greater general market acceptance in general (including the enactment of the Inflation Reduction Act
+of 2022 (“IRA”) which includes various tax credits that made certain EVs more affordable commencing in 2023)11; 
+
+ 
+
+ 
+•
+ 
+ 
+Elevated costs of oil caused by inflation and geopolitical issues like the war in Ukraine resulted in high gas
+prices making EVs generally a more attractive alternative to ICE vehicles; 
+ 
+
+10 
+ 
+Although the Federal Reserve began to increase interest rates in March of 2022 those increases began from a
+starting point of historically low rates so that even taking into account those raises interest rates within 2022 remained relatively low by historic standards. Moreover, the market generally expected such that such rate increases would end in 2022.
+
+11 
+ 
+Although the IRA provisions only take effect beginning in 2023 the enactment of the IRA also brought
+considerable attention to EVs in general and increased interest in Tesla’s products, which had traditionally been considered expensive. 
+ 
+ 
+5 
+
+ 
+
+ 
+FOIA Confidential Treatment Requested Under 17 C.F.R. § 200.83 by Tesla, Inc.
+ 
+ 
+
+ 
+ 
+1 Tesla Road, Austin, TX 78725
+
+P 650 681 5100 F 650 681 5101 
+ 
+
+ 
+•
+ 
+ 
+Historically high lithium prices increased the cost of producing
+lithium-ion batteries used in EVs, but Tesla had entered into long-term contracts which mitigated these costs but we cannot project the same pricing in the future; and 
+
+ 
+
+ 
+•
+ 
+ 
+For most of 2022, we had a decent backlog of orders we were able to fulfill. This was a function of being able to
+produce vehicles when other OEMs struggled with supply chain challenges and gas prices were rising. 
+ 
+
+ 
+•
+ 
+ 
+Adverse Macroeconomic Circumstances in 2023. By 2023 many of the positive
+macroeconomic factors above had reversed themselves. As noted in our October 27, 2023 letter these included historic increases in interest rates which adversely affect demand for all automobiles. These interest rate increases correlated to
+significantly reduced pricing for Tesla EVs. In addition, uncertainty regarding the application of certain provisions in the IRA potentially affected demand for EVs adversely and ongoing geopolitical risk had a negative impact on economic prospects
+in general. Tesla discussed these general macroeconomic headwinds in our Q4 2022 Shareholder Letter in which we stated: 
+ 
+
+ 
+•
+ 
+ 
+We are particularly focused on vehicle cost during this period of macroeconomic uncertainty, high interest rates
+(thus higher cost of vehicle financing) and vehicle price deflation. We continue to focus on cost efficiencies while improving functionality and reliability. While cost efficient manufacturing of EVs is still rare across most of the industry, it is
+critical for profitability at scale and will ultimately determine long-term success of OEMs.12 
+
+We note your response to our prior comment number three in your letter dated October 27, 2023. As previously requested, please provide us with your
+detailed and comprehensive quantitative analysis supporting your conclusions that it is more likely than not that your U.S. deferred tax assets will not be realized. In addition please address the following: 
+
+ 
+
+ 
+•
+ 
+ 
+It appears the majority of your historical U.S .taxable losses were sustained during the development stage
+and that your business exited the development stage and transitioned to consolidated profitability in 2020. Please refer to ASC
+740-10-30-17 and explain to us why you believe your facts did not change such that historical losses incurred in the development
+stage are more relevant than current substantial taxable income and forward looking forecasts in your realization analysis. 
+
+Finally, we note that although Tesla incurred losses during its development stage, the Cumulative Losses described above were not limited to
+development stage losses and were incurred even after Tesla began to sell large volumes of EVs. ASC 740 does not expressly define the term “development stage” but examples suggest that a company is generally considered to have exited that
+stage when it generates its first third party sales.13 Tesla sold its first EVs in 2012, when it sold approximately 2,650 units. By 2017 it was producing EVs on a large scale and began delivery of
+its first widely sold vehicle, the Model 3. By 2019 Tesla opened its Shanghai giga factory and sold approximately 365,000 units. In 2020 it launched another widely sold vehicle, the Model Y. In that year (2020) Tesla sold approximately 510,000
+units and in 2021 it sold approximately 937,000 units. Notwithstanding those sales the Company incurred annual losses in its US Financial Taxable Income in each year. As detailed above, Tesla did not have positive US Financial
+Taxable income until 2022. Furthermore even after that one positive year Tesla remained in a cumulative three-year loss position. We therefore respectfully submit that describing Tesla as having sustained losses “during the development
+stage” and having then “exited the development stage and transitioned to consolidated profitability in 2020” does not accurately reflect Tesla’s business and/or its financial results. 
+
+ 
+
+12 
+ 
+Q4 2022 Shareholder Letter. 
+
+13 
+ 
+See, e.g., ASC 740-10 -55-219, Example 31 (suggesting that a company is in the development stage when it generates significant research and development expense and then exits it when generates sales).
+
+ 
+ 
+6 
+
+ 
+
+ 
+FOIA Confidential Treatment Requested Under 17 C.F.R. § 200.83 by Tesla, Inc.
+ 
+ 
+
+ 
+ 
+1 Tesla Road, Austin, TX 78725
+
+P 650 681 5100 F 650 681 5101 
+ 
+ 
+We appreciate the Staff’s comments and request that the Staff contact the undersigned
+with any questions regarding this letter at 512-516-8177. 
+ 
+
+Sincerely,
+
+/s/ Derek Windham
+
+Derek Windham
+
+Senior Director and Deputy General Counsel
+ 
+cc: Vaibhav Taneja, Chief Financial Officer 
+ 
+ 
+7

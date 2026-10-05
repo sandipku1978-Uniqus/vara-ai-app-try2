@@ -1,0 +1,65 @@
+Document
+
+VIA EDGAR
+
+June 29, 2023
+
+United States Securities and Exchange Commission
+100 F Street, N.E.
+Washington, D.C. 20549
+Attn: Charles Eastman or Claire Erlanger
+
+RE: NVIDIA Corporation
+ Form 10-K for the Year Ended January 29, 2023
+ Filed February 24, 2023
+ File No. 000-23985
+
+Dear Mr. Eastman and Ms. Erlanger,
+
+On behalf of NVIDIA Corporation (“NVIDIA”, “we”, or the “Company”), I am responding to the comments received from the staff (the “Staff”) of the Securities and Exchange Commission by letter dated June 15, 2023, with respect to NVIDIA’s Form 10-K listed above (the “Comments”). The numbering of the paragraphs below corresponds to the numbering of the Comments, which for the Staff’s convenience have been incorporated into this response letter. The Company respectfully acknowledges the Staff’s Comments.
+Management's Discussion and Analysis of Financial Condition and Results of Operations Results of Operations, page 41
+1.Where you describe two or more business reasons that contributed to a material change in a financial statement line item between periods, please quantify, where possible, the extent to which each change contributed to the overall change in that line item. As an example, we note that the year-on-year increase in your Compute & Networking revenues was driven in part by growth from hyperscale customers, purchases made by several CSP partners to support multi-year cloud service agreements for cloud service offerings and research and development activities. Additionally, your disclosure of the increase in research and development expense indicates that it was "primarily driven by increased compensation, employee growth, engineering development costs, and data center infrastructure," but does not quantify any of the factors. See Item 303(b)(2) of Regulation S-K and SEC Release No. 33-8350. Please revise future filings accordingly.
+
+In response to the Staff’s Comment, in future filings, where we describe two or more business reasons that contributed to a material change in a financial statement line item between periods, we will quantify where possible the extent to which each change contributed to the overall change in that line item. 
+
+Management's Discussion and Analysis of Financial Condition and Results of Operations Results of Operations, page 41
+
+2.We note your risk factor disclosure which identifies inflation as a potential adverse economic condition which drives the costs for wafers, components, logistics, and other supply chain expenses. In future filings, please expand your disclosures to identify the principal factors contributing to the inflationary pressures the company has experienced and clarify the resulting impact to the company, if material. Please also identify actions planned or taken, if any, to mitigate inflationary pressures.
+
+In response to the Staff’s Comment, in future filings we will expand our disclosures to identify the principal factors contributing to the inflationary pressures the Company has experienced and clarify the resulting impact to the Company, in each case to the extent material. We will also identify actions planned or taken, if any, to mitigate inflationary pressures.
+Management's Discussion and Analysis of Financial Condition and Results of Operations Gross Profit and Gross Margin, page 42
+
+3.We note your narrative discussion of the drivers of the changes in gross margin for both your Compute & Networking and Graphics segment. However, in light of the fact that Note 17 on page 85 discloses that your segment profitability measure is operating income, please revise your discussion in MD&A in future filings to also include a discussion of the nature of the changes in segment operating income for each of your reportable segments. Also, if you continue to discuss the changes in segment gross margin, such as on the bottom of page 42, please revise to include quantification of the costs of revenues by segment so that investors can better assess the significance of the items disclosed in your narrative.
+
+ In response to the Staff’s Comment, in future filings we will include a discussion of the nature of material changes in segment operating income for each of our reportable segments in MD&A. If we discuss changes in segment gross margin, we will include quantification of the costs of revenues by segment. 
+Notes to the Consolidated Financial Statements
+Note 1. Organization and Summary of Significant Accounting Policies Revenue Recognition, page 60
+
+4.We note from your disclosure on page 36 of MD&A that in 2023 you entered into multi-year cloud service agreements and Note 1 to the financial statements includes disclosure of your revenue recognition for these agreements. Please tell us if you offer these cloud services in connection with the sale of other products or services. If so, please tell us and revise 
+
+Note 1 in future filings to disclose how you recognize revenue for the provision of multiple offerings to one customer and your accounting for any multiple performance obligations within customer contracts.
+
+ The Company advises the Staff that it has not executed any multi-element arrangements to offer NVIDIA AI cloud services together with other hardware and/or software or recognized any related revenue to date. If and when such multi-element arrangements are material, we will revise Note 1 in the relevant periods to disclose how we recognize revenue for the provision of multiple offerings to a customer and our accounting for any multiple performance obligations within a customer contract. 
+
+* * * *
+
+Please do not hesitate to call me at (408) 486-2000, if you have any questions or would like any additional information regarding this matter.
+
+Sincerely,
+
+NVIDIA Corporation
+
+By:/s/ Colette M. Kress
+
+Colette M. Kress
+
+Executive Vice President and Chief Financial Officer
+
+Cc: 
+Timothy S. Teter – Executive Vice President and General Counsel
+
+Donald Robertson – Vice President and Chief Accounting Officer
+
+Eric C. Jensen – Cooley LLP
+
+Scott Almassy – PricewaterhouseCoopers LLP
