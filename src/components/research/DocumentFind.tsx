@@ -5,6 +5,7 @@ import { ChevronDown, ChevronUp, Search, X } from 'lucide-react';
 
 import type { useDocumentFind } from '../../hooks/useDocumentFind';
 import { isFindShortcut } from '../../utils/documentFind';
+import { SEARCH_MODE_LABEL } from '../../services/filingResearchPlan';
 import './DocumentFind.css';
 
 type DocumentFindState = ReturnType<typeof useDocumentFind>;
@@ -113,7 +114,7 @@ export function DocumentHitList({ hits, query, mode, unavailableReason }: Docume
     <div className="document-hits-panel">
       <h4>All hits in this filing</h4>
       <p className="document-hits-query">
-        <span className="document-hits-mode">{mode === 'boolean' ? 'Boolean' : 'Keyword'}</span>
+        <span className="document-hits-mode">{mode === 'boolean' ? 'Boolean' : SEARCH_MODE_LABEL.semantic}</span>
         <code>{query}</code>
       </p>
       <p className="document-hits-summary" role="status">{summary}</p>

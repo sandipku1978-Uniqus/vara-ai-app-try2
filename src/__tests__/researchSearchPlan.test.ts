@@ -56,7 +56,7 @@ describe('planResearchSearch', () => {
       expect(plan.appliedHints).toContain('Detected Boolean / proximity syntax');
     });
 
-    it('leaves ordinary prose in Filing Research mode', () => {
+    it('leaves ordinary prose in Plain language mode', () => {
       const plan = planResearchSearch('companies discussing supply chain risk', base(), 'semantic');
       if (plan.status !== 'ready') throw new Error('expected ready');
       expect(plan.mode).toBe('semantic');

@@ -559,7 +559,7 @@ function simplifyDoubleNegation(node: BooleanSearchNode): BooleanSearchNode {
 }
 
 export function looksLikeBooleanQuery(query: string): boolean {
-  // Auto-switch Filing Research → Boolean only on high-confidence signals:
+  // Auto-switch Plain language → Boolean only on high-confidence signals:
   // UPPERCASE operators, a proximity operator, an auditor: field token, or a
   // numeric operand (#, $#, %#) — none of these occur in natural prose.
   // Lowercase prose ("increases and decreases"), quotes, or parentheses alone

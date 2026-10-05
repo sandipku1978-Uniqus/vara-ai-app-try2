@@ -73,15 +73,15 @@ const GUIDE_SECTIONS: GuideSection[] = [
     summary: 'The Research Workbench is the central hub for SEC disclosure research. Start here when you have a topic, entity, or filing type in mind and want to explore what issuers are disclosing.',
     steps: [
       'Open the Research Workbench from the sidebar or press the search bar on the Dashboard.',
-      'Enter a keyword, company name, or disclosure topic in the main search field. Filing Research mode can extract supported company, form, date, and auditor constraints from plain-language input.',
+      'Enter a keyword, company name, or disclosure topic in the main search field. Plain language mode extracts supported company, form, date, and auditor constraints from ordinary prose with fixed rules.',
       'Use form type, date range, SIC code, auditor, exchange, filer status, section keywords, and other available fields to narrow results before searching.',
-      'Toggle between Filing Research mode for assisted query preparation and Boolean mode for AND, OR, NOT, quoted phrases, w/# and p/# proximity, wildcards (crypto*, wom?n), numeric operands (#, $#, %#), and the auditor: field.',
+      'Toggle between Plain language mode for rule-based query preparation and Boolean mode for AND, OR, NOT, quoted phrases, w/# and p/# proximity, wildcards (crypto*, wom?n), numeric operands (#, $#, %#), and the auditor: field.',
       'Click any result row to open the filing in the Filing Detail viewer.',
     ],
     notes: [
       'Results are constrained by supported metadata filters and filing-text checks; missing source metadata can still affect coverage.',
       'If a search returns too many results, add form type and date range filters before further narrowing.',
-      'Natural language search automatically detects form types, date windows, auditor names, and entity references from your query.',
+      'Plain language mode detects form types, date windows, auditor names, and entity references in your query with fixed rules; it is a parser, not semantic or AI retrieval, so a concept it has no rule for is searched as words.',
     ],
     links: [
       { label: 'Open Research Workbench', href: '/search' },
@@ -93,7 +93,7 @@ const GUIDE_SECTIONS: GuideSection[] = [
     title: 'Research Workbench Deep Dive',
     summary: 'Master the full workflow: assisted filing search, Boolean search, research sessions with tabs, result insights, and saved alerts.',
     steps: [
-      'Use Filing Research mode to turn supported plain-language constraints into a deterministic SEC search. It is not conceptual or vector retrieval.',
+      'Use Plain language mode to turn supported plain-language constraints into a deterministic SEC search. It is a rule-based parser, not semantic, conceptual or vector retrieval.',
       'Switch to Boolean mode when you need exact-match results. Use AND, OR, NOT, "quoted phrases", proximity operators like w/5, near/10 or ordered p/3, single-word wildcards (crypto*, wom?n), and numeric operands (#, $#, %#). Your mode choice is authoritative — typed prose will not silently switch modes.',
       'Precedence is NOT, then proximity, then AND (explicit or implied by a space), then OR. Use parentheses to override it: (impairment OR restructuring) AND lease.',
       'Bare terms match whole words, case-insensitively, with singular/plural equivalence — lease also matches leases, and weakness also matches weaknesses. There is no broader stemming, so audit does not match auditory. Quoted phrases match a contiguous run of whole words, so "net income" does not match "planet income". Punctuation is normalised both ways, so 10-K, non-GAAP, R&D and U.S. GAAP all match their spaced forms.',
@@ -312,8 +312,8 @@ const FAQS: FaqItem[] = [
     answer: 'Use the Research Workbench (/search) and enter the company name or ticker in the entity/company field. You can also navigate directly to /company/TICKER (e.g., /company/AAPL) for a dossier with recent submissions, comment letters, and financials.',
   },
   {
-    question: 'What is the difference between Filing Research and Boolean search?',
-    answer: 'Filing Research mode extracts supported constraints from plain-language input and runs a deterministic SEC search; it is not conceptual retrieval. Boolean mode supports AND, OR, NOT, quoted phrases, proximity operators — w/5 or near/10 for either order, p/3 for first-term-precedes — numeric operands (# for any number, $# for a currency amount, %# for a percentage, e.g. "goodwill impairment" w/10 $#), single-word wildcards (crypto*, wom?n — these validate against filing text but cannot widen EDGAR retrieval, so pair them with a concrete term), and an audit-firm field — auditor:Deloitte (or auditor:"Ernst & Young") — to scope results to a specific accounting firm. Boolean matching is exact: whole-word terms with singular/plural equivalence, phrases bounded to whole words, and every OR branch retrieved independently so a rare second branch is never hidden by a common first one.',
+    question: 'What is the difference between Plain language and Boolean search?',
+    answer: 'Plain language mode extracts supported constraints from ordinary prose with fixed rules and runs a deterministic SEC search; it is not semantic or conceptual retrieval. Boolean mode supports AND, OR, NOT, quoted phrases, proximity operators — w/5 or near/10 for either order, p/3 for first-term-precedes — numeric operands (# for any number, $# for a currency amount, %# for a percentage, e.g. "goodwill impairment" w/10 $#), single-word wildcards (crypto*, wom?n — these validate against filing text but cannot widen EDGAR retrieval, so pair them with a concrete term), and an audit-firm field — auditor:Deloitte (or auditor:"Ernst & Young") — to scope results to a specific accounting firm. Boolean matching is exact: whole-word terms with singular/plural equivalence, phrases bounded to whole words, and every OR branch retrieved independently so a rare second branch is never hidden by a common first one.',
   },
   {
     question: 'How do the search filters work?',
