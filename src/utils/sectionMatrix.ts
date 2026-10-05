@@ -17,19 +17,29 @@
  */
 
 import { normalizeItemNumber } from './sectionPath';
-import { extractResolvedSection, formFamily, type ResolvedSectionScope } from './sectionTaxonomy';
+import {
+  SECTION_GROUPS,
+  conceptSliceKind,
+  conceptsForForm,
+  formFamily,
+  locateResolvedSection,
+  resolveConceptScope,
+  type ResolvedSectionScope,
+  type SectionGroup,
+} from './sectionTaxonomy';
 
-export const SECTION_MATRIX_FORMS = ['10-K', '10-Q', '20-F', 'S-1'] as const;
+export const SECTION_MATRIX_FORMS = ['10-K', '10-Q', '20-F', 'S-1', 'DEF 14A'] as const;
 export type SectionMatrixForm = typeof SECTION_MATRIX_FORMS[number];
 
 /**
- * The rows of each form's matrix. Every row resolves to a slicer scope (the
- * unit test pins this): "Signatures" has no Item number and no prospectus
- * heading in the slicer's vocabulary, and bare "Business"/"Management" on an
- * S-1 appear in prose constantly, so those rows are not offered rather than
- * approximated.
+ * The Item rows of each form's matrix — the filing's own outline. Every row
+ * resolves to a slicer scope (the unit test pins this): "Signatures" has no
+ * Item number and no prospectus heading in the slicer's vocabulary, and bare
+ * "Business"/"Management" on an S-1 appear in prose constantly, so those
+ * rows are not offered rather than approximated. A proxy statement has no
+ * Items; its rows are all taxonomy concepts.
  */
-export const SECTION_MATRIX_ROWS: Readonly<Record<SectionMatrixForm, readonly string[]>> = {
+export const SECTION_MATRIX_ITEM_ROWS: Readonly<Record<SectionMatrixForm, readonly string[]>> = {
   '10-K': [
     'Item 1. Business',
     'Item 1A. Risk Factors',
@@ -101,7 +111,56 @@ export const SECTION_MATRIX_ROWS: Readonly<Record<SectionMatrixForm, readonly st
     'Part II — Experts',
     'Part II — Financial Statements',
   ],
+  'DEF 14A': [],
 };
+
+export interface SectionMatrixRowGroup {
+  group: SectionGroup;
+  label: string;
+  rows: readonly string[];
+}
+
+/**
+ * The taxonomy concepts a form's matrix adds below its Items: the notes by
+ * topic, named subsections (Human Capital, Non-GAAP measures), the critical
+ * audit matters, and every proxy section. A concept that is just an Item on
+ * this form (Risk Factors is Item 1A on a 10-K) is already a row and is not
+ * repeated. All of it comes from the one taxonomy, so a concept added there
+ * appears here without touching this file.
+ */
+function conceptRows(form: SectionMatrixForm): Array<{ group: SectionGroup; label: string; key: string }> {
+  return conceptsForForm(form)
+    .filter(concept => conceptSliceKind(concept.key, form) === 'block'
+      || SECTION_MATRIX_ITEM_ROWS[form].length === 0)
+    .map(concept => ({ group: concept.group, label: concept.label, key: concept.key }));
+}
+
+function byForm<T>(build: (form: SectionMatrixForm) => T): Record<SectionMatrixForm, T> {
+  const record = {} as Record<SectionMatrixForm, T>;
+  for (const form of SECTION_MATRIX_FORMS) record[form] = build(form);
+  return record;
+}
+
+/** Rows grouped Items / Notes / Proxy, in display order; empty groups omitted. */
+export const SECTION_MATRIX_ROW_GROUPS: Readonly<Record<SectionMatrixForm, readonly SectionMatrixRowGroup[]>> =
+  byForm(form => {
+    const concepts = conceptRows(form);
+    return SECTION_GROUPS.map(group => ({
+      group: group.key,
+      label: group.label,
+      rows: [
+        ...(group.key === 'items' ? SECTION_MATRIX_ITEM_ROWS[form] : []),
+        ...concepts.filter(concept => concept.group === group.key).map(concept => concept.label),
+      ],
+    })).filter(group => group.rows.length > 0);
+  });
+
+/** Every row of each form's matrix, flattened in display order. */
+export const SECTION_MATRIX_ROWS: Readonly<Record<SectionMatrixForm, readonly string[]>> =
+  byForm(form => SECTION_MATRIX_ROW_GROUPS[form].flatMap(group => group.rows));
+
+const CONCEPT_ROW_KEYS: Readonly<Record<SectionMatrixForm, ReadonlyMap<string, string>>> =
+  byForm(form => new Map(conceptRows(form).map(concept => [concept.label, concept.key])));
 
 /**
  * Registration statements name sections by heading. Each row maps to the
@@ -134,6 +193,9 @@ const PART_ITEM_ROW_RE = /^Part (I|II), Item (\d{1,2}[A-C]?)\./;
 
 /** The slicer scope for one matrix row, or null when no slicer covers it. */
 export function sectionMatrixScope(form: SectionMatrixForm, label: string): ResolvedSectionScope | null {
+  const conceptKey = CONCEPT_ROW_KEYS[form].get(label);
+  if (conceptKey) return resolveConceptScope(conceptKey, form);
+  if (form === 'DEF 14A') return null;
   if (form === 'S-1') {
     const headings = S1_ROW_HEADINGS[label];
     return headings ? { kind: 'heading', headings: [...headings], label } : null;
@@ -179,6 +241,8 @@ function matchesMatrixForm(form: string, target: SectionMatrixForm): boolean {
   // The registration family also covers F-1 and 424B prospectuses; the "S-1"
   // matrix reads an S-1, not a prospectus that happens to share its headings.
   if (target === 'S-1') return root === 'S-1';
+  // The proxy matrix reads the definitive proxy, not a preliminary one.
+  if (target === 'DEF 14A') return root.replace(/\s+/g, ' ') === 'DEF 14A';
   return formFamily(form) === target;
 }
 
@@ -215,12 +279,20 @@ export function pickSectionMatrixFiling(
   return amendment;
 }
 
-export type SectionMatrixState = 'present' | 'absent' | 'not-checked' | 'no-filing' | 'failed';
+/**
+ * 'absent' — the filing text was read and the section's heading is not in it
+ * (not disclosed). 'unlocated' — the text was read but the slicer could not
+ * bound the section (it is mentioned without a heading, or the notes are not
+ * in this document): a reason to open the filing, never a verdict.
+ */
+export type SectionMatrixState = 'present' | 'absent' | 'unlocated' | 'not-checked' | 'no-filing' | 'failed';
 
 export interface SectionPresence {
-  state: 'present' | 'absent';
+  state: 'present' | 'absent' | 'unlocated';
   /** The first words of the slice the extractor returned, in its normalized form. */
   excerpt?: string;
+  /** unlocated: why the slicer could not extract the section. */
+  reason?: string;
 }
 
 const EXCERPT_CHARS = 140;
@@ -239,10 +311,14 @@ export function deriveSectionPresence(
   for (const label of rows) {
     const scope = sectionMatrixScope(form, label);
     if (!scope) continue;
-    const slice = extractResolvedSection(filingText, scope);
-    result[label] = slice
-      ? { state: 'present', excerpt: slice.slice(0, EXCERPT_CHARS) }
-      : { state: 'absent' };
+    const outcome = locateResolvedSection(filingText, scope);
+    if (outcome.status === 'found') {
+      result[label] = { state: 'present', excerpt: outcome.text.slice(0, EXCERPT_CHARS) };
+    } else if (outcome.reason === 'could-not-extract') {
+      result[label] = { state: 'unlocated', reason: outcome.detail };
+    } else {
+      result[label] = { state: 'absent' };
+    }
   }
   return result;
 }
@@ -316,7 +392,7 @@ export interface SectionMatrixCell {
   source?: SectionMatrixSource;
   /** present: the matched words, normalized. */
   excerpt?: string;
-  /** failed: why. */
+  /** failed / unlocated: why. */
   reason?: string;
   /** not-checked: the filing is being read right now. */
   checking?: boolean;
@@ -351,7 +427,7 @@ export function buildSectionMatrixCells(
         case 'verified': {
           const presence = record.sections[label];
           grid[label][ticker] = presence
-            ? { state: presence.state, source: record.source, excerpt: presence.excerpt }
+            ? { state: presence.state, source: record.source, excerpt: presence.excerpt, reason: presence.reason }
             : { state: 'not-checked', source: record.source };
           break;
         }
@@ -405,6 +481,7 @@ export function describeCellState(cell: SectionMatrixCell | undefined): string {
   switch (cell.state) {
     case 'present': return 'present';
     case 'absent': return 'absent';
+    case 'unlocated': return `could not extract: ${cell.reason || 'section not located'}`;
     case 'no-filing': return 'no filing';
     case 'failed': return `failed: ${cell.reason || 'unknown error'}`;
     default: return 'not checked';
@@ -478,6 +555,11 @@ export function sectionMatrixCellLabels(
       return {
         label: `${section}: not found in ${ticker}'s ${document}`,
         title: `Heading not found in the text of ${document}${fileName} — open the filing before treating this as an omission`,
+      };
+    case 'unlocated':
+      return {
+        label: `${section}: could not be extracted from ${ticker}'s ${document}`,
+        title: `Read ${document}${fileName}, but the section could not be located: ${cell.reason || 'no heading bounds it'} — open the filing`,
       };
     case 'no-filing':
       return {
