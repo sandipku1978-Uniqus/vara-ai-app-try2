@@ -6,11 +6,13 @@ import {
   flushUserData,
   getActiveProjectId,
   getUserDataStatus,
+  isAccountUserDataScope,
   onUserDataHydrated,
   overlayOutbox,
   prepareUserDataScope,
   resetUserDataForTests,
   startUserDataSync,
+  subscribeUserDataStatus,
   syncUserCollection,
 } from '../services/userData';
 import {
@@ -128,6 +130,24 @@ describe('signed out', () => {
     expect(server.fetch).not.toHaveBeenCalled();
     expect(getUserDataStatus().mode).toBe('local');
     expect(getActiveProjectId()).toBeNull();
+  });
+
+  it('asking whether the scope is an account does not publish a status change', async () => {
+    setActiveBrowserStorageScope('signed-out');
+    prepareUserDataScope('signed-out');
+    await Promise.resolve();
+    const before = getUserDataStatus();
+    const listener = vi.fn();
+    const unsubscribe = subscribeUserDataStatus(listener);
+    try {
+      for (let i = 0; i < 10; i += 1) expect(isAccountUserDataScope()).toBe(false);
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(listener).toHaveBeenCalledTimes(0);
+      expect(getUserDataStatus()).toBe(before);
+    } finally {
+      unsubscribe();
+    }
   });
 });
 

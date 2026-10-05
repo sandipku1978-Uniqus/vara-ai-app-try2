@@ -68,10 +68,9 @@ export function useDocumentCartItems(): CartFiling[] {
 
 /**
  * isAccountUserDataScope() as a render-safe value: false during server
- * rendering and hydration, then the live answer, re-read on status changes.
- * It is consulted only once the status names an account scope: for a
- * signed-out scope the engine keeps no state, and each call would publish a
- * fresh status object, re-rendering every subscriber without end.
+ * rendering and hydration (the server snapshot names no scope, so the client's
+ * first render matches the server's), then the live answer, re-read on status
+ * changes.
  */
 export function useAccountScope(): boolean {
   const status = useUserDataStatus();

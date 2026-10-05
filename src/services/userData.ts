@@ -252,7 +252,22 @@ function reportInvalid(message: string): void {
 let notifyQueued = false;
 
 function setStatus(update: Partial<UserDataStatus>): void {
-  status = { ...status, ...update };
+  // Publish only a real change: the object identity is the snapshot that
+  // useSyncExternalStore compares, and ensureState() re-prepares a signed-out
+  // scope on every call, so an unchanged status must stay the same object.
+  const changed = (Object.keys(update) as Array<keyof UserDataStatus>)
+    .some(key => !Object.is(update[key], status[key]));
+  if (!changed) return;
+  publishStatus({ ...status, ...update });
+}
+
+/**
+ * Replace the status object and notify subscribers. Also used directly when
+ * the project list or active project changed: those live outside the status
+ * fields, so a fresh object is what makes subscribers re-read them.
+ */
+function publishStatus(next: UserDataStatus): void {
+  status = next;
   // Deferred: prepareUserDataScope runs while the AppProvider renders, and a
   // subscriber must not be updated in the middle of another component's render.
   if (notifyQueued) return;
@@ -430,7 +445,7 @@ export function setActiveProject(projectId: string): void {
   const current = ensureState();
   if (!current || !current.projects.some(project => project.id === projectId)) return;
   writeScoped(ACTIVE_PROJECT_KEY, current.scope, projectId);
-  setStatus({});
+  publishStatus({ ...status });
 }
 
 function newUuid(): string {
