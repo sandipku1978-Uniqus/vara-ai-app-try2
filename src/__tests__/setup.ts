@@ -26,7 +26,7 @@ const localStorageMock = (() => {
   };
 })();
 
-Object.defineProperty(window, 'localStorage', { value: localStorageMock });
+if (typeof window !== 'undefined') Object.defineProperty(window, 'localStorage', { value: localStorageMock });
 
 // Mock sessionStorage
 const sessionStorageMock = (() => {
@@ -41,10 +41,10 @@ const sessionStorageMock = (() => {
   };
 })();
 
-Object.defineProperty(window, 'sessionStorage', { value: sessionStorageMock });
+if (typeof window !== 'undefined') Object.defineProperty(window, 'sessionStorage', { value: sessionStorageMock });
 
 // Mock matchMedia — jsdom doesn't implement it; AppState reads it for theme mode
-Object.defineProperty(window, 'matchMedia', {
+if (typeof window !== 'undefined') Object.defineProperty(window, 'matchMedia', {
   writable: true,
   value: (query: string) => ({
     matches: false,
