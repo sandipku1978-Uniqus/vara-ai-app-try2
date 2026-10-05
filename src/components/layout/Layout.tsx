@@ -15,6 +15,7 @@ import { useApp } from '../../context/AppState';
 import { URCBrandLockup, URCBrandMark } from '../brand/URCBrand';
 import MemoTray from '../memo/MemoTray';
 import CartTray from '../cart/CartTray';
+import AlertBell from '../alerts/AlertBell';
 import { BRAND } from '../../config/brand';
 import { EARNINGS_SCOPE_LABEL } from '../../config/earnings';
 import { clerkEnabled } from '../../services/auth';
@@ -264,6 +265,7 @@ export function Navbar({ mobileNavOpen, onMobileNavToggle, menuButtonRef }: { mo
             <span>{mounted ? (themeMode === 'dark' ? 'Switch to light surfaces' : 'Switch to dark surfaces') : 'Loading...'}</span>
           </span>
         </button>
+        {!isLanding && clerkEnabled && isLoaded && isSignedIn && <AlertBell />}
         {!isLanding && <CartTray />}
         {!isLanding && (
           <button className="copilot-entry-btn" onClick={() => setChatOpen(true)} title={`Open ${BRAND.copilotName}`}>
