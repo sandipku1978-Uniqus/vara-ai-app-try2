@@ -26,7 +26,7 @@ import {
   referenceBooleanExpression,
   textCitesReference,
 } from '../utils/accountingReference';
-import { parseSearchHit } from '../hooks/useEdgarSearch';
+import { parseSearchHit } from '../utils/edgarSearchHit';
 import {
   buildCandidateQueryFromBoolean,
   booleanQueryMatches,
@@ -1778,3 +1778,24 @@ export async function buildSearchTrendSummary(
     .filter(Boolean)
     .join(' ');
 }
+
+/**
+ * The executor's own pure filing-domain stages, exposed as one bundle so the
+ * server-side search-job worker (src/app/api/search-jobs) drives the SAME
+ * matching, snippet, ranking and roll-up code as the browser — never a copy
+ * that could drift. Network-bound stages are not included: the worker supplies
+ * its own paced, server-side clients for those.
+ */
+export const filingResearchStages = {
+  mapSearchHit,
+  uniqueById: uniqueById<FilingResearchResult>,
+  matchesBaseFilters,
+  matchesSignalFilters,
+  annotateResultMatchContext,
+  sortResearchResults,
+  getSignalCacheKey,
+  rollUpExhibitMatches,
+  detectAuditor,
+  detectAcceleratedStatus,
+  isExhibitDocumentType,
+} as const;
