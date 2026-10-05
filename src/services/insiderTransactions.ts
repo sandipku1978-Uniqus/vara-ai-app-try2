@@ -17,7 +17,11 @@ export interface InsiderSubmission {
   };
 }
 export interface InsiderFiling { accession: string; filedAt: string; formType: string; primaryDocument: string }
-export interface InsiderTransaction extends OwnershipTransaction { accession: string; filedAt: string; formType: string }
+export interface InsiderTransaction extends OwnershipTransaction {
+  accession: string; filedAt: string; formType: string;
+  /** The filing's primary document as SEC lists it (e.g. `xslF345X06/form4.xml`, the rendered form). */
+  primaryDocument: string;
+}
 export interface InsiderOwnerAggregate {
   owner: InsiderOwner;
   relationship: InsiderRelationship;
@@ -276,7 +280,7 @@ export async function getInsiderTransactions(options: InsiderTransactionsOptions
     options.signal?.throwIfAborted();
     const successful = parsed.filter((entry): entry is ParsedFiling => Boolean(entry));
     const transactions = successful.flatMap(({ filing, document }) => document.transactions.map(row => ({
-      ...row, accession: filing.accession, filedAt: filing.filedAt, formType: filing.formType,
+      ...row, accession: filing.accession, filedAt: filing.filedAt, formType: filing.formType, primaryDocument: filing.primaryDocument,
     })));
     const filingsFailed = failures.filter((entry): entry is { accession: string; reason: string } => Boolean(entry));
     const filingsAboutOtherIssuers = otherIssuers.filter((entry): entry is InsiderCoverage['filingsAboutOtherIssuers'][number] => Boolean(entry));

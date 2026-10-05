@@ -126,6 +126,38 @@ describe('memo Word export', () => {
     expect(text).toContain('Appendix — Evidence package');
     expect(text).toContain('urc.evidence-package.v1');
     expect(text).toContain('commit abc1234');
+    expect(text).toContain('Model: not reported');
+  });
+
+  it('cites an AAER as "AAER-4604, SEC, <date>" in the evidence table and sources, not as a filing', async () => {
+    const release: MemoCitation = {
+      id: 'SEC:AAER-4604', kind: 'release', cik: 'SEC', accessionNumber: 'AAER-4604', company: 'In the Matter of Example Corp.',
+      form: 'AAER', fileDate: '2026-09-30', excerpt: 'AAER-4604 (2026-09-30): In the Matter of Example Corp.',
+      sourceUrl: 'https://www.sec.gov/enforcement-litigation/administrative-proceedings/34-100000', note: '', addedAt: '2026-10-01T00:00:00.000Z',
+    };
+    const { xml } = await unpack(buildMemoDocument(memoInput({ citations: [release], draft: null })));
+    const text = visibleText(xml);
+    expect(text).toContain('[1] AAER-4604, SEC, 2026-09-30 — In the Matter of Example Corp. ');
+    expect(text).toContain('AAER (SEC release)');
+    expect(text).toContain('AAER-4604 (release no.)');
+    expect(text).not.toContain('Form AAER');
+  });
+
+  it('names the model, provider and effort the draft was saved with in the appendix', async () => {
+    const draft: MemoDraftRecord = {
+      ...DRAFT,
+      aiMetadata: {
+        requestedModel: 'openai/gpt-5.6', requestedEffort: 'high', model: 'openai/gpt-5.6', provider: 'openai',
+        reasoningEffort: 'high', webSources: [],
+      },
+    };
+    const evidencePackage = buildMemoEvidencePackage({
+      title: 'Research memo — Supply-chain risk', citations: CITATIONS, draft, generatedAt: NOW, appVersion: VERSION,
+    });
+    const { xml } = await unpack(buildMemoDocument(memoInput({ draft, evidencePackage })));
+    const text = visibleText(xml);
+    expect(text).toContain('Model: openai/gpt-5.6 (openai). Reasoning effort: high (as reported by the AI route response).');
+    expect(text).not.toContain('Model: not reported');
   });
 
   it('keeps [n] markers as superscript references linked to their evidence row, and leaves unresolvable ones as typed', async () => {
@@ -230,7 +262,7 @@ describe('cart section Word export', () => {
     addedAt: NOW.toISOString(),
   });
   const slices: CartSectionSlice[] = [
-    { filing: filing(1), conceptKey: 'risk-factors', sectionLabel: 'Risk Factors', status: 'extracted', text: 'item 1a risk factors our supply chain is concentrated', document: 'doc.htm' },
+    { filing: filing(1), conceptKey: 'risk-factors', sectionLabel: 'Risk Factors', status: 'extracted', text: 'Item 1A. Risk Factors\nOur supply chain is concentrated.', textForm: 'original', document: 'doc.htm' },
     { filing: filing(2, '8-K'), conceptKey: 'risk-factors', sectionLabel: 'Risk Factors', status: 'not-mapped', text: '', document: '', reason: 'Risk Factors is not mapped for Form 8-K' },
     { filing: filing(3), conceptKey: 'risk-factors', sectionLabel: 'Risk Factors', status: 'failed', text: '', document: 'doc.htm', reason: 'rate limited — retry' },
   ];
@@ -241,10 +273,11 @@ describe('cart section Word export', () => {
     expect(xml.match(/<w:br w:type="page"\/>/g)).toHaveLength(3);
     expect(text).toContain('Risk Factors — 3 selected filings');
     expect(text).toContain('1 of 3');
-    expect(text).toContain('our supply chain is concentrated');
+    expect(text).toContain('Item 1A. Risk FactorsOur supply chain is concentrated.');
     expect(text).toContain('Not mapped for this form — Risk Factors is not mapped for Form 8-K.');
     expect(text).toContain('Could not read filing — rate limited — retry.');
-    expect(text).toContain('Normalized section text');
+    expect(text).toContain('As filed — the filing’s own case, punctuation and line breaks');
+    expect(text).not.toContain('Normalized');
     expect(rels).toContain('https://www.sec.gov/Archives/edgar/data/1/');
   });
 
@@ -252,7 +285,9 @@ describe('cart section Word export', () => {
     const csv = buildSectionIndexCsv(slices).trim().split('\r\n');
     expect(csv).toHaveLength(4);
     expect(csv[0]).toContain('Status');
+    expect(csv[0]).toContain('Text form');
     expect(csv[1]).toContain('Extracted');
+    expect(csv[1]).toContain('As filed');
     expect(csv[2]).toContain('Not mapped for this form');
     expect(csv[3]).toContain('Could not read filing');
   });

@@ -21,7 +21,7 @@ import { GET, maxDuration } from '../app/api/insiders/transactions/route';
 function fixtureResult(): InsiderTransactionsResult {
   const document = parseOwnershipXml(readFileSync(new URL('./fixtures/insiders/apple-sale.xml', import.meta.url), 'utf8'));
   return { cik: '320193', issuer: { name: document.issuer.name!, tradingSymbol: document.issuer.tradingSymbol },
-    transactions: document.transactions.map(row => ({ ...row, accession: '0001140361-26-038307', filedAt: '2026-10-01', formType: '4' })), owners: [],
+    transactions: document.transactions.map(row => ({ ...row, accession: '0001140361-26-038307', filedAt: '2026-10-01', formType: '4', primaryDocument: 'xslF345X06/form4.xml' })), owners: [],
     coverage: { source: 'SEC submissions filings.recent and raw ownership XML', scope: 'requested-recent-filings', cik: '320193',
       filingsListed: 13, filingsRequested: 1, filingsParsed: 1, filingsFailed: [], filingsNotAttempted: 0, filingsOutsideLimit: 12,
       filingsAboutOtherIssuers: [], filingsAboutOtherIssuersCount: 0,

@@ -110,9 +110,10 @@ describe('AaerReleasesPanel', () => {
     render(<AaerReleasesPanel />);
     await screen.findByTestId('aaer-coverage');
 
-    fireEvent.click(screen.getByRole('button', { name: 'Cite Latch, Inc. AAER filed 2026-10-01 in memo tray' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Cite AAER-4604, SEC, 2026-10-01 — Latch, Inc. in memo tray' }));
     expect(getMemoCitations()[0]).toMatchObject({
-      kind: 'letter',
+      kind: 'release',
+      cik: 'SEC',
       accessionNumber: 'AAER-4604',
       form: 'AAER',
       fileDate: '2026-10-01',

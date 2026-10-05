@@ -19,7 +19,22 @@ import {
   type BooleanSearchNode,
 } from '../utils/booleanSearch';
 
+/**
+ * `semantic` is the internal id of the plain-language mode: a rule-based
+ * parser that lifts supported company, form, date and auditor constraints out
+ * of ordinary prose and runs a deterministic SEC search. It is not semantic,
+ * conceptual or vector retrieval, so users only ever see it as "Plain
+ * language" (SEARCH_MODE_LABEL). The id stays `semantic` because saved
+ * alerts and searches (the user-data `mode` column), search jobs and research
+ * URLs already store it.
+ */
 export type ResearchSearchMode = 'semantic' | 'boolean';
+
+/** What each search mode is called wherever a user can see it. */
+export const SEARCH_MODE_LABEL: Record<ResearchSearchMode, string> = {
+  semantic: 'Plain language',
+  boolean: 'Boolean / Proximity',
+};
 
 export interface SearchExecutionPlan {
   /** Residual query after an auditor token is lifted into the filters. */

@@ -129,7 +129,7 @@ export default function BooleanSyntaxHelp({ open, onClose }: BooleanSyntaxHelpPr
       )}
 
       <p className="bool-help__note">
-        Operators work in either case inside Boolean mode; only UPPERCASE operators auto-switch a Filing Research query into Boolean mode. A phrase in quotes is never split to look up a company.
+        Operators work in either case inside Boolean mode. A Plain language query switches to Boolean mode only on signals prose never contains — UPPERCASE AND, OR or NOT, a proximity operator (w/5, p/3), an auditor: field, a numeric operand (#, $#, %#) or a wildcard; ordinary prose never switches. A phrase in quotes is never split to look up a company.
       </p>
     </div>
   );

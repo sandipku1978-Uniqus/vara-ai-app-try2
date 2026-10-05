@@ -82,10 +82,24 @@ export function ownerName(owner: InsiderTransaction['reportingOwner']): string {
   return owner.name || (owner.cik ? `CIK ${owner.cik}` : NOT_REPORTED);
 }
 
-/** The service returns the accession but not the primary document, so the
- * link is the filing's EDGAR index page, which lists every document in it. */
+/** The filing's EDGAR index page, which lists every document in it. */
 export function filingIndexUrl(issuerCik: string, accession: string): string {
   return `https://www.sec.gov/Archives/edgar/data/${Number(issuerCik)}/${accession.replace(/-/g, '')}/${accession}-index.htm`;
+}
+
+/** SEC's primaryDocument: a relative file, optionally under its XSL rendering folder. */
+const PRIMARY_DOCUMENT_PATH = /^(?:[A-Za-z0-9_-]+\/)?[A-Za-z0-9_.-]+$/;
+
+/**
+ * The Form 3/4/5 document itself — SEC's primaryDocument path, which for
+ * ownership filings is the XSL-rendered form (`xslF345X06/form4.xml`) a
+ * reader sees as the filed form. Falls back to the index page when the
+ * service reported no usable document path.
+ */
+export function filingDocumentUrl(issuerCik: string, accession: string, primaryDocument: string | null | undefined): string {
+  const path = (primaryDocument || '').trim();
+  if (!path || !PRIMARY_DOCUMENT_PATH.test(path) || path.includes('..')) return filingIndexUrl(issuerCik, accession);
+  return `https://www.sec.gov/Archives/edgar/data/${Number(issuerCik)}/${accession.replace(/-/g, '')}/${path}`;
 }
 
 function count(value: number): string {
@@ -155,7 +169,7 @@ export function toTransactionRows(cik: string, transactions: readonly InsiderTra
     form: row.formType,
     filedAt: row.filedAt,
     accession: row.accession,
-    filingUrl: filingIndexUrl(cik, row.accession),
+    filingUrl: filingDocumentUrl(cik, row.accession, row.primaryDocument),
   }));
 }
 

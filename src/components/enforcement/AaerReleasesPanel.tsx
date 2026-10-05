@@ -125,9 +125,10 @@ export default function AaerReleasesPanel() {
         <CiteButton
           compact
           citation={{
-            // A release is not an EDGAR filing: "letter" keeps the memo tray
-            // from trying to resolve an EDGAR primary document for it.
-            kind: 'letter',
+            // A release is not an EDGAR filing: the memo tray cites it by
+            // release number ("AAER-4604, SEC, <date>") and never tries to
+            // resolve an EDGAR primary document for it.
+            kind: 'release',
             cik: 'SEC',
             accessionNumber: row.releaseNo,
             company: row.title,

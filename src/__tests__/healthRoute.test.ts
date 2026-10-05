@@ -55,6 +55,8 @@ describe('GET /api/health', () => {
     vi.stubEnv('KV_REST_API_URL', 'https://kv.example.test');
     vi.stubEnv('KV_REST_API_TOKEN', 'must-never-be-returned');
     vi.stubEnv('ANTHROPIC_API_KEY', 'must-never-be-returned-either');
+    vi.stubEnv('VERCEL_AI_GATEWAY_KEY', '');
+    vi.stubEnv('AI_GATEWAY_API_KEY', '');
     vi.stubEnv('URC_SUPABASE_SERVICE_KEY', 'must-never-be-returned-at-all');
   });
 
@@ -80,7 +82,7 @@ describe('GET /api/health', () => {
       checks: {
         database: { ok: true, schemaVersion: '025' },
         kv: { configured: true, ok: true },
-        ai: { configured: true },
+        ai: { configured: true, path: 'anthropic-direct', keys: ['ANTHROPIC_API_KEY'] },
       },
     });
     expect(typeof body.checks.database.latencyMs).toBe('number');
@@ -89,6 +91,26 @@ describe('GET /api/health', () => {
     expect(Object.keys(body.checks).sort()).toEqual(['ai', 'database', 'kv']);
     expect(JSON.stringify(body)).not.toContain('must-never-be-returned');
     expect(mocks.kvGet).toHaveBeenCalledWith('urc:health:probe');
+  });
+
+  it('reports AI as configured through the gateway when a gateway key is set, naming which keys', async () => {
+    vi.stubEnv('VERCEL_AI_GATEWAY_KEY', 'gateway-key-must-never-be-returned');
+    vi.stubEnv('ANTHROPIC_API_KEY', '');
+    let body = await (await GET(request(), undefined)).json();
+    expect(body.checks.ai).toEqual({ configured: true, path: 'gateway', keys: ['VERCEL_AI_GATEWAY_KEY'] });
+
+    vi.stubEnv('VERCEL_AI_GATEWAY_KEY', '');
+    vi.stubEnv('AI_GATEWAY_API_KEY', 'documented-name-must-never-be-returned');
+    vi.stubEnv('ANTHROPIC_API_KEY', 'direct-key-must-never-be-returned');
+    body = await (await GET(request('203.0.113.11'), undefined)).json();
+    expect(body.checks.ai).toEqual({ configured: true, path: 'gateway', keys: ['AI_GATEWAY_API_KEY', 'ANTHROPIC_API_KEY'] });
+    expect(JSON.stringify(body)).not.toContain('must-never-be-returned');
+  });
+
+  it('reports AI as not configured when no AI key is set', async () => {
+    vi.stubEnv('ANTHROPIC_API_KEY', '');
+    const body = await (await GET(request(), undefined)).json();
+    expect(body.checks.ai).toEqual({ configured: false, path: 'none', keys: [] });
   });
 
   it('answers 503, uncached, when the restricted database read fails or exceeds its budget', async () => {

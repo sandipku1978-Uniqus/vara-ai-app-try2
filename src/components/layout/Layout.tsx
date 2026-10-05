@@ -17,6 +17,7 @@ import MemoTray from '../memo/MemoTray';
 import CartTray from '../cart/CartTray';
 import { BRAND } from '../../config/brand';
 import { EARNINGS_SCOPE_LABEL } from '../../config/earnings';
+import { ENFORCEMENT_ROUTE_LABEL } from '../../config/enforcement';
 import { clerkEnabled } from '../../services/auth';
 import { findProductRoute } from '../../config/routes';
 import CommandPalette from './CommandPalette';
@@ -175,7 +176,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen: boolean; on
         <div className="nav-group-header">Reference</div>
         <SidebarNavItem to="/accounting" label="Accounting Standards" icon={<BookOpen size={16} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
         <SidebarNavItem to="/regulation" label="Securities Regulation" icon={<Scale size={16} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
-        <SidebarNavItem to="/enforcement" label="SEC Litigation Releases" icon={<Gavel size={16} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
+        <SidebarNavItem to="/enforcement" label={ENFORCEMENT_ROUTE_LABEL} icon={<Gavel size={16} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
 
         <div className="nav-group-header">Transactions</div>
         <SidebarNavItem to="/ipo" label="IPO Center" icon={<Briefcase size={16} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
