@@ -29,6 +29,7 @@ import { BRAND } from '../../config/brand';
 import CiteButton from '../memo/CiteButton';
 import CartToggle from '../cart/CartToggle';
 import ActiveQueryChips from './ActiveQueryChips';
+import ResultEvidenceDetails, { type OpenFilingOptions } from './ResultEvidenceDetails';
 import SearchScopeBanner from './SearchScopeBanner';
 import { researchTabId } from './ResearchSessionTabs';
 
@@ -64,7 +65,8 @@ interface ResearchResultsWorkspaceProps {
   onSelectResult: (resultId: string) => void;
   onExportResults: () => void;
   onOpenInsiders: () => void;
-  onOpenFiling: (result: FilingResearchResult) => void;
+  /** Open the viewer; options pick a matched exhibit or the all-hits list. */
+  onOpenFiling: (result: FilingResearchResult, options?: OpenFilingOptions) => void;
   previewError: boolean;
   selectedPrimaryDocument: string;
   selectedDocumentUrl: string;
@@ -404,7 +406,8 @@ export default function ResearchResultsWorkspace({
                   {result.matchedDocumentType && (
                     <div className="match-provenance">
                       Matched in {result.matchedDocumentType}
-                      {result.matchedDocumentCount && result.matchedDocumentCount > 1
+                      {/* Rows that carry the exhibit list name them below the card. */}
+                      {!result.matchedExhibits?.length && result.matchedDocumentCount && result.matchedDocumentCount > 1
                         ? ` (+${result.matchedDocumentCount - 1} more exhibit${result.matchedDocumentCount - 1 === 1 ? '' : 's'})`
                         : ''}
                     </div>
@@ -413,6 +416,11 @@ export default function ResearchResultsWorkspace({
                     {renderHighlightedText(result.matchSnippet || result.description || 'Matched on filing metadata.', previewHighlightTerms)}
                   </div>
                 </button>
+                <ResultEvidenceDetails
+                  result={result}
+                  renderSnippet={text => renderHighlightedText(text, previewHighlightTerms)}
+                  onOpenFiling={onOpenFiling}
+                />
                 <CiteButton
                   compact
                   className="research-hit-cite"

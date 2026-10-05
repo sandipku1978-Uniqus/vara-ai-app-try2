@@ -81,6 +81,66 @@ describe('exhibit roll-up', () => {
     expect(row.matchedDocumentCount).toBe(2);
   });
 
+  it('lists every matched exhibit under the parent row with its own recorded evidence', async () => {
+    const results = await executeFilingResearchSearch({
+      query: 'clawback',
+      filters: { ...defaultSearchFilters },
+      mode: 'boolean',
+      limit: 50,
+    });
+
+    const [row] = results.filter(r => r.accessionNumber === ACCESSION);
+    expect(row.matchedExhibits?.map(exhibit => [exhibit.documentType, exhibit.documentName])).toEqual([
+      ['EX-99.1', 'ex99-1.htm'],
+      ['EX-99.2', 'ex99-2.htm'],
+    ]);
+    for (const exhibit of row.matchedExhibits || []) {
+      expect(exhibit.matchSnippet).toContain('clawback');
+      expect(exhibit.matchHitCount).toBe(1);
+    }
+  });
+
+  it('records up to three distinct passages and the hit count from the text validation read', async () => {
+    const filler = 'Directors reviewed staffing, facilities, suppliers, budgets, and long range planning matters at length. '.repeat(4);
+    const text = [
+      'Item 1. Business', 'The board adopted a clawback policy.', filler,
+      'Item 1A. Risk Factors', 'A clawback may be difficult to enforce.', filler,
+      'Item 9B. Other Information', 'The clawback policy is filed as an exhibit.', filler,
+      'Item 10. Directors', 'The committee administers the clawback.',
+    ].join('\n');
+    mocks.search.mockImplementation(async () => [{
+      _id: `${ACCESSION}:main.htm`,
+      _score: 1,
+      _source: {
+        display_names: ['Parent Match Corp  (CIK 0000000001)'],
+        file_date: '2026-03-01',
+        file_type: '10-K',
+        root_form: '10-K',
+        adsh: ACCESSION,
+        ciks: [CIK],
+      },
+    }]);
+    mocks.fetchText.mockImplementation(async () => text);
+
+    const results = await executeFilingResearchSearch({
+      query: 'clawback',
+      filters: { ...defaultSearchFilters },
+      mode: 'boolean',
+      limit: 50,
+    });
+
+    const [row] = results;
+    expect(row.matchHitCount).toBe(4);
+    expect(row.matchSnippets).toHaveLength(3);
+    expect(row.matchSnippets?.[0]).toEqual({ excerpt: row.matchSnippet, sectionPath: row.matchSectionPath || '' });
+    expect(row.matchSnippets?.slice(1).map(snippet => snippet.sectionPath)).toEqual([
+      'Item 1A · Risk Factors',
+      'Item 9B · Other Information',
+    ]);
+    // Passages come from the text already read for validation — one read.
+    expect(mocks.fetchText).toHaveBeenCalledTimes(1);
+  });
+
   it('leaves a parent-document match without exhibit provenance', async () => {
     mocks.search.mockImplementation(async () => [
       {
