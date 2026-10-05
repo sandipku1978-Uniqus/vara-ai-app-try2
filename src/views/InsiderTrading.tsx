@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, type KeyboardEvent } from 'react';
 import { UserCheck, Loader2, ExternalLink } from 'lucide-react';
 import CompanySearchInput from '../components/filters/CompanySearchInput';
 import DataTable, { type ColumnDef } from '../components/tables/DataTable';
 import ResultsToolbar from '../components/tables/ResultsToolbar';
 import AskCopilotButton from '../components/tables/AskCopilotButton';
+import InsiderTransactionsPanel from '../components/insiders/InsiderTransactionsPanel';
 import { lookupCIK, fetchCompanySubmissions, getInsiderFilings } from '../services/secApi';
 
 interface InsiderFiling {
@@ -17,7 +18,42 @@ interface InsiderFiling {
   cik: string;
 }
 
+type InsiderView = 'filings' | 'transactions';
+
+const INSIDER_VIEWS: Array<{ id: InsiderView; label: string }> = [
+  { id: 'filings', label: 'Filings' },
+  { id: 'transactions', label: 'Transactions' },
+];
+
+/** Transactions are read per issuer; resolve the CIK when the picker gave only a ticker. */
+function TransactionsForCompany({ company }: { company: { ticker: string; cik: string } }) {
+  const [resolved, setResolved] = useState<{ ticker: string; cik: string | null } | null>(
+    company.cik ? { ticker: company.ticker, cik: company.cik } : null,
+  );
+
+  useEffect(() => {
+    if (company.cik) { setResolved({ ticker: company.ticker, cik: company.cik }); return; }
+    let cancelled = false;
+    setResolved(null);
+    lookupCIK(company.ticker)
+      .then(cik => { if (!cancelled) setResolved({ ticker: company.ticker, cik: cik || null }); })
+      .catch(() => { if (!cancelled) setResolved({ ticker: company.ticker, cik: null }); });
+    return () => { cancelled = true; };
+  }, [company.ticker, company.cik]);
+
+  if (!resolved || resolved.ticker !== company.ticker) {
+    return <div role="status" style={{ padding: '20px 0', color: 'var(--text-muted)' }}>Resolving {company.ticker} to its SEC CIK…</div>;
+  }
+  if (!resolved.cik) {
+    return <div role="alert" style={{ padding: '12px', color: 'var(--status-error)', background: 'var(--status-error-bg)', borderRadius: '4px' }}>{company.ticker} could not be matched to an SEC CIK, so its ownership filings cannot be read.</div>;
+  }
+  return <InsiderTransactionsPanel key={resolved.cik} cik={resolved.cik} companyLabel={company.ticker} />;
+}
+
 export default function InsiderTrading() {
+  const [view, setView] = useState<InsiderView>('filings');
+  const [transactionsTicker, setTransactionsTicker] = useState('');
+  const viewRefs = useRef<Record<InsiderView, HTMLButtonElement | null>>({ filings: null, transactions: null });
   const [companies, setCompanies] = useState<{ ticker: string; cik: string }[]>([]);
   const [filings, setFilings] = useState<InsiderFiling[]>([]);
   const [loading, setLoading] = useState(false);
@@ -68,6 +104,20 @@ export default function InsiderTrading() {
     return () => { cancelled = true; };
   }, [companies]);
 
+  const onViewKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
+    event.preventDefault();
+    const index = INSIDER_VIEWS.findIndex(item => item.id === view);
+    const nextIndex = event.key === 'Home' ? 0
+      : event.key === 'End' ? INSIDER_VIEWS.length - 1
+        : (index + (event.key === 'ArrowRight' ? 1 : -1) + INSIDER_VIEWS.length) % INSIDER_VIEWS.length;
+    const next = INSIDER_VIEWS[nextIndex].id;
+    setView(next);
+    viewRefs.current[next]?.focus();
+  };
+
+  const transactionsCompany = companies.find(c => c.ticker === transactionsTicker) ?? companies[0] ?? null;
+
   const columns: ColumnDef<InsiderFiling>[] = [
     { key: 'filingDate', header: 'Date', sortable: true },
     { key: 'form', header: 'Form', sortable: true },
@@ -101,7 +151,7 @@ export default function InsiderTrading() {
         <h1 style={{ fontSize: '1.35rem', fontWeight: 700, color: 'var(--text-primary)' }}>Insider Trading</h1>
       </div>
       <p style={{ color: 'var(--text-secondary)', marginBottom: '14px', fontSize: '0.86rem', lineHeight: 1.45 }}>
-        Forms 3, 4, and 5 insider ownership and transaction filings from each company&apos;s recent SEC submissions window (roughly the last 1,000 filings per registrant — high-volume filers&apos; older insider forms roll out of it).
+        Forms 3, 4, and 5 insider ownership and transaction filings from each company&apos;s recent SEC submissions window (roughly the last 1,000 filings per registrant — high-volume filers&apos; older insider forms roll out of it). The Transactions view reads each filing&apos;s ownership XML into one row per reported transaction.
       </p>
 
       <div style={{ marginBottom: '12px', maxWidth: '400px' }}>
@@ -130,6 +180,56 @@ export default function InsiderTrading() {
         </div>
       )}
 
+      <div role="tablist" aria-label="Insider data view" style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+        {INSIDER_VIEWS.map(item => (
+          <button
+            key={item.id}
+            ref={element => { viewRefs.current[item.id] = element; }}
+            type="button"
+            role="tab"
+            id={`insider-tab-${item.id}`}
+            aria-selected={view === item.id}
+            aria-controls={`insider-panel-${item.id}`}
+            tabIndex={view === item.id ? 0 : -1}
+            onClick={() => setView(item.id)}
+            onKeyDown={onViewKeyDown}
+            style={{
+              padding: '7px 14px', borderRadius: '6px', fontSize: '0.84rem', fontWeight: 600, cursor: 'pointer',
+              border: '1px solid ' + (view === item.id ? 'var(--accent-primary)' : 'var(--border-color)'),
+              background: view === item.id ? 'var(--interactive-hover-strong)' : 'var(--surface-panel-strong)',
+              color: view === item.id ? 'var(--accent-primary)' : 'var(--text-secondary)',
+            }}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+
+      <div role="tabpanel" id="insider-panel-transactions" aria-labelledby="insider-tab-transactions" hidden={view !== 'transactions'}>
+        {view === 'transactions' && (
+          transactionsCompany ? (
+            <>
+              {companies.length > 1 && (
+                <label style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', marginBottom: '12px', fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+                  Company
+                  <select
+                    value={transactionsCompany.ticker}
+                    onChange={event => setTransactionsTicker(event.target.value)}
+                    style={{ background: 'var(--input-bg)', border: '1px solid var(--input-border)', borderRadius: '4px', color: 'var(--text-primary)', padding: '4px 8px' }}
+                  >
+                    {companies.map(c => <option key={c.ticker} value={c.ticker}>{c.ticker}</option>)}
+                  </select>
+                </label>
+              )}
+              <TransactionsForCompany company={transactionsCompany} />
+            </>
+          ) : (
+            <div style={{ textAlign: 'center', padding: '28px 16px', color: 'var(--text-muted)' }}>Add a company above to read its insider transactions.</div>
+          )
+        )}
+      </div>
+
+      <div role="tabpanel" id="insider-panel-filings" aria-labelledby="insider-tab-filings" hidden={view !== 'filings'}>
       {error && <div role="alert" style={{ color: 'var(--status-error)', background: 'var(--status-error-bg)', border: '1px solid var(--status-error)', borderRadius: '4px', padding: '8px 10px', marginBottom: '12px' }}>{error}</div>}
 
       {loading ? (
@@ -151,6 +251,7 @@ export default function InsiderTrading() {
       ) : (
         <div style={{ textAlign: 'center', padding: '28px 16px', color: 'var(--text-muted)' }}>Add companies above to view insider trading filings.</div>
       )}
+      </div>
     </div>
   );
 }

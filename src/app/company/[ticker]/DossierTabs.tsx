@@ -3,7 +3,8 @@
 /**
  * Issuer Dossier tabs: Filings (from EDGAR submissions, passed in by the
  * server page) · Comment Letters (threads from the owned corpus, by CIK) ·
- * Financials (XBRL company facts, latest fiscal year, pinned to one year).
+ * Financials (XBRL company facts, latest fiscal year, pinned to one year) ·
+ * Insider Transactions (Forms 3/4/5 ownership XML for this CIK).
  */
 
 import { useEffect, useState } from 'react';
@@ -12,6 +13,7 @@ import { useParams } from 'next/navigation';
 import { ExternalLink, Loader2 } from 'lucide-react';
 import CiteButton from '../../../components/memo/CiteButton';
 import CartToggle from '../../../components/cart/CartToggle';
+import InsiderTransactionsPanel from '../../../components/insiders/InsiderTransactionsPanel';
 import {
   buildSecDataUrl,
   extractComparableFinancials,
@@ -110,7 +112,7 @@ export default function DossierTabs({
   const routeTicker = String(useParams<{ ticker?: string }>()?.ticker || '');
   // The route accepts a ticker or a CIK; only a ticker can seed Benchmarking.
   const dossierTicker = routeTicker && !/^\d+$/.test(routeTicker) ? decodeURIComponent(routeTicker).toUpperCase() : undefined;
-  const [tab, setTab] = useState<'filings' | 'letters' | 'financials'>('filings');
+  const [tab, setTab] = useState<'filings' | 'letters' | 'financials' | 'insiders'>('filings');
   const [threads, setThreads] = useState<ThreadSummary[] | null>(null);
   const [threadsError, setThreadsError] = useState('');
   const [threadReloadKey, setThreadReloadKey] = useState(0);
@@ -160,7 +162,7 @@ export default function DossierTabs({
   return (
     <div>
       <div style={{ display: 'flex', gap: 8, marginBottom: 18, overflowX: 'auto' }} role="group" aria-label="Issuer dossier view">
-        {([['filings', 'Filings'], ['letters', 'Comment Letters'], ['financials', 'Financials']] as const).map(([value, label]) => (
+        {([['filings', 'Filings'], ['letters', 'Comment Letters'], ['financials', 'Financials'], ['insiders', 'Insider Transactions']] as const).map(([value, label]) => (
           <button key={value} type="button" onClick={() => setTab(value)} aria-pressed={tab === value}
             style={{
               padding: '8px 16px', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer',
@@ -297,6 +299,8 @@ export default function DossierTabs({
           </div>
         )
       )}
+
+      {tab === 'insiders' && <InsiderTransactionsPanel cik={cik} companyLabel={companyName} />}
 
       {tab === 'financials' && (
         financials === 'loading' || financials === null ? (
