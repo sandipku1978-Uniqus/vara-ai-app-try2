@@ -79,5 +79,8 @@ async function handlePost(request: Request, context?: RouteContext) {
   }
 }
 
-export const GET = withRouteObservability('search-jobs/[id]', handleGet);
-export const POST = withRouteObservability('search-jobs/[id]', handlePost);
+// Next passes the params context to every call of a dynamic route; the
+// wrapper's optional context parameter is narrowed back to that contract.
+type DynamicRouteHandler = (request: Request, context: RouteContext) => Promise<Response>;
+export const GET = withRouteObservability('search-jobs/[id]', handleGet) as DynamicRouteHandler;
+export const POST = withRouteObservability('search-jobs/[id]', handlePost) as DynamicRouteHandler;
