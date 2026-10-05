@@ -9,7 +9,8 @@
 # provenance compares repository identity; schema-contract independently checks
 # service evidence; p1-user-data checks real signed CRUD/isolation/rejections;
 # p2-search-letters checks old/new search shapes and filters; p8-jobs exercises
-# both job transports and denied web identities; writer-role compares ACLs and
+# both job transports and denied web identities; p9-alert-hits checks signed
+# hit pages, evaluator leases and private ACLs (only when 029 exists); writer-role compares ACLs and
 # attributes at 026/027/028/head; grant-audit consumes supervisor SQL if present;
 # chain-test runs the existing end-to-end CI test in a separate plain cluster.
 # --only includes necessary Phase A prerequisites (always twice-in-place).
@@ -30,8 +31,12 @@ ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 cd "$ROOT"
 SUPPORT="$ROOT/scripts/db/dry-run"
 KEEP=0 PORT=54329 IMAGE=postgres:16 ONLY='' REPORT=''
-IDS='chain-apply chain-idempotent upgrade-compat reapply-head provenance schema-contract p1-user-data p2-search-letters p8-jobs writer-role grant-audit chain-test'
-usage() { sed -n '2,19p' "$ROOT/scripts/db/dry-run-chain.sh"; }
+IDS='chain-apply chain-idempotent upgrade-compat reapply-head provenance schema-contract p1-user-data p2-search-letters p8-jobs'
+for dry_file in "$ROOT"/db/migrations/029_*.sql; do
+  if [ -f "$dry_file" ]; then IDS="$IDS p9-alert-hits"; break; fi
+done
+IDS="$IDS writer-role grant-audit chain-test"
+usage() { sed -n '2,20p' "$ROOT/scripts/db/dry-run-chain.sh"; }
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --keep) KEEP=1; shift;;
@@ -266,6 +271,14 @@ p8() {
   if ! psql_dry main postgres -v surface=p8 -f "$SUPPORT/checks-private-surfaces.sql"; then failed=1; fi
   [ "$failed" -eq 0 ]
 }
+p9() {
+  node "$SUPPORT/assertion-requests.mjs" p9 > "$TEMP/requests.json"
+  if ! npx --no-install tsx "$SUPPORT/sign-assertions.ts" < "$TEMP/requests.json" > "$TEMP/assertions.json"; then
+    echo 'P9: real application signer failed (including alert-hits); stopping without a substitute signer.' >&2
+    return 1
+  fi
+  psql_dry main postgres -v "assertions=$(cat "$TEMP/assertions.json")" -f "$SUPPORT/checks-p9-alert-hits.sql"
+}
 writer() {
   snapshot_writer final
   # Snapshots in order: one per upgrade migration (writer-0NNN), the retried head, the final state.
@@ -378,7 +391,8 @@ if [ "$NEED_A" = 1 ]; then
     skip_check upgrade-compat 'Preserve old 025 calls through the chain head' 'Phase A prerequisite failed'
     skip_check reapply-head 'Retry every post-025 migration on head' 'Phase A prerequisite failed'
   fi
-  for id in provenance schema-contract p1-user-data p2-search-letters p8-jobs writer-role grant-audit; do
+  for id in $IDS; do
+    case "$id" in provenance|schema-contract|p1-user-data|p2-search-letters|p8-jobs|p9-alert-hits|writer-role|grant-audit) ;; *) continue;; esac
     selected "$id" || continue
     if [ "$id" = grant-audit ] && [ ! -f "$SUPPORT/grant-audit.sql" ]; then
       skip_check "$id" 'Supervisor grant audit' 'grant-audit.sql not present'; continue
@@ -390,7 +404,8 @@ if [ "$NEED_A" = 1 ]; then
       p1-user-data) run_check "$id" 'Real application signatures, nine-kind CRUD and isolation' p1;;
       p2-search-letters) run_check "$id" 'Old/new calls, filter-only order and facet ACLs' psql_dry main postgres -f "$SUPPORT/checks-p2-search-letters.sql";;
       p8-jobs) run_check "$id" 'Job lifecycle under both transports; web denied' p8;;
-      writer-role) run_check "$id" 'Stable attributes and only job ACL additions' writer;;
+      p9-alert-hits) run_check "$id" 'Signed alert hits, evaluator lifecycle and private ACLs' p9;;
+      writer-role) run_check "$id" 'Stable attributes; only job and alert-hit ACL additions' writer;;
       grant-audit)
         if [ -f "$SUPPORT/grant-audit.sql" ]; then run_check "$id" 'Supervisor grant audit contains no FLAG' grant_audit;
         else skip_check "$id" 'Supervisor grant audit' 'grant-audit.sql not present'; fi;;
