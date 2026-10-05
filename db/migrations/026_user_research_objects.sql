@@ -628,6 +628,32 @@ do $$ begin
   end if;
 end $$;
 
+-- ── 5b. Release evidence must report pgcrypto ───────────────────────────────
+-- 023's evidence RPC lists only pg_trgm, while scripts/accuracy/schema-
+-- contract.ts requires pgcrypto (this migration's identity assertions) to
+-- appear in that evidence — so the release gate failed on a database that
+-- had everything it needs. Add pgcrypto to the RPC's extension filter in
+-- place (found by the dry run, scripts/db/dry-run-chain.sh). The function is
+-- re-created from its own definition, so owner, ACL and every other byte of
+-- 023's body are untouched; a re-apply finds the filter already widened.
+do $$
+declare
+  v_oid oid := pg_catalog.to_regprocedure('public.urc_schema_contract_evidence()');
+  v_def text;
+begin
+  if v_oid is null then
+    raise exception 'user research objects: apply 023 first (public.urc_schema_contract_evidence() is missing)';
+  end if;
+  v_def := pg_catalog.pg_get_functiondef(v_oid);
+  if v_def like '%extname in (''pg_trgm'', ''pgcrypto'')%' then
+    return;
+  end if;
+  if v_def not like '%extname in (''pg_trgm'')%' then
+    raise exception 'user research objects: 023 evidence RPC has an unexpected extension filter; refusing to guess';
+  end if;
+  execute pg_catalog.replace(v_def, 'extname in (''pg_trgm'')', 'extname in (''pg_trgm'', ''pgcrypto'')');
+end $$;
+
 -- ── 6. Post-conditions: fail the migration rather than ship a weaker shape ──
 do $$
 declare
@@ -689,6 +715,10 @@ begin
   where n.nspname = 'public'
     and c.relname like 'urc\_%' escape '\'
     and c.relname not like 'urc\_user\_%' escape '\'
+    -- 028 deliberately grants the writer role the per-user search-job tables
+    -- (urc_search_jobs, urc_search_job_hits); without this exclusion a
+    -- re-apply of 026 on a database already at 028 would fail here.
+    and c.relname not like 'urc\_search\_job%' escape '\'
     and c.relkind in ('r', 'p', 'v', 'm')
     and (
       pg_catalog.has_table_privilege('urc_user_writer', c.oid, 'select')
