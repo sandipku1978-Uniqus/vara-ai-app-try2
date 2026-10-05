@@ -7,13 +7,14 @@
 
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Building2, FileSearch, Navigation } from 'lucide-react';
+import { Building2, FileSearch, FolderOpen, Navigation } from 'lucide-react';
 import { resolveCompanyEntity, type CompanyDirectoryEntry } from '../../services/secApi';
 import { PRODUCT_ROUTES } from '../../config/routes';
 import { ACCOUNTING_ISSUES, accountingIssueHref } from '../../config/accountingTopics';
+import { getActiveProjectId, getUserDataStatus, listUserProjects } from '../../services/userData';
 
 export interface PaletteItem {
-  kind: 'page' | 'company' | 'search';
+  kind: 'page' | 'company' | 'search' | 'project';
   label: string;
   hint: string;
   href: string;
@@ -70,6 +71,43 @@ export function accountingPaletteItems(normalized: string): PaletteItem[] {
     if (matches) {
       items.push({ kind: 'page', label: `Accounting issue: ${issue.label}`, hint: 'Precedents · staff comments · ASUs · guidance', href: accountingIssueHref(issue.id) });
     }
+  }
+  return items;
+}
+
+/**
+ * Project entries: the Projects page and "New project" whenever the query
+ * names projects, plus each project whose name or question matches. With no
+ * query only the active project is offered. Projects come from the account
+ * (userData.ts), so signed out or before the account answers there are none.
+ */
+export function projectPaletteItems(
+  normalized: string,
+  projects: Array<{ id?: string | null; name: string; question?: string }>,
+  activeId: string | null,
+): PaletteItem[] {
+  const query = normalized.trim().toLowerCase();
+  const items: PaletteItem[] = [];
+  const namesProjects = query.length >= 3 && ('projects'.startsWith(query) || query.startsWith('project') || 'workspace'.startsWith(query));
+  if (namesProjects) {
+    items.push({ kind: 'page', label: 'Projects', hint: 'All research projects', href: '/projects' });
+  }
+  for (const project of projects) {
+    if (!project.id) continue;
+    const isActive = project.id === activeId;
+    const matches = query
+      ? namesProjects || project.name.toLowerCase().includes(query) || (project.question || '').toLowerCase().includes(query)
+      : isActive;
+    if (!matches) continue;
+    items.push({
+      kind: 'project',
+      label: `Project: ${project.name}`,
+      hint: isActive ? 'Active project workspace' : 'Project workspace',
+      href: `/projects/${encodeURIComponent(project.id)}`,
+    });
+  }
+  if (namesProjects || (query.length >= 3 && 'new project'.startsWith(query))) {
+    items.push({ kind: 'page', label: 'New project', hint: 'Start a project with a name and question', href: '/projects?new=1' });
   }
   return items;
 }
@@ -151,6 +189,8 @@ export default function CommandPalette() {
       items.push({ kind: 'page', label: page.label, hint: 'Go to page', href: page.path });
     }
   }
+  const accountProjects = open && getUserDataStatus().mode === 'server' ? listUserProjects() : [];
+  items.push(...projectPaletteItems(normalized, accountProjects, accountProjects.length > 0 ? getActiveProjectId() : null));
   items.push(...accountingPaletteItems(normalized));
   if (normalized) {
     items.push({
@@ -218,6 +258,7 @@ export default function CommandPalette() {
                 border: 'none', cursor: 'pointer',
               }}>
               {item.kind === 'company' ? <Building2 size={15} style={{ color: 'var(--accent-primary)' }} />
+                : item.kind === 'project' ? <FolderOpen size={15} style={{ color: 'var(--accent-primary)' }} />
                 : item.kind === 'search' ? <FileSearch size={15} style={{ color: 'var(--text-muted)' }} />
                 : <Navigation size={15} style={{ color: 'var(--text-muted)' }} />}
               <span style={{ color: 'var(--text-primary)', fontSize: '0.85rem', flex: 1 }}>{item.label}</span>
