@@ -32,6 +32,31 @@ export function validSchemaContractEvidence(expected: ExpectedSchemaIdentity) {
     urcWebUpdate: false,
     urcWebDelete: false,
   }));
+  // 026: private user tables — forced RLS, no web-role privilege at all.
+  const userDataRelations = [
+    'urc_user_projects', 'urc_user_saved_searches', 'urc_user_alerts',
+    'urc_user_peer_sets', 'urc_user_memo_items', 'urc_user_annotations',
+    'urc_user_research_tabs', 'urc_user_watchlist', 'urc_user_checklists',
+    'urc_user_signing_key',
+  ].map(name => ({
+    name,
+    kind: 'r',
+    rls: true,
+    forceRls: true,
+    populated: true,
+    anonSelect: false,
+    anonInsert: false,
+    anonUpdate: false,
+    anonDelete: false,
+    authenticatedSelect: false,
+    authenticatedInsert: false,
+    authenticatedUpdate: false,
+    authenticatedDelete: false,
+    urcWebSelect: false,
+    urcWebInsert: false,
+    urcWebUpdate: false,
+    urcWebDelete: false,
+  }));
 
   const requiredColumns: Record<string, string[]> = {
     urc_sec_filings: ['accession', 'cik', 'root_form', 'date_filed'],
@@ -179,6 +204,18 @@ export function validSchemaContractEvidence(expected: ExpectedSchemaIdentity) {
     fn('urc_companies_needing_sic', 'integer', { anon: false }),
     fn('urc_thread_letters', '', { anon: false }),
     fn('urc_schema_contract_evidence', '', { anon: false }),
+    fn('urc_user_list', 'text, text, text, bigint, text', {
+      securityDefiner: true, definition: "perform public.urc_user_assume('list', p_kind)",
+    }),
+    fn('urc_user_upsert', 'text, jsonb, text, text, bigint, text', {
+      securityDefiner: true,
+      definition: "perform public.urc_user_assume('upsert', p_kind) on conflict (owner_user_id, org_scope, client_key)",
+    }),
+    fn('urc_user_delete', 'text, text[], text, text, bigint, text', {
+      securityDefiner: true, definition: "perform public.urc_user_assume('delete', p_kind)",
+    }),
+    fn('urc_user_assume', 'text, text, text, text, bigint, text', { anon: false, service: false }),
+    fn('urc_user_kind', 'text', { anon: false, service: false }),
   ];
 
   return {
@@ -202,7 +239,7 @@ export function validSchemaContractEvidence(expected: ExpectedSchemaIdentity) {
       { owner: 'postgres', objectType: 'S', grantee: 'postgres', privilege: 'USAGE', grantable: false },
       { owner: 'postgres', objectType: 'f', grantee: 'postgres', privilege: 'EXECUTE', grantable: false },
     ],
-    relations,
+    relations: [...relations, ...userDataRelations],
     columns,
     views,
     indexes,
@@ -213,7 +250,7 @@ export function validSchemaContractEvidence(expected: ExpectedSchemaIdentity) {
       { name: 'urc_web', config: ['statement_timeout=20s'] },
       { name: 'service_role', config: ['statement_timeout=600s'] },
     ],
-    extensions: [{ name: 'pg_trgm', version: '1.6' }],
+    extensions: [{ name: 'pg_trgm', version: '1.6' }, { name: 'pgcrypto', version: '1.3' }],
     policies: relations
       .filter(relation => relation.rls)
       .map(relation => ({

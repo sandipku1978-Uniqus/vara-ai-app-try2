@@ -7,6 +7,13 @@
  * every entry carries the metadata and excerpt it was cited with.
  */
 import { scopedStorageKey } from './storageNamespace';
+import {
+  MEMO_DRAFT_STORAGE_KEY,
+  MEMO_TRAY_STORAGE_KEY,
+  citationToItem,
+  draftToItem,
+} from './userDataCodecs';
+import { onUserDataHydrated, syncUserCollection } from './userData';
 
 /** The prior filing a year-over-year redline passage was compared against. */
 export interface MemoComparedFiling {
@@ -39,7 +46,7 @@ export interface MemoCitation {
   comparedTo?: MemoComparedFiling;
 }
 
-const STORAGE_KEY = 'urc.memo.tray.v1';
+const STORAGE_KEY = MEMO_TRAY_STORAGE_KEY;
 
 type Listener = () => void;
 const listeners = new Set<Listener>();
@@ -62,17 +69,21 @@ function read(): MemoCitation[] {
     cacheKey = key;
     return cache;
   }
+  // Citations captured before the identity first loaded (cacheKey === null)
+  // belong to whoever is signing in and are merged into that scope. Anything
+  // held under a DIFFERENT identity's key is that identity's work: drop it
+  // before loading the new scope, so user A's citations never carry into
+  // user B's tray (or into B's server copy).
+  const carried = cacheKey === null ? (cache || []) : [];
   try {
     const raw = window.localStorage.getItem(key);
     const stored = raw ? (JSON.parse(raw) as MemoCitation[]) : [];
-    // Citations captured before the scope was ready live only in memory —
-    // merge them instead of losing either side.
-    const pending = (cache || []).filter(item => !stored.some(existing => existing.id === item.id));
+    const pending = carried.filter(item => !stored.some(existing => existing.id === item.id));
     cache = [...stored, ...pending];
     cacheKey = key;
     if (pending.length > 0) persist(cache, key);
   } catch {
-    cache = cache || [];
+    cache = [...carried];
     cacheKey = key;
   }
   return cache;
@@ -84,6 +95,8 @@ function persist(items: MemoCitation[], key: string): void {
   } catch {
     // Quota/private-mode failures keep the tray in-memory for the session.
   }
+  // Signed in: queue the change for the account copy (no-op signed out).
+  syncUserCollection('memo', items.map(citationToItem), { partition: item => item.itemKind === 'citation' });
 }
 
 function write(items: MemoCitation[]): void {
@@ -220,7 +233,7 @@ export interface MemoDraftRecord {
   citationIds: string[];
 }
 
-const DRAFT_STORAGE_KEY = 'urc.memo.draft.v1';
+const DRAFT_STORAGE_KEY = MEMO_DRAFT_STORAGE_KEY;
 const draftListeners = new Set<Listener>();
 let draftCache: MemoDraftRecord | null | undefined;
 let draftCacheKey: string | null | undefined;
@@ -236,6 +249,7 @@ function persistDraft(record: MemoDraftRecord | null, key: string): void {
   } catch {
     // In-memory fallback only.
   }
+  syncUserCollection('memo', record ? [draftToItem(record)] : [], { partition: item => item.itemKind === 'draft' });
 }
 
 function readDraft(): MemoDraftRecord | null {
@@ -247,19 +261,36 @@ function readDraft(): MemoDraftRecord | null {
     draftCacheKey = key;
     return draftCache;
   }
+  // Only a draft generated before the identity first loaded may move into
+  // the new scope; another identity's draft is dropped, never carried.
+  const carried = draftCacheKey === null ? (draftCache ?? null) : null;
   try {
     const raw = window.localStorage.getItem(key);
     const stored = raw ? (JSON.parse(raw) as MemoDraftRecord) : null;
-    // A draft generated before the scope was ready beats nothing stored.
-    if (!stored && draftCache) persistDraft(draftCache, key);
-    else draftCache = stored;
+    if (!stored && carried) {
+      draftCache = carried;
+      persistDraft(carried, key);
+    } else {
+      draftCache = stored;
+    }
     draftCacheKey = key;
   } catch {
-    draftCache = draftCache ?? null;
+    draftCache = carried;
     draftCacheKey = key;
   }
   return draftCache ?? null;
 }
+
+// When the account copy replaces the local cache, re-read it and tell the
+// tray's subscribers (useSyncExternalStore) so the UI follows.
+onUserDataHydrated('memo', () => {
+  cache = null;
+  cacheKey = undefined;
+  draftCache = undefined;
+  draftCacheKey = undefined;
+  listeners.forEach(listener => listener());
+  draftListeners.forEach(listener => listener());
+});
 
 export function subscribeMemoDraft(listener: Listener): () => void {
   draftListeners.add(listener);

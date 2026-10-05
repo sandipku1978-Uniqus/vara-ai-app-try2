@@ -18,6 +18,8 @@ import { useApp } from '../context/AppState';
 import { hasResearchSearchCriteria } from '../services/researchSessions';
 import { describeBooleanQueryIssue } from '../utils/booleanSearch';
 import { scopedStorageKey } from '../services/storageNamespace';
+import { CHECKLIST_STORAGE_KEY, checklistToItem } from '../services/userDataCodecs';
+import { onUserDataHydrated, syncUserCollection } from '../services/userData';
 import {
   ACCOUNTING_ISSUES,
   CURATED_ASC_TOPICS,
@@ -65,7 +67,6 @@ const ADOPTION_SEARCHES = [
 ];
 
 const RESEARCH_DEFAULT_FORMS = '10-K,10-Q,20-F,8-K';
-const CHECKLIST_STORAGE_KEY = 'urc.accounting-review-checklist.v1';
 interface ChecklistItem { id: number; text: string; done: boolean }
 
 interface AiRendering {
@@ -188,7 +189,12 @@ export default function AccountingHub() {
   useEffect(() => {
     const storageKey = scopedStorageKey(CHECKLIST_STORAGE_KEY);
     if (storageKey) window.localStorage.setItem(storageKey, JSON.stringify(checklistItems));
+    // Signed in, the checklist is also kept on the account (no-op signed out).
+    syncUserCollection('checklists', [checklistToItem(checklistItems)]);
   }, [checklistItems]);
+
+  // Adopt the account's checklist once it has replaced the local cache.
+  useEffect(() => onUserDataHydrated('checklists', () => setChecklistItems(loadChecklistItems())), []);
 
   const researchMetrics = useMemo(() => {
     const issuers = new Set(researchResults.map(result => result.entityName)).size;

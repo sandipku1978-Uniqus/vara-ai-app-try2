@@ -47,9 +47,11 @@ import {
   createResearchSessionId,
   hasResearchSearchCriteria,
   loadResearchSessions,
+  mergeRestoredResearchSessions,
   parseResearchRouteParams,
   shouldHandleExternalResearchRoute,
   saveResearchSessions,
+  subscribeRestoredResearchSessions,
   type ResearchSearchSession,
 } from '../services/researchSessions';
 import { buildHighlightTerms } from '../services/searchAssist';
@@ -279,6 +281,12 @@ export default function SearchPage() {
   useEffect(() => {
     saveResearchSessions(sessions);
   }, [sessions]);
+
+  // Signed in, tabs saved to the account arrive after mount on a new browser
+  // session; add them beside whatever this page already has open.
+  useEffect(() => subscribeRestoredResearchSessions(() => {
+    setSessions(current => mergeRestoredResearchSessions(current, loadResearchSessions()));
+  }), []);
 
   const activeSession = useMemo(() => {
     if (sessions.length === 0) return null;

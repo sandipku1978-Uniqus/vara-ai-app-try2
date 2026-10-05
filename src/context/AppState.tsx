@@ -8,6 +8,13 @@ import type { FilingResearchResult, ResearchSearchMode } from '../services/filin
 import type { SavedAlertCoverage } from '../services/alertRoutes';
 import { BRAND } from '../config/brand';
 import { buildStorageScope, scopedStorageKey, setActiveBrowserStorageScope } from '../services/storageNamespace';
+import {
+  ALERTS_STORAGE_KEY,
+  WATCHLIST_STORAGE_KEY,
+  alertToItem,
+  watchlistToItems,
+} from '../services/userDataCodecs';
+import { onUserDataHydrated, prepareUserDataScope, syncUserCollection } from '../services/userData';
 import type {
   AgentActionLogEntry,
   AgentPromptRequest,
@@ -71,11 +78,18 @@ export interface SavedAlert {
    *  reasons and measured work survive local persistence so a partial check
    *  is never remembered as an authoritative one. */
   lastCheckCoverage?: SavedAlertCoverage;
+  /** Server-side evaluation settings (migration 026); absent on alerts saved
+   *  before durable storage. Preserved so a local edit never resets them. */
+  cadence?: 'daily' | 'weekly';
+  enabled?: boolean;
 }
 
 export type ThemeMode = 'light' | 'dark';
 
 interface AppContextType {
+  /** Identity scope for browser and account storage; null until identity loads. */
+  storageScope: string | null;
+
   watchlist: string[];
   addToWatchlist: (ticker: string) => void;
   removeFromWatchlist: (ticker: string) => void;
@@ -141,8 +155,6 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-const WATCHLIST_STORAGE_KEY = 'vara.watchlist.v1';
-const ALERTS_STORAGE_KEY = 'vara.alerts.v1';
 const THEME_STORAGE_KEY = 'urc.theme.v1';
 const SIDEBAR_COLLAPSED_STORAGE_KEY = 'urc.sidebar-collapsed.v1';
 
@@ -183,6 +195,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const identityLoaded = isLoaded || process.env.NEXT_PUBLIC_URC_E2E_BYPASS_AUTH === '1';
   const storageScope = identityLoaded ? buildStorageScope(userId ?? null, orgId ?? null) : null;
   setActiveBrowserStorageScope(storageScope);
+  // Synchronous and idempotent: captures what this identity had stored
+  // locally before any store effect below can write (userData.ts).
+  prepareUserDataScope(storageScope);
   // Written to the DOM so automated journeys can wait for identity hydration
   // before interacting: when Clerk finishes loading, this scope flips from
   // null and per-identity state re-hydrates — interactions made before that
@@ -252,14 +267,32 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (typeof window !== 'undefined' && watchlistStorageKey && hydratedStorageScope === storageScope) {
       window.localStorage.setItem(watchlistStorageKey, JSON.stringify(watchlist));
+      syncUserCollection('watchlist', watchlistToItems(watchlist));
     }
   }, [hydratedStorageScope, storageScope, watchlist, watchlistStorageKey]);
 
   useEffect(() => {
     if (typeof window !== 'undefined' && alertsStorageKey && hydratedStorageScope === storageScope) {
       window.localStorage.setItem(alertsStorageKey, JSON.stringify(savedAlerts));
+      syncUserCollection('alerts', savedAlerts.map(alertToItem));
     }
   }, [alertsStorageKey, hydratedStorageScope, savedAlerts, storageScope]);
+
+  // Signed in: when the account copy has been written into the local cache,
+  // adopt it (it already includes any change made here before it arrived).
+  useEffect(() => {
+    if (!storageScope) return undefined;
+    const offWatchlist = onUserDataHydrated('watchlist', () => {
+      setWatchlist(loadStoredJson(scopedStorageKey(WATCHLIST_STORAGE_KEY, storageScope), ['AAPL', 'MSFT']));
+    });
+    const offAlerts = onUserDataHydrated('alerts', () => {
+      setSavedAlerts(loadStoredJson(scopedStorageKey(ALERTS_STORAGE_KEY, storageScope), []));
+    });
+    return () => {
+      offWatchlist();
+      offAlerts();
+    };
+  }, [storageScope]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -420,6 +453,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   return (
     <AppContext.Provider value={{
+      storageScope,
       watchlist, addToWatchlist, removeFromWatchlist,
       chatHistory, addChatMessage,
       isChatOpen, setChatOpen,

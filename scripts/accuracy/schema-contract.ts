@@ -37,6 +37,19 @@ const REQUIRED_RELATIONS: Record<string, { kind: string; rls?: boolean }> = {
   urc_auditor_periods_mat: { kind: 'm' },
 };
 
+/**
+ * 026: user-owned research objects. Private rows, so the opposite of the read
+ * surface above: forced RLS, and no web role (anon, authenticated, urc_web)
+ * holds any privilege — the generic inventory loop below already enforces
+ * that. Access is only through the signed urc_user_* RPCs.
+ */
+const USER_DATA_RELATIONS = [
+  'urc_user_projects', 'urc_user_saved_searches', 'urc_user_alerts',
+  'urc_user_peer_sets', 'urc_user_memo_items', 'urc_user_annotations',
+  'urc_user_research_tabs', 'urc_user_watchlist', 'urc_user_checklists',
+  'urc_user_signing_key',
+];
+
 const REQUIRED_COLUMNS: Record<string, string[]> = {
   urc_sec_filings: ['accession', 'cik', 'root_form', 'date_filed'],
   urc_sec_auditors: [
@@ -268,6 +281,36 @@ const FUNCTION_REQUIREMENTS: FunctionRequirement[] = [
     serviceExecute: true,
     searchPath: 'search_path=pg_catalog, public',
   },
+  // 026. The only web-executable SECURITY DEFINER functions: owned by the
+  // NOLOGIN urc_user_writer role, and each verifies a signed identity
+  // assertion (urc_user_assume) before touching a row.
+  {
+    name: 'urc_user_list',
+    arguments: 'text,text,text,bigint,text',
+    anonExecute: true,
+    serviceExecute: true,
+    searchPath: 'search_path=pg_catalog, public',
+    securityDefiner: true,
+    definitionFragments: ["public.urc_user_assume('list'"],
+  },
+  {
+    name: 'urc_user_upsert',
+    arguments: 'text,jsonb,text,text,bigint,text',
+    anonExecute: true,
+    serviceExecute: true,
+    searchPath: 'search_path=pg_catalog, public',
+    securityDefiner: true,
+    definitionFragments: ["public.urc_user_assume('upsert'", 'on conflict (owner_user_id, org_scope, client_key)'],
+  },
+  {
+    name: 'urc_user_delete',
+    arguments: 'text,text[],text,text,bigint,text',
+    anonExecute: true,
+    serviceExecute: true,
+    searchPath: 'search_path=pg_catalog, public',
+    securityDefiner: true,
+    definitionFragments: ["public.urc_user_assume('delete'"],
+  },
 ];
 
 function arg(name: string): string | null {
@@ -458,6 +501,18 @@ export function assessSchemaContractEvidence(
     }
   }
 
+  for (const name of USER_DATA_RELATIONS) {
+    const relation = relations.get(name);
+    if (!relation) {
+      problems.push(`required user-data relation ${name} is missing (026)`);
+      continue;
+    }
+    if (relation.kind !== 'r') problems.push(`user-data relation ${name} has kind ${String(relation.kind)}, expected r`);
+    if (relation.rls !== true || relation.forceRls !== true) {
+      problems.push(`user-data table ${name} does not force row-level security`);
+    }
+  }
+
   const columns = new Set(records(evidence.columns).map(item => `${String(item.relation)}.${String(item.name)}`));
   for (const [relation, names] of Object.entries(REQUIRED_COLUMNS)) {
     for (const name of names) {
@@ -586,6 +641,7 @@ export function assessSchemaContractEvidence(
 
   const extensions = new Set(records(evidence.extensions).map(item => String(item.name)));
   if (!extensions.has('pg_trgm')) problems.push('required pg_trgm extension is missing');
+  if (!extensions.has('pgcrypto')) problems.push('required pgcrypto extension is missing (026 identity assertions)');
 
   return problems;
 }

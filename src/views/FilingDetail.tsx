@@ -21,7 +21,7 @@ import { useDocumentFind } from '../hooks/useDocumentFind';
 import { buildHitQuery } from '../utils/documentFind';
 import { DocumentFindBar, DocumentHitList } from '../components/research/DocumentFind';
 import type { ResearchSearchMode } from '../services/filingResearch';
-import { scopedStorageKey } from '../services/storageNamespace';
+import { annotationSavedMessage, loadAnnotations, saveAnnotations, subscribeRestoredAnnotations, type FilingAnnotation } from '../services/filingAnnotations';
 import { sanitizeSearchReturnTo } from '../lib/internalNavigation';
 import './FilingDetail.css';
 
@@ -55,15 +55,6 @@ interface ComparableFiling {
   primaryDocument: string;
 }
 
-interface FilingAnnotation {
-  id: string;
-  quote: string;
-  note: string;
-  section: string | null;
-  createdAt: string;
-}
-
-const ANNOTATIONS_STORAGE_KEY = 'vara.filing.annotations.v1';
 const REDLINE_SUMMARY_CACHE = new Map<string, { comparedFiling: ComparableFiling; summary: DisclosureDiffSummary; aiSummary: string | null }>();
 
 export function formatFilingMetadataValue(value: string, hydrationComplete: boolean): string {
@@ -106,34 +97,6 @@ function normalizeComparableForm(formType: string): string {
 function toDateValue(value: string): number {
   const result = Date.parse(value);
   return Number.isNaN(result) ? 0 : result;
-}
-
-function loadAnnotations(filingId: string): FilingAnnotation[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    const storageKey = scopedStorageKey(ANNOTATIONS_STORAGE_KEY);
-    if (!storageKey) return [];
-    const raw = window.localStorage.getItem(storageKey);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as Record<string, FilingAnnotation[]>;
-    return parsed[filingId] || [];
-  } catch {
-    return [];
-  }
-}
-
-function saveAnnotations(filingId: string, annotations: FilingAnnotation[]): void {
-  if (typeof window === 'undefined') return;
-  try {
-    const storageKey = scopedStorageKey(ANNOTATIONS_STORAGE_KEY);
-    if (!storageKey) return;
-    const raw = window.localStorage.getItem(storageKey);
-    const parsed = raw ? (JSON.parse(raw) as Record<string, FilingAnnotation[]>) : {};
-    parsed[filingId] = annotations;
-    window.localStorage.setItem(storageKey, JSON.stringify(parsed));
-  } catch {
-    // Ignore storage failures and keep notes in-memory.
-  }
 }
 
 function pickPreviousComparableFiling(
@@ -482,9 +445,22 @@ export default function FilingDetail() {
     setMetadataHydrationComplete(Boolean(routeState.companyName && routeState.filingDate && routeState.formType));
   }, [id, isValidFilingId, routeState]);
 
+  // The first run after the filing changes still holds the previous filing's
+  // notes (the reset above has only scheduled the reload); saving then would
+  // copy them onto this filing, locally and in the account. Skip that run.
+  const annotationsSavedForIdRef = useRef<string | null>(null);
   useEffect(() => {
+    if (annotationsSavedForIdRef.current !== id) {
+      annotationsSavedForIdRef.current = id;
+      return;
+    }
     if (isValidFilingId) saveAnnotations(id, annotations);
   }, [annotations, id, isValidFilingId]);
+
+  // Signed in: adopt the account's notes once they have replaced the local cache.
+  useEffect(() => subscribeRestoredAnnotations(() => {
+    if (isValidFilingId) setAnnotations(loadAnnotations(id));
+  }), [id, isValidFilingId]);
 
   // Set filing context for AI chat panel
   useEffect(() => {
@@ -657,7 +633,7 @@ export default function FilingDetail() {
     ]);
     setAnnotationDraft('');
     setSelectedQuote('');
-    setToolMessage('Annotation saved locally for this filing.');
+    setToolMessage(annotationSavedMessage());
   }, [activeSection, annotationDraft, selectedQuote]);
 
   const handleRemoveAnnotation = useCallback((annotationId: string) => {
