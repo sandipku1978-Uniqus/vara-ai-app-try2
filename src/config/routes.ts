@@ -16,8 +16,9 @@ export const PUBLIC_PAGE_PATHS = ['/', '/support', '/privacy', '/terms'] as cons
 // the uptime monitor's endpoint; /api/version is the release runbook's.
 // /api/search-jobs/continue is the search-job worker: Vercel Cron cannot
 // present a session, so the handler itself authenticates (CRON_SECRET for
-// GET, the owner's session for POST) and fails closed.
-export const PUBLIC_API_PATHS = ['/api/csp-report', '/api/health', '/api/version', '/api/search-jobs/continue'] as const;
+// GET, the owner's session for POST) and fails closed. /api/alerts/evaluate
+// (the scheduled alert evaluator, migration 029) follows the same contract.
+export const PUBLIC_API_PATHS = ['/api/csp-report', '/api/health', '/api/version', '/api/search-jobs/continue', '/api/alerts/evaluate'] as const;
 
 export const PRODUCT_ROUTES: ProductRoute[] = [
   { path: '/dashboard', label: 'Dashboard', group: 'Monitor', keywords: 'home monitor overview', palette: true },
