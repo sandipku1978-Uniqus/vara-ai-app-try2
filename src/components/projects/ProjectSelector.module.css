@@ -73,3 +73,19 @@
   gap: 8px;
   margin-top: 4px;
 }
+
+.link {
+  color: var(--accent-primary);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+.link:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 1px;
+}

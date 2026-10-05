@@ -11,6 +11,12 @@ import {
 import { ENFORCEMENT_ROUTE_LABEL, ENFORCEMENT_ROUTE_LIMITATION } from '../config/enforcement';
 import { EARNINGS_SCOPE_LABEL, EARNINGS_SCOPE_LIMITATION } from '../config/earnings';
 import { BRAND } from '../config/brand';
+import { useUserDataStatus } from '../hooks/useUserDataStatus';
+import {
+  isResearchAccountSynced,
+  researchStorageCopy,
+  type ResearchStorageCopy,
+} from '../components/projects/researchStorageCopy';
 import './SupportCenter.css';
 
 /* ------------------------------------------------------------------ */
@@ -66,7 +72,8 @@ const PLATFORM_LINKS = [
 /* ------------------------------------------------------------------ */
 /*  Guide content                                                      */
 /* ------------------------------------------------------------------ */
-const GUIDE_SECTIONS: GuideSection[] = [
+// Storage claims follow getUserDataStatus(): see researchStorageCopy.
+const guideSectionsFor = (copy: ResearchStorageCopy): GuideSection[] => [
   {
     id: 'start-here',
     title: 'Start Here',
@@ -103,10 +110,10 @@ const GUIDE_SECTIONS: GuideSection[] = [
       'Save an alert if you plan to rerun the same search regularly — it will appear on your Dashboard for quick re-execution.',
     ],
     notes: [
-      'Saved alerts and annotations are browser-local. They help with repeat research but are not shared across devices.',
+      copy.supportAlertsAndAnnotationsNote,
       'Boolean results are verified matches within a bounded candidate window, not a claim about the whole EDGAR corpus. If a run hits its time or request budget, or a filing could not be retrieved for validation, the results are labelled partial — read a zero in that state as "no verified matches among the candidates checked", not "nothing exists".',
       'If a Boolean search returns nothing, check for typos in quoted phrases and try widening the date window first. Invalid syntax (a dangling AND/OR, unbalanced parentheses or quotes, or a NOT-only query) is reported inline and runs no search at all.',
-      'Research sessions are saved in the current browser and can be restored there; they are not shared across devices.',
+      copy.supportResearchTabsNote,
     ],
     links: [
       { label: 'Open Research Workbench', href: '/search' },
@@ -124,7 +131,7 @@ const GUIDE_SECTIONS: GuideSection[] = [
       'Use Print / Save PDF to open a print-friendly view, then save as PDF from your browser print dialog.',
     ],
     notes: [
-      'Annotations are stored locally in the current browser.',
+      copy.supportAnnotationsNote,
       'Some XML-based SEC documents do not preview inline and must be opened on SEC.gov.',
       'Redline compares disclosure blocks (not character-by-character) against the closest prior filing of the same form type.',
       'PDF export uses the browser print dialog — this is the most reliable client-side approach.',
@@ -136,15 +143,15 @@ const GUIDE_SECTIONS: GuideSection[] = [
   {
     id: 'dashboard',
     title: 'Dashboard Overview',
-    summary: 'The Dashboard shows filing activity for your browser-local watchlist, local saved-search alerts, and watchlist-scoped charts.',
+    summary: copy.supportDashboardSummary,
     steps: [
       'Review current-year filing volume and form mix for the companies in your watchlist.',
       'Use the watchlist to track specific companies and see their latest filings at a glance.',
-      'Use local saved-search alerts to open or manually re-check frequent queries.',
+      copy.supportDashboardAlertsStep,
       'Use filing-volume and watchlist cards to open a prefilled Research Workbench search; open a filing result there for the detailed viewer.',
     ],
     notes: [
-      'Dashboard data refreshes when you navigate to the page. Watchlist items and alerts are browser-local.',
+      copy.supportDashboardNote,
       'The quick-search bar on the Dashboard takes you directly to the Research Workbench with your query pre-filled.',
     ],
     links: [
@@ -191,7 +198,7 @@ const GUIDE_SECTIONS: GuideSection[] = [
   {
     id: 'accounting-research',
     title: 'Accounting Standards & Analytics',
-    summary: 'The Accounting Research Hub combines a standards-topic directory, SEC filing research, result-set memos, and a browser-local checklist. Accounting Analytics compares financial ratios for selected companies.',
+    summary: copy.supportAccountingSummary,
     steps: [
       'In the Accounting Research Hub, search for specific accounting standards (e.g., ASC 606, ASC 842) to find how companies describe their adoption.',
       'Filter by industry or SIC code to see how peers in your sector handle the same topic.',
@@ -306,7 +313,7 @@ const GUIDE_SECTIONS: GuideSection[] = [
   },
 ];
 
-const FAQS: FaqItem[] = [
+const faqsFor = (copy: ResearchStorageCopy): FaqItem[] => [
   {
     question: 'How do I search for a specific company\'s filings?',
     answer: 'Use the Research Workbench (/search) and enter the company name or ticker in the entity/company field. You can also navigate directly to /company/TICKER (e.g., /company/AAPL) for a dossier with recent submissions, comment letters, and financials.',
@@ -333,7 +340,7 @@ const FAQS: FaqItem[] = [
   },
   {
     question: 'Where do saved alerts and annotations live?',
-    answer: 'Both are stored locally in the browser. They are useful for your own workflow on the same machine, but they are not shared across devices and do not send background notifications.',
+    answer: copy.supportStorageFaqAnswer,
   },
   {
     question: 'How does the AI extraction work for Board Profiles?',
@@ -371,21 +378,25 @@ export default function SupportCenter() {
   const router = useRouter();
   const [query, setQuery] = useState('');
   const normalizedQuery = query.trim().toLowerCase();
+  const accountSynced = isResearchAccountSynced(useUserDataStatus());
+  const storageCopy = researchStorageCopy(accountSynced);
+  const guideSections = useMemo(() => guideSectionsFor(researchStorageCopy(accountSynced)), [accountSynced]);
+  const faqs = useMemo(() => faqsFor(researchStorageCopy(accountSynced)), [accountSynced]);
 
   const visibleSections = useMemo(() => {
-    if (!normalizedQuery) return GUIDE_SECTIONS;
-    return GUIDE_SECTIONS.filter(section =>
+    if (!normalizedQuery) return guideSections;
+    return guideSections.filter(section =>
       matchesQuery(normalizedQuery, section.title) ||
       matchesQuery(normalizedQuery, section.summary) ||
       section.steps.some(step => matchesQuery(normalizedQuery, step)) ||
       section.notes.some(note => matchesQuery(normalizedQuery, note))
     );
-  }, [normalizedQuery]);
+  }, [guideSections, normalizedQuery]);
 
   const visibleFaqs = useMemo(() => {
-    if (!normalizedQuery) return FAQS;
-    return FAQS.filter(faq => matchesQuery(normalizedQuery, faq.question) || matchesQuery(normalizedQuery, faq.answer));
-  }, [normalizedQuery]);
+    if (!normalizedQuery) return faqs;
+    return faqs.filter(faq => matchesQuery(normalizedQuery, faq.question) || matchesQuery(normalizedQuery, faq.answer));
+  }, [faqs, normalizedQuery]);
 
   const noResults = visibleSections.length === 0 && visibleFaqs.length === 0;
 
@@ -468,7 +479,7 @@ export default function SupportCenter() {
             <ul className="guide-side-notes">
               <li>PDF export uses the browser print dialog after opening a clean filing view.</li>
               <li>Redline is disclosure-block comparison, not a legal blackline.</li>
-              <li>Annotations and saved alerts are local to the current browser.</li>
+              <li>{storageCopy.supportSidebarNote}</li>
               <li>AI board extraction requires a valid Anthropic API key.</li>
               <li>XBRL financial data is live from the SEC API.</li>
             </ul>

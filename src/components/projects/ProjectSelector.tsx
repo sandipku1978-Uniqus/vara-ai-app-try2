@@ -1,6 +1,7 @@
 'use client';
 
 import { useId, useState, type FormEvent } from 'react';
+import Link from 'next/link';
 import { FolderOpen } from 'lucide-react';
 import { useUserDataStatus } from '../../hooks/useUserDataStatus';
 import {
@@ -73,6 +74,11 @@ export default function ProjectSelector() {
           <button type="button" className="secondary-btn" onClick={() => setCreating(true)}>
             New project
           </button>
+        )}
+        {activeId && (
+          <Link className={styles.link} href={`/projects/${encodeURIComponent(activeId)}`}>
+            Open project workspace
+          </Link>
         )}
         <span className={styles.muted} role="status" aria-live="polite">
           {status.lastError
