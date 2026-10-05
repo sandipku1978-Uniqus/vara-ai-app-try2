@@ -4,6 +4,7 @@ import {
   canonicalizeAuditorInput,
 } from './auditors';
 import { isEnrichedSearchEnabled } from './secApi';
+import { formFamily, sectionScopeFamilies } from '../utils/sectionTaxonomy';
 import {
   buildReferenceSearchTerms,
   parseAccountingReference,
@@ -67,7 +68,27 @@ function normalizeLooseText(value: string): string {
 }
 
 function normalizeFormTypes(filters: SearchFilters, defaultForms = ''): string {
-  return filters.formTypes.length > 0 ? filters.formTypes.join(',') : defaultForms;
+  if (filters.formTypes.length > 0) return filters.formTypes.join(',');
+  return narrowFormsToSectionScope(defaultForms, filters.sectionScope || '');
+}
+
+/**
+ * A section-scope concept only exists on some forms — CD&A on a proxy, a
+ * lease note on a 10-K/10-Q/20-F/S-1. When the researcher picked no forms,
+ * the default list is narrowed to the forms that can carry the section, so
+ * retrieval does not spend its budget on candidates that structurally cannot
+ * match. An explicit item number, an unknown scope, or a narrowing that would
+ * leave nothing keeps the defaults (the scope filter still applies).
+ */
+export function narrowFormsToSectionScope(defaultForms: string, sectionScope: string): string {
+  const families = sectionScopeFamilies(sectionScope);
+  if (!families) return defaultForms;
+  const forms = defaultForms.split(',').map(form => form.trim()).filter(Boolean);
+  const narrowed = forms.filter(form => {
+    const family = formFamily(form);
+    return family !== null && families.includes(family);
+  });
+  return narrowed.length > 0 ? narrowed.join(',') : defaultForms;
 }
 
 function parseFormScope(formScope: string): string[] {
