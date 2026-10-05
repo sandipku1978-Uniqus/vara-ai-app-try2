@@ -1,10 +1,34 @@
 import { cacheService } from '../../../lib/cache';
-import { createAnthropicClient, isAnthropicTimeout } from '../../../lib/ai-runtime';
+import {
+  aiErrorResponse,
+  AiContentFilterError,
+  complete,
+  isAiServiceConfigured,
+  isAiTimeout,
+  modelUsageFromAiUsage,
+  outputTokenBudget,
+  planAiCall,
+  stream as streamModel,
+  type AiCompletion,
+  type AiUsage,
+} from '../../../lib/ai-gateway';
+import { findAiModel } from '../../../lib/ai-models';
+import {
+  answerMetadata,
+  NATIVE_WEB_SEARCH_MAX_USES,
+  prepareWebSearch,
+  WEB_SEARCH_OFF,
+  webSearchReservationTokens,
+  withWebAddendum,
+  type AiAnswerMetadata,
+  type WebSearchPreparation,
+} from '../../../lib/ai-web-search';
 import { SEC_RESEARCH_SYSTEM_PROMPT } from '../../../lib/systemPrompts';
 import {
   acquireAiConcurrency,
   checkAiRateLimit,
   estimateModelTokenReservation,
+  modelCostWeights,
   rateLimitResponse,
   releaseAiConcurrency,
   reserveAiTokenBudget,
@@ -15,10 +39,8 @@ import { buildFrameworkContext } from '../../../lib/framework-context';
 import crypto from 'crypto';
 import { withRouteObservability } from '../../../lib/route-observability';
 import {
-  classifyAnthropicFailure,
+  classifyAiFailure,
   recordAiUsage,
-  StreamUsageAccumulator,
-  usageFromMessage,
   type AiCallOutcome,
   type ModelUsage,
 } from '../../../lib/ai-usage';
@@ -26,9 +48,15 @@ import {
 /** The platform default would kill this route mid-flight; see the in-route budgets. */
 export const maxDuration = 300;
 
-const anthropic = createAnthropicClient(process.env.ANTHROPIC_API_KEY || '');
+type CachedAnswer = AiAnswerMetadata & { text: string };
 
-const CLAUDE_MODEL = process.env.ANTHROPIC_MODEL || 'claude-sonnet-5';
+function isCachedAnswer(value: unknown): value is CachedAnswer {
+  return Boolean(value && typeof value === 'object' && typeof (value as CachedAnswer).text === 'string' && typeof (value as CachedAnswer).model === 'string');
+}
+
+function errorUsage(error: unknown): AiUsage | null {
+  return (error as { usage?: AiUsage | null } | null)?.usage ?? null;
+}
 
 async function handlePost(req: Request) {
   try {
@@ -43,29 +71,40 @@ async function handlePost(req: Request) {
     if (validation.value.grounding) {
       return Response.json({ error: 'Grounded requests must use /api/claude.' }, { status: 400 });
     }
-    const { prompt, messages, maxTokens, frameworks } = validation.value;
+    const { prompt, messages, maxTokens, frameworks, reasoningEffort, webSearch } = validation.value;
     const isComplex = frameworks.length > 0;
-    const effectiveMaxTokens = isComplex ? 8192 : maxTokens;
 
     const rate = await checkAiRateLimit(req, access.identity, {
       operation: 'stream',
     });
     if (!rate.allowed) return rateLimitResponse(rate);
 
-    if (!process.env.ANTHROPIC_API_KEY) {
+    if (!isAiServiceConfigured()) {
       return Response.json({ error: 'AI service is not configured.' }, { status: 503 });
     }
+    const plan = planAiCall(validation.value.model);
+    const model = findAiModel(validation.value.model)!;
+    const effectiveMaxTokens = outputTokenBudget(model, isComplex ? 8192 : maxTokens, reasoningEffort);
 
     // 1. Check cache — if hit, return JSON immediately (no streaming needed).
-    //    Key includes frameworks (they change the injected KB and model config)
-    //    and the EFFECTIVE params, so different configs can't collide.
-    const payloadSignature = JSON.stringify({ prompt, messages, frameworks: [...frameworks].sort() });
+    //    Key includes frameworks (they change the injected KB and model config),
+    //    the model/transport/effort/web search, and the EFFECTIVE params, so
+    //    different configs can't collide.
+    const payloadSignature = JSON.stringify({
+      prompt,
+      messages,
+      frameworks: [...frameworks].sort(),
+      model: plan.wireModel,
+      transport: plan.transport,
+      reasoningEffort,
+      webSearch,
+    });
     const hash = crypto.createHash('sha256').update(`${access.identity.cacheScope}:${payloadSignature}-${effectiveMaxTokens}`).digest('hex');
-    const cacheKey = `ai-cache:${hash}`;
+    const cacheKey = `ai-cache:v2:${hash}`;
 
-    const cachedResponse = await cacheService.get<string>(cacheKey);
-    if (cachedResponse) {
-      return new Response(JSON.stringify({ text: cachedResponse, cached: true }), {
+    const cachedResponse = await cacheService.get<unknown>(cacheKey);
+    if (isCachedAnswer(cachedResponse)) {
+      return new Response(JSON.stringify({ ...cachedResponse, cached: true }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
       });
@@ -79,14 +118,19 @@ async function handlePost(req: Request) {
       apiMessages[apiMessages.length - 1].content += `\n\n[Reference material — internal cross-framework knowledge base, NOT from any filing]:${kbContext}`;
     }
 
+    const weights = modelCostWeights(model.pricing);
+    const webReservation = webSearchReservationTokens(model, webSearch);
     const estimatedTokens = estimateModelTokenReservation(
       SEC_RESEARCH_SYSTEM_PROMPT.length + apiMessages.reduce((total, message) => total + message.content.length, 0),
-      effectiveMaxTokens
-    );
+      effectiveMaxTokens,
+      1,
+      { weights, webSearchCalls: webReservation.webSearchCalls }
+    ) + webReservation.extraTokens;
+    const reportedModel = plan.transport === 'direct-anthropic' ? plan.wireModel : model.id;
+    const question = prompt || apiMessages[apiMessages.length - 1].content;
 
-    // 3. Stream response via SSE
-    // Note: Extended thinking is not compatible with streaming, so complex queries
-    // fall back to non-streaming with thinking enabled
+    // 3. Framework (complex) queries answer as one JSON response; standard
+    //    queries stream over SSE.
     if (isComplex) {
       const concurrency = await acquireAiConcurrency(access.identity);
       if (!concurrency.allowed) return rateLimitResponse(concurrency);
@@ -96,42 +140,41 @@ async function handlePost(req: Request) {
         return rateLimitResponse(budget);
       }
       const modelCallStartedAt = Date.now();
-      const usageRecord = { route: 'stream', model: CLAUDE_MODEL, userId: access.identity.userId, reservation: budget.reservation, startedAt: modelCallStartedAt };
-      const msg = await (async () => {
+      const usageRecord = {
+        route: 'stream', model: reportedModel, provider: model.provider, reasoningEffort, weights,
+        userId: access.identity.userId, reservation: budget.reservation, startedAt: modelCallStartedAt,
+      };
+      let web: WebSearchPreparation = WEB_SEARCH_OFF;
+      const completion: AiCompletion = await (async () => {
         try {
-          const message = await anthropic.messages.create({
-            model: CLAUDE_MODEL,
-            max_tokens: 8192,
-            // Sonnet 5: adaptive thinking only; temperature must be omitted
-            thinking: { type: 'adaptive' },
-            system: [{
-              type: 'text',
-              text: SEC_RESEARCH_SYSTEM_PROMPT,
-              cache_control: { type: 'ephemeral' },
-            }],
+          web = await prepareWebSearch({ model, webSearch, question, signal: req.signal });
+          const result = await complete({
+            model: model.id,
+            system: withWebAddendum(SEC_RESEARCH_SYSTEM_PROMPT, web.systemAddendum),
             messages: apiMessages,
-          }, { signal: req.signal });
-          await recordAiUsage({ ...usageRecord, usage: usageFromMessage(message), outcome: 'completed' });
-          return message;
+            maxTokens: effectiveMaxTokens,
+            reasoningEffort,
+            webSearch: web.nativeSearch,
+            maxWebSearches: NATIVE_WEB_SEARCH_MAX_USES,
+            cacheSystemPrompt: web.report.mode !== 'retrieval' && web.report.mode !== 'unavailable',
+            signal: req.signal,
+          });
+          await recordAiUsage({ ...usageRecord, usage: modelUsageFromAiUsage(result.usage), outcome: 'completed', additionalBillableTokens: web.retrievalBillableTokens });
+          return result;
         } catch (error) {
-          await recordAiUsage({ ...usageRecord, usage: null, outcome: classifyAnthropicFailure(error) });
+          await recordAiUsage({ ...usageRecord, usage: modelUsageFromAiUsage(errorUsage(error)), outcome: classifyAiFailure(error), additionalBillableTokens: web.retrievalBillableTokens });
           throw error;
         } finally {
           await releaseAiConcurrency(concurrency.lease);
         }
       })();
 
-      const textPayload = msg.content
-        .filter((block) => block.type === 'text')
-        .map((block) => block.text)
-        .join('');
+      const answer: CachedAnswer = { text: completion.text, ...answerMetadata(completion, reasoningEffort, web) };
+      // Reasoning output is the highest-variance path — cache briefly, not
+      // for a week (one bad generation was served for 7 days).
+      await cacheService.set(cacheKey, answer, { ex: 3600 });
 
-      // Temp-1 extended-thinking output is the highest-variance path — cache
-      // briefly, not for a week (one bad generation was served for 7 days).
-      const ttlSeconds = 3600;
-      await cacheService.set(cacheKey, textPayload, { ex: ttlSeconds });
-
-      return new Response(JSON.stringify({ text: textPayload, cached: false }), {
+      return new Response(JSON.stringify({ ...answer, cached: false }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
       });
@@ -145,35 +188,38 @@ async function handlePost(req: Request) {
       await releaseAiConcurrency(concurrency.lease);
       return rateLimitResponse(budget);
     }
-    // One usage line per streamed request, whichever way it ends: the input
-    // count arrives on message_start, the output count on message_delta.
+    // One usage line per streamed request, whichever way it ends.
     const streamStartedAt = Date.now();
-    const usageRecord = { route: 'stream', model: CLAUDE_MODEL, userId: access.identity.userId, reservation: budget.reservation, startedAt: streamStartedAt };
-    const observedUsage = new StreamUsageAccumulator();
+    const usageRecord = {
+      route: 'stream', model: reportedModel, provider: model.provider, reasoningEffort, weights,
+      userId: access.identity.userId, reservation: budget.reservation, startedAt: streamStartedAt,
+    };
+    let web: WebSearchPreparation = WEB_SEARCH_OFF;
     let usageRecorded = false;
     const settleStream = async (usage: ModelUsage | null, outcome: AiCallOutcome) => {
       if (usageRecorded) return;
       usageRecorded = true;
-      await recordAiUsage({ ...usageRecord, usage, outcome });
+      await recordAiUsage({ ...usageRecord, usage, outcome, additionalBillableTokens: web.retrievalBillableTokens });
     };
 
-    const stream = await (async () => {
+    // Retrieval (models without native search) runs before the first byte,
+    // so its results are in the prompt the stream answers from.
+    const modelStream = await (async () => {
       try {
-        return anthropic.messages.stream({
-          model: CLAUDE_MODEL,
-          max_tokens: maxTokens,
-          // Sonnet 5 runs adaptive thinking when the field is omitted and rejects
-          // non-default temperature — keep the fast SSE path explicitly thinking-off
-          thinking: { type: 'disabled' },
-          system: [{
-            type: 'text',
-            text: SEC_RESEARCH_SYSTEM_PROMPT,
-            cache_control: { type: 'ephemeral' },
-          }],
+        web = await prepareWebSearch({ model, webSearch, question, signal: req.signal });
+        return streamModel({
+          model: model.id,
+          system: withWebAddendum(SEC_RESEARCH_SYSTEM_PROMPT, web.systemAddendum),
           messages: apiMessages,
-        }, { signal: req.signal });
+          maxTokens: effectiveMaxTokens,
+          reasoningEffort,
+          webSearch: web.nativeSearch,
+          maxWebSearches: NATIVE_WEB_SEARCH_MAX_USES,
+          cacheSystemPrompt: web.report.mode !== 'retrieval' && web.report.mode !== 'unavailable',
+          signal: req.signal,
+        });
       } catch (error) {
-        await settleStream(null, classifyAnthropicFailure(error));
+        await settleStream(null, classifyAiFailure(error));
         await releaseAiConcurrency(concurrency.lease);
         throw error;
       }
@@ -185,33 +231,43 @@ async function handlePost(req: Request) {
     const readableStream = new ReadableStream({
       async start(controller) {
         try {
-          for await (const event of stream) {
-            observedUsage.observe(event);
-            if (
-              event.type === 'content_block_delta' &&
-              event.delta.type === 'text_delta'
-            ) {
-              const chunk = event.delta.text;
-              fullText += chunk;
+          let completion: AiCompletion | null = null;
+          for await (const event of modelStream) {
+            if (event.type === 'text-delta') {
+              fullText += event.text;
               controller.enqueue(
-                encoder.encode(`data: ${JSON.stringify({ text: chunk })}\n\n`)
+                encoder.encode(`data: ${JSON.stringify({ text: event.text })}\n\n`)
               );
+            } else if (event.type === 'finish') {
+              completion = event.completion;
             }
           }
+          if (!completion) throw new Error('Model stream ended without a final response.');
+          const metadata = answerMetadata(completion, reasoningEffort, web);
+          const answer: CachedAnswer = { text: completion.text || fullText, ...metadata };
 
-          // Signal completion
+          // The final event carries how the answer was produced (no `text`
+          // key, so older clients that only read text ignore it).
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({ done: true, ...metadata })}\n\n`));
           controller.enqueue(encoder.encode('data: [DONE]\n\n'));
           controller.close();
-          await settleStream(observedUsage.current(), 'completed');
+          await settleStream(modelUsageFromAiUsage(completion.usage), 'completed');
 
           // Cache the full response after stream completes
-          await cacheService.set(cacheKey, fullText, { ex: 3600 });
+          await cacheService.set(cacheKey, answer, { ex: 3600 });
         } catch (error) {
           // Whatever streamed before the failure was generated and billed.
-          await settleStream(observedUsage.current(), classifyAnthropicFailure(error));
+          await settleStream(
+            modelUsageFromAiUsage(errorUsage(error) ?? modelStream.partialUsage()),
+            classifyAiFailure(error)
+          );
           controller.enqueue(
             encoder.encode(`data: ${JSON.stringify({
-              error: isAnthropicTimeout(error) ? 'AI generation timed out.' : 'Stream error',
+              error: isAiTimeout(error)
+                ? 'AI generation timed out.'
+                : error instanceof AiContentFilterError
+                  ? 'The model declined to answer this request.'
+                  : 'Stream error',
             })}\n\n`)
           );
           controller.enqueue(encoder.encode('data: [DONE]\n\n'));
@@ -221,10 +277,10 @@ async function handlePost(req: Request) {
         }
       },
       cancel() {
-        stream.abort();
+        modelStream.abort();
         // The client went away mid-answer: what was generated so far is
         // billed, the rest is not — an unknown split, so the estimate stands.
-        void settleStream(observedUsage.current(), 'unknown');
+        void settleStream(modelUsageFromAiUsage(modelStream.partialUsage()), 'unknown');
         void releaseAiConcurrency(concurrency.lease);
       },
     });
@@ -240,9 +296,8 @@ async function handlePost(req: Request) {
     if (req.signal.aborted) {
       return Response.json({ error: 'Request cancelled.' }, { status: 499 });
     }
-    if (isAnthropicTimeout(error)) {
-      return Response.json({ error: 'AI generation timed out.' }, { status: 504 });
-    }
+    const mapped = aiErrorResponse(error);
+    if (mapped) return mapped;
     console.error('Claude Stream API Error:', error);
     return new Response(JSON.stringify({ error: 'An error occurred processing your request' }), { status: 500 });
   }

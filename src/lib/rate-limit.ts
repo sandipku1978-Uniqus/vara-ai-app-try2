@@ -2,6 +2,7 @@ import crypto from 'node:crypto';
 import { kv } from '@vercel/kv';
 import { isLocalE2eBypass, isProductionDeployment } from './clerk-config';
 import { clientIpFrom } from './client-ip';
+import { DEFAULT_AI_MODEL_ID, findAiModel } from './ai-models';
 
 export { clientIpFrom };
 import {
@@ -221,6 +222,53 @@ export async function checkAiRateLimit(
 }
 
 /**
+ * How expensive a model's tokens are relative to the default model's. The
+ * daily budget is a spend proxy stated in default-model tokens, so a model
+ * whose output costs twice as much draws twice as fast and a model at a
+ * tenth of the price draws at a tenth. Settlement (lib/ai-usage) weights
+ * measured usage with the same factors, so the estimate and the measured
+ * charge stay in one unit.
+ */
+export interface ModelCostWeights {
+  input: number;
+  output: number;
+}
+
+export const DEFAULT_MODEL_COST_WEIGHTS: ModelCostWeights = { input: 1, output: 1 };
+
+/** Floor so a near-free model still draws something from the budget. */
+const MIN_COST_WEIGHT = 0.01;
+
+/**
+ * Budget charge for one web search, in default-model tokens. Provider search
+ * is billed per call (about $0.01 on the gateway's 2026-10 price list), which
+ * is roughly a thousand output tokens of the default model.
+ */
+export const WEB_SEARCH_CALL_TOKEN_EQUIVALENT = 1_000;
+
+function costRatio(price: number | undefined, reference: number): number {
+  if (typeof price !== 'number' || !Number.isFinite(price) || price <= 0 || reference <= 0) return 1;
+  return Math.max(price / reference, MIN_COST_WEIGHT);
+}
+
+/** Weights for a model's per-token pricing against the default model's. */
+export function modelCostWeights(pricing: { input: number; output: number } | null | undefined): ModelCostWeights {
+  const reference = findAiModel(DEFAULT_AI_MODEL_ID)?.pricing;
+  if (!pricing || !reference) return DEFAULT_MODEL_COST_WEIGHTS;
+  return {
+    input: costRatio(pricing.input, reference.input),
+    output: costRatio(pricing.output, reference.output),
+  };
+}
+
+export interface TokenReservationOptions {
+  /** The model's cost relative to the default model; omitted means 1:1. */
+  weights?: ModelCostWeights;
+  /** Web searches the request may run (native tool uses or a retrieval call). */
+  webSearchCalls?: number;
+}
+
+/**
  * Conservative reservation for model input plus requested output. Three
  * characters per input token intentionally errs above the common four-char
  * approximation, and per-call overhead covers message framing/tokenization.
@@ -228,13 +276,19 @@ export async function checkAiRateLimit(
 export function estimateModelTokenReservation(
   inputCharacters: number,
   maxOutputTokens: number,
-  callCount = 1
+  callCount = 1,
+  options: TokenReservationOptions = {}
 ): number {
   const safeCharacters = Number.isFinite(inputCharacters) ? Math.max(0, Math.ceil(inputCharacters)) : 0;
   const safeOutput = Number.isFinite(maxOutputTokens) ? Math.max(0, Math.ceil(maxOutputTokens)) : 0;
   const safeCalls = Number.isFinite(callCount) ? Math.max(1, Math.ceil(callCount)) : 1;
+  const weights = options.weights ?? DEFAULT_MODEL_COST_WEIGHTS;
+  const searches = Number.isFinite(options.webSearchCalls) ? Math.max(0, Math.ceil(options.webSearchCalls ?? 0)) : 0;
   return Math.min(
-    Math.ceil(safeCharacters / 3) + safeOutput + safeCalls * 512,
+    Math.ceil((safeCharacters / 3) * weights.input)
+      + Math.ceil(safeOutput * weights.output)
+      + safeCalls * 512
+      + searches * WEB_SEARCH_CALL_TOKEN_EQUIVALENT,
     MAX_TOKEN_RESERVATION
   );
 }
