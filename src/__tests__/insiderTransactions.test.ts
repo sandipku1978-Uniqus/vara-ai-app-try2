@@ -41,7 +41,7 @@ function submission() {
   return parsed;
 }
 function rows(name: string, accession: string, filedAt: string): InsiderTransaction[] {
-  return parseOwnershipXml(fixture(name)).transactions.map(row => ({ ...row, accession, filedAt, formType: '4' }));
+  return parseOwnershipXml(fixture(name)).transactions.map(row => ({ ...row, accession, filedAt, formType: '4', primaryDocument: 'xslF345X06/form4.xml' }));
 }
 
 /** Generated boundary-test data, not an EDGAR fixture: only the four columns
@@ -208,6 +208,8 @@ describe('listing, aggregation and I/O coverage', () => {
     expect(readResponseWithLimit).toHaveBeenCalledWith(expect.any(Response), 1048576, expect.any(AbortSignal));
     expect(result.coverage).toMatchObject({ filingsListed: 13, filingsRequested: 1, filingsParsed: 1, filingsNotAttempted: 0, filingsOutsideLimit: 12, transactionRows: 1, rowsWithoutShares: 0, complete: true, olderHistoryNotRead: true, unreadHistoryFiles: submission().filings.files?.length, oldestFiledAt: '2026-10-01', newestFiledAt: '2026-10-01' });
     expect(result.issuer).toEqual({ name: 'Apple Inc.', tradingSymbol: 'AAPL' });
+    // Each row names the filing's primary document, so the UI links to the form itself.
+    expect(result.transactions[0]).toMatchObject({ accession: '0001140361-26-038307', formType: '4', primaryDocument: 'xslF345X06/form4.xml' });
   });
   it('computes hand-checked nets without including derivatives or combining joint owners', () => {
     const all = [...rows('apple-sale.xml', 'sale', '2026-10-01'), ...rows('apple-rsu.xml', 'rsu', '2026-09-29'), ...rows('tesla-exercise.xml', 'exercise', '2026-09-09'), ...rows('joint-purchases.xml', 'joint', '2026-09-30')];
