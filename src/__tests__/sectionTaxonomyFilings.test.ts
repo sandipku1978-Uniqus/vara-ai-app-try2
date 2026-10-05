@@ -284,6 +284,20 @@ describe('original-case slices (for reading and Word export)', () => {
     expect(normalizeForMatch(mdna)).toBe(extractResolvedSection(TEN_Q, q));
   });
 
+  it('keeps the punctuation and closing quotes that end the last sentence, but not the next heading', () => {
+    const body = [
+      'Item 1A. Risk Factors',
+      'Our results depend on the “Supply Agreement.”)',
+      'Item 1B. Unresolved Staff Comments',
+      'None.',
+    ].join('\n');
+    const resolved = resolveSectionScope('risk factors', '10-K')!;
+    const original = extractResolvedSectionOriginal(body, resolved);
+    expect(original.endsWith('the “Supply Agreement.”)')).toBe(true);
+    expect(original).not.toContain('Item 1B');
+    expect(normalizeForMatch(original)).toBe(extractResolvedSection(body, resolved));
+  });
+
   it('is empty when the section is not found', () => {
     expect(extractResolvedSectionOriginal(TEN_K, resolveSectionScope('non-gaap', '10-K')!)).toBe('');
   });

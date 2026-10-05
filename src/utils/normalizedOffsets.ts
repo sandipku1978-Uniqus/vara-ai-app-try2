@@ -99,3 +99,19 @@ export function originalSpan(offsets: TokenOffsets, start: number, end: number):
   if (lastToken >= offsets.starts.length) return null;
   return { start: offsets.starts[firstToken], end: offsets.ends[lastToken] };
 }
+
+// Sentence and clause punctuation, closing brackets and closing quotes: what
+// can end a filing's sentence after its last word ("regions.", "Agreement.”)").
+const CLOSING_PUNCTUATION = new Set(['.', ',', ';', ':', '!', '?', '…', ')', ']', '}', '"', '\'', '”', '’', '»', '›']);
+
+/**
+ * Extend an original-text span end over the punctuation that immediately
+ * follows its last word, so an as-filed slice keeps its final full stop and
+ * closing quote. Stops at the first other character (whitespace included),
+ * so it never reaches the next line, let alone the next heading.
+ */
+export function extendOverClosingPunctuation(text: string, end: number): number {
+  let cursor = end;
+  while (cursor < text.length && CLOSING_PUNCTUATION.has(text[cursor])) cursor += 1;
+  return cursor;
+}

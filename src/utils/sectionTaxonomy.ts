@@ -35,7 +35,7 @@
 import { normalizeForMatch } from './booleanSearch';
 import type { SectionSliceOptions } from './sectionPath';
 import { headingSectionRange, itemSectionRange, normalizeItemNumber } from './sectionPath';
-import { normalizedTokenOffsets, originalSpan } from './normalizedOffsets';
+import { extendOverClosingPunctuation, normalizedTokenOffsets, originalSpan } from './normalizedOffsets';
 import { locateHeadingBlock, normalizeHeading, type BlockSpec } from './sectionBlocks';
 
 export type FormFamily = '10-K' | '10-Q' | '20-F' | 'S-1' | 'DEF 14A' | '8-K';
@@ -855,7 +855,9 @@ export function extractResolvedSection(filingText: string, resolved: ResolvedSec
  * The same slice as extractResolvedSection, in the filing's own words — case,
  * punctuation and line breaks as filed — for anything a person reads or
  * exports (Word, memo citations). Exactly the same section boundaries: the
- * normalized slice's token range is mapped back onto the original text.
+ * normalized slice's token range is mapped back onto the original text, and
+ * the end is carried over the punctuation and closing quotes that directly
+ * follow the last word (the final full stop), which normalization drops.
  * '' when the section is not found, or when the mapping cannot be made
  * exactly (never an approximate span).
  */
@@ -1043,7 +1045,7 @@ export function locateResolvedSection(
       return {
         status: 'found',
         text: slice,
-        rawText: span ? text.slice(span.start, span.end) : undefined,
+        rawText: span ? text.slice(span.start, extendOverClosingPunctuation(text, span.end)) : undefined,
         truncated: false,
         label: resolved.label,
       };
