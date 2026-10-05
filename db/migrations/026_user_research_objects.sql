@@ -51,6 +51,13 @@
 --      let anyone write anyone's rows; the signature is what makes the
 --      database, not the route, enforce whose rows a call touches. The route
 --      takes the user and org from the Clerk session only — never the body.
+--      urc_user_assume() compares SHA-256 digests of the presented and the
+--      expected signature rather than the strings themselves, so how long the
+--      comparison runs says nothing about how many leading characters of a
+--      forged signature were right. There is no per-assertion nonce: one
+--      would change the signed message the route produces, and the short
+--      expiry bounds replay of an assertion that is only ever sent over TLS
+--      from the route to the database.
 --
 --   Why not the alternatives:
 --   * A custom-role JWT is not possible: this project signs tokens with
@@ -87,6 +94,9 @@ do $$ begin
   if pg_catalog.to_regprocedure('extensions.hmac(bytea,bytea,text)') is null then
     raise exception 'user research objects: pgcrypto must be installed in the extensions schema (extensions.hmac(bytea,bytea,text) is missing)';
   end if;
+  if pg_catalog.to_regprocedure('extensions.digest(text,text)') is null then
+    raise exception 'user research objects: pgcrypto must be installed in the extensions schema (extensions.digest(text,text) is missing)';
+  end if;
 end $$;
 
 -- ── 1. The writer role ───────────────────────────────────────────────────────
@@ -109,6 +119,9 @@ do $$ begin
   end if;
   if not pg_catalog.has_function_privilege('urc_user_writer', 'extensions.hmac(bytea,bytea,text)', 'execute') then
     execute 'grant execute on function extensions.hmac(bytea, bytea, text) to urc_user_writer';
+  end if;
+  if not pg_catalog.has_function_privilege('urc_user_writer', 'extensions.digest(text,text)', 'execute') then
+    execute 'grant execute on function extensions.digest(text, text) to urc_user_writer';
   end if;
 end $$;
 
@@ -461,7 +474,10 @@ begin
     ),
     'hex'
   );
-  if p_signature is null or lower(p_signature) <> v_expected then
+  -- Fixed-length digests of both sides: the comparison's running time does
+  -- not depend on how much of a presented signature matches.
+  if p_signature is null
+     or extensions.digest(lower(p_signature), 'sha256') <> extensions.digest(v_expected, 'sha256') then
     raise exception 'urc_user: identity assertion rejected' using errcode = '28000';
   end if;
   perform set_config('urc.user_id', p_user_id, true);
@@ -681,6 +697,9 @@ begin
   end if;
   if not pg_catalog.has_function_privilege('urc_user_writer', 'extensions.hmac(bytea,bytea,text)', 'execute') then
     raise exception 'user research objects: urc_user_writer cannot execute extensions.hmac';
+  end if;
+  if not pg_catalog.has_function_privilege('urc_user_writer', 'extensions.digest(text,text)', 'execute') then
+    raise exception 'user research objects: urc_user_writer cannot execute extensions.digest';
   end if;
 
   select string_agg(c.relname, ', ') into leaked
