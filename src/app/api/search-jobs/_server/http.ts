@@ -1,4 +1,5 @@
 import { timingSafeEqual } from 'node:crypto';
+import { BODY_READ_TIMEOUT_MS, BodyReadError, readBodyBytes } from '../../../../lib/ai-input';
 import { getUserWriterSupabase } from '../../../../lib/supabase-web';
 import { createSupabaseSearchJobStore, type SearchJobStore } from './store';
 
@@ -41,13 +42,28 @@ export function isAuthorizedCron(request: Request): boolean {
   return a.length === b.length && timingSafeEqual(a, b);
 }
 
-export async function readJsonBody(request: Request, maxBytes: number): Promise<unknown | Response> {
-  const declared = Number(request.headers.get('content-length') || 0);
-  if (Number.isFinite(declared) && declared > maxBytes) return jsonError(413, 'Request body is too large.');
+/**
+ * The JSON body of a worker/owner route (search-jobs, alerts evaluate), read
+ * through the bounded reader: at most `maxBytes` bytes, never buffered past
+ * the cap, with a read timeout. An empty body is `{}`; failures are the
+ * routes' `{ ok: false, error }` envelope (413 too large, 400 not JSON, 408
+ * timed out, 499 client cancelled).
+ */
+export async function readJsonBody(
+  request: Request,
+  maxBytes: number,
+  timeoutMs = BODY_READ_TIMEOUT_MS,
+): Promise<unknown | Response> {
+  let bytes: Uint8Array;
   try {
-    const text = await request.text();
-    if (text.length > maxBytes) return jsonError(413, 'Request body is too large.');
-    return text ? JSON.parse(text) : {};
+    bytes = await readBodyBytes(request, maxBytes, timeoutMs);
+  } catch (error) {
+    if (error instanceof BodyReadError) return jsonError(error.status, error.message);
+    return jsonError(400, 'Request body must be valid JSON.');
+  }
+  if (bytes.byteLength === 0) return {};
+  try {
+    return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes)) as unknown;
   } catch {
     return jsonError(400, 'Request body must be valid JSON.');
   }

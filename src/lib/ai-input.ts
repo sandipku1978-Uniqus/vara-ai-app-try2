@@ -9,7 +9,7 @@ const MAX_MESSAGE_CHARS = 40_000;
 const MAX_TOTAL_MESSAGE_CHARS = 120_000;
 const MAX_COMPARISON_TEXT_CHARS = 40_000;
 const MAX_TOTAL_COMPARISON_CHARS = 600_000;
-const BODY_READ_TIMEOUT_MS = 10_000;
+export const BODY_READ_TIMEOUT_MS = 10_000;
 
 export type ChatMessageInput = { role: 'user' | 'assistant'; content: string };
 
@@ -67,13 +67,19 @@ function badRequest(error: string, status = 400): ValidationResult<never> {
   };
 }
 
-class BodyReadError extends Error {
+/** Why a bounded body read stopped: 413 too large, 408 timed out, 499 client cancelled. */
+export class BodyReadError extends Error {
   constructor(message: string, public readonly status: number) {
     super(message);
   }
 }
 
-async function readBodyBytes(request: Request, maxBytes: number, timeoutMs: number): Promise<Uint8Array> {
+/**
+ * Read at most `maxBytes` of the request body, counting bytes as they arrive
+ * (a declared Content-Length over the cap is refused before reading), and give
+ * up after `timeoutMs`. Throws BodyReadError; never buffers past the cap.
+ */
+export async function readBodyBytes(request: Request, maxBytes: number, timeoutMs: number): Promise<Uint8Array> {
   const contentLength = Number(request.headers.get('content-length'));
   if (Number.isFinite(contentLength) && contentLength > maxBytes) {
     throw new BodyReadError('Request body is too large.', 413);
