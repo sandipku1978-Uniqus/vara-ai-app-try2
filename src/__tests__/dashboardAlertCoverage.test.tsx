@@ -3,6 +3,8 @@ import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import type { SavedAlert } from '../context/AppState';
 import type { SearchCandidateCoverage } from '../services/secApi';
 import { resetAlertHitsForTests, setAlertHitsFetchForTests } from '../services/alertHits';
+import { setActiveBrowserStorageScope } from '../services/storageNamespace';
+import { prepareUserDataScope, resetUserDataForTests } from '../services/userData';
 
 const mocks = vi.hoisted(() => ({
   push: vi.fn(),
@@ -132,6 +134,10 @@ describe('Dashboard Alert Center', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     resetAlertHitsForTests();
+    resetUserDataForTests();
+    // A signed-in account: the Alert Center reports server checks for it.
+    setActiveBrowserStorageScope('user:user_1:org:personal');
+    prepareUserDataScope('user:user_1:org:personal');
     calls.length = 0;
     mocks.savedAlerts = [alert()];
     handler = url => (url.startsWith('/api/user/alert-hits')
@@ -146,6 +152,8 @@ describe('Dashboard Alert Center', () => {
   });
   afterEach(() => {
     resetAlertHitsForTests();
+    resetUserDataForTests();
+    setActiveBrowserStorageScope(null);
     vi.unstubAllGlobals();
   });
 
@@ -187,7 +195,59 @@ describe('Dashboard Alert Center', () => {
   it('says the alert lives only in this browser when background checks are unavailable', async () => {
     handler = () => ({ status: 503, body: { ok: false, errorClass: 'unavailable', error: 'not provisioned' } });
     render(<Dashboard />);
-    expect(await screen.findByText(/Background checks are not available for this session/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Run now/ })).toBeDisabled();
+    expect(await screen.findByText(/Background checks are not available in this environment/)).toBeInTheDocument();
+    // No unread count is claimed where nothing checks the alert.
+    expect(screen.queryByText('new since you last looked')).toBeNull();
+    // Run now stays reachable and explains itself rather than asking a server that cannot answer.
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /Run now/ })); });
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Not checked: background checks are not available in this environment. The counts shown are from before and were not changed.'
+    );
+    expect(calls.some(call => call.url === '/api/alerts/evaluate')).toBe(false);
+    expect(mocks.updateSavedAlert).not.toHaveBeenCalled();
+    expect(mocks.executeSearch).not.toHaveBeenCalled();
+    expect(screen.getByText('4 matched in the last check window')).toBeInTheDocument();
+  });
+
+  it('reports a 503 from Run now as unavailable, never as a check, and keeps prior evidence', async () => {
+    handler = url => (url.startsWith('/api/user/alert-hits')
+      ? { status: 200, body: { ok: true, total: 0, unseen: 0, unseenAmendments: 0, byAlert: {}, hits: [] } }
+      : { status: 503, body: { ok: false, error: 'Scheduled alert checks are not configured for this deployment.' } });
+    render(<Dashboard />);
+    await waitFor(() => expect(calls.some(call => call.url.startsWith('/api/user/alert-hits'))).toBe(true));
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /Run now/ })); });
+    expect(calls.filter(call => call.url === '/api/alerts/evaluate')).toHaveLength(1);
+    expect(await screen.findByRole('alert')).toHaveTextContent(/background checks are not available in this environment/);
+    expect(screen.queryByText(/^Checked:/)).toBeNull();
+    expect(screen.getByText(/Last checked/)).toHaveTextContent('Last checked 3 hours ago · daily');
+    expect(screen.getByText('4 matched in the last check window')).toBeInTheDocument();
+    expect(mocks.updateSavedAlert).not.toHaveBeenCalled();
+  });
+
+  it('asks nothing of the server for a browser-only identity and says checks are unavailable here', async () => {
+    resetUserDataForTests();
+    setActiveBrowserStorageScope('signed-out');
+    prepareUserDataScope('signed-out');
+    render(<Dashboard />);
+    expect(await screen.findByText(/Background checks are not available in this environment/)).toBeInTheDocument();
+    expect(screen.getByText('This browser only')).toBeInTheDocument();
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: /Run now/ })); });
+    expect(screen.getByRole('alert')).toHaveTextContent(/^Not checked: background checks are not available in this environment/);
+    expect(calls).toHaveLength(0);
+    expect(mocks.updateSavedAlert).not.toHaveBeenCalled();
+    expect(screen.getByText('4 matched in the last check window')).toBeInTheDocument();
+  });
+
+  it('shows a never-checked alert with the evidence it was saved with', async () => {
+    mocks.savedAlerts = [alert({ lastCheckedAt: undefined, lastCheckCoverage: undefined, latestResultCount: 3, lastSeenAccessions: ['a', 'b', 'c'] })];
+    render(<Dashboard />);
+    expect(screen.getByText(/Not checked yet/)).toBeInTheDocument();
+    expect(screen.getByText('3 filings in the results when saved (2026-08-03)')).toBeInTheDocument();
+  });
+
+  it('claims no save-time evidence for an alert made from a search that was never run', async () => {
+    mocks.savedAlerts = [alert({ lastCheckedAt: undefined, lastCheckCoverage: undefined, latestResultCount: 0, lastSeenAccessions: [] })];
+    render(<Dashboard />);
+    expect(screen.queryByText(/in the results when saved/)).toBeNull();
   });
 });

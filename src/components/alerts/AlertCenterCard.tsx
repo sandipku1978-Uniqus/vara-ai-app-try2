@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { BellRing, Loader2, Play, Search as SearchIcon, X } from 'lucide-react';
@@ -12,7 +12,15 @@ import {
   runAlertNow,
   useAlertHitSummary,
 } from '../../services/alertHits';
-import { fetchUserData, isAccountUserDataScope, type UserAlertItem } from '../../services/userData';
+import { isAccountStorageScope } from '../../services/storageNamespace';
+import {
+  fetchUserData,
+  getUserDataStatus,
+  isAccountUserDataScope,
+  subscribeUserDataStatus,
+  type UserAlertItem,
+  type UserDataStatus,
+} from '../../services/userData';
 import './Alerts.css';
 
 const INCOMPLETE_REASON_LABELS: Record<NonNullable<NonNullable<SavedAlertCoverage['branches']>[number]['incompleteReason']>, string> = {
@@ -112,6 +120,23 @@ function checkStateFromLocal(alert: SavedAlert): CheckState {
 }
 
 /**
+ * The account store is known to be out of reach: the identity settled on a
+ * browser-only scope, or the store answered "unavailable". A scope that has
+ * not settled yet (null) is not a verdict.
+ */
+export function isAccountStoreUnavailable(status: Pick<UserDataStatus, 'mode' | 'scope'>): boolean {
+  return status.mode === 'unavailable' || (status.mode === 'local' && status.scope !== null);
+}
+
+/** The server refused the check because nothing here can run it (no store, or no account). */
+function isUnavailableAnswer(status: number): boolean {
+  return status === 503 || status === 401 || status === 403;
+}
+
+export const RUN_NOW_UNAVAILABLE_MESSAGE =
+  'Not checked: background checks are not available in this environment. The counts shown are from before and were not changed.';
+
+/**
  * The Dashboard's Alert Center. Alerts are checked on the server by the
  * scheduled evaluator; this card only reports each alert's latest check —
  * when, how many new hits are waiting, and whether coverage was complete —
@@ -122,6 +147,7 @@ export default function AlertCenterCard() {
   const { savedAlerts, removeSavedAlert } = useApp();
   const navigate = useRouter();
   const summary = useAlertHitSummary();
+  const userDataStatus = useSyncExternalStore(subscribeUserDataStatus, getUserDataStatus, getUserDataStatus);
   const [serverState, setServerState] = useState<Record<string, CheckState>>({});
   const [running, setRunning] = useState<string[]>([]);
   const [messages, setMessages] = useState<Record<string, { tone: 'info' | 'error'; text: string }>>({});
@@ -135,10 +161,15 @@ export default function AlertCenterCard() {
     setServerState(next);
   }, []);
 
+  // Only an account whose store is reachable has server checks to report; a
+  // browser-only identity (or a store that already answered "unavailable")
+  // would only collect a refusal, so nothing is requested until that changes.
+  const canQueryServer = isAccountStorageScope(userDataStatus.scope) && userDataStatus.mode !== 'unavailable';
   useEffect(() => {
+    if (!canQueryServer) return;
     void loadServerState();
     void refreshAlertHitSummary();
-  }, [loadServerState]);
+  }, [canQueryServer, loadServerState]);
 
   const runNow = async (alert: SavedAlert) => {
     setRunning(prev => [...prev, alert.id]);
@@ -147,8 +178,13 @@ export default function AlertCenterCard() {
       delete next[alert.id];
       return next;
     });
-    const result = await runAlertNow(alert.id);
-    if (result.ok) {
+    // Where nothing can check the alert, say so instead of claiming a check;
+    // the alert's prior evidence is left exactly as it was.
+    const knownUnavailable = summary.status === 'unavailable' || isAccountStoreUnavailable(getUserDataStatus());
+    const result = knownUnavailable ? null : await runAlertNow(alert.id);
+    if (!result || (!result.ok && isUnavailableAnswer(result.status))) {
+      setMessages(prev => ({ ...prev, [alert.id]: { tone: 'error', text: RUN_NOW_UNAVAILABLE_MESSAGE } }));
+    } else if (result.ok) {
       const check = result.value;
       const text = check.outcome === 'checked'
         ? `Checked: ${check.newFilings ?? 0} new filing${check.newFilings === 1 ? '' : 's'}${check.complete ? '' : ' (partial coverage)'}.`
@@ -163,7 +199,7 @@ export default function AlertCenterCard() {
     setRunning(prev => prev.filter(id => id !== alert.id));
   };
 
-  const backgroundUnavailable = summary.status === 'unavailable';
+  const backgroundUnavailable = summary.status === 'unavailable' || isAccountStoreUnavailable(userDataStatus);
 
   return (
     <section className="glass-card rss-card">
@@ -173,8 +209,9 @@ export default function AlertCenterCard() {
       </div>
       {backgroundUnavailable && savedAlerts.length > 0 && (
         <p className="alert-check-local" role="note">
-          Background checks are not available for this session (sign in, and the deployment needs saved-research storage).
-          These alerts are kept in this browser; open one to run its search by hand.
+          Background checks are not available in this environment (they need a signed-in account and saved-research storage on
+          the deployment). These alerts are kept in this browser and nothing checks them in the background; open one to run its
+          search by hand.
         </p>
       )}
       <div className="rss-grid">
@@ -196,6 +233,10 @@ export default function AlertCenterCard() {
             const unseen = summary.byAlert[alert.id] ?? 0;
             const isRunning = running.includes(alert.id);
             const message = messages[alert.id];
+            // Save-time evidence: the result list the alert was saved from (a
+            // search that was never run saves no accessions and shows nothing).
+            const savedWith = Array.isArray(alert.lastSeenAccessions) && alert.lastSeenAccessions.length > 0 ? Number(alert.latestResultCount) || 0 : 0;
+            const savedOn = alert.createdAt ? alert.createdAt.slice(0, 10) : '';
             return (
               <div key={alert.id} className="rss-news-card">
                 <div className="rss-timestamp">
@@ -206,8 +247,12 @@ export default function AlertCenterCard() {
                 </div>
                 <h4 className="rss-headline">{alert.name}</h4>
                 <div className="alert-check-line">
-                  <span><strong>{unseen.toLocaleString()}</strong> new since you last looked</span>
+                  {/* An unread count is only a claim where something checks the alert. */}
+                  {!backgroundUnavailable && <span><strong>{unseen.toLocaleString()}</strong> new since you last looked</span>}
                   {state.lastCheckedAt && <span>{state.matched.toLocaleString()} matched in the last check window</span>}
+                  {!state.lastCheckedAt && savedWith > 0 && (
+                    <span>{savedWith.toLocaleString()} filing{savedWith === 1 ? '' : 's'} in the results when saved{savedOn ? ` (${savedOn})` : ''}</span>
+                  )}
                   {state.coverage
                     ? <span>coverage {state.coverage.complete ? 'complete' : 'partial'}</span>
                     : state.lastCheckedAt ? <span>coverage not recorded</span> : null}
@@ -231,8 +276,8 @@ export default function AlertCenterCard() {
                   <button
                     className="secondary-btn"
                     onClick={() => void runNow(alert)}
-                    disabled={isRunning || backgroundUnavailable}
-                    title={backgroundUnavailable ? 'Background checks are not available for this session' : 'Check this alert on the server now'}
+                    disabled={isRunning}
+                    title={backgroundUnavailable ? 'Background checks are not available in this environment' : 'Check this alert on the server now'}
                   >
                     {isRunning ? <Loader2 size={14} className="spinner" /> : <Play size={14} />} Run now
                   </button>

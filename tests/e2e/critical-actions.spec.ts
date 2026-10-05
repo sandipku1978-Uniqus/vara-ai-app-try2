@@ -180,9 +180,8 @@ test.describe('critical action: comment-letter search', () => {
 test.describe('critical action: the alert journey (save, then check on the Dashboard)', () => {
   test('research-workbench.save-alert and dashboard.check-saved-alert round-trip', async ({ page }) => {
     const stats = await installBooleanFixtures(page);
-    // The Dashboard check validates documents through /api/filing-text —
-    // unstubbed, that reaches real SEC and the poll below races a network
-    // round-trip per candidate.
+    // Document validation during the search goes through /api/filing-text;
+    // stubbed so nothing here reaches real SEC.
     await installFilingDetailFixtures(page);
     await runBooleanQuery(page, 'mezzanine OR temporary');
     await expect(page.getByText(BOTH.company).first()).toBeVisible({ timeout: 30_000 });
@@ -202,25 +201,43 @@ test.describe('critical action: the alert journey (save, then check on the Dashb
       )).toBe(true);
     });
 
+    const readSavedAlert = () => page.evaluate(() => {
+      const key = Object.keys(window.localStorage).find(item => item.endsWith('.vara.alerts.v1'));
+      const alerts = JSON.parse((key && window.localStorage.getItem(key)) || '[]') as Array<Record<string, unknown>>;
+      return alerts.find(alert => alert.query === 'mezzanine OR temporary') ?? null;
+    });
+
     // Identity settled before the save (waitForIdentity), so the alert
     // persists to the scoped key; a hard navigation now proves durability.
     await page.goto('/dashboard');
     await waitForIdentity(page);
-    await expect(page.getByText('mezzanine OR temporary').first()).toBeVisible({ timeout: 20_000 });
-    await expect(page.getByText(/\d+ current match(es)? in scope/).first()).toBeVisible();
+    const card = page.locator('.rss-news-card').filter({ hasText: 'mezzanine OR temporary' });
+    await expect(card).toBeVisible({ timeout: 20_000 });
+    // The save-time evidence: never checked, and the result list it was saved from.
+    await expect(card).toContainText('Not checked yet');
+    const savedWith = card.getByText(/^\d+ filings? in the results when saved/);
+    await expect(savedWith).toBeVisible();
+    const savedWithText = (await savedWith.textContent()) || '';
+    const before = await readSavedAlert();
+    expect(before).not.toBeNull();
 
-    // Check Now reruns the saved search (through the same fixtures) and lands
-    // back on a truthful, non-error status line.
+    // Alerts are checked on the server (cron, or POST /api/alerts/evaluate for
+    // Run now). This environment has no account store, so Run now must say no
+    // check happened, run nothing in the browser, and leave the alert's
+    // evidence exactly as saved.
     await test.step('ui-action:dashboard.check-saved-alert', async () => {
-      const queriesBeforeCheck = stats.eftsQueries.length;
-      await page.getByRole('button', { name: 'Check Now' }).click();
-      // The status line never disappears (it shows the saved count), so the
-      // proof that Check Now re-ran retrieval is the fixture request counter —
-      // polled, because the check is asynchronous.
-      await expect
-        .poll(() => stats.eftsQueries.length, { timeout: 30_000 })
-        .toBeGreaterThan(queriesBeforeCheck);
-      await expect(page.getByText(/current matches in scope|new filings? detected/).first()).toBeVisible();
+      const queriesBeforeRun = stats.eftsQueries.length;
+      await expect(page.getByRole('note').filter({ hasText: 'Background checks are not available in this environment' })).toBeVisible();
+      await card.getByRole('button', { name: 'Run now' }).click();
+      await expect(card.getByRole('alert')).toHaveText(
+        'Not checked: background checks are not available in this environment. The counts shown are from before and were not changed.'
+      );
+      await expect(card.getByRole('button', { name: 'Run now' })).toBeEnabled();
+      await expect(card.getByText(/^Checked:/)).toHaveCount(0);
+      await expect(card).toContainText('Not checked yet');
+      await expect(savedWith).toHaveText(savedWithText);
+      expect(stats.eftsQueries.length).toBe(queriesBeforeRun);
+      expect(await readSavedAlert()).toEqual(before);
     });
   });
 });

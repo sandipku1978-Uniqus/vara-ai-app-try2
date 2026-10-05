@@ -146,7 +146,8 @@ export default function SavedSearchesMenu({ onRun }: { onRun?: (search: SavedSea
         type="button"
         className="secondary-btn"
         aria-expanded={open}
-        aria-controls="urc-saved-searches"
+        // The popover mounts only while open; a closed reference would dangle.
+        aria-controls={open ? 'urc-saved-searches' : undefined}
         onClick={() => setOpen(current => !current)}
       >
         <Bookmark size={16} aria-hidden="true" /> Saved ({searches.length})

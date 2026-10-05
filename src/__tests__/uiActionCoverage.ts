@@ -86,7 +86,7 @@ export const UI_ACTION_COVERAGE: Record<string, UiActionEvidence> = {
   'dashboard.open-recent-filing': { kind: 'automated-full', specs: [{ file: 'tests/e2e/dashboard-comment-letter-interactions.spec.ts', title: 'dashboard.open-recent-filing opens the exact selected filing identity' }] },
   'dashboard.check-saved-alert': { kind: 'automated-full', specs: [
     { file: 'tests/e2e/critical-actions.spec.ts', title: 'research-workbench.save-alert and dashboard.check-saved-alert round-trip' },
-    { file: 'tests/e2e/dashboard-comment-letter-interactions.spec.ts', title: 'dashboard.check-saved-alert rejects an unmeasured run without replacing prior alert evidence' },
+    { file: 'tests/e2e/dashboard-comment-letter-interactions.spec.ts', title: 'dashboard.check-saved-alert says checks are unavailable here without replacing prior alert evidence' },
   ] },
   'dashboard.open-or-remove-alert': { kind: 'automated-full', specs: [{ file: 'tests/e2e/dashboard-comment-letter-interactions.spec.ts', title: 'dashboard.open-or-remove-alert restores exact criteria and removes only the chosen alert' }] },
   'earnings.run-search': { kind: 'automated-full', specs: [{ file: 'tests/e2e/filing-search-surfaces.spec.ts', title: 'earnings.run-search returns earnings-release exhibit rows' }] },

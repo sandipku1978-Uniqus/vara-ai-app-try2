@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 import { Loader2, Search as SearchIcon } from 'lucide-react';
 import {
   buildSearchJobHeadline,
@@ -8,6 +8,8 @@ import {
   parseSearchJobSummary,
   type SearchJobSummary,
 } from '../../services/searchJobs';
+import { isAccountStorageScope } from '../../services/storageNamespace';
+import { getUserDataStatus, subscribeUserDataStatus } from '../../services/userData';
 import './SearchJobPanel.css';
 
 const STATUS_LABELS: Record<SearchJobSummary['status'], string> = {
@@ -27,8 +29,14 @@ const STATUS_LABELS: Record<SearchJobSummary['status'], string> = {
 export default function SearchJobsCard() {
   const [jobs, setJobs] = useState<SearchJobSummary[] | null>(null);
   const [state, setState] = useState<'loading' | 'ready' | 'unavailable' | 'error'>('loading');
+  const userData = useSyncExternalStore(subscribeUserDataStatus, getUserDataStatus, getUserDataStatus);
+  // Continued searches belong to a signed-in account; a browser-only identity,
+  // or an account whose store already answered "unavailable", has none to list
+  // and is not sent to collect a refusal.
+  const canList = isAccountStorageScope(userData.scope) && userData.mode !== 'unavailable';
 
   useEffect(() => {
+    if (!canList) return;
     const controller = new AbortController();
     fetch('/api/search-jobs?limit=6', { signal: controller.signal, cache: 'no-store' })
       .then(async response => {
@@ -50,9 +58,9 @@ export default function SearchJobsCard() {
         if ((error as Error)?.name !== 'AbortError') setState('error');
       });
     return () => controller.abort();
-  }, []);
+  }, [canList]);
 
-  if (state === 'unavailable') return null;
+  if (!canList || state === 'unavailable') return null;
 
   return (
     <section className="glass-card search-jobs-card" aria-labelledby="search-jobs-card-title">

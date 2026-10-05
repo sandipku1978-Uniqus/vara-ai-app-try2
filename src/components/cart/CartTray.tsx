@@ -164,7 +164,8 @@ export default function CartTray() {
         className="cart-trigger"
         onClick={() => setOpen(current => !current)}
         aria-expanded={open}
-        aria-controls="urc-document-cart"
+        // The tray mounts only while open; pointing at it while closed is a dangling reference.
+        aria-controls={open ? 'urc-document-cart' : undefined}
         aria-label={`${open ? 'Close' : 'Open'} document cart (${items.length} filing${items.length === 1 ? '' : 's'} selected)`}
         title="Document cart"
       >

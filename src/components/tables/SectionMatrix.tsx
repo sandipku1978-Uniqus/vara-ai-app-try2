@@ -88,8 +88,10 @@ export default function SectionMatrix({ form, sections, groups, companies, data,
               <th scope="col" className="sm-section-col">Section</th>
               {companies.map(c => {
                 const source = columnSource(sections, data, c.ticker);
+                // The column is named by its ticker alone; the cart checkbox inside keeps
+                // its own label and tab stop but must not leak into the header's name.
                 return (
-                  <th key={c.ticker} scope="col" className="sm-company-col">
+                  <th key={c.ticker} scope="col" className="sm-company-col" aria-label={c.ticker}>
                     {c.ticker}
                     {source && (
                       <div>

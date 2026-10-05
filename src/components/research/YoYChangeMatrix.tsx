@@ -295,7 +295,13 @@ export default function YoYChangeMatrix({
             <tr style={{ fontSize: '0.8rem', borderBottom: '1px solid var(--border-color)' }}>
               <th scope="col" style={{ textAlign: 'left', padding: '12px 20px', color: 'var(--text-muted)', fontWeight: 600 }}>Section</th>
               {visibleColumns.map(column => (
-                <th scope="col" key={column.key} style={{ textAlign: 'left', padding: '12px 16px', color: 'var(--text-primary)', fontWeight: 600 }}>
+                <th
+                  scope="col"
+                  key={column.key}
+                  // Named by its visible heading text only; the cart checkbox inside keeps its own label.
+                  aria-label={`${column.headerTop} ${column.error || column.headerSub}`.trim()}
+                  style={{ textAlign: 'left', padding: '12px 16px', color: 'var(--text-primary)', fontWeight: 600 }}
+                >
                   {column.headerTop}
                   <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 400 }}>
                     {column.error || column.headerSub}
