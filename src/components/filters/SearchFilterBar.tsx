@@ -33,6 +33,8 @@ export interface SearchFilterBarConfig {
   showFiscalYearEnd?: boolean;
   showAccountingFramework?: boolean;
   formTypeOptions?: string[];
+  /** Section title for the form chips (default "Form Types"). */
+  formTypesTitle?: string;
 }
 
 const EXCHANGES = ['NYSE', 'NASDAQ', 'AMEX', 'CBOE', 'OTC'];
@@ -342,7 +344,7 @@ export default function SearchFilterBar({ config, filters, onChange, onSearch, l
 
           {/* Form Types */}
           {config.showFormTypes && config.formTypeOptions && config.formTypeOptions.length > 0 && (
-            <CollapsibleSection title="Form Types" defaultOpen>
+            <CollapsibleSection title={config.formTypesTitle ?? 'Form Types'} defaultOpen>
               <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                 {config.formTypeOptions.map(ft => (
                   <button type="button" key={ft} aria-pressed={filters.formTypes.includes(ft)} onClick={() => toggleList('formTypes', ft)} style={pillBtnStyle(filters.formTypes.includes(ft))}>

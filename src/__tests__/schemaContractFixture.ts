@@ -9,6 +9,8 @@ export function validSchemaContractEvidence(expected: ExpectedSchemaIdentity) {
     ['urc_comment_letters', 'r', true],
     ['urc_filing_text', 'r', true],
     ['urc_thread_summaries', 'r', true],
+    ['urc_letter_facets', 'r', true],
+    ['urc_letter_issues', 'r', true],
     ['urc_schema_version', 'r', true],
     ['urc_current_auditors', 'v', false],
     ['urc_current_auditors_mat', 'm', false],
@@ -70,6 +72,8 @@ export function validSchemaContractEvidence(expected: ExpectedSchemaIdentity) {
       'cik', 'accession', 'document', 'text', 'fetched_at', 'source_validation_version',
     ],
     urc_thread_summaries: ['thread_id', 'input_coverage'],
+    urc_letter_facets: ['accession', 'cik', 'reviewed_forms', 'derivation_version'],
+    urc_letter_issues: ['thread_id', 'staff_accession', 'issues', 'parser_version', 'episode_fingerprint'],
     urc_schema_version: ['version', 'migration_count', 'chain_checksum', 'checksum_algorithm'],
     urc_auditor_periods_mat: [
       'issuer_cik', 'effective_from', 'effective_to', 'form_filing_ids',
@@ -161,7 +165,7 @@ export function validSchemaContractEvidence(expected: ExpectedSchemaIdentity) {
         f.root_form = any($1) least(greatest(coalesce(p_limit, 20), 1), 100)
         order by f.date_filed desc, f.accession`,
     }),
-    fn('urc_search_letters', 'text, text, date, date, integer, integer, text', {
+    fn('urc_search_letters', 'text, text, date, date, integer, integer, text, bigint, text, text[]', {
       definition: `order by l.date_filed desc, l.accession, l.cik limit 10001 limit 1000
         least(greatest(p_limit, 1), 100) least(greatest(p_offset, 0), 1000)`,
     }),

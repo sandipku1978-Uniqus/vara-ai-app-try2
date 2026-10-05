@@ -1,0 +1,98 @@
+Document
+
+October 21, 2021
+
+Cara Wirth
+United States Securities and Exchange Commission
+Division of Corporation Finance
+Office of Trade & Services
+100 F Street, N.E.
+Washington, D.C. 20549-0405
+
+Re:Amazon.com, Inc.
+Form 10-K for Fiscal Year Ended December 31, 2020
+Filed February 3, 2021
+File No. 000-22513
+
+Dear Ms. Wirth:
+On behalf of Amazon.com, Inc., this responds to your letter of September 23, 2021 regarding our Annual Report on Form 10-K for the year ended December 31, 2020 (the “2020 10-K”). Each of your comments is set forth below, followed by our response.
+Form 10-K for the Year Ended December 31, 2020
+General
+1.We note your disclosures in your CSR report expressing your commitment to utilize your size and scale toward climate and environmental innovations, and your statement that you are committed to building a sustainable business for your employees, customers and communities. We also note that you provided more expansive disclosure in your CSR report than you provided in your SEC filings. Please advise us what consideration you gave to providing the same type of climate-related disclosure in your SEC filings as you provided in your CSR report.
+Response
+As you noted from our 2020 Sustainability Report, we are committed to building a sustainable business for our employees, customers, and communities. To create lasting and systemic change on our planet, we are focused on driving change both within and beyond our company, and in partnership with others. This is reflected in The Climate Pledge, a commitment that we co-founded with the architect of the Paris Agreement, to achieve net-zero carbon emissions across the business by 2040 – 10 years ahead of the Paris Agreement. Achieving this goal requires a process of innovation and sustained action across our business over a prolonged period of time. This process of incremental innovation is the same process that we have applied to the development and growth of our business, which has evolved and expanded based on our commitment to four guiding principles: customer obsession rather than competitive focus, passion for invention, commitment to operational excellence, and long-term thinking. While we are still in the early phases of decarbonizing our business, we have seen meaningful progress in several areas, such as being on 
+
+October 21, 2021
+Page 2
+
+a path to powering our operations with 100% renewable energy by 2025, five years ahead of our goal. Our 2020 Sustainability Report details these actions and initiatives and includes our work on a wider range of commitments and initiatives to support our employees, our supply chain partners, and the communities where we operate around the world. 
+We recognize that many of our stakeholders, including some of our shareholders, are keenly interested in our actions and initiatives to address climate change and to reduce our carbon intensity. Accordingly, we provide climate-related disclosures through a number of Regulation FD-compliant means. In providing such disclosures, we assess applicable disclosure requirements under the U.S. securities laws and regulations, as well as additional factors such as the nature of the information, the context of the communication, and the information that is available at the time of the communication. For example, our definitive proxy statement filed on April 15, 2021 addresses many of the actions and initiatives we have taken to address environmental sustainability, since we believe this information may be useful to some of our shareholders in their assessment of management’s and the Board’s stewardship of our company.
+We also consider the intended audience for our climate-related disclosures. In this regard, we recognize that our shareholders are not our only stakeholders who may be interested in this topic. We believe our annual sustainability report is our most effective means of communicating comprehensively with all of our stakeholders. At the same time, while we address topics, metrics, and initiatives in our sustainability report that are important to us and certain stakeholders not all of that information is material to our business or operating results, as we stated in our 2020 Sustainability Report at page 137.1
+For our 2020 10-K, pursuant to our disclosure controls and procedures, we considered the responsiveness of information to the requirements of Form 10-K and the applicable provisions of Regulations S-K and S-X, as well as Rule 12b-20 of the Securities Exchange Act of 1934, and the interpretive guidance issued by the Securities and Exchange Commission (the “Commission”) reviewing how existing disclosure requirements apply to climate change matters.2 Specifically, whereas our 2020 Sustainability Report addresses certain actions we are taking in the course of operating our business to address climate change, our 2020 10-K addresses information material to an understanding of our business taken as a whole, including a description of our revenue-generating activities, products, and services offered through our North America, International, and Amazon Web Services segments, risk factors material to an investment in our securities, and management’s discussion and analysis of our financial position and results of operations. As discussed in our responses below, we believe that the 2020 10-K satisfies those requirements. As the size and extent of our climate initiatives continue to expand, and more of our renewable energy projects become operational, we will continue to monitor and evaluate our climate-related disclosures in the context of our segments and operations as we prepare future filings. In addition, we look forward to complying with any future climate change disclosure requirements resulting from the Commission’s current rulemaking efforts.
+Management’s Discussion and Analysis, page 19
+2.We note the disclosure in your proxy statement and your CSR report that you are taking meaningful steps in your journey to be net-zero carbon by 2040 through significant investments in renewable energy and sustainability initiatives. If material, please quantify capital expenditures and compliance costs for these climate-related initiatives.
+Response
+As we have publicly stated, we intend to use our size and scale to make a difference in addressing climate change and decarbonization, and we are focused on driving change ourselves and in partnership with others. This entails many initiatives across our company as well as supporting large-scale, long-term 
+
+ 1 Available at https://sustainability.aboutamazon.com/pdfBuilderDownload?name=amazon-sustainability-2020-report.
+ 2 Commission Guidance Regarding Disclosure Related to Climate Change, Release No. 33-9106 (Feb. 2, 2010).
+
+October 21, 2021
+Page 3
+
+decarbonization solutions, such as our renewable energy projects. To date, we have been able to support these and other projects through initiatives that have not required capital expenditures that are material to us for financial reporting purposes. For example, by agreeing to purchase energy generated by large-scale solar panel and wind projects, we help support the development of those projects. These projects do not require us to make capital expenditures; instead, we commit to purchase an agreed-upon percentage of the energy, if and as it is generated, over a stated term. Similarly, when we arrange for developers to install solar panel arrays on buildings across our operations, we typically do not own the panels, but instead pay for the energy as it is generated. For some building projects where we have arranged for solar panels to be included as part of the construction of the facility, the costs are capitalized and depreciated, similar to the accounting treatment of other fixtures such as HVAC equipment, but such expenditures to date have not been material. Moreover, some of our climate-change initiatives, such as planning data centers with water and energy efficiency in mind, can sometimes result in lower expenses over the life of an asset. In addition, our compliance costs for climate-related initiatives, such as Federal Energy Regulatory Commission licensing fees, have not been material for financial reporting purposes. 
+3.To the extent material, discuss the indirect consequences of climate-related regulation or business trends, such as the following:
+•decreased demand for goods or services that produce significant greenhouse gas emissions or are related to carbon-based energy sources;
+•increased demand for goods that result in lower emissions than competing products;
+•increased competition to develop innovative new products that result in lower emissions; and
+•any anticipated reputational risks resulting from operations or products that produce material greenhouse gas emissions.
+Response
+We address demand for goods and services that result in lower emissions through many aspects of our operations. For example, we are working to reduce the carbon impact of our fulfillment operations, including through reductions in the amount of packaging materials used. As well, we are reducing the carbon intensity of our devices, and our sustainable shopping initiatives offer customers the option of purchasing more sustainable products. 
+However, due to the nature of our retail operations, we have not identified trends in product demand attributable to climate-related regulation or business trends, or competitive pressure arising from lower emission product offerings, that are material to our operations or financial results. We do not manage our retail operations or discuss those operations with investors in terms of particular product offerings. Instead, we focus on providing a wide selection of products and services to our customers, offering hundreds of millions of unique products that are sold by us or by third parties across dozens of diverse product categories. Unlike a retailer relying primarily on physical stores, our decision to stock and sell a particular product or category of products does not preclude us from giving “shelf space” to other products and categories of products; as consumer demand shifts, we are able to adjust our offerings rapidly to maximize our unit sales without making the management decision to devote less selling space to other products. In this regard, we refer you to our comment letter responses addressed to the Division of Corporation Finance and dated October 26 and December 21, 2017, in which we confirm that, in preparing annual and quarterly disclosures in our MD&A, we assess whether there are any individual drivers or trends in any product category that would be material to an understanding of our net sales growth. As an example, when the COVID-19 pandemic produced rapid changes in consumer behavior, we disclosed in our periodic reports that increased demand in our North America and International segments, including for household staples and other essential products, contributed to net sales growth.3 If in the future we identify any such trends in demand that are material to an understanding of our operations, we will disclose them. 
+
+ 3 See, e.g., our Quarterly Report on Form 10-Q for the quarter ended March 31, 2020 at page 23.
+
+October 21, 2021
+Page 4
+
+With respect to our AWS segment, through our scale and focus on innovation and efficiency, our AWS data centers can achieve higher utilization and energy efficiency than is possible for the typical on-premises data center. We believe that the energy efficiency of our cloud services is one factor that our customers may consider when determining to utilize AWS services, although we are not able to isolate the extent to which it affects customers’ decisions as to whether or not to utilize AWS cloud computing services.
+As discussed in response to Comment #1, we have undertaken numerous actions and initiatives to proactively address climate change, including The Climate Pledge, through which we have committed to achieve net-zero carbon emissions across our business by 2040, as well as through outward-facing initiatives, such as The Climate Pledge Fund, which is an investment program to support the development of sustainable and decarbonizing technologies and services. We do encounter some criticism over various aspects of our operations, such as advocates urging us to accelerate even further our progress, and we embrace the opportunity to learn from and address these concerns. However, we believe that our initiatives are aggressive and demonstrate our seriousness about working hard on these issues, and we have not seen material effects on, or material trends affecting, our operations or financial results that are attributable to reputational concerns over the extent to which our operations, products, and services support decarbonization. 
+4.Disclose the material effects of transition risks related to climate change that may affect your business, financial condition, and results of operations, such as policy and regulatory changes that could impose operational and compliance burdens, market trends that may alter business opportunities, credit risks, or technological changes.
+Response
+The Risk Factors section of our 2020 10-K identifies a number of ways in which extreme weather conditions, changing technology, and changes in consumer demand could materially impact our business, financial condition, or results of operations. We also identify evolving governmental policy, law, and regulations, including regulation of electronic waste, energy consumption, and environmental regulation, as risks that could cause us to incur substantial costs, expose us to unanticipated liability or penalties, diminish the demand for, or availability of, our products and services, increase our cost of doing business, require us to change our business practices in a manner materially adverse to our business, damage our reputation, impede our growth, or otherwise have a material effect on our operations. We have sought to mitigate these risks by numerous initiatives, including our commitment to reduce our carbon intensity and be net carbon zero across our business ten years before the 2050 goal of the Paris Agreement. We have in the past, and will in the future, identify any specific regulatory changes or other specific transition risks that pose a material risk to our business, financial condition, or results of operations. 
+
+Very truly yours,
+
+/s/ Shelley L. Reynolds
+
+Shelley L. Reynolds
+Vice President, Worldwide Controller
+Amazon.com, Inc.
+
+cc:Lilyanna Peyser
+Division of Corporation Finance
+
+Audit Committee of the Amazon.com, Inc. Board of Directors
+
+October 21, 2021
+Page 5
+
+Andrew R. Jassy
+President and Chief Executive Officer
+Amazon.com, Inc.
+
+Brian T. Olsavsky
+Senior Vice President and Chief Financial Officer
+Amazon.com, Inc.
+
+David A. Zapolsky
+Senior Vice President, General Counsel, and Secretary
+Amazon.com, Inc.
+
+Jeff Lang
+Partner
+Ernst & Young LLP
+
+Ronald O. Mueller
+Partner
+Gibson, Dunn & Crutcher LLP

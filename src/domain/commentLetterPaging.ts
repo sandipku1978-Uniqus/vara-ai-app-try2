@@ -9,11 +9,12 @@
  *   - browse — urc_recent_threads (db/migrations/005_urc_dossier.sql):
  *     p_limit/p_offset, exact total_count, filterable by p_cik OR p_company
  *     (registrant-name ILIKE);
- *   - search — urc_search_letters (db/migrations/018_letters_search_deterministic.sql):
- *     p_limit 1..100, p_offset 0..999 inside a 1,000-deep ranked pool, total
- *     exact to 10,000 then a floor, filterable by p_company (name ILIKE)
- *     ONLY. There is no CIK parameter, so a resolved company can narrow
- *     full-text matches only by registrant name — and the UI must say so.
+ *   - search — urc_search_letters (db/migrations/027_letters_filters_and_issues.sql,
+ *     keeping 016-018's bounds): p_limit 1..100, p_offset 0..999 inside a
+ *     1,000-deep ranked pool, total exact to 10,000 then a floor; filterable
+ *     by letter type, filing date window, CIK (or a registrant-name ILIKE for
+ *     typed text), issuer SIC code, and the filing form under review. With
+ *     no query text and a structured filter it lists the newest matches.
  */
 
 import { companyNamePhrase } from '../services/secApi';
@@ -191,13 +192,23 @@ export interface CompanyScopeQuery {
   pattern: string | null;
 }
 
-export function companyScopeQuery(scope: CompanyScope | null, mode: LetterListMode): CompanyScopeQuery | null {
+/**
+ * Both lists filter a picked registrant by CIK (urc_search_letters took
+ * p_cik in migration 027). The name stand-in remains for callers that
+ * explicitly opt out of the CIK (none in the page today), so the label logic
+ * below stays honest if a list ever falls back to it.
+ */
+export function companyScopeQuery(
+  scope: CompanyScope | null,
+  _mode: LetterListMode,
+  options: { cikSupported?: boolean } = {}
+): CompanyScopeQuery | null {
   if (!scope) return null;
   if (scope.kind === 'name') {
     const pattern = scope.text.trim();
     return pattern ? { params: { company: pattern }, basis: 'name', pattern } : null;
   }
-  if (mode === 'browse') return { params: { cik: scope.cik }, basis: 'cik', pattern: null };
+  if (options.cikSupported !== false) return { params: { cik: scope.cik }, basis: 'cik', pattern: null };
   const pattern = registrantNameStandIn(scope.title);
   return { params: { company: pattern }, basis: 'name-stand-in', pattern };
 }
@@ -210,17 +221,68 @@ export function describeCompanyScope(scope: CompanyScope, mode: LetterListMode):
   if (scope.kind === 'cik') {
     return query.basis === 'cik'
       ? `${subject} filtered by CIK ${scope.cik} (${scope.title}).`
-      : `${subject} narrowed to registrant names containing "${query.pattern}" as a stand-in for CIK ${scope.cik} — the full-text letter index cannot filter by CIK.`;
+      : `${subject} narrowed to registrant names containing "${query.pattern}" as a stand-in for CIK ${scope.cik}.`;
   }
   return `${subject} narrowed to registrant names containing "${query.pattern}" — a free-text name match; choose a company suggestion to filter by CIK.`;
 }
 
 export type LetterFormFilter = '' | 'UPLOAD' | 'CORRESP';
 
+/** Structured filters added by migration 027. Empty strings / arrays mean "any". */
+export interface LetterFilters {
+  /** ISO date; letters filed on or after. */
+  filedAfter: string;
+  /** ISO date; letters filed on or before. */
+  filedBefore: string;
+  /** Canonical forms under review (services/commentLetterForms REVIEWED_FORM_OPTIONS). */
+  reviewedForms: string[];
+  /** Issuer SIC code, 3-4 digits. */
+  sic: string;
+}
+
+export const EMPTY_LETTER_FILTERS: LetterFilters = { filedAfter: '', filedBefore: '', reviewedForms: [], sic: '' };
+
 export interface LetterSearchCriteria {
   query: string;
   form: LetterFormFilter;
   scope: CompanyScope | null;
+  filters?: LetterFilters;
+}
+
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Filters the route can take as typed — a half-typed SIC or date is not one yet. */
+export function normalizeLetterFilters(filters: LetterFilters | undefined): LetterFilters {
+  if (!filters) return EMPTY_LETTER_FILTERS;
+  const sic = filters.sic.trim();
+  return {
+    filedAfter: ISO_DATE.test(filters.filedAfter) ? filters.filedAfter : '',
+    filedBefore: ISO_DATE.test(filters.filedBefore) ? filters.filedBefore : '',
+    reviewedForms: [...new Set(filters.reviewedForms.map(form => form.trim()).filter(Boolean))].slice(0, 12),
+    sic: /^\d{3,4}$/.test(sic) ? sic : '',
+  };
+}
+
+/** A date window, industry or reviewed form — enough to search without query text. */
+export function hasStructuredLetterFilters(filters: LetterFilters | undefined): boolean {
+  const normalized = normalizeLetterFilters(filters);
+  return Boolean(normalized.filedAfter || normalized.filedBefore || normalized.sic || normalized.reviewedForms.length > 0);
+}
+
+/** The filters actually applied, each with the basis a reader needs to weigh the result. */
+export function describeLetterFilters(filters: LetterFilters | undefined, sicTitle?: string | null): string[] {
+  const normalized = normalizeLetterFilters(filters);
+  const lines: string[] = [];
+  if (normalized.filedAfter && normalized.filedBefore) lines.push(`Filed ${normalized.filedAfter} to ${normalized.filedBefore}.`);
+  else if (normalized.filedAfter) lines.push(`Filed on or after ${normalized.filedAfter}.`);
+  else if (normalized.filedBefore) lines.push(`Filed on or before ${normalized.filedBefore}.`);
+  if (normalized.reviewedForms.length > 0) {
+    lines.push(`Concerning ${normalized.reviewedForms.join(', ')} — the form named in each letter's "Re:" block; letters whose block names no form, or not yet read, are excluded.`);
+  }
+  if (normalized.sic) {
+    lines.push(`Issuer industry SIC ${normalized.sic}${sicTitle ? ` (${sicTitle})` : ''} — from the issuer's EDGAR record; issuers without a SIC code are excluded.`);
+  }
+  return lines;
 }
 
 export interface LetterPageRequest {
@@ -242,9 +304,16 @@ export function letterBrowseParams(scope: CompanyScope | null, page: LetterPageR
 }
 
 export function letterSearchParams(criteria: LetterSearchCriteria, page: LetterPageRequest): URLSearchParams {
-  const params = new URLSearchParams({ q: criteria.query.trim() });
+  const params = new URLSearchParams();
+  const query = criteria.query.trim();
+  if (query) params.set('q', query);
   if (criteria.form) params.set('form', criteria.form);
   const scoped = companyScopeQuery(criteria.scope, 'search');
   if (scoped) for (const [name, value] of Object.entries(scoped.params)) params.set(name, value);
+  const filters = normalizeLetterFilters(criteria.filters);
+  if (filters.filedAfter) params.set('startdt', filters.filedAfter);
+  if (filters.filedBefore) params.set('enddt', filters.filedBefore);
+  if (filters.sic) params.set('sic', filters.sic);
+  if (filters.reviewedForms.length > 0) params.set('forms', filters.reviewedForms.join(','));
   return applyPage(params, page);
 }

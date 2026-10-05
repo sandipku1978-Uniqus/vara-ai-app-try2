@@ -427,13 +427,13 @@ test.describe('comment-letter action contracts', () => {
     expect(lastParams(stats.browseRequests).get('cik')).toBe(String(COMMENT_THREAD.cik));
     expect(lastParams(stats.browseRequests).get('company')).toBeNull();
 
-    // The full-text index has no CIK filter: the search narrows by registrant
-    // name as a labeled stand-in rather than silently ignoring the company.
+    // The full-text search filters a picked company by CIK as well
+    // (migration 027), and the label says so.
     await page.getByRole('button', { name: 'Revenue (ASC 606)' }).click();
     await expect(page.getByText('Showing 2 of 2 matching letters')).toBeVisible({ timeout: 20_000 });
-    await expect(page.getByText(new RegExp(`as a stand-in for CIK ${COMMENT_THREAD.cik}`))).toBeVisible();
-    expect(lastParams(stats.searchRequests).get('company')).toBe(COMMENT_THREAD.company_name);
-    expect(lastParams(stats.searchRequests).get('cik')).toBeNull();
+    await expect(page.getByText(`Matches filtered by CIK ${COMMENT_THREAD.cik} (${COMMENT_THREAD.company_name}).`)).toBeVisible();
+    expect(lastParams(stats.searchRequests).get('cik')).toBe(String(COMMENT_THREAD.cik));
+    expect(lastParams(stats.searchRequests).get('company')).toBeNull();
 
     // Removing the chip reruns the active search unscoped and clears the box.
     const searchRequests = stats.searchRequests.length;
@@ -441,7 +441,8 @@ test.describe('comment-letter action contracts', () => {
     await expect(page.getByText(`${COMMENT_THREAD.company_name} · CIK ${COMMENT_THREAD.cik}`)).toHaveCount(0);
     await expect.poll(() => stats.searchRequests.length).toBeGreaterThan(searchRequests);
     expect(lastParams(stats.searchRequests).get('company')).toBeNull();
-    await expect(page.getByText(/as a stand-in for CIK/)).toHaveCount(0);
+    expect(lastParams(stats.searchRequests).get('cik')).toBeNull();
+    await expect(page.getByText(/Matches filtered by CIK/)).toHaveCount(0);
     await expect(company).toHaveValue('');
     expect(lastParams(stats.browseRequests).get('cik')).toBeNull();
     expect(lastParams(stats.browseRequests).get('company')).toBeNull();

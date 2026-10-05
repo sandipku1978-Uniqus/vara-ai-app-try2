@@ -30,6 +30,9 @@ const REQUIRED_RELATIONS: Record<string, { kind: string; rls?: boolean }> = {
   urc_comment_letters: { kind: 'r', rls: true },
   urc_filing_text: { kind: 'r', rls: true },
   urc_thread_summaries: { kind: 'r', rls: true },
+  // 027: reviewed-form facets and the issue-level split of Staff letters.
+  urc_letter_facets: { kind: 'r', rls: true },
+  urc_letter_issues: { kind: 'r', rls: true },
   urc_schema_version: { kind: 'r', rls: true },
   urc_current_auditors: { kind: 'v' },
   urc_current_auditors_mat: { kind: 'm' },
@@ -64,6 +67,8 @@ const REQUIRED_COLUMNS: Record<string, string[]> = {
     'cik', 'accession', 'document', 'text', 'fetched_at', 'source_validation_version',
   ],
   urc_thread_summaries: ['thread_id', 'input_coverage'],
+  urc_letter_facets: ['accession', 'cik', 'reviewed_forms', 'derivation_version'],
+  urc_letter_issues: ['thread_id', 'staff_accession', 'issues', 'parser_version', 'episode_fingerprint'],
   urc_schema_version: [
     'version', 'migration_count', 'chain_checksum', 'checksum_algorithm',
   ],
@@ -149,8 +154,10 @@ const FUNCTION_REQUIREMENTS: FunctionRequirement[] = [
     ],
   },
   {
+    // 027 added p_cik, p_sic and p_reviewed_forms and dropped the
+    // seven-argument overload (PostgREST cannot choose between the two).
     name: 'urc_search_letters',
-    arguments: 'text,text,date,date,integer,integer,text',
+    arguments: 'text,text,date,date,integer,integer,text,bigint,text,text[]',
     anonExecute: true,
     serviceExecute: true,
     searchPath: 'search_path=pg_catalog, public',

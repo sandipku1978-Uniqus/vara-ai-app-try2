@@ -1,0 +1,223 @@
+CORRESP
+
+ 
+
+ 
+
+ 
+December 7, 2021 
+
+Cara Wirth 
+United States Securities and Exchange Commission
+ 
+Division of Corporation Finance 
+Office of Trade &
+Services 
+100 F Street, N.E. 
+Washington, D.C. 20549-0405
+ 
+ 
+
+ 
+Re:
+ 
+Amazon.com, Inc. 
+
+Form 10-K for Fiscal Year Ended December 31, 2020 
+
+Filed February 3, 2021 
+
+File No. 000-22513 
+
+Dear Ms. Wirth: 
+On behalf of Amazon.com, Inc., this
+responds to your supplemental letter of November 8, 2021 regarding our Annual Report on Form 10-K for the year ended December 31, 2020 (the “2020
+10-K”), following our initial response letter of October 21, 2021 (the “Initial Response Letter”) to your letter of September 23, 2021 (the “Initial Comment Letter”). Each of
+your supplemental comments is set forth below, followed by our response. 
+Form 10-K for the Year Ended
+December 31, 2020 
+General 
+ 
+
+1.
+ 
+Your response to comment 2 indicates that your capital expenditures and compliance costs related to your
+journey to becoming net-zero carbon by 2040 have not been material. Please explain in further detail how you determined that such capital expenditures were not material and quantify the amounts incurred. Your
+response should address your sustainability initiatives in addition to your investments in renewable energy. With respect to compliance costs, please explain how you determined that the Federal Energy Regulatory Commission licensing fees are not
+material and quantify any costs necessary for you to make certain that your operations and assets comply with environmental laws or regulations. 
+
+Response 
+Discrete capital expenditures
+in support of The Climate Pledge in 2020 were approximately $250 million. These consist of electric and lower-emission vehicles and supporting infrastructure (to expand our delivery fleet or replace vehicles as they were ready to be retired)
+and rooftop solar panels. The incremental cost of these assets in 2020 over what we would have spent for less 
+
+ 
+December 7, 2021 
+
+ Page
+ 2
+ 
+ 
+ 
+
+climate-friendly alternatives is even less material. As we continue to expand and ramp up our initiatives in support of our Climate Pledge commitment, including our expected purchases of electric
+vehicles, we expect these amounts to increase for 2021 and beyond. Nevertheless, we do not currently view these as material trends because the incremental cost is not expected to be significantly more than what would have been spent for traditional
+alternatives. For Climate Pledge initiatives that are inseparable within the costs of capitalized projects incorporating sustainable design (such as incorporating water and energy efficiencies in data centers), we concluded that the incremental
+costs of these elements were not material by comparing the overall costs to more carbon-intensive alternatives. 
+With respect to compliance
+costs related to our journey to be net-zero carbon across our operations by 2040, compliance costs related to Federal Energy Regulatory Commission rules and regulations are largely driven by outside counsel
+spend and were significantly less than $1 million in 2020. Additional compliance costs attributable to our renewable energy related initiatives and carbon data reporting consist primarily of personnel costs, which were less than
+$10 million for 2020. In this regard, we respectfully note that not all costs to comply with environmental laws or regulations are attributable to our climate-related initiatives. 
+
+ 
+
+2.
+ 
+Your response to comment 3 indicates that while you do address demand for goods and services that result in
+lower emissions through many aspects of your operations, you have not identified trends in product demand attributable to climate-related regulation or business trends, or competitive pressure arising from lower emission product offerings, that are
+material to your operations or financial results. Please provide additional detail on how you determined that such regulation or business trends were not material. 
+
+Response 
+We respectfully refer you to
+our response to comment 1 in our letter addressed to the Division of Corporation Finance dated December 21, 2017 (the “2017 Response Letter”) where we explain that due to the nature of our retail operations, in which we and
+independent third-party sellers offer hundreds of millions of unique products across dozens of diverse product categories, decisions to stock and sell a particular product or category of products does not preclude us from giving “shelf
+space” to other products and categories of products. As a result, as consumer demand shifts, we are able to adjust our offerings rapidly to maximize our unit sales without making the management decision to devote less selling space to other
+products. In short, we seek to increase unit sales across our stores, through increased product selection, across numerous product categories. For example, in September 2020, we launched a new program to badge certain products Climate Pledge
+Friendly to help make it easy for customers to discover and shop for more sustainable products.1 As of October 2021, we offered over 200,000 products badged as Climate Pledge Friendly. However,
+these and other lower emission products available through our stores are just some of the hundreds of millions of products offered, and other factors such as convenience, availability, and price also drive customer choice. 
+
+In light of the nature of our operations, when we assess whether there are trends in product demand that are material to our operations or
+financial results, we look at period-over-period changes in sales and operating income, on both a consolidated and segment basis, as well as 
+
+ 
+
+ 
+1 
+ 
+ See
+https://www.aboutamazon.com/news/sustainability/amazon-launches-climate-pledge-friendly-program 
+
+ 
+December 7, 2021 
+
+ Page
+ 3
+ 
+ 
+ 
+
+changes in our various categories of operating expenses (including cost of sales). We then analyze the sources of such changes, including product volume and channel mix, and assess whether there
+are any factors or trends that are material to an understanding of our operations or financial results, and whether we are able to identify the basis for any such factors or trends, and we then provide disclosure that reflects this analysis. For
+example, for the quarter ended March 31, 2020, after identifying increased sales on lower margin household staples and other essential products, along with decreased sales on higher margin discretionary consumer products, we identified and
+disclosed a material trend reflecting a shift in consumer demand arising from responses to the COVID-19 pandemic. Similarly, in past years, when applicable, we have identified sales in faster growing product
+categories such as electronics as a material factor or trend affecting our operations or financial results. In the course of conducting these types of analyses, we have not identified any changes in consumer demand that we would attribute to
+climate-related regulation or business trends or competitive pressure arising from lower emission product offerings that are material to our operations or financial results. 
+ 
+
+3.
+ 
+With respect to reputational concerns related to operations or products that produce greenhouse gas emissions,
+please explain how you determined that you have not seen material effects on, or material trends affecting, your operations or financial results, as stated in your response to prior comment 3. Your response should more clearly explain how you
+considered providing disclosure regarding climate change as a factor that could affect your reputation or brand image. 
+Response
+ 
+As discussed in our response to comment 2 of this letter, when assessing whether there are trends that are material to our operations
+or financial results, we look at period-over-period changes in sales, operating income, and categories of operating expenses, analyze the sources of such changes, and assess whether there are discernable factors or trends to be disclosed. In the
+course of conducting these analyses, we have not identified reputational concerns related to operations or products that produce greenhouse gas emissions that have had material effects on, or that underlie material trends affecting, our operations
+or financial results. We advertise extensively and undertake other efforts to promote awareness of the actions we are taking to be a leader in reducing greenhouse gas emissions and promoting sustainability in our operations, and we respectfully
+believe these initiatives help to account for the absence of discernable material effects on, or material trends affecting, our operations or financial results that are attributable to such reputational concerns. 
+
+We address our consideration of reputational risk associated with our climate change initiatives in our response to comment 4 of this letter.
+ 
+ 
+
+4.
+ 
+Your response to comment 4 points to certain risk factors that you disclosed in your 2020 Form 10-K. However, it does not appear that you have provided disclosure regarding the effects of transition risks related to climate change. Please revise to provide disclosure that specifically
+
+ 
+December 7, 2021 
+
+ Page
+ 4
+ 
+ 
+
+ 
+
+addresses transition risks, such as those noted in your response, and explains how such transition risks may impact your business, financial condition, and results of operations.
+ 
+Response 
+The Task
+Force on Climate-Related Financial Disclosures framework identifies four categories of climate change transition risks: “Policy and Legal,” “Technology,” “Market,” and “Reputation.”2 As discussed in our response to comment 4 in the Initial Response Letter, the Risk Factors section of our 2020 10-K specifically discusses each of these risk
+categories as potentially impacting our business, financial condition, and results of operations. For example, for “Policy and Legal” transition risks, we call out risk from evolving governmental policies, laws, and regulations, including
+regulation of electronic waste, energy consumption, and environmental regulation (at page 13 of the 2020 10-K), and for “Market” transition risks, we call out risks from changing or softening demand,
+customer retention, attracting new customers, and satisfying customers’ demand, and diminished demand for, or availability of, our products and services (at page 12 of the 2020 10-K). In this regard, we
+respectfully believe that climate-change transition considerations are not the only source of these types of risks and, given the nature of our operations and the actions we are proactively taking to reduce greenhouse gas emissions and promote
+sustainability in our operations, are not more significant than other factors that give rise to these types of risks. With respect to future filings, we will continue to assess whether specific regulatory, technology, market, or reputational risks
+attributable to climate-change related developments present unique risks that are material to our business, financial condition, or results of operations. For example, in our 2021 Form 10-K, we intend to
+specifically state that a failure to timely achieve one or more goals that we announce as part of The Climate Pledge could negatively impact our reputation or demand for our products and services. 
+
+ 
+
+Very truly yours,
+
+/s/ Shelley L. Reynolds
+
+Shelley L. Reynolds
+
+Vice President, Worldwide Controller
+
+Amazon.com, Inc.
+ 
+ 
+
+cc:
+ 
+Lilyanna Peyser 
+
+Division of Corporation Finance 
+
+Audit Committee of the Amazon.com, Inc. Board of Directors 
+
+Andrew R. Jassy 
+President and
+Chief Executive Officer 
+Amazon.com, Inc. 
+
+ 
+
+ 
+2 
+ 
+ See, “Task Force on Climate-related Financial Disclosures:
+Overview” (March 2021), at p. 12 https://assets.bbhub.io/company/sites/60/2020/10/TCFD_Booklet_FNL_Digital_March-2020.pdf 
+
+ 
+December 7, 2021 
+
+ Page
+ 5
+ 
+ 
+ 
+
+Brian T. Olsavsky 
+Senior Vice President and Chief Financial Officer 
+
+Amazon.com, Inc. 
+David A.
+Zapolsky 
+Senior Vice President, General Counsel, and Secretary 
+
+Amazon.com, Inc. 
+Jeff Lang 
+
+Partner 
+Ernst & Young
+LLP 
+Ronald O. Mueller 
+
+Partner 
+Gibson, Dunn &
+Crutcher LLP

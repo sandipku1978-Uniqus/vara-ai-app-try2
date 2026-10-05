@@ -1,0 +1,521 @@
+CORRESP
+
+ 
+
+ 
+
+ 
+
+ 
+Ran D. Ben-Tzur 
+
+rbentzur@fenwick.com | 650.335.7613 
+
+February 13, 2025 
+CERTAIN PORTIONS OF
+THIS LETTER AS FILED VIA EDGAR HAVE BEEN OMITTED AND SUBMITTED SEPARATELY TO THE SECURITIES AND EXCHANGE COMMISSION. CONFIDENTIAL TREATMENT HAS BEEN REQUESTED FOR THE OMITTED PORTIONS, WHICH HAVE BEEN REPLACED WITH A STATEMENT THAT SUCH INFORMATION
+IS BEING PROVIDED SUPPLEMENTALLY TO THE STAFF IN THE LETTER FILED VIA EDGAR. 
+VIA EDGAR AND ELECTRONIC TRANSMISSION 
+
+U.S. Securities and Exchange Commission 
+Division of Corporation
+Finance 
+Office of Crypto Assets 
+Office of Finance 
+
+100 F Street, NE 
+Washington, DC 20549 
+
+ 
+
+Attention:
+ 
+Ms. Michelle Miller
+
+ 
+Mr. Robert Telewicz
+
+ 
+Ms. Lulu Cheng
+
+ 
+Mr. John Dana Brown
+
+Re:
+ 
+Coinbase Global, Inc.
+
+ 
+Form 10-K for Fiscal Year Ended December 31, 2022
+
+ 
+Form 10-K for Fiscal Year Ended December 31, 2023
+
+ 
+Form 10-Q for Fiscal Quarter Ended September 30, 2024
+
+ 
+Response dated November 15, 2024
+
+ 
+File No. 001-40289
+ 
+Ladies and Gentlemen: 
+
+On behalf of Coinbase Global, Inc. (the “Company”), in this letter, we respond to the comments of the staff (the
+“Staff”) of the U.S. Securities and Exchange Commission (the “Commission”) contained in the Staff’s letter dated January 23, 2025 (the “Letter”). The numbered
+paragraphs below correspond to the numbered comments in the Letter, and the Staff’s comments are presented in bold italics. The Company has considered each of these disclosures carefully in light of the Staff’s comments and addressed them
+as set forth in the responses below. 
+Confidential Treatment Request 
+
+Pursuant to 17 C.F.R. § 200.83, we are requesting confidential treatment for portions of the response below reflecting information that we
+have provided supplementally. We request that these portions, as indicated by a statement that such information is being provided supplementally to the Staff, be maintained in confidence, not be made part of any public record and not be disclosed to
+any person, as they contain confidential information, disclosure of which would cause the Company competitive harm. In the event that the Staff receives a request for access to the confidential portions herein, whether pursuant to the Freedom of
+Information Act or otherwise, we respectfully request that we be notified immediately so that we may further substantiate this request for confidential treatment. Please address any notification of a request for access to such documents to the
+undersigned. 
+******* 
+ 
+ 
+[CONFIDENTIAL
+TREATMENT REQUESTED BY COINBASE GLOBAL, INC.] 
+
+ 
+
+ 
+United States Securities and Exchange Commission 
+
+Division of Corporation Finance 
+February 13, 2025 
+
+ Page
+ 2
+ 
+ 
+ 
+Form 10-Q for the period ending September 30, 2024
+ 
+Item 1. Financial Statements 
+
+5. Revenue, page 16 
+ 
+
+1.
+ 
+We have considered your response to our prior comment 6. In order to help us evaluate your response,
+please address the following: 
+ 
+
+ 
+•
+ 
+ 
+Clarify for us what you mean by your disclosure that stablecoin revenue is generated, in part, from the
+distribution of USDC and reconcile that statement with your conclusion that Circle does not meet the definition of a customer as it does not obtain goods or services that are an output of your ordinary activities. Consider revising your disclosure
+in future filings where appropriate. 
+ 
+
+ 
+•
+ 
+ 
+Expand your disclosure in future filings to provide a more detailed discussion of the formula used to
+determine your share of stablecoin revenue. In that regard, we note that income is generated based on USDC held on each respective party’s platform as well as from USDC in circulation outside of either party’s platform. 
+ 
+ 
+
+ 
+•
+ 
+ 
+Clarify for us how you determined recognizing stablecoin revenue at month end, prior to true ups being
+resolved, is consistent with the guidance in ASC Topic 450-30-25-1. 
+
+ 
+
+ 
+•
+ 
+ 
+Expand your disclosure in future filings to include a more detailed description of when and how stablecoin
+revenue is recognized. 
+ 
+
+ 
+•
+ 
+ 
+Revise your revenue footnote disclosure in future filings to disclose revenue from customers separately
+from other sources of revenue. Reference is made to ASC Topic 606-10-50-4. 
+
+In response to the first bullet point in the Staff’s comment: 
+
+The Company advises the Staff that it disclosed that stablecoin revenue is generated, in part, from the sale of USDC to its customers and
+growth of the USDC ecosystem because the amount of revenue that the Company earns from the Circle Agreement (as defined below) is determined, in part, by the amount of USDC held on the Company’s platform and the size of the USDC ecosystem as a
+whole. In response to the Staff’s comment, and as set forth below, the Company has revised its disclosures in its Annual Report on Form 10-K for the year ended December 31, 2024 as filed with
+the Commission on the date hereof (the “2024 Form 10–K”), to remove the reference to revenue being generated from the distribution of USDC. 
+
+The Company further advises the Staff that for the reasons described in the Company’s prior responses to the Staff, the Company
+considered whether its August 2023 agreement with Circle Internet Financial, LLC (“Circle”), as amended, (the “Circle Agreement”) is within the scope of Accounting Standards Codification
+(“ASC”) 606 – Revenue from Contracts with Customers (“ASC 606”), and concluded that Circle is not a customer, as no goods or services that are an output of the entity’s ordinary activities
+are transferred to Circle in exchange for consideration. 
+As described in the Company’s prior response to the Staff, the Company
+considered whether it is providing an agency service to Circle by connecting Circle with customers on the Company’s platform and acting as a reseller of USDC. However, the Company concluded that it is a principal in its relationship with its
+customers, and that the relationship with Circle is more akin to a vendor relationship as the Company obtains control of the USDC received from Circle and can direct the use of such USDC (e.g., sales to customers on the Company’s platform,
+sales to customers off-platform, payments to vendors, use in Prime Financing, etc.) such that the Company can obtain substantially all of the remaining benefits of the USDC. As the Company obtains control of
+the USDC before its subsequent sale or use, such subsequent sale or use does not transfer a benefit to Circle, and the Company realizes all the benefits from such subsequent sale or use. 
+ 
+ 
+[CONFIDENTIAL
+TREATMENT REQUESTED BY COINBASE GLOBAL, INC.] 
+
+ 
+
+ 
+United States Securities and Exchange Commission 
+
+Division of Corporation Finance 
+February 13, 2025 
+
+ Page
+ 3
+ 
+ 
+ 
+The Company’s sales and use of USDC (e.g., sales to customers on the Company’s
+platform, sales to customers off-platform, payments to vendors, use in Prime Financing, etc.) are distinct, separate contractual arrangements from the Circle Agreement. The Circle Agreement does not include
+any terms through which the Company has a performance obligation to provide Circle any good or service within the scope of ASC 606 and, therefore, Circle is not a customer of the Company.
+
+The Company advises the Staff that it has updated its disclosure of its accounting policy for stablecoin revenue in the 2024 Form 10-K to include disclosure in substantially the form set forth below in order to: 
+ 
+
+ 
+•
+ 
+ 
+Clarify the disclosure by removing the reference to revenue being generated from the distribution of USDC;
+ 
+ 
+
+ 
+•
+ 
+ 
+Disclose that Circle is not a customer and that the Circle Agreement is not within the scope of ASC 606;
+ 
+ 
+
+ 
+•
+ 
+ 
+Provide further detail on the formula used to determine stablecoin revenue; and 
+
+ 
+
+ 
+•
+ 
+ 
+Provide further detail on the manner and timing of the recognition of stablecoin revenue. 
+
+Stablecoin revenue 
+
+The Company earns revenue through an arrangement, as updated in August 2023 and further updated in November 2024, with Circle
+Internet Financial, LLC (“Circle”). The Company’s revenue from this arrangement is determined based on the daily income generated from the reserves backing USDC, which is dependent on the total USDC market
+capitalization, defined as the total amount of USDC in circulation, less the management fees charged by non-affiliated third parties managing such reserves and certain other expenses (the “Payment
+Base”). From the Payment Base, (i) Circle retains a portion in consideration of its role as issuer of USDC, (ii) the Company and Circle earn an amount based on the share of USDC held on their respective platforms,
+(iii) other approved participants in the USDC ecosystem earn an amount based on terms agreed between the approved participant, Circle, and the Company, and (iv) the Company receives 50% of the remaining Payment Base. The arrangement is not
+within the scope of Accounting Standards Codification (“ASC”) 606, Revenue from Contracts with Customers (“ASC 606”) as Circle is not a customer of the Company. Revenue is accrued on a monthly basis as
+it becomes realizable. 
+In response to the second bullet point in the Staff’s comment: 
+
+The Company advises the Staff that it has updated its disclosure in response to the Staff’s comment as reflected in the Company’s
+response to the first bullet point in the Staff’s comment above. 
+In response to the third bullet point in the Staff’s comment:
+ 
+The Company further advises that, as described in the Company’s prior response to the Staff, the Circle Agreement includes provisions
+whereby each party can dispute the calculation and pursue a true-up reimbursement for a given month. The amount to be received in any current or future period is not reduced or adjusted for any such disputed
+amounts, and such true-up reimbursements are subject to separate dispute provisions. Given the nature of the calculations and the inputs thereto, the Company does not believe there is a more than remote chance
+of such adjustments and that were there to be any adjustments, they would be insignificant in nature. Further, to date, the Company has not had any disputes with Circle that have resulted in a true-up
+adjustment. Accordingly, the amount recognized as revenue is realizable on a monthly basis as that is when the amount due to the Company is readily convertible to a known amount of cash, and, given the lack of history of disputes, the Company does
+not have an expectation of true-up reimbursements that would result in a prospective adjustment. 
+
+In response to the fourth bullet point in the Staff’s comment: 
+
+The Company advises the Staff that it has updated its disclosure in response to the Staff’s comment as reflected above in the
+Company’s response to the first bullet point in the Staff’s comment.
+ 
+ 
+[CONFIDENTIAL
+TREATMENT REQUESTED BY COINBASE GLOBAL, INC.] 
+
+ 
+
+ 
+United States Securities and Exchange Commission 
+
+Division of Corporation Finance 
+February 13, 2025 
+
+ Page
+ 4
+ 
+ 
+ 
+In response to the fifth bullet point in the Staff’s comment: 
+
+The Company acknowledges the Staff’s comment and advises the Staff that its prior presentation disclosed revenue accounted for as
+contracts from customers separately from other sources of revenue but did not label the revenue streams clearly as such. The Company further advises that it has revised its disclosure of revenue in the 2024 Form
+10-K, to add footnotes to the rows where applicable specifying that they comprise revenue from sources that are not accounted for as contracts from customers. 
+
+ 
+
+2.
+ 
+We are continuing to evaluate your response to our prior comment 11 and may have additional
+comments. 
+The Company acknowledges that the Staff continues to evaluate the Company’s response to
+prior comment 11. 
+6. Collateralized Arrangements and Financing, page 16 
+
+ 
+
+3.
+ 
+We acknowledge your response to our prior comment 8 regarding the Company’s accounting policy for
+customer collateral pledged. We note the following from your prior responses and disclosures in your filings: 
+ 
+
+ 
+•
+ 
+ 
+In your response to our prior comment 18 in your May 1, 2024 letter you
+state that “when non-cash collateral, i.e., crypto assets or USDC, is received, the Company applies the non-cash collateral provisions under ASC 860-30-25-5 to determine whether non-cash collateral is recognized in its consolidated balance
+sheets… [in] accordance with this guidance, non-cash collateral is only recorded if the Company has the rights to sell or rehypothecate the collateral and a sale of the
+collateral occurs, or if the borrower defaults under the terms of the secured contract and is no longer entitled to redeem the pledged asset.” 
+ 
+
+ 
+•
+ 
+ 
+Disclosure in the Company’s quarterly filings describes that for
+non-cash collateral received your accounting determination is based on the Company’s ability to obtain control or the Company’s right to sell, pledge, or rehypothecate the customer
+collateral. 
+ 
+
+ 
+•
+ 
+ 
+In your November 15, 2024, response to comment 8 you indicated that non-cash collateral is recognized by the Company in circumstances where USDC or crypto assets are received as collateral into a Coinbase controlled collateral wallet or user wallet but where the Company has
+contractual rights to sell, pledge, or rehypothecate the collateral. 
+Please reconcile these statements,
+including clarifying under which circumstance you would recognize USDC or crypto assets received as collateral in a wallet for which the Company has the contractual right to sell, pledge or rehypothecate the collateral and under which circumstances
+the Company would only recognize collateral once a sale of the collateral occurs or if the borrower defaults under the terms of the secured contract and is no longer entitled to redeem. To the extent the you believe that the guidance in ASC 860-30-25-5 is applicable to circumstances where intangible crypto assets are received as collateral pledged, please tell us why you
+concluded the guidance in ASC 350 would not be the appropriate literature to apply to determine whether the company has control of the intangible asset received instead of applying the guidance in ASC 860-30-25-5 which is applicable to the receiver of a financial asset for which the transferor of that financial asset has not transferred control as defined in ASC 860-10-40-5. 
+ 
+ 
+[CONFIDENTIAL
+TREATMENT REQUESTED BY COINBASE GLOBAL, INC.] 
+
+ 
+
+ 
+United States Securities and Exchange Commission 
+
+Division of Corporation Finance 
+February 13, 2025 
+
+ Page
+ 5
+ 
+ 
+ 
+The Company acknowledges the Staff’s comment and advises the Staff that it has included
+a table in the following form in its Significant Accounting Policy footnote in the 2024 Form 10-K in order to further clarify its accounting policy for collateral in lending arrangements: 
+
+ 
+
+ 
+Collateral
+
+Received
+ 
+ 
+Recognition Trigger
+
+Fiat
+ 
+Fiat collateral is recognized if the Company obtains control of the collateral.
+
+USDC
+ 
+ 
+USDC collateral on fiat and crypto asset loan receivables are recognized only in the event of default. If USDC collateral is sold, the
+associated proceeds are recognized. 
+ 
+USDC collateral on USDC loans not meeting the
+recognition criteria is recognized if the Company has the right to sell, pledge, or rehypothecate the collateral.(1)
+
+Crypto assets
+ 
+Crypto asset collateral is recognized if the Company obtains control of the collateral.(1)
+ 
+ 
+
+(1)
+ 
+The Company does not reuse or rehypothecate customer USDC or crypto assets nor grant security interests in such
+assets, in each case unless required by law or expressly agreed to by the customer. 
+The Company advises the Staff that
+the circumstances under which the Company recognizes USDC received as collateral in a wallet for which the Company has the contractual right to sell, pledge, or rehypothecate the collateral are when these assets are collateralizing loans that are
+denominated in USDC (as opposed to fiat or crypto assets), consistent with treatment of a secured borrowing arrangement in accordance with ASC
+860-30-25-7. For example, if the Company received USDC collateralizing a USDC loan receivable (where no USDC was derecognized and
+no loan receivable was recognized as the lent USDC does not meet the criteria in ASC 860-10-45-5 for derecognition) and the
+preceding criteria were met, the Company would recognize the USDC as collateral and a corresponding obligation to return collateral.
+
+Further, the Company advises the Staff that the circumstances under which the Company does not recognize USDC received as collateral in a
+wallet for which the Company has contractual right to sell, pledge, or rehypothecate the collateral are when these assets are collateralizing loans that are denominated in fiat or crypto assets. In these circumstances, on the loan side, the assets
+are always derecognized and a corresponding loan receivable is recognized, but the Company does not recognize the collateral as collateral unless the borrower defaults. If the collateral is sold, the Company would recognize the proceeds and a
+corresponding obligation to return collateral, though the Company has not sold collateral to date. This accounting treatment is consistent with transfers of financial assets accounting in accordance with ASC 860-30-25-5. For example, if the Company received USDC collateralizing a fiat loan receivable (fiat loans receivable are always recognized), it would not recognize the
+USDC unless the borrower defaulted. In this same example, if the Company sold the USDC collateral and received fiat, it would record the fiat and a corresponding obligation to return collateral. No entry would be recorded if the Company were to
+pledge or rehypothecate the USDC collateral. 
+The Company further advises the Staff that there are no circumstances under which the Company
+only recognizes collateral once a sale of the collateral occurs. As noted above, if the assets are collateralizing fiat or crypto asset loans receivable, the borrower would need to default before the Company recognizes the collateral, or if these
+assets are sold, then the proceeds (not the actual collateral itself) are recorded along with an accompanying obligation to return collateral. 
+
+Regarding the guidance applicable to determining whether the Company has control of crypto assets received as collateral, the Company has
+determined that the guidance in ASC 350, Intangibles-Goodwill and Other (“ASC 350”) is the most appropriate guidance to apply in this circumstance. 
+ 
+ 
+[CONFIDENTIAL
+TREATMENT REQUESTED BY COINBASE GLOBAL, INC.] 
+
+ 
+
+ 
+United States Securities and Exchange Commission 
+
+Division of Corporation Finance 
+February 13, 2025 
+
+ Page
+ 6
+ 
+ 
+ 
+
+Accordingly, the Company recognizes crypto assets held as collateral utilizing the recognition criteria under ASC 350. Prior to rescission of Staff Accounting Bulletin
+(“SAB”) No. 121 (“SAB 121”), the Company presented all crypto assets held as collateral on its platform within safeguarding customer crypto assets and safeguarding customer crypto liabilities.
+Upon rescission of SAB 121, the Company has reclassified crypto assets held as collateral that it controls to crypto assets held as collateral on the balance sheet with a corresponding obligation to return collateral. 
+
+ 
+
+4.
+ 
+In your response to our prior comment 9 you describe your consideration of the conditions in ASC 860-10-40-5 when USDC is transferred to counterparties under USDC lending arrangements. For transfers of USDC that the Company has
+concluded should be accounted for as sales under ASC 860, for example in fact patterns in which the Company does not maintain effective control as described in ASC 860-10-40-5(c), please describe the analysis the Company performed to conclude that the transferred USDC would be beyond the reach of your creditors in bankruptcy. For example, please tell us whether
+for USDC that you derecognize as a result of transferring to a wallet in which you hold the USDC for the benefit of a platform user you have received a true sale opinion consistent with the guidance in ASC 860-10-55-18A and if so, please supplementally provide us with that opinion. 
+
+The Company acknowledges the Staff’s reference to ASC 860-10-40-5 in the context of lending arrangements and its request for additional information on when the Company accounts for transfers of USDC as sales under ASC 860. The Company advises the Staff
+that although it evaluates ASC 860, including 860-10-40-5, in determining the appropriate accounting for its USDC loaned, as
+disclosed in its significant accounting policy disclosures, it does not account for USDC loaned to customers as sales. USDC loaned to customers is not derecognized from the Consolidated Balance Sheets as the borrower has an obligation to return the
+same financial assets (USDC) back to the Company in order to release the collateral pledged for the loan. If a lending arrangement is open-ended, there is a call option and written put option on the same or similar asset embedded within the loan.
+This constitutes a form of continuing involvement with the USDC transferred and therefore the Company maintains effective control over the USDC as defined in ASC
+10-40-5(c). Accordingly, USDC loaned remains recorded in USDC in the Consolidated Balance Sheets.
+
+The Company advises the Staff that for transfers of USDC that the Company accounts for as sales under ASC 860 (e.g., sales of USDC to
+customers in exchange for fiat), the Company has concluded that the transferred USDC would be beyond the reach of the creditors of Coinbase, Inc. in bankruptcy because USDC constitutes a financial asset credited to a securities account at a
+securities intermediary within the meaning of Division 8 Uniform Commercial Code as in effect in the State of California (“Division 8”). Accordingly, user claims against Coinbase, Inc. for the return of their digital assets
+would constitute “security entitlements” for purposes of Division 8. Division 8 provides that financial assets held by a securities intermediary, such as Coinbase, Inc., are not property of the securities intermediary and not subject to
+the claims of the securities intermediary’s general creditors, in each case to the extent such assets are necessary to satisfy security entitlements with respect to such assets.
+
+The Company further advises the Staff that its user agreement (“User Agreement”) reflects this treatment as set forth
+below: 
+“2.7.2 Application of the Uniform Commercial Code. All Supported Digital Assets credited to the Digital Asset Wallet will be
+treated as “financial assets” under Division 8 of the California Uniform Commercial Code (“Division 8”). Coinbase is a “securities intermediary” as used in Division 8 with respect to Supported Digital
+Assets, and your Digital Asset Wallet is a “securities account” as used in Division 8. As stated in Division 8, “the characterization of a person, business, or transaction for purposes of this division does not determine the
+characterization of the person, business, or transaction for purposes of any other law, regulation, or rule,” including the United States Commodity Exchange Act and any federal, state, or foreign securities law or regulation. Coinbase will
+comply with your instructions with respect to your Supported Digital Assets, subject to the terms of this User Agreement.”
+ 
+ 
+[CONFIDENTIAL
+TREATMENT REQUESTED BY COINBASE GLOBAL, INC.] 
+
+ 
+
+ 
+United States Securities and Exchange Commission 
+
+Division of Corporation Finance 
+February 13, 2025 
+
+ Page
+ 7
+ 
+ 
+ 
+The User Agreement defines (i) “Digital Asset” as “any digital asset
+(including a virtual currency or virtual commodity) which is a digital representation of value based on (or built on top of) a cryptographic protocol of a computer network” and (ii) “Supported Digital Asset” as “only those
+particular Digital Assets listed as available to trade or custody in your Digital Asset Wallet.” USDC is a Digital Asset within the meaning of the User Agreement.
+
+The Company has obtained legal opinions from outside counsel consistent with the Uniform Commercial Code analysis above. Per the Staff
+request, the Company is supplementally providing the Staff, under separate cover, with a copy of such opinions and is requesting confidential treatment with respect to such opinions. The Company refers the Staff to the contents of such opinions for
+further analysis supporting its position. 
+******* 
+ 
+ 
+[CONFIDENTIAL
+TREATMENT REQUESTED BY COINBASE GLOBAL, INC.] 
+
+ 
+
+ 
+United States Securities and Exchange Commission 
+
+Division of Corporation Finance 
+February 13, 2025 
+
+ Page
+ 8
+ 
+ 
+ 
+Should the Staff have additional questions or comments regarding the foregoing, please do not
+hesitate to contact the undersigned at (310) 434-5403, or, in his absence, Michael Brown at (415) 875-2432. 
+
+ 
+
+Sincerely,
+
+/s/ Ran Ben-Tzur
+
+Ran Ben-Tzur
+
+Partner
+
+FENWICK & WEST LLP
+ 
+ 
+
+CC:
+ 
+Brian Armstrong 
+
+Alesia Haas 
+Paul Grewal, Esq.
+ 
+Molly Abraham, Esq. 
+
+Coinbase Global, Inc. 
+
+Michael Brown, Esq. 
+Jennifer
+Hitchcock, Esq. 
+Fenwick & West LLP 
+ 
+ 
+[CONFIDENTIAL
+TREATMENT REQUESTED BY COINBASE GLOBAL, INC.]

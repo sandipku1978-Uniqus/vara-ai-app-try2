@@ -3,7 +3,11 @@
  *
  *   ?thread=<id>            → full conversation, reading order
  *   ?q=<query>[&form=...]   → ranked full-text search with highlighted excerpts
- *   (neither)               → recent review conversations
+ *       filters: form (UPLOAD|CORRESP), startdt/enddt (filed after/before),
+ *       cik, company (name ILIKE), sic (issuer industry), forms (comma list
+ *       of the filing forms under review, read from each letter's Re: block)
+ *   startdt/enddt/sic/forms without q → filter-only search, newest first
+ *   (neither)               → recent review conversations (company/cik)
  *
  * Unlike the old EFTS passthrough, results are threaded (Staff letter ↔
  * response conversations) and searchable inside the letter text.
@@ -93,6 +97,12 @@ async function handleGet(request: Request) {
   const size = parseBoundedInteger(params.get('size'), 20, 1, 100);
   const rawCik = params.get('cik');
   const cikParam = rawCik === null || rawCik === '' ? null : parseCik(rawCik);
+  // 027 filters: industry (SIC code) and the filing form the letter concerns.
+  const sic = (params.get('sic') || '').trim() || null;
+  const rawForms = (params.get('forms') || '').trim();
+  const reviewedForms = rawForms
+    ? [...new Set(rawForms.split(',').map(value => value.trim()).filter(Boolean))]
+    : [];
   if (
     (threadId && !/^[A-Za-z0-9:._-]{1,160}$/.test(threadId))
     || q.length > 2000
@@ -104,6 +114,9 @@ async function handleGet(request: Request) {
     || from === null
     || size === null
     || (rawCik !== null && rawCik !== '' && cikParam === null)
+    || (sic !== null && !/^\d{3,4}$/.test(sic))
+    || reviewedForms.length > 12
+    || reviewedForms.some(value => !/^[A-Za-z0-9][A-Za-z0-9 ./-]{0,19}$/.test(value))
   ) {
     return complete(
       NextResponse.json({
@@ -156,7 +169,12 @@ async function handleGet(request: Request) {
       );
     }
 
-    if (q) {
+    // A date window, industry or reviewed form without query text is a
+    // filter-only search (migration 027): the newest matching letters, still
+    // capped and counted like a text search. Company/CIK alone stays the
+    // episode browse below.
+    const structuredFilter = Boolean(startdt || enddt || sic || reviewedForms.length > 0);
+    if (q || structuredFilter) {
       // Pagination contract (readiness audit R0): the ranked pool is 1,000
       // deep, so offsets beyond it are UNSUPPORTED — say so with a 422 and
       // coverage metadata rather than a 200 that reads as "no matches".
@@ -173,7 +191,7 @@ async function handleGet(request: Request) {
           { status: 422 }
         ), { outcome: 'rejected', mode: 'search', errorClass: 'invalid-request' });
       }
-      const searchParams = {
+      const searchParams: Record<string, unknown> = {
         p_query: q,
         p_form: form === 'UPLOAD' || form === 'CORRESP' ? form : null,
         p_start: startdt || null,
@@ -182,6 +200,12 @@ async function handleGet(request: Request) {
         p_offset: from,
         p_company: company,
       };
+      // The 027 arguments are sent only when set: PostgREST resolves a
+      // function by the argument names supplied, so an unfiltered search is
+      // the same seven-name call before and after the migration.
+      if (cikParam !== null) searchParams.p_cik = cikParam;
+      if (sic) searchParams.p_sic = sic;
+      if (reviewedForms.length > 0) searchParams.p_reviewed_forms = reviewedForms;
       dbCallCount += 1;
       const { data, error } = await db.rpc('urc_search_letters', searchParams);
       if (error) return databaseFailure('urc_search_letters', error, 'search');
@@ -212,6 +236,8 @@ async function handleGet(request: Request) {
       return complete(NextResponse.json({
         total,
         totalIsFloor,
+        // Without query text the order is newest first, not relevance.
+        ordering: q ? 'relevance' : 'newest',
         matches: rows.map(withoutTotalCount),
       }), {
         outcome: 'success',

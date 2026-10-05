@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import {
   BROWSE_PAGE_SIZE,
+  EMPTY_LETTER_FILTERS,
   EPISODE_NOUN,
+  describeLetterFilters,
+  hasStructuredLetterFilters,
+  normalizeLetterFilters,
   MATCH_NOUN,
   SEARCH_PAGE_SIZE,
   SEARCH_POOL_DEPTH,
@@ -136,9 +140,10 @@ describe('comment-letter company scope', () => {
     expect(companyScopeFromUrl('', '')).toBeNull();
   });
 
-  it('filters the episode list by CIK and only falls back to the registrant name where the search index cannot take one', () => {
+  it('filters both lists by CIK for a picked registrant and by name only for typed text', () => {
     expect(companyScopeQuery(apple, 'browse')).toEqual({ params: { cik: '320193' }, basis: 'cik', pattern: null });
-    expect(companyScopeQuery(apple, 'search')).toEqual({ params: { company: 'Apple' }, basis: 'name-stand-in', pattern: 'Apple' });
+    expect(companyScopeQuery(apple, 'search')).toEqual({ params: { cik: '320193' }, basis: 'cik', pattern: null });
+    expect(companyScopeQuery(apple, 'search', { cikSupported: false })).toEqual({ params: { company: 'Apple' }, basis: 'name-stand-in', pattern: 'Apple' });
     expect(companyScopeQuery({ kind: 'name', text: 'app' }, 'search')).toEqual({ params: { company: 'app' }, basis: 'name', pattern: 'app' });
     expect(companyScopeQuery(null, 'browse')).toBeNull();
   });
@@ -151,8 +156,7 @@ describe('comment-letter company scope', () => {
 
   it('labels every list with the basis actually applied', () => {
     expect(describeCompanyScope(apple, 'browse')).toBe('Episodes filtered by CIK 320193 (Apple Inc.).');
-    expect(describeCompanyScope(apple, 'search')).toContain('as a stand-in for CIK 320193');
-    expect(describeCompanyScope(apple, 'search')).toContain('cannot filter by CIK');
+    expect(describeCompanyScope(apple, 'search')).toBe('Matches filtered by CIK 320193 (Apple Inc.).');
     expect(describeCompanyScope({ kind: 'name', text: 'app' }, 'browse')).toContain('free-text name match');
   });
 
@@ -160,7 +164,27 @@ describe('comment-letter company scope', () => {
     expect(letterBrowseParams(null, { from: 0, size: BROWSE_PAGE_SIZE }).toString()).toBe('size=12');
     expect(letterBrowseParams(apple, { from: 12, size: BROWSE_PAGE_SIZE }).toString()).toBe('cik=320193&size=12&from=12');
     const search = letterSearchParams({ query: ' revenue ', form: 'CORRESP', scope: apple }, { from: 50, size: SEARCH_PAGE_SIZE });
-    expect(Object.fromEntries(search)).toEqual({ q: 'revenue', form: 'CORRESP', company: 'Apple', size: '50', from: '50' });
+    expect(Object.fromEntries(search)).toEqual({ q: 'revenue', form: 'CORRESP', cik: '320193', size: '50', from: '50' });
     expect(letterSearchParams({ query: 'revenue', form: '', scope: null }, { from: 0, size: SEARCH_PAGE_SIZE }).toString()).toBe('q=revenue&size=50');
+  });
+
+  it('sends only complete filters and searches without text when a structured filter is set', () => {
+    const filters = { filedAfter: '2024-01-01', filedBefore: '2024-1-3', reviewedForms: ['10-K', ' 10-K', 'S-1'], sic: '28' };
+    expect(normalizeLetterFilters(filters)).toEqual({ filedAfter: '2024-01-01', filedBefore: '', reviewedForms: ['10-K', 'S-1'], sic: '' });
+    expect(Object.fromEntries(letterSearchParams({ query: '', form: 'UPLOAD', scope: null, filters }, { from: 0, size: SEARCH_PAGE_SIZE })))
+      .toEqual({ form: 'UPLOAD', startdt: '2024-01-01', forms: '10-K,S-1', size: '50' });
+    expect(hasStructuredLetterFilters(filters)).toBe(true);
+    expect(hasStructuredLetterFilters({ ...EMPTY_LETTER_FILTERS, sic: '12' })).toBe(false);
+    expect(hasStructuredLetterFilters(undefined)).toBe(false);
+  });
+
+  it('describes each applied filter with its basis', () => {
+    const lines = describeLetterFilters({ filedAfter: '2024-01-01', filedBefore: '', reviewedForms: ['S-1'], sic: '2834' }, 'PHARMACEUTICAL PREPARATIONS');
+    expect(lines).toEqual([
+      'Filed on or after 2024-01-01.',
+      'Concerning S-1 — the form named in each letter\'s "Re:" block; letters whose block names no form, or not yet read, are excluded.',
+      'Issuer industry SIC 2834 (PHARMACEUTICAL PREPARATIONS) — from the issuer\'s EDGAR record; issuers without a SIC code are excluded.',
+    ]);
+    expect(describeLetterFilters(EMPTY_LETTER_FILTERS)).toEqual([]);
   });
 });

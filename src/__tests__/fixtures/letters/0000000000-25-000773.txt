@@ -1,0 +1,180 @@
+January 23, 2025
+
+Alesia Haas
+Chief Financial Officer
+Coinbase Global, Inc.
+c/o The Corporation Trust Company
+1209 Orange Street
+Wilmington, DE 19801
+
+ Re: Coinbase Global, Inc.
+ Form 10-K for Fiscal Year Ended December 31, 2022
+ Form 10-K for Fiscal Year Ended December 31, 2023
+ Form 10-Q for Fiscal Quarter Ended September 30, 2024
+ Response dated November 15, 2024
+ File No. 001-40289
+Dear Alesia Haas:
+
+ We have reviewed your November 15, 2024 response to our comment letter
+and have
+the following comments.
+
+ Please respond to this letter within ten business days by providing the
+requested
+information or advise us as soon as possible when you will respond. If you do
+not believe a
+comment applies to your facts and circumstances, please tell us why in your
+response.
+
+ After reviewing your response to this letter, we may have additional
+comments.
+Unless we note otherwise, any references to prior comments are to comments in
+our October
+18, 2024 letter.
+
+Form 10-Q for the period ending September 20, 2024
+Item 1. Financial Statements
+5. Revenue, page 16
+
+1. We have considered your response to our prior comment 6. In order to
+help us
+ evaluate your response, please address the following:
+ Clarify for us what you mean by your disclosure that stablecoin
+revenue is
+ generated, in part, from the distribution of USDC and reconcile that
+statement
+ with your conclusion that Circle does not meet the definition of a
+customer as it
+ does not obtain goods or services that are an output of your ordinary
+activities.
+ Consider revising your disclosure in future filings where
+appropriate.
+ January 23, 2025
+Page 2
+
+ Expand your disclosure in future filings to provide a more
+detailed discussion of
+ the formula used to determine your share of stablecoin revenue. In
+that regard, we
+ note that income is generated based on USDC held on each respective
+party s
+ platform as well as from USDC in circulation outside of either party
+ s platform.
+ Clarify for us how you determined recognizing stablecoin revenue
+at month end,
+ prior to true ups being resolved, is consistent with the guidance in
+ASC Topic
+ 450-30-25-1.
+ Expand your disclosure in future filings to include a more
+detailed description of
+ when and how stablecoin revenue is recognized.
+ Revise your revenue footnote disclosure in future filings to
+disclose revenue from
+ customers separately from other sources of revenue. Reference is
+made to ASC
+ Topic 606-10-50-4.
+2. We are continuing to evaluate your response to our prior comment 11 and
+may have
+ additional comments.
+6. Collateralized Arrangements and Financing, page 16
+
+3. We acknowledge your response to our prior comment 8 regarding the
+Company s
+ accounting policy for customer collateral pledged. We note the following
+from your
+ prior responses and disclosures in your filings:
+ In your response to our prior comment 18 in your May 1, 2024 letter
+you state that
+ when non-cash collateral, i.e., crypto assets or USDC, is
+received, the Company
+ applies the non-cash collateral provisions under ASC 860-30-25-5 to
+determine
+ whether non-cash collateral is recognized in its consolidated
+balance sheets [in]
+ accordance with this guidance, non-cash collateral is only recorded
+if the
+ Company has the rights to sell or rehypothecate the collateral and a
+sale of the
+ collateral occurs, or if the borrower defaults under the terms of
+the secured
+ contract and is no longer entitled to redeem the pledged asset.
+ Disclosure in the Company's quarterly filings describes that for
+non-cash
+ collateral received your accounting determination is based on the
+Company s
+ ability to obtain control or the Company s right to sell, pledge,
+or rehypothecate
+ the customer collateral.
+ In your November 15, 2024, response to comment 8 you indicated that
+non-cash
+ collateral is recognized by the Company in circumstances where USDC
+or crypto
+ assets are received as collateral into a Coinbase controlled
+collateral wallet or user
+ wallet but where the Company has contractual rights to sell, pledge,
+or
+ rehypothecate the collateral.
+ Please reconcile these statements, including clarifying under which
+circumstance you
+ would recognize USDC or crypto assets received as collateral in a wallet
+for which
+ the Company has the contractual right to sell, pledge or rehypothecate
+the collateral
+ and under which circumstances the Company would only recognize
+collateral once a
+ sale of the collateral occurs or if the borrower defaults under the
+terms of the secured
+ contract and is no longer entitled to redeem. To the extent the you
+believe that the
+ guidance in ASC 860-30-25-5 is applicable to circumstances where
+intangible crypto
+ assets are received as collateral pledged, please tell us why you
+concluded the
+ January 23, 2025
+Page 3
+
+ guidance in ASC 350 would not be the appropriate literature to apply to
+determine
+ whether the company has control of the intangible asset received instead
+of applying
+ the guidance in ASC 860-30-25-5 which is applicable to the receiver of a
+financial
+ asset for which the transferor of that financial asset has not
+transferred control as
+ defined in ASC 860-10-40-5.
+4. In your response to our prior comment 9 you describe your consideration
+of the
+ conditions in ASC 860-10-40-5 when USDC is transferred to counterparties
+under
+ USDC lending arrangements. For transfers of USDC that the Company has
+ concluded should be accounted for as sales under ASC 860, for example in
+fact
+ patterns in which the Company does not maintain effective control as
+described in
+ ASC 860-10-40-5(c), please describe the analysis the Company performed
+to
+ conclude that the transferred USDC would be beyond the reach of your
+creditors in
+ bankruptcy. For example, please tell us whether for USDC that you
+derecognize as a
+ result of transferring to a wallet in which you hold the USDC for the
+benefit of a
+ platform user you have received a true sale opinion consistent with the
+guidance in
+ ASC 860-10-55-18A and if so, please supplementally provide us with that
+opinion.
+
+ Please contact Michelle Miller at 202-551-3368 or Robert Telewicz at
+202-551-3438
+if you have questions regarding comments on the financial statements and
+related
+matters. Please contact Lulu Cheng at 202-551-3811 or John Dana Brown at
+202-551-3859
+with any other questions.
+
+ Sincerely,
+
+ Division of
+Corporation Finance
+ Office of Crypto
+Assets

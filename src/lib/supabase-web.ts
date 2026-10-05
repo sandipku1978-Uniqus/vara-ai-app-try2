@@ -28,7 +28,7 @@ function jwtRole(token: string): string | null {
 /**
  * Web request handlers must use the migration-defined `urc_web` Postgres role.
  * Service authority is never a production read identity. It remains available
- * separately to trusted jobs and getCacheWriterSupabase()'s three audited
+ * separately to trusted jobs and getCacheWriterSupabase()'s four audited
  * server-only cache-writer routes. Local development may fall back so the existing
  * Supabase stack remains runnable, but production reads fail closed until
  * URC_SUPABASE_WEB_KEY is provisioned.
