@@ -1,15 +1,19 @@
 /**
  * Saved peer sets (benchmark C4's "build/load a saved matrix").
  *
- * A named list of tickers, browser-local like sessions and the memo tray.
+ * A named list of tickers. The browser copy is the synchronous cache; when
+ * signed in, every change is also queued for the account copy (userData.ts,
+ * migration 026), and signed out it stays browser-local as before.
  * Loading one re-populates the Benchmarking company selection, which drives
  * every view — financials, redline, section matrix, YoY changes — so one saved
  * set serves them all.
  */
 
 import { scopedStorageKey } from './storageNamespace';
+import { PEER_SETS_STORAGE_KEY, peerSetToItem } from './userDataCodecs';
+import { syncUserCollection } from './userData';
 
-const STORAGE_KEY = 'urc.benchmark.peersets.v1';
+const STORAGE_KEY = PEER_SETS_STORAGE_KEY;
 const MAX_SETS = 20;
 
 /**
@@ -49,6 +53,7 @@ function writeAll(sets: SavedPeerSet[]): void {
   } catch {
     // Quota or privacy mode — saved sets are a convenience, never load-bearing.
   }
+  syncUserCollection('peer-sets', sets.slice(0, MAX_SETS).map(peerSetToItem));
 }
 
 export function listPeerSets(): SavedPeerSet[] {

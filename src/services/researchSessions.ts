@@ -2,6 +2,8 @@ import type { SearchFilters } from '../domain/searchFilters';
 import type { FilingResearchResult, ResearchSearchMode } from './filingResearch';
 import { scopedStorageKey } from './storageNamespace';
 import { BOOLEAN_ENGINE_VERSION } from '../utils/booleanSearch';
+import { MAX_RESEARCH_TABS, RESEARCH_TABS_STORAGE_KEY, researchTabToItem } from './userDataCodecs';
+import { onUserDataHydrated, syncUserCollection } from './userData';
 
 export interface ResolvedResearchSearch {
   query: string;
@@ -42,8 +44,8 @@ export interface ResearchSearchSession {
   } | null;
 }
 
-const STORAGE_KEY = 'vara.research.sessions.v1';
-const MAX_SESSIONS = 8;
+const STORAGE_KEY = RESEARCH_TABS_STORAGE_KEY;
+const MAX_SESSIONS = MAX_RESEARCH_TABS;
 
 const ROUTE_FILTER_KEYS: Array<[keyof SearchFilters, string]> = [
   ['keyword', 'keyword'],
@@ -263,21 +265,42 @@ export function loadResearchSessions(): ResearchSearchSession[] {
 
 export function saveResearchSessions(sessions: ResearchSearchSession[]): void {
   if (typeof window === 'undefined') return;
+  const storageKey = scopedStorageKey(STORAGE_KEY);
+  if (!storageKey) return;
+  let stamped: ResearchSearchSession[];
   try {
-    const storageKey = scopedStorageKey(STORAGE_KEY);
-    if (!storageKey) return;
-    window.sessionStorage.setItem(
-      storageKey,
-      JSON.stringify(
-        sessions
-          .slice(0, MAX_SESSIONS)
-          .map(sanitizeSession)
-          // Stamp the engine that produced these rows so a later build can tell
-          // whether they are still valid.
-          .map(session => ({ ...session, engineVersion: BOOLEAN_ENGINE_VERSION }))
-      )
-    );
+    stamped = sessions
+      .slice(0, MAX_SESSIONS)
+      .map(sanitizeSession)
+      // Stamp the engine that produced these rows so a later build can tell
+      // whether they are still valid.
+      .map(session => ({ ...session, engineVersion: BOOLEAN_ENGINE_VERSION }));
+    window.sessionStorage.setItem(storageKey, JSON.stringify(stamped));
   } catch {
     // Ignore storage quota or serialization errors.
+    return;
   }
+  // Signed in, the tabs also persist to the account so they survive a
+  // browser restart (no-op signed out: tabs stay session-scoped as before).
+  syncUserCollection('research-tabs', stamped.map((session, position) => researchTabToItem(session, position)));
+}
+
+/**
+ * Tabs restored from the account after this page already mounted. The open
+ * page's tabs win (they may hold a live run); restored ones fill the
+ * remaining slots up to the tab cap.
+ */
+export function mergeRestoredResearchSessions(
+  current: ResearchSearchSession[],
+  restored: ResearchSearchSession[],
+): ResearchSearchSession[] {
+  const known = new Set(current.map(session => session.id));
+  const additions = restored.filter(session => !known.has(session.id));
+  if (additions.length === 0) return current;
+  return [...current, ...additions].slice(0, MAX_SESSIONS);
+}
+
+/** Notifies when the account's tabs have been written into this session's cache. */
+export function subscribeRestoredResearchSessions(listener: () => void): () => void {
+  return onUserDataHydrated('research-tabs', listener);
 }
