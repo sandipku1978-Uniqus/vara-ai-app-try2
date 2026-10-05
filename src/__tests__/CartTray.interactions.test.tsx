@@ -99,7 +99,11 @@ describe('document cart UI', () => {
     renderSurface();
     await user.click(screen.getByRole('checkbox', { name: /Select Apple Inc\./ }));
     const trigger = screen.getByRole('button', { name: 'Open document cart (1 filing selected)' });
+    // aria-controls names the tray only while the tray exists.
+    expect(trigger).not.toHaveAttribute('aria-controls');
     await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-controls', 'urc-document-cart');
+    expect(document.getElementById('urc-document-cart')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Remove Apple Inc. Form 10-K filed 2026-01-30 from the document cart' }));
     expect(getDocumentCart()).toHaveLength(0);
     expect(screen.getByText('No filings selected.')).toBeInTheDocument();
@@ -107,6 +111,7 @@ describe('document cart UI', () => {
     screen.getByRole('button', { name: 'Close document cart' }).focus();
     fireEvent.keyDown(document, { key: 'Escape' });
     expect(screen.queryByRole('complementary', { name: 'Document cart' })).not.toBeInTheDocument();
+    expect(trigger).not.toHaveAttribute('aria-controls');
   });
 
   it('disables Compare when no selected filing carries a ticker', async () => {
