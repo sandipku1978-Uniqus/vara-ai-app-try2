@@ -5,6 +5,7 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 
 import {
   BellRing,
+  Bookmark,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -56,7 +57,7 @@ import {
   type ResearchSearchSession,
 } from '../services/researchSessions';
 import { buildHighlightTerms } from '../services/searchAssist';
-import { mergeCandidateCoverage } from '../services/searchCoverage';
+import { buildResultsHeadline, mergeCandidateCoverage } from '../services/searchCoverage';
 import { exportResultsWorkbook } from '../services/resultExport';
 import { RESEARCH_LIBRARY } from '../config/researchLibrary';
 import { countExactMatches, isEftsExactCountEquivalent } from '../services/exactCount';
@@ -80,6 +81,8 @@ import './SearchPage.css';
 import '../styles/evidence-ledger.css';
 import { addCitation, citationId, removeCitation } from '../services/memoTray';
 import { useMemoTray } from '../hooks/useMemoTray';
+import { saveSearch } from '../services/savedSearches';
+import SavedSearchesMenu from '../components/alerts/SavedSearchesList';
 
 // Amendments included for every core form: EFTS matches form types exactly, so
 // omitting 10-K/A etc. hides restatements — often the most material filings.
@@ -1285,7 +1288,28 @@ export default function SearchPage() {
       latestNewAccessions: [],
       latestResultCount: displayResults.length,
     });
-    setAlertMessage('Saved locally in this browser. Rerun it manually from the Dashboard; it does not send scheduled background notifications.');
+    setAlertMessage('Alert saved. Signed in with saved-research storage, it is checked on the server (daily by default) and new hits appear under the bell; otherwise it stays in this browser and is not checked in the background.');
+  }
+
+  function handleSaveSearch() {
+    if (!hasResearchSearchCriteria(query, filters)) return;
+    const headline = !searched
+      ? 'not run before saving'
+      : `${searchJobHeadline || buildResultsHeadline(displayResults.length, candidateCoverage, RESEARCH_RESULT_LIMIT)} · ${
+        candidateCoverage ? (candidateCoverage.complete ? 'complete coverage' : 'partial coverage') : 'coverage not reported'
+      }`;
+    const result = saveSearch({
+      label: buildAlertName(query, filters),
+      query,
+      mode: searchMode,
+      filters,
+      defaultForms: DEFAULT_FORM_SCOPE,
+      coverageHeadline: headline,
+      resultCount: displayResults.length,
+    });
+    setAlertMessage(result
+      ? (result.duplicate ? 'This search was already saved; its label and save-time headline were refreshed.' : 'Search saved. Re-run it from “Saved” here or from the Dashboard; it is not checked in the background (save an alert for that).')
+      : 'The search could not be saved yet — your session is still loading. Retry in a moment.');
   }
 
   const selectedResultId = selectedResult?.id || '';
@@ -1679,9 +1703,13 @@ export default function SearchPage() {
               />
 
               <div className="research-toolbar-actions">
+                <button className="secondary-btn" onClick={handleSaveSearch} disabled={!hasResearchSearchCriteria(query, filters)}>
+                  <Bookmark size={16} /> Save search
+                </button>
                 <button className="secondary-btn" onClick={handleCreateAlert} disabled={!hasResearchSearchCriteria(query, filters)}>
                   <BellRing size={16} /> Save Alert
                 </button>
+                <SavedSearchesMenu />
               </div>
             </div>
 

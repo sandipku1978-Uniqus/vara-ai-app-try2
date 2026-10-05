@@ -18,6 +18,8 @@ describe('search continuation job security boundaries', () => {
       .map(file => relative(sourceRoot, file))
       .sort();
     expect(callers).toEqual([
+      // 029: the scheduled alert evaluator's store (urc_alert_eval_* RPCs).
+      'app/api/alerts/_server/store.ts',
       'app/api/search-jobs/_server/http.ts',
       'lib/supabase-web.ts',
     ]);

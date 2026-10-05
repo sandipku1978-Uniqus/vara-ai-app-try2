@@ -277,7 +277,7 @@ describe('protected API authorization matrix', () => {
     }
 
     expect(config.matcher).toEqual(['/((?!_next/static(?:/|$)|_next/image(?:/|$)).*)']);
-    expect(PUBLIC_API_PATHS).toEqual(['/api/csp-report', '/api/health', '/api/version', '/api/search-jobs/continue']);
+    expect(PUBLIC_API_PATHS).toEqual(['/api/csp-report', '/api/health', '/api/version', '/api/search-jobs/continue', '/api/alerts/evaluate']);
   });
 
   /**
