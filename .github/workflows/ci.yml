@@ -31,7 +31,18 @@ jobs:
       # after six minutes of green steps. Blocks on high/critical only; a
       # moderate advisory on main used to deadlock every PR, including the
       # Dependabot PR carrying its fix.
-      - run: npm audit --audit-level=high
+      #
+      # The blocking gate covers what ships: production dependencies. A
+      # lint-only chain (eslint-config-next → fast-glob → micromatch →
+      # braces) carries GHSA-vfj7-8cjw-p6xm with no fixed release to move
+      # to (docs/operations/dependency-advisories-2026-10.md), and a gate
+      # nobody can turn green stops being a gate. The full-tree audit still
+      # runs and is visible in the log, but it does not block.
+      - name: Audit production dependencies (blocking)
+        run: npm audit --audit-level=high --omit=dev
+      - name: Audit the full tree including dev dependencies (informational)
+        run: npm audit --audit-level=high
+        continue-on-error: true
       - name: Enforce an acyclic source dependency graph
         run: npm run check:cycles
       - run: npm test
