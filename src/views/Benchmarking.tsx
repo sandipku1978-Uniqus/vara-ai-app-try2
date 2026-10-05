@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import { Download, X, ArrowRightLeft, Loader2, Sparkles, LayoutGrid, Type, DollarSign, TrendingUp, TrendingDown, RefreshCw, SearchCheck } from 'lucide-react';
+import { Download, X, ArrowRightLeft, Loader2, Sparkles, LayoutGrid, Type, DollarSign, TrendingUp, TrendingDown, RefreshCw, SearchCheck, NotebookText } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell, RadarChart, PolarGrid, PolarAngleAxis, Radar, Legend } from 'recharts';
 import { fetchCompanySubmissions, fetchCompanyFacts, extractComparableFinancials, getAvailableYears, formatFinancialValue, CIK_MAP, SecSubmission, FinancialMetric, CompanyFacts, lookupCIK, extractCompanyMetadata, buildSecProxyUrl, extractDocumentTextFromHtml, fetchAnnualDisclosureText, fetchFilingTextOutcome, buildSecDocumentUrl } from '../services/secApi';
 import CiteButton from '../components/memo/CiteButton';
@@ -19,6 +19,8 @@ import type { PeerSourceTag } from '../services/peerProvenance';
 import SectionMatrix from '../components/tables/SectionMatrix';
 import {
   SECTION_MATRIX_FORMS,
+  SECTION_MATRIX_ITEM_ROWS,
+  SECTION_MATRIX_ROW_GROUPS,
   SECTION_MATRIX_ROWS,
   buildSectionMatrixCells,
   buildSectionMatrixCsvRows,
@@ -34,6 +36,7 @@ import {
 import { useApp } from '../context/AppState';
 import TopicPassage from '../components/research/TopicPassage';
 import YoYChangeMatrix from '../components/research/YoYChangeMatrix';
+import FootnoteComparison from '../components/research/FootnoteComparison';
 import { deletePeerSet, listPeerSets, savePeerSet, type SavedPeerSet } from '../services/peerSets';
 import { splitIntoParagraphs } from '../lib/filingText';
 import {
@@ -77,12 +80,14 @@ function colLabel(colKey: string): string { return `${colTicker(colKey)} '${Stri
 function matrixKey(form: string, ticker: string): string { return `${form}|${ticker}`; }
 
 /**
- * Filing sections offered by the Text Redline "Compare" dropdown. The Section
+ * Filing sections offered by the Text Redline "Compare" dropdown: the 10-K's
+ * Items (the redline's extractor is Item-anchored; notes and proxy sections
+ * are compared as topics above, or in the Footnotes view). The Section
  * Matrix's rows live in utils/sectionMatrix beside the slicer that verifies
  * them; Signatures is offered here only because the redline's positional
  * fallback can still locate it.
  */
-const ALL_SECTIONS = [...SECTION_MATRIX_ROWS['10-K'], 'Signatures'];
+const ALL_SECTIONS = [...SECTION_MATRIX_ITEM_ROWS['10-K'], 'Signatures'];
 
 /** Section used when the comparison target is a topic rather than an Item. */
 const DEFAULT_COMPARE_SECTION = 'Item 1A. Risk Factors';
@@ -184,7 +189,10 @@ export default function Benchmarking() {
     label: comparisonLabel,
   } = resolveComparisonTarget(comparisonTarget, DEFAULT_COMPARE_SECTION);
 
-  const [viewMode, setViewMode] = useState<'financials' | 'text-diff' | 'audit-matrix' | 'yoy-changes'>('financials');
+  // 'footnotes' is the note-by-note comparison. The shared compare context
+  // (AppState) knows the four original views, so footnotes report as a
+  // text comparison there.
+  const [viewMode, setViewMode] = useState<'financials' | 'text-diff' | 'audit-matrix' | 'yoy-changes' | 'footnotes'>('financials');
   const [commonSize, setCommonSize] = useState(false);
   const [matrixFormType, setMatrixFormType] = useState<SectionMatrixForm>('10-K');
   // One record per form and company: which filing was read and what it said.
@@ -293,7 +301,7 @@ export default function Benchmarking() {
     setActiveCompareContext({
       tickers: selectedTickers,
       sicCode: peerSicCode,
-      viewMode,
+      viewMode: viewMode === 'footnotes' ? 'text-diff' : viewMode,
       selectedSection,
       updatedAt: new Date().toISOString(),
     });
@@ -1035,11 +1043,14 @@ Keep it crisp and practical.`;
             <button className={`toggle-view-btn ${viewMode === 'yoy-changes' ? 'active' : ''}`} onClick={() => setViewMode('yoy-changes')}>
               <Type size={16} /> YoY Changes
             </button>
+            <button className={`toggle-view-btn ${viewMode === 'footnotes' ? 'active' : ''}`} onClick={() => setViewMode('footnotes')}>
+              <NotebookText size={16} /> Footnotes
+            </button>
           </div>
           {/* Export produces a CSV only for the two data views; Text Redline
               exports through the disclosure-matrix's own DOCX/PDF actions, so
               the CSV button would be a silent no-op there. */}
-          {viewMode !== 'text-diff' && viewMode !== 'yoy-changes' && (
+          {viewMode !== 'text-diff' && viewMode !== 'yoy-changes' && viewMode !== 'footnotes' && (
             <button className="icon-btn" title="Export as CSV" onClick={handleCsvExport}><Download size={18} /> Export</button>
           )}
         </div>
@@ -1838,6 +1849,11 @@ Keep it crisp and practical.`;
         <YoYChangeMatrix tickers={selectedTickers} companiesData={companiesData} />
       )}
 
+      {/* ===== FOOTNOTES VIEW: one note topic, side by side, by fiscal period ===== */}
+      {viewMode === 'footnotes' && (
+        <FootnoteComparison tickers={selectedTickers} companiesData={companiesData} />
+      )}
+
       {/* ===== SECTION MATRIX VIEW ===== */}
       {viewMode === 'audit-matrix' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
@@ -1857,7 +1873,7 @@ Keep it crisp and practical.`;
             </span>
           </div>
           <p role="note" style={{ margin: 0, padding: '10px 14px', borderRadius: '4px', fontSize: '0.8rem', lineHeight: 1.45, color: 'var(--text-secondary)', background: 'color-mix(in srgb, var(--status-warning) 10%, transparent)', border: '1px solid color-mix(in srgb, var(--status-warning) 30%, transparent)' }}>
-            A check means the section heading was found in the text of the filing named in the cell — the company&rsquo;s latest {matrixFormType} on EDGAR — using the same Item slicer as the YoY Changes view and the section-scope filter. A dash means that heading was not found in that text; open the filing before treating it as an omission, since some filers format headings unusually. Cells stay &ldquo;not checked&rdquo; until you verify them, and the CSV export records each cell&rsquo;s state and source accession.
+            A check means the section was found in the text of the filing named in the cell — the company&rsquo;s latest {matrixFormType} on EDGAR — using the same section taxonomy as the YoY Changes view, the Footnotes view and the section-scope filter (Items, notes to the financial statements, and proxy sections). &ldquo;Not disclosed&rdquo; means the text was read and the section&rsquo;s heading is not in it; &ldquo;Could not extract&rdquo; means the filing mentions the section but no heading bounds it (or the notes are filed as an exhibit) — open the filing before drawing a conclusion. Cells stay &ldquo;not checked&rdquo; until you verify them, and the CSV export records each cell&rsquo;s state and source accession.
           </p>
 
           <div className="glass-card" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
@@ -1889,6 +1905,7 @@ Keep it crisp and practical.`;
           <SectionMatrix
             form={matrixFormType}
             sections={matrixRows}
+            groups={SECTION_MATRIX_ROW_GROUPS[matrixFormType]}
             companies={selectedTickers.map(t => ({ ticker: t, name: companiesData[t]?.name || t }))}
             data={matrixCells}
             loading={isLoading}

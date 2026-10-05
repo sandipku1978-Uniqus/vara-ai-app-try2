@@ -85,6 +85,29 @@
   opacity: 0.55;
 }
 
+.sm-mark.unlocated {
+  color: var(--status-warning);
+  opacity: 0.85;
+}
+
+/* Items / Notes / Proxy: a header row per group keeps a long list scannable. */
+.section-matrix .sm-group-row,
+.section-matrix tbody tr.sm-group-row:hover {
+  background: var(--table-header-bg, var(--surface-subtle));
+}
+
+.sm-group-label {
+  text-align: left;
+  padding: 7px 12px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  position: sticky;
+  left: 0;
+}
+
 .sm-mark.not-checked {
   color: var(--text-muted);
   opacity: 0.7;

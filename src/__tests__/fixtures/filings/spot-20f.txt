@@ -1,0 +1,1610 @@
+[Fixture: Spotify Technology S.A. 20-F for year ended 2025-12-31, accession 0001628280-26-006874, ck0001639920-20251231.htm. Extracted with src/lib/filingText; trimmed to heading lines plus the opening of each section.]
+UNITED STATES
+SECURITIES AND EXCHANGE COMMISSION
+___________________________________________________________
+_______________________________ […].
+OR
+☒ ANNUAL REPORT PURSUANT TO SECTION 13 OR 15(d) OF THE SECURITIES EXCHANGE ACT OF 1934
+OR
+☐ TRANSITION REPORT PURSUANT TO SECTION 13 OR 15(d) OF THE SECURITIES EXCHANGE ACT OF 1934
+OR
+☐ SHELL COMPANY REPORT PURSUANT TO SECTION 13 OR 15(d) OF THE SECURITIES EXCHANGE ACT OF […].
+(Exact name of Registrant as specified in its charter)
+___________________________________________________________
+Grand Duchy of Luxembourg
+(Jurisdiction of incorporation)
+33 Boulevard Prince Henri
+Grand Duchy of Luxembourg
+(Address of principal executive offices)
+___________________________________________________________
+Christian Luiga
+Chief Financial Officer
+ir@spotify.com
+(Name, E-mail and Address of Company Contact Person)
+___________________________________________________________
+Securities for which there is a […].
+Large accelerated filer ☒ Accelerated filer
+☐
+Non-accelerated filer
+☐
+Emerging growth company
+☐
+If an emerging growth company that prepares its financial statements in accordance with […].
+U.S. GAAP ¨
+International Financial Reporting Standards as issued
+by the International Accounting Standards Board ☒
+Other ¨
+If “Other” has been checked in response to the previous question indicate by check mark […].
+Table of Contents
+TABLE OF CONTENTS
+Page
+Certain Defined Terms
+1
+Note on Presentation
+1
+PART I
+2
+Forward-looking Statements
+3
+Item 1. Identity of Directors, Senior Management and Advisers
+4
+Item 2. Offer Statistics and Expected Timetable
+4
+Item 3. Key Information
+5
+Item 4. Information on the Company
+34
+Item 4A. Unresolved Staff Comments
+41
+Item 5. Operating and Financial Review and Prospects
+42
+Item 6. Directors, Senior Management and Employees
+58
+Item 7. Major Shareholders and Related Party Transactions
+78
+Item 8. Financial Information
+79
+Item 9. The Offer and Listing
+80
+Item 10. Additional Information
+81
+Item 11. Quantitative and Qualitative Disclosures About Market Risk
+90
+Item 12. Description of Securities Other than Equity Securities
+91
+PART II
+93
+Item 13. Defaults, Dividend Arrearages and Delinquencies
+93
+Item 14. Material Modifications to the Rights of Security Holders and Use of Proceeds
+93
+Item 15. Controls and Procedures
+93
+Item 16A. Audit Committee Financial Expert
+94
+Item 16B. Code of Ethics
+94
+Item 16C. Principal Accountant Fees and Services
+94
+Item 16D. Exemptions from the Listing Standards for Audit Committees
+94
+Item 16E. Purchases of Equity Securities by the Issuer and Affiliated Purchasers
+95
+Item 16F. Change in Registrant’s Certifying Accountant
+95
+Item 16G. Corporate Governance
+95
+Item 16H. Mine Safety Disclosure
+96
+Item 16I. Disclosure Regarding Foreign Jurisdictions that Prevent Inspections
+96
+Item 16J. Insider Trading Policies
+96
+Item 16K. Cybersecurity
+96
+PART III
+98
+Item 17. Financial Statements
+98
+Item 18. Financial Statements
+98
+Item 19. Exhibits
+98
+Signatures
+101
+INDEX TO CONSOLIDATED FINANCIAL STATEMENTS
+i
+Table of Contents
+Certain Defined Terms
+In this report, unless the context otherwise requires, references to “Company,” “we,” […].
+Note on Presentation
+Currency
+All references in this report to (i) “Euro,” “EUR,” or “€” are to the currency of the […].
+Presentation of Financial Information
+In accordance with International Financial Reporting Standards (“IFRS”) as issued by the […].
+Non-IFRS Financial Measures
+In this report, we present Free Cash Flow, which is a financial measure not recognized by […].
+Rounding
+Certain monetary amounts, percentages, and other figures included in this report have been […].
+Table of Contents
+PART I
+Table of Contents
+Forward-looking Statements
+This report contains estimates and forward-looking statements. All statements other than […].
+Table of Contents
+•interruptions, delays, or discontinuations in service arising from our systems or systems […].
+Item 1. Identity of Directors, Senior Management and Advisers
+Not applicable.
+Item 2. Offer Statistics and Expected Timetable
+Not applicable.
+4
+Table of Contents
+Item 3. Key Information
+A. [Reserved]
+B. Capitalization and Indebtedness.
+Not applicable.
+C. Reasons for the Offer and Use of […].
+D. Risk Factors
+An investment in our ordinary shares involves a high degree of risk. You should carefully […].
+Risks Related to Our Business Model, Strategy, and Performance
+If our efforts to attract prospective users, retain existing users, and effectively […].
+Ou […].
+Risks Related to Intellectual Property
+Assertions by third parties of infringement or other violation by us of their intellectual […].
+Risks Related to Our Operations
+Streaming depends on effectively working with operating systems, online platforms, […].
+We […].
+Our business depends on a strong brand, and any failure to maintain, protect, and enhance our brand could harm our business.
+We have developed a strong brand that we believe has contributed significantly to the […].
+Risks Related to Our Metrics
+Our user metrics and other estimates are subject to inherent challenges in measurement, […].
+Risks Related to Our Indebtedness
+Our indebtedness and liabilities could limit the cash flow available for our operations, […].
+Risks Related to Tax
+We are a multinational company that faces complex taxation regimes in various […].
+We are […].
+Risks Related to Owning Our Ordinary Shares
+The trading price of our ordinary shares has been and will likely continue to be volatile.
+Item 4. Information on the Company
+A. History and Development of the Company
+We are a Luxembourg public limited liability company (société anonyme), which means that […].
+B. Business Overview
+We are the world’s most popular audio streaming subscription service with a community of […].
+Our Business Model
+We offer both Premium and Ad-Supported Services to our customers. Our Premium and […].
+We […].
+Premium
+Our Premium Service provides users with unlimited online and offline high-quality […].
+As […].
+Ad-Supported
+Our Ad-Supported Service has no subscription fees and provides Ad-Supported Users with […].
+Licensing Agreements
+In order to stream content to our users, we generally secure intellectual property rights […].
+Content License Agreements with Major and Independent Record Labels
+We have license agreements for sound recordings and audiovisual works with record label […].
+Musical Composition License Agreements with Music Publishers
+With respect to musical compositions, we generally obtain licenses for mechanical rights, […].
+Podcast License Agreements with Podcasters and Podcast Networks
+With respect to podcasts in both audio-only and audiovisual formats that we license from […].
+Audiobook License Agreements with Audiobook Publishers and Authors
+With respect to audiobooks for which we obtain distribution rights directly from rights […].
+License Agreement Extensions and Renewals
+From time to time, our license agreements with certain rights holders and/or their agents […].
+Intellectual Property
+The success of our business depends on our ability to protect and enforce our intellectual […].
+Seasonality
+See “Item 5.D. Trend Information” for a description of the seasonality of our business.
+Competition
+We face robust, complex, and rapidly evolving competition in all aspects of our business, […].
+Government Regulation
+We are subject to many U.S. federal and state, European, Luxembourg, and other foreign […].
+Human Capital
+At Spotify, we know that when our employees grow, Spotify grows. Our objective is to […].
+Compensation and Benefits
+We provide competitive compensation for our employees and a range of flexible benefits, […].
+Health, Safety, and Wellness
+We provide our employees and their families with robust healthcare benefits and a variety […].
+Learning & Inclusion
+We enable and empower our employees’ growth by offering a number of learning opportunities […].
+Environmental Sustainability
+We strive to be part of the solution for addressing climate change through our operations. […].
+C. Organizational Structure
+Name Principal activities Proportion of
+voting rights
+and shares
+held (directly
+or indirectly) Country of
+incorporation
+Spotify AB Main operating company 100 % Sweden
+Spotify USA Inc. USA operating company 100 % USA
+Spotify Ltd Sales, marketing, contract research and development, and customer support 100 […].
+D. Property, Plant and Equipment
+Spotify’s principal operational offices are located in Stockholm, Sweden and New York, New […].
+Item 4A. Unresolved Staff Comments
+None
+41
+Item 5. Operating and Financial Review and Prospects
+For discussion related to our financial condition, changes in financial condition, and […].
+Overview
+We are the world’s most popular audio streaming subscription service. With a presence in […].
+Audiobooks
+The Company continued to expand the availability of audiobooks on our Premium Service. […].
+Spotify Partner Program
+On January 2, 2025, in the U.S., U.K., Canada and Australia, we launched the Spotify […].
+Spotify Ad Exchange
+On April 1, 2025, we announced the launch of Spotify Ad Exchange (“SAX”). SAX is a […].
+Enhancing the listening and user experience
+We are focused on building and delivering features designed to increase user engagement on […].
+Current macroeconomic environment
+The global macroeconomic environment continues to be uncertain, reflecting the impacts of […].
+How We Generate Revenue
+We operate and manage our business in two reportable segments—Premium and Ad-Supported. We […].
+Premium
+Our Premium Service provides users with unlimited online and offline high-quality […].
+As […].
+Ad-Supported
+Our Ad-Supported Service has no subscription fees and provides Ad-Supported Users with […].
+Components of our Operating Results
+Cost of Revenue. Cost of revenue consists predominantly of royalty and distribution costs […].
+Key Performance Indicators
+We use certain key performance indicators to monitor and manage our business. We use these […].
+MAUs
+We track MAUs as an indicator of the size of the audience engaged with our Service. We […].
+As of December 31, Change
+2025 2024 2023 2025 vs. 2024 2024 vs. 2023
+(in millions, except percentages)
+MAUs 751 675 602 76 11 % 73 12 %
+MAUs were 751 million as of December 31, 2025. This […].
+Premium Subscribers
+We define Premium Subscribers as users that have completed registration with Spotify and […].
+As of December 31, Change
+2025 2024 2023 2025 vs. 2024 2024 vs. 2023
+(in millions, except percentages)
+Premium Subscribers 290 263 236 27 10 % 27 11 %
+Premium Subscribers were 290 million as of […].
+Ad-Supported MAUs
+We define Ad-Supported MAUs as the total count of Ad-Supported Users that have consumed […].
+As of December 31, Change
+2025 2024 2023 2025 vs. 2024 2024 vs. 2023
+(in millions, except percentages)
+Ad-Supported MAUs 476 425 379 51 12 % 46 12 %
+Ad-Supported MAUs were 476 million as of […].
+Premium ARPU
+Premium ARPU is a monthly measure defined as Premium subscription revenue recognized in […].
+Year ended December 31, Change
+2025 2024 2023 2025 vs. 2024 2024 vs. 2023
+Premium ARPU € 4.63 € 4.69 € 4.39 € (0.06) (1) % […].
+Three months ended December 31, Change
+2025 2024 2023 2025 vs. 2024 2024 vs. 2023
+Premium ARPU € 4.70 € 4.85 € 4.60 € (0.15) (3) % […].
+A. Operating Results
+Revenue
+Year ended December 31, Change
+2025 2024 2023 2025 vs. 2024 2024 vs. 2023
+(in € millions, except percentages)
+Premium 15,350 13,819 11,566 1,531 11 % 2,253 19 %
+Ad-Supported 1,836 1,854 1,681 (18) (1) […].
+Premium revenue
+For the years ended December 31, 2025 and 2024, Premium revenue comprised 89% and 88%, […].
+Ad-Supported revenue
+For the years ended December 31, 2025 and 2024, Ad-Supported revenue comprised 11% and […].
+Foreign exchange impact on revenue
+The changes in revenue described above include the impact of foreign exchange rate […].
+Cost of revenue
+Year ended December 31, Change
+2025 2024 2023 2025 vs. 2024 2024 vs. 2023
+(in € millions, except percentages)
+Premium 10,184 9,324 8,231 860 9 % 1,093 13 %
+Ad-Supported 1,506 1,625 1,619 (119) (7) % 6 […].
+Premium cost of revenue
+For the year ended December 31, 2025, as compared to 2024, Premium cost of revenue […].
+Ad-Supported cost of revenue
+For the year ended December 31, 2025, as compared to 2024, Ad-Supported cost of revenue […].
+Foreign exchange impact on total cost of revenue
+The changes in cost of revenue described above include the impact of foreign exchange rate […].
+Gross profit and gross margin
+Year ended December 31, Change
+2025 2024 2023 2025 vs. 2024 2024 vs. 2023
+(in € millions, except percentages)
+Gross profit
+Premium 5,166 4,495 3,335 671 15 % 1,160 35 %
+Ad-Supported 330 229 62 101 44 % 167 269 %
+Con […].
+Gross margin
+Premium gross profit and gross margin
+For the year ended December 31, 2025, as compared to 2024, Premium gross profit increased […].
+Ad-Supported gross profit and gross margin
+For the year ended December 31, 2025, as compared to 2024, Ad-Supported gross profit […].
+Consolidated Operating Expenses
+Research and development
+Year ended December 31, Change
+2025 2024 2023 2025 vs. 2024 2024 vs. 2023
+(in € millions, except percentages)
+For the year ended December 31, 2025, as compared to 2024, research and development costs […].
+Sales and marketing
+Year ended December 31, Change
+2025 2024 2023 2025 vs. 2024 2024 vs. 2023
+(in € millions, except percentages)
+49
+For the year ended December 31, 2025, as compared to 2024, sales and marketing expense […].
+General and administrative
+2025 2024 2023 2025 vs. 2024 2024 vs. 2023
+(in € millions, except percentages)
+For the year ended December 31, 2025, as compared to 2024, general and administrative […].
+Foreign exchange impact on total operating expenses
+The changes in operating expenses described above include the impact of foreign exchange […].
+Finance income
+Finance income consists of fair value adjustment gains on certain financial instruments, […].
+Finance costs
+Finance costs consist of fair value adjustment losses on certain financial instruments, […].
+Income tax expense
+2025 2024 2023 2025 vs. 2024 2024 vs. 2023
+Income tax expense 12 203 27 (191) (94) % 176 652 %
+For the year ended December 31, 2025, income tax expense was €12 million, as compared to […].
+B. Liquidity and Capital Resources
+Our principal sources of liquidity are our cash and cash equivalents, short term […].
+We […].
+Share repurchase program
+On August 20, 2021, the Company announced that the board of directors had approved a […].
+T […].
+Exchangeable Notes
+On March 2, 2021, Spotify USA Inc. issued US$1,500 million in aggregate principal amount […].
+Cash flow
+Year ended December 31,
+2025 2024 2023
+(in € millions)
+For the year ended December 31, 2025, as compared to 2024, net cash flows from operating […].
+Free Cash Flow:
+We define “Free Cash Flow” as net cash flows from operating activities less capital […].
+Ye […].
+(in € millions)
+Change in restricted cash 2 1 4
+Free Cash Flow 2,874 2,285 678
+We believe Free Cash Flow is a useful supplemental financial […].
+Restrictions on subsidiaries to transfer funds
+The payment of dividends and the making, or repayment, of loans and advances to the […].
+Indebtedness
+As of December 31, 2025, our outstanding indebtedness, other than lease liabilities, […].
+Off-balance sheet arrangements
+As of December 31, 2025, we do not have transactions with unconsolidated entities, such as […].
+Contractual obligations
+The following table sets forth our contractual obligations and commercial commitments as […].
+Payments due by period
+Contractual obligations: Total Less than
+(in € millions)
+Minimum guarantees (1)
+2,613 1,123 1,490 — —
+Exchangeable Notes (2)
+1,277 1,277 — — —
+Lease obligations (3)
+685 98 175 146 266
+Purchase obligations (4)
+1,575 626 668 228 53
+Total 6,150 3,124 2,333 374 319
+___________________________________
+(1)W […].
+D. Trend Information
+Our results reflect the effects of our trial programs, both discounted and free trials, in […].
+E. Critical Accounting Estimates
+We prepare our consolidated financial statements in accordance with IFRS as issued by the […].
+Revenue Recognition
+Premium Revenue
+In arrangements where we have multiple performance obligations to the customer, the […].
+Share-based Compensation
+Our employees and members of our board of directors receive remuneration in the form of […].
+Content
+We incur royalty costs for the right to stream content to our users, paid to record […].
+55
+Provisions
+From time to time, we are involved in legal actions or other third-party assertions […].
+We […].
+Exchangeable Notes
+Our Exchangeable Notes are re-measured at each reporting date using valuation models using […].
+Income Taxes
+We are subject to income taxes in Luxembourg, Sweden, the United States, and numerous […].
+Goodwill Impairment
+In accordance with the accounting policy described in Note 2 to our consolidated financial […].
+Recent Accounting Pronouncements
+See Note 2 to our consolidated financial statements included elsewhere in this report for […].
+Item 6. Directors, Senior Management and Employees
+A. Directors and Senior Management
+The following table sets forth the names, ages, and positions of our senior management and […].
+Name Age Position
+Daniel Ek 42 Founder and Executive Chairman
+Martin Lorentzon 56 Co-Founder and Director
+Alex Norström 49 Co-Chief Executive Officer and Director
+Gustav Söderström 49 Co-Chief Executive Officer and Director
+Dustee Jenkins 47 Chief Public Affairs Officer
+Christian Luiga 57 Chief Financial Officer
+Anna Lundström 42 Chief Human Resources Officer
+Christopher Marshall 57 Lead Independent Director
+Barry McCarthy 72 Director
+Shishir Mehrotra 46 Director
+Heidi O’Neill 61 Director
+Ted Sarandos 61 Director
+Thomas Staggs 65 Director
+Mona Sutphen 58 Director
+Padmasree Warrior 65 Director
+The business address of each director and each of Mr. Luiga and Ms. Lundström is […].
+Danie […].
+Family Relationships
+There are no family relationships between any of the directors. There are no family […].
+Arrangements or Understandings
+None of our senior management or directors has any arrangement or understanding with our […].
+B. Compensation
+This section discusses the principles underlying the material components of our executive […].
+Executive Compensation Philosophy and Objectives
+We operate in the highly competitive and dynamic digital media industry as the world’s […].
+Engagement of Compensation Consultant
+The people experience and compensation committee has engaged the services of Compensia to […].
+Airbnb Autodesk Block Booking Holdings
+DoorDash eBay Electronic Arts Expedia Group
+Intuit MercadoLibre Netflix PayPal Holdings
+Shopify Sirius XM Holdings Snap Take-Two Interactive
+Uber Technologies Warner Bros. Discovery
+The 2025 Peer Group consists of companies that have similar business characteristics to […].
+Compensation Philosophy
+We design the principal components of our executive compensation program to fulfill one or […].
+Executive Compensation Program Components
+The following describes the primary components of our executive compensation program for […].
+Base Salary and Bonus
+Generally, each named executive officer’s initial base salary was established through […].
+Named Executive Officer Annual Base
+Salary ($)
+Daniel Ek(1)
+$ —
+Alex Norström(2)
+$ 339,000
+Gustav Söderström(2)
+$ 326,000
+Christian Luiga(2)
+$ 326,000
+______________________
+(1)Since July 1, 2017, Mr. Ek has not received a base […].
+( […].
+Long-Term Incentives
+Each of our named executive officers, other than Mr. Ek, has been granted equity awards in […].
+Named Executive Officer Aggregate Long-Term Incentive Award Dollar Value
+Allocation
+($)
+Daniel Ek — — — — —
+Alex Norström 12,500,000 31,133 — 10,378 —
+Gustav Söderström 12,500,000 31,133 — 10,378 —
+Ch […].
+Long-Term Incentive Award Decisions
+Each year our people experience and compensation committee reviews and, if needed, […].
+Retirement Savings and Other Benefits
+Our retirement programs are designed to comply with local laws and regulations. For our […].
+Employee Benefits and Perquisites
+Additional benefits received by our employees who reside in Sweden, including Messrs. Ek, […].
+Severance
+Each of our named executive officers is entitled to severance upon certain qualifying […].
+Employment Agreements
+We have, or one of our subsidiaries has, entered into employment agreements with Messrs. […].
+Daniel Ek
+Mr. Ek’s employment agreement provides for an indefinite term that automatically expires […].
+Christian Luiga, Alex Norström and Gustav Söderström
+The following is a description of our employment agreements with Messrs. Luiga, Norström, […].
+Dustee Jenkins
+The following is a description of our employment agreement with Ms. Jenkins. Ms. Jenkins’ […].
+Clawback Policy
+In 2023, we adopted a Clawback Policy in compliance with the SEC rules and New York Stock […].
+Equity Grant Practices
+We do not grant equity awards in anticipation of the release of material, nonpublic […].
+C. Board Practices
+Board of Directors Structure
+Our board of directors currently consists of twelve directors and is composed of Class A […].
+People Experience and Compensation Committee
+Our board of directors has established a people experience and compensation committee that […].
+Audit Committee
+Our board of directors has established an audit committee that consists of Thomas Staggs, […].
+D. Employees
+In 2025, 2024, and 2023, we had 7,287, 7,691, and 9,123 full-time employees on average, […].
+December 31, % Change
+2025 2024 2023 2025 vs. 2024 2024 vs. 2023
+December 31,
+2025 2024 2023
+United States 3,466 […].
+E. Share Ownership
+The following table provides information regarding share ownership by our officers and […].
+Name of Beneficial Owner Number of
+Shares
+Owned Approximate
+Percentage of
+Outstanding
+Ordinary
+Shares Number of
+Shares
+Underlying
+Options Option
+Exercise
+Price ($) Option
+Expiration
+Date Restricted
+Stock
+Units
+Daniel Ek(1)
+28,625,267 13.9 % — $ — — —
+Martin Lorentzon(2)
+19,006,383 9.2 % 11,260 $ 362.36 5/31/2026 —
+— — % 24,120 $ 169.16 5/31/2027 —
+— — % 6,627 $ […].
+Christopher Marshall(3)
+72,133 * 5,630 $ 241.57 5/31/2026 1,595
+— — % 12,060 $ 112.77 5/31/2027 —
+— — % 4,970 $ […].
+Barry McCarthy(4)
+345,702 * 5,630 $ 241.57 5/31/2026 —
+— — % 12,060 $ 112.77 5/31/2027 —
+— — % 6,627 $ 153.92 […].
+Thomas Staggs(5)
+23,248 * 5,961 $ 362.36 5/31/2026 —
+— — % 2,981 $ 241.57 5/31/2026 —
+— — % 6,562 $ 169.16 […].
+Stock Options
+As noted above, we have granted stock options to our named executive officers and other […].
+Restricted Stock Units
+As noted above, we have granted RSUs to our named executive officers and other employees, […].
+Cash Program
+As noted above, we also offer cash awards as part of our incentive mix program to all […].
+Warrants
+On August 23, 2021, Mr. Ek purchased, through D.G.E. Investments, 800,000 non-compensatory […].
+Compensation Tables
+The following table sets forth information concerning the compensation of our named […].
+Name and Principal Position Year Salary
+($)
+Bonus
+Option
+Awards
+Stock
+Awards
+Non-Equity Incentive Compensation Plan
+All Other
+Compensation
+($) Total
+($)
+Daniel Ek (Executive Chairman and Former CEO) (5)
+2025 — — — — — 694,484 (6) 694,484
+2024 — — — — — 667,308 667,308
+2023 — — — — — 1,431,654 […].
+Christian Luiga (CFO)(10)
+2025 330,000 (7) 760,820 1,437,693 — 3,750,000 105,051 (11) 6,383,564
+2024 79,000 (7) […].
+2 […].
+Name
+(# shares)(1)
+All Other Option Awards: Number of Securities Underlying Options
+(# shares)(1)
+($)
+Grant Date
+Fair Value
+of Stock and Option
+Awards
+Daniel Ek — — — — — —
+Alex Norström 5/1/2025 — 10,378 31,133 602.26 13,438,430
+Gustav Söderström 5/1/2025 — […].
+C […].
+Outstanding Equity Awards at 2025 Fiscal Year-End
+The following table summarizes the number of ordinary shares underlying outstanding equity […].
+Option Awards Ordinary Share Awards
+Name Grant
+Date Number
+of Securities
+Underlying
+Unexercised
+Options
+(#)
+Exercisable
+Number
+Of Securities
+Underlying
+Unexercised
+Options
+(#)
+Unexercisable(1)
+Option
+Exercise
+Price
+($) Option
+Expiration
+Date
+Number
+Of
+Ordinary
+Shares
+That Have
+Not
+Vested
+Market
+Value of
+Ordinary
+Shares
+That Have
+Not
+Vested
+Daniel Ek — — — — — — —
+Alex Norström 3/1/2021 3,216 — 321.28 3/1/2026 — —
+3/1/2022 26,501 6,116 151.25 3/1/2027 — […].
+Option Awards Stock Awards
+Name Number of Ordinary
+Shares
+Acquired on Exercise
+(#)
+Value Realized on
+Exercise
+Number of Ordinary
+Shares
+Acquired on Vesting
+(#)
+Value Realized on
+Vesting
+Daniel Ek
+— — — —
+Alex Norström — — 25,249 (3) 15,539,382
+Gustav Söderström 52,031 19,953,251 1,514 […].
+Christian Luiga — — — —
+Dustee Jenkins 4,058 1,686,049 10,958 (5) 6,750,219
+________________________
+(1)Represents […].
+Non-Employee Director Compensation
+Similar to our executive compensation decisions, the people experience and compensation […].
+Name Aggregate Long-Term Incentive Award Dollar Value
+Allocation
+($)
+Heidi O’Neill 340,000 — 759 379 —
+Mona Sutphen 340,000 1,138 — — 85,000
+The following table […].
+Fees Earned or Paid in Cash
+($)
+Stock
+Awards
+Stock
+Options
+Total
+Barry McCarthy — — 396,392 396,392
+Heidi O’Neill — 254,688 160,584 415,272
+Ted Sarandos — — […].
+Name Restricted
+Stock Units
+Outstanding
+at Fiscal
+Year End Stock Options
+Outstanding
+at Fiscal
+Year End
+Mona Sutphen 1,104 10,628
+F. Disclosure of a Registrant’s Action to Recover Erroneously Awarded Compensation
+None.
+Item 7. Major Shareholders and Related Party Transactions.
+A. Major Shareholders
+The following table sets forth, as of December 31, 2025 (except where noted), the number […].
+Ordinary Shares
+Beneficiary Certificates(4)
+Percent
+of
+Total
+Voting Power
+Name Number Percent Number Percent
+28,625,267 13.9 % 119,932,980 38.7 % 28.8 %
+Martin Lorentzon(2)
+19,050,367 9.3 % 190,000,000 61.3 % 40.5 %
+Tencent(3)
+16,631,969 8.1 % — — — (5)
+________________________
+(1)Includes 11,993,298 ordinary shares […].
+Change in Control Arrangements
+None applicable.
+B. Related Party Transactions
+Luxembourg law prescribes certain procedures for related party transactions with […].
+Pleas […].
+Related Party Transaction Policy
+Our board of directors has adopted the Related Party Transaction Policy, which requires […].
+C. Interests of Experts and Counsel
+Not applicable
+Item 8. Financial Information
+A. Consolidated Statements and Other Financial Information
+Refer to “Item 18. Financial Statements” for our consolidated financial statements and […].
+Legal or arbitration proceedings
+Refer to Notes 21 and 24 of the consolidated financial statements included elsewhere in […].
+Dividend Policy
+We have never declared or paid any cash dividends on our share capital, and we do not […].
+B. Significant Changes
+There have been no significant changes since the date of the financial statements included […].
+Item 9. The Offer and Listing
+A. Offer and Listing Details
+B. Plan of Distribution
+Not applicable.
+C. Markets
+Our ordinary shares are listed and traded on the NYSE.
+D. Selling Shareholders
+Not applicable.
+E. Dilution
+Not applicable.
+80
+F. Expenses of the Issue
+Not applicable.
+Item 10. Additional Information
+A. Share Capital
+Not applicable.
+B. Memorandum and Articles of Association
+We are registered with the Luxembourg Trade and Companies’ Register under number […].
+See […].
+C. Material Contracts
+The following is a summary of a material agreement, other than material agreements entered […].
+D. Exchange Controls
+We are not aware of any governmental laws, decrees, regulations or other legislation in […].
+E. Taxation
+Luxembourg Tax Considerations
+The following is an overview of certain material Luxembourg tax consequences of […].
+Taxation of the Company
+Income Tax
+As the Company is a fully-taxable Luxembourg company, its net taxable profit is as a rule […].
+Withholding Tax
+Dividends paid by us to the holders of our ordinary shares are as a rule subject to a 15% […].
+Net Wealth Tax
+The Company is as a rule subject to Luxembourg net wealth tax (“NWT”) on its net assets as […].
+Top-up Tax
+In December 2021, the OECD published final Pillar Two Model Rules for a global minimum tax […].
+Other Taxes
+The issuance of our ordinary shares and any other amendment of our articles of association […].
+Taxation of the Holders of Ordinary Shares
+A holder of our ordinary shares will not become resident, nor be deemed to be resident, in […].
+Income Tax—Luxembourg Resident Holders
+Luxembourg Individual Residents. Dividends and other payments derived from our ordinary […].
+Income Tax—Luxembourg Non-Resident Holders
+Non-resident holders of our ordinary shares who have neither a permanent establishment nor […].
+Net Wealth Tax
+Luxembourg resident holders of our ordinary shares, as well as non-resident holders of our […].
+Other Taxes
+Under Luxembourg tax law, where an individual holder of our ordinary shares is a resident […].
+U.S. Federal Income Tax Considerations
+The following summary describes certain U.S. federal income tax considerations generally […].
+Dividends
+Subject to the discussion below under “—Passive Foreign Investment Company,” the amount of […].
+Disposition of Our Ordinary Shares
+Subject to the discussion below under “—Passive Foreign Investment Company,” a U.S. Holder […].
+Passive Foreign Investment Company
+In general, a non-U.S. corporation will be classified as a PFIC for any taxable year if at […].
+Information Reporting and Backup Withholding
+Dividend payments and proceeds paid from the sale or other taxable disposition of our […].
+Foreign Financial Asset Reporting
+Certain U.S. Holders are required to report information relating to their holdings of […].
+FATCA
+Provisions under Sections 1471 through 1474 of the Internal Revenue Code and applicable […].
+F. Dividends and Paying Agents
+Not applicable.
+G. Statement by Experts
+Not applicable.
+89
+H. Documents on Display
+Our SEC filings are available to you on the SEC’s website at http://www.sec.gov. This site […].
+I. Subsidiary Information
+Not applicable.
+J. Annual Report to Security Holders
+Not applicable.
+Item 11. Quantitative and Qualitative Disclosures About Market Risk
+Our activities expose us to a variety of market risks. Our primary market risk exposures […].
+Financial risk management
+Our operations are exposed to financial risks. To manage these risks efficiently, we have […].
+Currency risk
+Currency risk manifests itself in transaction exposure, which relates to business […].
+Transaction exposure sensitivity
+In most cases, our customers are billed in their respective local currency. Major […].
+90
+Th […].
+(SEK) British pound
+(GBP) U.S. dollar
+(USD)
+(in € millions)
+Translation exposure sensitivity
+The impact on our equity would be approximately €276 million if the Euro weakened by 10% […].
+Interest rate risk
+Interest rate risk is the risk that changes in interest rates will have a negative impact […].
+Share price risk
+Share price risk is the risk that the fair value or future cash flows of a financial […].
+A […].
+Investment risk
+We are exposed to investment risk as it relates to changes in the market value of our long […].
+Inflation risk
+Inflationary factors, such as increases in costs, may adversely affect our results of […].
+Item 12. Description of Securities Other Than Equity Securities
+Not applicable.
+A. Debt Securities
+Not applicable.
+91
+B. Warrants and Rights
+Not applicable.
+C. Other Securities
+Not applicable.
+D. American Depositary Shares
+Not applicable.
+92
+PART II
+Item 13. Defaults, Dividend Arrearages and Delinquencies
+None
+Item 14. Material Modifications to the Rights of Security Holders and Use of Proceeds
+None
+Item 15. Controls and Procedures
+A. Disclosure Controls and Procedures
+As required by Rules 13a-15(b) and 15d-15(b) under the Exchange Act, our management, with […].
+B. Management’s annual report on internal control over financial reporting
+Our management is responsible for establishing and maintaining adequate internal control […].
+C. Attestation report of the registered public accounting firm
+Please see the report of Ernst & Young AB, an independent registered public accounting […].
+D. Changes in internal control over financial reporting
+There were no changes to our internal control over financial reporting during the year […].
+Item 16A. Audit Committee Financial Expert
+Our board of directors has determined that Mr. Thomas Staggs is an “audit committee […].
+Item 16B. Code of Ethics
+We have adopted the Spotify Code of Conduct and Ethics, which applies to all of our […].
+Item 16C. Principal Accountant Fees and Services
+Ernst & Young AB have acted as our principal accountants for the years ended December 31, […].
+(in € thousands)
+Audit fees 9,071 7,823
+Tax fees — —
+All other fees — —
+Total 9,324 8,110
+“Audit fees” are the aggregate fees earned by the Ernst & Young entities […].
+Item 16D. Exemptions from the Listing Standards for Audit Committees
+None.
+94
+Item 16E. Purchases of Equity Securities by the Issuer and Affiliated Purchasers
+2025
+Total Number of Shares Purchased
+Average Price Paid per Share (1)
+January 500,000
+€ — — € 762,495,883
+April 500,000 (4) € — — € 762,495,883
+May — € — — € […].
+J […].
+Item 16F. Change in Registrant’s Certifying Accountant
+Not applicable.
+Item 16G. Corporate Governance
+Our common shares are listed on the NYSE. For purposes of NYSE rules, so long as we are a […].
+Item 16H. Mine Safety Disclosure
+Not applicable.
+Item 16I. Disclosure Regarding Foreign Jurisdictions that Prevent Inspections
+Not applicable.
+Item 16J. Insider Trading Policies
+Our board of directors has adopted the Company’s Insider Trading Policy that governs all […].
+Item 16K. Cybersecurity
+Cybersecurity Risk Management and Strategy
+We have developed and implemented a cybersecurity risk management program designed to […].
+Our cybersecurity risk management program includes:
+•an Information Security Policy that articulates our information security practices and […].
+Cybersecurity Governance
+Our board of directors considers cybersecurity risk as part of its risk oversight function […].
+PART III
+Item 17. Financial Statements
+See “Item 18. Financial Statements”
+Item 18. Financial Statements
+The audited Consolidated Financial Statements as required under Item 18 are attached […].
+Item 19. Exhibits
+The following are filed as exhibits hereto:
+1.1
+Amended and Restated Articles of Association of Spotify Technology S.A. (English […].
+2. […].
+101.INS XBRL Instance Document
+101.SCH XBRL Taxonomy Extension Schema Document
+101.CAL XBRL Taxonomy Extension Calculation Linkbase Document
+101.DEF XBRL Taxonomy Extension Definition Linkbase Document
+101.PRE XBRL Taxonomy Extension Presentation Linkbase Document
+104 Cover Page Interactive Data File (formatted as Inline XBRL and contained in Exhibit […].
+SIGNATURES
+The registrant hereby certifies that it meets all of the requirements for filing on Form […].
+By:
+/s/ Christian Luiga
+Name:
+Christian Luiga
+Title: Chief Financial Officer
+***
+101
+INDEX TO CONSOLIDATED FINANCIAL STATEMENTS
+Page
+Consolidated statement of comprehensive income/(loss) for the years ended December 31, […].
+Report of Independent Registered Public Accounting Firm
+To the Shareholders and Board of Directors of Spotify Technology S.A.
+Opinion on the Financial Statements
+We have audited the accompanying consolidated statements of financial position of Spotify […].
+Basis for Opinion
+These financial statements are the responsibility of the Company’s management. Our […].
+We […].
+Critical Audit Matter
+The critical audit matter communicated below is a matter arising from the current period […].
+Music Royalty Costs
+Description of the Matter
+As explained in Note 2 of the consolidated financial statements, cost of revenue consists […].
+How We Addressed the Matter in Our Audit
+We obtained an understanding, evaluated the design and tested the operating effectiveness […].
+Stockholm, Sweden
+February 10, 2026
+Report of Independent Registered Public Accounting Firm
+To the Shareholders and the Board of Directors of Spotify Technology S.A.
+Opinion on Internal Control Over Financial Reporting
+We have audited Spotify Technology S.A.’s internal control over financial reporting as of […].
+Basis for Opinion
+The Company’s management is responsible for maintaining effective internal control over […].
+Definition and Limitations of Internal Control Over Financial Reporting
+A company’s internal control over financial reporting is a process designed to provide […].
+Stockholm, Sweden
+February 10, 2026
+Consolidated statement of operations
+for the year ended December 31
+(in € millions, except share and per share data)
+Note 2025 2024 2023
+Revenue 4 17,186 15,673 13,247
+Cost of revenue 11,690 10,949 9,850
+Gross profit 5,496 4,724 3,397
+3,298 3,359 3,843
+Finance […].
+Income tax expense 8 12 203 27
+Earnings/(loss) per share attributable to owners of the parent
+Basic 9 10.77 5.67 (2.73)
+Diluted 9 10.51 5.50 (2.73)
+Weighted-average ordinary shares outstanding
+Basic 9 205,412,951 200,622,518 194,732,304
+Diluted 9 210,509,173 206,990,369 194,732,304
+Th […].
+Consolidated statement of comprehensive income/(loss)
+for the year ended December 31
+(in € millions)
+Note 2025 2024 2023
+Other comprehensive income
+Items not to be subsequently reclassified to consolidated statement
+of operations (net of tax):
+Net gains in the fair value of long term investments held at […].
+Consolidated statement of financial position
+(in € millions)
+Note 2025 2024
+Assets
+Non-current assets
+Goodwill 12 1,083 1,201
+Intangible assets 12 41 48
+4,519 3,626
+Current assets
+Income tax receivable 8 116 28
+10,496 8,379
+Total assets 15,015 12,005
+Equity and liabilities
+Equity
+Share capital 16 — —
+Non-current liabilities
+Accrued expenses and other liabilities 20 2 5
+601 2,030
+Current liabilities
+Income tax payable 8 72 33
+6,085 4,450
+The accompanying notes are an integral part of these consolidated financial […].
+Consolidated statement of changes in equity
+(in € millions, except share data)
+Note Number of
+ordinary
+shares
+outstanding Share
+capital Treasury
+shares Other
+paid in
+capital Other
+reserves […].
+Restricted stock units withheld for
+employee taxes — — — — (71) — (71)
+Share-based compensation 17 — — — — 322 — 322
+Income tax impact associated with share-based compensation 8 — — — — 23 — 23
+Balance at December 31, 2023 197,143,389 — (262) 5,155 1,812 (4,182) 2,523
+Issuance of […].
+Restricted stock units withheld for
+employee taxes — — — — (137) — (137)
+Share-based compensation 17 — — — — 268 — 268
+Income tax impact associated with share-based compensation 8 — — — — 359 — 359
+Balance at December 31, 2024 203,844,409 — (262) 6,124 2,707 (3,044) 5,525
+Issuance of […].
+Restricted stock units withheld for
+employee taxes — — — — (241) — (241)
+Share-based compensation 17 — — — — 248 — 248
+Income tax impact associated with share-based compensation 8 — — — — 417 — 417
+Balance at December 31, 2025 205,832,527 — (701) 6,496 3,366 (832) 8,329
+The accompanying […].
+Consolidated statement of cash flows
+for the year ended December 31
+Note 2025 2024 2023
+Operating activities
+Adjustments to reconcile net income/(loss) to net cash flows
+Share-based compensation expense 17 247 267 321
+Finance costs 7 266 352 220
+Income tax expense 8 12 203 27
+Changes in working capital:
+Increase/(decrease) in provisions 22 3 (5)
+Income tax paid (86) (53) (43)
+Investing activities
+Business combinations, net of cash acquired (9) — —
+Financing activities
+Lease incentives received 10 — — 2
+Supplemental disclosure of cash flow information
+Non-cash investing and financing activities
+Real estate assets disposed of in exchange for finance lease receivables 10, 11 9 62 —
+The […].
+Notes to the 2025 consolidated financial statements
+1. Corporate information
+Spotify Technology S.A. (the “Company” or “parent”) is a public limited company […].
+The […].
+2. Summary of material accounting policies
+The principal accounting policies applied in the preparation of these consolidated […].
+(a)Basis of preparation
+The consolidated financial statements of Spotify Technology S.A. comply with International […].
+(b)Basis of consolidation
+Subsidiaries are all entities over which the Group has control. The Group controls an […].
+(c)Foreign currency translation
+Functional and reporting currency
+Items included in the financial statements of each of the Group’s entities are measured […].
+Transactions and balances
+Foreign currency transactions are translated into the functional currency using the […].
+F- […].
+Group companies
+The results and financial position of all the Group entities that have a functional […].
+•A […].
+(d)Revenue recognition
+Premium revenue
+The Group generates revenue through the sale of subscriptions to the Premium Service and […].
+Ad-Supported revenue
+The Group’s advertising revenue is generated primarily from the sale of display, audio, […].
+(e)Advertising credits
+Advertising credits that are not transferable are issued to certain rights holders and […].
+(f)Business combinations
+Business combinations are accounted for using the acquisition method. Identifiable assets […].
+(g)Cost of revenue
+Cost of revenue consists predominantly of royalty and distribution costs related to […].
+Co […].
+(h)Research and development expenses
+Research and development expenses primarily comprise costs incurred for development of […].
+(i)Sales and marketing expenses
+Sales and marketing expenses primarily comprise employee compensation and benefits, […].
+(j)General and administrative expenses
+General and administrative expenses primarily comprise employee compensation and benefits […].
+(k)Income tax
+The tax expense for the period comprises current and deferred tax. Tax is recognized in […].
+(i)Current tax
+Current tax comprises the expected tax payable or receivable on the taxable income or loss […].
+(ii)Deferred tax
+Deferred tax is recognized in respect of temporary differences between the carrying […].
+•t […].
+(iii)Uncertain tax positions
+Management periodically evaluates positions taken in tax returns in which applicable tax […].
+(l)Leases
+At the inception of a contract, the Group assesses whether a contract is, or contains, a […].
+As a Lessee
+The Group recognizes a right-of-use asset and a lease liability at the lease commencement […].
+Short-term leases and lease of low-value assets
+The Group has elected not to recognize right-of-use assets and lease liabilities for […].
+As a Lessor
+The Group has entered into agreements to sublease portions of its leased offices. As an […].
+(m)Property and equipment
+Property and equipment are stated at historical cost less accumulated depreciation and any […].
+(n)Intangible assets
+Acquired intangible assets other than goodwill comprise acquired developed technology, […].
+(o)Goodwill
+Goodwill is the excess of the consideration transferred over the net identifiable assets […].
+(p)Impairment of non-financial assets
+Assets that are subject to depreciation or amortization are reviewed for impairment […].
+(q)Financial instruments
+(i)Financial assets
+Initial recognition and measurement
+The Group’s financial assets comprise cash and cash equivalents, short term investments, […].
+Subsequent measurement
+After initial measurement, short term investments are primarily measured at fair value […].
+Derecognition
+Financial assets are derecognized when the rights to receive cash flows from the asset […].
+Impairment of financial assets
+The Group assesses at each reporting date whether there is any evidence that a financial […].
+(ii)Financial liabilities
+Initial recognition and measurement
+The Group’s financial liabilities are comprised of trade and other payables, lease […].
+The […].
+Subsequent measurements
+Other financial liabilities
+After initial recognition, payables are subsequently measured at amortized cost using the […].
+Financial liabilities at fair value through profit or loss
+After initial recognition, financial liabilities at fair value through the profit or loss […].
+Derecognition
+Financial liabilities are derecognized when the obligation under the liability is […].
+(iii)Fair value measurements
+For financial assets and liabilities measured at fair value on a recurring basis, fair […].
+(iv)Foreign exchange forward contracts
+The Group designates certain foreign exchange forward contracts as cash flow hedges when […].
+(r)Podcast content assets
+The Group incurs costs to acquire, license, produce or commission podcasts for inclusion […].
+(s)Cash and cash equivalents and restricted cash
+Cash and cash equivalents comprise cash on deposit at banks and on hand and highly liquid […].
+(t)Short term investments
+The Group invests in a variety of instruments, such as money market funds, corporate debt […].
+(u)Long term investments
+Long term investments consist primarily of non-controlling equity interests in public and […].
+(v)Share capital
+Ordinary shares are classified as equity.
+Equity instruments are initially measured at the […].
+(w)Share-based compensation
+Employees of the Group and members of the board of directors may receive remuneration in […].
+(x)Employee benefits
+The Group provides defined contribution plans to its employees. The Group pays […].
+(y)Provisions
+Provisions are recognized when the Group has a present obligation (legal or constructive) […].
+New standards and interpretations issued not yet effective
+Presentation and Disclosure in Financial Statements - IFRS 18
+In April 2024, the IASB issued IFRS 18 Presentation and Disclosure in Financial Statements […].
+3. Critical accounting estimates and judgments
+The preparation of the consolidated financial statements requires management to make […].
+F […].
+4. Revenue recognition
+Revenue from contracts with customers
+(i)Disaggregated revenue
+The Group discloses revenue by reportable segment and geographic area in Note 23.
+(ii)Performance obligations
+The Group discloses its policies for how it identifies, satisfies, and recognizes its […].
+(iii)Contract liabilities
+The Group’s contract liabilities from contracts with customers consist primarily of […].
+Re […].
+5. Personnel expenses
+2025 2024 2023
+(in € millions, except employee data)
+Share-based compensation 248 267 321
+Total 1,924 2,088 2,345
+On January 23, 2023, the Company announced a reorganization to […].
+Sales and marketing 44
+General and administrative 34
+There were no similar material reorganization events during the years ended December 31, […].
+6. Auditor remuneration
+2025 2024 2023
+F-23
+7. Finance income and costs
+2025 2024 2023
+Finance income
+Fair value movements on derivative liabilities (Note 22) — — 5
+Total 292 328 161
+Finance costs
+Fair value movements on derivative liabilities (Note 22) — (33) (7)
+Fair value movements on Exchangeable Notes (Note 22) (123) (239) (98)
+Total (266) (352) (220)
+8. Income tax
+An analysis of the Group’s income tax expense for periods presented is set out below:
+2025 […].
+Current tax expense
+214 245 52
+Deferred tax benefit
+Change in tax rates (1) (1) (1)
+Benefit of tax credits (41) — —
+(202) (42) (25)
+Income tax expense 12 203 27
+For the years ended December 31, 2025, 2024, and 2023, the Group recorded an income tax […].
+Tax credits (41) — —
+Adjustments in respect of previous years (6) (9) (10)
+Income tax expense 12 203 27
+The Group will be subject to tax in future periods as a result of foreign exchange […].
+202 […].
+Trade and other receivables 11 3
+Intangible assets 3 (63)
+Share-based compensation 365 148
+Accrued expenses and other liabilities 25 3
+Capitalized research and development costs 13 —
+The increase in deferred tax assets is primarily attributable to the recognition of […].
+20 […].
+Movement recognized in consolidated statement of
+operations 203 42 25
+Movement recognized in consolidated statement of
+changes in equity and other comprehensive income 133 103 (8)
+Movement due to acquisition (2) — —
+At December 31 499 165 20
+F-25
+Deferred tax assets and deferred tax liabilities are offset […].
+Intangible assets — 72
+Share-based compensation — 261
+Tax credits carried forward — 92
+Capitalized research & development costs — 279
+Lease liability — 41
+Total 41 818
+At December 31, 2025, no deferred tax liability had been recognized on […].
+Tax […].
+9. Earnings/(loss) per share
+Basic earnings/(loss) per share is computed using the weighted-average number of […].
+2025 […].
+(in € millions, except share and per share data)
+Basic earnings/(loss) per share
+Shares used in computation:
+Diluted earnings/(loss) per share
+Net earnings/(loss) used in the computation
+of diluted earnings/(loss) per share 2,212 1,138 (532)
+Shares used in computation:
+Stock options 3,741,907 4,407,037 —
+Diluted weighted average ordinary shares 210,509,173 […].
+Diluted earnings/(loss) per share
+attributable to owners of the parent 10.51 5.50 (2.73)
+Potential dilutive securities that […].
+10. Leases
+The Group leases certain properties under non-cancellable lease agreements that primarily […].
+Below is the roll-forward of lease right-of-use assets:
+Right-of-use assets
+Cost
+At January 1, 2024 684
+Exchange differences 28
+At December 31, 2024 597
+Exchange differences (42)
+At December 31, 2025 579
+Accumulated depreciation and impairment loss
+Depreciation charge (44)
+Impairment charge (25)
+Exchange differences (17)
+Depreciation charge (42)
+Impairment charge (5)
+Exchange differences 20
+Cost, net accumulated depreciation and impairment loss
+At December 31, 2024 226
+At December 31, 2025 234
+Impairment of real estate assets
+As a result of our Work From Anywhere program and a comprehensive review of our real […].
+T […].
+Below is the roll-forward of lease liabilities:
+At January 1 537 558
+Payments (1)
+(104) (105)
+Decreases (9) —
+At December 31 498 537
+(1)€31 million and €36 million of interest paid on lease liabilities […].
+Below is the maturity analysis of lease liabilities:
+Maturity Analysis (in € millions)
+Less than one year 95
+Impact of discounting remaining lease payments (132)
+Lease liabilities included in the consolidated
+statement of financial position
+Excluded from the lease commitments above are short term […].
+Payments received (4) (1)
+Exchange differences (8) 2
+F-29
+Below is the maturity analysis of finance lease receivables:
+Maturity Analysis (in € millions)
+Less than one year 15
+One to five years 58
+More than five years 41
+Total lease payments receivable 114
+Unearned finance income (33)
+Total finance lease receivables 81
+Finance lease receivables included in the consolidated
+statement of financial position
+11. Property and equipment
+Property
+and
+equipment Leasehold
+improvements Total
+Cost
+At January 1, 2024 93 444 537
+At December 31, 2024 101 394 495
+At December 31, 2025 136 348 […].
+Accumulated depreciation and impairment loss
+At January 1, 2024 (79) (211) (290)
+At December 31, 2024 (87) (220) (307)
+Impairment charge — (3) (3)
+At December 31, 2025 (83) (213) (296)
+Cost, net accumulated depreciation and impairment loss
+At December 31, 2024 14 174 188
+At December 31, 2025 53 135 188
+Impairment charges included […].
+12. Goodwill and intangible assets
+Internal
+development
+costs and
+patents Acquired
+intangible
+assets Total Goodwill Total
+Cost
+At January 1, 2024 68 168 236 1,137 1,373
+At December 31, 2024 64 141 205 1,201 1,406
+Acquisitions
+— 5 5 6 11
+At December 31, 2025 37 133 170 1,083 1,253
+Accumulated amortization
+At January 1, 2024 (55) (97) (152) — (152)
+Exchange differences — (5) (5) — (5)
+At December 31, 2024 (56) (101) (157) — (157)
+At December 31, 2025 (25) (104) (129) — (129)
+Cost, net accumulated amortization
+At December 31, 2024 8 40 48 1,201 1,249
+At December 31, 2025 12 29 41 1,083 1,124
+Amortizat […].
+Premium Ad-Supported Premium Ad-Supported
+2025 2025 2024 2024
+Goodwill 266 817 279 922
+F-31
+Valuation methodology
+The Group performed its annual impairment test in the fourth quarter of 2025. The […].
+Ad-Supported segment
+For the Ad-supported segment we used an income valuation method which involved discounting […].
+Premium segment
+For the Premium segment we used an income valuation method which involved discounting the […].
+13. Restricted cash and other non-current assets
+2025 2024
+Restricted cash
+Total 61 68
+14. Trade and other receivables
+2025 2024
+Less: allowance for expected credit losses (5) (3)
+Other 266 231
+Total 802 771
+F-32
+Trade receivables are non-interest bearing and generally […].
+Provision for expected credit losses 10 5
+Reversal of unutilized provisions (4) (3)
+Receivables written off (4) (4)
+The maximum exposure to credit risk at the reporting date is the carrying value of each […].
+15. Other current assets
+2025 2024
+Total 111 132
+Content asset amortization of €125 million, €188 million, and €208 […].
+16. Issued share capital and other reserves
+As of each of December 31, 2025, 2024, and 2023, the authorized and subscribed share […].
+T […].
+Other reserves
+2025 2024 2023
+Currency translation
+At January 1 150 63 100
+Short term investments
+Gains/(losses) on fair value that may be subsequently reclassified to consolidated […].
+Long term investments
+At January 1 553 224 161
+Net gains on fair value of investments held at period-end not to […].
+Exchangeable Notes
+Cash flow hedges
+Gains/(losses) on fair value that may be subsequently reclassified consolidated statement […].
+Deferred tax (1) — 3
+Share-based compensation
+At January 1 2,029 1,539 1,265
+Share-based compensation (Note 17) 248 268 322
+Income tax impact associated with share-based compensation (Note 8) 417 359 23
+At December 31 2,453 2,029 1,539
+Currency translation reserve comprises foreign exchange […].
+17. Share-based compensation
+Stock Option Plans
+The Company has Employee Stock Option Plans (“ESOP”) and Director Stock Option Plans […].
+Restricted Stock Unit Program
+The Company has restricted stock unit (“RSU”) programs for employees and members of its […].
+Other Awards
+In connection with the acquisition of The Ringer during 2020 and Podsights during 2022, […].
+RSUs Other
+Number of
+RSUs Weighted
+average
+grant date
+fair value Number of
+Awards Weighted
+average
+grant date
+fair value
+US$ US$
+Outstanding at January 1, 2023 3,135,407 142.23 71,717 152.50
+Granted 1,379,324 121.77 — —
+F […].
+Options
+Number of
+options Weighted
+average
+exercise price
+US$
+Outstanding at January 1, 2023 16,004,890 164.56
+Granted 2,140,650 129.05
+Forfeited […].
+Exer […].
+Range of exercise prices (US$) Number of
+options Weighted
+average
+remaining
+contractual
+life (years) Number of
+options Weighted
+average
+re […].
+Expected volatility (%)
+39.9 – 54.0
+49.9 – 57.6
+51.5 – 61.2
+Risk-free interest rate (%)
+3.5 – 4.4
+3.5 – 4.9
+3.5 – 4.9
+Expected life of stock options (years)
+2.6 – 4.8
+2.6 – 4.8
+2.6 – 4.8
+Valuation assumptions are determined at each grant date and, as […].
+Actual stock option expense 28
+Stock option expense increase/(decrease) under the following
+assumption changes
+Volatility decreased by 10% (5)
+Expected life decrease by 1 year (5)
+Expected life increase by 1 year 4
+The expense recognized in the consolidated statement of operations for share-based […].
+202 […].
+18. Exchangeable Notes
+On March 2, 2021, the Company’s wholly owned subsidiary, Spotify USA Inc. (the “Issuer”), […].
+19. Trade and other payables
+2025 2024
+Total 1,194 1,342
+Trade payables generally have a 30-day term and are recognized […].
+20. Accrued expenses and other liabilities
+2025 2024
+Non-current
+Other accrued liabilities 2 5
+Current
+Accrued salaries, vacation, severance, and related taxes 100 119
+Total 2,589 2,347
+F-41
+21. Provisions
+Legal
+contingencies Other Total
+Reversal of unutilized amounts (2) (3) (5)
+Exchange differences — 1 1
+Reversal of unutilized amounts — (4) (4)
+Exchange differences (1) (2) (3)
+Non-current portion — 3 3
+Non-current portion — 3 3
+Legal contingencies
+Various legal actions, proceedings, and claims are pending or may be instituted or […].
+As […].
+Other
+The Group has provisions that relate primarily to potential tax obligations other than […].
+22. Financial risk management and financial instruments
+Financial risk management
+The Group’s operations are exposed to financial risks. To manage these risks efficiently, […].
+Capital management
+The Group’s objectives when managing capital (cash and cash equivalents, short term […].
+On […].
+Credit risk management
+Financial assets such as cash and cash equivalents and short term investments carry an […].
+Liquidity risk management
+Liquidity risk is the Group’s risk of not being able to meet the short term payment […].
+Th […].
+Liquidity
+Cash equivalents include investments in money market funds measured at fair value and […].
+Currency risk management
+Transaction exposure relates to business transactions denominated in foreign currency […].
+(i)Transaction exposure sensitivity
+In most cases, the Group’s customers are billed in their respective local currency. Major […].
+(SEK) British pound
+(GBP) U.S. dollar
+(USD)
+(SEK) British pound
+(GBP) U.S. dollar
+(USD)
+(ii)Translation exposure sensitivity
+Translation exposure exists due to the translation of the results and financial position […].
+Interest rate risk management
+Interest rate risk is the risk that changes in interest rates will have a negative impact […].
+Financing risk management
+The Group finances its operations through external borrowings, equity offerings, and cash […].
+Share price risk management
+Share price risk is the risk that the fair value or future cash flows of a financial […].
+T […].
+Other share price risk
+Social costs are payroll taxes associated with employee salaries and benefits, including […].
+Investment risk
+The Group is exposed to investment risk as it relates to changes in the market value of […].
+Insurance risk management
+Insurance coverage is governed by corporate guidelines and includes a common package of […].
+Financial instruments
+Foreign exchange forward contracts
+Cash flow hedges
+The Group’s currency pairs used for cash flow hedges are Euro / U.S. dollar, Euro / […].
+Notional amount in foreign currency
+Australian dollar
+(AUD) British pound
+(GBP) Canadian dollar
+(CAD) Norwegian krone
+(NOK) Swedish krona
+(SEK) U.S. dollar
+(USD)
+(in millions)
+Hedged line item in consolidated statement of operations
+Revenue 533 689 446 1,065 1,811 135
+Cost of revenue 308 408 266 683 1,155 91
+Total 841 1,097 712 1,748 2,966 226
+The following […].
+Notional amount in foreign currency
+Australian dollar
+(AUD) British pound
+(GBP) Canadian dollar
+(CAD) Norwegian krone
+(NOK) Swedish krona
+(SEK) U.S. dollar
+(USD)
+(in millions)
+Hedged line item in consolidated statement of operations
+Revenue 447 607 420 983 1,648 102
+Cost of revenue 285 373 262 635 1,067 72
+Total 732 980 682 1,618 2,715 174
+Fair values
+The carrying amounts of certain financial instruments, including cash and cash […].
+F-46
+The […].
+Financial assets at fair value
+Cash equivalents:
+Short term investments:
+Agency securities — 2 — 2
+Derivatives (designated for hedging):
+Foreign exchange forwards — 8 — 8
+Financial liabilities at fair value
+Derivatives (designated for hedging):
+Financial assets and liabilities by fair value hierarchy level Level 1 Level 2 Level 3 […].
+Financial assets at fair value
+Cash equivalents:
+Short term investments:
+Derivatives (designated for hedging):
+Financial liabilities at fair value
+Derivatives (designated for hedging):
+The Group’s policy is to recognize transfers into and transfers out of fair value […].
+F-47
+Recurring fair value measurements
+Long term investment – Tencent Music Entertainment Group
+The Group’s approximate 9% investment in TME is carried at fair value through other […].
+20 […].
+Warrants
+On August 23, 2021, the Company issued, for €31 million, warrants to acquire 800,000 […].
+T […].
+Long term investments – other
+The Group has interests in certain long term investments, the most significant of which is […].
+Initial recognition of long term investment 1 1 3
+Changes in fair value recorded in other comprehensive income held at period-end (5) 19 16
+Return of capital — (2) —
+Exchangeable Notes
+On March 2, 2021, the Company’s wholly owned subsidiary, Spotify USA Inc. issued US$1,500 […].
+Effect of changes in foreign exchange rates (204) 88
+At December 31 1,458 1,539
+The change in estimated fair value is recognized within finance […].
+23. Segment information
+The Group has two reportable segments: Premium and Ad-Supported. Revenue for the Premium […].
+Premium
+Revenue 15,350 13,819 11,566
+Cost of revenue 10,184 9,324 8,231
+Gross profit 5,166 4,495 3,335
+Ad-Supported
+Revenue 1,836 1,854 1,681
+Cost of revenue 1,506 1,625 1,619
+Consolidated
+Revenue 17,186 15,673 13,247
+Cost of revenue 11,690 10,949 9,850
+Gross profit 5,496 4,724 3,397
+Reconciliation of segment gross profit
+Operating expenses, finance income, and finance costs are not allocated to individual […].
+Revenue by country
+2025 2024 2023
+United States 6,470 6,136 5,225
+Other countries 10,703 9,527 8,013
+Total […].
+P […].
+Non-current assets by country
+Non-current assets for this purpose consist of property and equipment and lease […].
+2025 […].
+24. Commitments and contingencies
+Obligations under leases
+See Note 10 for lease obligations.
+Commitments
+The Group is subject to the following minimum guarantees relating to the content on its […].
+Contingencies
+Various legal actions, proceedings, and claims are pending or may be instituted or […].
+On […].
+25. Related party transactions
+Key management compensation
+Key management includes members of the Company’s senior management and the board of […].
+20 […].
+Key management compensation
+Share-based compensation 32 37 33
+Total 37 44 43
+Other related party transactions
+On August 23, 2021, the Company issued, for €31 million, warrants to acquire 800,000 […].
+D […].
+26. Group information
+Name Principal activities Proportion of
+voting rights
+and shares
+held (directly
+or indirectly) Country of
+incorporation
+Spotify AB Main operating company 100 % Sweden
+Spotify USA Inc. USA operating company 100 % USA
+Spotify Ltd Sales, marketing, contract research and development, and customer support 100 […].
+27. Events after the reporting period
+Subsequent to the end of the reporting period, the Group signed several license agreements […].

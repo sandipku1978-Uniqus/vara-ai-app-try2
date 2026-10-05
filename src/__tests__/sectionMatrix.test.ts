@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
   SECTION_MATRIX_FORMS,
+  SECTION_MATRIX_ITEM_ROWS,
+  SECTION_MATRIX_ROW_GROUPS,
   SECTION_MATRIX_ROWS,
   buildSectionMatrixCells,
   buildSectionMatrixCsvRows,
@@ -169,9 +171,10 @@ describe('deriveSectionPresence', () => {
     expect(presence['Part I — Dividend Policy'].state).toBe('absent');
   });
 
-  it('finds nothing in empty text', () => {
+  it('never reads empty text as "absent" — no text is "could not extract"', () => {
     const presence = deriveSectionPresence('10-K', ['Item 1. Business'], '');
-    expect(presence['Item 1. Business']).toEqual({ state: 'absent' });
+    expect(presence['Item 1. Business']).toMatchObject({ state: 'unlocated' });
+    expect(presence['Item 1. Business'].reason).toMatch(/not available/);
   });
 });
 
@@ -317,5 +320,53 @@ describe('mapWithConcurrency', () => {
   it('handles an empty list and a limit above the item count', async () => {
     expect(await mapWithConcurrency([], 2, async item => item)).toEqual([]);
     expect(await mapWithConcurrency(['a'], 8, async item => item.toUpperCase())).toEqual(['A']);
+  });
+});
+
+describe('rows from the one taxonomy, grouped Items / Notes / Proxy', () => {
+  it('adds the notes and named subsections below a 10-K’s Items without repeating Item-mapped concepts', () => {
+    const groups = SECTION_MATRIX_ROW_GROUPS['10-K'];
+    expect(groups.map(group => group.label)).toEqual(['Items', 'Notes']);
+    expect(groups[0].rows.slice(0, 22)).toEqual(SECTION_MATRIX_ITEM_ROWS['10-K']);
+    expect(groups[0].rows).toEqual(expect.arrayContaining(['Human Capital', 'Non-GAAP Measures']));
+    // Risk Factors is Item 1A on a 10-K — already a row.
+    expect(groups[0].rows).not.toContain('Risk Factors');
+    expect(groups[1].rows).toEqual(expect.arrayContaining(['Leases', 'Income Taxes', 'Revenue', 'Critical Audit Matters', 'Significant Accounting Policies']));
+    expect(SECTION_MATRIX_ROWS['10-K']).toEqual(groups.flatMap(group => group.rows));
+  });
+
+  it('offers DEF 14A as a form whose rows are the proxy sections', () => {
+    expect(SECTION_MATRIX_FORMS).toContain('DEF 14A');
+    expect(SECTION_MATRIX_ROW_GROUPS['DEF 14A'].map(group => group.label)).toEqual(['Proxy']);
+    expect(SECTION_MATRIX_ROWS['DEF 14A']).toEqual([
+      'Compensation Discussion & Analysis', 'Summary Compensation Table', 'Pay versus Performance',
+      'Director Compensation', 'Audit Fees', 'Related-Party Transactions', 'Board and Committees', 'Say-on-Pay Proposal',
+    ]);
+    for (const row of SECTION_MATRIX_ROWS['DEF 14A']) expect(sectionMatrixScope('DEF 14A', row), row).not.toBeNull();
+  });
+
+  it('reads the definitive proxy, not a preliminary or additional-materials filing', () => {
+    expect(pickSectionMatrixFiling(filingIndex(['DEFA14A', 'PRE 14A', 'DEF 14A']), 'DEF 14A')).toMatchObject({ form: 'DEF 14A', accession: '0000320193-26-000003' });
+    expect(pickSectionMatrixFiling(filingIndex(['DEFA14A', 'PRE 14A']), 'DEF 14A')).toBeNull();
+  });
+
+  it('separates "not disclosed" from "could not extract" in a cell, its label and the export', () => {
+    // Notes exist, but the lease note is only mentioned, never headed.
+    const text = [
+      'Item 8. Financial Statements',
+      'Notes to Consolidated Financial Statements',
+      'Note 1 – Revenue',
+      'Revenue is recognized when control transfers. Leases are discussed elsewhere.',
+    ].join('\n');
+    const presence = deriveSectionPresence('10-K', ['Leases', 'Going Concern'], text);
+    expect(presence.Leases.state).toBe('unlocated');
+    expect(presence['Going Concern']).toEqual({ state: 'absent' });
+
+    const record: CompanyVerification = { status: 'verified', source: SOURCE, sections: presence };
+    const cells = buildSectionMatrixCells(['Leases', 'Going Concern'], ['AAPL'], () => record);
+    expect(cells.Leases.AAPL).toMatchObject({ state: 'unlocated', reason: expect.stringMatching(/mentions Leases/) });
+    expect(describeCellState(cells.Leases.AAPL)).toMatch(/^could not extract: /);
+    expect(sectionMatrixCellLabels('Leases', 'AAPL', '10-K', cells.Leases.AAPL).label)
+      .toBe("Leases: could not be extracted from AAPL's 10-K 0000320193-26-000002");
   });
 });
