@@ -1,6 +1,7 @@
 import {
   useEffect,
   useRef,
+  useState,
   type FormEventHandler,
   type KeyboardEventHandler,
   type MouseEventHandler,
@@ -13,6 +14,7 @@ import {
   CheckCircle2,
   ClipboardList,
   ExternalLink,
+  FileDown,
   FileSearch,
   Loader2,
   Send,
@@ -29,15 +31,129 @@ import type {
   PendingAlertDraft,
 } from '../types/agent';
 import { renderMarkdown } from '../utils/markdownRenderer';
+import type { AiAnswerMeta } from '../services/aiApi';
 import ResponsibleAIBanner from './ResponsibleAIBanner';
+import { exportAnswerDocx, answerFileStem } from '../services/answerExport';
+import { buildAnswerEvidencePackage, fetchAppVersion } from '../services/evidencePackage';
+import { exportEvidencePackageJson, readSessionDisplayName } from '../services/memoExport';
 import type { PanelTab } from './AIQnAPanel.helpers';
+import { AnswerModelLine, WebSourcesList } from './ai/AnswerModelMeta';
+import { ModelSelector } from './ai/ModelSelector';
+
+/**
+ * Answer footer export: one icon button opening a two-item menu — the Word
+ * document (answer, citations, evidence packet, evidence-package appendix)
+ * or the evidence package alone as JSON.
+ */
+function AnswerExportButton({ run, evidence }: { run: AgentRun; evidence: AgentEvidencePacket | null }) {
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    menuRef.current?.querySelector<HTMLButtonElement>('[role="menuitem"]')?.focus();
+  }, [open]);
+
+  async function exportAs(format: 'docx' | 'json') {
+    setOpen(false);
+    setBusy(true);
+    setFailed(false);
+    try {
+      const generatedAt = new Date();
+      const evidencePackage = buildAnswerEvidencePackage({
+        run,
+        evidence,
+        generatedAt,
+        appVersion: await fetchAppVersion(),
+        aiMetadata: { response: run.aiMetadata },
+      });
+      if (format === 'json') exportEvidencePackageJson(evidencePackage, answerFileStem(run, generatedAt));
+      else await exportAnswerDocx({ run, evidence, author: readSessionDisplayName(), generatedAt, evidencePackage });
+    } catch (error) {
+      console.error('Answer export failed:', error);
+      setFailed(true);
+    } finally {
+      setBusy(false);
+      buttonRef.current?.focus();
+    }
+  }
+
+  return (
+    <div
+      className="answer-export"
+      style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+      // Focus leaving the control and its menu closes the menu.
+      onBlur={event => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpen(false);
+      }}
+    >
+      <button
+        ref={buttonRef}
+        type="button"
+        className="icon-btn-small"
+        aria-label="Export this answer"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        title="Export answer to Word, or its evidence package as JSON"
+        disabled={busy}
+        onClick={() => setOpen(current => !current)}
+      >
+        {busy ? <Loader2 size={15} className="spinner" /> : <FileDown size={15} />}
+      </button>
+      {open && (
+        <div
+          ref={menuRef}
+          role="menu"
+          aria-label="Export this answer"
+          className="answer-export-menu"
+          style={{
+            position: 'absolute', right: 0, bottom: 'calc(100% + 4px)', zIndex: 5, display: 'flex', flexDirection: 'column',
+            minWidth: '200px', padding: '4px', borderRadius: '6px', border: '1px solid var(--border-color)',
+            background: 'var(--surface-panel)', boxShadow: '0 8px 20px color-mix(in srgb, var(--text-primary) 14%, transparent)',
+          }}
+          onKeyDown={event => {
+            if (event.key === 'Escape') {
+              event.preventDefault();
+              setOpen(false);
+              buttonRef.current?.focus();
+            } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+              event.preventDefault();
+              const items = Array.from(menuRef.current?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]') || []);
+              const index = items.indexOf(document.activeElement as HTMLButtonElement);
+              const next = (index + (event.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length;
+              items[next]?.focus();
+            }
+          }}
+        >
+          {(['docx', 'json'] as const).map(format => (
+            <button
+              key={format}
+              type="button"
+              role="menuitem"
+              onClick={() => void exportAs(format)}
+              style={{ textAlign: 'left', padding: '6px 10px', border: 'none', borderRadius: '4px', background: 'transparent', color: 'var(--text-primary)', fontSize: '0.78rem', cursor: 'pointer' }}
+            >
+              {format === 'docx' ? 'Word document (.docx)' : 'Evidence package (.json)'}
+            </button>
+          ))}
+        </div>
+      )}
+      {failed && <span role="alert" style={{ fontSize: '0.72rem', color: 'var(--status-error)' }}>Export failed — retry.</span>}
+    </div>
+  );
+}
 
 interface AnswerTabProps {
   activeRun: AgentRun;
+  evidence: AgentEvidencePacket | null;
   streamingText: string;
   loadingStage: string;
   pendingAlertDraft: PendingAlertDraft | null;
   suggestions: string[];
+  answerMeta: AiAnswerMeta | null;
   onConfirmAlert: () => void;
   onDismissAlert: () => void;
   onFillComposer: (text: string) => void;
@@ -45,10 +161,12 @@ interface AnswerTabProps {
 
 function AnswerTab({
   activeRun,
+  evidence,
   streamingText,
   loadingStage,
   pendingAlertDraft,
   suggestions,
+  answerMeta,
   onConfirmAlert,
   onDismissAlert,
   onFillComposer,
@@ -66,6 +184,18 @@ function AnswerTab({
         </div>
       ) : (
         <div className="empty-state-small">This run has no answer yet.</div>
+      )}
+
+      {activeRun.answer && (answerMeta || activeRun.status === 'completed') && (
+        <>
+          <div className="copilot-answer-footer">
+            <div className="copilot-answer-footer-start">
+              {answerMeta && <AnswerModelLine meta={answerMeta} />}
+            </div>
+            {activeRun.status === 'completed' && <AnswerExportButton run={activeRun} evidence={evidence} />}
+          </div>
+          {answerMeta && <WebSourcesList sources={answerMeta.webSources} />}
+        </>
       )}
 
       {pendingAlertDraft && (
@@ -226,6 +356,12 @@ export interface AIQnAPanelViewProps {
   inputValue: string;
   pendingAlertDraft: PendingAlertDraft | null;
   suggestions: string[];
+  /** What the server reported answering the active run, when it reported it. */
+  answerMeta?: AiAnswerMeta | null;
+  /** Model ids the gateway can serve; null/undefined = unknown, offer the full registry. */
+  availableModelIds?: Set<string> | null;
+  /** Shown in the model selector when availability could not be checked. */
+  modelAvailabilityNote?: string | null;
   onResizeStart: MouseEventHandler<HTMLDivElement>;
   onResizeKeyDown: KeyboardEventHandler<HTMLDivElement>;
   onClearRuns: () => void;
@@ -254,6 +390,9 @@ export function AIQnAPanelView({
   inputValue,
   pendingAlertDraft,
   suggestions,
+  answerMeta = null,
+  availableModelIds = null,
+  modelAvailabilityNote = null,
   onResizeStart,
   onResizeKeyDown,
   onClearRuns,
@@ -368,10 +507,12 @@ export function AIQnAPanelView({
             {tab === 'answer' && (
               <AnswerTab
                 activeRun={activeRun}
+                evidence={evidence}
                 streamingText={streamingText}
                 loadingStage={loadingStage}
                 pendingAlertDraft={pendingAlertDraft}
                 suggestions={suggestions}
+                answerMeta={answerMeta}
                 onConfirmAlert={onConfirmAlert}
                 onDismissAlert={onDismissAlert}
                 onFillComposer={onFillComposer}
@@ -397,6 +538,7 @@ export function AIQnAPanelView({
           placeholder={`Ask ${BRAND.shortName} to open filings, compare peers, find comment letters, or draft alerts...`}
           disabled={running}
         />
+        <ModelSelector availableModelIds={availableModelIds} availabilityNote={modelAvailabilityNote} />
         <button type="submit" disabled={!inputValue.trim() || running} className="send-btn" aria-label={running ? 'Copilot is working' : 'Send message to copilot'}>
           {running ? <Loader2 size={16} className="spinner" /> : <Send size={16} />}
         </button>

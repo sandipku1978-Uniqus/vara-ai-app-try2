@@ -5,6 +5,7 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 
 import {
   BellRing,
+  Bookmark,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -15,6 +16,7 @@ import {
   MessageSquare,
   Search,
   Sparkles,
+  Type,
 } from 'lucide-react';
 import SearchFilterBar, { defaultSearchFilters, type SearchFilters } from '../components/filters/SearchFilterBar';
 import { useApp } from '../context/AppState';
@@ -47,27 +49,40 @@ import {
   createResearchSessionId,
   hasResearchSearchCriteria,
   loadResearchSessions,
+  mergeRestoredResearchSessions,
   parseResearchRouteParams,
   shouldHandleExternalResearchRoute,
   saveResearchSessions,
+  subscribeRestoredResearchSessions,
   type ResearchSearchSession,
 } from '../services/researchSessions';
 import { buildHighlightTerms } from '../services/searchAssist';
-import { mergeCandidateCoverage } from '../services/searchCoverage';
+import { buildResultsHeadline, mergeCandidateCoverage } from '../services/searchCoverage';
 import { exportResultsWorkbook } from '../services/resultExport';
 import { RESEARCH_LIBRARY } from '../config/researchLibrary';
 import { countExactMatches, isEftsExactCountEquivalent } from '../services/exactCount';
 import BooleanSyntaxHelp, { BooleanSyntaxHelpTrigger } from '../components/research/BooleanSyntaxHelp';
 import ResearchSessionTabs from '../components/research/ResearchSessionTabs';
 import ResearchResultsWorkspace from '../components/research/ResearchResultsWorkspace';
+import type { OpenFilingOptions } from '../components/research/ResultEvidenceDetails';
+import SearchJobPanel from '../components/research/SearchJobPanel';
+import {
+  buildSearchJobHeadline,
+  shouldOfferSearchContinuation,
+  type SearchJobPlanInput,
+  type SearchJobSummary,
+} from '../services/searchJobs';
 import { generateSearchTrendReport, SEARCH_TREND_AI_FALLBACK } from '../services/searchTrendReport';
 import { planResearchSearch } from '../services/researchSearchPlan';
+import { SEARCH_MODE_LABEL } from '../services/filingResearchPlan';
 import { canUseInstantEnrichedSearch } from '../services/filingResearch';
 import { BRAND } from '../config/brand';
 import './SearchPage.css';
 import '../styles/evidence-ledger.css';
 import { addCitation, citationId, removeCitation } from '../services/memoTray';
 import { useMemoTray } from '../hooks/useMemoTray';
+import { saveSearch } from '../services/savedSearches';
+import SavedSearchesMenu from '../components/alerts/SavedSearchesList';
 
 // Amendments included for every core form: EFTS matches form types exactly, so
 // omitting 10-K/A etc. hides restatements — often the most material filings.
@@ -77,6 +92,7 @@ const INITIAL_RESEARCH_RESULT_LIMIT = 80;
 const INITIAL_BOOLEAN_RESULT_LIMIT = 40;
 const RESEARCH_RESULTS_PAGE_SIZE = 50;
 const RESEARCH_SEARCH_USES_ENRICHED_RESULTS = true;
+const SEARCH_JOB_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const SAMPLE_SEARCHES = [
   'ASC 842 adoption w/10 lease',
   'ASR w/5 derivative',
@@ -173,6 +189,9 @@ export default function SearchPage() {
   );
   const initialQuery = initialRouteSearch?.query || '';
   const activeTabId = searchParams?.get('tab');
+  // A continuation job attached to the results pane. The Dashboard links
+  // here with ?searchJob=<id>; "Keep validating" attaches a new one.
+  const routeSearchJobId = searchParams?.get('searchJob') || '';
 
   const setSearchParams = useCallback((params: Record<string, string> | URLSearchParams, options?: { replace?: boolean }) => {
     let nextParams: URLSearchParams;
@@ -251,6 +270,14 @@ export default function SearchPage() {
   const coverageRestoredForSessionRef = useRef<string | null>(null);
   const [libraryOpen, setLibraryOpen] = useState(false);
 
+  const [searchJobId, setSearchJobId] = useState<string | null>(
+    () => (SEARCH_JOB_ID.test(routeSearchJobId) ? routeSearchJobId : null)
+  );
+  const [searchJob, setSearchJob] = useState<SearchJobSummary | null>(null);
+  useEffect(() => {
+    if (SEARCH_JOB_ID.test(routeSearchJobId)) setSearchJobId(routeSearchJobId);
+  }, [routeSearchJobId]);
+
   const captureCandidateCoverage = useCallback((coverage: SearchCandidateCoverage) => {
     setCandidateCoverage(current => mergeCandidateCoverage(current, coverage));
   }, []);
@@ -278,6 +305,12 @@ export default function SearchPage() {
   useEffect(() => {
     saveResearchSessions(sessions);
   }, [sessions]);
+
+  // Signed in, tabs saved to the account arrive after mount on a new browser
+  // session; add them beside whatever this page already has open.
+  useEffect(() => subscribeRestoredResearchSessions(() => {
+    setSessions(current => mergeRestoredResearchSessions(current, loadResearchSessions()));
+  }), []);
 
   const activeSession = useMemo(() => {
     if (sessions.length === 0) return null;
@@ -333,8 +366,8 @@ export default function SearchPage() {
   }, [displayResults]);
 
   const activeFilterCount = useMemo(() => countAppliedFilters(filters), [filters]);
-  const searchModeLabel = searchMode === 'semantic' ? 'Filing research' : 'Boolean / proximity';
-  const searchModeShortLabel = searchMode === 'semantic' ? 'FR' : 'BQ';
+  const searchModeLabel = SEARCH_MODE_LABEL[searchMode];
+  const searchModeShortLabel = searchMode === 'semantic' ? 'PL' : 'BQ';
   const resultCountLabel = displayResults.length >= RESEARCH_RESULT_LIMIT ? `${RESEARCH_RESULT_LIMIT}+` : displayResults.length.toString();
   const isResearchFocusMode = isRailCollapsed && displayResults.length > 0;
   const lastUpdatedLabel = useMemo(() => {
@@ -471,6 +504,40 @@ export default function SearchPage() {
     if (!search || search.mode !== 'boolean') return false;
     return isEftsExactCountEquivalent(search.query, search.filters);
   }, [candidateCoverage, lastResolvedSearch]);
+
+  // Offer a continuation job only for the run on screen, once it has settled
+  // with partial coverage that EDGAR's own count cannot answer.
+  const searchJobOffer = useMemo<SearchJobPlanInput | null>(() => {
+    if (searchJobId || loading || isRefiningResults || !activeSession?.searched) return null;
+    const { query: jobQuery, mode, filters: jobFilters } = activeResolvedSearch;
+    const hydrateTextSignals = shouldHydrateSearchSignals(mode, jobFilters);
+    if (!shouldOfferSearchContinuation(candidateCoverage, mode, hydrateTextSignals)) return null;
+    return {
+      query: jobQuery,
+      mode,
+      filters: jobFilters,
+      defaultForms: DEFAULT_FORM_SCOPE,
+      includeExhibits: false,
+      hydrateTextSignals,
+    };
+  }, [searchJobId, loading, isRefiningResults, activeSession?.searched, activeResolvedSearch, candidateCoverage]);
+
+  // The job's headline supersedes the bounded run's only when the job is
+  // answering the search on screen.
+  const searchJobHeadline = useMemo(() => {
+    if (!searchJob) return null;
+    const { input } = searchJob.plan;
+    const sameSearch =
+      buildSearchSignature(input.query, input.mode, input.filters) ===
+      buildSearchSignature(activeResolvedSearch.query, activeResolvedSearch.mode, activeResolvedSearch.filters);
+    return sameSearch ? buildSearchJobHeadline(searchJob) : null;
+  }, [searchJob, activeResolvedSearch]);
+
+  const detachSearchJob = useCallback(() => {
+    setSearchJobId(null);
+    setSearchJob(null);
+    if (routeSearchJobId) setSearchParams({ searchJob: '' }, { replace: true });
+  }, [routeSearchJobId, setSearchParams]);
 
   const handleCountExactly = useCallback(async () => {
     const search = lastResolvedSearch;
@@ -1162,7 +1229,7 @@ export default function SearchPage() {
   }, [activeTabId, setActiveSearchContext, setRouteForSession]);
 
 
-  const openFiling = useCallback((row: FilingResearchResult) => {
+  const openFiling = useCallback((row: FilingResearchResult, options: OpenFilingOptions = {}) => {
     const params = new URLSearchParams();
     params.set('company', row.companyName || row.entityName);
     params.set('date', row.fileDate);
@@ -1179,7 +1246,9 @@ export default function SearchPage() {
       ? buildResearchRouteParams(activeSession.query, activeSession.mode, activeSession.filters, activeSession.id)
       : new URLSearchParams();
     params.set('returnTo', `/search${returnParams.size ? `?${returnParams.toString()}` : ''}`);
-    navigate.push(`/filing/${row.cik}_${row.accessionNumber}_${row.primaryDocument}?${params.toString()}`);
+    if (options.panel === 'hits' && activeResolvedSearch.query) params.set('panel', 'hits');
+    const documentName = options.document || row.primaryDocument;
+    navigate.push(`/filing/${row.cik}_${row.accessionNumber}_${documentName}?${params.toString()}`);
   }, [activeResolvedSearch, activeSession, navigate]);
 
   async function handleTrendReport() {
@@ -1219,7 +1288,28 @@ export default function SearchPage() {
       latestNewAccessions: [],
       latestResultCount: displayResults.length,
     });
-    setAlertMessage('Saved locally in this browser. Rerun it manually from the Dashboard; it does not send scheduled background notifications.');
+    setAlertMessage('Alert saved. Signed in with saved-research storage, it is checked on the server (daily by default) and new hits appear under the bell; otherwise it stays in this browser and is not checked in the background.');
+  }
+
+  function handleSaveSearch() {
+    if (!hasResearchSearchCriteria(query, filters)) return;
+    const headline = !searched
+      ? 'not run before saving'
+      : `${searchJobHeadline || buildResultsHeadline(displayResults.length, candidateCoverage, RESEARCH_RESULT_LIMIT)} · ${
+        candidateCoverage ? (candidateCoverage.complete ? 'complete coverage' : 'partial coverage') : 'coverage not reported'
+      }`;
+    const result = saveSearch({
+      label: buildAlertName(query, filters),
+      query,
+      mode: searchMode,
+      filters,
+      defaultForms: DEFAULT_FORM_SCOPE,
+      coverageHeadline: headline,
+      resultCount: displayResults.length,
+    });
+    setAlertMessage(result
+      ? (result.duplicate ? 'This search was already saved; its label and save-time headline were refreshed.' : 'Search saved. Re-run it from “Saved” here or from the Dashboard; it is not checked in the background (save an alert for that).')
+      : 'The search could not be saved yet — your session is still loading. Retry in a moment.');
   }
 
   const selectedResultId = selectedResult?.id || '';
@@ -1309,7 +1399,7 @@ export default function SearchPage() {
               <span>{activeFilterCount}</span>
             </div>
             <div className="research-rail-collapsed-badge" title={searchModeLabel}>
-              {searchMode === 'semantic' ? <Sparkles size={15} /> : <Hash size={15} />}
+              {searchMode === 'semantic' ? <Type size={15} /> : <Hash size={15} />}
               <span>{searchModeShortLabel}</span>
             </div>
           </div>
@@ -1351,7 +1441,7 @@ export default function SearchPage() {
               onClick={() => setSearchMode('semantic')}
               aria-pressed={searchMode === 'semantic'}
             >
-              <Sparkles size={16} /> Filing Research
+              <Type size={16} /> {SEARCH_MODE_LABEL.semantic}
             </button>
             <button
               type="button"
@@ -1359,7 +1449,7 @@ export default function SearchPage() {
               onClick={() => setSearchMode('boolean')}
               aria-pressed={searchMode === 'boolean'}
             >
-              <Hash size={16} /> Boolean / Proximity
+              <Hash size={16} /> {SEARCH_MODE_LABEL.boolean}
             </button>
           </div>
 
@@ -1613,9 +1703,13 @@ export default function SearchPage() {
               />
 
               <div className="research-toolbar-actions">
+                <button className="secondary-btn" onClick={handleSaveSearch} disabled={!hasResearchSearchCriteria(query, filters)}>
+                  <Bookmark size={16} /> Save search
+                </button>
                 <button className="secondary-btn" onClick={handleCreateAlert} disabled={!hasResearchSearchCriteria(query, filters)}>
                   <BellRing size={16} /> Save Alert
                 </button>
+                <SavedSearchesMenu />
               </div>
             </div>
 
@@ -1721,6 +1815,17 @@ export default function SearchPage() {
           selectedIsCited={selectedIsCited}
           onToggleCitation={handleToggleCitation}
           resolvedDocuments={resolvedPreviewDocs}
+          headlineOverride={searchJobHeadline}
+          jobStatusRegion={
+            <SearchJobPanel
+              jobId={searchJobId}
+              offerSearch={searchJobOffer}
+              onAttach={setSearchJobId}
+              onDetach={detachSearchJob}
+              onOpenFiling={openFiling}
+              onJobChange={setSearchJob}
+            />
+          }
         />
       </section>
     </div>

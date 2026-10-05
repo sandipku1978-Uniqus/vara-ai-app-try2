@@ -17,6 +17,14 @@
 
 export const BURN_DOWN_DATE = '2026-09-30';
 
+/**
+ * Debt window for the October 2026 first-wave controls: they shipped with
+ * component tests but no Playwright archetype spec. When this date passes,
+ * the meta-test turns red until each has executable evidence.
+ */
+export const OCTOBER_2026_EXCEPTION_EXPIRY = '2026-11-15';
+export const OCTOBER_2026_EXCEPTION_REASON = 'Shipped in the October 2026 first wave with component-level vitest coverage only; no Playwright spec exercises the control and its outcome yet. Queued for the archetype burn-down.';
+
 export type UiActionEvidence =
   | { kind: 'automated-full'; specs: readonly { file: string; title: string }[] }
   | {
@@ -78,7 +86,7 @@ export const UI_ACTION_COVERAGE: Record<string, UiActionEvidence> = {
   'dashboard.open-recent-filing': { kind: 'automated-full', specs: [{ file: 'tests/e2e/dashboard-comment-letter-interactions.spec.ts', title: 'dashboard.open-recent-filing opens the exact selected filing identity' }] },
   'dashboard.check-saved-alert': { kind: 'automated-full', specs: [
     { file: 'tests/e2e/critical-actions.spec.ts', title: 'research-workbench.save-alert and dashboard.check-saved-alert round-trip' },
-    { file: 'tests/e2e/dashboard-comment-letter-interactions.spec.ts', title: 'dashboard.check-saved-alert rejects an unmeasured run without replacing prior alert evidence' },
+    { file: 'tests/e2e/dashboard-comment-letter-interactions.spec.ts', title: 'dashboard.check-saved-alert says checks are unavailable here without replacing prior alert evidence' },
   ] },
   'dashboard.open-or-remove-alert': { kind: 'automated-full', specs: [{ file: 'tests/e2e/dashboard-comment-letter-interactions.spec.ts', title: 'dashboard.open-or-remove-alert restores exact criteria and removes only the chosen alert' }] },
   'earnings.run-search': { kind: 'automated-full', specs: [{ file: 'tests/e2e/filing-search-surfaces.spec.ts', title: 'earnings.run-search returns earnings-release exhibit rows' }] },
@@ -255,6 +263,32 @@ export const UI_ACTION_COVERAGE: Record<string, UiActionEvidence> = {
     { file: 'tests/e2e/global-workspace-interactions.spec.ts', title: 'global.async-and-retry distinguishes loading, failure, empty, and partial success while retrying the same criteria' },
     { file: 'tests/e2e/global-workspace-interactions.spec.ts', title: 'global.async-and-retry allows only the newest overlapping request to update the view' },
   ] },
+  // October 2026 first-wave controls (W2-D inventory). No Playwright spec
+  // exercises them yet; each has component-level vitest coverage and is
+  // carried as owned debt with its own expiry. Burn these down by writing the
+  // archetype specs, not by extending the date.
+  'dashboard.open-search-job': { kind: 'manual-exception', owner: 'urc-engineering', expires: OCTOBER_2026_EXCEPTION_EXPIRY, reason: OCTOBER_2026_EXCEPTION_REASON },
+  'research-workbench.continue-search-job': { kind: 'manual-exception', owner: 'urc-engineering', expires: OCTOBER_2026_EXCEPTION_EXPIRY, reason: OCTOBER_2026_EXCEPTION_REASON },
+  'comment-letters.filter-letters': { kind: 'manual-exception', owner: 'urc-engineering', expires: OCTOBER_2026_EXCEPTION_EXPIRY, reason: OCTOBER_2026_EXCEPTION_REASON },
+  'comment-letters.review-comment-issues': { kind: 'manual-exception', owner: 'urc-engineering', expires: OCTOBER_2026_EXCEPTION_EXPIRY, reason: OCTOBER_2026_EXCEPTION_REASON },
+  'comment-letters.export-letters': { kind: 'manual-exception', owner: 'urc-engineering', expires: OCTOBER_2026_EXCEPTION_EXPIRY, reason: OCTOBER_2026_EXCEPTION_REASON },
+  'benchmarking.compare-footnotes': { kind: 'manual-exception', owner: 'urc-engineering', expires: OCTOBER_2026_EXCEPTION_EXPIRY, reason: OCTOBER_2026_EXCEPTION_REASON },
+  'benchmarking.choose-yoy-form': { kind: 'manual-exception', owner: 'urc-engineering', expires: OCTOBER_2026_EXCEPTION_EXPIRY, reason: OCTOBER_2026_EXCEPTION_REASON },
+  'benchmarking.explain-yoy-change': { kind: 'manual-exception', owner: 'urc-engineering', expires: OCTOBER_2026_EXCEPTION_EXPIRY, reason: OCTOBER_2026_EXCEPTION_REASON },
+  'benchmarking.build-peers-from-sources': { kind: 'manual-exception', owner: 'urc-engineering', expires: OCTOBER_2026_EXCEPTION_EXPIRY, reason: OCTOBER_2026_EXCEPTION_REASON },
+  'insider-trading.view-transactions': { kind: 'manual-exception', owner: 'urc-engineering', expires: OCTOBER_2026_EXCEPTION_EXPIRY, reason: OCTOBER_2026_EXCEPTION_REASON },
+  'accounting-standards.browse-asu-index': { kind: 'manual-exception', owner: 'urc-engineering', expires: OCTOBER_2026_EXCEPTION_EXPIRY, reason: OCTOBER_2026_EXCEPTION_REASON },
+  'sec-enforcement.open-aaer-tab': { kind: 'manual-exception', owner: 'urc-engineering', expires: OCTOBER_2026_EXCEPTION_EXPIRY, reason: OCTOBER_2026_EXCEPTION_REASON },
+  'sec-enforcement.filter-export-cite-aaers': { kind: 'manual-exception', owner: 'urc-engineering', expires: OCTOBER_2026_EXCEPTION_EXPIRY, reason: OCTOBER_2026_EXCEPTION_REASON },
+  'company-dossier.view-insider-transactions': { kind: 'manual-exception', owner: 'urc-engineering', expires: OCTOBER_2026_EXCEPTION_EXPIRY, reason: OCTOBER_2026_EXCEPTION_REASON },
+  'filing-detail.find-in-document': { kind: 'manual-exception', owner: 'urc-engineering', expires: OCTOBER_2026_EXCEPTION_EXPIRY, reason: OCTOBER_2026_EXCEPTION_REASON },
+  'filing-detail.review-search-hits': { kind: 'manual-exception', owner: 'urc-engineering', expires: OCTOBER_2026_EXCEPTION_EXPIRY, reason: OCTOBER_2026_EXCEPTION_REASON },
+  'accounting-issue.open-evidence': { kind: 'manual-exception', owner: 'urc-engineering', expires: OCTOBER_2026_EXCEPTION_EXPIRY, reason: OCTOBER_2026_EXCEPTION_REASON },
+  'accounting-issue.ask-question': { kind: 'manual-exception', owner: 'urc-engineering', expires: OCTOBER_2026_EXCEPTION_EXPIRY, reason: OCTOBER_2026_EXCEPTION_REASON },
+  'accounting-issue.compare-peers': { kind: 'manual-exception', owner: 'urc-engineering', expires: OCTOBER_2026_EXCEPTION_EXPIRY, reason: OCTOBER_2026_EXCEPTION_REASON },
+  'global.select-to-cart': { kind: 'manual-exception', owner: 'urc-engineering', expires: OCTOBER_2026_EXCEPTION_EXPIRY, reason: OCTOBER_2026_EXCEPTION_REASON },
+  'global.document-cart': { kind: 'manual-exception', owner: 'urc-engineering', expires: OCTOBER_2026_EXCEPTION_EXPIRY, reason: OCTOBER_2026_EXCEPTION_REASON },
+  'global.model-selector': { kind: 'manual-exception', owner: 'urc-engineering', expires: OCTOBER_2026_EXCEPTION_EXPIRY, reason: OCTOBER_2026_EXCEPTION_REASON },
 };
 
 /**

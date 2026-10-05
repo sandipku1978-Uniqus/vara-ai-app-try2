@@ -4,8 +4,8 @@ Uniqus Research is a Next.js application for researching SEC filings, comparing 
 
 ## What is implemented
 
-- SEC filing search with exact Boolean, `NOT`, grouping, and proximity validation against filing text
-- Filing viewer with within-document search, annotations, table extraction, historical redlines, and export
+- SEC filing search with exact Boolean, `NOT`, grouping, and proximity validation against filing text; a text-validated result shows up to three passages from the text that was read, each with its section breadcrumb, the number of hits in that document, and the matched exhibits listed under the parent filing
+- Filing viewer with a find bar (Ctrl/⌘+F while the viewer has focus; case-insensitive, optional whole-word matching, match count, Enter / Shift+Enter to step), an "All hits in this filing" list of every hit of the search that opened the filing (Boolean phrases and `W/n` / `P/n` proximity as the engine evaluates them) with section breadcrumbs, annotations, table extraction, historical redlines, and export. Find and the hit list work on HTML documents rendered in the viewer, not on PDF or XML documents or the parsed Form 3/4/5 view
 - Company dossiers, XBRL financial comparisons, PCAOB auditor information, and comment-letter review episodes
 - Disclosure benchmarking, board, ESG, M&A, IPO, earnings, exhibit, exempt-offering, and accounting research workflows
 - Evidence-linked Claude analysis through authenticated server routes
@@ -41,14 +41,18 @@ Local development may use Clerk's keyless development flow. The current internal
 Use [.env.example](.env.example) as the complete template. The principal settings are:
 
 - `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY`, and—before external production launch—`CLERK_RESEARCH_FEATURE` for strict access control
-- `ANTHROPIC_API_KEY` and optional `ANTHROPIC_MODEL` for AI routes
+- `VERCEL_AI_GATEWAY_KEY` (or the gateway's documented name, `AI_GATEWAY_API_KEY`) for AI routes: with a gateway key every model in `src/lib/ai-models.ts` runs through the Vercel AI Gateway. `ANTHROPIC_API_KEY` is the no-gateway fallback: without a gateway key only the default model runs, directly on Anthropic, and other models report unavailable. Either key makes `/api/health` report AI as configured; its `checks.ai` names the path (`gateway`, `anthropic-direct` or `none`) and which key variables are set, never their values
+- optional `ANTHROPIC_MODEL`: set it to a registry id (for example `anthropic/claude-sonnet-5.5`) to make that model the default for requests that name none. Any value that is not a registry id is treated as the Anthropic API model id the no-gateway path runs (default `claude-sonnet-5`) and leaves the registry default in place. `/api/ai/models` lists the registry and which models this deployment can call
+- web search (off unless a request asks for it): models with native search use their provider's own tool; every other model gets web context retrieved first, through the gateway, from Perplexity Sonar (`perplexity/sonar`). The gateway refuses Sonar (`no_zdr_providers_available`) on accounts that enforce zero data retention, because Perplexity is not a ZDR provider and a per-request opt-out cannot override a team setting. Retrieval then falls back to GPT-5.6 Luna's native OpenAI web search (`openai/gpt-5.6-luna`), which runs under ZDR; Sonar is skipped for ten minutes after a refusal on that instance. If no retriever answers, the model answers without web results and the response's `webSearch` report says why (`src/lib/ai-web-search.ts`)
+- `URC_USER_DATA_SIGNING_SECRET` (32+ characters, server only, Sensitive): the HMAC secret the `/api/user/*` routes sign the Clerk identity with; the same value goes in `public.urc_user_signing_key` (migration 026). Unset, saved research (memo, watchlists, peer sets and the rest) stays browser-local
+- `CRON_SECRET` (16+ characters, server only, Sensitive): Vercel Cron sends it as `Authorization: Bearer …` to `/api/search-jobs/continue` (scheduled in `vercel.json`), which continues long full-text search jobs; the route fails closed when it is unset
 - `KV_REST_API_URL`, `KV_REST_API_TOKEN`, `AI_DAILY_TOKEN_BUDGET_PER_USER`, and optional `AI_MAX_CONCURRENT_*` values for distributed limits and budgets
 - `URC_SUPABASE_URL` and `URC_SUPABASE_WEB_KEY` for production read routes that operate under database policy
 - `URC_SUPABASE_SERVICE_KEY` as a server-only secret for trusted ingestion/maintenance jobs and the three audited cache-writer routes; it is never a web-read identity
 - `NEXT_PUBLIC_EDGAR_USER_AGENT` for SEC requests, in `Organization contact@example.com` form
 - optional `NEXT_PUBLIC_POSTHOG_*` settings for consent-aware analytics
 
-Never expose a service-role key, Anthropic or Clerk secret, KV token, or other server credential through a `NEXT_PUBLIC_*` variable.
+Never expose a service-role key, AI Gateway or Anthropic key, Clerk secret, KV token, signing or cron secret, or other server credential through a `NEXT_PUBLIC_*` variable.
 
 ## Verification
 

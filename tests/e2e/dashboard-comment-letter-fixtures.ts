@@ -322,11 +322,13 @@ export async function installCommentLetterFixtures(
         return;
       }
       const form = requestUrl.searchParams.get('form');
-      // The search RPC narrows by registrant-name substring only (there is
-      // no CIK parameter), and this fixture models exactly that.
+      // Like the browse RPC, the search RPC (migration 027) takes either a
+      // CIK (exact) or a registrant-name substring.
+      const searchCik = requestUrl.searchParams.get('cik');
       const company = (requestUrl.searchParams.get('company') || '').toLowerCase();
       const matches = [...COMMENT_LETTERS, ...commentSearchFillers(options.extraSearchMatches ?? 0)]
         .filter(letter => !form || letter.form === form)
+        .filter(letter => !searchCik || String(letter.cik) === searchCik)
         .filter(letter => !company || letter.company_name.toLowerCase().includes(company))
         .map(letter => ({
           accession: letter.accession,

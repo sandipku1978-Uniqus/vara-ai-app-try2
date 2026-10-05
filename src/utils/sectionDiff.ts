@@ -116,6 +116,78 @@ export function computeSectionChange(priorText: string, currentText: string): Se
   };
 }
 
+/**
+ * The change between two slices as the redline-summary prompt reads it:
+ * every changed run marked [-removed-] / [+added+], with a few unchanged
+ * tokens either side for context, runs separated by "…". Built from the same
+ * word-level diff the bucket is measured on, so an explanation describes the
+ * change that was counted — not a different, prettier diff.
+ *
+ * Bounded: a rewritten section would otherwise exceed what one model call may
+ * carry. When runs are dropped the result says so (`truncated`), and the
+ * caller must tell the reader the explanation covers part of the change.
+ */
+export interface MarkedDiff {
+  text: string;
+  /** Changed runs included / found. */
+  runsIncluded: number;
+  runsTotal: number;
+  truncated: boolean;
+}
+
+const MARKED_DIFF_CONTEXT_TOKENS = 12;
+const MARKED_DIFF_MAX_CHARS = 36_000;
+
+export function buildMarkedDiff(priorText: string, currentText: string, maxChars = MARKED_DIFF_MAX_CHARS): MarkedDiff {
+  const prior = tokensOf(priorText);
+  const current = tokensOf(currentText);
+  const dmp = new diff_match_patch();
+  dmp.Diff_Timeout = 10;
+  const encoded = dmp.diff_linesToChars_(prior.join('\n') + '\n', current.join('\n') + '\n');
+  const diffs = dmp.diff_main(encoded.chars1, encoded.chars2, false);
+  dmp.diff_charsToLines_(diffs, encoded.lineArray);
+
+  const ops = diffs.map(([operation, chunk]) => ({ operation, tokens: chunk.split('\n').filter(Boolean) }));
+
+  const runs: string[] = [];
+  let index = 0;
+  while (index < ops.length) {
+    if (ops[index].operation === 0) { index += 1; continue; }
+    const before = index > 0 && ops[index - 1].operation === 0
+      ? ops[index - 1].tokens.slice(-MARKED_DIFF_CONTEXT_TOKENS).join(' ')
+      : '';
+    const parts: string[] = [];
+    // One run is consecutive edits joined by short unchanged gaps — the same
+    // grouping that counts "passages" in computeSectionChange.
+    while (index < ops.length) {
+      const op = ops[index];
+      if (op.operation === -1) parts.push(`[-${op.tokens.join(' ')}-]`);
+      else if (op.operation === 1) parts.push(`[+${op.tokens.join(' ')}+]`);
+      else if (op.tokens.length < PASSAGE_GAP_TOKENS && index + 1 < ops.length) parts.push(op.tokens.join(' '));
+      else break;
+      index += 1;
+    }
+    const after = index < ops.length && ops[index].operation === 0
+      ? ops[index].tokens.slice(0, MARKED_DIFF_CONTEXT_TOKENS).join(' ')
+      : '';
+    runs.push([before, ...parts, after].filter(Boolean).join(' '));
+  }
+
+  const kept: string[] = [];
+  let length = 0;
+  for (const run of runs) {
+    if (length + run.length + 3 > maxChars) break;
+    kept.push(run);
+    length += run.length + 3;
+  }
+  return {
+    text: kept.join('\n…\n'),
+    runsIncluded: kept.length,
+    runsTotal: runs.length,
+    truncated: kept.length < runs.length,
+  };
+}
+
 export const CHANGE_BUCKET_LABELS: Record<ChangeBucket, string> = {
   new: 'New section',
   deleted: 'Section removed',

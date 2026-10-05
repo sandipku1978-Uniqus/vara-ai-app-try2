@@ -1,0 +1,2861 @@
+[Fixture: Microsoft Corp DEF 14A filed 2025-10-21, accession 0001193125-25-245150, d908201ddef14a.htm. Extracted with src/lib/filingText; trimmed to heading lines plus the opening of each section.]
+Table of Contents
+UNITED STATES SECURITIES AND EXCHANGE COMMISSION
+Proxy Statement Pursuant to Section 14(a) of the
+Securities Exchange Act of 1934 (Amendment No.)
+Filed by the Registrant
+☒
+Filed by a Party other than the Registrant
+☐
+Check the appropriate box:
+☐
+Preliminary Proxy Statement
+☐
+☒
+Definitive Proxy Statement
+☐
+Definitive Additional Materials
+☐
+Microsoft Corporation
+(Name of Registrant as Specified In Its Charter)
+Payment of Filing Fee (Check all boxes that apply):
+☒
+No fee required
+☐
+Fee paid previously with preliminary materials
+☐
+Fee computed on table in exhibit required by Item 25(b) per Exchange Act Rules […].
+0-11
+Table of Contents
+Notice of Annual Shareholders Meeting and
+Virtual Meeting Site:
+virtualshareholdermeeting.com/MSFT25
+Table of Contents
+Celebrating 50 Years of Microsoft
+Fifty years ago, Bill Gates and Paul Allen started Microsoft with a simple but powerful […].
+Satya Nadella
+Chairman and Chief Executive Officer
+Left to Right: Bill Gates, Microsoft Co-founder and Gates Foundation Chair; Steve Ballmer, […].
+Table of Contents
+Letter from our Chairman and Chief Executive Officer
+October 21, 2025
+Dear Shareholder,
+On behalf of the Board of Directors, it is our pleasure […].
+Satya Nadella
+Chairman and Chief Executive Officer
+Table of Contents
+Letter from the Board of Directors
+October 21, 2025
+Dear Shareholder,
+Microsoft’s Board remains deeply proud of the Company’s […].
+Your Board of Directors
+Table of Contents
+Notice of 2025 Annual Shareholders Meeting
+Date
+Time
+Virtual Meeting
+Record Date
+September 30, 2025. Only shareholders of record at the close of business on the record […].
+Proxy Voting
+Make your vote count. Please vote your shares promptly to ensure the presence of a quorum […].
+Items of
+Business
+•
+•
+Approve, on a nonbinding advisory basis, the compensation paid to our named executive […].
+Approve the Microsoft Corporation 2026 Stock Plan
+•
+•
+Address of Corporate
+Headquarters
+Meeting Details
+Important notice regarding the availability of proxy materials for the Annual Meeting to […].
+By Order of the Board of Directors
+Keith R. Dolliver
+Secretary
+Redmond, Washington
+October 21, 2025
+PROXY SUMMARY
+1
+GOVERNANCE AND OUR BOARD OF DIRECTORS
+Board of Directors Stewardship
+6
+Our Governance Structure
+9
+Director Selection and Qualifications
+15
+Board Composition and Diversity
+17
+Our Director Nominees
+18
+Director Compensation
+26
+NAMED EXECUTIVE OFFICER COMPENSATION
+A Letter from the Compensation Committee
+28
+Compensation Discussion and Analysis
+29
+Section 1: Performance Update
+29
+Section 2: Executive Compensation Program
+33
+Section 3: Pay Setting Governance and Process
+34
+Program Design
+37
+Decisions and Results
+41
+Section 6: Other Compensation Policies and Information
+46
+Compensation Committee Report
+49
+50
+Summary Compensation Table
+50
+Grants of Plan-Based Awards
+52
+53
+Option Exercises and Stock Vested
+54
+Nonqualified Deferred Compensation
+54
+Payments at Termination of Employment
+55
+CEO Pay Ratio
+55
+Pay Versus Performance
+56
+Equity Award Grant Practices
+59
+Equity Compensation Plan Information
+59
+Principal Shareholders
+59
+Stock Ownership Information
+60
+AUDIT COMMITTEE MATTERS
+Audit Committee Report
+61
+Fees Billed by Deloitte & Touche
+63
+64
+PROPOSALS TO BE VOTED ON DURING THE MEETING
+Proposal 1: Election of 12 Directors
+65
+Proposal 2: Advisory Vote to Approve
+Named Executive Officer Compensation
+66
+Proposal 3: Ratification of the Selection
+of Deloitte & Touche LLP as our Independent
+66
+Proposal 4: Approval of the Microsoft Corporation 2026 Stock Plan
+66
+Shareholder Proposals
+77
+INFORMATION ABOUT THE MEETING
+Date, Time, and Place of Meeting
+91
+Proxy Materials are Available on the Internet
+91
+Participating in the Annual Meeting
+91
+Soliciting Proxies
+91
+Householding
+92
+Election of Directors
+92
+Voting
+92
+Shareholders Entitled to Vote; Quorum
+92
+Vote Required; Effect of Abstentions
+and Broker Non-Votes
+92
+Vote Confidentiality
+93
+Tabulation of Votes
+93
+Where to Find More Proxy Voting Information
+93
+Where to Find our Corporate Governance Documents
+93
+Proposals by Shareholders for 2026 Annual Meeting
+94
+Other Business
+94
+95
+ii
+Proxy Summary
+This summary highlights information contained elsewhere in this Proxy Statement. This […].
+Annual Shareholders Meeting
+Meeting Agenda:
+The meeting will cover the proposals listed under Voting Matters and Vote Recommendations […].
+Place: virtualshareholdermeeting.com/MSFT25
+Mailing Date:
+October 21, 2025.
+Voting:
+Shareholders as of the record date are entitled to vote. Each share of common stock of […].
+Vote in Advance of the Meeting
+Vote your shares at proxyvote.com.
+Have your Notice of Internet Availability or proxy card […].
+Vote Online During the Meeting
+See page 91 in Part 5 – Information About the Meeting for details on voting your shares […].
+Voting Matters and Vote Recommendations
+See Part 4 – Proposals to be Voted on During the Meeting for more information.
+Board
+Recommends
+See
+Page
+Management Proposals
+Election of 12 Directors
+FOR
+65
+Advisory Vote to Approve Named Executive Officer Compensation (“say-on-pay vote”)
+FOR
+66
+Ratification of the Selection of Deloitte & Touche LLP as our Independent Auditor for […].
+FOR
+66
+Approval of the Microsoft Corporation 2026 Stock Plan
+FOR
+66
+Shareholder Proposals
+European Security Program Censorship Risk Audit
+AGAINST
+77
+Report on Risks of Censorship in Generative Artificial Intelligence
+AGAINST
+79
+Report on AI Data Usage Oversight
+AGAINST
+81
+Report on Data Operations in Human Rights Hotspots
+AGAINST
+83
+Report on Human Rights Due Diligence
+AGAINST
+86
+AGAINST
+89
+1
+Our Director Nominees
+See Part 1 – Board of Directors and Governance for more information.
+The following table […].
+Name
+Occupation
+Age
+Director
+Since
+Independent
+Other Public
+Boards
+Reid G. Hoffman
+Partner, Greylock Partners
+58
+2017
+Yes
+1
+Hugh F. Johnston
+Senior Executive Vice President and CFO,
+The Walt Disney Company
+64
+2017
+Yes
+1
+Teri L. List
+Former Executive Vice President and CFO, The Gap, Inc.
+62
+2014
+Yes
+3
+Catherine MacGregor
+Group CEO and Director, Engie S.A.
+53
+2023
+Yes
+1
+Mark A. L. Mason
+CFO, Citigroup Inc.
+56
+2023
+Yes
+0
+Satya Nadella
+Chairman and CEO, Microsoft Corporation
+58
+2014
+No
+0
+Sandra E. Peterson
+Lead Independent Director, Microsoft Corporation;
+Operating Partner, Clayton, Dubilier & Rice, LLC
+66
+2015
+Yes
+0
+Penny S. Pritzker
+Founder and Chairman, PSP Partners, LLC
+66
+2017
+0
+John David Rainey
+Executive Vice President and CFO, Walmart Inc.
+55
+New
+Nominee
+0
+Charles W. Scharf
+CEO, President, and Director, Wells Fargo & Company
+60
+2014
+1
+John W. Stanton
+Founder and Chairman, Trilogy Partnerships
+70
+2014
+1
+Emma N. Walmsley
+CEO and Director, GSK plc
+56
+2019
+1
+2
+Committee Memberships
+The following table provides current membership for each Board committee.
+Name
+Audit
+Compensation
+Environmental, Social,
+and Public Policy
+Governance and
+Nominating
+Reid G. Hoffman
+Member
+Hugh F. Johnston
+Chair,
+Financial Expert
+Teri L. List
+Financial Expert
+and Member
+Member
+Catherine MacGregor
+Member
+Member
+Mark A. L. Mason
+Member
+Satya Nadella
+Sandra E. Peterson
+Member
+Chair
+Penny S. Pritzker
+Chair
+Carlos A. Rodriguez*
+Financial Expert
+and Member
+Chair
+Charles W. Scharf
+John W. Stanton
+Emma N. Walmsley
+*
+Mr. Rodriguez is not seeking re-election at the 2025 Annual Meeting. The Board will […].
+Executive Compensation Advisory Vote
+Our Board recommends that shareholders vote to approve, on an advisory basis, the […].
+Pay for Performance
+We have executed on our pay for performance philosophy.
+•
+Over 95% of the annual target […].
+Sound Program Design
+We design our executive compensation program to attract, motivate, and retain the key […].
+Provides a competitive total pay opportunity
+•
+Delivers a majority of pay based on performance
+•
+Consists primarily of stock-based compensation
+•
+•
+Does not encourage unnecessary and excessive risk taking
+See Part 2 – Named Executive Officer Compensation for more information.
+3
+Business Overview
+Our Business Performance
+In fiscal year 2025, we continued to achieve strong business results, focusing on enabling […].
+Fiscal Year 2025 Business Performance Highlights
+Revenue
+(
+15%)
+$281.7 billion
+Operating Income
+(
+17%)
+$128.5 billion
+Net Income
+(
+16%)
+$101.8 billion
+Diluted Earnings per Share
+(
+16%)
+$13.64
+Highlights from fiscal year 2025 include the following metrics. Percentages are […].
+Linkedln revenue increased 9%
+•
+Dynamics products and cloud services revenue increased 15%
+•
+Server products and cloud services revenue increased 23%
+•
+Windows OEM and Devices revenue increased 3%
+•
+Xbox content and services revenue increased 16%
+•
+4
+Governance and Board Best Practices
+Our mission to empower every person and every organization on the planet to achieve more […].
+Independent, Effective Board Oversight
+•
+Lead Independent Director
+•
+11 of 12 director nominees are independent
+•
+All committee chairs and members are independent
+•
+Board-adopted refreshment commitment to maintain an average tenure of 10 years or less […].
+Shareholder Rights
+•
+Single class of stock with equal voting rights
+•
+All directors are elected annually
+•
+Directors are elected by majority vote in uncontested elections
+•
+Confidential voting policy
+•
+15% of outstanding shares can call a special meeting
+•
+Our Bylaws provide for “proxy access” by shareholders
+See Part 1 – Board of Directors and Governance and Part 5 – Information About the Meeting […].
+BOARD OF
+DIRECTORS AND
+GOVERNANCE
+2
+NAMED
+EXECUTIVE OFFICER
+COMPENSATION
+3
+AUDIT
+COMMITTEE
+MATTERS
+4
+PROPOSALS TO
+BE VOTED ON DURING
+THE MEETING
+5
+INFORMATION
+ABOUT THE
+MEETING
+1. Board of Directors and Governance
+Earning the trust of our customers, partners, shareholders, and other stakeholders is the […].
+Board of Directors Stewardship
+Shareholders elect our Board to serve their long-term interests and to oversee management. […].
+Strategy
+Led by our CEO, senior management develops and executes our business strategy. They manage […].
+Risk Oversight
+Effective risk management is critical to Microsoft’s ability to achieve its mission. The […].
+BOARD OF
+DIRECTORS AND
+GOVERNANCE
+2
+NAMED
+EXECUTIVE OFFICER
+COMPENSATION
+3
+AUDIT
+COMMITTEE
+MATTERS
+4
+PROPOSALS TO
+BE VOTED ON DURING
+THE MEETING
+5
+INFORMATION
+ABOUT THE
+MEETING
+The Board of Directors
+The Board oversees business affairs, integrity, risk management, CEO succession planning, […].
+Audit
+Committee
+Compensation
+Committee
+Environmental, Social,
+and Public Policy
+Committee
+Governance and
+Nominating
+Committee
+Oversees the Company’s processes to manage risk; the Company’s financial statements; […].
+p […].
+Company Management
+The Board, in consultation with each of its committees, oversees Company management in […].
+Internal
+Audit
+Integrated Enterprise
+Risk Management
+Regulatory
+Governance
+Provides independent and objective audit, investigative, and advisory services designed to […].
+BOARD OF
+DIRECTORS AND
+GOVERNANCE
+2
+NAMED
+EXECUTIVE OFFICER
+COMPENSATION
+3
+AUDIT
+COMMITTEE
+MATTERS
+4
+PROPOSALS TO
+BE VOTED ON DURING
+THE MEETING
+5
+INFORMATION
+ABOUT THE
+MEETING
+Selected Areas of Oversight
+Cybersecurity
+The Board maintains direct oversight over cybersecurity risk. The Board receives and […].
+A […].
+Datacenter
+Supply Chain
+and Capacity
+Our Audit Committee and Environmental, Social, and Public Policy Committee […].
+Software and Services Quality and Availability
+The Board maintains direct oversight over Microsoft’s ability to deliver products and […].
+Digital Safety and Service Misuse
+Our Environmental, Social, and Public Policy Committee assists the Board in overseeing […].
+Culture, Workplace, and Talent Management
+The Compensation Committee assists the Board in overseeing Microsoft’s human capital […].
+Sustainability
+Our Environmental, Social, and Public Policy Committee assists the Board in overseeing […].
+BOARD OF
+DIRECTORS AND
+GOVERNANCE
+2
+NAMED
+EXECUTIVE OFFICER
+COMPENSATION
+3
+AUDIT
+COMMITTEE
+MATTERS
+4
+PROPOSALS TO
+BE VOTED ON DURING
+THE MEETING
+5
+INFORMATION
+ABOUT THE
+MEETING
+Our Governance Structure
+Framework
+We have developed a corporate governance framework designed to ensure our Board has the […].
+Articles of Incorporation
+•
+Bylaws
+•
+Corporate Governance Guidelines
+•
+Director Independence Guidelines
+•
+Microsoft Finance Code of Professional Conduct
+•
+Microsoft Standards of Business Conduct (“Trust Code”)
+•
+Audit Committee Charter and Responsibilities Calendar
+•
+Compensation Committee Charter
+•
+Environmental, Social, and Public Policy Committee Charter
+•
+Governance and Nominating Committee Charter
+•
+Executive Stock Ownership Policy
+•
+Executive Compensation Recovery Policy
+•
+Compensation Consultant Independence Standards
+Shareholder Rights
+Microsoft strives to implement best practices in shareholder rights and to ensure the […].
+Annual election of all directors (unclassified board)
+•
+Majority voting standard for directors in uncontested elections
+•
+Confidential voting policy
+•
+•
+Proxy access bylaw allows groups of up to 20 shareholders holding 3% of shares for at […].
+BOARD OF
+DIRECTORS AND
+GOVERNANCE
+2
+NAMED
+EXECUTIVE OFFICER
+COMPENSATION
+3
+AUDIT
+COMMITTEE
+MATTERS
+4
+PROPOSALS TO
+BE VOTED ON DURING
+THE MEETING
+5
+INFORMATION
+ABOUT THE
+MEETING
+Shareholder Engagement
+Effective corporate governance includes regular, constructive conversations with our […].
+O […].
+Board Leadership
+The Board’s independent directors elected Satya Nadella to the role of Chairman and CEO, […].
+Leads the Board’s annual CEO performance evaluation
+•
+•
+Shapes, reviews, and has final authority to approve the agenda and schedule for Board […].
+Chairs the annual shareholders meeting
+•
+•
+Authorizes retention of outside counsel, advisors, or other consultants who report […].
+•
+Calls meetings of the independent directors
+•
+The Board does not have a policy as to whether the Chairman should be an independent […].
+CEO Succession
+A primary responsibility of the Board is planning for CEO succession and overseeing […].
+10
+BOARD OF
+DIRECTORS AND
+GOVERNANCE
+2
+NAMED
+EXECUTIVE OFFICER
+COMPENSATION
+3
+AUDIT
+COMMITTEE
+MATTERS
+4
+PROPOSALS TO
+BE VOTED ON DURING
+THE MEETING
+5
+INFORMATION
+ABOUT THE
+MEETING
+candidates, and professional and leadership development plans for internal candidates. The […].
+Annual Board and Committee Evaluation Process
+The Board is committed to a rigorous self-evaluation process. The Governance and […].
+Our […].
+Director Attendance
+Each quarter, our Board holds two-day meetings comprised of committee and Board meetings. […].
+Director Orientation and Continuing Education
+Our orientation programs are designed to familiarize new directors with our businesses, […].
+Director Stock Ownership Policy
+To align the interests of our directors and shareholders, our directors are required to […].
+Derivatives Trading, Hedging, and Pledging
+Our directors and executive officers are prohibited from trading in options, puts, calls, […].
+Insider Trading Policies and Procedures
+We have adopted insider trading policies and procedures applicable to our directors, […].
+1 […].
+Board Independence
+The Board’s independence enables it to be objective and critical in carrying out its […].
+•
+11 of 12 director nominees are independent
+. We are committed to maintaining a substantial majority of directors who are independent […].
+Board tenure
+. We are committed to board refreshment. To strike a balance between retaining directors […].
+Board diversity
+. The Board is committed to actively seeking highly qualified women and individuals from […].
+Executive sessions of independent directors
+. At each quarterly Board meeting, time is set aside for the independent directors to meet […].
+Committee independence
+. Only independent directors are members of the Board’s committees. Each committee meets […].
+Independent compensation consultant
+. The compensation consultant retained by the Compensation Committee is independent of the […].
+Lead Independent Director
+. As described in the “Board Leadership” section, the Lead Independent Director has a […].
+Board Committees
+To support effective corporate governance, our Board delegates certain responsibilities to […].
+Environmental
+, Social, and Public Policy Committee, and a Governance and Nominating Committee.
+12
+1
+2
+3
+4
+5
+Th […].
+Director
+Audit
+Compensation
+Environmental, Social,
+and Public Policy
+Governance and
+Nominating
+Reid G. Hoffman
+Hugh F. Johnston
+Chair,
+Financial Expert
+Teri L. List
+Financial Expert
+and Member
+Catherine MacGregor
+Mark A. L. Mason
+Satya Nadella
+Sandra E. Peterson
+Chair
+Penny S. Pritzker
+Chair
+Carlos A. Rodriguez*
+Financial Expert
+and Member
+Chair
+Charles W. Scharf
+John W. Stanton
+Emma N. Walmsley
+8
+5
+4
+4
+*
+Mr. Rodriguez is not seeking re-election at the 2025 Annual Meeting. John David […].
+Audit Committee
+•
+•
+Oversee internal auditing processes
+•
+Inquire about significant risks, review our policies for enterprise risk assessment and […].
+Compensation Committee
+•
+•
+Establish the process for annually reviewing our CEO’s performance
+•
+•
+Approve annual compensation, annual goals and objectives, and in consultation with the […].
+Is independent of the Company
+•
+Will not perform any work for Company management except at the request of the […].
+•
+Should […].
+Environmental, Social, and Public Policy Committee
+•
+Assist the Board in overseeing the Company’s key non-financial regulatory risks that may […].
+Governance and Nominating Committee
+•
+Determine and recommend the slate of director nominees for election to our Board during […].
+Identify, recruit, and recommend candidates for the Board
+•
+•
+Annually evaluate the performance and effectiveness of the Board
+•
+Annually assess the independence of each director
+•
+•
+Review and provide guidance to the Board and management about the framework for the […].
+Director Selection and Qualifications
+Shareholders elect our Board of Directors annually. In making its annual director […].
+The […].
+Assessing the Committee’s own performance
+Shareholder Recommendations and Nominations of Director Candidates
+Recommendations
+The Governance and Nominating Committee considers shareholder recommendations for […].
+Our […].
+Nominations
+Our Bylaws provide for proxy access shareholder nominations of director candidates by […].
+Board Composition and Diversity
+Our Board of Directors believes that having a diverse mix of directors with complementary […].
+Our Director Nominees
+Following are biographies for the 12 directors nominated by the Board for election during […].
+Reid G. Hoffman
+Experience:
+(venture capital firm)
+•  Partner (2023-present)
+•  General Partner (2009-2023)
+•  Advisory Partner (2019-present)
+• […].
+Microsoft Committees:
+• Environmental, Social, and Public Policy
+Other Public Company Directorships:
+• Aurora Innovation, Inc.
+• Joby Aviation, Inc.
+• Reinvent Technology Partners Z
+Hugh F. Johnston
+Experience:
+(media and entertainment)
+•   Senior Executive Vice President and Chief Financial Officer (2023-present)
+PepsiCo, […].
+Microsoft Committees:
+• Audit (Chair)
+Other Public Company Directorships:
+• HCA Healthcare, Inc.
+Former Public Company Directorships
+Held in the Past Five Years:
+•  None
+Board Diversity
+Financial
+Global
+Business
+Leadership
+Mergers and
+Acquisitions
+Sales and
+Marketing
+Technology
+18
+1
+2
+3
+4
+5
+Teri L. List
+Experience:
+(clothing and accessories retailer)
+•   Executive Vice President and Chief Financial Officer  (2016-2020)
+•   Executive Vice […].
+Microsoft Committees:
+•  Audit
+•  Governance and Nominating
+Other Public Company Directorships:
+•  Danaher Corporation
+•  lululemon athletica inc.
+•  Visa Inc.
+Former Public Company Directorships
+Held in the Past Five Years:
+•  DoubleVerify Holdings, Inc.
+•  Oscar Health, Inc.
+Other Positions:
+•  Former Trustee, Financial Accounting Foundation
+•  Former Practice Fellow, Financial […].
+Catherine MacGregor
+Experience:
+(energy company)
+•  Group Chief Executive Officer and Director (2021-present)
+•  President, Technip Energies […].
+Microsoft Committees:
+•  Compensation
+•  Environmental, Social, and Public Policy
+Other Public Company Directorships:
+•  Engie S.A.
+Former Public Company Directorships
+Held in the Past Five Years:
+•  None
+19
+1
+2
+3
+4
+5
+Mark A. L. Mason
+Experience:
+(banking and financial services company)
+•  Chief Financial Officer (2019-present)
+•  Chief Financial Officer, Institutional Clients […].
+Microsoft Committees:
+•  Governance and Nominating
+Other Public Company Directorships:
+•  None
+Former Public Company Directorships
+Held in the Past Five Years:
+•  None
+Satya Nadella
+Experience:
+•  Chairman and Chief Executive Officer (2021-present)
+•  Chief Executive Officer and […].
+• […].
+Microsoft Committees:
+• None
+Other Public Company Directorships:
+• None
+Former Public Company Directorships
+Held in the Past Five Years:
+•  Starbucks Corporation
+Board Diversity
+Financial
+Global
+Business
+Leadership
+Mergers and
+Acquisitions
+Sales and
+Marketing
+Technology
+20
+1
+2
+3
+4
+5
+Sandra E. Peterson
+•  Lead Independent Director (2023-present)
+Clayton, Dubilier & Rice, LLC (2019-present)
+(investment firm)
+•  Operating Partner (2019-present)
+•  Group Worldwide Chair and member of the Executive
+Com […].
+Former Public Company Directorships
+Held in the Past Five Years:
+•  Covetrus, Inc.
+•  Zymergen, Inc.
+Penny S. Pritzker
+PSP Partners, LLC (present)
+(private investment firm)
+•  Founder and Chairman (present)
+Pritzker Realty Group (present)
+•  Co-founder and Chairman (present)
+Inspired Capital Partners (present)
+•  Co-founder and Chairman (present)
+•  Co-founder (2009-2013; 2017-2025)
+•  Co-founder and […].
+Other Positions:
+•  Co-founder, Pritzker Traubert Foundation
+21
+1
+2
+3
+4
+5
+John David Rainey
+(retail company)
+•  Executive Vice President and Chief Financial Officer (2022-present)
+•  Chief Financial […].
+Charles W. Scharf
+(banking and financial services company)
+•  Chief Executive Officer, President, and Director (2019-present)
+•  Chairman and Chief […].
+Board Diversity
+Financial
+Global
+Business
+Leadership
+Mergers and
+Acquisitions
+Sales and
+Marketing
+Technology
+22
+1
+2
+3
+4
+5
+John W. Stanton
+(investment company)
+•  Founder and Chairman (2005-present)
+•  Chairman of the Board (2011-2013)
+•  Interim Chief […].
+Other Positions:
+• Chairman, First Avenue Entertainment LLLP, owner of Seattle Mariners (2016-present)
+Emma N. Walmsley
+(healthcare company)
+•  Chief Executive Officer and Director (2017-present)
+•  Chief Executive Officer, Consumer […].
+How to Communicate with our Board
+We will transmit shareholder communications related to corporate governance and other […].
+Office of the Corporate Secretary
+Microsoft Corporation
+One Microsoft Way
+Redmond, WA 98052-6399
+Concerns about accounting or auditing matters or possible violations […].
+Director Independence
+Our Board has adopted director independence guidelines to assist in determining each […].
+F […].
+Certain Relationships and Related Transactions
+We are a global company with extensive operations in the U.S. and many foreign countries. […].
+Director Compensation
+The Compensation Committee periodically reviews the regular annual retainer paid to […].
+Regular Retainers
+Annual Base Retainer (TOTAL)
+$360,000
+Cash
+$125,000
+Stock Award
+$235,000
+Annual Audit Committee Chair Retainer
+$45,000
+Annual Audit Committee Non-Chair Member Retainer
+$15,000
+Annual Compensation Committee Chair Retainer
+$35,000
+Annual Environmental, Social, and Public Policy Committee Chair Retainer
+$25,000
+Annual Governance and Nominating Committee Chair Retainer
+$25,000
+$40,000
+Regular Retainers
+Annual Base Retainer (TOTAL)
+$375,000
+Cash
+$125,000
+Stock Award
+$250,000
+Annual Audit Committee Chair Retainer
+$45,000
+Annual Audit Committee Non-Chair Member Retainer
+$15,000
+Annual Compensation Committee Chair Retainer
+$35,000
+Annual Environmental, Social, and Public Policy Committee Chair Retainer
+$25,000
+Annual Governance and Nominating Committee Chair Retainer
+$25,000
+$60,000
+The Company reimburses reasonable expenses incurred for Board-related […].
+Di […].
+Director Compensation
+This table describes the cash and stock award portions of the annual retainer paid to each […].
+Name
+Fees Earned or
+Paid in Cash¹
+($)
+Stock Awards²
+($)
+All Other
+Compensation3
+($)
+Total
+($)
+Reid G. Hoffman4
+125,000
+242,500
+0
+367,500
+Hugh F. Johnston5
+170,000
+242,500
+0
+412,500
+Teri L. List
+140,000
+242,500
+15,000
+397,500
+Catherine MacGregor6
+125,000
+242,500
+0
+367,500
+Mark A. L. Mason
+125,000
+242,500
+0
+367,500
+Sandra E. Peterson7
+125,000
+317,500
+15,000
+457,500
+Penny S. Pritzker8
+150,000
+242,500
+0
+392,500
+Carlos A. Rodriguez9
+175,000
+242,500
+0
+417,500
+Charles W. Scharf
+125,000
+242,500
+0
+367,500
+John W. Stanton
+140,000
+242,500
+15,000
+397,500
+125,000
+242,500
+0
+367,500
+The value of fractional shares under […].
+Lead Independent Director Compensation
+In March 2023, the independent directors elected Sandra Peterson as Lead Independent […].
+2 […].
+2. Named Executive Officer Compensation
+A Letter from the Compensation Committee
+Dear Shareholder,
+Our executive compensation program is designed to strongly align […].
+Our […].
+The Compensation Committee
+Carlos A. Rodriguez (Chair)
+Catherine MacGregor
+Sandra E. Peterson
+Charles W. Scharf
+Emma N. Walmsley
+28
+1
+2
+3
+4
+5
+Compensation Discussion and Analysis
+This Compensation Discussion and Analysis provides information about our fiscal year 2025 […].
+Section 1 – Performance Update
+p. 29
+Section 2 – Executive Compensation Program
+p. 33
+Section 3 – Pay Setting Governance and Process
+p. 34
+Section 4 – Fiscal Year 2025 Compensation Program Design
+p. 37
+p. 41
+Section 6 – Other Compensation Policies and Information
+p. 46
+Microsoft’s executive compensation program is thoughtfully designed by our […].
+Each […].
+Section 1 – Performance Update
+Achieving Strong Financial Results
+Fiscal Year 2025 Business Performance Highlights
+Percentages are year-over-year
+Revenue
+(
+15%)
+Operating Income
+(
+17%)
+Net Income
+16%)
+Diluted Earnings per Share
+16%)
+$281.7 billion
+$128.5 billion
+$101.8 billion
+$13.64
+Highlights from fiscal year 2025 […].
+•
+LinkedIn revenue increased 9%
+•
+Dynamics products and cloud services revenue increased 15%
+•
+Server products and cloud services revenue increased 23%
+•
+Windows OEM and Devices revenue increased 3%
+•
+Xbox content and services revenue increased 16%
+•
+29
+1
+2
+3
+4
+5
+Superior Shareholder Returns
+Cumulative Total Shareholder Return
+during Mr. Nadella’s CEO tenure: MSFT vs. S&P 500
+Driving Business Success
+Continued Innovation and Growth
+Since being appointed Chief Executive Officer by the Board of Directors in 2014, Mr. […].
+3 […].
+Corporate Leadership
+Our efforts to advance our technology portfolio and support our customers are guided by […].
+Section 2 – Executive Compensation Program
+Executive Compensation Philosophy
+We design our executive compensation program to attract, motivate, and retain the key […].
+Compensation Best Practices
+What We Do
+What We Don’t Do
+•
+Maintain a robust stock ownership policy that reinforces the alignment of executive […].
+•
+Promote long-term focus through multi-year vesting and performance requirements
+•
+Use a combination of absolute and relative performance measures
+•
+•
+Retain an independent compensation consultant
+•
+Solicit investor feedback on our compensation program and potential enhancements through […].
+Annual assessment of compensation-related risks
+•
+Settle all long-term incentives in Microsoft stock
+•
+No extraordinary perquisites
+•
+No “golden parachute” tax gross-ups
+•
+No employment agreements
+•
+No change in control payments or benefits
+•
+No executive-only pension or supplemental executive retirement plans
+•
+No guaranteed bonuses, compensation increases, or multi-year equity grants
+•
+No dividends paid on unvested stock awards
+•
+No encouragement of unnecessary and excessive risk taking
+33
+1
+2
+3
+4
+5
+Shareholder Engagement
+Engaged with shareholders
+owning approximately 50%
+of shares in FY25
+Compensation Committee chair and Lead Independent […].
+Section 3 – Pay Setting Governance and Process
+Our Compensation Committee establishes the design of our executive compensation program. […].
+Competitive Pay
+We compete for senior executive talent with global information technology companies, large […].
+Approach to Compensation Benchmarking
+To ensure that our Board and Compensation Committee have current information to set […].
+In […].
+Peer Group Used for Fiscal Year 2025 Pay Analysis
+For fiscal year 2025, the Compensation Committee reviewed the evolution of our business […].
+Primary Peer Group – Technology
+Adobe
+Alphabet
+Amazon
+Apple
+Broadcom
+Cisco Systems
+IBM
+Intel
+Meta
+Nvidia
+Oracle
+Qualcomm
+Salesforce
+Secondary Peer Group – General Industry
+Accenture
+AT&T
+Comcast
+Johnson & Johnson
+Merck
+Netflix
+Pfizer
+Procter & Gamble
+Tesla
+Verizon
+Walt Disney
+Microsoft is meaningfully larger than almost every company in both peer groups in terms of […].
+Performance-Based Pay and Goal Setting
+Our incentive compensation arrangements are tied to specific performance measures that […].
+Focus on Pay for Performance
+Over 95% of the annual target compensation opportunity for our CEO is performance-based […].
+Section 4 – Fiscal Year 2025 Compensation Program Design
+Consistent with our philosophy, the compensation program for our Named Executives in […].
+A […].
+Base Salaries
+Our Named Executives’ base salaries are set to align with the scope and complexity of […].
+Annual Cash Incentives
+Cash incentives are determined in two performance categories for our CEO and other NEOs, […].
+Financial
+We include financial performance measures in our cash incentives to measure our success in […].
+Operational Assessment
+The operational assessment portion of each Named Executive’s fiscal year 2025 annual cash […].
+Security
+Product, Customers,
+& Stakeholders
+Culture
+•
+Accelerated automation response and remediation
+•
+Customer trust
+•
+Cybersecurity risk identification, mitigation, and reduction
+•
+Security mindset culture
+•
+Customer and partner engagement and outreach
+•
+Customer satisfaction
+•
+Developer engagement
+•
+Efficiency and productivity
+•
+Innovation
+•
+Product development and implementation of strategic roadmap
+•
+Quality
+•
+Revenue, consumption, and market share
+•
+Compliance and integrity
+•
+Culture
+•
+Global citizenship
+•
+Inclusion
+•
+Organizational health
+•
+Sustainability
+•
+Input from Microsoft’s senior executives about Mr. Nadella’s leadership
+•
+Equity Compensation
+Under the Incentive Plan, each year, our Named Executives receive PSAs and our Named […].
+Performance Stock Awards
+PSAs are designed to encourage our executives to achieve rigorous, growth-oriented goals […].
+Fiscal Year 2025 Performance Stock Award Metrics and Weights
+For fiscal year 2025, we updated our PSA core metrics to further align with our key long […].
+Weights
+Azure and Other Cloud Services Revenue Growth
+35%
+35%
+Search and News Advertising Revenue (ex TAC) Growth
+10%
+Xbox Content and Services Revenue Growth
+10%
+LinkedIn Sessions
+10%
+Weights
+Azure and Other Cloud Services Revenue Growth
+35%
+35%
+Consumer Services Revenue Growth
+15%
+Xbox Content and Services Revenue Growth
+15%
+Targets for the PSA metrics are set at the target levels established under Microsoft’s […].
+Fiscal Year 2025 PSA Metric Descriptions
+Performance Metrics
+Description
+Weights
+Azure and Other Cloud Services
+Revenue Growth
+Revenue from Azure and other cloud services, including cloud and AI consumption-based […].
+Microsoft Cloud Revenue
+Growth, excluding Azure and
+Other Cloud Services
+Revenue from Microsoft 365 Commercial Cloud, the commercial portion of LinkedIn, and Dynamics 365
+35%
+Consumer Services Revenue
+Growth
+Revenue from all consumer areas, excluding Xbox, device licensing, and devices
+15%
+Xbox Content and Services
+Revenue Growth
+Revenue from Xbox content and services, comprising first- and third-party content […].
+15%
+3 […].
+PSA Metric Year
+Our fiscal year 2025 PSA metric results can be found on page 45.
+Results for the three […].
+3-year Relative TSR Ranking1
+Modifier
+20th Percentile & Below
+75.00%
+87.50%
+100.00%
+125.00%
+80th Percentile & Above
+150.00%
+Relative TSR percentile ranking as compared to the S&P 500 results in the above […].
+Stock Awards
+Stock awards were granted under the Incentive Plan in September 2024 for shares of […].
+Dur […].
+Financial Results
+The fiscal year 2025 financial performance measures are shown below, resulting in a […].
+Financial Results
+($ in billions)1
+FY24
+Actual
+FY25
+Threshold
+FY25
+Target
+FY25
+Maximum
+FY25
+Actual
+FY25
+Growth Rate
+$250.98
+$273.20
+$290.64
+$306.63
+$289.18
+15.22%
+FY25 Incentive Plan Operating Income3
+$109.37
+$112.31
+$122.75
+$138.70
+$128.84
+17.80%
+“Incentive Plan Revenue” and “Incentive Plan […].
+Operational Results
+The key results influencing the Compensation Committee and the independent members of our […].
+Average Financial:
+117.00%
++
+Average Operational:
+151.67%
+=
+Overall Bonus:
+127.40%
+140%
+Mr. Nadella’s thoughtful leadership has been instrumental in advancing […].
+•
+Spe […].
+Product, Customers & Stakeholders (10%)
+160%
+Mr. Nadella continued to directly lead Microsoft’s ongoing execution of our […].
+•
+Stren […].
+Other Named Executives
+The key results influencing our Compensation Committee’s decisions on the operational […].
+Takeshi Numoto, Executive Vice President and Chief Marketing Officer
+•
+Led multiple complex cross-functional efforts to support the successful launch of […].
+•
+Am […].
+Bradford L. Smith, Vice Chair and President
+•
+Led efforts to sustain customer and stakeholder trust while promoting AI innovation and […].
+Fiscal Year 2025 Cash Incentive Payout Percentages
+Final results under each portion of the cash incentive, and the resulting awards, were as […].
+Nadella
+Hood
+Althoff
+Numoto
+Smith
+Financial results (% of target)
+117.00%
+117.00%
+117.00%
+117.00%
+117.00%
+Operational results (% of target)
+151.67%
+156.67%
+156.67%
+140.00%
+156.67%
+Total FY25 cash incentive (% of target)
+127.40%
+136.84%
+136.84%
+128.50%
+136.84%
+Total FY25 cash incentive earned
+$9,555,000
+$3,421,000
+$3,398,194
+$2,056,000
+$3,421,000
+The fiscal year 2025 PSAs and SAs […].
+Named Executive
+PSAs
+(Target Number
+of Shares)¹
+SAs
+(Number
+of Shares)²
+Aggregate
+Target
+Award Value³
+($)
+119,864
+0
+50,000,000
+Amy E. Hood
+23,374
+23,374
+19,500,000
+Judson B. Althoff
+23,374
+23,374
+19,500,000
+Takeshi Numoto
+8,511
+8,511
+7,100,000
+Bradford L. Smith
+23,374
+23,374
+19,500,000
+The PSAs vest in full following the end of the three-year […].
+The […].
+Fiscal Year 2023 PSAs (Completed Performance Period)
+Our Compensation Committee (and for Mr. Nadella, the independent members of our Board) […].
+Core Metric Year
+Performance Period
+FY23
+FY24
+FY25
+FY23 – FY25
+FY23
+PSA
+Core
+Metric
+Average
+rTSR
+Modifier
+Final
+Payout
+Payout %
+99.65%
+119.69%
+103.69%
+107.68%
+x
+150.00%
+=
+161.52%
+The actual performance under the fiscal year […].
+PSA Core Metrics
+Aggregate
+Weighting
+Weighting
+Threshold
+Target
+Maximum
+Actual
+Result
+Final
+Payout
+1/3
+99.65%
+1/3
+119.69%
+1/3
+103.69%
+Azure and Other Cloud Services Revenue Growth4
+35%
+29.23%
+36.76%
+44.28%
+34.58%
+85.52%
+35%
+8.09%
+14.38%
+20.67%
+14.77%
+106.20%
+Consumer Services Revenue Growth6
+15%
+-0.01%
+11.09%
+22.20%
+15.59%
+140.50%
+Xbox Content and Services Revenue Growth7
+15%
+-2.90%
+14.23%
+31.37%
+14.81%
+103.38%
+FY23 PSA 3-Year Average Payout
+107.68%
+Fiscal Year 2023 Core Metric results related to Microsoft Cloud Revenue (weighted […].
+Relative TSR Modifier
+The core metric results for the fiscal year 2023 PSAs were then subject to adjustment […].
+Peer Group Index
+Performance Period
+Relative
+Total Shareholder Return
+Modifier Payout
+S&P 500
+July 1, 2022 – June 30, 2025
+150.00%
+Based on this result, the total payment […].
+Perf […].
+Section 6 – Other Compensation Policies and Information
+No Extraordinary Perquisites
+Our Named Executives are eligible for the same benefits available to our other full-time […].
+Post-Employment Compensation
+Our Named Executives do not have employment contracts. No Named Executive is entitled to […].
+Strong and Comprehensive Clawback Policy
+Accountability is a fundamental value of Microsoft. To reinforce this value through our […].
+Robust Stock Ownership Policy
+Our executive officers and certain other senior executives are required to maintain a […].
+Named Executive
+Share Ownership
+Requirement as of
+June 30, 2025
+Amy E. Hood
+8x base salary
+Judson B. Althoff
+8x base salary
+Takeshi Numoto
+5x base salary
+Bradford L. Smith
+8x base salary
+In fiscal year 2025, each of our Named Executives complied with our stock ownership […].
+Hedging and Pledging Policy
+Our Named Executives are subject to our Derivatives Trading, Hedging, and Pledging policy […].
+Deductibility of Executive Compensation
+Section 162(m) of the Internal Revenue Code (“Section 162(m)”) imposes an annual deduction […].
+Annual Compensation Risk Assessment
+We performed an annual assessment for our Compensation and Audit Committees of our Board […].
+Compensation Committee Report
+The Compensation Committee has reviewed and discussed with management the Compensation […].
+Compensation Committee
+Carlos A. Rodriguez (Chair)
+Catherine MacGregor
+Sandra E. Peterson
+Emma N. Walmsley
+49
+1
+2
+3
+4
+5
+Summary Compensation Table
+This table contains information about compensation awarded to our Named Executives for the […].
+Named Executive and
+Principal Position
+Year
+Salary
+($)
+Bonus
+Stock
+Non-equity
+Incentive Plan
+Compensation2
+All Other
+Compensation3
+Total
+Chairman and Chief
+Executive Officer
+2025
+2,500,000
+0
+84,245,496
+9,555,000
+196,294
+96,496,790
+2024
+2,500,000
+0
+71,236,392
+5,200,000
+169,791
+Amy E. Hood
+Executive Vice President and
+Chief Financial Officer
+2025
+1,000,000
+0
+25,037,360
+3,421,000
+23,191
+29,481,551
+2024
+1,000,000
+0
+21,094,956
+3,642,750
+61,500
+25 […].
+Judson B. Althoff
+Executive Vice President and CEO Microsoft Commercial
+2025
+993,333
+0
+23,708,619
+3,398,194
+98,588
+28,198,734
+2024
+960,000
+0
+18,515,353
+3,497,040
+77,934
+23,050 […].
+Takeshi Numoto
+Executive Vice President and
+Chief Marketing Officer
+2025
+800,000
+0
+9,005,380
+2,056,000
+15,250
+11,876,630
+Bradford L. Smith
+Vice Chair and President
+2025
+1,000,000
+0
+23,734,545
+3,421,000
+111,750
+28,267,295
+2024
+1,000,000
+0
+18,684,175
+3,642,750
+112,868
+Assumptions
+SA Award
+Fair Value
+Dividends Per Share
+Interest Rate
+$419.00 to $428.11
+$0.83
+3.35% to 3.88%
+$326.16 to $318.20
+$0.75
+4.47% to 5.30%
+$241.86 to […].
+$ […].
+Assumptions
+(Operating
+Goals)
+Assumptions
+(TSR Goal)
+PSU Award
+Expected
+Payout
+CEO
+Fair
+Value
+Non-CEO
+Fair
+Value
+Dividend
+Yield
+Interest
+Rate
+Historical
+Volatility
+Remaining
+Performance
+Period on
+the Grant
+Date (Years)
+100%
+$478.02
+$478.02
+0.77%
+3.41%
+28.26%
+2.79
+100%
+$525.50
+$525.50
+0.77%
+3.65%
+23.21%
+1.79
+100%
+$602.81
+$60 […].
+All other compensation details
+Named Executive
+Retirement Plan
+ContributionsA
+Broad-Based
+Plan BenefitsB
+Charitable
+GiftsC
+Security for
+Personal TravelD
+Total
+11,750
+0
+100,000
+84,544
+196,294
+Amy E. Hood
+11,750
+1,241
+10,200
+0
+23,191
+Judson B. Althoff
+11,700
+1,652
+85,236
+0
+98,588
+Takeshi Numoto
+11,750
+1,500
+2,000
+0
+15,250
+Bradford L. Smith
+11,750
+0
+100,000
+0
+111,750
+(A)
+Includes 401(k) plan matching contributions.
+(B)
+Includes payments in lieu of athletic club membership and credits for waived life […].
+(C)
+Includes matching charitable contributions under our corporate giving program.
+(D)
+Includes personal security-related costs and expenses associated with personal travel.
+51
+1
+2
+Grants of Plan-Based Awards
+This table provides information on grants of awards under any plan to the Named Executives […].
+Grant Date
+Estimated Possible Payouts under
+Non-Equity
+Incentive Plan Awards2
+Estimated Future Payouts under
+Equity Incentive Plan Awards3
+All
+Other
+Stock
+Awards
+(#)
+Grant Date
+Fair Value
+of Stock
+Named
+Executive
+Threshold
+Target
+Maximum
+Threshold
+(#)
+Target
+(#)
+Maximum
+(#)
+0
+7,500,000
+15,000,000
+2025 PSA
+9/16/2024
+2,247
+39,955
+119,865
+19,099,130
+2024 PSA
+9/16/2024
+2,860
+50, […].
+Amy E. Hood
+0
+2,500,000
+5,000,000
+2025 PSA
+9/16/2024
+438
+7,791
+23,373
+3,724,413
+2024 PSA
+9/16/2024
+501
+8,899
+26,697
+Judson B. Althoff
+0
+2,483,334
+4,966,667
+2025 PSA
+9/16/2024
+438
+7,791
+23,373
+3,724,413
+2024 PSA
+9/16/2024
+476
+8,462
+25,386
+Takeshi Numoto
+0
+1,600,000
+3,200,000
+2025 PSA
+9/16/2024
+160
+2,837
+8,511
+1,356,143
+2024 PSA
+9/16/2024
+203
+3,611
+10,833
+1 […].
+Bradford L. Smith
+0
+2,500,000
+5,000,000
+2025 PSA
+9/16/2024
+438
+7,791
+23,373
+3,724,413
+2024 PSA
+9/16/2024
+443
+7,882
+23,646
+Stock Awards
+Named Executive
+Award
+Date
+Number of
+Shares or Units
+of Stock That
+Have Not
+(#)
+Market Value
+of Shares or
+Units of Stock
+That Have
+Not Vested2
+Equity Incentive Plan
+Awards:
+Number of Unearned
+Shares, Units or
+Other Rights That
+Have Not Vested3
+(#)
+Equity Incentive
+Plan Awards:
+Market or Payout
+Value of Unearned
+Shares, Units, or
+Other Rights That
+Have Not Vested2
+9/19/2022
+308,8704
+153,635,027
+9/19/2023
+305,100
+151,759,791
+9/16/2024
+119,865
+59,622,050
+Amy E. Hood
+9/13/2021
+3,624
+1,802,614
+9/19/2022
+12,550
+6,242,496
+9/19/2022
+54,0534
+26,886,503
+9/18/2023
+16,686
+8, […].
+Judson B. Althoff
+9/13/2021
+2,609
+1,297,743
+9/19/2022
+10,499
+5,222,308
+9/19/2022
+45,2204
+22,492,880
+9/18/2023
+15,866
+7, […].
+Takeshi Numoto
+9/14/2020
+4045
+200,954
+9/13/2021
+1,155
+574,509
+9/19/2022
+3,999
+1,989,143
+9/19/2022
+17,2234
+8,566,892
+9 […].
+Bradford L. Smith
+9/13/2021
+3,210
+1,596,686
+9/19/2022
+11,116
+5,529,210
+9/19/2022
+47,8774
+23,814,499
+9/18/2023
+14,779
+7, […].
+Option Exercises and Stock Vested
+This table provides information on an aggregate basis about stock awards that vested […].
+M […].
+Stock Awards
+Named Executive
+Number of Shares
+Acquired on Vesting
+Value Realized
+on Vesting1
+265,106
+110,586,317
+75,310
+31,140,584
+57,112
+23,595,294
+26,706
+11,053,493
+66,635
+27,553, […].
+Nonqualified Deferred Compensation
+This table provides information about the Named Executives’ earnings and balances under […].
+Named Executive
+Executive
+Contributions in
+Aggregate
+Earnings in Fiscal
+Year 20252
+Aggregate
+Balance at
+June 30, 20253
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+1,180,483
+10,002,748
+0
+0
+0
+These amounts are included in the Summary […].
+Payments at Termination of Employment
+This table shows the amounts that would have been payable to our Named Executives upon a […].
+Without Cause1
+Retirement
+Death or Disability
+183,133,036
+145,705,316
+230,620,167
+49,071,710
+—
+69,522,996
+44,328,656
+—
+64,217,123
+19,396,811
+—
+25,2 […].
+CEO Pay Ratio
+For fiscal year 2025, the annual total compensation for the median employee of the Company […].
+Pay Versus Performance
+This section provides disclosure
+about
+the relationship between executive compensation actually paid to our principal […].
+Non-PEO
+Named Executives and certain financial performance measures of the Company for the fiscal […].
+S-K
+under the Securities Exchange Act of 1934 (the “Pay Versus Performance Rules”) and does […].
+Committee
+evaluates compensation decisions.
+Pay for Performance Table
+Year
+1
+(a)
+Summary
+Compensation
+Table Total
+for PEO
+($) (b)
+Compensation
+Actually Paid
+to PEO
+2
+($) (c)
+Average
+Summary
+Compensation
+Table Total
+for
+Non-PEO
+Named
+Executive
+Officers
+($) (d)
+Average
+Actually
+Paid to
+Non-PEO
+Named
+Executive
+Officers
+2
+($) (e)
+Investment Based On:
+3
+Net Income
+(in millions)
+(h)
+Microsoft
+Incentive
+Plan
+Revenue
+4
+(in billions)
+(i)
+Microsoft
+Total
+Shareholder
+Return
+($) (f)
+Peer Group
+Total
+Shareholder
+Return
+($) (g)
+2025
+96,496,790
+131,138,799
+24,456,053
+31,268,315
+255
+276
+101,832
+289.18
+2024
+79,106,183
+171,304,590
+2 […].
+The
+Non-PEO
+Named Executives for fiscal year 2025 were: Amy E. Hood, Judson B. Althoff, Takeshi […].
+Non-PEO
+Named Executives for each of fiscal years 2024, 2023, and 2022 were: Amy E. Hood, Judson […].
+Non-PEO
+Named Executives for fiscal year 2021 were: Amy E. Hood, Jean-Philippe Courtois, Bradford […].
+S-K
+for our Annual Report for the fiscal year ended June 30, 2025.
+41
+) is the financial […].
+The […].
+PEO
+Average for
+NEO
+Summary Compensation Table (“SCT”) Total
+96,496,790
+24,456,053
+Amounts Reported as ‘Stock Awards’ in SCT
+(84,245,496)
+(20,371,476)
+Fair Value of Equity Awards Granted in the Year and Unvested as of Year End
+107,802,587
+25,076,581
+Change in Fair Value of Outstanding and Unvested Equity Awards, […].
+1 […].
+Compensation Actually Paid
+131,138,799
+31,268,315
+56
+1
+2
+3
+4
+5
+Financial Performance Measures
+In accordance with the Pay Versus Performance Rules, the following table lists the […].
+Most Important Performance Measures
+Microsoft Incentive Plan Revenue (Company Selected Measure)
+Relative TSR as compared to the S&P 500
+Azure and Other Cloud Services Revenue
+Microsoft Cloud Revenue, excluding Azure and Other Cloud Services
+Microsoft Incentive Plan Operating Income
+Relationship Between “Compensation Actually Paid” and Performance Measures
+In accordance with the Pay Versus Performance Rules, the below charts illustrate how […].
+m […].
+Computer
+Index), our net income, and Microsoft Incentive Plan Revenue.
+57
+1
+2
+3
+4
+5
+58
+1
+2
+3
+4
+5
+Equity Award Grant Practices
+Microsoft has not granted stock options or similar awards, other than options substituted […].
+Equity Compensation Plan Information
+This table provides information about shares of Microsoft common stock that may be issued […].
+Plan Category
+Number of Securities
+to be Issued Upon
+Exercise of Outstanding
+Options, Warrants
+and Rights1
+(a)
+Weighted-
+Average
+Exercise Price
+of Outstanding
+Options, Warrants,
+and Rights2
+($)(b)
+Number of Securities
+Remaining Available
+for Future Issuance
+Under Equity
+Compensation Plans
+(Excluding Securities
+Reflected in Column (a))3
+(c)
+Equity compensation plans approved by security holders
+81,687,793
+$56.41
+161,129,962
+Equity compensation plans not approved by security holders
+0
+N/A
+0
+Total
+81,687,793
+$56.41
+161,129,962
+Represents shares issuable upon vesting of outstanding SAs […].
+Principal Shareholders
+This table lists all entities that are the beneficial owner of more than 5% of Microsoft […].
+Name
+Amount and
+Nature of Beneficial
+Percent of
+Class to be Voted
+During the Meeting
+The Vanguard Group, Inc.
+664,882,153¹
+8.95%
+BlackRock, Inc.
+540,020,228²
+7.30%
+All information […].
+Stock Ownership Information
+As of September 30, 2025, this table describes the number of shares of our common stock […].
+Beneficial Ownership
+Name
+Common
+Percent of
+Common
+Stock
+Additional
+Underlying Shares
+or Stock Units3,4
+Reid G. Hoffman
+15,905
+6
+*
+16,217
+32,122
+Hugh F. Johnston
+8,032
+7
+*
+1,130
+9,162
+Teri L. List
+25,600
+8
+*
+0
+25,600
+0
+*
+1,487
+1,487
+Mark A. L. Mason
+1,400
+*
+0
+1,400
+30,682
+*
+0
+30,682
+Penny S. Pritzker
+25,552
+9
+*
+0
+25,552
+John David Rainey
+6,498
+*
+0
+6,498
+Carlos A. Rodriguez
+4,381
+*
+0
+4,381
+45,142
+10
+*
+0
+45,142
+John W. Stanton
+82,252
+11
+*
+0
+82,252
+9,913
+*
+830
+10,743
+900,572
+12
+*
+0
+900,572
+465,746
+*
+65,398
+531,144
+82,187
+*
+63,374
+145,561
+Directors and Executive Officers as a Group (18 people)
+2,279,620
+13
+*
+N/A
+N/A
+*
+Less than 1%
+Beneficial ownership represents sole voting and investment power.
+For directors, includes […].
+3. Audit Committee Matters
+Audit Committee Report
+Charter and Responsibilities
+The Audit Committee operates under a written charter adopted by the Board of Directors. It […].
+Independent Auditor Tenure and Rotation
+As part of its auditor engagement process, the Audit Committee considers whether to rotate […].
+Independence and Performance of Outside Audit Firm
+The Audit Committee recognizes the importance of maintaining the independence of […].
+As […].
+Audit Committee
+Hugh F. Johnston (Chair)
+Carlos A. Rodriguez
+Fees Billed by Deloitte & Touche
+This table presents fees for professional audit and other services rendered by Deloitte & […].
+Audit Fees
+$53,880,000
+$56,280,000
+Audit-Related Fees
+19,470,000
+18,643,000
+Tax Fees
+5,105,000
+6,334,000
+All Other Fees
+10,000
+10,000
+$78,465,000
+$81,267,000
+Audit Fees
+These amounts represent fees of Deloitte & Touche for the audit of our annual consolidated […].
+Audit-Related Fees
+Audit-related fees consist of assurance and related services that are reasonably related […].
+Tax Fees
+Tax fees generally consist of tax compliance and return preparation, and tax planning and […].
+All Other Fees
+All other fees consist of permitted services other than those that meet the criteria above […].
+4. Proposals to be Voted on During the Meeting
+Management Proposals
+Proposal 1: Election of 12 Directors
+The Board of Directors has nominated 12 directors for election during the 2025 annual […].
+Reid G. Hoffman
+Occupation: Partner, Greylock Partners
+Hugh F. Johnston
+Occupation: Former Executive Vice President and CFO, The Gap, Inc.
+Occupation: Group CEO […].
+Satya Nadella (Board Chair)
+Occupation: Chairman and CEO, Microsoft Corporation
+Penny S. Pritzker
+Occupation: Founder and Chairman, PSP Partners, LLC
+John David Rainey
+Director Since: New Nominee
+Occupation: Executive Vice President and CFO, Walmart Inc.
+Occupation: CEO, President, and Director, Wells Fargo & Company
+Occupation: Founder and Chairman, Trilogy Partnerships
+Occupation: CEO and Director, GSK plc
+65
+1
+2
+3
+4
+5
+Proposal 2: Advisory Vote to Approve Named Executive Officer Compensation
+Pursuant to Section 14A of the Securities Exchange Act of 1934, we are asking for your […].
+Proposal 4: Approval of the Microsoft Corporation 2026 Stock Plan
+We are asking our shareholders to vote on a proposal to approve the Microsoft Corporation […].
+Burn Rate and Overhang
+Our stock-based compensation model, including the broad-based participation of our […].
+FY2 […].
+Stock options1
+(a) Granted
+0
+0
+0
+(b) Assumed in acquisitions
+12,332
+85,059
+0
+Restricted stock and time-based restricted stock units
+(c) Granted
+54,581,047
+38,096,132
+37,950,910
+(d) Assumed in acquisitions
+0
+2,641,454
+0
+Performance share units and performance-based restricted stock units2
+(e) Granted
+694,404
+1,276,407
+508,506
+(f) Assumed in acquisitions
+0
+0
+0
+(g) Earned
+782,024
+567,070
+765,480
+55,275,451
+39,372,539
+38,459,416
+(i) Weighted average common shares outstanding
+7,446,000,000
+7,431,000,000
+7,433,000,000
+0.74%
+0.53%
+0.52%
+No SARs were granted.
+Includes total […].
+(e) Granted
+1,916,471
+2,582,456
+1,419,283
+The burn rate calculation excludes awards that were granted in […].
+Weighted average
+exercise price
+Shares
+New shares available under the 2026 Stock Plan
+226,000,000
+78,437,585
+(a) Total shares available for issuance
+304,437,585
+91,842,011
+Shares underlying previously granted outstanding stock options2
+$57.70
+300,631
+(b) Total outstanding stock awards and stock options
+92,142,642
+(c) Common shares outstanding
+7,433,087,554
+Overhang (a + b / c)
+5.34%
+Includes 1,010,899 shares that remain available for future awards under the 2001 […].
+Overview
+The purposes of the 2026 Stock Plan are to attract and retain employees providing personal […].
+Administration
+The 2026 Stock Plan is administered by the Committee. The Committee may delegate its […].
+Eligibility
+Awards under the 2026 Stock Plan may be granted to employees of the Company or its […].
+Inc […].
+Term
+Generally, the term of a stock option or SAR may be no more than ten years from the date […].
+Types of Awards
+The 2026 Stock Plan provides for grants of the following types of equity-based awards to […].
+Available Shares
+Subject to capitalization adjustments and the share counting provisions described below, […].
+Shareholder Rights
+An awardee will not be entitled to the privileges of ownership, including voting rights, […].
+Death or Disability
+If an employee awardee’s employment terminates because of his or her death or total and […].
+Nontransferability of Awards
+Unless otherwise determined by the Committee, awards granted under the 2026 Stock Plan are […].
+Impact of a Change in Control
+In the event of a Change in Control (as defined below), the Committee may (a) provide for […].
+(i)
+during any period of not more than 36 months, individuals who constitute the Board as of […].
+(ii)
+any “person” (as that term is defined in Section 3(a)(9) of the Exchange Act and as used […].
+(iii)
+the consummation of a merger, consolidation, statutory share exchange or similar form of […].
+(iv)
+the consummation of a sale of all or substantially all of the Company’s assets (other than […].
+Impact of Dissolution or Liquidation
+In the event of the proposed dissolution or liquidation of the Company, awards will […].
+73
+Substitutions and Assumptions
+The Committee has the right to substitute or assume Awards in connection with mergers, […].
+Amendment and Termination of the 2026 Stock Plan
+The Committee may amend or terminate the 2026 Stock Plan from time to time in such […].
+Compensation Recovery
+The 2026 Stock Plan provides that all awards granted under the 2026 Stock Plan will be […].
+Certain Material U.S. Federal Income Tax Consequences of Awards
+The U.S. federal income tax consequences to the Company and awardees under the 2026 Stock […].
+New Plan Benefits
+The 2026 Stock Plan does not provide for set benefits or amounts of awards and we have not […].
+Name and Principal Position
+Dollar value ($)
+Number of
+shares (#)
+Chairman and Chief Executive Officer
+—
+—
+Executive Vice President and Chief Financial Officer
+—
+—
+Executive Vice President and CEO Microsoft Commercial
+—
+—
+Executive Vice President and Chief Marketing Officer
+—
+—
+Vice Chair and President
+—
+—
+Current executive officers as a group (7 people)
+—
+—
+3,270,000
+1
+—
+2
+Current employees other than executive officers as a group
+—
+—
+Amount reflects three equal quarterly payments for the upcoming service period under the […].
+Equity Compensation Plan Information
+For information regarding shares of Microsoft common stock that may be issued under our […].
+Shareholder Proposals
+Receipt of a majority of the votes cast is required to approve each of the following […].
+Proposal 5: European Security Program Censorship Risk Audit
+National Center for Public Policy Research has advised us that they intend to submit the […].
+Supporting Statement
+Recent headlines make clear that public concern about state-sponsored censorship is […].
+By […].
+Board Recommendation
+COMPANY STATEMENT IN OPPOSITION
+The requested report is not necessary because it would overlap Microsoft’s existing […].
+Fo […].
+Proposal 6: Report on Risks of Censorship in Generative Artificial Intelligence
+Ridgeline Research LLC, on behalf of American Conservative Values ETF, has advised us that […].
+Supporting Statement:
+Generative AI (GenAI) is revolutionizing how individuals access and process information. […].
+Board Recommendation
+COMPANY STATEMENT IN OPPOSITION
+Freedom of expression is an essential ingredient in democracy. The very definition of free […].
+Microsoft’s Responsible AI and Information Integrity Frameworks
+Microsoft’s Responsible AI principles-fairness, reliability and safety, privacy and […].
+•
+F […].
+Transparency and Reporting
+Microsoft already publishes extensive reports that address the concerns raised in the […].
+Microsoft’s Approach to Safety
+Our approach tailors safety interventions to the service’s nature and specific risks. We […].
+Proposal 7: Report on AI Data Usage Oversight
+National Legal and Policy Center has advised us that they intend to submit the following […].
+Board Recommendation
+COMPANY STATEMENT IN OPPOSITION
+We believe that the proposal to produce a public report describing Microsoft’s Artificial […].
+Proposal 8: Report on Data Operations in Human Rights Hotspots
+Mari Mennel-Bell, on behalf of individual shareholder Olga Bell Greenbaum D’Angelo, has […].
+Supporting Statement:
+Shareholders are concerned by Microsoft’s announced plans1 to expand datacenter operations […].
+Board Recommendation
+COMPANY STATEMENT IN OPPOSITION
+The requested report is not necessary because of Microsoft’s existing extensive […].
+For […].
+Microsoft Due Diligence Policies and Practices
+Microsoft has articulated our human rights commitments and due diligence processes and […].
+External Assessment
+Our commitments to freedom of expression and user privacy are subject to an external audit […].
+Additional Microsoft Transparency and Reporting
+Twice a year we publish the number of legal demands for customer data that we receive from […].
+Proposal 9: Report on Human Rights Due Diligence
+Religious of the Sacred Heart of Mary and co-filers have advised us that they intend to […].
+Board Recommendation
+COMPANY STATEMENT IN OPPOSITION
+Microsoft has a longstanding robust human rights due diligence program firmly aligned with […].
+Our commitment to ongoing human rights due diligence
+Microsoft’s Global Human Rights Statement (see aka.ms/humanrights) commits us to […].
+•
+Regu […].
+Transparency and independent oversight
+Microsoft provides transparency about our human rights practices, and our program is […].
+•
+Board Recommendation
+COMPANY STATEMENT IN OPPOSITION
+This proposal requests a new report that falls outside the scope of established standards […].
+Commitment to Transparency
+Our sustainability disclosures are comprehensive and aligned with global standards and are […].
+Balanced Approach to Technology and Energy
+Microsoft has a long history of supporting the energy industry across the full value chain […].
+Employee Engagement and Industry Collaboration
+We value employee input and have established channels for dialogue and engagement on […].
+M […].
+5. Information About the Meeting
+Date, Time, and Place of Meeting
+Virtual Meeting Location: virtualshareholdermeeting.com/MSFT25
+This Proxy Statement was first mailed to shareholders on or about October 21, 2025. It is […].
+Proxy Materials are Available on the Internet
+We are furnishing proxy materials to our shareholders primarily via the Internet instead […].
+Participating in the Annual Meeting
+This year’s virtual Annual Meeting will be conducted at […].
+The meeting will be followed […].
+Soliciting Proxies
+The Board of Directors is soliciting the proxy accompanying this Proxy Statement. Proxies […].
+Householding
+We deliver a single Proxy Statement and Annual Report, along with individual proxy cards […].
+Election of Directors
+Twelve directors are to be elected during the Annual Meeting to hold office until the next […].
+Voting
+Shareholders Entitled to Vote; Quorum
+Shareholders of record at the close of business on September 30, 2025, will be entitled to […].
+Vote Required; Effect of Abstentions and Broker Non-Votes
+For each nominee and proposal submitted to the shareholders for a vote, approval requires […].
+Votes Required
+for Approval
+Abstentions
+Uninstructed
+Shares
+Management Proposals
+Election of 12 Directors
+Majority of votes cast
+No effect
+No effect
+Advisory Vote to Approve Named
+Executive Officer Compensation (“say-on-pay vote”)
+Majority of votes cast
+No effect
+No effect
+Ratification of the Selection of Deloitte & Touche LLP
+as our Independent Auditor for Fiscal Year 2026
+Majority of votes cast
+No effect
+Discretionary vote
+Approval of the Microsoft Corporation 2026 Stock Plan
+Majority of votes cast
+No effect
+Shareholder Proposals
+European Security Program Censorship Risk Audit
+Majority of votes cast
+Report on Risks of Censorship in Generative Artificial Intelligence
+Majority of votes cast
+Report on AI Data Usage Oversight
+Report on Data Operations in Human Rights Hotspots
+Report on Human Rights Due Diligence
+Vote Confidentiality
+We maintain the confidentiality of the votes of individual shareholders. Ballots, proxy […].
+Tabulation of Votes
+Our independent election inspector, Broadridge Financial Services, will tabulate votes […].
+Where to Find More Proxy Voting Information
+•
+The SEC website has a variety of information about the proxy voting process at […].
+•
+Conta […].
+Where to Find our Corporate Governance Documents
+Copies of our Board committee charters and other governance documents listed in Part 1 – […].
+Proposals by Shareholders for 2026 Annual Meeting
+Any shareholder who wishes to submit a proposal, director nomination, or to present […].
+Submission
+Rules and Requirements
+Deadline
+Proxy Access Director Nominees
+Between May 24, 2026, and close of business on June 23, 2026, assuming we do not change […].
+Where to Submit
+Electronically
+askboard@microsoft.com
+By Mail
+MSC 123/9999, Office of the Corporate Secretary, Microsoft Corporation, One Microsoft Way, […].
+Other Business
+The Board of Directors does not intend to bring any other business before the Annual […].
+R […].
+MICROSOFT CORPORATION
+1.
+Purpose of the Plan. The purposes of this Plan are to attract and retain Employees and […].
+(a)
+“Award” means any award or benefits granted under the Plan, including Options, Share […].
+(b)
+“Award Agreement” means a written or electronic agreement setting forth the terms of an […].
+(c)
+“Awardee” means the holder of an outstanding Award.
+(d)
+“Board” means the Board of Directors of the Company.
+(e)
+(i)
+during any period of not more than 36 months, individuals who constitute the Board as of […].
+(ii)
+any “person” (as such term is defined in Section 3(a)(9) of the Exchange Act and as used […].
+(iii)
+the consummation of a merger, consolidation, statutory share exchange or similar form of […].
+(iv)
+the consummation of a sale of all or substantially all of the Company’s assets (other than […].
+(f)
+“Code” means the Internal Revenue Code of 1986, as amended.
+(g)
+“Committee” means the Compensation Committee of the Board.
+(h)
+“Company” means Microsoft Corporation, a Washington corporation, and any successor entity.
+(i)
+“Consultant” means any individual other than an Employee or a Non-Employee Director who is […].
+(j)
+“Continuous Status” and “Continuous Status as a Participant” mean (1) for Employees, the […].
+(k)
+“Conversion Options” means the Options described in Section 6(c) of the Plan.
+(l)
+“Director Fee Award” means a cash award granted under the Plan to a Non-Employee Director, […].
+(m)
+“Employee” means any person, including an officer, who is a common law employee of, […].
+(n)
+“Effective Date” means March 1, 2026.
+(o)
+“Exchange Act” means the Securities Exchange Act of 1934, as amended.
+(p)
+“Incentive Stock Option” means any Option intended to qualify as an incentive stock option […].
+(q)
+“Non-Employee Director” means a member of the Company’s Board of Directors who is not an […].
+(r)
+“Nonqualified Stock Option” means an Option not intended to qualify as an Incentive Stock […].
+(s)
+“Option” means a stock option granted under the Plan, including any Incentive Stock Option […].
+(t)
+“Parent” means a “parent corporation,” whether now or hereafter existing, as defined in […].
+(u)
+“Plan” means this 2026 Stock Plan, including any amendments to it.
+(v)
+“Restricted Stock Award” means a grant of Shares that is subject to certain specified […].
+(w)
+“SAR” means a stock appreciation right awarded under the Plan.
+(x)
+“Section 409A” means Section 409A of the Code, including any amendments or successor […].
+(y)
+“Share” means one share of Company common stock.
+96
+1
+2
+3
+4
+5
+(z)
+“Share Award” means a Restricted Stock Award or Stock Award, or other grant of Shares or […].
+(aa)
+“Stock Award” means an unfunded and unsecured promise to deliver Shares or their cash […].
+(bb)
+“Subsidiary” means (i) in the case of an Incentive Stock Option, a “subsidiary […].
+(cc)
+“Total and Permanent Disability” means with respect to an Employee, that the Participant […].
+(a)
+Procedure. The Plan is administered by the Committee. The Board, at its discretion, may […].
+(b)
+Powers of the Committee. Subject to the provisions of the Plan, the Committee has the […].
+(c)
+Effect of Committee Actions. All decisions, determinations, and interpretations of the […].
+(a)
+Each Option will be designated in the Award Agreement as either an Incentive Stock Option […].
+(b)
+For purposes of Section 6(a), Options will be taken into account in the order in which […].
+(c)
+Options converted or substituted under the Plan for any or all outstanding stock options […].
+(a)
+Term. The term of each Option or SAR will be no more than ten (10) years from the date of […].
+(b)
+Exercise Price/Consideration. The per Share exercise price under each Option or SAR will […].
+(c)
+Exercise. Any Option or SAR granted under the Plan will be exercisable at the times and […].
+(d)
+Rights as a Shareholder and Dividends. Until the issuance (as evidenced by the appropriate […].
+(e)
+Termination of Continuous Status. In the event of termination of an Awardee’s Continuous […].
+(b)
+Without approval of the shareholders of the Company, no Option or SAR may be repriced, […].
+(c)
+No more than 226,000,000 Shares, as adjusted pursuant to the provisions of Section 15, […].
+(d)
+The Committee may provide that a Share Award includes dividends or dividend equivalents, […].
+(b)
+In determining adjustments to be made under this Section 15, the Committee may take into […].
+(i)
+provide for the assumption of or the issuance of substitute awards that will substantially […].
+(ii)
+to the extent the affected Awards (whether vested or unvested) are not assumed or […].
+100
+1
+Helpful Resources
+This Proxy Statement includes several website addresses and references to additional […].
+Annual Meeting
+Annual Meeting Website
+proxyvote.com
+Online Voting
+proxyvote.com
+Webcast
+virtualshareholdermeeting.com/MSFT25
+SEC Website on Proxy Matters
+sec.gov/spotlight/proxymatters/proxy_materials.shtml
+Electronic Delivery of Future Proxy Materials
+proxyvote.com
+Board of Directors
+Board of Directors
+aka.ms/BoardMembers
+Board Committees
+aka.ms/BoardCommittees
+Corporate Governance Policies and Guidelines
+aka.ms/policiesandguidelines
+Contact the Board
+askboard@microsoft.com
+Financial Reporting
+Annual Report
+microsoft.com/en-us/Investor/annual-reports
+Filings and Reports
+microsoft.com/en-us/Investor/sec-filings
+Additional Company Information
+Executive Team
+news.microsoft.com/source/leadership/
+Investor Relations
+microsoft.com/investor
+Corporate Responsibility
+microsoft.com/csr
+Reports Hub
+microsoft.com/transparency
+Public Policy Engagement
+microsoft.com/public-policy-engagement
+Note About Forward-Looking Statements
+This Proxy Statement includes estimates, projections, and statements relating to our […].
+1 […].
+Microsoft Employee Giving
+Microsoft employees are passionate about giving time, money, and skills to address the […].
+Drive More Impact with Nonprofit Offers from Microsoft
+Microsoft is committed to providing relevant, affordable, and innovative cloud and AI […].

@@ -21,7 +21,7 @@ import {
   resolveCompanyHint,
 } from '../services/agentEvidence';
 import { buildSearchTrendSummary, executeFilingResearchSearch, type ResearchSearchMode } from '../services/filingResearch';
-import { generateAgentAnswerStreaming, generateFilingSummary, planAgentRun } from '../services/aiApi';
+import { generateAgentAnswerStreaming, generateFilingSummary, planAgentRun, type AiAnswerMeta } from '../services/aiApi';
 import { openCleanPrintView } from '../services/filingExport';
 import { BRAND } from '../config/brand';
 import {
@@ -37,6 +37,7 @@ import {
   type SurfaceRoute,
 } from './AIQnAPanel.helpers';
 import { AIQnAPanelView } from './AIQnAPanelView';
+import { useAiModelAvailability } from './ai/modelAvailability';
 import { useResizablePanel } from './useResizablePanel';
 import './AIQnA.css';
 
@@ -68,6 +69,8 @@ export function AIQnAPanel() {
   const [running, setRunning] = useState(false);
   const [streamingText, setStreamingText] = useState('');
   const [loadingStage, setLoadingStage] = useState('');
+  // What the server reported answering each run (model, effort, web sources).
+  const { ids: availableModelIds, note: modelAvailabilityNote } = useAiModelAvailability(isChatOpen);
   const { panelWidth, handleResizeStart, handleResizeKeyDown } = useResizablePanel();
   const processingRequestIdRef = useRef<string | null>(null);
   const messageInputRef = useRef<HTMLInputElement>(null);
@@ -141,6 +144,8 @@ export function AIQnAPanel() {
       });
 
       const runtime = createInitialRuntimeState();
+      // Filled by callbacks, so held in objects TS does not narrow to null.
+      const summaryMeta: { current: AiAnswerMeta | null } = { current: null };
       setLoadingStage('Searching 500K+ SEC filings...');
 
       for (const action of plan.actions) {
@@ -452,7 +457,12 @@ export function AIQnAPanel() {
               ? buildImportantSectionSnippets(locator, evidence.html, evidence.text, evidence.sections, [explicitSection])
               : buildImportantSectionSnippets(locator, evidence.html, evidence.text, evidence.sections);
 
-            runtime.importantSummary = await generateFilingSummary(locator, snippets, String(action.input.mode || 'default'));
+            runtime.importantSummary = await generateFilingSummary(
+              locator,
+              snippets,
+              String(action.input.mode || 'default'),
+              meta => { summaryMeta.current = meta; },
+            );
             runtime.citations.push(...snippets.map(snippet => snippet.citation));
             runtime.findings.push(`Prepared a cited filing summary using ${snippets.length} section snippet${snippets.length === 1 ? '' : 's'}.`);
             appendAgentLog(runId, { actionId: action.id, type: action.type, title: action.title, detail: `Generated a filing summary for ${locator.companyName}.`, status: 'completed' });
@@ -560,9 +570,11 @@ export function AIQnAPanel() {
       };
 
       let finalAnswer: string;
+      const answerMeta: { current: AiAnswerMeta | null } = { current: null };
 
       if (runtime.importantSummary && runtime.searchResults.length === 0 && runtime.commentLetterResults.length === 0 && runtime.lettersCorpusCount === 0) {
         finalAnswer = runtime.importantSummary;
+        answerMeta.current = summaryMeta.current;
       } else {
         // Use streaming for answer generation — tokens appear incrementally
         setLoadingStage('Generating analysis...');
@@ -571,15 +583,21 @@ export function AIQnAPanel() {
         finalAnswer = await generateAgentAnswerStreaming(
           evidencePacket,
           streamContext,
-          (chunk) => setStreamingText(prev => prev + chunk)
+          (chunk) => setStreamingText(prev => prev + chunk),
+          meta => { answerMeta.current = meta; },
         );
       }
+
+      // The run keeps what the route reported, so the answer's model line
+      // and its evidence-package export both name the model that answered.
+      const reportedMeta = answerMeta.current;
 
       updateAgentRun(runId, {
         status: 'completed',
         completedAt: new Date().toISOString(),
         answer: finalAnswer,
         evidence: evidencePacket,
+        ...(reportedMeta ? { aiMetadata: reportedMeta } : {}),
       });
       setStreamingText('');
       setTab('answer');
@@ -672,6 +690,9 @@ export function AIQnAPanel() {
       inputValue={inputValue}
       pendingAlertDraft={pendingAlertDraft}
       suggestions={suggestions}
+      answerMeta={activeRun?.aiMetadata ?? null}
+      availableModelIds={availableModelIds}
+      modelAvailabilityNote={modelAvailabilityNote}
       onResizeStart={handleResizeStart}
       onResizeKeyDown={handleResizeKeyDown}
       onClearRuns={clearAgentRuns}

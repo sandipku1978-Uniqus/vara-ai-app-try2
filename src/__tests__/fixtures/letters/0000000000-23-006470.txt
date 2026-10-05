@@ -1,0 +1,129 @@
+United States securities and exchange commission logo
+
+ June 15, 2023
+
+ Colette Kress
+ Chief Financial Officer
+ NVIDIA Corporation
+ 2788 San Tomas Expressway
+ Santa Clara , California 95051
+
+ Re: NVIDIA CORP
+ Form 10-K for the
+fiscal year ended January 29, 2023
+ File No. 0-23985
+
+ Dear Colette Kress:
+
+ We have limited our review of your filing to the financial
+statements and related
+ disclosures and have the following comments. In some of our comments, we
+may ask you to
+ provide us with information so we may better understand your disclosure.
+
+ Please respond to these comments within ten business days by
+providing the requested
+ information or advise us as soon as possible when you will respond. If
+you do not believe our
+ comments apply to your facts and circumstances, please tell us why in
+your response.
+
+ After reviewing your
+response to these comments, we may have additional comments.
+
+ Form 10-K for the fiscal year ended January 29, 2023
+
+ Management's Discussion and Analysis of Financial Condition and Results
+of Operations
+ Results of Operations, page 41
+
+ 1. Where you describe two
+or more business reasons that contributed to a material change in
+ a financial statement
+line item between periods, please quantify, where possible, the extent
+ to which each change
+contributed to the overall change in that line item. As an example,
+ we note that the
+year-on-year increase in your Compute & Networking revenues was
+ driven in part by
+growth from hyperscale customers, purchases made by several CSP
+ partners to support
+multi-year cloud service agreements for cloud service offerings and
+ research and
+development activities. Additionally, your disclosure of the increase in
+ research and
+development expense indicates that it was "primarily driven by increased
+ compensation, employee
+growth, engineering development costs, and data center
+ infrastructure," but
+does not quantify any of the factors. See Item 303(b)(2) of Regulation
+ S-K and SEC Release No.
+33-8350. Please revise future filings accordingly.
+ 2. We note your risk
+factor disclosure which identifies inflation as a potential adverse
+ Colette Kress
+NVIDIA Corporation
+June 15, 2023
+Page 2
+ economic condition which drives the costs for wafers, components,
+logistics, and other
+ supply chain expenses. In future filings, please expand your
+disclosures to identify the
+ principal factors contributing to the inflationary pressures the
+company has experienced
+ and clarify the resulting impact to the company, if material. Please
+also identify actions
+ planned or taken, if any, to mitigate inflationary pressures
+Gross Profit and Gross Margin, page 42
+
+3. We note your narrative discussion of the drivers of the changes in
+gross margin for both
+ your Compute & Networking and Graphics segment. However, in light of
+the fact that
+ Note 17 on page 85 discloses that your segment profitability measure
+is operating income,
+ please revise your discussion in MD&A in future filings to also
+include a discussion of the
+ nature of the changes in segment operating income for each of your
+reportable segments.
+ Also, if you continue to discuss the changes in segment gross margin,
+such as on the
+ bottom of page 42, please revise to include quantification of the
+costs of revenues by
+ segment so that investors can better assess the significance of the
+items disclosed in your
+ narrative.
+Notes to the Consolidated Financial Statements
+Note 1. Organization and Summary of Significant Accounting Policies
+Revenue Recognition, page 60
+
+4. We note from your disclosure on page 36 of MD&A that in 2023 you
+entered into multi-
+ year cloud service agreements and Note 1 to the financial statements
+includes disclosure
+ of your revenue recognition for these agreements. Please tell us if
+you offer these cloud
+ services in connection with the sale of other products or services. If
+so, please tell us and
+ revise Note 1 in future filings to disclose how you recognize revenue
+for the provision of
+ multiple offerings to one customer and your accounting for any
+multiple performance
+ obligations within customer contracts.
+ In closing, we remind you that the company and its management are
+responsible for the
+accuracy and adequacy of their disclosures, notwithstanding any review,
+comments, action or
+absence of action by the staff.
+
+ You may contact Charles Eastman at (202) 551-3794 or Claire Erlanger at
+(202) 551-
+3301 with any questions.
+
+FirstName LastNameColette Kress Sincerely,
+Comapany NameNVIDIA Corporation
+ Division of
+Corporation Finance
+June 15, 2023 Page 2 Office of
+Manufacturing
+FirstName LastName

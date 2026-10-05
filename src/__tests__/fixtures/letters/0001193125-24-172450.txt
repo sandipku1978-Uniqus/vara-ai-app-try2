@@ -1,0 +1,137 @@
+CORRESP
+
+ 
+
+Microsoft Corporation
+ 
+Tel 425 882 8080
+
+One Microsoft Way
+ 
+Fax 425 936 7329
+
+Redmond, WA 98052-6399
+ 
+http://www.microsoft.com/
+ 
+ 
+
+ 
+June 28, 2024 
+
+VIA EDGAR 
+United States Securities and Exchange
+Commission 
+Division of Corporation Finance 
+Office of Life
+Sciences 
+100 F Street, N.E. 
+Washington, D.C. 20549 
+
+ 
+
+Attn:
+ 
+Conlon Danberg 
+
+Suzanne Hayes 
+ 
+
+Re:
+ 
+Microsoft Corporation 
+
+Current Report on Form 8-K filed January 19, 2024 
+
+Amended Current Report on Form 8-K/A filed March 8, 2024 
+
+File No. 001-37845 
+
+Ladies and Gentlemen: 
+We are in receipt of the comment letter,
+dated June 17, 2024, from the staff (the “Staff”) of the Securities and Exchange Commission (the “SEC”) regarding the above captioned filings on
+Form 8-K filed January 19, 2024 (the “Form 8-K”) and Form
+8-K/A filed March 8, 2024 (the “Form 8-K/A”). Below is the response of Microsoft Corporation (the
+“Company,” “we,” “our” or similar terminology) to the Staff’s comments. 
+For
+the Staff’s convenience, we have incorporated the Staff’s comments into this response letter in italics. 
+Current Report on Form 8-K filed January 19, 2024 and Amended Current Report on Form 8-K/A filed March 8, 2024 
+
+Item 1.05 Material Cybersecurity Incidents, page 1 
+ 
+
+1.
+ 
+Please advise us as to why you determined to file under Item 1.05 of Form
+8-K given the statement that the incident had not had a material impact on your operations, and you had not determined whether the incident was reasonably likely to materially impact your financial condition
+or results of operations. 
+
+ 
+
+ 
+On January 12, 2024, we detected that beginning in late November 2023, a nation-state associated threat
+actor had gained access to Microsoft’s employees’ email accounts and exfiltrated sensitive business and other information. At the time of filing the Form 8-K, our investigation was ongoing and many
+aspects of the situation were uncertain. Based on the information in our possession at that time, we considered potential impacts of the incident, including those identified in the Gerding Statement (defined below). Although we were generally
+aware that a large volume of data had been accessed, we did not believe there to be and were unable to determine any material impact of the incident applying both qualitative and quantitative factors. Nevertheless, due to the uncertainty and ongoing
+investigation and remediation of this significant and complex incident, and noting the SEC’s admonition in both the proposing and adopting release that “doubts as to the critical nature” of the relevant information “be resolved
+in favor of those the statute is designed to protect,” we determined that prompt disclosure of the incident under Item 1.05 of Form 8-K was warranted. The Form 8-K
+provided investors with information necessary to understand the material aspects of the nature, scope, and timing of the incident. The Form 8-K/A provided investors with information related to developments in
+the incident since the filing of the Form 8-K, and to update prior statements that our investors, customers, and other stakeholders may have been relying upon. 
+
+We continue to actively monitor and update our assessment of this cybersecurity incident through our incident review process. To the extent we determine that
+the incident has or is reasonably likely to materially impact the Company, including our financial condition or results of operations, we will file an amended Form 8-K pursuant to Instruction 2 of Item 1.05 to
+update our disclosure. 
+On May 21, 2024, Erik Gerding, Director, Division of Corporation Finance released a statement related to disclosure of
+cybersecurity incidents determined to be material and other cybersecurity incidents (the “Gerding Statement”). We acknowledge the Gerding Statement and will give the Gerding Statement appropriate consideration when evaluating future
+cybersecurity incidents and Form 8-K disclosure. 
+ 
+
+2.
+ 
+We note the statement in your Form 10-Q for the quarter ended
+March 31, 2024 indicating that the cybersecurity incident has and may continue to result in harm to your reputation and customer relationships. Please advise us as to whether you believe the harm to your reputation and customer relationships is
+reasonably likely to have a material impact on you, including your financial condition and results of operations. To the extent you determine it is reasonably likely to have a material impact, please file an amended Form 8-K pursuant to Instruction 2 to Item 1.05 to update your disclosure. 
+As of the date of this
+response letter, we do not believe the harm to our reputation and customer relationships is reasonably likely to have a material impact on the Company, including our financial condition and results of operations. We continue to actively monitor and
+update our assessment of this cybersecurity incident through our incident review process. To the extent we determine that the harm to our reputation and customer relationships is reasonably likely to have a material impact on the Company, we will
+file an amended Form 8-K pursuant to Instruction 2 of Item 1.05 to update our disclosure. 
+*****
+
+ 
+ 
+
+ 
+
+ 
+
+ 
+Please advise us if we can provide any further information or assistance to facilitate your review. Please
+direct any questions or further comments regarding this response letter to the undersigned at (425) 882-8080. 
+ 
+
+Very truly yours,
+
+MICROSOFT CORPORATION
+
+By:
+ 
+ 
+/s/ Keith Dolliver
+
+Name:
+ 
+Keith Dolliver
+
+Title:
+ 
+Deputy General Counsel and Corporate Secretary
+ 
+ 
+
+cc:
+ 
+Amy Hood, Chief Financial Officer 
+
+Brad Smith, Vice Chair and President 
+
+Alice Jolla, Corporate Vice President and Chief Accounting Officer

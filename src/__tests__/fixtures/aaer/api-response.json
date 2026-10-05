@@ -1,0 +1,198 @@
+{
+  "releases": [
+    {
+      "releaseNo": "AAER-4604",
+      "date": "2026-10-01",
+      "respondents": [
+        "Latch, Inc."
+      ],
+      "title": "Latch, Inc.",
+      "url": "https://www.sec.gov/files/litigation/admin/2026/33-11450.pdf",
+      "otherReleaseNumbers": [
+        "33-11450",
+        "34-106568"
+      ],
+      "relatedActions": [
+        {
+          "label": "Administrative Summary",
+          "url": "https://www.sec.gov/enforcement-litigation/administrative-proceedings/33-11450-s"
+        }
+      ]
+    },
+    {
+      "releaseNo": "AAER-4603",
+      "date": "2026-09-30",
+      "respondents": [
+        "Travel + Leisure Co."
+      ],
+      "title": "Travel + Leisure Co.",
+      "url": "https://www.sec.gov/enforcement-litigation/litigation-releases/lr-26657",
+      "otherReleaseNumbers": [
+        "LR-26657"
+      ],
+      "relatedActions": [
+        {
+          "label": "SEC Complaint",
+          "url": "https://www.sec.gov/files/litigation/complaints/2026/comp26657.pdf"
+        }
+      ]
+    },
+    {
+      "releaseNo": "AAER-4602",
+      "date": "2026-09-23",
+      "respondents": [
+        "L&L Energy, Inc.",
+        "Dickson Lee, CPA (Order Granting Extension of Time to File a Reply)"
+      ],
+      "title": "L&L Energy, Inc. and Dickson Lee, CPA (Order Granting Extension of Time to File a Reply)",
+      "url": "https://www.sec.gov/files/litigation/opinions/2026/33-11440.pdf",
+      "otherReleaseNumbers": [
+        "33-11440",
+        "34-106474"
+      ],
+      "relatedActions": []
+    },
+    {
+      "releaseNo": "AAER-4601",
+      "date": "2026-09-22",
+      "respondents": [
+        "Nihat Cardak"
+      ],
+      "title": "Nihat Cardak",
+      "url": "https://www.sec.gov/files/litigation/admin/2026/34-106459.pdf",
+      "otherReleaseNumbers": [
+        "34-106459"
+      ],
+      "relatedActions": []
+    },
+    {
+      "releaseNo": "AAER-4600",
+      "date": "2026-09-11",
+      "respondents": [
+        "Dada Nexus Limited"
+      ],
+      "title": "Dada Nexus Limited",
+      "url": "https://www.sec.gov/files/litigation/admin/2026/34-106344.pdf",
+      "otherReleaseNumbers": [
+        "34-106344"
+      ],
+      "relatedActions": []
+    },
+    {
+      "releaseNo": "AAER-4599",
+      "date": "2026-09-03",
+      "respondents": [
+        "Paul Frenkiel"
+      ],
+      "title": "Paul Frenkiel",
+      "url": "https://www.sec.gov/files/litigation/admin/2026/34-106274.pdf",
+      "otherReleaseNumbers": [
+        "34-106274"
+      ],
+      "relatedActions": []
+    },
+    {
+      "releaseNo": "AAER-4598",
+      "date": "2026-08-31",
+      "respondents": [
+        "L&L Energy, Inc.",
+        "Dickson Lee, CPA (Order Granting Extension of Time To File Reply)"
+      ],
+      "title": "L&L Energy, Inc. and Dickson Lee, CPA (Order Granting Extension of Time To File Reply)",
+      "url": "https://www.sec.gov/files/litigation/opinions/2026/33-11437.pdf",
+      "otherReleaseNumbers": [
+        "33-11437",
+        "34-106239"
+      ],
+      "relatedActions": []
+    },
+    {
+      "releaseNo": "AAER-4597",
+      "date": "2026-07-22",
+      "respondents": [
+        "L&L Energy, Inc.",
+        "Dickson Lee, CPA (Order Granting Extension of Time)"
+      ],
+      "title": "L&L Energy, Inc. and Dickson Lee, CPA (Order Granting Extension of Time)",
+      "url": "https://www.sec.gov/files/litigation/opinions/2026/33-11432.pdf",
+      "otherReleaseNumbers": [
+        "33-11432",
+        "34-105966"
+      ],
+      "relatedActions": []
+    },
+    {
+      "releaseNo": "AAER-4595",
+      "date": "2026-07-01",
+      "respondents": [
+        "Steven W. Hurd, CPA"
+      ],
+      "title": "Steven W. Hurd, CPA",
+      "url": "https://www.sec.gov/files/litigation/admin/2026/34-105834.pdf",
+      "otherReleaseNumbers": [
+        "34-105834"
+      ],
+      "relatedActions": []
+    },
+    {
+      "releaseNo": "AAER-4594",
+      "date": "2026-06-30",
+      "respondents": [
+        "Jason Jianxun Tang, CPA"
+      ],
+      "title": "Jason Jianxun Tang, CPA",
+      "url": "https://www.sec.gov/files/litigation/admin/2026/34-105809.pdf",
+      "otherReleaseNumbers": [
+        "34-105809"
+      ],
+      "relatedActions": []
+    },
+    {
+      "releaseNo": "AAER-4593",
+      "date": "2026-06-04",
+      "respondents": [
+        "Adrian D. Beamish, CPA"
+      ],
+      "title": "Adrian D. Beamish, CPA",
+      "url": "https://www.sec.gov/files/litigation/admin/2026/34-105615.pdf",
+      "otherReleaseNumbers": [
+        "34-105615"
+      ],
+      "relatedActions": []
+    },
+    {
+      "releaseNo": "AAER-4592",
+      "date": "2026-05-05",
+      "respondents": [
+        "Jai Sondhi"
+      ],
+      "title": "Jai Sondhi",
+      "url": "https://www.sec.gov/files/litigation/admin/2026/34-105372.pdf",
+      "otherReleaseNumbers": [
+        "34-105372"
+      ],
+      "relatedActions": []
+    }
+  ],
+  "total": 12,
+  "returned": 12,
+  "coverage": {
+    "pagesDiscovered": 34,
+    "pagesRequested": 1,
+    "pagesParsed": 1,
+    "pagesFailed": [],
+    "rowsParsed": 100,
+    "unparsedRows": 0,
+    "oldestDate": "2024-02-12",
+    "newestDate": "2026-10-01",
+    "complete": false,
+    "source": "sec.gov accounting-auditing-enforcement-releases index",
+    "fetchedAt": "2026-10-05T04:28:02.975Z",
+    "incompleteReason": "Requested page limit reached."
+  },
+  "cache": {
+    "hit": false,
+    "cachedAt": null,
+    "ttlSeconds": 0
+  }
+}

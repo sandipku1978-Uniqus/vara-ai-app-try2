@@ -391,6 +391,7 @@
 }
 
 .ai-input-area {
+  position: relative;
   display: flex;
   gap: 8px;
   padding: 10px;
@@ -441,6 +442,93 @@
 
 .copilot-answer.streaming {
   position: relative;
+}
+
+/* Answer footer: model line on the start side; the end side is left free for
+   answer actions (export). */
+.copilot-answer-footer {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.copilot-answer-footer-start {
+  min-width: 0;
+}
+
+.answer-model-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+.answer-model-fallback {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  color: var(--status-warning);
+}
+
+.answer-model-fallback svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* Web sources are deliberately not citation cards: dashed rule, globe, and an
+   explicit "not SEC filings" note, so they never read as filing evidence. */
+.web-sources {
+  padding: 8px 10px;
+  border: 1px dashed var(--input-border);
+  border-radius: 4px;
+  background: var(--surface-subtle);
+}
+
+.web-sources-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+  color: var(--text-muted);
+}
+
+.web-sources-header .section-label {
+  margin: 0;
+}
+
+.web-sources-note {
+  margin-left: auto;
+  font-size: 0.68rem;
+}
+
+.web-sources-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 0;
+  padding-left: 18px;
+  font-size: 0.78rem;
+}
+
+.web-sources-list a {
+  color: var(--text-secondary);
+  text-decoration: underline;
+  text-decoration-color: var(--input-border);
+  text-underline-offset: 2px;
+  word-break: break-word;
+}
+
+.web-sources-list a:hover {
+  color: var(--accent-primary);
+}
+
+.web-sources-host {
+  margin-left: 6px;
+  color: var(--text-muted);
+  font-size: 0.7rem;
 }
 
 .copilot-answer.streaming::after {

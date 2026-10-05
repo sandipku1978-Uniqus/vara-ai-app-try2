@@ -8,6 +8,7 @@
  *
  *   npm run accuracy            # full run
  *   npm run accuracy -- --suite boolean
+ *   npm run accuracy -- --suite recall
  *   npm run accuracy -- --json report.json
  *
  * Design rule: nothing here asserts "the app still does what it did". Every
@@ -58,6 +59,7 @@ import {
 } from '../../src/services/filingResearch';
 import { defaultSearchFilters } from '../../src/domain/searchFilters';
 import { candidateRequestHeaders } from './request';
+import { suiteRecall } from './recall';
 
 interface Check {
   suite: string;
@@ -1794,6 +1796,11 @@ const SUITES: Record<string, () => Promise<void>> = {
   xbrl: suiteXbrl,
   'boolean-deployed': suiteBooleanDeployedCanary,
   boolean: suiteBoolean,
+  recall: () => suiteRecall({
+    candidateBase, withCandidateProductFetch, setCoverageTarget, record, skip,
+    candidateAvailable: () => semanticAvailability.requestErrors === 0
+      && semanticAvailability.serverErrorResponses === 0,
+  }),
   equivalence: suiteMatcherEquivalence,
   disclosure: suiteDisclosure,
 };

@@ -12,3 +12,13 @@ export function scopedStorageKey(baseKey: string, scope = activeBrowserStorageSc
   if (!scope) return null;
   return `urc.identity.${encodeURIComponent(scope)}.${baseKey}`;
 }
+
+/** The scope the AppProvider last set (null until identity has loaded). */
+export function getActiveBrowserStorageScope(): string | null {
+  return activeBrowserStorageScope;
+}
+
+/** True for a signed-in identity's scope; false for 'signed-out' and null. */
+export function isAccountStorageScope(scope: string | null): scope is string {
+  return Boolean(scope && scope.startsWith('user:'));
+}

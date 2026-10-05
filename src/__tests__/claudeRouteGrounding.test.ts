@@ -35,6 +35,9 @@ vi.mock('../lib/rate-limit', () => ({
   checkAiRateLimit: vi.fn(async () => ({ allowed: true })),
   acquireAiConcurrency: vi.fn(async () => ({ allowed: true, lease: 'lease-1' })),
   estimateModelTokenReservation: vi.fn(() => 10_000),
+  modelCostWeights: vi.fn(() => ({ input: 1, output: 1 })),
+  DEFAULT_MODEL_COST_WEIGHTS: { input: 1, output: 1 },
+  WEB_SEARCH_CALL_TOKEN_EQUIVALENT: 1_000,
   reserveAiTokenBudget: vi.fn(async () => ({ allowed: true })),
   releaseAiConcurrency: vi.fn(async () => undefined),
   // Usage metering settles against these after the model call.
@@ -59,7 +62,12 @@ function modelCall(index = 0): ModelCall {
 describe('/api/claude grounded ASC guidance', () => {
   beforeEach(() => {
     vi.resetModules();
+    // The pre-gateway deployment: the default model runs directly on
+    // Anthropic, on the legacy model id.
     vi.stubEnv('ANTHROPIC_API_KEY', 'test-key');
+    vi.stubEnv('VERCEL_AI_GATEWAY_KEY', '');
+    vi.stubEnv('AI_GATEWAY_API_KEY', '');
+    vi.stubEnv('ANTHROPIC_MODEL', '');
     mocks.createMessage.mockReset().mockResolvedValue({
       content: [{ type: 'text', text: 'Single lessee model [1].' }],
     });
@@ -123,7 +131,18 @@ describe('/api/claude grounded ASC guidance', () => {
     const response = await POST(post('/api/claude', { prompt: 'Summarize this filing.' }));
 
     const payload = await response.json();
-    expect(payload).toEqual({ text: 'Single lessee model [1].', cached: false });
+    expect(payload).toEqual({
+      text: 'Single lessee model [1].',
+      cached: false,
+      // How the answer was produced: the legacy direct model at the default
+      // model's default effort, no web search.
+      model: 'claude-sonnet-5',
+      provider: 'anthropic',
+      reasoningEffort: 'medium',
+      usage: { input: 0, output: 0 },
+      webSources: [],
+      webSearch: { requested: false, mode: 'off' },
+    });
     const call = modelCall();
     expect(call.system[0].text).toBe(SEC_RESEARCH_SYSTEM_PROMPT);
     expect(call.messages).toEqual([{ role: 'user', content: 'Summarize this filing.' }]);
@@ -142,7 +161,15 @@ describe('/api/claude grounded ASC guidance', () => {
   });
 
   it('returns the grounding report alongside a cached answer', async () => {
-    mocks.cacheGet.mockResolvedValue('Cached lessee model [1].');
+    mocks.cacheGet.mockResolvedValue({
+      text: 'Cached lessee model [1].',
+      model: 'claude-sonnet-5',
+      provider: 'anthropic',
+      reasoningEffort: 'medium',
+      usage: { input: 900, output: 120 },
+      webSources: [],
+      webSearch: { requested: false, mode: 'off' },
+    });
     const { POST } = await import('../app/api/claude/route');
 
     const response = await POST(post('/api/claude', {
@@ -153,6 +180,7 @@ describe('/api/claude grounded ASC guidance', () => {
     const payload = await response.json();
     expect(payload.cached).toBe(true);
     expect(payload.text).toBe('Cached lessee model [1].');
+    expect(payload.model).toBe('claude-sonnet-5');
     expect(payload.grounding.coverage).toBe('grounded');
     expect(payload.grounding.excerpts[0].id).toBe('IFRS 16');
     expect(mocks.createMessage).not.toHaveBeenCalled();

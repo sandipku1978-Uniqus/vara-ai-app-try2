@@ -559,7 +559,7 @@ function simplifyDoubleNegation(node: BooleanSearchNode): BooleanSearchNode {
 }
 
 export function looksLikeBooleanQuery(query: string): boolean {
-  // Auto-switch Filing Research → Boolean only on high-confidence signals:
+  // Auto-switch Plain language → Boolean only on high-confidence signals:
   // UPPERCASE operators, a proximity operator, an auditor: field token, or a
   // numeric operand (#, $#, %#) — none of these occur in natural prose.
   // Lowercase prose ("increases and decreases"), quotes, or parentheses alone
@@ -1163,6 +1163,161 @@ export function extractBooleanMatchSnippet(query: string, text: string): Boolean
     excerpt,
     distance: null,
   };
+}
+
+/** A hit as an inclusive range of engine token positions. */
+export interface BooleanHitSpan {
+  start: number;
+  end: number;
+}
+
+/**
+ * The engine's tokenization of `text`, with each token's source range.
+ *
+ * `tokens` is exactly `normalizeForMatch(text).split(' ')` — the same
+ * lowercase, dotted-initialism collapse, thousands-separator removal and
+ * token pattern — but every token also carries the `[start, end)` code-unit
+ * range it came from in the ORIGINAL text. Consumers that must point back at
+ * the source (the filing viewer scrolling to a hit) use this instead of
+ * re-deriving positions from normalized text, which drifts the moment
+ * normalization changes.
+ */
+export function tokenizeForMatchWithOffsets(text: string): { tokens: string[]; starts: number[]; ends: number[] } {
+  // Stage 1: lowercase with a per-unit source map (lowercasing can expand a
+  // character, e.g. U+0130, so the map is not the identity).
+  let current = '';
+  let map: number[] = [];
+  for (let index = 0; index < text.length; index += 1) {
+    const lowered = text[index].toLowerCase();
+    current += lowered;
+    for (let unit = 0; unit < lowered.length; unit += 1) map.push(index);
+  }
+
+  // Stages 2 and 3 drop single characters exactly where normalizeMatchText's
+  // replacements do, carrying the source map along.
+  const dropAt = (pattern: RegExp, dropOffset: number) => {
+    const drop = new Set<number>();
+    pattern.lastIndex = 0;
+    for (let hit = pattern.exec(current); hit; hit = pattern.exec(current)) {
+      drop.add(hit.index + dropOffset);
+    }
+    if (drop.size === 0) return;
+    let next = '';
+    const nextMap: number[] = [];
+    for (let index = 0; index < current.length; index += 1) {
+      if (drop.has(index)) continue;
+      next += current[index];
+      nextMap.push(map[index]);
+    }
+    current = next;
+    map = nextMap;
+  };
+  dropAt(/\b([a-z])\./g, 1);
+  dropAt(/(\d),(?=\d)/g, 1);
+
+  const tokens: string[] = [];
+  const starts: number[] = [];
+  const ends: number[] = [];
+  const tokenPattern = new RegExp(MATCH_TOKEN_RE.source, 'g');
+  for (let hit = tokenPattern.exec(current); hit; hit = tokenPattern.exec(current)) {
+    tokens.push(hit[0]);
+    starts.push(map[hit.index]);
+    ends.push(map[hit.index + hit[0].length - 1] + 1);
+  }
+  return { tokens, starts, ends };
+}
+
+function collectHitSpans(node: BooleanSearchNode, index: TextIndex): BooleanHitSpan[] {
+  switch (node.type) {
+    case 'TERM':
+    case 'PHRASE':
+    case 'NUMBER':
+    case 'WILDCARD':
+      return findOperandSpans(node, index);
+    case 'PROX': {
+      // One hit per left-operand occurrence that has a qualifying partner,
+      // under exactly the gap and order rule matchesProximity applies. The
+      // partner is the NEAREST qualifying right occurrence (the following one
+      // on a tie), so alternating operands read as separate hits rather than
+      // chaining into one span the length of a paragraph. Right spans are
+      // scanned in a window around each left span, so dense operands
+      // (# W/5 revenue) stay near-linear.
+      const leftSpans = findOperandSpans(node.left, index);
+      const rightSpans = findOperandSpans(node.right, index).sort((a, b) => a.start - b.start);
+      if (leftSpans.length === 0 || rightSpans.length === 0) return [];
+      const maxRightLength = rightSpans.reduce((max, span) => Math.max(max, span.end - span.start), 0);
+      const spans: BooleanHitSpan[] = [];
+      for (const left of leftSpans) {
+        let partner: { span: BooleanHitSpan; gap: number } | null = null;
+        const windowStart = left.start - node.distance - maxRightLength - 1;
+        let low = 0;
+        let high = rightSpans.length;
+        while (low < high) {
+          const mid = (low + high) >> 1;
+          if (rightSpans[mid].start < windowStart) low = mid + 1;
+          else high = mid;
+        }
+        for (let cursor = low; cursor < rightSpans.length; cursor += 1) {
+          const right = rightSpans[cursor];
+          if (right.start > left.end + node.distance + 1) break;
+          if (node.ordered && left.end >= right.start) continue;
+          const gap =
+            left.end < right.start
+              ? right.start - left.end - 1
+              : left.start > right.end
+                ? left.start - right.end - 1
+                : 0;
+          if (gap > node.distance) continue;
+          // Rights arrive in document order, so `<=` lets a later (following)
+          // partner win a tie.
+          if (!partner || gap <= partner.gap) partner = { span: right, gap };
+        }
+        if (partner) {
+          spans.push({ start: Math.min(left.start, partner.span.start), end: Math.max(left.end, partner.span.end) });
+        }
+      }
+      return spans;
+    }
+    case 'AND':
+    case 'OR':
+      return [...collectHitSpans(node.left, index), ...collectHitSpans(node.right, index)];
+    default:
+      // NOT: negated text is never evidence of a match. AUDITOR: a metadata
+      // constraint with no position in the text.
+      return [];
+  }
+}
+
+/**
+ * Every hit of a Boolean expression in an engine token stream, in document
+ * order, overlapping hits merged — what a researcher means by "all hits in
+ * this filing". A phrase hit is each occurrence; a `W/n` / `P/n` hit is each
+ * left-operand occurrence with its nearest qualifying partner, spanning both
+ * operands; AND and OR contribute the hits of
+ * their positive branches; NOT contributes none.
+ *
+ * Same truth precondition as extractBooleanMatchSnippet: text the full
+ * expression rejects yields no hits at all, so a hit list can never stand in
+ * for a match the engine did not make. Returns null when the query cannot be
+ * parsed.
+ */
+export function findBooleanHitSpans(query: string, tokens: string[]): BooleanHitSpan[] | null {
+  const parsed = parseBooleanQuery(query);
+  if (!parsed.expression) return null;
+  const index: TextIndex = { normalizedText: tokens.join(' '), tokens };
+  if (!evaluate(parsed.expression, index)) return [];
+
+  const sorted = collectHitSpans(parsed.expression, index).sort((a, b) => a.start - b.start || a.end - b.end);
+  const merged: BooleanHitSpan[] = [];
+  for (const span of sorted) {
+    const previous = merged[merged.length - 1];
+    if (previous && span.start <= previous.end) {
+      previous.end = Math.max(previous.end, span.end);
+    } else {
+      merged.push({ start: span.start, end: span.end });
+    }
+  }
+  return merged;
 }
 
 function collectPositiveTerms(node: BooleanSearchNode, negated = false, bucket = new Set<string>()): Set<string> {

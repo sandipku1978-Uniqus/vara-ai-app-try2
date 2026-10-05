@@ -4,91 +4,67 @@
  * Year-over-year section change matrix (benchmark C2–C4).
  *
  * Two shapes, chosen by selection:
- *  - PEERS (several companies): rows are the taxonomy's section concepts,
- *    one column per peer, each cell classifying how much of that section
- *    changed between the filer's two most recent annual reports.
+ *  - PEERS (several companies): rows are the taxonomy's section concepts for
+ *    the chosen form, grouped Items / Notes / Proxy, one column per peer,
+ *    each cell classifying how much of that section changed between the
+ *    filer's two most recent periods of report.
  *  - CHRONOLOGICAL (one company): the same rows, one column per consecutive
- *    pair of annual periods (FY22→23, FY23→24, …), showing how each section
- *    evolved across up to six years — the single-filer mode of the benchmark.
+ *    pair of periods (FY22→23, FY23→24, …), across up to six years.
  *
  * Cells are heat-shaded by the deterministic bucket, show the exact changed
  * percentage, and click through to the redline of the two section texts.
  * Measurement runs on the same engine-normalized slices the section-scope
  * filter uses; the redline is labelled as normalized text, never passed off
- * as the filing's typography.
+ * as the filing's typography. A section the slicer could not locate in
+ * either period says so — it is never measured as "new" or "removed".
+ *
+ * "Explain changes" (on demand, one cell at a time) sends that cell's marked
+ * diff through the existing redline-summary path; every claim it returns
+ * quotes changed text that the client verifies against the diff.
  */
 
-import { useEffect, useMemo, useState } from 'react';
-import { fetchFilingText, type SecSubmission } from '../../services/secApi';
-import { extractResolvedSection, resolveSectionScope, SECTION_CONCEPT_LIST } from '../../utils/sectionTaxonomy';
-import { CHANGE_BUCKET_LABELS, computeSectionChange, type SectionChange } from '../../utils/sectionDiff';
+import { Fragment, useEffect, useMemo, useState } from 'react';
+import { Loader2, Sparkles } from 'lucide-react';
+import { buildSecDocumentUrl, fetchFilingText, type SecSubmission } from '../../services/secApi';
+import { aiSummarizeRedline } from '../../services/aiApi';
+import { SECTION_GROUPS, conceptsForForm } from '../../utils/sectionTaxonomy';
+import { buildMarkedDiff, CHANGE_BUCKET_LABELS } from '../../utils/sectionDiff';
+import {
+  YOY_FORMS,
+  locateConcepts,
+  periodLabel,
+  pickComparablePeriods,
+  yoyCells,
+  type ComparedPeriod,
+  type YoYCell,
+  type YoYForm,
+} from '../../utils/yoyChanges';
+import { renderMarkdown } from '../../utils/markdownRenderer';
 import { TextDiffViewer } from './TextDiffViewer';
-
-interface AnnualPeriod {
-  accession: string;
-  primaryDocument: string;
-  reportDate: string;
-}
-
-interface MatrixCell {
-  change: SectionChange;
-  priorSlice: string;
-  currentSlice: string;
-}
+import CartToggle from '../cart/CartToggle';
 
 interface MatrixColumn {
   key: string;
   headerTop: string;
   headerSub: string;
-  cells: Record<string, MatrixCell>;
+  cells: Record<string, YoYCell>;
   error?: string;
+  cik?: string;
+  ticker?: string;
+  /** Company name for the cart; the later period of the pair is what a cart selection adds. */
+  company?: string;
+  prior?: ComparedPeriod;
+  current?: ComparedPeriod;
 }
 
-/** The filer's most recent annual periods, amendments winning their period. */
-export function pickAnnualPeriods(submission: SecSubmission, limit = 2): AnnualPeriod[] {
-  const recent = submission.filings.recent;
-  const byPeriod = new Map<string, AnnualPeriod>();
-  recent.form.forEach((form, index) => {
-    if (form !== '10-K' && form !== '10-K/A') return;
-    const reportDate = recent.reportDate?.[index] || recent.filingDate?.[index] || '';
-    if (!reportDate) return;
-    const existing = byPeriod.get(reportDate);
-    // Amendments are the authoritative text for their period; among equals
-    // the earlier-listed (newer) filing wins.
-    if (!existing || form === '10-K/A') {
-      if (existing && form !== '10-K/A') return;
-      byPeriod.set(reportDate, {
-        accession: recent.accessionNumber[index],
-        primaryDocument: recent.primaryDocument[index],
-        reportDate,
-      });
-    }
-  });
-  return Array.from(byPeriod.values())
-    .sort((a, b) => b.reportDate.localeCompare(a.reportDate))
-    .slice(0, limit);
+interface Explanation {
+  status: 'loading' | 'done' | 'error';
+  text?: string;
+  note?: string;
 }
 
-/** Per-concept slices for one period's filing text. */
-function sliceConcepts(filingText: string): Record<string, string> {
-  const slices: Record<string, string> = {};
-  for (const concept of SECTION_CONCEPT_LIST) {
-    const resolved = resolveSectionScope(concept.key, '10-K');
-    if (!resolved) continue;
-    slices[concept.key] = extractResolvedSection(filingText, resolved);
-  }
-  return slices;
-}
-
-function cellsForPair(priorSlices: Record<string, string>, currentSlices: Record<string, string>): Record<string, MatrixCell> {
-  const cells: Record<string, MatrixCell> = {};
-  for (const concept of SECTION_CONCEPT_LIST) {
-    const priorSlice = priorSlices[concept.key] ?? '';
-    const currentSlice = currentSlices[concept.key] ?? '';
-    cells[concept.key] = { change: computeSectionChange(priorSlice, currentSlice), priorSlice, currentSlice };
-  }
-  return cells;
-}
+/** Explanations survive re-selecting a cell; keyed by both accessions and the concept. */
+const explanationCache = new Map<string, Explanation>();
 
 const CHRONO_PERIODS = 6;
 
@@ -101,6 +77,8 @@ const BUCKET_STYLE: Record<string, { background: string; color: string }> = {
   deleted: { background: 'color-mix(in srgb, var(--status-error, #d64545) 12%, transparent)', color: 'var(--status-error, #d64545)' },
 };
 
+const FORM_NOUN: Record<YoYForm, string> = { '10-K': 'annual report', '20-F': 'annual report', 'DEF 14A': 'proxy statement' };
+
 export default function YoYChangeMatrix({
   tickers,
   companiesData,
@@ -108,45 +86,54 @@ export default function YoYChangeMatrix({
   tickers: string[];
   companiesData: Record<string, SecSubmission>;
 }) {
+  const [form, setForm] = useState<YoYForm>('10-K');
   const [columns, setColumns] = useState<MatrixColumn[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedCell, setSelectedCell] = useState<{ column: string; concept: string } | null>(null);
+  const [explanations, setExplanations] = useState<Record<string, Explanation>>({});
   const chronological = tickers.length === 1;
+  const concepts = useMemo(() => conceptsForForm(form), [form]);
+  const explaining = Object.values(explanations).some(entry => entry.status === 'loading');
 
   useEffect(() => {
     let cancelled = false;
 
-    async function textFor(cik: string, period: AnnualPeriod): Promise<string> {
+    async function textFor(cik: string, period: ComparedPeriod): Promise<string> {
       return fetchFilingText(cik, period.accession.replace(/-/g, ''), period.primaryDocument);
     }
 
     async function loadChronological(ticker: string, submission: SecSubmission) {
-      const periods = pickAnnualPeriods(submission, CHRONO_PERIODS);
+      const periods = pickComparablePeriods(submission, form, CHRONO_PERIODS);
       if (periods.length < 2) {
-        setColumns([{ key: ticker, headerTop: ticker, headerSub: 'Fewer than two annual reports on file', cells: {} }]);
+        setColumns([{ key: ticker, headerTop: ticker, headerSub: `Fewer than two ${form} filings on record`, cells: {} }]);
         return;
       }
       const cik = String(submission.cik);
       // Oldest first, so columns read left → right through time. Each period
       // is fetched and sliced exactly once, then consecutive pairs diff.
       const ordered = [...periods].reverse();
-      const slicesByPeriod: Array<Record<string, string> | null> = [];
+      const located: Array<ReturnType<typeof locateConcepts> | null> = [];
       for (const period of ordered) {
         const text = await textFor(cik, period).catch(() => '');
-        slicesByPeriod.push(text ? sliceConcepts(text) : null);
         if (cancelled) return;
+        located.push(text ? locateConcepts(text, form) : null);
       }
       const next: MatrixColumn[] = [];
       for (let i = 1; i < ordered.length; i += 1) {
-        const prior = slicesByPeriod[i - 1];
-        const current = slicesByPeriod[i];
-        const label = `${ordered[i - 1].reportDate.slice(0, 4)} → ${ordered[i].reportDate.slice(0, 4)}`;
+        const prior = located[i - 1];
+        const current = located[i];
+        const label = `${periodLabel(ordered[i - 1], form)} → ${periodLabel(ordered[i], form)}`;
         next.push({
           key: label,
           headerTop: label,
-          headerSub: `${ordered[i].reportDate}`,
-          cells: prior && current ? cellsForPair(prior, current) : {},
+          headerSub: `period of report ${ordered[i].reportDate}`,
+          cells: prior && current ? yoyCells(form, prior, current) : {},
           error: prior && current ? undefined : 'Filing text could not be retrieved',
+          cik,
+          ticker,
+          company: submission.name || ticker,
+          prior: ordered[i - 1],
+          current: ordered[i],
         });
         setColumns([...next]);
       }
@@ -157,9 +144,9 @@ export default function YoYChangeMatrix({
       for (const ticker of tickers) {
         const submission = companiesData[ticker];
         if (!submission) continue;
-        const periods = pickAnnualPeriods(submission, 2);
+        const periods = pickComparablePeriods(submission, form, 2);
         if (periods.length < 2) {
-          next.push({ key: ticker, headerTop: ticker, headerSub: 'Fewer than two annual reports on file', cells: {} });
+          next.push({ key: ticker, headerTop: ticker, headerSub: `Fewer than two ${form} filings on record`, cells: {} });
           setColumns([...next]);
           continue;
         }
@@ -176,8 +163,13 @@ export default function YoYChangeMatrix({
           next.push({
             key: ticker,
             headerTop: ticker,
-            headerSub: `${prior.reportDate.slice(0, 4)} → ${current.reportDate.slice(0, 4)}`,
-            cells: cellsForPair(sliceConcepts(priorText), sliceConcepts(currentText)),
+            headerSub: `${periodLabel(prior, form)} → ${periodLabel(current, form)}`,
+            cells: yoyCells(form, locateConcepts(priorText, form), locateConcepts(currentText, form)),
+            cik,
+            ticker,
+            company: submission.name || ticker,
+            prior,
+            current,
           });
         }
         setColumns([...next]);
@@ -204,99 +196,166 @@ export default function YoYChangeMatrix({
     if (tickers.length > 0 && Object.keys(companiesData).length > 0) void load();
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tickers.join('|'), companiesData, chronological]);
+  }, [tickers.join('|'), companiesData, chronological, form]);
 
   const selected = useMemo(() => {
     if (!selectedCell) return null;
     const column = columns.find(c => c.key === selectedCell.column);
     const cell = column?.cells[selectedCell.concept];
-    if (!column || !cell) return null;
-    const concept = SECTION_CONCEPT_LIST.find(c => c.key === selectedCell.concept);
-    return { column, cell, conceptLabel: concept?.label || selectedCell.concept };
-  }, [selectedCell, columns]);
+    if (!column || !cell || cell.kind !== 'change') return null;
+    const concept = concepts.find(c => c.key === selectedCell.concept);
+    const explanationKey = column.prior && column.current
+      ? `${column.prior.accession}|${column.current.accession}|${selectedCell.concept}`
+      : '';
+    return { column, cell, conceptLabel: concept?.label || selectedCell.concept, explanationKey };
+  }, [selectedCell, columns, concepts]);
+
+  const explanation = selected?.explanationKey
+    ? explanations[selected.explanationKey] ?? explanationCache.get(selected.explanationKey)
+    : undefined;
+
+  async function explainSelected() {
+    if (!selected || !selected.explanationKey || explaining) return;
+    const key = selected.explanationKey;
+    const diff = buildMarkedDiff(selected.cell.priorSlice, selected.cell.currentSlice);
+    if (!diff.text.trim()) {
+      const entry: Explanation = { status: 'done', text: 'No changed text to explain — the two slices are identical after normalization.' };
+      explanationCache.set(key, entry);
+      setExplanations(prev => ({ ...prev, [key]: entry }));
+      return;
+    }
+    setExplanations(prev => ({ ...prev, [key]: { status: 'loading' } }));
+    try {
+      const text = await aiSummarizeRedline(diff.text, { throwOnError: true });
+      const entry: Explanation = {
+        status: 'done',
+        text,
+        note: diff.truncated
+          ? `Covers ${diff.runsIncluded} of ${diff.runsTotal} changed passages — the rest did not fit in one request. Read the redline for the remainder.`
+          : undefined,
+      };
+      explanationCache.set(key, entry);
+      setExplanations(prev => ({ ...prev, [key]: entry }));
+    } catch {
+      setExplanations(prev => ({
+        ...prev,
+        [key]: { status: 'error', text: 'The explanation could not be generated (the AI service may be busy or your request limit reached). The redline below is unaffected — retry in a moment.' },
+      }));
+    }
+  }
 
   const subjectName = chronological
     ? companiesData[tickers[0]]?.name || tickers[0]
     : null;
+  const placeholderColumns = tickers.map((t): MatrixColumn => ({ key: t, headerTop: t, headerSub: 'Loading…', cells: {} }));
+  const visibleColumns = columns.length > 0 ? columns : placeholderColumns;
+
+  const sourceLine = (cik: string | undefined, period: ComparedPeriod | undefined) => {
+    if (!cik || !period) return null;
+    return (
+      <a href={buildSecDocumentUrl(cik, period.accession, period.primaryDocument)} target="_blank" rel="noopener noreferrer"
+        style={{ color: 'var(--accent-primary)' }}>
+        {period.form} {period.accession} (period of report {period.reportDate})
+      </a>
+    );
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       <div className="glass-card" style={{ overflow: 'auto' }}>
-        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-color)' }}>
-          <h4 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '0.9rem', fontWeight: 600 }}>
-            {chronological
-              ? `Section changes over time — ${subjectName}, annual report to annual report`
-              : 'Year-over-year section changes — latest 10-K vs prior'}
-          </h4>
-          <div style={{ marginTop: '4px', fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-            Deterministic change measure: percentage of section tokens added or removed between the two periods.
-            Click a cell for the redline.{chronological ? ' Add more companies to compare peers instead.' : ' Select a single company for its multi-year history.'}
-            {loading ? ' Comparing…' : ''}
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-color)', display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+          <div>
+            <h4 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '0.9rem', fontWeight: 600 }}>
+              {chronological
+                ? `Section changes over time — ${subjectName}, ${FORM_NOUN[form]} to ${FORM_NOUN[form]}`
+                : `Year-over-year section changes — latest ${form} vs prior`}
+            </h4>
+            <div style={{ marginTop: '4px', fontSize: '0.72rem', color: 'var(--text-muted)', maxWidth: '720px' }}>
+              Deterministic change measure: percentage of section tokens added or removed between the two periods of report.
+              Click a cell for the redline and an optional explanation.{chronological ? ' Add more companies to compare peers instead.' : ' Select a single company for its multi-year history.'}
+              {loading ? ' Comparing…' : ''}
+            </div>
+          </div>
+          <div role="group" aria-label="Form to compare" style={{ display: 'flex', gap: '6px' }}>
+            {YOY_FORMS.map(option => (
+              <button key={option} type="button" onClick={() => setForm(option)} aria-pressed={form === option}
+                style={{
+                  padding: '5px 12px', borderRadius: '4px', cursor: 'pointer', fontSize: '0.78rem',
+                  border: `1px solid ${form === option ? 'var(--accent-primary)' : 'var(--border-color)'}`,
+                  background: form === option ? 'var(--accent-primary)' : 'var(--surface-subtle)',
+                  color: form === option ? 'var(--surface-panel)' : 'var(--text-secondary)',
+                }}>
+                {option}
+              </button>
+            ))}
           </div>
         </div>
         <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: '620px' }}>
           <thead>
             <tr style={{ fontSize: '0.8rem', borderBottom: '1px solid var(--border-color)' }}>
               <th scope="col" style={{ textAlign: 'left', padding: '12px 20px', color: 'var(--text-muted)', fontWeight: 600 }}>Section</th>
-              {(columns.length > 0 ? columns : tickers.map((t): MatrixColumn => ({ key: t, headerTop: t, headerSub: 'Loading…', cells: {} }))).map(column => (
-                <th scope="col" key={column.key} style={{ textAlign: 'left', padding: '12px 16px', color: 'var(--text-primary)', fontWeight: 600 }}>
+              {visibleColumns.map(column => (
+                <th
+                  scope="col"
+                  key={column.key}
+                  // Named by its visible heading text only; the cart checkbox inside keeps its own label.
+                  aria-label={`${column.headerTop} ${column.error || column.headerSub}`.trim()}
+                  style={{ textAlign: 'left', padding: '12px 16px', color: 'var(--text-primary)', fontWeight: 600 }}
+                >
                   {column.headerTop}
                   <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 400 }}>
                     {column.error || column.headerSub}
                   </div>
+                  {column.cik && column.current && column.current.filingDate && (
+                    <CartToggle
+                      className="matrix-column-select"
+                      filing={{
+                        cik: column.cik,
+                        accessionNumber: column.current.accession,
+                        company: column.company || column.ticker || column.headerTop,
+                        form: column.current.form,
+                        fileDate: column.current.filingDate,
+                        ticker: column.ticker || '',
+                        primaryDocument: column.current.primaryDocument,
+                        sourceUrl: buildSecDocumentUrl(column.cik, column.current.accession, column.current.primaryDocument),
+                        origin: 'yoy',
+                      }}
+                    />
+                  )}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody style={{ fontSize: '0.82rem' }}>
-            {SECTION_CONCEPT_LIST.map(concept => (
-              <tr key={concept.key} style={{ borderBottom: '1px solid var(--border-color)' }}>
-                <th scope="row" style={{ textAlign: 'left', padding: '12px 20px', color: 'var(--text-secondary)', fontWeight: 500 }}>{concept.label}</th>
-                {columns.map(column => {
-                  const cell = column.cells[concept.key];
-                  if (!cell) {
-                    return <td key={column.key} style={{ padding: '12px 16px', color: 'var(--text-muted)' }}>—</td>;
-                  }
-                  const { change } = cell;
-                  // A section absent from BOTH periods is "not found", never
-                  // "unchanged" — an empty comparison earns no verdict.
-                  if (change.priorTokens === 0 && change.currentTokens === 0) {
-                    return <td key={column.key} style={{ padding: '12px 16px', color: 'var(--text-muted)' }} title="Section not found in either period">n/a</td>;
-                  }
-                  const style = BUCKET_STYLE[change.bucket];
-                  const isSelected = selectedCell?.column === column.key && selectedCell?.concept === concept.key;
-                  return (
-                    <td key={column.key} style={{ padding: '6px 8px' }}>
-                      <button
-                        type="button"
-                        onClick={() => setSelectedCell({ column: column.key, concept: concept.key })}
-                        aria-pressed={isSelected}
-                        title={`${CHANGE_BUCKET_LABELS[change.bucket]} — ${change.addedTokens} tokens added, ${change.removedTokens} removed`}
-                        style={{
-                          width: '100%', textAlign: 'left', cursor: 'pointer', padding: '7px 10px', borderRadius: '6px',
-                          border: isSelected ? '1px solid var(--accent-primary)' : '1px solid transparent',
-                          background: style.background, color: style.color, fontSize: '0.78rem', fontWeight: 600,
-                        }}
-                      >
-                        {CHANGE_BUCKET_LABELS[change.bucket]}
-                        <span style={{ display: 'block', fontSize: '0.68rem', fontWeight: 400, color: 'var(--text-muted)' }}>
-                          {change.bucket === 'new' || change.bucket === 'deleted'
-                            ? `${Math.max(change.currentTokens, change.priorTokens).toLocaleString()} tokens`
-                            : `${Math.round(change.changedRatio * 100)}% of tokens${change.changedPassages > 0 ? ` · ${change.changedPassages} passage${change.changedPassages === 1 ? '' : 's'}` : ''}`}
-                        </span>
-                      </button>
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
+          {SECTION_GROUPS.map(group => {
+            const rows = concepts.filter(concept => concept.group === group.key);
+            if (rows.length === 0) return null;
+            return (
+              <tbody key={group.key} style={{ fontSize: '0.82rem' }}>
+                <tr>
+                  <th scope="colgroup" colSpan={visibleColumns.length + 1}
+                    style={{ textAlign: 'left', padding: '8px 20px', fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--text-muted)', background: 'var(--table-header-bg, var(--surface-subtle))' }}>
+                    {group.label}
+                  </th>
+                </tr>
+                {rows.map(concept => (
+                  <tr key={concept.key} style={{ borderBottom: '1px solid var(--border-color)' }}>
+                    <th scope="row" style={{ textAlign: 'left', padding: '12px 20px', color: 'var(--text-secondary)', fontWeight: 500 }}>{concept.label}</th>
+                    {columns.map(column => (
+                      <Fragment key={column.key}>
+                        {renderCell(column, concept.key)}
+                      </Fragment>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            );
+          })}
         </table>
       </div>
 
       {selected && (
         <div className="glass-card" style={{ overflow: 'hidden' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid var(--border-color)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '14px 20px', borderBottom: '1px solid var(--border-color)' }}>
             <div>
               <h4 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '0.9rem', fontWeight: 600 }}>
                 {chronological ? subjectName : selected.column.headerTop} — {selected.conceptLabel}: {chronological ? selected.column.headerTop : selected.column.headerSub}
@@ -305,9 +364,40 @@ export default function YoYChangeMatrix({
                 Normalized comparison text (case and punctuation removed) — the same form the change percentage is measured on.
               </div>
             </div>
-            <button type="button" onClick={() => setSelectedCell(null)} aria-label="Close section redline"
-              style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1rem' }}>×</button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button
+                type="button"
+                className="secondary-btn"
+                onClick={() => void explainSelected()}
+                disabled={!selected.explanationKey || explaining || selected.cell.change.bucket === 'unchanged' || explanation?.status === 'done'}
+                title={selected.cell.change.bucket === 'unchanged' ? 'Nothing material changed to explain' : 'Explain what changed and why a reviewer might care'}
+                style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
+              >
+                {explanation?.status === 'loading' ? <Loader2 size={14} className="spinner" /> : <Sparkles size={14} />}
+                Explain changes
+              </button>
+              <button type="button" onClick={() => setSelectedCell(null)} aria-label="Close section redline"
+                style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1rem' }}>×</button>
+            </div>
           </div>
+          {explanation && (
+            <div role={explanation.status === 'error' ? 'alert' : 'status'} aria-live="polite"
+              style={{ padding: '12px 20px', borderBottom: '1px solid var(--border-color)', fontSize: '0.8rem', borderLeft: '3px solid var(--accent-primary)' }}>
+              {explanation.status === 'loading' ? (
+                <span style={{ color: 'var(--text-secondary)' }}>Explaining the changed text…</span>
+              ) : explanation.status === 'error' ? (
+                <span style={{ color: 'var(--status-error)' }}>{explanation.text}</span>
+              ) : (
+                <>
+                  <div className="md-content" dangerouslySetInnerHTML={{ __html: renderMarkdown(explanation.text || '') }} />
+                  {explanation.note && <div style={{ marginTop: '6px', color: 'var(--status-warning)' }}>{explanation.note}</div>}
+                  <div style={{ marginTop: '8px', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                    AI explanation of the changed text only; each quoted phrase was checked against the diff. Compared {sourceLine(selected.column.cik, selected.column.prior)} → {sourceLine(selected.column.cik, selected.column.current)}.
+                  </div>
+                </>
+              )}
+            </div>
+          )}
           <div style={{ maxHeight: '480px', overflow: 'auto', padding: '12px 16px' }}>
             <TextDiffViewer oldText={selected.cell.priorSlice} newText={selected.cell.currentSlice} />
           </div>
@@ -315,4 +405,47 @@ export default function YoYChangeMatrix({
       )}
     </div>
   );
+
+  function renderCell(column: MatrixColumn, conceptKey: string) {
+    const cell = column.cells[conceptKey];
+    if (!cell) {
+      return <td style={{ padding: '12px 16px', color: 'var(--text-muted)' }}>—</td>;
+    }
+    if (cell.kind === 'not-disclosed') {
+      // A section absent from BOTH periods earns no verdict — never "unchanged".
+      return <td style={{ padding: '12px 16px', color: 'var(--text-muted)', fontSize: '0.74rem' }} title={cell.detail}>Not disclosed</td>;
+    }
+    if (cell.kind === 'could-not-extract') {
+      return (
+        <td style={{ padding: '12px 16px', color: 'var(--status-warning)', fontSize: '0.74rem' }} title={cell.detail}>
+          Could not extract
+        </td>
+      );
+    }
+    const { change } = cell;
+    const style = BUCKET_STYLE[change.bucket];
+    const isSelected = selectedCell?.column === column.key && selectedCell?.concept === conceptKey;
+    return (
+      <td style={{ padding: '6px 8px' }}>
+        <button
+          type="button"
+          onClick={() => setSelectedCell({ column: column.key, concept: conceptKey })}
+          aria-pressed={isSelected}
+          title={`${CHANGE_BUCKET_LABELS[change.bucket]} — ${change.addedTokens} tokens added, ${change.removedTokens} removed`}
+          style={{
+            width: '100%', textAlign: 'left', cursor: 'pointer', padding: '7px 10px', borderRadius: '6px',
+            border: isSelected ? '1px solid var(--accent-primary)' : '1px solid transparent',
+            background: style.background, color: style.color, fontSize: '0.78rem', fontWeight: 600,
+          }}
+        >
+          {CHANGE_BUCKET_LABELS[change.bucket]}
+          <span style={{ display: 'block', fontSize: '0.68rem', fontWeight: 400, color: 'var(--text-muted)' }}>
+            {change.bucket === 'new' || change.bucket === 'deleted'
+              ? `${Math.max(change.currentTokens, change.priorTokens).toLocaleString()} tokens`
+              : `${Math.round(change.changedRatio * 100)}% of tokens${change.changedPassages > 0 ? ` · ${change.changedPassages} passage${change.changedPassages === 1 ? '' : 's'}` : ''}`}
+          </span>
+        </button>
+      </td>
+    );
+  }
 }

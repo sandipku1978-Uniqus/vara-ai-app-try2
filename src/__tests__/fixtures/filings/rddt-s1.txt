@@ -1,0 +1,1952 @@
+[Fixture: Reddit, Inc. S-1 filed 2024-02-22, accession 0001628280-24-006294, reddits-1q423.htm. Extracted with src/lib/filingText; trimmed to heading lines plus the opening of each section.]
+As filed with the Securities and Exchange Commission on February 22, 2024.
+UNITED STATES
+SECURITIES AND EXCHANGE COMMISSION
+REGISTRATION STATEMENT
+UNDER
+Reddit, Inc.
+(Exact name of registrant as specified in its charter)
+Delaware 7374 45-2546501
+(State or other jurisdiction of
+incorporation or organization) (Primary Standard Industrial
+Classification Code Number)
+(I.R.S. Employer
+Identification Number)
+(415) 494-8016
+(Address, including zip code, and telephone number, including area code, of […].
+Steven Huffman
+Chief Executive Officer and President
+Reddit, Inc.
+(415) 494-8016
+(Name, address, including zip code, and telephone number, […].
+Copies to:
+Anthony J. Richmond
+Richard A. Kline
+Sarah B. Axtell
+Latham & Watkins LLP
+(650) 328-4600
+Benjamin Lee
+Chief Legal Officer
+Milana McCullagh
+VP, Legal
+Reddit, Inc.
+(415) 494-8016
+Alan F. Denenberg
+Emily Roberts
+Elizabeth LeBow
+Davis Polk & Wardwell LLP
+(650) 752-2000
+Approximate date of commencement of proposed sale to the public: As soon as […].
+Large accelerated filer ☐ Accelerated filer ☐
+Non-accelerated filer ☒ Smaller reporting company ☐
+Emerging growth company ☒
+If an emerging growth company, indicate by check mark if the registrant has elected not to […].
+Preliminary Prospectus (Subject to Completion)
+Shares
+Reddit, Inc.
+Class A Common Stock
+Reddit, Inc. is offering shares of its Class A common stock and the selling stockholders […].
+PRICE $ A SHARE
+Price to Public
+Underwriting Discounts and Commissions(1)
+Proceeds to Reddit(2)
+Proceeds to Selling Stockholders(2)
+Per Share $ $ $ $
+Total $ $ $ $
+________________
+(1)See “Underwriters” for a description of the compensation payable to the […].
+CITIGROUP DEUTSCHE BANK SECURITIES MUFG
+CITIZENS JMP
+NEEDHAM & COMPANY PIPER SANDLER RAYMOND JAMES
+ACADEMY SECURITIES LOOP CAPITAL MARKETS RAMIREZ & CO., INC. ROTH CAPITAL PARTNERS TELSEY […].
+Table of Contents
+TABLE OF CONTENTS
+Page
+Letter From Our Co-Founder
+i
+Prospectus Summary
+1
+Risk Factors
+22
+Special Note Regarding Forward-Looking Statements
+77
+Market and Industry Data
+81
+Use of Proceeds
+82
+Dividend Policy
+84
+Capitalization
+85
+Dilution
+89
+Selected Consolidated Financial Data
+92
+Management’s Discussion and Analysis of Financial Condition and Results of Operations
+96
+Business
+124
+Page
+Management
+163
+Executive and Director Compensation
+170
+Certain Relationships and Related-Party Transactions
+186
+Principal and Selling Stockholders
+192
+Description of Capital Stock
+197
+Shares Eligible for Future Sale
+208
+Material U.S. Federal Income Tax Consequences to Non-U.S. Holders
+214
+Underwriters
+218
+Legal Matters
+230
+Experts
+230
+Where You Can Find Additional Information
+230
+Index to Consolidated Financial Statements
+Table of Contents
+As used in this prospectus, unless the context otherwise requires, references to “Reddit,” […].
+Table of Contents
+LETTER FROM OUR CO-FOUNDER
+I think of August 13, 2005 as the day Reddit really came to life. We had been online for a […].
+Table of Contents
+love our investors to be users as well. Additionally, being public lets us raise capital […].
+Steve Huffman
+ii
+Table of Contents
+PROSPECTUS SUMMARY
+This summary highlights information contained elsewhere in this prospectus. This summary […].
+Our Mission
+Our mission is to bring community, belonging, and empowerment to everyone in the world.
+We […].
+Overview: The Power of Reddit’s Communities
+Reddit is a global, digital city where anyone in the world can join a community to learn […].
+Table of Contents
+Reddit’s community ecosystem is organically built upon shared interests, passions, and […].
+Powerful Advertising Engine Built Around Context and User Interest
+These qualities not only make the experience more enjoyable for users, they also make […].
+A Valuable Source of Conversational Data and Knowledge
+Over time, Reddit has evolved to become one of the internet’s largest corpuses of […].
+Entrepreneurial User Economy
+Commerce is another area of growth that has emerged organically on Reddit. In fact, new […].
+Why Users Come to Reddit
+The internet has given people the tools to redefine how we live. We have search engines to […].
+Open, Growing Archive of Human Knowledge (2005– )
+Over the last 18 years, Reddit has become one of the internet’s largest open archives of […].
+People-powered Curation for Authentic Interactions and Trusted Content
+Our differentiated community approach underlies the interactions on our platform: Reddit […].
+Authentic and Trusted Recommendations
+Reddit’s community-powered recommendations are a foundational part of why so many users […].
+Flexible Canvas for Self- and Community-expression
+Every subreddit is a flexible canvas for communities to express themselves through a […].
+C […].
+Layered Moderation, Community Management, and Safety Supports Trust
+We are committed to continuously enhancing our policies and processes to promote the […].
+C […].
+Our Strategy for Growing Users and Engagement
+Our strategy is to support the growth and engagement of our communities. We aim to become […].
+Why Advertisers Come to Reddit
+Reddit is the place where people, entities of public interest, and businesses come […].
+Advertisers come to Reddit for distinctive benefits:
+•Contextual and Interest-based Advertising. Reddit’s advertising platform enables […].
+5
+r/ […].
+The Future of Our Platform and Monetization Strategies
+Advertising
+Reddit is a unique place on the internet, and we believe that we have many avenues to […].
+Data Licensing
+Reddit is one of the internet’s largest corpuses of authentic and constantly updated […].
+W […].
+User Economy
+Commerce has already emerged on our platform organically as a result of our interest- and […].
+Our Market Opportunity
+We have a long and successful history of evolving with the internet, and are continuing to […].
+Advertising
+People come to Reddit in many ways, and the core of our monetization is through […].
+Our […].
+Data Licensing
+Given the value of Reddit’s data in sentiment analysis and trend identification, we […].
+9
+e […].
+User Economy
+Commerce is already at the core of many communities today. As we introduce new ways to […].
+Risks Associated with Our Business
+Our business is subject to a number of risks of which you should be aware before making a […].
+Corporate Information
+We were incorporated as a Delaware corporation in May 2011. Our principal executive […].
+Channels for Disclosure of Information
+Investors, the media, and others should note that, after the completion of this offering, […].
+Implications of Being an Emerging Growth Company
+We are an emerging growth company as defined in the Jumpstart Our Business Startups Act of […].
+THE OFFERING
+Class A common stock offered by us
+shares
+Class A common stock offered by the selling stockholders
+shares
+shares
+shares (or shares if the underwriters exercise their over-allotment option in […].
+Use of proceeds
+We estimate that we will receive net proceeds from this offering of approximately $ (or $ […].
+Voting rights
+Shares of our Class A common stock are entitled to one vote per share.
+Shares of our Class […].
+Directed share program
+As a community platform, Reddit is committed to providing users and moderators with an […].
+Risk factors
+See “Risk Factors” and other information included in this prospectus for a discussion of […].
+Proposed New York Stock Exchange symbol
+“RDDT”
+In this prospectus, the number of shares of our common stock to be outstanding after this […].
+SUMMARY CONSOLIDATED FINANCIAL DATA
+The following tables set forth our summary consolidated financial data. The summary […].
+Yo […].
+(in thousands, except share and per share amounts)
+Consolidated Statements of Operations Data:
+Revenue $ 666,701 $ 804,029
+Costs and expenses:
+Cost of revenue 104,799 111,011
+Income tax expense (benefit) 622 3,801
+Net income (loss) per share attributable to Class A and Class B common stock, basic and […].
+Other Financial Information:
+Adjusted EBITDA(2)
+$ (108,393) $ (69,275)
+Free Cash Flow(3)
+$ (100,254) $ (84,838)
+________________
+(1)See Note 4—Net Income (Loss) per Share of the […].
+Pro forma(1)
+Pro forma as adjusted(2)(3)
+(unaudited)
+(in thousands)
+Consolidated Balance Sheet Data:
+Working capital 1,377,470 1,346,117 — —
+Total assets 1,599,711 1,596,467 — —
+_______________ […].
+Non-GAAP Financial Measures
+We use certain non-GAAP financial measures to supplement our consolidated financial […].
+Adjusted EBITDA
+Adjusted EBITDA is defined as net income (loss) excluding interest (income) expense, net, […].
+(in thousands)
+Reconciliation of Adjusted EBITDA:
+Add (deduct):
+Income tax expense (benefit) 622 3,801
+Depreciation and amortization(1)
+8,000 13,702
+Stock-based compensation expense and related taxes(2)
+55,768 49,086
+Restructuring costs(3)
+— 8,098
+20
+________________
+(1)Includes depreciation and amortization as follows:
+Year ended December 31,
+2022 2023
+(in thousands)
+(2)Includes stock-based compensation expense and related taxes as follows:
+Year ended December 31,
+2022 2023
+(in thousands)
+Stock-based compensation expense and related taxes $ 55,768 $ 49,086
+In connection with secondary sales of our common stock, stock-based compensation expense […].
+Free Cash Flow
+Free Cash Flow represents net cash provided by (used in) operating activities less […].
+The […].
+(in thousands)
+Reconciliation of Free Cash Flow:
+Less:
+21
+RISK FACTORS
+Investing in our Class A common stock involves a high degree of risk. You should carefully […].
+Risks Related to Our Business
+If we fail to increase or retain our user base, and in particular, our DAUq, or if user […].
+Risks Related to Human Capital and Culture
+We cannot assure you that we will effectively manage our growth.
+Our employee headcount and […].
+Risks Related to Cybersecurity, Information Systems, and Intellectual Property
+Our business, results of operations, financial condition, and prospects may be harmed by […].
+Risks Related to Governmental Regulation and Litigation
+Our business is subject to increasingly complex and evolving laws, rules, regulations, […].
+Risks Related to Financial and Accounting Matters
+We are exposed to fluctuations in currency exchange rates and interest rates, which could […].
+Date First Available for Sale Into the Market
+Number of RSUs or PRSUs for Shares of Our Class A Common Stock Eligible to Vest
+Number of […].
+SPECIAL NOTE REGARDING FORWARD-LOOKING STATEMENTS
+This prospectus contains forward-looking statements about us and our industry that involve […].
+MARKET AND INDUSTRY DATA
+This prospectus contains estimates, projections, and other information concerning our […].
+USE OF PROCEEDS
+We estimate that we will receive net proceeds from this offering of $ (or approximately $ […].
+DIVIDEND POLICY
+We have never declared or paid cash dividends on our capital stock. We currently intend to […].
+CAPITALIZATION
+The following table sets forth our cash, cash equivalents, and marketable securities and […].
+Actual Pro forma Pro forma
+as adjusted
+(unaudited)
+(in thousands, except share and per share amounts)
+Convertible preferred stock; par value $0.0001 per share; 86,864,781 shares authorized; […].
+Stockholders’ equity (deficit):
+Preferred stock, par value $0.0001 per share; no shares authorized, issued or outstanding, […].
+Accumulated other comprehensive income (loss) 814
+A $1.00 increase (decrease) in the assumed initial public offering price of $ per share of […].
+Market Capitalization Vesting Criteria Number of Outstanding PRSUs
+Average Ten-day Closing Price of Class A Common Stock Necessary to Meet the Market […].
+Ave […].
+DILUTION
+If you invest in our Class A common stock in this offering, your ownership interest will […].
+Assumed initial public offering price per share $
+$
+Increase in pro forma as adjusted net tangible book value per share attributable to new […].
+Shares Purchased Total Consideration Average Price
+Number
+Percent
+Amount Percent
+Per Share
+Existing stockholders
+%
+$
+%
+$
+New investors
+$
+Total
+100 % $ 100 %
+Sales by the selling stockholders in this offering will cause the number of […].
+SELECTED CONSOLIDATED FINANCIAL DATA
+The following tables set forth our selected consolidated financial data. The selected […].
+(in thousands, except share and per share amounts)
+Consolidated Statements of Operations Data:
+Revenue $ 666,701 $ 804,029
+Costs and expenses:
+Cost of revenue 104,799 111,011
+Income tax expense (benefit) 622 3,801
+Net income (loss) per share attributable to Class A and Class B common stock, basic and […].
+Other Financial Information:
+Adjusted EBITDA(2)
+$ (108,393) $ (69,275)
+Free Cash Flow(3)
+$ (100,254) $ (84,838)
+________________
+(1)See Note 4—Net Income (Loss) per Share of the […].
+(in thousands)
+Consolidated Balance Sheet Data:
+Working capital 1,377,470 1,346,117
+Total assets 1,599,711 1,596,467
+Total liabilities […].
+Non-GAAP Financial Measures
+We use certain non-GAAP financial measures to supplement our consolidated financial […].
+Adjusted EBITDA
+Adjusted EBITDA is defined as net income (loss) excluding interest (income) expense, net, […].
+Reconciliation of Adjusted EBITDA:
+Add (deduct):
+Income tax expense (benefit) 622 3,801
+Depreciation and amortization(1)
+8,000 13,702
+Stock-based compensation expense and related taxes(2)
+55,768 49,086
+Restructuring costs(3)
+— 8,098
+________________
+(1)Includes depreciation and amortization as follows:
+Year ended December 31,
+2022 2023
+(2)Includes stock-based compensation expense and related taxes as follows:
+Year ended December 31,
+2022 2023
+Stock-based compensation expense and related taxes $ 55,768 $ 49,086
+In connection with secondary sales of our common stock, stock-based compensation expense […].
+Free Cash Flow
+Free Cash Flow represents net cash provided by (used in) operating activities less […].
+94
+T […].
+Reconciliation of Free Cash Flow:
+Less:
+95
+MANAGEMENT’S DISCUSSION AND ANALYSIS OF FINANCIAL CONDITION AND RESULTS OF OPERATIONS
+The following discussion and analysis of our financial condition and results of operations […].
+Overview
+Our mission is to bring community, belonging, and empowerment to everyone in the world. We […].
+Key Financial and Operating Metrics
+We review a number of metrics, including the key metrics discussed below, to evaluate our […].
+Trends in User Metrics
+Daily Active Unique. We define a daily active unique (“DAUq”) as a user whom we can […].
+DA […].
+Quarterly Average DAUq
+(in millions)
+Total DAUq YoY Growth: (2)% (1)% 2% 6% 6% 9% 19% 34% Total DAUq YoY Growth: 12% 11% 11% 7% […].
+Quarterly Average WAUq
+(in millions)
+DAUq/WAUq: 27% 27% 27% 28% 28% 28% 28% 27%
+99
+WAUq YoY Growth:
+WAUq YoY Growth:
+10% 10% 11% 4% 1% 1% 9% 20%
+In the three months ended December 31, 2023, global WAUq grew […].
+Trends in Monetization Metrics
+We monetize our business primarily through advertising on our mobile applications and […].
+Quarterly ARPU
+(in dollars)
+YoY Growth: 82% 35% 36% 5% 5% 15% —% (7)% YOY Growth: 93% 47% 42% 17% 12% 9% 16% 3%
+QoQ Growth:
+(22)% 3% 16% 13% (22)% 13% 1% 5%
+QoQ Growth:
+(20)% 9% 1% 33% (23)% 6% 8% 18%
+During the three months ended December 31, 2023, ARPU was […].
+Non-GAAP Financial Measures
+We use certain non-GAAP financial measures to supplement our consolidated financial […].
+10 […].
+Key Factors Affecting our Performance
+User Growth and Engagement
+The absolute number of DAUq is a critical component to our business because it influences […].
+Monetization
+We started selling advertisements on Reddit in 2006. We began more meaningfully investing […].
+International Expansion
+We see a massive opportunity to grow, from both an advertising perspective and from a user […].
+Product Innovation
+We continue to make investments to be a leader in contextual and interest-based […].
+Seasonality
+We experience seasonality in our business and financial results. Overall advertising spend […].
+Continuing Impacts of Macroeconomic Conditions
+The continuing impact from recent macroeconomic conditions has created significant […].
+At […].
+Results of Operations
+The following table summarizes our historical consolidated statements of operations data […].
+Year ended
+December 31,
+(in thousands, except percentages)
+Revenue $ 666,701 $ 804,029 $ 137,328 21 %
+Net income (loss) (158,550) (90,824) 67,726 (43)
+Adjusted EBITDA (108,393) (69,275) 39,118 […].
+Components of Results of Operations
+Revenue
+We generate substantially all of our revenue through the sale of advertising on our mobile […].
+Cost of Revenue
+Cost of revenue consists primarily of payments to third parties for the cost of hosting […].
+Research and Development Expenses
+Research and development expenses consist primarily of personnel-related costs including […].
+Sales and Marketing Expenses
+Sales and marketing expenses consist primarily of personnel-related costs including […].
+10 […].
+General and Administrative Expenses
+General and administrative expenses consist primarily of personnel-related costs including […].
+Other Income (Expense), Net
+Other income (expense), net, consists of interest expense, interest income, realized gains […].
+Income Tax Expense (Benefit)
+We are subject to income taxes in the United States and foreign jurisdictions. Our income […].
+Discussion of Results of Operations
+The following table sets forth our consolidated statements of operations data for the […].
+Year ended
+December 31,
+2022 2023
+Consolidated Statements of Operations Data:
+Revenue $ 666,701 $ 804,029
+Costs and expenses(1):
+Cost of revenue 104,799 111,011
+Income tax expense (benefit) 622 3,801
+Adjusted EBITDA(2)
+$ (108,393) $ (69,275)
+Free Cash Flow(3)
+$ (100,254) $ (84,838)
+105
+_________________
+(1)In connection with secondary sales of our […].
+Year ended
+December 31,
+2022 2023
+(unaudited)
+Consolidated Statements of Operations Data:
+Revenue 100 % 100 %
+Costs and expenses:
+Other income (expense), net 2 7
+Income (loss) before income taxes (25) (11)
+Income tax expense (benefit) 0 0
+Revenue
+Year ended
+December 31,
+(in thousands, except percentages)
+Revenue $ 666,701 $ 804,029 $ 137,328 21 %
+Revenue increased $137.3 million, or 21%, compared to the prior year. The growth in […].
+Cost of Revenue
+Year ended
+December 31,
+(in thousands, except percentages)
+Cost of revenue $ 104,799 $ 111,011 $ 6,212 6 %
+106
+Cost of revenue increased $6.2 million, […].
+Research and Development Expenses
+Year ended
+December 31,
+(in thousands, except percentages)
+Research and development expenses increased $73.2 million, or 20%, compared to the prior […].
+Sales and Marketing Expenses
+December 31,
+(in thousands, except percentages)
+Sales and marketing expenses increased $5.1 million, or 2%, compared to the prior year. […].
+General and Administrative Expenses
+December 31,
+(in thousands, except percentages)
+General and administrative expenses increased $20.8 million, or 14%, compared to the prior […].
+Other Income (Expense), Net
+December 31,
+Other income (expense), net for the year ended December 31, 2023 was $53.1 […].
+Income Tax Expense (Benefit)
+December 31,
+Income tax expense (benefit) $ 622 $ 3,801 $ 3,179 NM
+________________
+NM – Not meaningful
+Income tax expense (benefit) for the year ended December 31, 2023 was $3.8 million […].
+108
+Unaudited Quarterly Results of Operations Data
+The following table sets forth our unaudited quarterly consolidated results of operations […].
+Three months ended
+March 31,
+2021 June 30,
+2021 September 30,
+2021 December 31,
+2021 March 31,
+2022 June 30,
+2022 […].
+Consolidated Statements of Operations Data:
+Revenue $ 79,003 $ 108,054 $ 121,187 $ 176,672 $ 146,182 $ 148,556 $ 171,535 $ 200,428 $ 163,740 $ 183,031 $ 207,508 $ 249,750
+Costs and expenses:
+Cost of revenue 13,587 16,164 20,049 22,765 22,362 25,841 28,182 28,414 26,863 28,836 […].
+Income tax expense (benefit) 35 105 70 130 157 437 (1,602) 1,630 988 1,426 445 942
+Net income (loss) $ (56,618) $ (70,534) $ (7,389) $ 6,645 $ (35,287) $ (55,731) $ (45,305) […].
+Adjusted EBITDA(1)
+$ (6,800) $ 8,881 $ 700 $ 27,174 $ (24,047) $ (40,397) $ (32,880) $ (11,069) $ (50,183) $ […].
+Free Cash Flow(2)
+$ (33,486) $ (59,682) $ (5,933) $ (33,385) $ 3,622 $ (31,220) $ (35,592) $ (37,064) $ […].
+Three months ended
+March 31,
+2021 June 30,
+2021 September 30,
+2021 December 31,
+2021 March 31,
+2022 June 30,
+2022 […].
+Reconciliation of Adjusted EBITDA:
+Net income (loss) $ (56,618) $ (70,534) $ (7,389) $ 6,645 $ (35,287) $ (55,731) $ (45,305) […].
+Add (deduct)
+Interest (income) expense, net (314) (148) (115) 222 (359) (1,964) (4,954) (8,404) […].
+Income tax expense (benefit) 35 105 70 130 157 437 (1,602) 1,630 988 1,426 445 942
+Depreciation and amortization(a)
+631 644 697 841 859 995 2,773 3,373 3,338 3,321 3,288 3,755
+Stock-based compensation expense and related taxes(b)
+49,361 78,679 7,170 19,146 10,298 14,935 15,297 15,238 13,167 10,116 9,423 16,380
+Restructuring costs(c)
+— — — — — — — — 3,916 4,182 — —
+Other (income) expense, net 105 135 267 190 285 931 911 […].
+(a)Depreciation and amortization included in above line items:
+Three months ended
+March 31,
+2021 June 30,
+2021 September 30,
+2021 December 31,
+2021 March 31,
+2022 June 30,
+2022 […].
+Three months ended
+March 31,
+2021 June 30,
+2021 September 30,
+2021 December 31,
+2021 March 31,
+2022 June 30,
+2022 […].
+Three months ended
+March 31,
+2021 June 30,
+2021 September 30,
+2021 December 31,
+2021 March 31,
+2022 June 30,
+2022 […].
+Reconciliation of Free Cash Flow:
+Net cash provided by (used in) operating activities $ (33,119) $ (59,211) $ (5,131) $ […].
+Less:
+Purchases of property and equipment (367) (471) (802) (659) (1,279) (1,157) (2,469) […].
+Fr […].
+Three months ended
+March 31,
+2021 June 30,
+2021 September 30,
+2021 December 31,
+2021 March 31,
+2022 June 30,
+2022 […].
+Consolidated Statements of Operations Data:
+Revenue 100 % 100 % 100 % 100 % 100 % 100 % 100 % 100 % 100 % 100 % 100 % 100 %
+Costs and expenses:
+Cost of revenue 17 15 17 13 15 17 16 14 16 16 13 12
+Research and development 56 83 45 39 53 […].
+Income tax expense (benefit) 0 0 0 0 0 0 (1) 1 1 1 0 0
+Net income (loss) (72) % (65) % (6) % 4 % (24) % (37) % (26) % (11) % (36) % (23) % (4) % […].
+Quarterly Trends
+Revenue
+Advertising spend is traditionally highest in the fourth quarter of each calendar year and […].
+Cost of Revenue and Operating Expenses
+Cost of revenue generally increased during each quarter presented, primarily driven by […].
+Liquidity and Capital Resources
+We have historically financed our operations primarily through net proceeds from the sale […].
+Operating Activities
+Net cash used in operating activities was $(75.1) million in the year ended December 31, […].
+Investing Activities
+Net cash provided by investing activities was $41.3 million in the year ended December 31, […].
+Financing Activities
+Net cash used in financing activities was $(0.8) million in the year ended December 31, […].
+Free Cash Flow
+Free Cash Flow was $(100.3) million and $(84.8) million for the years ended December 31, […].
+Off-Balance Sheet Arrangements
+We did not have during the periods presented, and we do not currently have, any […].
+Contractual Obligations and Commitments
+Total
+Less than 1 Year
+Operating leases
+$ 30,455 $ 5,304 $ 12,150 $ 11,747 $ 1,254
+Purchase commitments 338,224 106,003 232,221 — —
+Critical Accounting Policies and Estimates
+We prepare our consolidated financial statements in accordance with U.S. GAAP. Preparing […].
+Revenue Recognition
+We generate substantially all of our revenue through the sale of advertising on our mobile […].
+Stock-Based Compensation
+We have granted stock-based awards consisting of restricted stock units (“RSUs”), […].
+We […].
+Service-based RSUs
+Substantially all of our outstanding RSUs contain both a service-based vesting condition […].
+Stock Options
+Stock options generally vest over a service period of four years. Stock-based compensation […].
+Fair Value of Common Stock—See “—Common Stock Valuations” below.
+Expected Term—The expected term of options represents the period that our stock-based […].
+Risk-free interest rate 3.83 %
+Expected dividend yield 0 %
+The weighted-average fair value of employee stock options granted during the year ended […].
+Service-based RSAs
+We grant, in certain circumstances, RSAs with a service-based vesting condition, covering […].
+Performance-based and Market-based RSUs
+Certain employees have RSU grant agreements with a liquidity-based performance condition […].
+Expected time to Liquidity Event (in years) 3.35
+Risk-free interest rate 0.20 %
+Expected volatility 60 %
+Expected dividend yield 0 %
+PRSUs granted during the year ended December 31, 2023 were not material to our […].
+As of […].
+Common Stock Valuations
+The fair value of the Class A common stock underlying our stock-based awards is determined […].
+Valuation methodology
+Backsolve Method (OPM)
+Backsolve Method (OPM)
+Marketable value per share(1)
+$ 19.35 $ 20.44
+Discount for lack of marketability
+25.0 % 25.0 %
+Weighting on discounted value per share
+80.0 % 80.0 %
+Secondary sale marketable value per share(2)
+$ 42.47 $ 42.47
+Secondary sale weighting
+20.0 % 20.0 %
+Concluded fair value per common share
+$ 20.10 $ 20.76
+_______________
+(1)The Series E convertible preferred stock has economic […].
+IPO scenario:
+Scenario probability weighting(1)
+50.0 % 60.0 % 75.0 % 80.0 % 80.0 % 75.0 % 75.0 % 65.0 % 65.0 % 65.0 % 65.0 % 70.0 %
+Marketable value per share (PWERM)(2)
+$ 61.80 $ 63.12 $ 52.68 $ 52.36 $ 53.26 $ 41.01 $ 41.31 $ 33.95 $ 33.68 $ 33.32 $ 34.51 $ […].
+Discount for lack of marketability(3)
+13.5 % 10.0 % 10.0 % 8.0 % 6.0 % 16.0 % 15.0 % 18.0 % 19.0 % 15.5 % 12.5 % 6.0 %
+Remain private scenario:
+Scenario probability weighting(1)
+50.0 % 40.0 % 25.0 % 20.0 % 20.0 % 25.0 % 25.0 % 35.0 % 35.0 % 35.0 % 35.0 % 30.0 %
+Marketable value per share (OPM)(4)
+$ 27.89 $ 31.09 $ 27.28 $ 27.31 $ 27.94 $ 24.59 $ 26.31 $ 19.91 $ 21.74 $ 19.58 $ 20.37 $ […].
+Discount for lack of marketability(3)
+30.0 % 27.5 % 30.0 % 29.0 % 26.5 % 25.0 % 24.0 % 25.5 % 25.5 % 23.5 % 20.5 % 14.0 %
+PWERM Discounted Value:
+Probability weighted discounted value $ 36.49 $ 43.10 $ 40.33 $ 42.42 $ 44.16 $ 30.45 $ […].
+Secondary Sales:
+Secondary sale marketable value per share(5)
+$ 42.86 $ 69.07 $ 57.31 $ 57.76 $ 58.06 $ 47.22 $ 46.84 $ 39.71 $ — $ — $ — $ 29.25
+121
+Secondary sale weighting(6)
+25.0 % 25.0 % 25.0 % 25.0 % 25.0 % 25.0 % 25.0 % 25.0 % — % — % — % 25.0 %
+Concluded fair value per common share
+$ 38.08 $ 49.59 $ 44.57 $ 46.26 $ 47.63 $ 34.64 $ 35.21 $ 27.39 $ 23.40 $ 23.54 $ 25.29 $ […].
+Recent Accounting Pronouncements
+See Note 2—Basis of Presentation and Significant Accounting Policies of the notes to our […].
+Emerging Growth Company Status
+We are an emerging growth company as defined under the JOBS Act. Under the JOBS Act, […].
+Quantitative and Qualitative Disclosures about Market Risk
+We are exposed to market risks in the ordinary course of our business. These risks […].
+Interest Rate Risk
+We had cash and cash equivalents of $435.8 million and $401.2 million at December 31, 2022 […].
+Foreign Currency Risk
+For the years ended December 31, 2022 and 2023, the majority of our revenue and operating […].
+BUSINESS
+Our Mission
+Our mission is to bring community, belonging, and empowerment to everyone in the world.
+We […].
+Overview: The Power of Reddit’s Communities
+Reddit is a global, digital city where anyone in the world can join a community to learn […].
+Powerful Advertising Engine Built Around Context and User Interest
+These qualities not only make the experience more enjoyable for users, they also make […].
+A Valuable Source of Conversational Data and Knowledge
+Over time, Reddit has evolved to become one of the internet’s largest corpuses of […].
+Entrepreneurial User Economy
+Commerce is another area of growth that has emerged organically on Reddit. In fact, new […].
+Communities and Redditors
+Reddit is a community of communities where users come to connect with others with similar […].
+Why Users Come to Reddit
+The internet has given people the tools to redefine how we live. We have search engines to […].
+Open, Growing Archive of Human Knowledge (2005– )
+Over the last 18 years, Reddit has become one of the internet’s largest open archives of […].
+People-powered Curation for Authentic Interactions and Trusted Content
+Our differentiated community approach underlies the interactions on our platform: Reddit […].
+Authentic and Trusted Recommendations
+Reddit’s community-powered recommendations are a foundational part of why so many users […].
+Flexible Canvas for Self- and Community-expression
+Every subreddit is a flexible canvas for communities to express themselves through a […].
+C […].
+Layered Moderation, Community Management, and Safety Supports Trust
+We are committed to continuously enhancing our policies and processes to promote the […].
+U […].
+Our Strategy for Growing Users and Engagement
+Our strategy is to support the growth and engagement of our communities. We aim to become […].
+Why Advertisers Come to Reddit
+Reddit is the place where people, entities of public interest, and businesses come […].
+130
+Advertisers come to Reddit for distinctive benefits:
+•Contextual and Interest-based Advertising. People on Reddit are exploring and engaging in […].
+The Future of Our Platform and Monetization Strategies
+Advertising
+Reddit is a unique place on the internet, and we believe that we have many avenues to […].
+Data Licensing
+Reddit is one of the internet’s largest corpuses of authentic and constantly updated […].
+W […].
+User Economy
+Commerce has already emerged on our platform organically as a result of our interest- and […].
+Our Market Opportunity
+Community is a core human need. With over 18 years of accumulated knowledge across various […].
+Advertising
+People come to Reddit in many ways, and the core of our monetization is through […].
+Our […].
+Data Licensing
+Given the value of Reddit’s data in sentiment analysis and trend identification, we […].
+User Economy
+We believe there are a number of paths for growth by building an economy on Reddit. […].
+Advertiser Success Stories
+H&M
+“Reddit has quickly become an always-on partner for us at H&M, connecting our breadth of […].
+Dell
+“The ‘I.T. Squad’ was our first custom program with Reddit and it exceeded expectations. […].
+Oatly
+“Creative and its ability to capture the attention of the user is at the core of every […].
+Yes Milady!
+“The campaign was so good that I put all our advertising budget into it and only sometimes […].
+Caliber Fitness
+“Discussion and community is at the core of Reddit, so it seemed like the perfect place to […].
+How Reddit Works
+Communities
+A community on Reddit is called a “subreddit,” as it is a sub-community on Reddit. The […].
+Moderators
+Communities are created and led by Redditors who we call moderators, volunteers who are […].
+Rules
+Moderators create and enforce rules that keep conversations aligned to the purpose of the […].
+Posts
+Every community is filled with conversation prompts, which we call posts. Posts are made […].
+Conversations
+Every post on Reddit is a prompt for an unlimited number of conversations which are called […].
+Illustration of a conversation thread
+The first comment on any post is structured as a direct reply to the post it is attached […].
+Votes
+Votes enable community members to collectively and anonymously participate in deciding […].
+Illustration of the upvote/downvote buttons
+Search
+Many users come to Reddit seeking information. Users that utilize third-party search […].
+Karma
+Karma reflects the cumulative number of upvotes (net of downvotes) a Redditor has received […].
+Reddit Gold and Contributor Program
+Reddit Gold is purchased by Redditors using real (fiat) money and can be awarded to other […].
+Reddit Avatars
+Redditors can create cartoon versions of themselves, to put a face to their digital […].
+Illustration of a Reddit Avatar
+147
+Reddit Premium
+Reddit Premium is a subscription that offers users certain added benefits, including […].
+Our Community Values
+Our Community Values existed long before they were written down. In addition to helping […].
+Remember the Human
+We believe Reddit is the most human place on the internet. It is powered by the […].
+We […].
+Start with Community
+Reddit succeeds when our communities succeed. When we build anything on Reddit, we start […].
+Keep Reddit Real
+Reddit is where people can be genuine. The humans of Reddit are a vast and diverse group […].
+Privacy is a Right
+Reddit stands for privacy. Redditors have complete control of their identity and are […].
+W […].
+Believe in the Good
+Reddit reflects humanity. When people on Reddit come together around something they really […].
+Our Unique Three Layer Moderation Model
+On Reddit, we have a unique governance model where everyone is governed by a set of rules, […].
+Promoting Both Open Expression and Safety on Reddit
+Open expression and conversation are important for the health of society and our […].
+Remem […].
+Our Offerings for Advertisers
+Our strategy is to be the leader in contextual advertising. We offer a suite of products […].
+Ad Products
+•Auction-Based Delivery. During the three months ended December 31, 2023, approximately […].
+Auction Technology
+We began more meaningfully investing in our own ad technology and foundation in 2018 and […].
+Audience Reach
+We offer advertisers four key options for finding audiences based on interests: Reddit […].
+Measurement
+Advertisers need to be able to understand the effectiveness of their investment when using […].
+Brand Safety
+We take a layered and dynamic approach designed to ensure brands appear in only […].
+•Commu […].
+Go-To-Market Approach
+We built our advertising business by focusing on top U.S.-based advertisers, and over time […].
+Ads Platform and Ads Technology
+We began more meaningfully investing in our own ad technology and foundation in 2018. This […].
+Our Data and API Policies
+Reddit has become one of the internet’s largest open archives of human experiences and […].
+Research and Development
+Our research and development organization is responsible for the design, development, […].
+Building the Future of the Internet at Reddit
+We believe that community and belonging are core human needs, and that people can use […].
+Competition
+We are competing for people’s time and for global advertising spend. As such, we face […].
+Intellectual Property
+Our success depends in part on our ability to protect our intellectual property and […].
+As […].
+Our Facilities
+Our corporate headquarters is located in San Francisco, California, where we lease […].
+We […].
+Regulation
+We are subject to many U.S. federal and state and foreign laws, rules, and regulations, […].
+Legal Proceedings
+We are currently involved in, and may in the future be involved in, legal proceedings, […].
+MANAGEMENT
+Executive Officers, Directors, and Director Nominee
+The following table sets forth information regarding our executive officers, directors, […].
+Name Age Position(s)
+Executive Officers
+Steven Huffman 40 Chief Executive Officer, President, and Director
+Jennifer Wong 48 Chief Operating Officer
+Andrew Vollero 57 Chief Financial Officer
+Christopher Slowe, Ph.D.
+45 Chief Technology Officer
+Benjamin Lee 56 Chief Legal Officer and Corporate Secretary
+Non-Employee Directors and Director Nominee
+Patricia Fili-Krushel(2)
+Porter Gale(2)
+David Habiger(1)
+54
+Director and Chairperson of the Board of Directors
+Robert A. Sauerberg(1)
+62
+Director and Vice Chairperson of the Board of Directors
+Michael Seibel(1)
+Steven O. Newhouse(3)(4)
+66
+Director Nominee
+_______________
+(1)Member of the audit committee.
+(2)Member of the compensation and talent […].
+Executive Officers and Employee Director
+Steven Huffman is our co-founder and has served as our Chief Executive Officer and […].
+Jen […].
+Non-Employee Directors
+Patricia Fili-Krushel has served on our board of directors since January 2022. From […].
+Po […].
+Non-Employee Director Nominee
+Steven O. Newhouse has been appointed to serve as a member of our board of directors, […].
+Family Relationships
+There are no family relationships among any of our executive officers or directors.
+Board Structure and Composition
+Director Independence
+Our board of directors currently consists of six members and will be increased to seven […].
+Voting Arrangements
+•Mr. Seibel and Mr. Sauerberg were elected by the holders of our Series A convertible […].
+Governance Agreement
+In connection with this offering, we intend to enter into a governance agreement with […].
+Leadership Structure of the Board
+Our amended and restated bylaws and corporate governance guidelines to be adopted […].
+Our […].
+Role of Board in Risk Oversight Process
+Risk assessment and oversight are an integral part of our governance and management […].
+Ou […].
+Board Committees
+Our board of directors has three standing committees: the audit committee; the […].
+Audit Committee
+Our audit committee consists of David Habiger, Robert A. Sauerberg, and Michael Seibel. […].
+Compensation and Talent Committee
+Our compensation and talent committee consists of Patricia Fili-Kruschel and Porter Gale. […].
+Nominating and Corporate Governance Committee
+Effective upon the completion of this offering, our nominating and corporate governance […].
+Business Ethics Policy
+In connection with this offering, our board of directors has adopted a business ethics […].
+Indemnification and Insurance
+We maintain directors’ and officers’ liability insurance. Our amended and restated […].
+Compensation Committee Interlocks and Insider Participation
+None of our executive officers has served as a member of a compensation committee (or if […].
+EXECUTIVE AND DIRECTOR COMPENSATION
+Executive Compensation
+This section discusses the material components of the executive compensation program for […].
+Summary Compensation Table
+The following table presents all of the compensation awarded to or earned by or paid to […].
+Name and Principal Position Year Salary Bonus Stock
+Awards Option
+Awards Non-Equity
+Incentive Plan
+Compensation All Other
+Compensation Total
+($)
+($)
+($)
+Steven Huffman
+2023
+341,346 — 98,332,716 93,776,049 792,000 7,375 193,249,486
+Chief Executive Officer and President
+2022
+200,000 125,000 — — — 7,375 332,375
+Jennifer Wong
+2023
+583,820 — 45,696,176 45,736,084 506,880 7,375 92,530,335
+Chief Operating Officer
+2022
+562,772 168,832 29,946,596 — — 7,375 30,685,575
+Andrew Vollero
+2023
+613,569 — 5,413,034 — 527,155 9,000 6,562,758
+Chief Financial Officer
+2022
+600,000 180,000 — — — 9,000 789,000
+________________
+(1)Amounts reported represent (i) […].
+Narrative to the Summary Compensation Table
+Annual Base Salaries
+Our named executive officers receive a base salary to compensate them for services […].
+170
+Annual Performance Bonuses
+We maintain an annual performance-based cash bonus program in which each of our named […].
+Equity Compensation
+We have granted stock options and RSUs to our employees, including our named executive […].
+Steven Huffman Jennifer Wong
+RSUs $ — 2,990,511 1,462,028
+At-the-Money Options $ 25.29 2,990,511 1,462,028
+For Mr. […].
+Ea […].
+Retirement Benefits
+We currently maintain a 401(k) retirement savings plan for our U.S. employees, including […].
+Perquisites and Other Personal Benefits
+We determine perquisites on a case-by-case basis and will provide a perquisite to a named […].
+Outstanding Equity Awards at Year-End
+The following table presents information regarding outstanding equity awards held by our […].
+Option Awards
+Stock Awards(1)
+Name
+Vesting Commencement Date
+Grant
+Date Number of
+Securities
+Underlying
+Unexercised
+Stock
+Options
+Exercisable Number of
+Securities
+Underlying
+Unexercised
+Stock
+Options
+Unexercisable Option
+Exercise
+Price Option
+Expiration
+Date
+Equity
+Incentive Plan
+Awards:
+Number of
+Unearned
+Shares, Units
+or Other
+Rights That
+Have Not
+Vested Equity Incentive
+Plan Awards:
+Market or
+Payout Value of
+Unearned Shares, Units or
+Other Rights
+That Have Not
+Vested
+(#) (#) ($) (#)
+7/10/2015(3)
+2,168,730 — 1.93 7/9/2025
+6/1/2016
+6/1/2016(4)
+562,447
+8/14/2020
+8/14/2020(5)
+662,44 […].
+Executive Compensation Arrangements
+Offer Letters
+We have entered into amended and restated offer letters with each of our named executive […].
+Change in Control and Severance Agreements
+We have entered into change in control and severance agreements (each, a “Severance […].
+Mr. Huffman and Ms. Wong
+In the event we terminate Mr. Huffman’s or Ms. Wong’s employment without “cause” or he or […].
+Mr. Vollero
+In the event we terminate Mr. Vollero’s employment without “cause” or he resigns for “good […].
+Equity Incentive Plans
+We have adopted the 2024 Plan, which will be effective on the date immediately prior to […].
+Compensation Recovery (“Clawback”) Policy
+Effective upon the completion of this offering, we have adopted a compensation recovery […].
+Director Compensation
+In February 2022, we adopted our non-employee director compensation program (the “Director […].
+Name
+Stock Awards
+Total
+($)
+Porter Gale — —
+David Habiger
+512,600 512,600
+Paula A. Price(2)
+— —
+Robert A. Sauerberg — —
+Michael Seibel — —
+________________
+(1)The amount reported represents the grant date fair value of RSU awards […].
+Porter Gale — —
+Paula A. Price
+120,000 —
+Robert A. Sauerberg — —
+(2)Ms. Price stepped down from our board of directors in February 2024.
+183
+Non-Employee Director Compensation Program
+In February 2022, we adopted the Director Compensation Program, which was amended and […].
+Arrangements with Advance
+Robert A. Sauerberg has served as Advance’s designee to our board of directors. In this […].
+CERTAIN RELATIONSHIPS AND RELATED-PARTY TRANSACTIONS
+The following includes a summary of transactions since January 1, 2021 and any currently […].
+Convertible Preferred Stock Financings
+Series E Convertible Preferred Stock Financing
+In February 2021, we entered into a Series E preferred stock purchase agreement with […].
+T […].
+Shares of Series E Preferred Stock
+Aggregate Purchase Price
+(#) ($)
+Advance Magazine Publishers Inc.(2)
+588,592 24,999,974
+Tencent Cloud Europe B.V.(3)
+2,354,370 99,999,982
+47,087 1,999,983
+Entities affiliated with Sam Altman(5)
+1,177,184 49,999,949
+2,354,370 99,999,982
+______________
+(1)For more information regarding […].
+Series F and Series F-1 Convertible Preferred Stock Financing
+In August 2021, we entered into a Series F preferred stock purchase agreement with various […].
+(#) (#) ($)
+Advance Magazine Publishers Inc.(2)
+— 16,182 999,957
+Tencent Cloud Europe B.V.(3)
+— 1,076,997 66,552,383
+FMR LLC(4)
+6,634,905 — 409,999,974
+Entities affiliated with Sam Altman(5)
+— 161,828 10,000,064
+— 404,569 25,000,099
+_____________
+(1)For more information regarding […].
+Subleases
+On October 18, 2017, we entered into a sublease agreement with Advance to lease […].
+On […].
+Tender Offer
+In April 2021, we conducted a tender offer for shares of our outstanding Class A and Class […].
+Name Position Shares of Common Stock Aggregate Purchase Price
+($)
+Christopher Slowe, Ph.D.
+The 2021 Tender Offer was conducted to reward and incentivize […].
+Stock Repurchase
+In March 2021, we repurchased an aggregate of 1,177,185 shares of our outstanding Class B […].
+Voluntary Conversion Agreement with Entities Affiliated with FMR LLC
+In August 2021, funds and accounts managed by direct or indirect subsidiaries of FMR LLC, […].
+Investors’ Rights Agreement
+We are party to an amended and restated investors’ rights agreement with the purchasers of […].
+Right of First Refusal
+We are party to an amended and restated right of first refusal agreement with the […].
+Tax Return Filing and Sharing Agreement
+We were party to a certain Tax Return Filing and Sharing Agreement (the “TSA”) with […].
+Governance Agreement
+In connection with this offering, we intend to enter into a governance agreement with […].
+Board of Directors
+In the event that our board of directors determines to increase the size of the board of […].
+Designation Rights
+The Governance Agreement will require us to nominate two directors designated by Advance […].
+Securities Issuances
+Unless Advance provides its consent, we shall only be permitted to issue shares of Class A […].
+Additional Approval Rights
+We will also be required to obtain Advance’s prior written approval or consent in order […].
+Standstill
+During the term of the Governance Agreement, Advance and certain of its affiliates are […].
+Termination
+The Governance Agreement will terminate upon the first to occur of (i) such date that […].
+Other Transactions
+We have entered into employment, offer letter, and change of control and severance […].
+We […].
+Director and Officer Indemnification
+We have entered into indemnification agreements with certain of our current executive […].
+Directed Share Program
+At our request, the underwriters have reserved up to shares of our Class A common stock, […].
+Related Person Transaction Policy
+We have a written related person transaction policy, to be effective upon the completion […].
+PRINCIPAL AND SELLING STOCKHOLDERS
+The following table contains information about the beneficial ownership of our common […].
+Name of Beneficial Owner Shares
+Beneficially Owned
+Shares of Class A Common Stock Being Offered
+Shares
+Beneficially Owned
+Class A Class B Class A Class B
+Shares % Shares % Shares % Shares %
+Named Executive Officers, Directors, and Director Nominee:
+Steven Huffman(1)
+368,954 2.1 % 4,312,818 3.5 % 3.3 % 3.5 %
+Shares subject to voting proxy(2)
+16,182
+*
+42,191,092 34.5 % 30.1 % 34.0 %
+Total
+385,136 2.2 % 46,503,910 37.3 % 33.0 % 37.3 %
+Jennifer Wong(3)
+2,078,159 10.9 % — * 1.5 % *
+Andrew Vollero(4)
+291,719 1.7 % — * * *
+Patricia Fili-Krushel(5)
+7,990
+*
+— * * *
+Porter Gale(6)
+111,331
+*
+— * * *
+David Habiger(7)
+5,147
+*
+— * * *
+Robert A. Sauerberg(8)
+—
+*
+47,087 * * *
+Michael Seibel(9)
+120,000
+*
+31,697 * * *
+Steven O. Newhouse(10)
+16,182
+*
+42,191,092 34.5 % 30.1 % 34.0 %
+3,758,387 19.0 % 47,101,798 37.6 % 35.1 % 36.9 %
+5% or Greater Stockholders:
+Advance Magazine Publishers Inc.(12)
+16,182
+*
+42,191,092 34.5 % 30.1 % 34.0 %
+—
+*
+11,743,944 9.6 % 8.4 % 9.5 %
+Entities affiliated with Quiet Capital and Tacit Capital(14)
+2,972,235 16.9 % 6,610,551 5.4 % 6.8 % 5.6 %
+Entities affiliated with Sam Altman(15)
+789,456 4.5 % 11,369,103 9.3 % 8.7 % 9.2 %
+Entities affiliated with Tencent(16)
+1,127,422 6.4 % 14,320,372 11.7 % 11.0 % 11.6 %
+Entities affiliated with Vy Capital(17)
+404,569 2.3 % 6,792,080 5.5 % 5.1 % 5.5 %
+Selling Stockholders:
+All selling stockholders who beneficially own, in the aggregate, less than 1% of our […].
+_ […].
+DESCRIPTION OF CAPITAL STOCK
+The following summary describes our capital stock and certain provisions of our amended […].
+General
+Upon the completion of this offering and the filing of our amended and restated […].
+•2,000 […].
+Common Stock
+We have three classes of authorized common stock: Class A common stock, Class B common […].
+Voting Rights
+Each holder of our Class A common stock is entitled to one vote per share, each holder of […].
+Conversion Rights
+Class B Common Stock. Each outstanding share of Class B common stock is convertible at any […].
+Economic Rights
+Dividends. Any dividend or distribution paid or payable to the holders of shares of Class […].
+No Preemptive or Similar Rights
+Holders of shares of our common stock do not have preemptive, subscription, or redemption […].
+Fully Paid and Non-assessable
+All of our outstanding shares of Class A and Class B common stock are fully paid and […].
+Class C Common Stock
+Our authorized but unissued shares of Class C common stock are available for issuance with […].
+Preferred Stock
+In connection with the effectiveness of the registration statement of which this […].
+199
+re […].
+Stock Options
+As of December 31, 2023, we had outstanding options to purchase an aggregate of 5,718,266 […].
+Restricted Stock Units
+As of December 31, 2023, we had outstanding RSUs representing 562,447 shares of our Class […].
+Voting Agreement
+Prior to the effectiveness of the registration statement of which this prospectus forms a […].
+Registration Rights
+Upon the completion of this offering, certain holders of our Class B common stock and our […].
+Demand Registration Rights
+Upon the completion of this offering, the holders of up to 107,123,949 shares of our […].
+2 […].
+Form S-3 Registration Rights
+Upon the completion of this offering, the holders of up to 107,123,949 shares of our […].
+Piggyback Registration Rights
+Upon the completion of this offering, in the event that we propose to register any of our […].
+Anti-Takeover Provisions
+Certain provisions of Delaware law, our amended and restated certificate of incorporation […].
+Delaware Law
+We have opted out of Section 203 of the Delaware General Corporation Law, but our amended […].
+Multi-Class Stock
+As described above in “—Common Stock—Voting Rights,” our amended and restated certificate […].
+Board of Directors Vacancies
+Our amended and restated certificate of incorporation and restated bylaws will authorize […].
+Stockholder Action; Special Meeting of Stockholders
+Our amended and restated certificate of incorporation will provide that, at any time when […].
+Advance Notice Requirements for Stockholder Proposals and Director Nominations
+Our amended and restated bylaws will provide advance notice procedures for stockholders […].
+No Cumulative Voting
+The Delaware General Corporation Law provides that stockholders are not entitled to […].
+Amendment of Charter and Bylaws Provisions
+Amendments to our amended and restated certificate of incorporation will require the […].
+Issuance of Undesignated Preferred Stock
+Subject to the rights granted to Advance pursuant to the Governance Agreement, our board […].
+Choice of Forum
+Our amended and restated certificate of incorporation and amended and restated bylaws will […].
+Limitations on Liability and Indemnification Matters
+Our amended and restated certificate of incorporation will limit the liability of our […].
+Listing
+We have applied to list our Class A common stock on the New York Stock Exchange under the […].
+Transfer Agent and Registrar
+Upon completion of this offering, the transfer agent and registrar for our Class A and […].
+SHARES ELIGIBLE FOR FUTURE SALE
+Prior to this offering, there has been no public market for our common stock. Future sales […].
+Date First Available for Sale Into the Market
+Number of RSUs and PRSUs for Shares of Our Class A Common Stock Eligible to Vest
+Number of […].
+Lock-Up Agreements/Market Standoff Agreements
+In connection with this offering, we and all of our directors and executive officers, the […].
+Registration Rights
+Pursuant to our amended and restated investors’ rights agreement, the holders of up to […].
+Equity Incentive Plans
+We intend to file one or more registration statements on Form S-8 under the Securities Act […].
+MATERIAL U.S. FEDERAL INCOME TAX CONSEQUENCES TO NON-U.S. HOLDERS
+The following discussion is a summary of the material U.S. federal income tax consequences […].
+Definition of a Non-U.S. Holder
+For purposes of this discussion, a “Non-U.S. Holder” is any beneficial owner of our Class […].
+Distributions
+As described in “Dividend Policy,” we do not anticipate declaring or paying dividends to […].
+Sale or Other Taxable Disposition
+A Non-U.S. Holder will not be subject to U.S. federal income tax on any gain realized upon […].
+Information Reporting and Backup Withholding
+Payments of dividends on our Class A common stock will not be subject to backup […].
+Copies […].
+Additional Withholding Tax on Payments Made to Foreign Accounts
+Withholding taxes may be imposed under Sections 1471 to 1474 of the Code (such Sections […].
+UNDERWRITERS
+Under the terms and subject to the conditions in an underwriting agreement to be dated the […].
+Name Number of Shares
+Morgan Stanley & Co. LLC
+Goldman Sachs & Co. LLC
+J.P. Morgan Securities LLC
+BofA Securities, Inc.
+Citigroup Global Markets Inc.
+Deutsche Bank Securities Inc.
+MUFG […].
+Citizens JMP Securities, LLC
+Needham & Company, LLC
+Piper Sandler & Co.
+Raymond James & Associates, Inc.
+Academy Securities, Inc.
+Loop Capital Markets LLC
+Samuel A. Ramirez & Company, Inc.
+Roth Capital Partners, LLC
+Telsey Advisory Group LLC
+Total:
+The underwriters and the representatives are collectively referred to as the […].
+The […].
+W […].
+Total
+Per Share No Exercise Full Exercise
+Public offering price $ $ $
+Proceeds, before expenses, to us $ $ $
+The estimated offering expenses payable by us, exclusive of the underwriting discounts and […].
+Other Relationships
+The underwriters and their respective affiliates are full service financial institutions […].
+Pricing of the Offering
+Prior to this offering, there has been no public market for our Class A common stock. The […].
+Directed Share Program
+At our request, the underwriters have reserved up to shares of our Class A common stock, […].
+Sales to Retail Investors
+In addition to allocations made to retail investors by the underwriters and through our […].
+Selling Restrictions
+European Economic Area
+In relation to each Member State of the European Economic Area (each, a “Member State”), […].
+United Kingdom
+No shares of our Class A common stock have been offered or will be offered pursuant to the […].
+Japan
+No registration pursuant to Article 4, paragraph 1 of the Financial Instruments and […].
+Ac […].
+For Qualified Institutional Investors (“QII”)
+Please note that the solicitation for newly issued or secondary securities (each as […].
+22 […].
+For Non-QII Investors
+Please note that the solicitation for newly issued or secondary securities (each as […].
+Brazil
+The offer and sale of our shares of Class A common stock has not been, and will not be, […].
+Switzerland
+Shares of our Class A common stock may not be publicly offered in Switzerland and will not […].
+Canada
+Shares of our Class A common stock may be sold only to purchasers purchasing, or deemed to […].
+Hong Kong
+Shares of our Class A common stock may not be offered or sold by means of any document […].
+Singapore
+This prospectus has not been registered as a prospectus with the Monetary Authority of […].
+Dubai International Financial Centre
+This prospectus relates to an Exempt Offer in accordance with the Offered Securities Rules […].
+LEGAL MATTERS
+The validity of the shares of Class A common stock offered hereby will be passed upon for […].
+EXPERTS
+The consolidated financial statements of Reddit, Inc. as of December 31, 2022 and 2023, […].
+WHERE YOU CAN FIND ADDITIONAL INFORMATION
+We have filed with the SEC a registration statement on Form S-1, including exhibits and […].
+INDEX TO CONSOLIDATED FINANCIAL STATEMENTS
+Page
+Report of Independent Registered Public Accounting Firm
+Consolidated Balance Sheets
+Consolidated Statements of Operations
+Consolidated Statements of Comprehensive Income (Loss)
+Consolidated Statements of Convertible Preferred Stock and Stockholders’ Deficit
+Consolidated Statements of Cash Flows
+Notes to the Consolidated Financial Statements
+REPORT OF INDEPENDENT REGISTERED PUBLIC ACCOUNTING FIRM
+To the Stockholders and Board of Directors
+Reddit, Inc.:
+Opinion on the Consolidated Financial Statements
+We have audited the accompanying consolidated balance sheets of Reddit, Inc. and […].
+Basis for Opinion
+These consolidated financial statements are the responsibility of the Company’s […].
+We […].
+San Francisco, California
+Reddit, Inc.
+Consolidated Balance Sheets
+(in thousands, except share and per share amounts)
+December 31,
+2022 December 31,
+2023
+ASSETS
+Current assets:
+Total current assets 1,483,927 1,479,687
+Intangible assets, net 41,237 32,147
+Goodwill 26,299 26,299
+Total assets $ 1,599,711 $ 1,596,467
+LIABILITIES, CONVERTIBLE PREFERRED STOCK, AND STOCKHOLDERS’ DEFICIT
+Current liabilities:
+Total liabilities 125,283 155,897
+Commitments and contingencies (Note 11)
+Convertible preferred stock, par value $0.0001 per share; 86,864,781 and 86,864,781 shares […].
+Stockholders’ deficit:
+Class A common stock, par value $0.0001 per share; 189,000,000 and 189,000,000 shares […].
+Consolidated Statements of Operations
+(in thousands, except share and per share amounts)
+Year ended December 31,
+2022 2023
+Revenue $ 666,701 $ 804,029
+Costs and expenses:
+Cost of revenue 104,799 111,011
+Income tax expense (benefit) 622 3,801
+Net income (loss) per share attributable to Class A and Class B common stock, basic and […].
+Consolidated Statements of Comprehensive Income (Loss)
+Year ended December 31,
+2022 2023
+Change in other comprehensive income (loss), net of tax:
+The accompanying notes are an integral part of these financial statements.
+Reddit, Inc.
+Consolidated Statements of Convertible Preferred Stock and Stockholders’ Deficit
+(in thousands, except share amounts)
+Total Convertible
+Preferred
+Stock Common Stock Additional
+Paid-in
+Capital Accumulated
+Other
+Comprehensive
+Income
+(Loss) Accumulated
+Deficit Total
+Stockholders’
+Deficit
+Class A Class B
+Shares Amount Shares Amount Shares Amount
+Balance as of December 31, 2021 73,021,449 $ 1,853,492 5,166,855 $ — 51,212,674 $ 6 $ […].
+Stock-based compensation expense — — — — — — 55,310 — — 55,310
+Vesting of early exercised stock options — — — — — — 2,292 — — 2,292
+Change in other […].
+Ba […].
+Stock-based compensation expense — — — — — — 47,598 — — 47,598
+Vesting of early exercised stock options — — — — — — 692 — — 692
+Change in other […].
+Balanc […].
+Consolidated Statements of Cash Flows
+Year ended December 31,
+2022 2023
+Cash flows from operating activities
+Adjustments to reconcile net income (loss) to net cash provided by (used in) operating […].
+Stock-based compensation 55,310 47,598
+Changes in operating assets and liabilities:
+Net cash provided by (used in) operating activities
+$ (94,021) $ (75,114)
+Cash flows from investing activities
+Net cash provided by (used in) investing activities
+$ (804,183) $ 41,291
+Cash flows from financing activities
+Net cash provided by (used in) financing activities
+$ (3,784) $ (811)
+(901,988) (34,634)
+1,337,848 435,860
+$ 435,860 $ 401,226
+Total cash, cash equivalents, and restricted cash
+$ 435,860 $ 401,226
+Supplemental disclosure of noncash financing and investing activities:
+The accompanying notes are an integral part of these financial statements.
+Reddit, Inc.
+NOTES TO THE CONSOLIDATED FINANCIAL STATEMENTS
+1. Organization and Description of the Business
+Description of Business
+Reddit, Inc. (“Reddit,” “we,” “our,” or “us”) was incorporated in the state of Delaware. […].
+2. Basis of Presentation and Significant Accounting Policies
+Basis of Presentation
+Our consolidated financial statements are prepared in accordance with generally accepted […].
+Use of Estimates
+The preparation of the consolidated financial statements in conformity with U.S. GAAP […].
+Advertising Revenue
+We generate substantially all of our revenue through the sale of advertising on our mobile […].
+NOTES TO THE CONSOLIDATED FINANCIAL STATEMENTS
+goods or services before they are transferred to the customer. For advertising revenue […].
+Other Revenue
+Other revenue consists of revenue from data licensing, Reddit Premium subscriptions, and […].
+Cost of Revenue
+Cost of revenue consists primarily of payments to third parties for the cost of hosting […].
+Research and Development Expenses
+Research and development expenses consist primarily of personnel-related costs including […].
+Sales and Marketing Expenses
+Sales and marketing expenses consist primarily of personnel-related costs including […].
+General and Administrative Expenses
+General and administrative expenses consist primarily of personnel-related costs including […].
+NOTES TO THE CONSOLIDATED FINANCIAL STATEMENTS
+expenses also include costs incurred for professional services, including outside legal […].
+Advertising Costs
+Advertising costs are expensed as incurred and were $34.4 million and $8.2 million for the […].
+Stock-Based Compensation
+We measure and recognize compensation expense for stock-based awards, including restricted […].
+Income Taxes
+We account for income taxes using an asset and liability approach. Under this method, the […].
+Functional Currency
+The U.S. dollar is the functional currency for all subsidiaries, and therefore, foreign […].
+Cash, Cash Equivalents, and Restricted Cash
+Cash and cash equivalents consist of highly liquid investments with original maturities of […].
+Marketable Securities
+We hold investments in marketable securities consisting of U.S. and non-U.S. government […].
+NOTES TO THE CONSOLIDATED FINANCIAL STATEMENTS
+investments available for current operations. Our available-for-sale investments are […].
+Fair Value Measurements
+Certain financial instruments are required to be recorded at fair value. Other financial […].
+Accounts Receivable, Net
+Accounts receivable are recorded at the invoiced amount, net of any allowance for doubtful […].
+Property and Equipment, Net
+Property and equipment are stated at cost, less accumulated depreciation. We compute […].
+Software Development Costs
+Software development costs include costs to develop software to be used to meet internal […].
+Leases
+Leases arise from contractual obligations that convey the right to control the use of […].
+Deferred Offering Costs
+Deferred offering costs, which consist of direct incremental legal, accounting, […].
+F-11
+Re […].
+NOTES TO THE CONSOLIDATED FINANCIAL STATEMENTS
+event the planned IPO is terminated, the deferred offering costs will be immediately […].
+Business Combinations
+We include the results of operations of the businesses that we acquire from the date of […].
+Goodwill
+Goodwill represents the excess of the aggregate purchase consideration over the fair value […].
+Acquired Intangible Assets
+Identifiable acquired intangible assets consist primarily of acquisition-related developed […].
+Cryptocurrency
+We account for cryptocurrency investments, and cryptocurrency received in exchange for […].
+NOTES TO THE CONSOLIDATED FINANCIAL STATEMENTS
+basis. Gains and losses realized upon the sale or settlement of cryptocurrencies are also […].
+Impairment of Long-Lived Assets
+We evaluate recoverability of our property and equipment and definite-lived intangible […].
+Concentration of Business Risk
+We primarily use Amazon Web Services and Google Cloud Platform for our hosting […].
+Concentration of Credit Risk
+Financial instruments that potentially subject us to significant concentrations of credit […].
+Segments
+We have determined that we have a single operating segment. Our Chief Executive Officer is […].
+Emerging Growth Company Status
+We are an emerging growth company as defined in the Jumpstart Our Business Startups Act of […].
+Recently Adopted Accounting Pronouncements
+In June 2016, the Financial Accounting Standards Board (“FASB”) issued Accounting […].
+In […].
+Accounting Pronouncements Not Yet Adopted
+In December 2023, the FASB issued ASU No. 2023-08, Intangibles—Goodwill and Other—Crypto […].
+3. Revenue
+The following table represents our revenue disaggregated by source:
+Year ended December 31,
+2022 2023
+Other revenue 14,139 15,247
+Total revenue $ 666,701 $ […].
+T […].
+Rest of world(1)
+117,737 152,651
+Total revenue $ 666,701 $ 804,029
+______________
+(1)Other than the United […].
+4. Net Income (Loss) per Share
+We compute net income (loss) per share of Class A and Class B common stock using the […].
+T […].
+Class A Class B Consolidated
+(in thousands, except share and per share data)
+Numerator:
+Denominator:
+Basic and diluted income (loss) per share attributable to common stockholders: $ (2.77) $ […].
+Class A Class B Consolidated
+(in thousands, except share and per share data)
+Numerator:
+Denominator:
+Basic and diluted income (loss) per share attributable to common stockholders: $ (1.54) $ […].
+Class A Class B Consolidated
+Stock options 16,290,463 8,228,797 24,519,260
+Unvested RSUs & RSAs 12,953,243 4,362,661 […].
+Class A Class B Consolidated
+Stock options 22,600,876 7,213,522 29,814,398
+Unvested RSUs & RSAs 24,166,383 2,720,150 […].
+5. Fair Value Measurements
+Fair value is defined as the price that would be received to sell an asset in an orderly […].
+Fair value
+hierarchy
+level Cost or
+amortized
+cost Gross
+unrealized
+gains Gross
+unrealized
+losses Fair
+value
+Cash equivalents:
+Marketable securities:
+Total $ 1,219,931 $ 84 $ (3,876) $ 1,216,139
+December 31, 2023
+Fair value
+hierarchy
+level Cost or
+amortized
+cost Gross
+unrealized
+gains Gross
+unrealized
+losses Fair
+value
+Cash equivalents:
+Marketable securities:
+Commercial paper Level 2 187,596 148 (24) 187,720
+Total $ 1,166,672 $ 1,178 $ (364) $ […].
+F […].
+6. Balance Sheet Components
+Prepaid Expenses and Other Current Assets
+December 31,
+2022 December 31,
+2023
+Other 1,249 1,590
+Property and Equipment, Net
+Property and equipment, net consisted of the following:
+December 31,
+2022 December 31,
+2023
+Construction-in-progress 83 —
+Depreciation expense was $3.7 million and $4.7 million for the years ended December 31, […].
+Other Noncurrent Assets
+Other noncurrent assets consisted of the following:
+December 31,
+2022 December 31,
+2023
+Prepaid expenses
+$ 1,329 $ 962
+Deferred offering costs
+14,362 16,484
+Other
+721 985
+Total other noncurrent assets
+$ 17,704 $ 19,380
+F-18
+Reddit, Inc.
+Accrued Expenses and Other Current Liabilities
+December 31,
+2022 December 31,
+2023
+Other 1,695 5,284
+Other Noncurrent Liabilities
+Other noncurrent liabilities consisted of the following:
+December 31,
+2022 December 31,
+2023
+Holdback liability from acquisitions $ 6,088 $ —
+Other 1,048 287
+7. Operating Leases
+We have entered into various non-cancellable operating leases agreements, primarily for […].
+Lease Cost
+The components of lease cost were as follows:
+Year ended December 31,
+2022 2023
+F-19
+Reddit, Inc.
+Lease Term and Discount Rate
+The weighted-average remaining lease term and discount rate related to the operating […].
+Y […].
+Maturity of Lease Liabilities
+The present value of our operating lease liabilities as of December 31, 2023 was as […].
+20 […].
+Thereafter
+1,254
+Total undiscounted lease payments
+30,455
+Less: imputed interest
+(4,708)
+Present value of lease liabilities
+$ 25,747
+Operating lease liabilities
+3,707
+Operating lease liabilities, noncurrent
+22,040
+Total
+$ 25,747
+Other Information
+Right-of-use assets obtained in exchange for lease liabilities were $16.4 million and […].
+8. Acquisitions
+In the year ended December 31, 2022, we made several acquisitions to enhance our […].
+Of […].
+9. Goodwill and Intangible Assets
+Goodwill
+The change in the carrying amount of goodwill for the year ended December 31, 2022 was as […].
+Goodwill acquired 19,828
+There was no change in the carrying amount of goodwill during the year ended December 31, […].
+Acquired Intangible Assets
+Acquired intangible assets consisted of the following:
+December 31, 2022
+Gross carrying
+value Accumulated
+amortization Net carrying
+value Weighted-average remaining useful life […].
+(in thousands, except year data)
+December 31, 2023
+Gross carrying
+value Accumulated
+amortization Net carrying
+value Weighted-average remaining useful life […].
+(in thousands, except year data)
+Amortization expense was $4.1 million and $9.0 million for the years ended December 31, […].
+Cryptocurrency
+The net carrying value of our cryptocurrencies, which consisted primarily of Bitcoin and […].
+10. Debt
+Revolving Line of Credit
+On October 8, 2021, we entered into a five-year, $750.0 million, revolving loan and […].
+On […].
+11. Commitments and Contingencies
+Purchase Obligations
+We enter into contracts with non-cancellable purchase obligations, primarily related to […].
+Legal Matters
+From time to time, we may become involved in claims and other legal matters arising in the […].
+Indemnification
+In the ordinary course of business, we may provide indemnifications of varying scope and […].
+12. Convertible Preferred Stock
+Convertible preferred stock outstanding consisted of the following as of December 31, 2022 […].
+Shares
+authorized Shares issued and outstanding Original issue price per share Aggregate
+liquidati […].
+(in thousands, except share and per share data)
+Series A 7,500,000 7,500,000 $ 2.67 $ 35,000 $ 21,670
+Series A-1 114,746 114,746 5.93 680 […].
+Dividends
+The holders of Series A, Series A-1, Series B, Series C, Series D, Series D-1, Series E, […].
+Liquidation Preference
+In the event of any (i) liquidation, dissolution or winding up of Reddit, (ii) the […].
+F-2 […].
+Voting Rights
+The holders of each share of Series A, Series A-1, Series B, Series C, Series D, Series […].
+Conversion
+The holders of each share of convertible preferred stock have the option to convert each […].
+Redemption
+The holders of convertible preferred stock have no rights to redeem shares. The […].
+13. Common Stock
+Class A and Class B Common Stock
+We have two classes of authorized common stock, Class A and Class B common stock. The […].
+Common Stock Reserved for Issuance
+The total number of shares reserved for grant and issuance under the Reddit, Inc. 2017 […].
+14. Stock-Based Compensation
+Our board of directors adopted, and our stockholders approved, the 2017 Plan and the 2012 […].
+RSUs and RSAs
+Service-based RSUs
+We grant service-based RSUs to our employees, all of which relate to Class A common stock. […].
+Service-based RSAs
+We grant, in certain circumstances, RSAs with a service-based vesting condition, covering […].
+Market-based RSUs
+As of December 31, 2023, we had outstanding 1,344,894 RSUs covering 120,000 shares of our […].
+RSUs and RSAs
+The following table summarizes the RSU and RSA activity for the year ended December 31, […].
+Service-
+based
+RSUs RSAs Market and Performance-
+based
+RSUs Total RSUs and RSAs Weighted-
+average grant
+date fair
+value
+Unvested as of December 31, 2022 12,679,187 174,056 4,462,661 […].
+Vested
+(837,628) (87,026) — (924,654) $ 45.31
+Canceled/Forfeited
+(1,510,434) — (3,250,256) (4,760,690) $ 14.63
+Unvested as of December 31, 2023 25,406,057 […].
+Stock Options
+Stock option grants generally expire ten years from the date of the grant. Certain stock […].
+Outstanding
+stock
+options Weighted-
+average
+exercise
+price Weighted-
+average
+remaining
+contractual
+life
+(years) Aggregate
+intrinsic
+value
+(in thousands, except share, per share, and year data)
+Balance as of December 31, 2022 24,413,803 $ 5.94 5.11 $ 523,626
+Granted
+8,905,078 45.15 10 $ 17,721
+Exercised
+(2,997,697) 2.81
+Canceled/Forfeited
+(525,275) 13.86
+Balance as of December 31, 2023 29,795,909 $ 17.83 6.00 $ 500,472
+Vested as […].
+Determination of Fair Value
+We estimate the fair value of stock options using the Black-Scholes option-pricing model, […].
+Risk-free interest rate 3.83 %
+Expected dividend yield 0 %
+Early Exercised Options
+Option holders have the right to exercise unvested options, which are subject to our […].
+S […].
+Secondary Sales
+During the year ended December 31, 2023, certain former employees sold an aggregate of […].
+Stock-Based Compensation
+The following table summarizes the components of stock-based compensation expense […].
+Year […].
+Stock-based compensation(1)
+$ 55,310 $ 47,598
+_______________
+(1)During the year ended December 31, 2023, we recorded […].
+15. Employee Benefit Plans
+We have a defined contribution 401(k) plan (the “401(k) Plan”) for our United States-based […].
+16. Income Taxes
+For the years ended December 31, 2022 and 2023, the geographical breakdown of our income […].
+Current income tax expense (benefit):
+State 610 1,133
+Foreign 1,231 1,468
+Deferred income tax expense (benefit):
+State — —
+The current income tax expense for the years ended December 31, 2022 and 2023 were […].
+Our […].
+State income taxes, net of federal benefit 2.3 1.2
+Stock-based compensation 0.6 3.9
+F-31
+Reddit, Inc.
+Deferred income taxes reflect the net tax effect of temporary differences […].
+Deferred tax assets:
+Stock-based compensation 21,061 21,364
+Other 6,374 4,216
+Deferred tax liabilities:
+Right-of-use asset (5,434) (5,426)
+As of December 31, 2023, we had $216.7 million and $177.1 million, respectively, of […].
+As […].
+Uncertain Tax Positions
+The following table summarizes the activity related to our gross unrecognized tax benefits […].
+Beginning balance of unrecognized tax benefits
+$ 8,982 $ 16,428
+Increases/(decreases) related to prior year tax positions
+1,925 (1,750)
+Increases/(decreases) related to current year tax positions
+5,521 4,558
+Ending balance of unrecognized tax benefits
+$ 16,428 $ 19,236
+Substantially all of the unrecognized tax benefits were recorded as […].
+O […].
+17. Related-Party Transactions
+As of December 31, 2023, Advance holds all of the Series A preferred stock and 34% of the […].
+18. Subsequent Events
+We have evaluated subsequent events through February 5, 2024, which is the date the […].
+Data Licensing Arrangements
+In January 2024, we entered into certain data licensing arrangements with performance […].
+19. Subsequent Events (unaudited)
+We have evaluated subsequent events through February 22, 2024, which is the date the […].
+F […].
+Stock-Based Compensation
+On February 7, 2024, our board of directors granted to certain of our employees RSUs with […].
+PART II
+INFORMATION NOT REQUIRED IN PROSPECTUS
+Item 13. Other Expenses of Issuance and Distribution
+The following table sets forth the costs and expenses, other than underwriting discounts […].
+Amount to Be Paid
+SEC registration fee
+$ 14,760
+FINRA filing fee
+15,500
+New York Stock Exchange listing fee
+25,000
+Transfer agent’s fees and expenses
+*
+Printing and engraving expenses
+*
+Legal fees and expenses
+*
+Accounting fees and expenses
+*
+Blue Sky fees and expenses
+*
+Miscellaneous expenses
+*
+$ *
+____________
+*To be completed by amendment.
+Item 14. Indemnification of Directors and Officers
+Section 145 of the Delaware General Corporation Law provides that a corporation may […].
+Se […].
+Item 15. Recent Sales of Unregistered Securities
+Since January 1, 2021, the registrant granted to its employees, consultants, and other […].
+Preferred Issuances
+In February 2021 through June 2021, the registrant sold an aggregate of 12,195,638 shares […].
+Other Issuances
+In June 2022, the registrant issued 236,117 shares of its Class A common stock at $61.79 […].
+Item 16. Exhibits and Financial Statement Schedules
+See the Exhibit Index attached to this registration statement, which Exhibit Index is […].
+Item 17. Undertakings
+(a)Insofar as indemnification for liabilities arising under the Securities Act may be […].
+(b)The undersigned registrant hereby undertakes that:
+(1)For purposes of determining any liability under the Securities Act, the information […].
+EXHIBIT INDEX
+Exhibit
+Number Exhibit Description
+1.1* Form of Underwriting Agreement
+3.1
+3.2
+Form of Amended and Restated Certificate of Incorporation, to be in effect […].
+3.3
+Amended and Restated Bylaws, as currently in effect
+3.4
+Form of Amended and Restated Bylaws, to be in effect immediately prior to the […].
+4.1*
+Reference is made to Exhibits 3.1 through 3.4
+4.2*
+Form of Class A Common Stock Certificate
+5.1* Opinion of Latham & Watkins LLP
+10.1
+Amended and Restated Investors’ Rights Agreement, dated September 1, 2021, by and […].
+2012 Stock Option and Grant Plan, as amended
+10.7(b)#
+Form of Incentive Stock Option Grant Notice and Incentive Stock Option Agreement […].
+2017 Equity Incentive and Grant Plan, as amended
+10.8(b)#
+Form of Early Exercise Incentive Stock Option Grant Notice and Early Exercise […].
+Employee Stock Purchase Plan
+10.11*#
+Amended and Restated Non-Employee Director Compensation Program
+10.12#
+Form of Indemnification Agreement between the Registrant and each of its Directors […].
+Exhibit
+Number Exhibit Description
+10.17*#
+10.18*#
+10.19*#
+Executive Change in Control and Severance Plan
+21.1
+List of Subsidiaries of the Registrant
+23.1
+Consent of KPMG LLP, Independent Registered Public Accounting Firm
+24.1
+99.1*
+99.2
+Consent of Director Nominee
+107.1
+Filing Fee Table
+________________
+*To be filed by amendment.
+# Indicates management contract or compensatory […].
+SIGNATURES
+Pursuant to the requirements of the Securities Act of 1933, as amended, the registrant has […].
+By: /s/ Steven Huffman
+Name: Steven Huffman
+Title: Chief Executive Officer and President
+KNOW ALL PERSONS BY THESE PRESENTS, that each person whose signature appears below […].
+Pur […].
+Signature Title Date
+/s/ Steven Huffman
+Chief Executive Officer, President and Director
+(Principal Executive Officer)
+February 22, 2024
+Steven Huffman
+/s/ Andrew Vollero
+Chief Financial Officer
+(Principal Financial Officer)
+February 22, 2024
+Andrew Vollero
+/s/ Michelle Reynolds
+Chief Accounting Officer
+(Principal Accounting Officer)
+February 22, 2024
+Michelle Reynolds
+/s/ Patricia Fili-Krushel
+Director
+February 22, 2024
+Patricia Fili-Krushel
+/s/ Porter Gale
+Director
+February 22, 2024
+Porter Gale
+/s/ David Habiger
+Director
+February 22, 2024
+David Habiger
+/s/ Robert A. Sauerberg
+Director
+February 22, 2024
+Robert A. Sauerberg
+/s/ Michael Seibel
+Director
+February 22, 2024
+Michael Seibel

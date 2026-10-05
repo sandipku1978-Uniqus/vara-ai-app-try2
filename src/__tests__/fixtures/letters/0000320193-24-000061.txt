@@ -1,0 +1,163 @@
+Document
+
+FOIA CONFIDENTIAL TREATMENT REQUESTED PURSUANT TO RULE 83 (17 C.F.R. § 200.83)
+
+Apple Inc.
+One Apple Park Way
+Cupertino, CA 95014 April 29, 2024
+
+BY EDGAR
+
+To:
+U.S. Securities and Exchange Commission
+Division of Corporation Finance
+Office of Technology
+100 F Street, NE
+Washington, D.C. 20549
+
+Re:
+Apple Inc. 
+Form 10-K for the fiscal year ended September 30, 2023
+Response dated March 20, 2024
+File No. 001-36743
+
+Dear Mses. Kindelan and Collins,
+
+Apple Inc. (the “Company”) provides the following response (the “Response Letter”) to the comments contained in the letter (the “Comment Letter”) of the staff of the Division of Corporation Finance (the “Staff”) of the U.S. Securities and Exchange Commission (the “Commission”), dated April 2, 2024, relating to the above-referenced filing. 
+
+Because of the commercially sensitive nature of information contained herein, we have filed a separate letter (the “Request Letter”) with the Office of FOIA Services (the “FOIA Office”) in connection with a request for confidential treatment of certain portions of this Response Letter under the Freedom of Information Act, 5 U.S.C. § 552 (“FOIA”), 17 C.F.R. § 200.83 (“Rule 83”), and the Commission’s rules and regulations promulgated under FOIA. For the Staff’s reference, we have enclosed a copy of the Request Letter, which includes a version of this Response Letter that has been redacted to indicate the portions for which the Company is requesting confidential treatment. 
+
+In accordance with Rule 83, the Company requests confidential treatment of (a) the marked portions (the “Confidential Information”) of this Response Letter and (b) the accompanying Request Letter (collectively, the “Confidential Material”). Please promptly inform the undersigned of any request for disclosure of the Confidential Material made pursuant to FOIA or otherwise so that the undersigned may substantiate the foregoing request for confidential treatment in accordance with Rule 83.
+
+In accordance with Rule 83, this Response Letter has also been clearly marked with the legend “Confidential Treatment Requested by Apple Inc.” and each page is marked for the record with the identifying numbers and code “AI-001” through “AI-006.”
+
+In response to the Comment Letter, and to facilitate review, we have repeated the text of each of the Staff’s comments below and followed each comment with the Company’s response.
+
+Confidential Treatment Requested by Apple Inc.
+AI-001 
+*** - Information omitted and provided under separate cover to the Staff pursuant to Rule 83
+
+U.S. Securities and Exchange Commission
+April 29, 2024
+Page 2
+Confidential Treatment Requested by Apple Inc.
+
+Form 10-K for the fiscal year ended September 30, 2023
+Management’s Discussion and Analysis of Financial Condition and Results of Operations
+Products and Services Performance, page 22
+
+1.We note your response to prior comment 1. Please describe further the qualitative factors considered in assessing the level of disclosures provided in your results of operations discussion and specifically how you applied such factors to your current discussion of changes in Services revenue.
+
+The Company respectfully advises the Staff that, as noted in response to prior comment 1 in the Company’s letter dated March 20, 2024 (the “Prior Response Letter”), in applying Item 303(b) of Regulation S-K to the Company’s Management’s Discussion and Analysis of Financial Condition and Results of Operations (“MD&A”), management considers both a quantitative threshold and applicable qualitative factors when assessing materiality. As the relevant components approach the quantitative threshold or qualitative factors are identified, management evaluates providing additional disclosures.
+
+In assessing qualitative factors when preparing disclosures regarding the Company’s results of operations, including with respect to discussing the Company’s Services net sales, management is mindful of the objective under Item 303(a) of Regulation S-K to provide material information relevant to an assessment of the results of operations. This includes disclosure of matters that have had a material impact on reported operations or that management assesses are reasonably likely to have a material impact on future operations, and data that will enhance a reader's understanding of the Company’s results of operations. As such, management’s evaluation of qualitative factors is intended to result in disclosure of non-routine events or trends that are, or are reasonably likely to be, material to an understanding of the Company’s reported results of operations. Qualitative factors management considers in assessing the level of information provided in the Company’s results of operations disclosures include, but are not limited to, the following: 
+
+•Whether a discussion of a component of the Company’s results of operations would highlight a change in earnings not otherwise apparent from the reported results or reveal other trends, in each case material to an understanding of the business;
+
+•Whether a discussion of a component of the Company’s results of operations would highlight any non-routine or non-recurring event or factor material to an understanding of the business;
+
+•Whether the Company’s ability to meet, or any failure to meet, analysts’ consensus expectations was materially impacted due to factors that were unexpected or due to drivers that would be difficult for analysts and investors to discern;
+
+•Whether there are non-routine business, political or regulatory developments that materially affected demand for the Company’s products or services or the Company’s ability to provide products or services to customers.
+
+Confidential Treatment Requested by Apple Inc.
+AI-002
+*** - Information omitted and provided under separate cover to the Staff pursuant to Rule 83
+
+U.S. Securities and Exchange Commission
+April 29, 2024
+Page 3
+Confidential Treatment Requested by Apple Inc.
+With respect to the discussion of the Company’s Services net sales in the Annual Report on Form 10-K for the fiscal year ended September 30, 2023, management concluded that the change in Services net sales was both quantitatively and qualitatively immaterial and, as such, concluded that no additional disclosures would be required under Item 303(a) of Regulation S-K to enhance a reader’s understanding of the Company’s results of operations. The Company respectfully notes that the Commission Guidance Regarding Management's Discussion and Analysis of Financial Condition and Results of Operations, Release No. 33-8350 (effective Dec. 29, 2003) specifically directs companies to (i) “eliminate immaterial information that does not promote understanding of companies’ financial condition, liquidity and capital resources, changes in financial condition and results of operations”; (ii) “avoid the unnecessary information overload for investors that can result from disclosure of information that is not required, is immaterial, and does not promote understanding”; (iii) “de-emphasize (or, if appropriate, delete) immaterial information that is not required and does not promote understanding”; and (iv) “avoid unnecessary duplication and immaterial detail that is not required and does not promote understanding of a company’s overall financial condition and operating performance.” See Release No. 33-8350, Sections I.B., I.C. & III.B.
+
+Form 10-K for the fiscal year ended September 30, 2023
+Notes to Consolidated Financial Statements
+Note 2 - Revenue, page 35
+
+2.We note your response to prior comment 2 that you believe the services included within Services net sales to be similar in nature as they all represent services delivered to Apple product customers related to Apple products. Please expand on your analysis supporting your conclusion that each of the various types of services within the “Services” grouping are similar for the purpose of providing disclosures pursuant to ASC 280-10-50-40. As part of your response, address the following:
+
+• Expand on the descriptions of the various categories of services provided in your prior response, including the similarities and differences between them. For example, describe the specific type or types of advertising services and tell us how they are similar to or different from streaming or purchasing video and music media under digital content and extended warranty contracts and out-of-warranty repairs under AppleCare.
+
+• Tell us how you considered differences in revenue recognition between each of the categories of services and reasons underlying such differences. For example, tell us how you considered differences between services where the company accounts for sales on a net basis (e.g., third-party application–related sales through the App Store) and those services you account for on a gross basis. 
+
+• Tell us how you considered differences in the customers for each category of your services. In this regard, you indicate advertising net sales are amounts earned from businesses for Apple customer activity on Apple products whereas Digital Content net sales are amounts earned from Apple customers for streaming or purchasing video, music, etc. 
+
+• Explain how you considered the quantitative significance of various categories of services. 
+
+Confidential Treatment Requested by Apple Inc.
+AI-003
+*** - Information omitted and provided under separate cover to the Staff pursuant to Rule 83
+
+U.S. Securities and Exchange Commission
+April 29, 2024
+Page 4
+Confidential Treatment Requested by Apple Inc.
+The Company respectfully advises the Staff that expanded descriptions of the various main categories of services are as follows:
+
+•Advertising net sales consist of Browser and Platform.
+◦Browser represents Apple’s share of advertising net sales generated by searches on third-party search platforms through Apple devices. [***] with the customer being third-party search platforms.
+◦Platform represents advertising generated on the App Store. [***] with the customer being App developers.
+
+•App Store net sales consist of Apps and Subscriptions.
+◦Apps represent Apple’s share of the sale of third-party apps on the App Store and any subsequent in-app purchases. [***] with the customer being Apple device end users.
+◦Subscriptions represent Apple’s share of subscriptions to third-party services sold on the App Store. [***] with the customer being Apple device end users.
+
+•Digital Content net sales consist of Apple Streaming Services and Digital Purchases.
+◦Apple Streaming Services represent subscriptions to various Apple services (e.g., Apple TV+, Apple Music). [***] with the customer being Apple device end users.
+◦Digital Purchases represent discrete sales of digital content (e.g., downloading a song, renting a movie). [***] with the customer being Apple device end users.
+
+•AppleCare net sales consist of Extended Warranty, Business-to-Business and Out-of-Warranty.
+◦Extended Warranty represents extended service agreements for Apple products, generally entered into at the time of sale of the device. [***] with the customer being Apple device end users.
+◦Business-to-Business represents discrete sales of service parts for third-party repair of Apple products. [***] with the customer being third-party service providers.
+◦Out-of-Warranty represents the discrete repair of an Apple device after the contractual warranty period has expired. [***] with the customer being Apple device end users.
+
+•Cloud Services net sales represent the subscription to access additional iCloud storage using Apple devices. [***] with the customer being Apple device end users.
+
+ASC 280-10-50-40 requires disclosure of “revenues from external customers for each product and service or each group of similar products and services unless it is impractical to do so.” The guidance, however, does not provide a definition of “similar.” When considering the Company’s services for the purpose of providing disclosures pursuant to ASC 280-10-50-40, management views [***]
+
+Confidential Treatment Requested by Apple Inc.
+AI-004
+*** - Information omitted and provided under separate cover to the Staff pursuant to Rule 83
+
+U.S. Securities and Exchange Commission
+April 29, 2024
+Page 5
+Confidential Treatment Requested by Apple Inc.
+[***]
+
+* * *
+
+Confidential Treatment Requested by Apple Inc.
+AI-005
+*** - Information omitted and provided under separate cover to the Staff pursuant to Rule 83
+
+U.S. Securities and Exchange Commission
+April 29, 2024
+Page 6
+Confidential Treatment Requested by Apple Inc.
+The Company acknowledges that:
+
+•the Company is responsible for the adequacy and accuracy of the disclosure in the filing;
+
+•Staff comments or changes to disclosure in response to Staff comments do not foreclose the Commission from taking any action with respect to the filing; and
+
+•the Company may not assert Staff comments as a defense in any proceeding initiated by the Commission or any person under federal securities laws of the United States.
+
+If you have any questions regarding the Company’s responses, you may contact me at (408) 862-1401 or Sam Whittington, Senior Director, Corporate Law, at (415) 361-0600.
+
+Very truly yours,
+
+/s/ Luca Maestri
+
+Luca Maestri
+Senior Vice President, Chief Financial Officer
+
+cc:Kate Adams, Senior Vice President, General Counsel and Secretary, Apple Inc.
+Chris Kondo, Senior Director, Corporate Accounting and Principal Accounting Officer, Apple Inc.
+Sam Whittington, Senior Director, Corporate Law, Apple Inc.
+Ian Schuman, Latham & Watkins LLP
+Jenna Cooper, Latham & Watkins LLP
+
+Confidential Treatment Requested by Apple Inc.
+AI-006
+*** - Information omitted and provided under separate cover to the Staff pursuant to Rule 83

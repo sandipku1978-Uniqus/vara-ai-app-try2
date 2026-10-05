@@ -1625,3 +1625,48 @@
   border: 1px solid var(--border-color);
   border-radius: 4px;
 }
+
+/* ASU chips sit under the cite control, outside the card button. */
+.research-hit-row .research-hit-asu {
+  position: absolute;
+  top: 34px;
+  right: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+}
+
+.research-hit-row:has(.research-hit-asu) .research-hit-card .company,
+.research-hit-row:has(.research-hit-asu) .research-hit-card .meta {
+  padding-right: 96px;
+}
+
+.research-hit-asu-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--surface-panel);
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.research-hit-asu-chip:hover,
+.research-hit-asu-chip:focus-visible {
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+.research-hit-asu-chip:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+.research-hit-asu-more {
+  color: var(--text-muted);
+  font-size: 0.68rem;
+}

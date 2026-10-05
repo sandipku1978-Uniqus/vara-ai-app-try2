@@ -2,12 +2,13 @@ import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { PRODUCT_ROUTES, findProductRoute } from '../config/routes';
+import { findAccountingIssue } from '../config/accountingTopics';
 import { UI_GLOBAL_ACTION_CONTRACTS, UI_PAGE_CONTRACTS } from './uiPageContracts';
 
 const sorted = (values: readonly string[]) => [...values].sort((a, b) => a.localeCompare(b));
 
 describe('UI page QA contracts', () => {
-  it('covers the 21 registered product routes and four explicit non-product pages', () => {
+  it('covers the 21 registered product routes and five explicit non-product pages', () => {
     const productContracts = UI_PAGE_CONTRACTS.filter(contract => contract.kind === 'product');
     const nonProductPatterns = UI_PAGE_CONTRACTS
       .filter(contract => contract.kind !== 'product')
@@ -22,8 +23,9 @@ describe('UI page QA contracts', () => {
       '/design-gallery',
       '/company/[ticker]',
       '/filing/[...slug]',
+      '/accounting/[topic]',
     ]));
-    expect(UI_PAGE_CONTRACTS).toHaveLength(25);
+    expect(UI_PAGE_CONTRACTS).toHaveLength(26);
   });
 
   it('uses unique page, route, representative-path, and action identifiers', () => {
@@ -82,12 +84,20 @@ describe('UI page QA contracts', () => {
     }
   });
 
-  it('provides concrete representative paths for both dynamic route shapes', () => {
+  it('provides concrete representative paths for every dynamic route shape', () => {
     const dynamicContracts = UI_PAGE_CONTRACTS.filter(contract => contract.kind === 'dynamic');
     expect(dynamicContracts.map(contract => contract.routePattern)).toEqual([
       '/company/[ticker]',
       '/filing/[...slug]',
+      '/accounting/[topic]',
     ]);
+
+    // An accounting issue page is a prerendered issue id under the Accounting Hub.
+    const issue = dynamicContracts.find(contract => contract.routePattern === '/accounting/[topic]');
+    const issueId = issue!.representativePath.replace(/^\/accounting\//, '');
+    expect(issue?.representativePath).toMatch(/^\/accounting\/[a-z0-9-]+$/);
+    expect(findAccountingIssue(issueId)?.id).toBe(issueId);
+    expect(findProductRoute(issue!.representativePath)?.path).toBe('/accounting');
 
     const company = dynamicContracts.find(contract => contract.routePattern === '/company/[ticker]');
     const filing = dynamicContracts.find(contract => contract.routePattern === '/filing/[...slug]');

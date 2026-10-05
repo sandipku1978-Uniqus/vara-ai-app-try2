@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, type RefObject, type SyntheticEvent } from 'react';
+import { useEffect, useMemo, useState, type ReactNode, type RefObject, type SyntheticEvent } from 'react';
 import {
   BookMarked,
   ChevronLeft,
@@ -27,7 +27,10 @@ import {
 } from '../../services/searchCoverage';
 import { BRAND } from '../../config/brand';
 import CiteButton from '../memo/CiteButton';
+import CartToggle from '../cart/CartToggle';
 import ActiveQueryChips from './ActiveQueryChips';
+import AsuCitationChips from './AsuCitationChips';
+import ResultEvidenceDetails, { type OpenFilingOptions } from './ResultEvidenceDetails';
 import SearchScopeBanner from './SearchScopeBanner';
 import { researchTabId } from './ResearchSessionTabs';
 
@@ -63,7 +66,8 @@ interface ResearchResultsWorkspaceProps {
   onSelectResult: (resultId: string) => void;
   onExportResults: () => void;
   onOpenInsiders: () => void;
-  onOpenFiling: (result: FilingResearchResult) => void;
+  /** Open the viewer; options pick a matched exhibit or the all-hits list. */
+  onOpenFiling: (result: FilingResearchResult, options?: OpenFilingOptions) => void;
   previewError: boolean;
   selectedPrimaryDocument: string;
   selectedDocumentUrl: string;
@@ -80,6 +84,12 @@ interface ResearchResultsWorkspaceProps {
    * would 404.
    */
   resolvedDocuments?: Record<string, string>;
+  /** Search-continuation status region (SearchJobPanel), rendered in its own
+   *  slot under the pane header, apart from the run's result rows. */
+  jobStatusRegion?: ReactNode;
+  /** The continuation job's headline, when the attached job answers the
+   *  search on screen — it supersedes the bounded run's headline. */
+  headlineOverride?: string | null;
 }
 
 /**
@@ -188,6 +198,8 @@ export default function ResearchResultsWorkspace({
   selectedIsCited,
   onToggleCitation,
   resolvedDocuments = {},
+  jobStatusRegion = null,
+  headlineOverride = null,
 }: ResearchResultsWorkspaceProps) {
   const [resultSort, setResultSort] = useState<ResultSort>('relevance');
   const [resultPage, setResultPage] = useState(1);
@@ -224,7 +236,7 @@ export default function ResearchResultsWorkspace({
         <div className="pane-header">
           <div>
             <div className="eyebrow">Search hits</div>
-            <h2>{results.length > 0 ? buildResultsHeadline(results.length, candidateCoverage, resultLimit) : 'No results yet'}</h2>
+            <h2>{headlineOverride || (results.length > 0 ? buildResultsHeadline(results.length, candidateCoverage, resultLimit) : 'No results yet')}</h2>
           </div>
           {results.length > 1 && (
             <div style={{ display: 'flex', gap: '6px' }}>
@@ -262,6 +274,8 @@ export default function ResearchResultsWorkspace({
           )}
           <div className="pane-hint">Select a filing to preview it here, then open the full workspace only when you need the full toolset.</div>
         </div>
+
+        {jobStatusRegion}
 
         {!loading && degradedNotice && (
           <div role="status" className="research-refining-banner" style={{ justifyContent: 'space-between' }}>
@@ -351,7 +365,25 @@ export default function ResearchResultsWorkspace({
                 // The card is itself a button (row selection), so the cite
                 // control sits beside it in the row wrapper rather than
                 // nested inside — nested buttons are invalid and unreachable.
-                <div key={result.id} className="research-hit-row">
+                <div key={result.id} className="research-hit-row has-cart-select">
+                <CartToggle
+                  className="research-hit-select"
+                  filing={{
+                    cik: result.cik,
+                    accessionNumber: result.accessionNumber,
+                    company: result.entityName,
+                    form: result.formType,
+                    fileDate: result.fileDate,
+                    ticker: result.tickers?.[0],
+                    primaryDocument: result.filingPrimaryDocument && !isPlaceholderPrimaryDocument(result.filingPrimaryDocument, result.accessionNumber)
+                      ? result.filingPrimaryDocument
+                      : undefined,
+                    description: result.matchSnippet || result.description || '',
+                    sourceUrl,
+                    origin: 'search',
+                  }}
+                  disabledReason={sourceUrl ? undefined : 'Locating the official SEC document before it can be selected'}
+                />
                 <button
                   className={`research-hit-card ${selectedResult?.id === result.id ? 'active' : ''}`}
                   onClick={() => onSelectResult(result.id)}
@@ -385,7 +417,8 @@ export default function ResearchResultsWorkspace({
                   {result.matchedDocumentType && (
                     <div className="match-provenance">
                       Matched in {result.matchedDocumentType}
-                      {result.matchedDocumentCount && result.matchedDocumentCount > 1
+                      {/* Rows that carry the exhibit list name them below the card. */}
+                      {!result.matchedExhibits?.length && result.matchedDocumentCount && result.matchedDocumentCount > 1
                         ? ` (+${result.matchedDocumentCount - 1} more exhibit${result.matchedDocumentCount - 1 === 1 ? '' : 's'})`
                         : ''}
                     </div>
@@ -394,6 +427,11 @@ export default function ResearchResultsWorkspace({
                     {renderHighlightedText(result.matchSnippet || result.description || 'Matched on filing metadata.', previewHighlightTerms)}
                   </div>
                 </button>
+                <ResultEvidenceDetails
+                  result={result}
+                  renderSnippet={text => renderHighlightedText(text, previewHighlightTerms)}
+                  onOpenFiling={onOpenFiling}
+                />
                 <CiteButton
                   compact
                   className="research-hit-cite"
@@ -409,6 +447,7 @@ export default function ResearchResultsWorkspace({
                   }}
                   disabledReason={sourceUrl ? undefined : SOURCE_UNRESOLVED_REASON}
                 />
+                <AsuCitationChips text={result.matchSnippet} />
                 </div>
                 );
               })}

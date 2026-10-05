@@ -4,90 +4,28 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
-import { BellRing, Clock, Eye, FileText, Loader2, RefreshCw, Search as SearchIcon, TrendingUp, X } from 'lucide-react';
+import { Bookmark, Clock, Eye, FileText, Loader2, TrendingUp, X } from 'lucide-react';
 import { useApp } from '../context/AppState';
 import { BRAND } from '../config/brand';
-import { executeFilingResearchSearch } from '../services/filingResearch';
 import { fetchCompanySubmissions, type SecSubmission, lookupCIK } from '../services/secApi';
 import { defaultSearchFilters } from '../components/filters/SearchFilterBar';
 import CompanySearchInput from '../components/filters/CompanySearchInput';
+import ProjectSelector from '../components/projects/ProjectSelector';
+import SearchJobsCard from '../components/research/SearchJobsCard';
 import { describeForm } from '../lib/formLabels';
 import { buildResearchRouteParams } from '../services/researchSessions';
-import { BOOLEAN_ENGINE_VERSION } from '../utils/booleanSearch';
 import { buildWatchlistAnalytics } from '../services/dashboardAnalytics';
-import {
-  buildSavedAlertRouteParams,
-  snapshotSavedAlertCoverage,
-  type SavedAlertCoverage,
-} from '../services/alertRoutes';
+import AlertCenterCard from '../components/alerts/AlertCenterCard';
+import { SavedSearchesList } from '../components/alerts/SavedSearchesList';
 import './Dashboard.css';
 
 const CHART_COLORS = ['#B31F7E', '#482A7A', '#E8B15E', '#247BA0', '#3A8D5D', '#D65A4A'];
-
-const INCOMPLETE_REASON_LABELS: Record<NonNullable<NonNullable<SavedAlertCoverage['branches']>[number]['incompleteReason']>, string> = {
-  'doc-budget': 'document budget reached',
-  'page-budget': 'page budget reached',
-  deadline: 'time limit reached',
-  error: 'source error',
-  cancelled: 'check cancelled',
-  'display-limit': 'result display limit reached',
-};
-
-function AlertCoverageState({ coverage }: { coverage: SavedAlertCoverage }) {
-  const requiredBranches = coverage.branches?.filter(branch => branch.required) ?? [];
-  const unfinishedBranches = requiredBranches.filter(branch => !branch.exhausted);
-  const completedBranchCount = requiredBranches.length - unfinishedBranches.length;
-  const upstreamTotal = `${coverage.upstreamTotal.toLocaleString()}${coverage.upstreamTotalIsFloor ? '+' : ''}`;
-
-  return (
-    <div
-      className={`alert-coverage ${coverage.complete ? 'alert-coverage-complete' : 'alert-coverage-partial'}`}
-      data-coverage-state={coverage.complete ? 'complete' : 'partial'}
-    >
-      <p className="alert-coverage-summary">
-        <strong>{coverage.complete ? 'Complete coverage' : 'Partial coverage'}</strong>
-        <span>Examined {coverage.examined.toLocaleString()} of {upstreamTotal} upstream candidates</span>
-        {requiredBranches.length > 0 && (
-          <span>{completedBranchCount}/{requiredBranches.length} required branches complete</span>
-        )}
-      </p>
-      {unfinishedBranches.length > 0 && (
-        <ul className="alert-coverage-branches" aria-label="Unfinished Boolean branches">
-          {unfinishedBranches.map((branch, index) => (
-            <li key={`${branch.branch}-${index}`}>
-              <code>{branch.branch}</code>
-              <span>
-                {branch.incompleteReason
-                  ? (INCOMPLETE_REASON_LABELS[branch.incompleteReason] ?? branch.incompleteReason)
-                  : 'did not finish'}
-                {' · '}{branch.examined.toLocaleString()} examined
-                {' · '}{branch.pages.toLocaleString()} page{branch.pages === 1 ? '' : 's'}
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
-      {coverage.work && (
-        <p className="alert-coverage-work">
-          Measured work: {coverage.work.totalUpstreamRequests.toLocaleString()} upstream requests
-          {' · '}pages {coverage.work.pageRequests.toLocaleString()}/{coverage.work.ceiling.pages.toLocaleString()}
-          {' · '}document attempts {coverage.work.docHttpAttempts.toLocaleString()}/{coverage.work.ceiling.docHttpAttempts.toLocaleString()}
-          {' · '}documents hydrated {coverage.work.docFetches.toLocaleString()}
-          {' · '}pre-screen {coverage.work.prescreenRequests.toLocaleString()}/{coverage.work.ceiling.prescreenRequests.toLocaleString()}
-        </p>
-      )}
-    </div>
-  );
-}
 
 export default function Dashboard() {
   const {
     watchlist,
     addToWatchlist,
     removeFromWatchlist,
-    savedAlerts,
-    updateSavedAlert,
-    removeSavedAlert,
   } = useApp();
   const navigate = useRouter();
   const [dataStats, setDataStats] = useState<{
@@ -110,8 +48,6 @@ export default function Dashboard() {
   const [filingVolumeData, setFilingVolumeData] = useState<Record<string, string | number | null>[]>([]);
   const [volumeLoading, setVolumeLoading] = useState(false);
   const [addError, setAddError] = useState('');
-  const [checkingAlerts, setCheckingAlerts] = useState<string[]>([]);
-  const [alertErrors, setAlertErrors] = useState<Record<string, string>>({});
 
   useEffect(() => {
     let cancelled = false;
@@ -177,100 +113,6 @@ export default function Dashboard() {
     addToWatchlist(upper);
   };
 
-  const checkAlert = async (alertId: string) => {
-    const alert = savedAlerts.find(item => item.id === alertId);
-    if (!alert) return;
-
-    setCheckingAlerts(prev => [...prev, alertId]);
-    setAlertErrors(prev => {
-      const next = { ...prev };
-      delete next[alertId];
-      return next;
-    });
-    try {
-      // A truncated run (budget, deadline, rate limit) must not rebaseline
-      // the alert: filings a partial window failed to see would be
-      // re-announced as "new" on the next healthy check — or worse, real
-      // new filings would be counted as seen without ever being announced.
-      let runCoverage: import('../services/secApi').SearchCandidateCoverage | null = null;
-      const results = await executeFilingResearchSearch({
-        query: alert.query,
-        filters: alert.filters,
-        mode: alert.mode,
-        defaultForms: alert.defaultForms,
-        limit: 20,
-        onCoverage: coverage => { runCoverage = coverage; },
-      });
-      const coverageSnapshot = runCoverage as import('../services/secApi').SearchCandidateCoverage | null;
-      // A result array without coverage is not an auditable search result.
-      // Invalid/legacy Boolean plans can stop before onCoverage fires; treating
-      // that as a successful zero would clear prior evidence and advance the
-      // engine version even though no retrieval was measured.
-      if (!coverageSnapshot) {
-        throw new Error('The saved search completed without coverage evidence.');
-      }
-      const runComplete = coverageSnapshot.complete;
-
-      const accessions = results.map(result => result.accessionNumber);
-      // The v2 Boolean engine legitimately recalls a different set than the one
-      // that produced lastSeenAccessions (independent OR branches, plural and
-      // punctuation matching, token-bounded phrases). Treat the first check
-      // after a version change as a re-baseline so long-known filings are not
-      // announced as new; genuine new filings surface from the next check on.
-      const isReBaseline = (alert.engineVersion ?? 1) !== BOOLEAN_ENGINE_VERSION;
-      const latestNewAccessions = isReBaseline
-        ? []
-        : accessions.filter(accession => !alert.lastSeenAccessions.includes(accession));
-
-      updateSavedAlert(alert.id, {
-        lastCheckedAt: new Date().toISOString(),
-        // Retain the complete evidence ledger (audit R1). A partial alert
-        // check remains explainable after reload: every branch verdict, stop
-        // reason and measured request count crosses the storage boundary.
-        lastCheckCoverage: snapshotSavedAlertCoverage(coverageSnapshot),
-        // Only a COMPLETE run may replace the seen-set. A partial window
-        // still reports what it found, but the baseline stays intact so
-        // nothing it missed gets silently marked as seen.
-        lastSeenAccessions: runComplete
-          ? accessions
-          : Array.from(new Set([...alert.lastSeenAccessions, ...accessions])),
-        latestNewAccessions,
-        latestResultCount: results.length,
-        // A partial run has not established the current engine's complete
-        // baseline. Preserve the old version marker so the next healthy run
-        // still performs the required re-baseline.
-        ...(runComplete ? { engineVersion: BOOLEAN_ENGINE_VERSION } : {}),
-      });
-    } catch (error) {
-      console.error('Alert check failed:', error);
-      setAlertErrors(prev => ({
-        ...prev,
-        [alertId]: 'This saved search could not be checked. Existing counts were not replaced; retry when the SEC search is available.',
-      }));
-    } finally {
-      setCheckingAlerts(prev => prev.filter(id => id !== alertId));
-    }
-  };
-
-  useEffect(() => {
-    const staleAlerts = savedAlerts.filter(alert => {
-      if (!alert.lastCheckedAt) return true;
-      return Date.now() - new Date(alert.lastCheckedAt).getTime() > 1000 * 60 * 30;
-    });
-
-    if (staleAlerts.length === 0) return;
-
-    // Sequential, not Promise.all: each Boolean run now carries its own request
-    // budget (60 pages / 120 documents), so three concurrent broad searches on
-    // Dashboard load could exceed the /api/sec-proxy limit and self-inflict 429s.
-    void (async () => {
-      for (const alert of staleAlerts.slice(0, 3)) {
-        await checkAlert(alert.id);
-      }
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [savedAlerts.length]);
-
   return (
     <div className="dashboard-container">
       <header className="page-header">
@@ -299,6 +141,8 @@ export default function Dashboard() {
           </div>
         )}
       </header>
+
+      <ProjectSelector />
 
       <div className="dashboard-grid">
         <section className="glass-card chart-card">
@@ -529,62 +373,17 @@ export default function Dashboard() {
           </div>
         </section>
 
+        <AlertCenterCard />
+
         <section className="glass-card rss-card">
           <div className="card-header">
-            <h3>Alert Center</h3>
-            <span className="badge">Saved Searches</span>
+            <h3>Saved Searches</h3>
+            <Bookmark size={18} className="text-blue" />
           </div>
-          <div className="rss-grid">
-            {savedAlerts.length === 0 ? (
-              <div className="rss-news-card" style={{ gridColumn: '1 / -1' }}>
-                <div className="rss-timestamp">No alerts saved</div>
-                <h4 className="rss-headline">Create a local saved filing search from the Research Workbench</h4>
-                <p className="rss-summary">Saved searches persist in this browser and are checked manually or while this dashboard is open; they do not run as scheduled background notifications.</p>
-                <button className="secondary-btn" onClick={() => navigate.push('/search')}>
-                  <BellRing size={14} /> Open Research
-                </button>
-              </div>
-            ) : (
-              savedAlerts.map(alert => {
-                const isChecking = checkingAlerts.includes(alert.id);
-                const checkError = alertErrors[alert.id];
-                return (
-                  <div key={alert.id} className="rss-news-card">
-                    <div className="rss-timestamp">
-                      {alert.lastCheckedAt ? `Last checked ${new Date(alert.lastCheckedAt).toLocaleString()}` : 'Not checked yet'}
-                    </div>
-                    <h4 className="rss-headline">{alert.name}</h4>
-                    <p className="rss-summary">
-                      {checkError
-                        ? <span role="alert" style={{ color: 'var(--status-error)' }}>{checkError}</span>
-                        : alert.latestNewAccessions.length > 0
-                        ? `${alert.latestNewAccessions.length} new filing${alert.latestNewAccessions.length === 1 ? '' : 's'} detected.`
-                        : `${alert.latestResultCount} current match${alert.latestResultCount === 1 ? '' : 'es'} in scope.`}
-                    </p>
-                    {alert.lastCheckCoverage && <AlertCoverageState coverage={alert.lastCheckCoverage} />}
-                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '10px' }}>
-                      <button
-                        className="secondary-btn"
-                        onClick={() => {
-                          const params = buildSavedAlertRouteParams(alert);
-                          navigate.push(`/search?${params.toString()}`);
-                        }}
-                      >
-                        <SearchIcon size={14} /> Open
-                      </button>
-                      <button className="secondary-btn" onClick={() => void checkAlert(alert.id)} disabled={isChecking}>
-                        {isChecking ? <Loader2 size={14} className="spinner" /> : <RefreshCw size={14} />} Check Now
-                      </button>
-                      <button className="secondary-btn" onClick={() => removeSavedAlert(alert.id)}>
-                        <X size={14} /> Remove
-                      </button>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
+          <SavedSearchesList emptyMessage="No saved searches yet. Use “Save search” in the Research Workbench to keep a question you want to re-run; “Make alert” turns one into a server-checked alert." />
         </section>
+
+        <SearchJobsCard />
       </div>
     </div>
   );

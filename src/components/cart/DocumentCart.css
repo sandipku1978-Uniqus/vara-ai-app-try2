@@ -1,0 +1,185 @@
+/* Document cart: header badge, panel, and the shared select checkbox. */
+
+.cart-trigger {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 4px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.cart-trigger:hover { border-color: var(--accent-primary); }
+.cart-trigger:focus-visible { outline: 2px solid var(--accent-primary); outline-offset: 2px; }
+.cart-count {
+  min-width: 18px;
+  padding: 1px 5px;
+  border-radius: 999px;
+  background: var(--accent-primary);
+  color: #fff;
+  font-size: 0.7rem;
+  text-align: center;
+}
+@media (max-width: 720px) {
+  .cart-trigger-label { display: none; }
+}
+
+.cart-panel {
+  position: fixed;
+  top: 64px;
+  right: 12px;
+  z-index: 62;
+  width: min(420px, calc(100vw - 24px));
+  max-height: calc(100vh - 140px);
+  display: flex;
+  flex-direction: column;
+  background: var(--surface-panel);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  box-shadow: 0 16px 36px color-mix(in srgb, var(--text-primary) 16%, transparent);
+  overflow: hidden;
+}
+.cart-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border-color);
+}
+.cart-panel-header h2 { font-size: 1rem; margin: 0; color: var(--text-primary); }
+.cart-eyebrow {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+.cart-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--border-color);
+  background: transparent;
+  color: var(--text-secondary);
+  border-radius: 4px;
+  padding: 4px 6px;
+  cursor: pointer;
+  font-size: 0.72rem;
+}
+.cart-icon-btn:hover { background: var(--interactive-hover); }
+
+.cart-empty { margin: 16px; display: flex; flex-direction: column; gap: 6px; }
+
+.cart-list {
+  list-style: none;
+  margin: 0;
+  padding: 8px 12px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.cart-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 8px 10px;
+}
+.cart-item-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 0.8rem;
+}
+.cart-item-company { font-weight: 600; color: var(--text-primary); }
+.cart-item-date { font-size: 0.72rem; color: var(--text-muted); }
+
+.cart-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-top: 1px solid var(--border-color);
+}
+.cart-section-row,
+.cart-button-row,
+.cart-bundle-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.cart-section-row label { font-size: 0.75rem; color: var(--text-secondary); font-weight: 600; }
+.cart-section-row select {
+  flex: 1;
+  min-width: 140px;
+  border: 1px solid var(--input-border);
+  border-radius: 4px;
+  background: var(--surface-subtle);
+  color: var(--text-primary);
+  font-size: 0.8rem;
+  padding: 5px 8px;
+}
+.cart-actions .el-btn { display: inline-flex; align-items: center; gap: 6px; }
+.cart-bundle {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+.cart-note { font-size: 0.75rem; color: var(--text-secondary); }
+.cart-clear {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: var(--status-error);
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+.cart-clear:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* The shared select control. */
+.cart-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+}
+.cart-toggle input {
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  accent-color: var(--accent-primary);
+  cursor: pointer;
+}
+.cart-toggle input:disabled { cursor: not-allowed; }
+.cart-toggle input:focus-visible { outline: 2px solid var(--accent-primary); outline-offset: 2px; }
+.cart-toggle label { cursor: pointer; }
+
+/* Search results: the select box is the row's own leading column. */
+.research-hit-row.has-cart-select {
+  flex-direction: row;
+  align-items: stretch;
+  gap: 6px;
+}
+.research-hit-row.has-cart-select > .research-hit-select {
+  flex: 0 0 auto;
+  align-self: flex-start;
+  padding-top: 12px;
+}
+.research-hit-row.has-cart-select > .research-hit-card { flex: 1; min-width: 0; }
+
+/* Matrix column headers carry the select box under the ticker. */
+.cart-toggle.matrix-column-select { margin-top: 4px; font-weight: 400; }

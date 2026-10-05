@@ -8,6 +8,8 @@ import DataTable, { type ColumnDef } from '../components/tables/DataTable';
 import ResultsToolbar from '../components/tables/ResultsToolbar';
 import AskCopilotButton from '../components/tables/AskCopilotButton';
 import CiteButton from '../components/memo/CiteButton';
+import CartToggle from '../components/cart/CartToggle';
+import { filingIndexUrl } from '../services/documentCart';
 import AIResultsSummary from '../components/tables/AIResultsSummary';
 import SearchFilterBar, { type SearchFilters, defaultSearchFilters } from '../components/filters/SearchFilterBar';
 import { executeFilingResearchSearch, matchesDocumentTypePrefixes } from '../services/filingResearch';
@@ -165,6 +167,22 @@ export default function ExhibitSearch() {
       const url = `https://www.sec.gov/Archives/edgar/data/${row.cik}/${accNum}/${row.primaryDocument}`;
       return (
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <CartToggle
+            filing={{
+              cik: row.cik,
+              accessionNumber: row.accessionNumber,
+              company: row.entityName,
+              form: row.formType,
+              fileDate: row.fileDate,
+              // The row's document is the exhibit; bulk actions resolve the
+              // parent filing's primary document from EDGAR.
+              description: [row.documentType, row.description].filter(Boolean).join(' — '),
+              // The cart holds the parent filing, so it links the filing's
+              // EDGAR index page rather than this one exhibit.
+              sourceUrl: filingIndexUrl(row.cik, row.accessionNumber),
+              origin: 'exhibit',
+            }}
+          />
           <a
             href={url}
             target="_blank"

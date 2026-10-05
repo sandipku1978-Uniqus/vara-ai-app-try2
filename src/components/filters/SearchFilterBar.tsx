@@ -5,7 +5,13 @@ import { Filter, X, ChevronDown, ChevronUp, ChevronRight } from 'lucide-react';
 import CompanyLookupField from './CompanyLookupField';
 import SicLookupField from './SicLookupField';
 import AuditorLookupField from './AuditorLookupField';
-import { describeSectionScope } from '../../utils/sectionTaxonomy';
+import { describeSectionScope, sectionScopeOptions } from '../../utils/sectionTaxonomy';
+
+/**
+ * Every section the "In Section" filter understands, from the one taxonomy,
+ * labelled by group (Items / Notes / Proxy) and the forms that carry it.
+ */
+const SECTION_SCOPE_OPTIONS = sectionScopeOptions();
 
 export type { SearchFilters } from '../../domain/searchFilters';
 export { defaultSearchFilters } from '../../domain/searchFilters';
@@ -27,6 +33,8 @@ export interface SearchFilterBarConfig {
   showFiscalYearEnd?: boolean;
   showAccountingFramework?: boolean;
   formTypeOptions?: string[];
+  /** Section title for the form chips (default "Form Types"). */
+  formTypesTitle?: string;
 }
 
 const EXCHANGES = ['NYSE', 'NASDAQ', 'AMEX', 'CBOE', 'OTC'];
@@ -323,14 +331,20 @@ export default function SearchFilterBar({ config, filters, onChange, onSearch, l
               <div style={{ minWidth: '140px', flex: '1 1 140px' }}>
                 <label htmlFor={`${fieldId}-item`} style={labelStyle}>In Section</label>
                 <input id={`${fieldId}-item`} value={filters.sectionScope || ''} onChange={e => onChange({ ...filters, sectionScope: e.target.value })}
-                  placeholder="e.g. 1A, 7 — or risk factors, MD&A" style={{ ...inputStyle, width: '100%' }} />
+                  list={`${fieldId}-item-options`}
+                  placeholder="e.g. 1A, risk factors, leases, CD&A" style={{ ...inputStyle, width: '100%' }} />
+                <datalist id={`${fieldId}-item-options`}>
+                  {SECTION_SCOPE_OPTIONS.map(option => (
+                    <option key={option.value} value={option.value} label={`${option.groupLabel} · ${option.forms.join(', ')}`} />
+                  ))}
+                </datalist>
               </div>
             )}
           </div>
 
           {/* Form Types */}
           {config.showFormTypes && config.formTypeOptions && config.formTypeOptions.length > 0 && (
-            <CollapsibleSection title="Form Types" defaultOpen>
+            <CollapsibleSection title={config.formTypesTitle ?? 'Form Types'} defaultOpen>
               <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
                 {config.formTypeOptions.map(ft => (
                   <button type="button" key={ft} aria-pressed={filters.formTypes.includes(ft)} onClick={() => toggleList('formTypes', ft)} style={pillBtnStyle(filters.formTypes.includes(ft))}>

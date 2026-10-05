@@ -15,8 +15,16 @@ describe('formFamily', () => {
     expect(formFamily('10-KT')).toBe('10-K');
     expect(formFamily('10-Q/A')).toBe('10-Q');
     expect(formFamily('20-F')).toBe('20-F');
-    expect(formFamily('8-K')).toBeNull();
     expect(formFamily('S-1')).toBe('S-1');
+    // Proxies and current reports joined the taxonomy (v2): CD&A lives on a
+    // DEF 14A, non-GAAP measures on an 8-K's EX-99.1 press release.
+    expect(formFamily('DEF 14A')).toBe('DEF 14A');
+    expect(formFamily('DEFR14A')).toBe('DEF 14A');
+    expect(formFamily('PRE 14A')).toBe('DEF 14A');
+    expect(formFamily('8-K')).toBe('8-K');
+    expect(formFamily('EX-99.1')).toBe('8-K');
+    expect(formFamily('DEFA14A')).toBeNull();
+    expect(formFamily('6-K')).toBeNull();
   });
 });
 
@@ -35,15 +43,32 @@ describe('resolveSectionScope', () => {
   });
 
   it('returns null for unmapped forms and unknown concepts — never a guess', () => {
+    // A 10-Q has no Business item; a 10-K has no CD&A of its own.
     expect(resolveSectionScope('business', '10-Q')).toBeNull();
-    // risk factors on an S-1 now resolves as a HEADING scope (see headingSlicing tests).
-    expect(resolveSectionScope('controls', 'S-1')).toBeNull();
+    expect(resolveSectionScope('CD&A', '10-K')).toBeNull();
+    expect(resolveSectionScope('leases', '8-K')).toBeNull();
     expect(resolveSectionScope('prospectus summary', '10-K')).toBeNull();
+    expect(resolveSectionScope('climate', '10-K')).toBeNull();
   });
 
   it('describes scopes for UI chips', () => {
     expect(describeSectionScope('risk factors')).toBe('Risk Factors');
     expect(describeSectionScope('1a')).toBe('Item 1A');
+    expect(describeSectionScope('cd&a')).toBe('Compensation Discussion & Analysis');
+    expect(describeSectionScope('Leases')).toBe('Leases');
+  });
+
+  it('resolves the new concepts to the right kind of slice per form', () => {
+    expect(resolveSectionScope('leases', '10-K')).toMatchObject({ kind: 'block', label: 'Leases' });
+    expect(resolveSectionScope('leases', '20-F')).toMatchObject({ kind: 'block', label: 'Leases' });
+    expect(resolveSectionScope('cybersecurity', '10-K')).toEqual({ kind: 'item', item: '1c', options: {}, label: 'Cybersecurity' });
+    expect(resolveSectionScope('cybersecurity', '20-F')).toMatchObject({ kind: 'block' });
+    expect(resolveSectionScope('audit fees', '10-K')).toEqual({ kind: 'item', item: '14', options: {}, label: 'Audit Fees' });
+    expect(resolveSectionScope('audit fees', 'DEF 14A')).toMatchObject({ kind: 'block' });
+    expect(resolveSectionScope('related party transactions', '20-F')).toMatchObject({ kind: 'item', item: '7' });
+    expect(resolveSectionScope('say-on-pay', 'DEF 14A')).toMatchObject({ kind: 'block', label: 'Say-on-Pay Proposal' });
+    expect(resolveSectionScope('non-gaap', '8-K')).toMatchObject({ kind: 'block' });
+    expect(resolveSectionScope('critical audit matters', '10-K')).toMatchObject({ kind: 'block' });
   });
 });
 

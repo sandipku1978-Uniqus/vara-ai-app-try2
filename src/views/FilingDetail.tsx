@@ -5,7 +5,7 @@ import OwnershipFormView from '../components/research/OwnershipFormView';
 import { buildOwnershipRenderedPath, parseOwnershipDocument, type OwnershipDocument } from '../utils/ownershipForm';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 
-import { ArrowLeft, Bookmark, MessageSquare, ExternalLink, Columns, Highlighter, Settings2, Download, List, AlertCircle, FileText, Loader2, Copy, X } from 'lucide-react';
+import { ArrowLeft, Bookmark, MessageSquare, ExternalLink, Columns, Highlighter, Settings2, Download, List, AlertCircle, FileText, Loader2, Copy, X, Search } from 'lucide-react';
 import { useApp } from '../context/AppState';
 import { BRAND } from '../config/brand';
 import { buildSecDocumentUrl, buildSecProxyUrl, fetchCompanySubmissions, fetchFilingText, fetchSubmissionHistory, resolvePrimaryDocumentPath, type SecFilingSeries, type SecSubmission } from '../services/secApi';
@@ -17,8 +17,11 @@ import CiteButton from '../components/memo/CiteButton';
 import { buildRedlineExcerpt, passageKey, type MemoCitation } from '../services/memoTray';
 import { buildHighlightTerms } from '../services/searchAssist';
 import { clearDocumentHighlights, highlightDocumentSearchTerms } from '../services/filingHighlights';
+import { useDocumentFind } from '../hooks/useDocumentFind';
+import { buildHitQuery } from '../utils/documentFind';
+import { DocumentFindBar, DocumentHitList } from '../components/research/DocumentFind';
 import type { ResearchSearchMode } from '../services/filingResearch';
-import { scopedStorageKey } from '../services/storageNamespace';
+import { annotationSavedMessage, loadAnnotations, saveAnnotations, subscribeRestoredAnnotations, type FilingAnnotation } from '../services/filingAnnotations';
 import { sanitizeSearchReturnTo } from '../lib/internalNavigation';
 import './FilingDetail.css';
 
@@ -37,9 +40,13 @@ interface FilingRouteState {
   highlightQuery?: string;
   highlightMode?: ResearchSearchMode;
   highlightSectionKeywords?: string;
+  /** Open with the "All hits in this filing" list showing (?panel=hits). */
+  openHitsPanel?: boolean;
   originatingSearchSessionId?: string | null;
   returnTo?: string;
 }
+
+type SidebarTab = 'toc' | 'metadata' | 'tools' | 'hits';
 
 interface ComparableFiling {
   accessionNumber: string;
@@ -48,15 +55,6 @@ interface ComparableFiling {
   primaryDocument: string;
 }
 
-interface FilingAnnotation {
-  id: string;
-  quote: string;
-  note: string;
-  section: string | null;
-  createdAt: string;
-}
-
-const ANNOTATIONS_STORAGE_KEY = 'vara.filing.annotations.v1';
 const REDLINE_SUMMARY_CACHE = new Map<string, { comparedFiling: ComparableFiling; summary: DisclosureDiffSummary; aiSummary: string | null }>();
 
 export function formatFilingMetadataValue(value: string, hydrationComplete: boolean): string {
@@ -99,34 +97,6 @@ function normalizeComparableForm(formType: string): string {
 function toDateValue(value: string): number {
   const result = Date.parse(value);
   return Number.isNaN(result) ? 0 : result;
-}
-
-function loadAnnotations(filingId: string): FilingAnnotation[] {
-  if (typeof window === 'undefined') return [];
-  try {
-    const storageKey = scopedStorageKey(ANNOTATIONS_STORAGE_KEY);
-    if (!storageKey) return [];
-    const raw = window.localStorage.getItem(storageKey);
-    if (!raw) return [];
-    const parsed = JSON.parse(raw) as Record<string, FilingAnnotation[]>;
-    return parsed[filingId] || [];
-  } catch {
-    return [];
-  }
-}
-
-function saveAnnotations(filingId: string, annotations: FilingAnnotation[]): void {
-  if (typeof window === 'undefined') return;
-  try {
-    const storageKey = scopedStorageKey(ANNOTATIONS_STORAGE_KEY);
-    if (!storageKey) return;
-    const raw = window.localStorage.getItem(storageKey);
-    const parsed = raw ? (JSON.parse(raw) as Record<string, FilingAnnotation[]>) : {};
-    parsed[filingId] = annotations;
-    window.localStorage.setItem(storageKey, JSON.stringify(parsed));
-  } catch {
-    // Ignore storage failures and keep notes in-memory.
-  }
 }
 
 function pickPreviousComparableFiling(
@@ -228,6 +198,7 @@ export default function FilingDetail() {
       highlightQuery: params.get('highlight') || '',
       highlightMode: params.get('highlightMode') === 'boolean' ? 'boolean' : 'semantic',
       highlightSectionKeywords: params.get('highlightSection') || '',
+      openHitsPanel: params.get('panel') === 'hits',
       originatingSearchSessionId: params.get('session'),
       returnTo: sanitizeSearchReturnTo(returnTo),
     };
@@ -327,7 +298,8 @@ export default function FilingDetail() {
   const [isMobileSidebar, setIsMobileSidebar] = useState(false);
   const [redlineMode, setRedlineMode] = useState(false);
   const [annotationMode, setAnnotationMode] = useState(false);
-  const [activeTab, setActiveTab] = useState<'toc'|'metadata'|'tools'>('toc');
+  const hasIncomingQuery = Boolean(routeState.highlightQuery?.trim());
+  const [activeTab, setActiveTab] = useState<SidebarTab>(() => (routeState.openHitsPanel && hasIncomingQuery ? 'hits' : 'toc'));
   const [iframeError, setIframeError] = useState(false);
 
   // A placeholder document can 404 the iframe before resolution completes;
@@ -426,9 +398,9 @@ export default function FilingDetail() {
 
   const handleSidebarTabKeyDown = (
     event: KeyboardEvent<HTMLButtonElement>,
-    currentTab: 'toc' | 'metadata' | 'tools'
+    currentTab: SidebarTab
   ) => {
-    const tabs = ['toc', 'metadata', 'tools'] as const;
+    const tabs: SidebarTab[] = hasIncomingQuery ? ['toc', 'metadata', 'tools', 'hits'] : ['toc', 'metadata', 'tools'];
     const currentIndex = tabs.indexOf(currentTab);
     let nextIndex: number | null = null;
     if (event.key === 'ArrowLeft') nextIndex = (currentIndex - 1 + tabs.length) % tabs.length;
@@ -473,9 +445,22 @@ export default function FilingDetail() {
     setMetadataHydrationComplete(Boolean(routeState.companyName && routeState.filingDate && routeState.formType));
   }, [id, isValidFilingId, routeState]);
 
+  // The first run after the filing changes still holds the previous filing's
+  // notes (the reset above has only scheduled the reload); saving then would
+  // copy them onto this filing, locally and in the account. Skip that run.
+  const annotationsSavedForIdRef = useRef<string | null>(null);
   useEffect(() => {
+    if (annotationsSavedForIdRef.current !== id) {
+      annotationsSavedForIdRef.current = id;
+      return;
+    }
     if (isValidFilingId) saveAnnotations(id, annotations);
   }, [annotations, id, isValidFilingId]);
+
+  // Signed in: adopt the account's notes once they have replaced the local cache.
+  useEffect(() => subscribeRestoredAnnotations(() => {
+    if (isValidFilingId) setAnnotations(loadAnnotations(id));
+  }), [id, isValidFilingId]);
 
   // Set filing context for AI chat panel
   useEffect(() => {
@@ -648,7 +633,7 @@ export default function FilingDetail() {
     ]);
     setAnnotationDraft('');
     setSelectedQuote('');
-    setToolMessage('Annotation saved locally for this filing.');
+    setToolMessage(annotationSavedMessage());
   }, [activeSection, annotationDraft, selectedQuote]);
 
   const handleRemoveAnnotation = useCallback((annotationId: string) => {
@@ -1049,6 +1034,26 @@ export default function FilingDetail() {
     }
   }, [highlightTerms, iframeLoadedToken]);
 
+  // Find bar (typed text) and the incoming query's full hit list. Both read
+  // the same sanitized document the highlight above decorates; neither
+  // touches the frame's sandbox.
+  const incomingHitQuery = useMemo(
+    () => buildHitQuery(routeState.highlightQuery || '', routeState.highlightMode || 'semantic', highlightTerms),
+    [highlightTerms, routeState.highlightMode, routeState.highlightQuery]
+  );
+  const documentFind = useDocumentFind({ frameRef: iframeRef, loadToken: iframeLoadedToken, hitQuery: incomingHitQuery });
+  const documentIsInline = Boolean(isValidFilingId && !ownershipDoc && !/\.(xml|pdf)$/i.test(primaryDoc) && !iframeError);
+
+  useEffect(() => {
+    if (!routeState.openHitsPanel || !hasIncomingQuery) return;
+    setActiveTab('hits');
+    setShowSidebar(true);
+  }, [hasIncomingQuery, id, routeState.openHitsPanel]);
+
+  useEffect(() => {
+    if (!hasIncomingQuery) setActiveTab(current => (current === 'hits' ? 'toc' : current));
+  }, [hasIncomingQuery]);
+
   useEffect(() => {
     if (!pendingFilingSectionLabel || tocEntries.length === 0) return;
 
@@ -1385,7 +1390,10 @@ export default function FilingDetail() {
       <div className="filing-layout">
 
         {/* Main Document Viewer */}
-        <div className={`document-viewer glass-card ${redlineMode ? 'redline-active' : ''}`}>
+        <div
+          className={`document-viewer glass-card ${redlineMode ? 'redline-active' : ''}`}
+          onKeyDown={event => { if (documentIsInline && !event.defaultPrevented) documentFind.handleShortcut(event); }}
+        >
           {redlineMode && (
             <div className="redline-banner">
               <AlertCircle size={16} className="text-orange" />
@@ -1407,8 +1415,24 @@ export default function FilingDetail() {
           )}
           <div className="doc-header-nav">
             <h3 className="doc-title">{primaryDoc}</h3>
-            <a href={secUrl} target="_blank" rel="noreferrer" className="icon-btn text-muted" title="Open on SEC.gov" aria-label="Open document on SEC.gov"><ExternalLink size={16} aria-hidden="true" /></a>
+            <div className="doc-header-actions">
+              {documentIsInline && (
+                <button
+                  type="button"
+                  className={`icon-btn text-muted ${documentFind.find.open ? 'active-icon' : ''}`}
+                  title="Find in document (Ctrl+F / ⌘F)"
+                  aria-label="Find in document"
+                  aria-expanded={documentFind.find.open}
+                  aria-controls={documentFind.find.open ? 'filing-find-bar' : undefined}
+                  onClick={() => (documentFind.find.open ? documentFind.find.closeFind() : documentFind.find.openFind())}
+                >
+                  <Search size={16} aria-hidden="true" />
+                </button>
+              )}
+              <a href={secUrl} target="_blank" rel="noreferrer" className="icon-btn text-muted" title="Open on SEC.gov" aria-label="Open document on SEC.gov"><ExternalLink size={16} aria-hidden="true" /></a>
+            </div>
           </div>
+          {documentIsInline && <DocumentFindBar id="filing-find-bar" find={documentFind.find} inputRef={documentFind.findInputRef} />}
           {annotationMode && selectedQuote && (
             <div className="annotation-composer-overlay">
               <span className="annotation-label">Selected text</span>
@@ -1516,6 +1540,24 @@ export default function FilingDetail() {
               >
                 Tools
               </button>
+              {hasIncomingQuery && (
+                <button
+                  type="button"
+                  id="filing-sidebar-tab-hits"
+                  role="tab"
+                  aria-selected={activeTab === 'hits'}
+                  aria-controls={activeTab === 'hits' ? 'filing-sidebar-panel-hits' : undefined}
+                  tabIndex={activeTab === 'hits' ? 0 : -1}
+                  className={activeTab === 'hits' ? 'active' : ''}
+                  onClick={() => setActiveTab('hits')}
+                  onKeyDown={event => handleSidebarTabKeyDown(event, 'hits')}
+                >
+                  Hits{' '}
+                  {!documentFind.hits.loading && documentFind.hits.status === 'ok' && (
+                    <span className="sidebar-tab-count">{documentFind.hits.total.toLocaleString()}</span>
+                  )}
+                </button>
+              )}
             </div>
 
             <div
@@ -1573,6 +1615,15 @@ export default function FilingDetail() {
                     <p>Sections are parsed automatically from the filing HTML.</p>
                   </div>
                 </div>
+              )}
+
+              {activeTab === 'hits' && hasIncomingQuery && (
+                <DocumentHitList
+                  hits={documentFind.hits}
+                  query={routeState.highlightQuery || ''}
+                  mode={routeState.highlightMode === 'boolean' ? 'boolean' : 'semantic'}
+                  unavailableReason={documentIsInline ? undefined : 'Hits can only be listed for documents shown inline. Open the document on SEC.gov to search it there.'}
+                />
               )}
 
               {activeTab === 'metadata' && (

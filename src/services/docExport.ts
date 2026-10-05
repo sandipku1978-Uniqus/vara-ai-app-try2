@@ -1,4 +1,5 @@
 import { Document, Packer, Paragraph, TextRun, HeadingLevel } from 'docx';
+import { downloadBlob, markdownToDocxBlocks, safeFileStem } from './docxShared';
 
 function escapeHtml(value: string): string {
   return value
@@ -7,75 +8,6 @@ function escapeHtml(value: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
-}
-
-function parseMarkdownToDocx(markdown: string) {
-  const children: Paragraph[] = [];
-  
-  const blocks = markdown.split('\n\n');
-  
-  for (const block of blocks) {
-    if (!block.trim()) continue;
-    
-    // Heading 2
-    if (block.startsWith('## ')) {
-      children.push(new Paragraph({
-        text: block.replace('## ', '').trim(),
-        heading: HeadingLevel.HEADING_2,
-        spacing: { before: 400, after: 200 }
-      }));
-      continue;
-    }
-
-    // Heading 3
-    if (block.startsWith('### ')) {
-      children.push(new Paragraph({
-        text: block.replace('### ', '').trim(),
-        heading: HeadingLevel.HEADING_3,
-        spacing: { before: 300, after: 100 }
-      }));
-      continue;
-    }
-
-    // List items
-    if (block.startsWith('- ') || block.startsWith('* ') || /^[0-9]+\./.test(block)) {
-      const items = block.split('\n');
-      for (const item of items) {
-        if (!item.trim()) continue;
-        const cleanItem = item.replace(/^[-*]\s+/, '').replace(/^[0-9]+\.\s+/, '');
-        children.push(new Paragraph({
-          text: cleanItem,
-          bullet: { level: 0 },
-          spacing: { after: 100 }
-        }));
-      }
-      continue;
-    }
-
-    // Standard paragraph with possible inline bold
-    const paragraphChildren: TextRun[] = [];
-    const parts = block.split(/(\*\*.*?\*\*)/g);
-    
-    for (const part of parts) {
-      if (part.startsWith('**') && part.endsWith('**')) {
-        paragraphChildren.push(new TextRun({
-          text: part.slice(2, -2),
-          bold: true
-        }));
-      } else {
-        paragraphChildren.push(new TextRun({
-          text: part
-        }));
-      }
-    }
-    
-    children.push(new Paragraph({
-      children: paragraphChildren,
-      spacing: { after: 200 }
-    }));
-  }
-  
-  return children;
 }
 
 export async function generateMemoDocx(markdown: string, tickers: string[], section: string) {
@@ -95,21 +27,13 @@ export async function generateMemoDocx(markdown: string, tickers: string[], sect
           ],
           spacing: { after: 400 }
         }),
-        ...parseMarkdownToDocx(markdown)
+        ...markdownToDocxBlocks(markdown)
       ],
     }]
   });
 
   const blob = await Packer.toBlob(doc);
-  const url = window.URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  const safeSection = section.replace(/[^A-Za-z0-9_-]+/g, '_').replace(/^_+|_+$/g, '') || 'comparison';
-  a.download = `Uniqus_Comparison_${safeSection}.docx`;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  window.URL.revokeObjectURL(url);
+  downloadBlob(blob, `Uniqus_Comparison_${safeFileStem(section, 'comparison')}.docx`);
 }
 
 /* ------------------------------------------------------------------ */

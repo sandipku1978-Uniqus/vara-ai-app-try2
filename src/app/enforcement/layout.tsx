@@ -1,9 +1,9 @@
 import { Metadata } from 'next';
-import { ENFORCEMENT_SCOPE_DESCRIPTION, ENFORCEMENT_SCOPE_LABEL } from '../../config/enforcement';
+import { ENFORCEMENT_ROUTE_DESCRIPTION, ENFORCEMENT_ROUTE_LABEL } from '../../config/enforcement';
 
 export const metadata: Metadata = {
-  title: `${ENFORCEMENT_SCOPE_LABEL} - Uniqus Research Center`,
-  description: ENFORCEMENT_SCOPE_DESCRIPTION,
+  title: `${ENFORCEMENT_ROUTE_LABEL} - Uniqus Research Center`,
+  description: ENFORCEMENT_ROUTE_DESCRIPTION,
 };
 
 export default function Layout({ children }: { children: React.ReactNode }) {

@@ -3,13 +3,17 @@
 /**
  * Issuer Dossier tabs: Filings (from EDGAR submissions, passed in by the
  * server page) · Comment Letters (threads from the owned corpus, by CIK) ·
- * Financials (XBRL company facts, latest fiscal year, pinned to one year).
+ * Financials (XBRL company facts, latest fiscal year, pinned to one year) ·
+ * Insider Transactions (Forms 3/4/5 ownership XML for this CIK).
  */
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useParams } from 'next/navigation';
 import { ExternalLink, Loader2 } from 'lucide-react';
 import CiteButton from '../../../components/memo/CiteButton';
+import CartToggle from '../../../components/cart/CartToggle';
+import InsiderTransactionsPanel from '../../../components/insiders/InsiderTransactionsPanel';
 import {
   buildSecDataUrl,
   extractComparableFinancials,
@@ -105,7 +109,10 @@ export default function DossierTabs({
   companyName: string;
   recentFilings: RecentFilings;
 }) {
-  const [tab, setTab] = useState<'filings' | 'letters' | 'financials'>('filings');
+  const routeTicker = String(useParams<{ ticker?: string }>()?.ticker || '');
+  // The route accepts a ticker or a CIK; only a ticker can seed Benchmarking.
+  const dossierTicker = routeTicker && !/^\d+$/.test(routeTicker) ? decodeURIComponent(routeTicker).toUpperCase() : undefined;
+  const [tab, setTab] = useState<'filings' | 'letters' | 'financials' | 'insiders'>('filings');
   const [threads, setThreads] = useState<ThreadSummary[] | null>(null);
   const [threadsError, setThreadsError] = useState('');
   const [threadReloadKey, setThreadReloadKey] = useState(0);
@@ -155,7 +162,7 @@ export default function DossierTabs({
   return (
     <div>
       <div style={{ display: 'flex', gap: 8, marginBottom: 18, overflowX: 'auto' }} role="group" aria-label="Issuer dossier view">
-        {([['filings', 'Filings'], ['letters', 'Comment Letters'], ['financials', 'Financials']] as const).map(([value, label]) => (
+        {([['filings', 'Filings'], ['letters', 'Comment Letters'], ['financials', 'Financials'], ['insiders', 'Insider Transactions']] as const).map(([value, label]) => (
           <button key={value} type="button" onClick={() => setTab(value)} aria-pressed={tab === value}
             style={{
               padding: '8px 16px', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer',
@@ -177,7 +184,7 @@ export default function DossierTabs({
             </caption>
             <thead>
               <tr>
-                {['Date', 'Form', 'Description', 'Document', 'Memo'].map(header => (
+                {['Select', 'Date', 'Form', 'Description', 'Document', 'Memo'].map(header => (
                   <th key={header} scope="col" style={{ padding: '12px 16px', textAlign: 'left', color: 'var(--text-muted)', fontWeight: 600, borderBottom: '1px solid var(--border-color)' }}>{header}</th>
                 ))}
               </tr>
@@ -185,7 +192,7 @@ export default function DossierTabs({
             <tbody>
               {filingCount === 0 && (
                 <tr>
-                  <td colSpan={5} style={{ padding: '18px 16px', color: 'var(--text-muted)' }}>
+                  <td colSpan={6} style={{ padding: '18px 16px', color: 'var(--text-muted)' }}>
                     No recent submissions in this registrant&apos;s SEC feed.
                   </td>
                 </tr>
@@ -196,6 +203,22 @@ export default function DossierTabs({
                 const url = `https://www.sec.gov/Archives/edgar/data/${cik}/${accession}/${doc}`;
                 return (
                   <tr key={recentFilings.accessionNumber[i]} style={{ backgroundColor: i % 2 === 0 ? 'transparent' : 'var(--interactive-hover)' }}>
+                    <td style={{ padding: '10px 16px', borderBottom: '1px solid var(--border-color)' }}>
+                      <CartToggle
+                        filing={{
+                          cik: String(cik),
+                          accessionNumber: recentFilings.accessionNumber[i],
+                          company: companyName,
+                          form: recentFilings.form[i],
+                          fileDate: recentFilings.filingDate[i],
+                          ticker: dossierTicker,
+                          primaryDocument: doc,
+                          description: recentFilings.primaryDocDescription[i] || '',
+                          sourceUrl: url,
+                          origin: 'dossier',
+                        }}
+                      />
+                    </td>
                     <td style={{ padding: '10px 16px', borderBottom: '1px solid var(--border-color)', color: 'var(--text-secondary)' }}>{recentFilings.filingDate[i]}</td>
                     <td style={{ padding: '10px 16px', borderBottom: '1px solid var(--border-color)' }}>
                       <span style={{ display: 'inline-block', padding: '2px 8px', borderRadius: 4, backgroundColor: 'var(--surface-subtle)', color: 'var(--status-success)', fontWeight: 600, fontSize: 13 }}>
@@ -276,6 +299,8 @@ export default function DossierTabs({
           </div>
         )
       )}
+
+      {tab === 'insiders' && <InsiderTransactionsPanel cik={cik} companyLabel={companyName} />}
 
       {tab === 'financials' && (
         financials === 'loading' || financials === null ? (

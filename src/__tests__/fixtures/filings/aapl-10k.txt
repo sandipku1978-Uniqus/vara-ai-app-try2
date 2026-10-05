@@ -1,0 +1,791 @@
+[Fixture: Apple Inc. 10-K for fiscal year ended 2025-09-27, accession 0000320193-25-000079, aapl-20250927.htm. Extracted with src/lib/filingText; trimmed to heading lines plus the opening of each section.]
+UNITED STATES
+SECURITIES AND EXCHANGE COMMISSION
+(Mark One)
+☒ ANNUAL REPORT PURSUANT TO SECTION 13 OR 15(d) OF THE SECURITIES EXCHANGE ACT OF 1934
+or
+☐ […].
+(Exact name of Registrant as specified in its charter)
+California 94-2404110
+(State or other jurisdiction
+of incorporation or organization)
+(I.R.S. Employer Identification No.)
+One Apple Park Way
+Cupertino, California
+95014
+(Address of principal executive offices) (Zip Code)
+(408) 996-1010
+(Registrant’s telephone number, including area code)
+Securities registered pursuant to Section 12(b) of the Act:
+AAPL The Nasdaq Stock Market LLC
+Indicate by check mark if the Registrant is a well-known seasoned issuer, as defined in […].
+Yes ☒ No ☐
+Indicate by check mark if the Registrant is not required to file reports pursuant to […].
+Yes ☐ No ☒
+Indicate by check mark whether the Registrant (1) has filed all reports required to be […].
+Yes ☒ No ☐
+Indicate by check mark whether the Registrant has submitted electronically every […].
+Yes ☒ No ☐
+Indicate by check mark whether the Registrant is a large accelerated filer, an accelerated […].
+Large accelerated filer ☒ Accelerated filer ☐
+Non-accelerated filer ☐ Smaller reporting company ☐
+Emerging growth company ☐
+If an emerging growth company, indicate by check mark if the Registrant has elected not to […].
+Yes ☐ No ☒
+The aggregate market value of the voting and non-voting stock held by non-affiliates of […].
+DOCUMENTS INCORPORATED BY REFERENCE
+Portions of the Registrant’s definitive proxy statement relating to its 2026 annual […].
+Ap […].
+TABLE OF CONTENTS
+Page
+Part I
+Item 1.
+Business
+1
+Item 1A.
+Risk Factors
+5
+Item 1B.
+Unresolved Staff Comments
+17
+Item 1C.
+Cybersecurity
+17
+Item 2.
+Properties
+17
+Item 3.
+Legal Proceedings
+18
+Item 4.
+Mine Safety Disclosures
+18
+Part II
+Item 5.
+19
+Item 6.
+[Reserved]
+20
+Item 7.
+Management’s Discussion and Analysis of Financial Condition and Results of Operations
+21
+Item 7A.
+Quantitative and Qualitative Disclosures About Market Risk
+27
+Item 8.
+Financial Statements and Supplementary Data
+28
+Item 9.
+52
+Item 9A.
+Controls and Procedures
+52
+Item 9B.
+Other Information
+53
+Item 9C.
+Disclosure Regarding Foreign Jurisdictions that Prevent Inspections
+53
+Part III
+Item 10.
+Directors, Executive Officers and Corporate Governance
+53
+Item 11.
+Executive Compensation
+53
+Item 12.
+53
+Item 13.
+Certain Relationships and Related Transactions, and Director Independence
+53
+Item 14.
+Principal Accountant Fees and Services
+53
+Part IV
+Item 15.
+Exhibit and Financial Statement Schedules
+54
+Item 16.
+57
+This Annual Report on Form 10-K (“Form 10-K”) contains forward-looking […].
+Unl […].
+PART I
+Item 1. Business
+Company Background
+The Company designs, manufactures and markets smartphones, personal computers, tablets, […].
+Products
+iPhone
+iPhone® is the Company’s line of smartphones based on its iOS operating system. The […].
+Mac
+Mac® is the Company’s line of personal computers based on its macOS® operating system. The […].
+Wearables, Home and Accessories
+Wearables includes smartwatches, wireless headphones and spatial computers. The Company’s […].
+Services
+Advertising
+The Company’s advertising services include third-party licensing arrangements and the […].
+AppleCare
+The Company offers a portfolio of fee-based service and support products under the […].
+Cloud Services
+The Company’s cloud services store and keep customers’ content up-to-date and available […].
+Digital Content
+The Company operates various platforms, including the App Store®, that allow customers to […].
+Payment Services
+The Company offers payment services, including Apple Card®, a co-branded credit card, and […].
+Segments
+The Company manages its business primarily on a geographic basis. The Company’s reportable […].
+Markets and Distribution
+The Company’s customers are primarily in the consumer, small and mid-sized business, […].
+Competition
+The markets for the Company’s products and services are highly competitive and are […].
+The […].
+Supply of Components
+Although most components essential to the Company’s business are generally available from […].
+Research and Development
+Because the industries in which the Company competes are characterized by rapid […].
+Intellectual Property
+The Company currently holds a broad collection of intellectual property rights relating to […].
+Business Seasonality and Product Introductions
+The Company has historically experienced higher net sales in its first quarter compared to […].
+Human Capital
+The Company believes that its people play an important role in its success, and strives to […].
+Available Information
+The Company’s Annual Reports on Form 10-K, Quarterly Reports on Form 10-Q, Current Reports […].
+Item 1A. Risk Factors
+The following summarizes factors that could have a material adverse effect on the […].
+This […].
+Macroeconomic and Industry Risks
+The Company’s operations and performance depend significantly on global and regional […].
+T […].
+Business Risks
+To remain competitive and stimulate customer demand, the Company must successfully manage […].
+Legal and Regulatory Compliance Risks
+The Company’s business, results of operations and financial condition could be adversely […].
+Financial Risks
+The Company’s net sales and gross margins are subject to volatility and downward pressure […].
+General Risks
+The price of the Company’s stock is subject to volatility.
+The Company’s stock has […].
+Item 1B. Unresolved Staff Comments
+None.
+Item 1C. Cybersecurity
+The Company’s management, led by its Head of Corporate Information Security, has overall […].
+Item 2. Properties
+The Company’s headquarters is located in Cupertino, California. As of September 27, 2025, […].
+Item 3. Legal Proceedings
+Digital Markets Act Investigations
+On March 25, 2024, the Commission announced that it had opened a formal noncompliance […].
+Department of Justice Lawsuit
+On March 21, 2024, the DOJ and a number of state and district attorneys general filed a […].
+Epic Games
+Epic Games, Inc. filed a lawsuit in the U.S. District Court for the Northern District of […].
+Other Legal Proceedings
+The Company is subject to other legal proceedings and claims that have not been fully […].
+Item 4. Mine Safety Disclosures
+Not applicable.
+PART II
+Item 5. Market for Registrant’s Common Equity, Related Stockholder Matters and Issuer […].
+Holders
+As of October 17, 2025, there were 22,429 shareholders of record.
+Share repurchase activity […].
+Periods Total Number
+of Shares Purchased Average Price
+Paid Per Share Total Number of Shares
+Purchased as Part of Publicly
+Announced Plans or Programs
+Approximate Dollar Value of
+Shares That May Yet Be Purchased
+Under the Plans or Programs (1)
+Total 89,498 $ 99,779
+(1)On May 2, 2024, the Company announced a program to repurchase up […].
+Company Stock Performance
+The following graph shows a comparison of five-year cumulative total shareholder return, […].
+Dow Jones U.S. Technology Total Stock Market Index
+$ 100 $ 147 $ 107 $ 147 $ 220 $ 287
+Item 6. [Reserved]
+Item 7. Management’s Discussion and Analysis of Financial Condition and Results of Operations
+The following discussion should be read in conjunction with the consolidated financial […].
+Product, Service and Software Announcements
+The Company announces new product, service and software offerings at various times during […].
+Fiscal Period
+The Company’s fiscal year is the 52- or 53-week period that ends on the last Saturday of […].
+Macroeconomic Conditions
+Macroeconomic conditions, including inflation, interest rates and currency fluctuations, […].
+Tariffs and Other Measures
+Beginning in the second quarter of 2025, new U.S. Tariffs were announced, including […].
+Segment Operating Performance
+The following table shows net sales by reportable segment for 2025, 2024 and 2023 (dollars […].
+Americas
+Americas net sales increased during 2025 compared to 2024 primarily due to higher net […].
+Europe
+Europe net sales increased during 2025 compared to 2024 primarily due to higher net sales […].
+Greater China
+Greater China net sales decreased during 2025 compared to 2024 primarily due to lower net […].
+Japan
+Japan net sales increased during 2025 compared to 2024 primarily due to higher net sales […].
+Rest of Asia Pacific
+Rest of Asia Pacific net sales increased during 2025 compared to 2024 primarily due to […].
+Products and Services Performance
+The following table shows net sales by category for 2025, 2024 and 2023 (dollars in […].
+20 […].
+Services (1)
+109,158 14 % 96,169 13 % 85,200
+Total net sales $ 416,161 6 % $ 391,035 2 % $ 383,285
+(1)Ser […].
+Mac
+Mac net sales increased during 2025 compared to 2024 primarily due to higher net sales of […].
+Wearables, Home and Accessories
+Wearables, Home and Accessories net sales decreased during 2025 compared to 2024 primarily […].
+Services
+Services net sales increased during 2025 compared to 2024 primarily due to higher net […].
+Gross Margin
+Products and Services gross margin and gross margin percentage for 2025, 2024 and 2023 […].
+Gross margin:
+Products $ 112,887 $ 109,633 $ 108,803
+Services 82,314 71,050 60,345
+Total gross margin $ […].
+Gross margin percentage:
+Products Gross Margin
+Products gross margin increased during 2025 compared to 2024 primarily due to favorable […].
+Services Gross Margin
+Services gross margin increased during 2025 compared to 2024 primarily due to higher […].
+S […].
+Operating Expenses
+2025 Change 2024 Change 2023
+Research and Development
+The growth in R&D expense during 2025 compared to 2024 was primarily driven by increases […].
+Selling, General and Administrative
+The growth in selling, general and administrative expense during 2025 compared to 2024 was […].
+Provision for Income Taxes
+Provision for income taxes, effective tax rate and statutory federal income tax rate for […].
+Provision for income taxes $ 20,719 $ 29,749 $ 16,741
+The Company’s effective tax rate for 2025 was lower than the statutory federal income tax […].
+Liquidity and Capital Resources
+The Company believes its balances of cash, cash equivalents and marketable securities, […].
+Debt
+As of September 27, 2025, the Company had outstanding fixed-rate notes with varying […].
+Th […].
+Leases
+The Company has lease arrangements for certain equipment and facilities, including […].
+Manufacturing Purchase Obligations
+The Company utilizes several outsourcing partners to manufacture subassemblies for the […].
+Other Purchase Obligations
+The Company’s other purchase obligations primarily consist of noncancelable obligations to […].
+Deemed Repatriation Tax Payable
+As of September 27, 2025, the balance of the deemed repatriation tax payable imposed by […].
+Capital Return Program
+In addition to its contractual cash requirements, the Company has an authorized share […].
+Recent Accounting Pronouncements
+Internal-Use Software
+In September 2025, the Financial Accounting Standards Board (“FASB”) issued Accounting […].
+Disaggregation of Income Statement Expenses
+In November 2024, the FASB issued ASU No. 2024-03, Income Statement—Reporting […].
+Income Taxes
+In December 2023, the FASB issued ASU No. 2023-09, Income Taxes (Topic 740): Improvements […].
+Critical Accounting Estimates
+The preparation of financial statements and related disclosures in conformity with U.S. […].
+Uncertain Tax Positions
+The Company is subject to income taxes in the U.S. and numerous foreign jurisdictions. The […].
+Legal and Other Contingencies
+The Company is subject to various legal proceedings and claims that arise in the ordinary […].
+Item 7A. Quantitative and Qualitative Disclosures About Market Risk
+The Company is exposed to economic risk from interest rates and foreign exchange rates. […].
+Interest Rate Risk
+The Company is primarily exposed to fluctuations in U.S. interest rates and their impact […].
+Interest Rate
+Sensitive Instrument
+Hypothetical Interest
+Rate Increase
+Potential Impact
+2025 2024
+Investment portfolio 100 basis points, all tenors
+Decline in fair value
+$ 2,416 $ 2,755
+Term debt
+Foreign Exchange Rate Risk
+The Company’s exposure to foreign exchange rate risk relates primarily to the Company […].
+Item 8. Financial Statements and Supplementary Data
+Index to Consolidated Financial Statements Page
+Consolidated Statements of Operations for the years ended September 27, 2025, September […].
+Notes to Consolidated Financial Statements
+34
+Reports of Independent Registered Public Accounting Firm
+49
+All financial statement schedules have been omitted, since the required information is […].
+CONSOLIDATED STATEMENTS OF OPERATIONS
+Years ended
+September 27,
+2025 September 28,
+2024 September 30,
+2023
+Net sales:
+Products $ 307,003 $ 294,866 $ 298,085
+Services 109,158 96,169 85,200
+Total net sales […].
+Cost of sales:
+Products 194,116 185,233 189,282
+Services 26,844 25,119 24,855
+Total cost of sales 220,960 […].
+Operating expenses:
+Operating income 133,050 123,216 114,301
+Provision for income taxes 20,719 29,749 16,741
+Net income $ 112,010 $ 93,736 $ 96,995
+Earnings per share:
+Shares used in computing earnings per share:
+Basic 14,948,500 15,343,783 15,744,231
+Diluted 15,004,697 15,408,095 15,812,547
+See […].
+Appl […].
+CONSOLIDATED STATEMENTS OF COMPREHENSIVE INCOME
+(In millions)
+Years ended
+September 27,
+2025 September 28,
+2024 September 30,
+2023
+Net income $ 112,010 $ 93,736 $ […].
+Other comprehensive income/(loss):
+See accompanying Notes to Consolidated Financial Statements.
+Apple Inc.
+CONSOLIDATED BALANCE SHEETS
+September 27,
+2025 September 28,
+2024
+ASSETS:
+Current assets:
+Non-current assets:
+Total assets $ 359,241 $ 364,980
+LIABILITIES AND SHAREHOLDERS’ EQUITY:
+Current liabilities:
+Term debt 12,350 10,912
+Non-current liabilities:
+Term debt 78,328 85,750
+Total liabilities 285,508 308,030
+Commitments and contingencies
+Shareholders’ equity:
+Common stock and additional paid-in capital, $0.00001 par value: 50,400,000 shares […].
+93, […].
+CONSOLIDATED STATEMENTS OF SHAREHOLDERS’ EQUITY
+(In millions, except per-share amounts)
+Years ended
+September 27,
+2025 September 28,
+2024 September 30,
+2023
+Common stock and additional paid-in capital:
+Beginning balances 83,276 73,812 64,849
+Share-based compensation 13,246 12,034 11,138
+Ending balances 93,568 83,276 73,812
+Accumulated deficit:
+Net income 112,010 93,736 96,995
+Accumulated other comprehensive loss:
+Dividends and dividend equivalents declared per share or RSU $ 1.02 $ 0.98 $ 0.94
+See […].
+A […].
+CONSOLIDATED STATEMENTS OF CASH FLOWS
+(In millions)
+Years ended
+September 27,
+2025 September 28,
+2024 September 30,
+2023
+Cash, cash equivalents, and […].
+Operating activities:
+Net income 112,010 93,736 96,995
+Share-based compensation expense 12,863 11,688 10,833
+Other (89) (2,266) (2,227)
+Changes in operating assets and liabilities:
+Inventories 1,400 (1,046) (1,618)
+Investing activities:
+Other (1,480) (1,308) (1,337)
+Financing activities:
+Other (111) (361) (581)
+Cash, cash equivalents, and restricted cash and cash equivalents, […].
+Supplemental cash flow disclosure:
+See accompanying Notes to Consolidated Financial Statements.
+Apple Inc.
+Notes to Consolidated Financial Statements
+Note 1 – Summary of Significant Accounting Policies
+Basis of Presentation and Preparation
+The consolidated financial statements include the accounts of Apple Inc. and its wholly […].
+Recently Adopted Accounting Pronouncements
+Segment Reporting
+Beginning with the 2025 annual reporting period, the Company adopted the FASB’s ASU No. […].
+Revenue
+The Company records revenue net of taxes collected from customers that are remitted to […].
+Share-Based Compensation
+The Company recognizes share-based compensation expense on a straight-line basis for its […].
+Cash Equivalents
+All highly liquid investments with maturities of three months or less at the date of […].
+Trade Receivables
+Trade receivables are stated at transaction price.
+Marketable Securities
+The cost of securities sold is determined using the specific identification method.
+Inventories
+Inventories are measured using the first-in, first-out method.
+Property, Plant and Equipment
+Property, plant and equipment are stated at cost. Depreciation on property, plant and […].
+Derivative Instruments
+The Company presents derivative assets and liabilities at their gross fair values in the […].
+Income Taxes
+The Company records certain deferred tax assets and liabilities in connection with the […].
+Leases
+The Company combines and accounts for lease and nonlease components as a single lease […].
+Note 2 – Revenue
+The Company recognizes revenue at the amount to which it expects to be entitled when […].
+T […].
+Mac
+33,708 29,984 29,357
+iPad
+28,023 26,694 28,300
+Wearables, Home and Accessories
+35,686 37,005 39,845
+Services (1)
+109,158 96,169 85,200
+Total net sales $ 416,161 $ 391,035 $ 383,285
+Portion of total net […].
+Note 3 – Earnings Per Share
+The following table shows the computation of basic and diluted earnings per share for […].
+Numerator:
+Net income $ 112,010 $ 93,736 $ 96,995
+Denominator:
+Weighted-average diluted shares 15,004,697 15,408,095 15,812,547
+Approximately 24 million […].
+Note 4 – Financial Instruments
+Cash, Cash Equivalents and Marketable Securities
+The following tables show the Company’s cash, cash equivalents and marketable securities […].
+Adjusted
+Cost Unrealized
+Gains Unrealized
+Losses Fair
+Value Cash and
+Cash
+Equivalents Current
+Marketable
+Securities Non-Current
+Marketable
+Securities
+Cash $ 28,267 $ — $ — $ 28,267 $ 28,267 $ — $ —
+Mutual funds
+679 177 (2) 854 — 854 —
+Subtotal 5,951 177 (2) 6,126 5,272 854 —
+U.S. Treasury securities […].
+Total
+$ 134,711 $ 736 $ (3,027) $ 132,420 $ 35,934 $ 18,763 $ 77,723
+2024
+Adjusted
+Cost Unrealized
+Gains Unrealized
+Losses Fair
+Value Cash and
+Cash
+Equivalents Current
+Marketable
+Securities Non-Current
+Marketable
+Securities
+Cash $ 27,199 $ — $ — $ 27,199 $ 27,199 $ — $ —
+Mutual funds
+515 105 (3) 617 — 617 —
+Subtotal 1,293 105 (3) 1,395 778 617 —
+U.S. Treasury securities […].
+Derivative Instruments and Hedging
+The Company may use derivative instruments to partially offset its business exposure to […].
+Foreign Exchange Rate Risk
+To protect gross margins from fluctuations in foreign exchange rates, the Company may use […].
+Interest Rate Risk
+To protect the Company’s term debt or marketable securities from fluctuations in interest […].
+Derivative instruments designated as accounting hedges:
+Derivative instruments not designated as accounting hedges:
+As of September 27, 2025 and September 28, 2024, the carrying amount of the Company’s […].
+Accounts Receivable
+Trade Receivables
+As of September 27, 2025, the Company had one customer that represented 10% or more of […].
+Vendor Non-Trade Receivables
+The Company has non-trade receivables from certain of its manufacturing vendors resulting […].
+Note 5 – Property, Plant and Equipment
+The following table shows the Company’s gross property, plant and equipment by major asset […].
+Machinery, equipment and internal-use software
+83,420 80,205
+Accumulated depreciation
+(76,014) (73,448)
+Depreciation expense on property, plant and equipment was $8.0 billion, […].
+Note 6 – Consolidated Financial Statement Details
+The following tables show the Company’s consolidated financial statement details as of […].
+Other Non-Current Assets
+2025 2024
+Other Current Liabilities
+2025 2024
+Income taxes payable $ 13,016 $ 26,601
+Accrued distribution and marketing
+8,919 7,679
+Note 7 – Income Taxes
+European Commission State Aid Decision
+On August 30, 2016, the Commission announced its decision that Ireland granted state aid […].
+Provision for Income Taxes and Effective Tax Rate
+The provision for income taxes for 2025, 2024 and 2023, consisted of the following (in […].
+Federal:
+Current $ 11,487 $ 5,571 $ 9,445
+Deferred (1,804) (3,080) (3,644)
+Total 9,683 2,491 5,801
+State:
+Current 1,680 1,726 1,570
+Total 1,541 1,428 1,521
+Foreign:
+Current 8,891 25,483 8,750
+Deferred 604 347 669
+Total 9,495 25,830 9,419
+Provision for income taxes $ 20,719 $ 29,749 $ 16,741
+Foreign pretax earnings were $82.0 billion, $77.3 billion and $72.9 billion in 2025, 2024 […].
+Change in valuation allowance
+2,091 — —
+Impact of the State Aid Decision
+(486) 10,246 —
+Other 410 279 (188)
+Provision for income taxes $ 20,719 $ 29,749 $ 16,741
+Deferred Tax Assets and Liabilities
+As of September 27, 2025 and September 28, 2024, the significant components of the […].
+202 […].
+Deferred tax assets:
+Other 3,049 3,341
+Deferred tax liabilities:
+Right-of-use assets 2,300 2,125
+Other 678 455
+As of September 27, 2025, the Company had $4.7 billion in foreign tax credit […].
+Uncertain Tax Positions
+As of September 27, 2025, the total amount of gross unrecognized tax benefits was $23.2 […].
+Note 8 – Leases
+The Company has lease arrangements for certain equipment and facilities, including […].
+Pay […].
+Right-of-use assets:
+Operating leases Other non-current assets $ 11,205 $ 10,234
+Lease liabilities:
+Operating leases Other current liabilities $ 1,579 $ 1,488
+Operating
+Leases Finance
+Leases Total
+2026 $ 1,967 $ 563 $ 2,530
+2027 1,988 73 2,061
+2028 1,848 51 1,899
+2029 1,585 48 1,633
+2030 […].
+Note 9 – Debt
+Commercial Paper
+The Company issues unsecured short-term promissory notes pursuant to a commercial paper […].
+Maturities 90 days or less:
+Maturities greater than 90 days:
+Proceeds from commercial paper 5,836 — —
+Term Debt
+The Company has outstanding Notes, which are senior unsecured obligations with interest […].
+Maturities
+(calendar year)
+2025 2024
+Amount
+(in millions)
+Effective
+Interest Rate
+Amount
+(in millions)
+Effective
+Interest Rate
+2025 – 2062
+$ 86,781
+0.03% – 5.75%
+$ 97,341
+0.03% – 6.65%
+2028 – 2035
+4,500
+4.07% – 4.83%
+—
+Total term debt principal
+91,281 97,341
+Unamortized premium/(discount) and issuance costs, net (309) (321)
+Total term debt
+90,678 96,662
+To manage interest rate risk on certain of its U.S. dollar–denominated […].
+Th […].
+Note 10 – Shareholders’ Equity
+Share Repurchase Program
+During 2025, the Company repurchased 402 million shares of its common stock for $89.3 […].
+Shares of Common Stock
+The following table shows the changes in shares of common stock for 2025, 2024 and 2023 […].
+Note 11 – Share-Based Compensation
+The Apple Inc. 2022 Employee Stock Plan (“2022 Plan”) is a shareholder-approved plan that […].
+Restricted Stock Units
+A summary of the Company’s RSU activity and related information for 2025 is as follows:
+Number of
+RSUs
+(in thousands)
+Weighted-Average
+Grant-Date Fair
+Value Per RSU
+RSUs granted 73,466 $ 226.68
+RSUs forfeited
+(8,373) $ 183.03
+The weighted-average grant-date fair value of RSUs granted in 2024 and […].
+Share-Based Compensation
+The following table shows share-based compensation expense and the related income tax […].
+Share-based compensation expense $ 12,863 $ 11,688 $ 10,833
+Income tax benefit related to share-based compensation expense $ (3,602) $ (3,350) $ (3,421)
+As of September 27, 2025, the total unrecognized compensation cost related to outstanding […].
+Note 12 – Commitments, Contingencies and Supply Concentrations
+Unconditional Purchase Obligations
+The Company has entered into certain off–balance sheet commitments that require the future […].
+Contingencies
+The Company is subject to various legal proceedings and claims that have arisen in the […].
+Note 13 – Segment Information and Geographic Data
+The Company manages its business primarily on a geographic basis. The Company’s CEO is its […].
+Americas Europe
+Greater
+China
+Japan Rest of
+Asia Pacific Corporate Total
+Net sales $ 178,353 $ 111,032 $ 64,377 $ 28,703 $ 33,696 $ — $ 416,161
+Cost of sales […].
+Se […].
+Americas Europe
+Greater
+China
+Japan Rest of
+Asia Pacific Corporate Total
+Net sales $ 167,045 $ 101,328 $ 66,952 $ 25,052 $ 30,658 $ — $ 391,035
+Cost of sales […].
+Op […].
+Americas Europe
+Greater
+China
+Japan Rest of
+Asia Pacific Corporate Total
+Net sales $ 162,560 $ 94,294 $ 72,559 $ 24,257 $ 29,615 $ — $ 383,285
+Cost of sales […].
+Ope […].
+Net sales:
+U.S. $ 151,790 $ 142,196 $ 138,573
+64,377 66,952 72,559
+Other countries 199,994 181,887 […].
+Long-lived assets:
+U.S. $ 40,274 $ 35,664
+3,617 4,797
+(1)China includes Hong Kong and Taiwan.
+Report of Independent Registered Public Accounting Firm
+To the Shareholders and the Board of Directors of Apple Inc.
+Opinion on the Financial Statements
+We have audited the accompanying consolidated balance sheets of Apple Inc. (the “Company”) […].
+Basis for Opinion
+These financial statements are the responsibility of the Company’s management. Our […].
+We […].
+Critical Audit Matter
+The critical audit matter communicated below is a matter arising from the current period […].
+Uncertain Tax Positions
+Description of the Matter
+As discussed in Note 7 to the financial statements, the Company is subject to income taxes […].
+How We Addressed the
+Matter in Our Audit
+We tested controls relating to the evaluation of uncertain tax positions, including […].
+We […].
+San Jose, California
+October 31, 2025
+Report of Independent Registered Public Accounting Firm
+To the Shareholders and the Board of Directors of Apple Inc.
+Opinion on Internal Control Over Financial Reporting
+We have audited Apple Inc.’s internal control over financial reporting as of September 27, […].
+Basis for Opinion
+The Company’s management is responsible for maintaining effective internal control over […].
+Definition and Limitations of Internal Control Over Financial Reporting
+A company’s internal control over financial reporting is a process designed to provide […].
+San Jose, California
+October 31, 2025
+Item 9. Changes in and Disagreements with Accountants on Accounting and Financial Disclosure
+None.
+Item 9A. Controls and Procedures
+Evaluation of Disclosure Controls and Procedures
+Based on an evaluation under the supervision and with the participation of the Company’s […].
+Inherent Limitations over Internal Controls
+The Company’s internal control over financial reporting is designed to provide reasonable […].
+Management’s Annual Report on Internal Control over Financial Reporting
+The Company’s management is responsible for establishing and maintaining adequate internal […].
+Changes in Internal Control over Financial Reporting
+There were no changes in the Company’s internal control over financial reporting during […].
+Item 9B. Other Information
+On October 31, 2025, the Company announced that Chris Kondo, Senior Director of Corporate […].
+Insider Trading Arrangements
+None.
+Item 9C. Disclosure Regarding Foreign Jurisdictions that Prevent Inspections
+Not applicable.
+PART III
+Item 10. Directors, Executive Officers and Corporate Governance
+The information required by this Item will be included in the Company’s definitive proxy […].
+Item 11. Executive Compensation
+The information required by this Item will be included in the 2026 Proxy Statement, and is […].
+Item 12. Security Ownership of Certain Beneficial Owners and Management and Related Stockholder Matters
+The information required by this Item will be included in the 2026 Proxy Statement, and is […].
+Item 13. Certain Relationships and Related Transactions, and Director Independence
+The information required by this Item will be included in the 2026 Proxy Statement, and is […].
+Item 14. Principal Accountant Fees and Services
+The information required by this Item will be included in the 2026 Proxy Statement, and is […].
+PART IV
+Item 15. Exhibit and Financial Statement Schedules
+(a)Documents filed as part of this report
+(1)All financial statements
+Index to Consolidated Financial Statements Page
+Consolidated Statements of Operations for the years ended September 27, 2025, September […].
+Notes to Consolidated Financial Statements
+34
+Reports of Independent Registered Public Accounting Firm*
+49
+*Ernst & Young LLP, PCAOB Firm ID No. 00042.
+(2)Financial Statement Schedules
+All financial statement schedules have been omitted, since the required information is not […].
+(3)Exhibits required by Item 601 of Regulation S-K (1)
+Incorporated by Reference
+Exhibit Number Exhibit Description Form Exhibit Filing Date/
+Period End Date
+3.1
+Restated Articles of Incorporation of the Registrant filed on August 3, 2020.
+8-K 3.1 […].
+Incorporated by Reference
+Exhibit Number Exhibit Description Form Exhibit Filing Date/
+Period End Date
+4.9
+Officer’s Certificate of the Registrant, dated as of September 17, 2015, including […].
+Incorporated by Reference
+Exhibit Number Exhibit Description Form Exhibit Filing Date/
+Period End Date
+4.26
+Indenture, dated as of October 28, 2021, between the Registrant and The Bank of New […].
+Incorporated by Reference
+Exhibit Number Exhibit Description Form Exhibit Filing Date/
+Period End Date
+101**
+Inline XBRL Document Set for the consolidated financial statements and accompanying […].
+Item 16. Form 10-K Summary
+None.
+SIGNATURES
+Pursuant to the requirements of Section 13 or 15(d) of the Securities Exchange Act of […].
+By: /s/ Kevan Parekh
+Kevan Parekh
+Senior Vice President,
+Chief Financial Officer
+Power of Attorney
+KNOW ALL PERSONS BY THESE PRESENTS, that each person whose signature appears below […].
+Pur […].
+Name Title Date
+/s/ Timothy D. Cook Chief Executive Officer and Director
+TIMOTHY D. COOK
+/s/ Kevan Parekh Senior Vice President, Chief Financial Officer
+KEVAN PAREKH
+/s/ Chris Kondo Senior Director of Corporate Accounting
+CHRIS KONDO
+/s/ Wanda Austin
+WANDA AUSTIN
+/s/ Alex Gorsky Director October 31, 2025
+ALEX GORSKY
+/s/ Andrea Jung Director October 31, 2025
+ANDREA JUNG
+/s/ Arthur D. Levinson Director and Chair of the Board October 31, 2025
+ARTHUR D. LEVINSON
+/s/ Monica Lozano Director October 31, 2025
+MONICA LOZANO
+/s/ Ronald D. Sugar Director October 31, 2025
+RONALD D. SUGAR
+/s/ Susan L. Wagner Director October 31, 2025
+SUSAN L. WAGNER

@@ -5,9 +5,10 @@
  * Public, cheap, and honest: it reports whether the pieces every product
  * request depends on are answering right now — the restricted database read
  * and the KV store behind the rate limiters and the SEC request pacer — plus
- * which build is serving. It never reads secrets, never touches the model,
- * and never blocks on a dependency: each probe has its own budget, and a
- * failing probe is reported, not thrown.
+ * which build is serving, and which AI credentials are present (by name). It
+ * never returns a secret value, never touches the model, and never blocks on
+ * a dependency: each probe has its own budget, and a failing probe is
+ * reported, not thrown.
  *
  * 200 when the platform can serve product requests, 503 when it cannot: a
  * failing database read, a configured KV store that does not answer (the
@@ -48,6 +49,32 @@ async function probeDatabase(): Promise<ProbeResult & { schemaVersion: string | 
     schemaVersion: provenance.schemaVersion,
     ...(ok ? {} : { detail: 'schema provenance read failed or exceeded its budget' }),
   };
+}
+
+/**
+ * Which AI credentials are present — names only, never values. Models run
+ * through the Vercel AI Gateway when a gateway key is set
+ * (`VERCEL_AI_GATEWAY_KEY`, or the gateway's documented `AI_GATEWAY_API_KEY`)
+ * and fall back to the direct Anthropic API with `ANTHROPIC_API_KEY`; either
+ * one is enough for the AI routes to answer (lib/ai-gateway
+ * `isAiServiceConfigured`). Read inline so the health check never loads a
+ * model SDK.
+ */
+const AI_KEY_NAMES = ['VERCEL_AI_GATEWAY_KEY', 'AI_GATEWAY_API_KEY', 'ANTHROPIC_API_KEY'] as const;
+
+interface AiConfigurationCheck {
+  configured: boolean;
+  /** gateway (every registry model) · anthropic-direct (Anthropic only) · none */
+  path: 'gateway' | 'anthropic-direct' | 'none';
+  /** Names of the AI key variables that are set. */
+  keys: string[];
+}
+
+function aiConfiguration(env: NodeJS.ProcessEnv = process.env): AiConfigurationCheck {
+  const keys = AI_KEY_NAMES.filter(name => Boolean((env[name] || '').trim()));
+  const gateway = keys.includes('VERCEL_AI_GATEWAY_KEY') || keys.includes('AI_GATEWAY_API_KEY');
+  const path = gateway ? 'gateway' : keys.includes('ANTHROPIC_API_KEY') ? 'anthropic-direct' : 'none';
+  return { configured: path !== 'none', path, keys };
 }
 
 function kvConfigured(): boolean {
@@ -115,7 +142,7 @@ async function handleGet(request: Request) {
       checks: {
         database,
         kv,
-        ai: { configured: Boolean(process.env.ANTHROPIC_API_KEY) },
+        ai: aiConfiguration(),
       },
     },
     {

@@ -1,0 +1,216 @@
+{
+  "generatedAt": "2026-10-05T04:23:29.331Z",
+  "question": "What was the most recent SEC press release headline? Answer in one sentence and name the date.",
+  "native": [
+    {
+      "model": "anthropic/claude-sonnet-5.5",
+      "mode": "native",
+      "accepted": true,
+      "citations": 9,
+      "sampleCitations": [
+        {
+          "url": "https://www.sec.gov/newsroom/whats-new",
+          "title": "SEC.gov"
+        },
+        {
+          "url": "https://www.sec.gov/newsroom",
+          "title": "SEC.gov"
+        },
+        {
+          "url": "https://www.newsnow.com/us/US/SEC",
+          "title": "Securities & Exchange Commission News"
+        }
+      ],
+      "webSearchCalls": 1,
+      "answer": "The most recent SEC press release I found is \"SEC Proposal Would Address How Investment Advisers and Funds Can Custody Crypto Assets Under the Federal Securities Laws,\" dated Oct. 1, 2026. It was list",
+      "elapsedMs": 3393
+    },
+    {
+      "model": "openai/gpt-5.6-luna",
+      "mode": "native",
+      "accepted": true,
+      "citations": 19,
+      "sampleCitations": [
+        {
+          "url": "https://www.sec.gov/newsroom/press-releases?year=2026",
+          "title": null
+        },
+        {
+          "url": "https://www.sec.gov/newsroom",
+          "title": null
+        },
+        {
+          "url": "https://www.sec.gov/newsroom/press-releases?month=10&order=field_publish_date&page=22&sort=asc&speaker=&year=All",
+          "title": null
+        }
+      ],
+      "webSearchCalls": 1,
+      "answer": "The most recent SEC press release headline was **“SEC Proposal Would Address How Investment Advisers and Funds Can Custody Crypto Assets Under the Federal Securities Laws,”** dated **October 1, 2026**",
+      "elapsedMs": 3812
+    },
+    {
+      "model": "google/gemini-3.8-flash",
+      "mode": "native",
+      "accepted": true,
+      "citations": 2,
+      "sampleCitations": [
+        {
+          "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQHVLjlGbgXsYr1zt1DdcrJBI2OaK2oHowAf48K4WqVEGjkFfd6WAjjfijX6arFDKzcaLY-gMZ5v6LGzE5_J1j8XSdjuNVBl3b3yEX_n7kXLiMVsx1Hsjw==",
+          "title": "sec.gov"
+        },
+        {
+          "url": "https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQGjLtnfT2VRg-HwAYfmvDWdRziM8nEn1BxwVXBXU3lXkBTjmp2Opzrb3NHzDzLzWqaZ6Ph9Kl0_tuU7iZ60gpu2scXlDlbkuF0yBKkzRzOaENeWQIvxx66uAyuZnIorY15rtCeFLA==",
+          "title": "sec.gov"
+        }
+      ],
+      "webSearchCalls": 2,
+      "answer": "The most recent SEC press release headline is **“SEC Proposal Would Address How Investment Advisers and Funds Can Custody Crypto Assets Under the Federal Securities Laws,”** released on **October 1, 2",
+      "elapsedMs": 3862
+    },
+    {
+      "model": "spacexai/grok-4.5",
+      "mode": "native",
+      "accepted": true,
+      "citations": 9,
+      "sampleCitations": [
+        {
+          "url": "https://www.sec.gov/newsroom/press-releases",
+          "title": null
+        },
+        {
+          "url": "https://www.aninews.in/news/business/us-sec8217s-crypto-regulatory-work-8216not-finished8217-more-proposals-ahead-sec-chair-paul-atkins20261003085856",
+          "title": null
+        },
+        {
+          "url": "https://www.sec.gov/newsroom/press-releases?year=2026&month=10",
+          "title": null
+        }
+      ],
+      "webSearchCalls": 2,
+      "answer": "The most recent SEC press release headline is “SEC Proposal Would Address How Investment Advisers and Funds Can Custody Crypto Assets Under the Federal Securities Laws,” dated October 1, 2026.[[1]](ht",
+      "elapsedMs": 4366
+    },
+    {
+      "model": "openai/gpt-6.1-sol",
+      "mode": "native",
+      "accepted": true,
+      "citations": 19,
+      "sampleCitations": [
+        {
+          "url": "https://www.sec.gov/newsroom/press-releases?year=2026",
+          "title": null
+        },
+        {
+          "url": "https://www.sec.gov/newsroom/press-releases?month=10&order=field_publish_date&page=22&sort=asc&speaker=&year=All",
+          "title": null
+        },
+        {
+          "url": "https://www.sec.gov/newsroom/press-releases?month=10&order=field_publish_date&page=20&sort=asc&speaker=&year=All",
+          "title": null
+        }
+      ],
+      "webSearchCalls": 1,
+      "answer": "The SEC’s most recent press release headline was “SEC Proposal Would Address How Investment Advisers and Funds Can Custody Crypto Assets Under the Federal Securities Laws,” dated October 1, 2026. ([se",
+      "elapsedMs": 4534
+    },
+    {
+      "model": "anthropic/claude-opus-5.5",
+      "mode": "native",
+      "accepted": true,
+      "citations": 9,
+      "sampleCitations": [
+        {
+          "url": "https://www.sec.gov/newsroom/whats-new",
+          "title": "SEC.gov"
+        },
+        {
+          "url": "https://www.sec.gov/newsroom",
+          "title": "SEC.gov"
+        },
+        {
+          "url": "https://www.newsnow.com/us/US/SEC",
+          "title": "Securities & Exchange Commission News"
+        }
+      ],
+      "webSearchCalls": 1,
+      "answer": "The newest SEC press release I found is \"SEC Proposal Would Address How Investment Advisers and Funds Can Custody Crypto Assets Under the Federal Securities Laws,\" dated Oct. 1, 2026. It's listed firs",
+      "elapsedMs": 5748
+    }
+  ],
+  "retrieval": {
+    "chain": [
+      "perplexity/sonar",
+      "openai/gpt-5.6-luna"
+    ],
+    "succeeded": true,
+    "retriever": "openai/gpt-5.6-luna",
+    "retrieverLabel": "GPT-5.6 Luna web search",
+    "attempts": [
+      {
+        "model": "perplexity/sonar",
+        "outcome": "unavailable",
+        "reason": "not available under the team's zero-data-retention policy"
+      },
+      {
+        "model": "openai/gpt-5.6-luna",
+        "outcome": "answered"
+      }
+    ],
+    "failures": null,
+    "citations": 10,
+    "sampleCitations": [
+      {
+        "url": "https://www.sec.gov/newsroom/press-releases?year=2026",
+        "title": null
+      },
+      {
+        "url": "https://www.sec.gov/newsroom",
+        "title": null
+      },
+      {
+        "url": "https://www.sec.gov/newsroom?genre=8",
+        "title": null
+      }
+    ],
+    "billableTokens": 1465,
+    "answer": "The most recent SEC press release headline was **“SEC Proposal Would Address How Investment Advisers and Funds Can Custody Crypto Assets Under the Federal Securities Laws,” dated October 1, 2026**. ([",
+    "elapsedMs": 4568
+  },
+  "injected": {
+    "model": "deepseek/deepseek-v4.1-flash",
+    "mode": "retrieval",
+    "retriever": "openai/gpt-5.6-luna",
+    "sources": 10,
+    "skippedRetrievers": [
+      "perplexity/sonar: unavailable on its last attempt (rechecked after 10 minutes)"
+    ],
+    "blockFirstLine": "Web results (GPT-5.6 Luna web search, retrieved 2026-10-05T04:23:43.978Z)",
+    "answer": "According to a web search result from sec.gov's press release listing (not an SEC filing), the most recent headline is **\"SEC Proposal Would Address How Investment Advisers and Funds Can Custody Crypto Assets Under the Federal Securities La"
+  },
+  "streaming": [
+    {
+      "model": "anthropic/claude-sonnet-5.5",
+      "textDeltas": 5,
+      "finishReason": "stop",
+      "usage": {
+        "input": 26,
+        "output": 33,
+        "cacheRead": 0,
+        "cacheWrite": 0
+      },
+      "textMatchesDeltas": true
+    },
+    {
+      "model": "deepseek/deepseek-v4.1-flash",
+      "textDeltas": 4,
+      "finishReason": "stop",
+      "usage": {
+        "input": 42,
+        "output": 73,
+        "reasoning": 55,
+        "cacheRead": 0
+      },
+      "textMatchesDeltas": true
+    }
+  ]
+}

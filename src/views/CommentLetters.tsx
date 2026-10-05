@@ -6,8 +6,22 @@ import { useSearchParams } from 'next/navigation';
 import { Mail, Search, Loader2, ExternalLink, MessageSquare, ChevronDown, ChevronRight, X } from 'lucide-react';
 import AskCopilotButton from '../components/tables/AskCopilotButton';
 import CompanySearchInput from '../components/filters/CompanySearchInput';
+import SearchFilterBar from '../components/filters/SearchFilterBar';
 import CiteButton from '../components/memo/CiteButton';
+import LetterExportButtons from '../components/research/LetterExportButtons';
+import LetterIssuesPanel from '../components/research/LetterIssuesPanel';
 import { useApp } from '../context/AppState';
+import { defaultSearchFilters, type SearchFilters } from '../domain/searchFilters';
+import { REVIEWED_FORM_OPTIONS } from '../services/commentLetterForms';
+import {
+  buildSearchResultsDocx,
+  csvBlob,
+  docxBlob,
+  downloadBlob,
+  exportFilename,
+  searchResultsCsv,
+  type SearchExportInput,
+} from '../services/letterExport';
 import {
   BROWSE_PAGE_SIZE,
   DEEP_LINK_BROWSE_PAGE_SIZE,
@@ -21,14 +35,17 @@ import {
   companyScopeFromUrl,
   companyScopeText,
   describeCompanyScope,
+  describeLetterFilters,
   describeRemaining,
   describeShown,
   emptyPagedList,
+  hasStructuredLetterFilters,
   letterBrowseParams,
   letterSearchParams,
   pagingStatus,
   startPagedList,
   type CompanyScope,
+  type LetterFilters,
   type LetterFormFilter,
   type LetterSearchCriteria,
   type PagedList,
@@ -45,6 +62,31 @@ const TOPIC_CHIPS: Array<{ label: string; query: string }> = [
   { label: 'Goodwill impairment', query: 'goodwill impairment reporting unit fair value' },
   { label: 'Climate', query: 'climate related risks disclosure' },
 ];
+
+/** The shared filter bar, showing only what the letter corpus can filter by. */
+const LETTER_FILTER_CONFIG = {
+  showEntityName: false,
+  showDateRange: true,
+  showFormTypes: true,
+  showSIC: true,
+  formTypeOptions: [...REVIEWED_FORM_OPTIONS],
+  formTypesTitle: 'Filing form under review (read from each letter’s “Re:” block)',
+};
+
+export function letterFiltersFrom(filters: SearchFilters): LetterFilters {
+  return {
+    filedAfter: filters.dateFrom,
+    filedBefore: filters.dateTo,
+    reviewedForms: filters.formTypes,
+    sic: filters.sicCode,
+  };
+}
+
+const LETTER_TYPE_LABEL: Record<LetterFormFilter, string> = {
+  '': '',
+  UPLOAD: 'Staff letters (UPLOAD) only.',
+  CORRESP: 'Company responses (CORRESP) only.',
+};
 
 export interface ThreadSummary {
   thread_id: string;
@@ -183,9 +225,24 @@ interface ThreadSummaryPayload {
     truncatedLetters: number;
     missingTextLetters: number;
     omittedLetters: number;
+    charactersInLetters?: number;
+    charactersRead?: number;
+    charactersOmitted?: number;
+    planVersion?: number;
     method: string;
     evidenceFingerprint?: string;
   } | null;
+}
+
+/** What the summary read, in the reader's terms; older cached summaries carry less detail. */
+export function describeSummaryReading(coverage: NonNullable<ThreadSummaryPayload['coverage']>): string {
+  if (coverage.planVersion === undefined) {
+    return coverage.truncatedLetters > 0 ? ` · ${coverage.truncatedLetters} long letters excerpted from opening and closing` : '';
+  }
+  if (coverage.truncatedLetters > 0) {
+    return ` · middles of ${coverage.truncatedLetters} long letter${coverage.truncatedLetters === 1 ? '' : 's'} omitted (${(coverage.charactersOmitted ?? 0).toLocaleString()} of ${(coverage.charactersInLetters ?? 0).toLocaleString()} characters not read)`;
+  }
+  return coverage.lettersWithText > 0 ? ' · every extracted letter read in full' : '';
 }
 
 type SummaryState = ThreadSummaryPayload | 'checking' | 'generating' | 'not-generated' | 'error' | null;
@@ -304,7 +361,7 @@ export function ThreadConversation({ threadId }: { threadId: string }) {
           {aiSummary.coverage && (
             <div style={{ marginTop: '6px', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
               {aiSummary.coverage.lettersRepresented}/{aiSummary.coverage.totalLetters} letters represented · {aiSummary.coverage.lettersWithText} with extracted text
-              {aiSummary.coverage.truncatedLetters > 0 ? ` · ${aiSummary.coverage.truncatedLetters} long letters excerpted from opening and closing` : ''}
+              {describeSummaryReading(aiSummary.coverage)}
               {aiSummary.coverage.missingTextLetters > 0 ? ` · ${aiSummary.coverage.missingTextLetters} unavailable` : ''}
               {aiSummary.coverage.omittedLetters > 0 ? ` · ${aiSummary.coverage.omittedLetters} letters omitted` : ' · no letters omitted'}
             </div>
@@ -325,6 +382,20 @@ export function ThreadConversation({ threadId }: { threadId: string }) {
           )}
         </div>
       ) : null}
+      {letters.length > 0 && (
+        <LetterIssuesPanel
+          threadId={threadId}
+          company={letters[0].company_name}
+          letters={letters.map(letter => ({
+            accession: letter.accession,
+            cik: letter.cik,
+            company_name: letter.company_name,
+            form: letter.form,
+            date_filed: letter.date_filed,
+            has_text: letter.has_text,
+          }))}
+        />
+      )}
       {letters.map(letter => (
         <div key={`${letter.accession}:${letter.form}`} style={{
           ...cardStyle,
@@ -451,6 +522,9 @@ export default function CommentLetters() {
     setCompanyScope(companyScopeFromUrl(requestedCompany, requestedCik));
   }
   const [formFilter, setFormFilter] = useState<LetterFormFilter>('');
+  // Date window, reviewed form and industry, through the shared filter bar.
+  const [filterBar, setFilterBar] = useState<SearchFilters>(defaultSearchFilters);
+  const [matchOrdering, setMatchOrdering] = useState<'relevance' | 'newest'>('relevance');
   const [threadPage, setThreadPage] = useState<PagedList<ThreadSummary>>(emptyPagedList);
   const [matchPage, setMatchPage] = useState<PagedList<SearchMatch>>(emptyPagedList);
   // The criteria the visible matches were fetched with — Load more must page
@@ -578,19 +652,28 @@ export default function CommentLetters() {
     });
   }, [requestedThreadId, threadPage.items]);
 
-  const runSearch = useCallback(async (query: string, form: LetterFormFilter, scope: CompanyScope | null) => {
+  const runSearch = useCallback(async (
+    query: string,
+    form: LetterFormFilter,
+    scope: CompanyScope | null,
+    filters?: LetterFilters
+  ) => {
     const trimmed = query.trim();
-    if (!trimmed && !scope) return;
+    // A date window, reviewed form or industry is enough to list letters
+    // without query text (newest first); a company alone filters the
+    // episode list below instead.
+    const filterOnly = !trimmed && hasStructuredLetterFilters(filters);
+    if (!trimmed && !scope && !filterOnly) return;
     setLoading(true);
     setSearchError('');
     setMatchPageError('');
-    setSearched(Boolean(trimmed));
+    setSearched(Boolean(trimmed) || filterOnly);
     setExpandedThread(null);
     setExpandedSearchMatch(null);
-    if (!trimmed) { setLoading(false); return; } // company-only filters the browse list via effect
+    if (!trimmed && !filterOnly) { setLoading(false); return; } // company-only filters the browse list via effect
     searchGeneration.current += 1;
     const generation = searchGeneration.current;
-    const criteria: LetterSearchCriteria = { query: trimmed, form, scope };
+    const criteria: LetterSearchCriteria = { query: trimmed, form, scope, filters };
     setActiveSearch(criteria);
     try {
       const params = letterSearchParams(criteria, { from: 0, size: SEARCH_PAGE_SIZE });
@@ -598,6 +681,7 @@ export default function CommentLetters() {
       if (!response.ok) throw new Error(String(response.status));
       const payload = await response.json();
       if (generation !== searchGeneration.current) return;
+      setMatchOrdering(payload.ordering === 'newest' ? 'newest' : 'relevance');
       setMatchPage(startPagedList({
         items: (payload.matches ?? []) as SearchMatch[],
         total: payload.total ?? 0,
@@ -648,20 +732,48 @@ export default function CommentLetters() {
     setKeyword(pendingSearchIntent.query);
     setFormFilter('');
     setCompanyScope(null);
+    setFilterBar(defaultSearchFilters);
     runSearch(pendingSearchIntent.query, '', null);
     setPendingSearchIntent(null);
   }, [pendingSearchIntent, runSearch, setPendingSearchIntent]);
 
+  const letterFilters = letterFiltersFrom(filterBar);
+
   const clearCompanyScope = useCallback(() => {
     setCompanyScope(null);
-    if (searched && keyword.trim()) runSearch(keyword, formFilter, null);
-  }, [formFilter, keyword, runSearch, searched]);
+    if (searched && (keyword.trim() || hasStructuredLetterFilters(letterFiltersFrom(filterBar)))) {
+      runSearch(keyword, formFilter, null, letterFiltersFrom(filterBar));
+    }
+  }, [filterBar, formFilter, keyword, runSearch, searched]);
 
   const matches = matchPage.items;
   const threads = threadPage.items;
-  const showBrowse = !searched || (!loading && matches.length === 0 && !keyword.trim());
+  const searchActive = searched && activeSearch !== null
+    && (Boolean(activeSearch.query) || hasStructuredLetterFilters(activeSearch.filters));
+  const showBrowse = !searchActive;
   const matchStatus = pagingStatus(matchPage, SEARCH_POOL_DEPTH);
   const threadStatus = pagingStatus(threadPage);
+  const activeFilterLines = activeSearch
+    ? [
+      ...(activeSearch.form ? [LETTER_TYPE_LABEL[activeSearch.form]] : []),
+      ...describeLetterFilters(activeSearch.filters),
+    ]
+    : [];
+
+  const searchExportInput = (): SearchExportInput => ({
+    query: activeSearch?.query ?? '',
+    ordering: matchOrdering,
+    filters: [
+      ...activeFilterLines,
+      ...(activeSearch?.scope ? [describeCompanyScope(activeSearch.scope, 'search')] : []),
+    ],
+    total: matchPage.total,
+    totalIsFloor: matchPage.totalIsFloor,
+    matches,
+    generatedAt: new Date().toISOString(),
+    poolDepth: SEARCH_POOL_DEPTH,
+  });
+  const searchExportStub = `comment_letters_${activeSearch?.query || 'filtered'}`;
 
   return (
     <div style={{ width: '100%', padding: 'clamp(14px, 2vw, 20px)', maxWidth: '1440px', margin: '0 auto' }}>
@@ -700,7 +812,7 @@ export default function CommentLetters() {
           <input value={keyword} onChange={e => setKeyword(e.target.value)}
             placeholder='e.g. revenue recognition principal agent, "material weakness", segment reporting'
             aria-label="Search inside SEC comment letters"
-            onKeyDown={e => e.key === 'Enter' && runSearch(keyword, formFilter, companyScope)}
+            onKeyDown={e => e.key === 'Enter' && runSearch(keyword, formFilter, companyScope, letterFilters)}
             style={{ width: '100%', padding: '7px 10px', background: 'var(--input-bg)', border: '1px solid var(--input-border)', borderRadius: '4px', color: 'var(--text-primary)', fontSize: '0.84rem', outline: 'none' }} />
         </div>
         <div style={{ minWidth: '200px' }}>
@@ -715,13 +827,13 @@ export default function CommentLetters() {
             onSelect={(title, cik) => {
               const scope = companyScopeFromSelection(title, cik);
               setCompanyScope(scope);
-              if (keyword.trim()) runSearch(keyword, formFilter, scope);
+              if (keyword.trim() || hasStructuredLetterFilters(letterFilters)) runSearch(keyword, formFilter, scope, letterFilters);
             }}
           />
         </div>
         <div style={{ display: 'flex', gap: '6px' }}>
           {([['', 'All'], ['UPLOAD', 'Staff letters'], ['CORRESP', 'Responses']] as const).map(([value, label]) => (
-            <button key={value} type="button" aria-pressed={formFilter === value} onClick={() => { setFormFilter(value); if (searched && (keyword.trim() || companyScope)) runSearch(keyword, value, companyScope); }}
+            <button key={value} type="button" aria-pressed={formFilter === value} onClick={() => { setFormFilter(value); if (searched && (keyword.trim() || companyScope || hasStructuredLetterFilters(letterFilters))) runSearch(keyword, value, companyScope, letterFilters); }}
               style={{
                 padding: '5px 9px', borderRadius: '4px', fontSize: '0.76rem', cursor: 'pointer',
                 border: '1px solid ' + (formFilter === value ? 'var(--accent-primary)' : 'var(--input-border)'),
@@ -732,7 +844,7 @@ export default function CommentLetters() {
             </button>
           ))}
         </div>
-        <button type="button" onClick={() => runSearch(keyword, formFilter, companyScope)} disabled={loading}
+        <button type="button" onClick={() => runSearch(keyword, formFilter, companyScope, letterFilters)} disabled={loading}
           style={{ padding: '7px 14px', background: 'var(--accent-primary)', color: 'white', border: '1px solid var(--accent-primary)', borderRadius: '4px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem' }}>
           {loading ? <Loader2 size={14} className="spinner" /> : <Search size={14} />} Search
         </button>
@@ -750,11 +862,20 @@ export default function CommentLetters() {
         </div>
       )}
 
+      {/* Date window, filing form under review, industry — the shared filter bar */}
+      <SearchFilterBar
+        config={LETTER_FILTER_CONFIG}
+        filters={filterBar}
+        onChange={setFilterBar}
+        onSearch={() => runSearch(keyword, formFilter, companyScope, letterFilters)}
+        loading={loading}
+      />
+
       {/* Topic-first entry — fires a tuned corpus query per issue */}
       <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '12px' }}>
         {TOPIC_CHIPS.map(chip => (
           <button key={chip.label} type="button"
-            onClick={() => { setKeyword(chip.query); runSearch(chip.query, formFilter, companyScope); }}
+            onClick={() => { setKeyword(chip.query); runSearch(chip.query, formFilter, companyScope, letterFilters); }}
             style={{
               padding: '4px 8px', borderRadius: '4px', fontSize: '0.73rem', cursor: 'pointer',
               border: '1px solid var(--input-border)', background: 'var(--input-bg)', color: 'var(--text-secondary)',
@@ -769,14 +890,33 @@ export default function CommentLetters() {
           <Loader2 size={20} className="spinner" style={{ marginBottom: '6px' }} />
           <div>Searching inside letters…</div>
         </div>
-      ) : searched && keyword.trim() ? (
+      ) : searchActive ? (
         matches.length > 0 ? (
           <div>
             <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: '6px 0 8px' }}>
-              <div>{describeShown(matchPage, MATCH_NOUN)} — ranked by relevance</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <span>
+                  {describeShown(matchPage, MATCH_NOUN)} — {matchOrdering === 'newest'
+                    ? 'newest first (no query text, so no relevance ranking)'
+                    : 'ranked by relevance'}
+                </span>
+                <LetterExportButtons
+                  subject="the matches shown"
+                  onCsv={() => downloadBlob(exportFilename(searchExportStub, 'csv'), csvBlob(searchResultsCsv(searchExportInput())))}
+                  onDocx={async () => downloadBlob(exportFilename(searchExportStub, 'docx'), await docxBlob(buildSearchResultsDocx(searchExportInput())))}
+                />
+              </div>
               {activeSearch?.scope && (
                 <div style={{ color: 'var(--text-muted)', fontSize: '0.74rem', marginTop: '2px' }}>
                   {describeCompanyScope(activeSearch.scope, 'search')}
+                </div>
+              )}
+              {activeFilterLines.map(line => (
+                <div key={line} style={{ color: 'var(--text-muted)', fontSize: '0.74rem', marginTop: '2px' }}>{line}</div>
+              ))}
+              {matches.length < matchPage.total && (
+                <div style={{ color: 'var(--text-muted)', fontSize: '0.72rem', marginTop: '2px' }}>
+                  Exports contain the {matches.length.toLocaleString()} matches loaded here; load more to include more.
                 </div>
               )}
             </div>
@@ -844,8 +984,13 @@ export default function CommentLetters() {
           </div>
         ) : (
           <div role={searchError ? 'alert' : undefined} style={{ textAlign: 'center', padding: '28px', color: searchError ? 'var(--status-error)' : 'var(--text-muted)' }}>
-            <p>{searchError || 'No searchable letter text matched. Check the corpus coverage above before treating this as no precedent.'}</p>
-            {searchError && <button type="button" className="secondary-btn" onClick={() => void runSearch(keyword, formFilter, companyScope)}>Retry letter search</button>}
+            <p>{searchError || (activeSearch?.query
+              ? 'No searchable letter text matched. Check the corpus coverage above before treating this as no precedent.'
+              : 'No letters matched these filters. Check the corpus coverage above before treating this as no precedent.')}</p>
+            {!searchError && activeFilterLines.map(line => (
+              <p key={line} style={{ fontSize: '0.74rem', margin: '2px 0' }}>{line}</p>
+            ))}
+            {searchError && <button type="button" className="secondary-btn" onClick={() => void runSearch(activeSearch?.query ?? keyword, activeSearch?.form ?? formFilter, activeSearch?.scope ?? companyScope, activeSearch?.filters ?? letterFilters)}>Retry letter search</button>}
           </div>
         )
       ) : null}

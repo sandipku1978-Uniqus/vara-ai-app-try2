@@ -4,6 +4,7 @@ import {
   canonicalizeAuditorInput,
 } from './auditors';
 import { isEnrichedSearchEnabled } from './secApi';
+import { formFamily, sectionScopeFamilies } from '../utils/sectionTaxonomy';
 import {
   buildReferenceSearchTerms,
   parseAccountingReference,
@@ -18,7 +19,22 @@ import {
   type BooleanSearchNode,
 } from '../utils/booleanSearch';
 
+/**
+ * `semantic` is the internal id of the plain-language mode: a rule-based
+ * parser that lifts supported company, form, date and auditor constraints out
+ * of ordinary prose and runs a deterministic SEC search. It is not semantic,
+ * conceptual or vector retrieval, so users only ever see it as "Plain
+ * language" (SEARCH_MODE_LABEL). The id stays `semantic` because saved
+ * alerts and searches (the user-data `mode` column), search jobs and research
+ * URLs already store it.
+ */
 export type ResearchSearchMode = 'semantic' | 'boolean';
+
+/** What each search mode is called wherever a user can see it. */
+export const SEARCH_MODE_LABEL: Record<ResearchSearchMode, string> = {
+  semantic: 'Plain language',
+  boolean: 'Boolean / Proximity',
+};
 
 export interface SearchExecutionPlan {
   /** Residual query after an auditor token is lifted into the filters. */
@@ -67,7 +83,27 @@ function normalizeLooseText(value: string): string {
 }
 
 function normalizeFormTypes(filters: SearchFilters, defaultForms = ''): string {
-  return filters.formTypes.length > 0 ? filters.formTypes.join(',') : defaultForms;
+  if (filters.formTypes.length > 0) return filters.formTypes.join(',');
+  return narrowFormsToSectionScope(defaultForms, filters.sectionScope || '');
+}
+
+/**
+ * A section-scope concept only exists on some forms — CD&A on a proxy, a
+ * lease note on a 10-K/10-Q/20-F/S-1. When the researcher picked no forms,
+ * the default list is narrowed to the forms that can carry the section, so
+ * retrieval does not spend its budget on candidates that structurally cannot
+ * match. An explicit item number, an unknown scope, or a narrowing that would
+ * leave nothing keeps the defaults (the scope filter still applies).
+ */
+export function narrowFormsToSectionScope(defaultForms: string, sectionScope: string): string {
+  const families = sectionScopeFamilies(sectionScope);
+  if (!families) return defaultForms;
+  const forms = defaultForms.split(',').map(form => form.trim()).filter(Boolean);
+  const narrowed = forms.filter(form => {
+    const family = formFamily(form);
+    return family !== null && families.includes(family);
+  });
+  return narrowed.length > 0 ? narrowed.join(',') : defaultForms;
 }
 
 function parseFormScope(formScope: string): string[] {

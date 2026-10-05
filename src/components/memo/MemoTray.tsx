@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { BookMarked, Copy, Download, Loader2, Sparkles, Trash2, X } from 'lucide-react';
+import { BookMarked, Copy, Download, FileText, Loader2, Sparkles, Trash2, X } from 'lucide-react';
 import { useMemoDraft, useMemoTray } from '../../hooks/useMemoTray';
 import {
   clearMemoDraft,
@@ -12,9 +12,18 @@ import {
   setMemoDraft,
   updateCitationNote,
 } from '../../services/memoTray';
-import { aiDraftMemoFromCitations } from '../../services/aiApi';
+import { aiDraftMemoFromCitations, type AiAnswerMeta } from '../../services/aiApi';
 import { resolvePrimaryDocumentPath } from '../../services/secApi';
 import { buildImportantSectionSnippets, fetchFilingEvidence } from '../../services/agentEvidence';
+import {
+  DEFAULT_MEMO_TITLE,
+  draftTitle,
+  exportEvidencePackageJson,
+  exportMemoDocx,
+  memoFileStem,
+  readSessionDisplayName,
+} from '../../services/memoExport';
+import { buildMemoEvidencePackage, fetchAppVersion } from '../../services/evidencePackage';
 import MemoDraft from './MemoDraft';
 import '../../styles/evidence-ledger.css';
 import './MemoTray.css';
@@ -72,6 +81,49 @@ export default function MemoTray() {
     URL.revokeObjectURL(url);
   }, [citations]);
 
+  const [wordExportOpen, setWordExportOpen] = useState(false);
+  const [exportTitle, setExportTitle] = useState('');
+  const [exportQuestion, setExportQuestion] = useState('');
+  const [exporting, setExporting] = useState<'docx' | 'json' | ''>('');
+  const [exportError, setExportError] = useState('');
+
+  const runWordExport = useCallback(async (format: 'docx' | 'json') => {
+    setExporting(format);
+    setExportError('');
+    try {
+      const generatedAt = new Date();
+      const title = exportTitle.trim() || draftTitle(draftRecord?.text) || DEFAULT_MEMO_TITLE;
+      const evidencePackage = buildMemoEvidencePackage({
+        title,
+        question: exportQuestion,
+        citations,
+        draft: draftRecord,
+        generatedAt,
+        appVersion: await fetchAppVersion(),
+        aiMetadata: { response: draftRecord?.aiMetadata },
+      });
+      if (format === 'json') {
+        exportEvidencePackageJson(evidencePackage, memoFileStem(title, generatedAt));
+      } else {
+        await exportMemoDocx({
+          title,
+          question: exportQuestion,
+          author: readSessionDisplayName(),
+          generatedAt,
+          citations,
+          draft: draftRecord,
+          draftIsStale,
+          evidencePackage,
+        });
+      }
+    } catch (error) {
+      console.error('Memo export failed:', error);
+      setExportError('The export could not be built. The memo is unchanged — retry when ready.');
+    } finally {
+      setExporting('');
+    }
+  }, [citations, draftIsStale, draftRecord, exportQuestion, exportTitle]);
+
   const draftMemo = useCallback(async () => {
     setDrafting(true);
     setDraftError('');
@@ -111,6 +163,7 @@ export default function MemoTray() {
           }
         }
         return {
+          kind: citation.kind,
           company: citation.company,
           form: citation.form,
           fileDate: citation.fileDate,
@@ -119,8 +172,9 @@ export default function MemoTray() {
           note: citation.note,
         };
       }));
-      const memo = await aiDraftMemoFromCitations(enriched);
-      setMemoDraft(memo, citations.map(citation => citation.id));
+      let reported: AiAnswerMeta | null = null;
+      const memo = await aiDraftMemoFromCitations(enriched, { onMeta: meta => { reported = meta; } });
+      setMemoDraft(memo, citations.map(citation => citation.id), reported);
     } catch (error) {
       console.error('Memo draft failed:', error);
       setDraftError('The memo draft could not be generated. The cited evidence is unchanged — retry when ready.');
@@ -171,7 +225,7 @@ export default function MemoTray() {
                     <div className="memo-tray-item-top">
                       <span className="el-badge el-badge-citation">[{index + 1}]</span>
                       <span className="el-mono">{citation.fileDate}</span>
-                      <span className="el-badge el-badge-neutral">{citation.form}</span>
+                      <span className="el-badge el-badge-neutral">{citation.kind === 'release' ? citation.accessionNumber : citation.form}</span>
                       {citation.section && (
                         <span className="el-badge el-badge-neutral memo-tray-section" title="Section or passage this citation is scoped to">
                           {citation.section}
@@ -211,6 +265,15 @@ export default function MemoTray() {
                 </button>
                 <button type="button" className="el-btn el-btn-secondary" onClick={exportMarkdown}>
                   <Download size={14} /> Export .md
+                </button>
+                <button
+                  type="button"
+                  className="el-btn el-btn-secondary"
+                  aria-expanded={wordExportOpen}
+                  aria-controls="memo-word-export"
+                  onClick={() => setWordExportOpen(current => !current)}
+                >
+                  <FileText size={14} /> Export Word
                 </button>
                 <button type="button" className="el-btn el-btn-primary" onClick={() => void draftMemo()} disabled={drafting}>
                   {drafting ? <Loader2 size={14} className="spinner" /> : <Sparkles size={14} />} Draft memo with AI
@@ -252,6 +315,40 @@ export default function MemoTray() {
                 )}
               </div>
 
+              {wordExportOpen && (
+                <div id="memo-word-export" className="memo-tray-export" role="group" aria-label="Word export">
+                  <label>
+                    <span>Title</span>
+                    <input
+                      type="text"
+                      value={exportTitle}
+                      placeholder={draftTitle(draft) || DEFAULT_MEMO_TITLE}
+                      onChange={event => setExportTitle(event.target.value)}
+                    />
+                  </label>
+                  <label>
+                    <span>Question</span>
+                    <input
+                      type="text"
+                      value={exportQuestion}
+                      placeholder="The research question this memo answers (optional)"
+                      onChange={event => setExportQuestion(event.target.value)}
+                    />
+                  </label>
+                  <div className="memo-tray-export-actions">
+                    <button type="button" className="el-btn el-btn-primary" onClick={() => void runWordExport('docx')} disabled={Boolean(exporting)}>
+                      {exporting === 'docx' ? <Loader2 size={14} className="spinner" /> : <Download size={14} />} Download .docx
+                    </button>
+                    <button type="button" className="el-btn el-btn-secondary" onClick={() => void runWordExport('json')} disabled={Boolean(exporting)}>
+                      {exporting === 'json' ? <Loader2 size={14} className="spinner" /> : <Download size={14} />} Evidence package .json
+                    </button>
+                  </div>
+                  <span className="memo-tray-export-hint">
+                    The Word file carries the AI draft, an Evidence table, Sources, and an evidence-package appendix.
+                  </span>
+                  {exportError && <div role="alert" className="el-state el-state-error">{exportError}</div>}
+                </div>
+              )}
               {copyError && <div role="alert" className="el-state el-state-error memo-tray-empty">{copyError}</div>}
               {draftError && <div className="el-state el-state-error memo-tray-empty">{draftError}</div>}
               {draft && (

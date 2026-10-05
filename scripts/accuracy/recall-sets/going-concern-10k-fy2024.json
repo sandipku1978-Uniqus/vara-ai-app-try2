@@ -1,0 +1,184 @@
+{
+  "id": "going-concern-10k-fy2024",
+  "description": "Substantial doubt within fifteen words of going concern in FY2024 primary 10-Ks filed March 25, 2025.",
+  "query": "\"substantial doubt\" W/15 \"going concern\"",
+  "mode": "boolean",
+  "filters": {
+    "formTypes": [
+      "10-K"
+    ],
+    "dateFrom": "2025-03-25",
+    "dateTo": "2025-03-25",
+    "fiscalYear": 2024
+  },
+  "expected": [
+    {
+      "accession": "0001091818-25-000017",
+      "cik": "0000894501",
+      "companyName": "GOLD ROCK HOLDINGS, INC.  (GRHI)  (CIK 0000894501)",
+      "form": "10-K",
+      "fileDate": "2025-03-25",
+      "document": "grhi12312410k.htm",
+      "evidence": "or operating\nactivities. These factors raise substantial doubt about our ability to continue as a going concern.\n\nWhile we are attempting to generate revenues, our cash position may not\nbe significant",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/894501/000109181825000017/grhi12312410k.htm"
+    },
+    {
+      "accession": "0001641172-25-000541",
+      "cik": "0001673504",
+      "companyName": "Atlantis Glory Inc.  (AGLY)  (CIK 0001673504)",
+      "form": "10-K",
+      "fileDate": "2025-03-25",
+      "document": "form10-k.htm",
+      "evidence": "ended December 31, 2024, these factors raise substantial\ndoubt about our ability to continue as a going concern.\n\nAs\nat December 31, 2024, we had cash and cash equivalents of $0. To date, we have fina",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1673504/000164117225000541/form10-k.htm"
+    },
+    {
+      "accession": "0001641172-25-000512",
+      "cik": "0001695473",
+      "companyName": "Greater Cannabis Company, Inc.  (GCAN)  (CIK 0001695473)",
+      "form": "10-K",
+      "fileDate": "2025-03-25",
+      "document": "form10-k.htm",
+      "evidence": "y accepted in the United States of America.\n\nSubstantial Doubt about the Company’s\nAbility to Continue as a Going Concern\n\nThe accompanying financial statements have been prepared\nassuming that the Co",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1695473/000164117225000512/form10-k.htm"
+    },
+    {
+      "accession": "0001641172-25-000633",
+      "cik": "0001371128",
+      "companyName": "NewHydrogen, Inc.  (NEWH)  (CIK 0001371128)",
+      "form": "10-K",
+      "fileDate": "2025-03-25",
+      "document": "form10-k.htm",
+      "evidence": "ements included\nin this annual report, raise substantial doubt about our ability to continue as a going concern. We expect to continue to incur net losses\nuntil we are able to realize revenues to fund",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1371128/000164117225000633/form10-k.htm"
+    },
+    {
+      "accession": "0001641172-25-000596",
+      "cik": "0001295514",
+      "companyName": "MDWerks, Inc.  (MDWK)  (CIK 0001295514)",
+      "form": "10-K",
+      "fileDate": "2025-03-25",
+      "document": "form10-k.htm",
+      "evidence": "urring losses from operations and expressing substantial doubt in our ability to continue as a going concern without\nadditional capital becoming available. Our ability to continue as a going concern i",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1295514/000164117225000596/form10-k.htm"
+    },
+    {
+      "accession": "0001628280-25-014614",
+      "cik": "0000924168",
+      "companyName": "ENERGY FOCUS, INC/DE  (EFOI)  (CIK 0000924168)",
+      "form": "10-K",
+      "fileDate": "2025-03-25",
+      "document": "efoi-20241231.htm",
+      "evidence": "obligations and sustain our operations raise substantial doubt about our ability to continue as a going concern.\n\nWhile we continue to pursue funding sources and transactions that could raise capital,",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/924168/000162828025014614/efoi-20241231.htm"
+    },
+    {
+      "accession": "0001437749-25-009139",
+      "cik": "0001757715",
+      "companyName": "Aterian, Inc.  (ATER)  (CIK 0001757715)",
+      "form": "10-K",
+      "fileDate": "2025-03-25",
+      "document": "ater20241231_10k.htm",
+      "evidence": "stered public accounting firm have expressed substantial doubt about our ability to continue as a going concern.\n\nWe have experienced significant after-tax losses for the years ended December 31, 2024",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1757715/000143774925009139/ater20241231_10k.htm"
+    },
+    {
+      "accession": "0000950170-25-044487",
+      "cik": "0001469443",
+      "companyName": "Arcadia Biosciences, Inc.  (RKDA)  (CIK 0001469443)",
+      "form": "10-K",
+      "fileDate": "2025-03-25",
+      "document": "rkda-20241231.htm",
+      "evidence": "rt.\n\nRisks Related to Our Business\n\nThere is substantial doubt about our ability to continue as a going concern, which may hinder our ability to obtain further financing.\n\nOur consolidated financial s",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1469443/000095017025044487/rkda-20241231.htm"
+    },
+    {
+      "accession": "0001558370-25-003619",
+      "cik": "0001610853",
+      "companyName": "HELIUS MEDICAL TECHNOLOGIES, INC.  (HSDT, HSDTW)  (CIK 0001610853)",
+      "form": "10-K",
+      "fileDate": "2025-03-25",
+      "document": "hsdt-20241231x10k.htm",
+      "evidence": "tomers for our product.\n\nThese factors raise substantial doubt about our ability to continue as a going concern through at least 12 months from the date of this Form 10-K. We had $1.1 million of cash",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1610853/000155837025003619/hsdt-20241231x10k.htm"
+    },
+    {
+      "accession": "0001558370-25-003621",
+      "cik": "0001626971",
+      "companyName": "Corvus Pharmaceuticals, Inc.  (CRVS)  (CIK 0001626971)",
+      "form": "10-K",
+      "fileDate": "2025-03-25",
+      "document": "crvs-20241231x10k.htm",
+      "evidence": "s agreed with our conclusion that there is a substantial doubt regarding our ability to continue as a going concern for a period of at least 12 months beyond the filing of this Annual Report on Form 1",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1626971/000155837025003621/crvs-20241231x10k.htm"
+    },
+    {
+      "accession": "0001013762-25-002130",
+      "cik": "0001866226",
+      "companyName": "Welsbach Technology Metals Acquisition Corp.  (WTMA, WTMAR, WTMAU)  (CIK 0001866226)",
+      "form": "10-K",
+      "fileDate": "2025-03-25",
+      "document": "ea0233942-10k_welsbach.htm",
+      "evidence": "ains an explanatory paragraph that expresses substantial doubt about our ability to continue as a going concern, since we will cease all operations except for the purpose of liquidating if we are unab",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1866226/000101376225002130/ea0233942-10k_welsbach.htm"
+    },
+    {
+      "accession": "0001013762-25-002139",
+      "cik": "0001934945",
+      "companyName": "Trailblazer Merger Corp I  (TBMC, TBMCR)  (CIK 0001934945)",
+      "form": "10-K",
+      "fileDate": "2025-03-25",
+      "document": "ea0234234-10k_trail1.htm",
+      "evidence": "nt dissolution and the liquidity\nissue raise substantial doubt about the Company’s ability to continue as a going concern for one year from the date the financial\nstatements are issued. No adjustments",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1934945/000101376225002139/ea0234234-10k_trail1.htm"
+    },
+    {
+      "accession": "0001641172-25-000535",
+      "cik": "0001487718",
+      "companyName": "AMERICAN BATTERY MATERIALS, INC.  (BLTH)  (CIK 0001487718)",
+      "form": "10-K",
+      "fileDate": "2025-03-25",
+      "document": "form10-k.htm",
+      "evidence": "achieved profitable operations, which raise substantial doubt about its ability to continue\nas a going concern. Management’s plans in regard to these matters are described in Note 2. The financial st",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1487718/000164117225000535/form10-k.htm"
+    },
+    {
+      "accession": "0001829126-25-002048",
+      "cik": "0002012807",
+      "companyName": "RF Acquisition Corp II  (RFAI, RFAIR, RFAIU)  (CIK 0002012807)",
+      "form": "10-K",
+      "fileDate": "2025-03-25",
+      "document": "rfacq2_10k.htm",
+      "evidence": "ains an explanatory paragraph that expresses substantial doubt about our ability to continue as a “going concern.”\n\nAs of December 31,\n2024, we had working capital of $689,207. Further, we expect to i",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/2012807/000182912625002048/rfacq2_10k.htm"
+    },
+    {
+      "accession": "0001558370-25-003588",
+      "cik": "0001781983",
+      "companyName": "Aprea Therapeutics, Inc.  (APRE)  (CIK 0001781983)",
+      "form": "10-K",
+      "fileDate": "2025-03-25",
+      "document": "apre-20241231x10k.htm",
+      "evidence": "identified conditions and events that raise substantial doubt regarding our ability to continue as a going concern.\n\n​\n\nRisks related to the discovery, development and commercialization of our produc",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1781983/000155837025003588/apre-20241231x10k.htm"
+    }
+  ],
+  "recallFloor": 0.5,
+  "floorRationale": "UNMEASURED: conservative placeholder floor 0.50; no immutable candidate product URL available on 2026-10-05. Set a measured floor only after an actual product sample-recall run; never lower a floor to make a run pass.",
+  "notes": "Verified SAMPLE, not the complete true-positive universe. Sample recall = found/sample expected; a lower-bound-type regression check, not a statistical bound or corpus recall estimate. Selected the first 15 distinct matching primary documents in official EFTS relevance order, dropping failures of local verification. Source query \"substantial doubt\" AND \"going concern\" returned 27 document hits in this bounded window, of which 23 were calendar-year FY2024 primary candidates; the proximity true-positive universe can be smaller. FY2024 is independently confirmed by the primary document's dei:DocumentFiscalYearFocus=2024 and EFTS period_ending=2024-12-31. Product applies form/date filters, with no fiscal-year filter; only the expected sample is constrained to FY2024. The full extracted primary text satisfies the complete product Boolean expression. Evidence is a verbatim <=200-character local window; when AND terms are distant it shows a focal query phrase, not every operand. These are textual co-occurrences, not assertions that a company has a material weakness, substantial doubt, a goodwill CAM, or any particular accounting outcome. Non-GAAP coverage uses 10-K primary text only, not earnings-release exhibits. Raw official responses are cached with URL and SHA-256 under os.tmpdir()/urc-recall-sec-documents-v1; --refresh downloads anew."
+}

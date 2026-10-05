@@ -33,6 +33,7 @@ import { AppProvider } from '../context/AppState';
 import { Layout } from '../components/layout/Layout';
 import { AIQnAPanel } from '../components/AIQnAPanel';
 import { PostHogProvider } from '../components/providers/PostHogProvider';
+import { UserDataSync } from '../components/providers/UserDataSync';
 
 export default function RootLayout({
   children,
@@ -54,6 +55,7 @@ export default function RootLayout({
         <body>
           <div id="root">
             <AppProvider>
+              <UserDataSync />
               <Layout>
                 {children}
               </Layout>

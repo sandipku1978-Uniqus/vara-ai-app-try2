@@ -7,6 +7,14 @@
  * every entry carries the metadata and excerpt it was cited with.
  */
 import { scopedStorageKey } from './storageNamespace';
+import {
+  MEMO_DRAFT_STORAGE_KEY,
+  MEMO_TRAY_STORAGE_KEY,
+  citationToItem,
+  draftToItem,
+} from './userDataCodecs';
+import { onUserDataHydrated, syncUserCollection } from './userData';
+import type { AiAnswerMeta } from './aiApi';
 
 /** The prior filing a year-over-year redline passage was compared against. */
 export interface MemoComparedFiling {
@@ -16,9 +24,17 @@ export interface MemoComparedFiling {
   sourceUrl: string;        // canonical SEC.gov URL of the prior document
 }
 
+/**
+ * filing: an EDGAR filing. letter: an SEC comment letter. release: an SEC
+ * enforcement release (an AAER), which is not an EDGAR filing — `cik` is
+ * 'SEC', `accessionNumber` the release number (AAER-4604), `form` 'AAER',
+ * `fileDate` the release date and `company` its title.
+ */
+export type MemoCitationKind = 'filing' | 'letter' | 'release';
+
 export interface MemoCitation {
   id: string;               // `${cik}:${accession}` plus optional `#section` and `~passage` scopes
-  kind: 'filing' | 'letter';
+  kind: MemoCitationKind;
   cik: string;
   accessionNumber: string;
   company: string;
@@ -39,7 +55,7 @@ export interface MemoCitation {
   comparedTo?: MemoComparedFiling;
 }
 
-const STORAGE_KEY = 'urc.memo.tray.v1';
+const STORAGE_KEY = MEMO_TRAY_STORAGE_KEY;
 
 type Listener = () => void;
 const listeners = new Set<Listener>();
@@ -53,6 +69,28 @@ function storageKey(): string | null {
   return scopedStorageKey(STORAGE_KEY);
 }
 
+/**
+ * Before the release kind existed, an AAER was cited as a "letter" with cik
+ * 'SEC' and its release number as the accession. Read those as releases; the
+ * id (`SEC:AAER-…`) is unchanged, so they stay cited and deduplicated.
+ */
+export function upgradeLegacyCitation(item: MemoCitation): MemoCitation {
+  return item.kind === 'letter' && item.cik === 'SEC' && /^AAER-/i.test(item.accessionNumber || '')
+    ? { ...item, kind: 'release' }
+    : item;
+}
+
+/** "AAER-4604, SEC, 2026-09-30" — how a release is cited. */
+export function releaseReference(citation: Pick<MemoCitation, 'accessionNumber' | 'fileDate'>): string {
+  return [citation.accessionNumber, 'SEC', citation.fileDate].map(part => (part || '').trim()).filter(Boolean).join(', ');
+}
+
+/** Text ending in exactly one full stop (a title may already end in one). */
+export function sentence(text: string): string {
+  const trimmed = text.trim();
+  return trimmed ? `${trimmed.replace(/\.+$/, '')}.` : '';
+}
+
 function read(): MemoCitation[] {
   if (typeof window === 'undefined') return cache || [];
   const key = storageKey();
@@ -62,17 +100,21 @@ function read(): MemoCitation[] {
     cacheKey = key;
     return cache;
   }
+  // Citations captured before the identity first loaded (cacheKey === null)
+  // belong to whoever is signing in and are merged into that scope. Anything
+  // held under a DIFFERENT identity's key is that identity's work: drop it
+  // before loading the new scope, so user A's citations never carry into
+  // user B's tray (or into B's server copy).
+  const carried = cacheKey === null ? (cache || []) : [];
   try {
     const raw = window.localStorage.getItem(key);
-    const stored = raw ? (JSON.parse(raw) as MemoCitation[]) : [];
-    // Citations captured before the scope was ready live only in memory —
-    // merge them instead of losing either side.
-    const pending = (cache || []).filter(item => !stored.some(existing => existing.id === item.id));
+    const stored = raw ? (JSON.parse(raw) as MemoCitation[]).map(upgradeLegacyCitation) : [];
+    const pending = carried.filter(item => !stored.some(existing => existing.id === item.id));
     cache = [...stored, ...pending];
     cacheKey = key;
     if (pending.length > 0) persist(cache, key);
   } catch {
-    cache = cache || [];
+    cache = [...carried];
     cacheKey = key;
   }
   return cache;
@@ -84,6 +126,8 @@ function persist(items: MemoCitation[], key: string): void {
   } catch {
     // Quota/private-mode failures keep the tray in-memory for the session.
   }
+  // Signed in: queue the change for the account copy (no-op signed out).
+  syncUserCollection('memo', items.map(citationToItem), { partition: item => item.itemKind === 'citation' });
 }
 
 function write(items: MemoCitation[]): void {
@@ -140,7 +184,14 @@ export function isCited(cik: string, accessionNumber: string, section?: string, 
  * Human-readable identity for a citation, used for accessible control names
  * so a page of cite controls never announces as an undifferentiated "Cite".
  */
-export function describeCitation(citation: Pick<MemoCitation, 'company' | 'form' | 'fileDate' | 'section'>): string {
+export function describeCitation(
+  citation: Pick<MemoCitation, 'company' | 'form' | 'fileDate' | 'section'> & Partial<Pick<MemoCitation, 'kind' | 'accessionNumber'>>
+): string {
+  if (citation.kind === 'release') {
+    const reference = releaseReference({ accessionNumber: citation.accessionNumber || '', fileDate: citation.fileDate });
+    const title = citation.company.trim();
+    return [reference, title].filter(Boolean).join(' — ') || 'this release';
+  }
   const identity = [citation.company, citation.form, citation.fileDate ? `filed ${citation.fileDate}` : '']
     .map(part => part.trim())
     .filter(Boolean)
@@ -218,9 +269,15 @@ export interface MemoDraftRecord {
   text: string;
   generatedAt: string;
   citationIds: string[];
+  /**
+   * What the AI route reported about the draft call (model, provider,
+   * effort, usage, web sources), for the evidence package. Absent on drafts
+   * saved before it was recorded, or when the route reported none.
+   */
+  aiMetadata?: AiAnswerMeta;
 }
 
-const DRAFT_STORAGE_KEY = 'urc.memo.draft.v1';
+const DRAFT_STORAGE_KEY = MEMO_DRAFT_STORAGE_KEY;
 const draftListeners = new Set<Listener>();
 let draftCache: MemoDraftRecord | null | undefined;
 let draftCacheKey: string | null | undefined;
@@ -236,6 +293,7 @@ function persistDraft(record: MemoDraftRecord | null, key: string): void {
   } catch {
     // In-memory fallback only.
   }
+  syncUserCollection('memo', record ? [draftToItem(record)] : [], { partition: item => item.itemKind === 'draft' });
 }
 
 function readDraft(): MemoDraftRecord | null {
@@ -247,19 +305,36 @@ function readDraft(): MemoDraftRecord | null {
     draftCacheKey = key;
     return draftCache;
   }
+  // Only a draft generated before the identity first loaded may move into
+  // the new scope; another identity's draft is dropped, never carried.
+  const carried = draftCacheKey === null ? (draftCache ?? null) : null;
   try {
     const raw = window.localStorage.getItem(key);
     const stored = raw ? (JSON.parse(raw) as MemoDraftRecord) : null;
-    // A draft generated before the scope was ready beats nothing stored.
-    if (!stored && draftCache) persistDraft(draftCache, key);
-    else draftCache = stored;
+    if (!stored && carried) {
+      draftCache = carried;
+      persistDraft(carried, key);
+    } else {
+      draftCache = stored;
+    }
     draftCacheKey = key;
   } catch {
-    draftCache = draftCache ?? null;
+    draftCache = carried;
     draftCacheKey = key;
   }
   return draftCache ?? null;
 }
+
+// When the account copy replaces the local cache, re-read it and tell the
+// tray's subscribers (useSyncExternalStore) so the UI follows.
+onUserDataHydrated('memo', () => {
+  cache = null;
+  cacheKey = undefined;
+  draftCache = undefined;
+  draftCacheKey = undefined;
+  listeners.forEach(listener => listener());
+  draftListeners.forEach(listener => listener());
+});
 
 export function subscribeMemoDraft(listener: Listener): () => void {
   draftListeners.add(listener);
@@ -270,9 +345,9 @@ export function getMemoDraft(): MemoDraftRecord | null {
   return readDraft();
 }
 
-export function setMemoDraft(text: string, citationIds: string[]): void {
+export function setMemoDraft(text: string, citationIds: string[], aiMetadata?: AiAnswerMeta | null): void {
   readDraft();
-  draftCache = { text, generatedAt: new Date().toISOString(), citationIds };
+  draftCache = { text, generatedAt: new Date().toISOString(), citationIds, ...(aiMetadata ? { aiMetadata } : {}) };
   const key = draftStorageKey();
   draftCacheKey = key;
   if (key && typeof window !== 'undefined') persistDraft(draftCache, key);
@@ -295,8 +370,9 @@ function describeComparedFiling(compared: MemoComparedFiling): string {
 /** Numbered plain-text citations, ready to paste into a memo or email. */
 export function formatCitationsText(items: MemoCitation[]): string {
   return items
-    .map((item, index) =>
-      `[${index + 1}] ${item.company} — Form ${item.form}, filed ${item.fileDate}` +
+    .map((item, index) => item.kind === 'release'
+      ? `[${index + 1}] ${releaseReference(item)} — ${sentence(item.company)} ${item.sourceUrl}`
+      : `[${index + 1}] ${item.company} — Form ${item.form}, filed ${item.fileDate}` +
       `${item.section ? `, ${item.section}` : ''} ` +
       `(accession ${item.accessionNumber})` +
       `${item.comparedTo ? `, compared with ${describeComparedFiling(item.comparedTo)}` : ''}. ` +
@@ -308,7 +384,9 @@ export function formatCitationsText(items: MemoCitation[]): string {
 export function formatMemoMarkdown(items: MemoCitation[]): string {
   const lines: string[] = ['# Research memo — cited evidence', ''];
   items.forEach((item, index) => {
-    lines.push(`## [${index + 1}] ${item.company} — Form ${item.form} (${item.fileDate})${item.section ? ` — ${item.section}` : ''}`);
+    lines.push(item.kind === 'release'
+      ? `## [${index + 1}] ${releaseReference(item)} — ${item.company}`
+      : `## [${index + 1}] ${item.company} — Form ${item.form} (${item.fileDate})${item.section ? ` — ${item.section}` : ''}`);
     lines.push(`Source: ${item.sourceUrl}`);
     if (item.comparedTo) lines.push(`Compared with: ${describeComparedFiling(item.comparedTo)} — ${item.comparedTo.sourceUrl}`);
     // Redline excerpts span several lines; every line needs the quote marker

@@ -1,0 +1,1482 @@
+{
+  "generatedAt": "2026-10-05T04:22:21.793Z",
+  "gateway": "https://ai-gateway.vercel.sh",
+  "prompt": "Compute the sum of all prime numbers below 400, then multiply by 7 and take the result modulo 997. Reply with just the final number.",
+  "notes": [
+    "Every offered row went through src/lib/ai-gateway.ts complete() with the mapping in EFFORT_WIRE_MAP; excluded rows were sent raw to record why the registry does not offer that level.",
+    "The gateway accepts (HTTP 200) every effort value on every model, clamping silently, so \"accepted\" alone does not prove a level is honoured; the registry offers a level only when the catalog lists it (reasoning_options) and, for off switches, when a live call returned zero reasoning tokens.",
+    "Prompt: a short arithmetic task chosen to elicit reasoning. Reasoning token counts vary run to run; they are evidence that reasoning ran or did not, not a calibration.",
+    "Claude Opus 5.5 accepted thinking: disabled with HTTP 200 but still produced thinking tokens (excluded row), so the registry does not offer none for it; Claude Sonnet 5.5 honoured it (0 thinking tokens).",
+    "GLM 5.3 at high and max reported 0 reasoning tokens when the gateway served it from Fireworks, and non-zero from Baseten in earlier runs: the provider the gateway routes to decides whether reasoning usage is reported.",
+    "Sonnet 5.5 and DeepSeek V4.1 Flash at none stopped on length: with reasoning off they worked the arithmetic in the answer itself and ran past the 400-token answer allowance the matrix gave them."
+  ],
+  "rows": [
+    {
+      "model": "anthropic/claude-opus-5.5",
+      "provider": "anthropic",
+      "transport": "gateway-messages",
+      "effort": "low",
+      "offered": true,
+      "wireEffort": "low",
+      "request": {
+        "thinking": {
+          "type": "adaptive",
+          "display": "summarized"
+        },
+        "output_config": {
+          "effort": "low"
+        }
+      },
+      "accepted": true,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 608,
+      "inputTokens": 58,
+      "outputTokens": 611,
+      "reasoningSummaryReturned": true,
+      "finishReason": "stop",
+      "servedBy": "anthropic",
+      "answer": "500",
+      "elapsedMs": 8506
+    },
+    {
+      "model": "anthropic/claude-opus-5.5",
+      "provider": "anthropic",
+      "transport": "gateway-messages",
+      "effort": "medium",
+      "offered": true,
+      "wireEffort": "medium",
+      "request": {
+        "thinking": {
+          "type": "adaptive",
+          "display": "summarized"
+        },
+        "output_config": {
+          "effort": "medium"
+        }
+      },
+      "accepted": true,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 597,
+      "inputTokens": 58,
+      "outputTokens": 651,
+      "reasoningSummaryReturned": true,
+      "finishReason": "stop",
+      "servedBy": "anthropic",
+      "answer": "**500**\n\nThe sum of the 78 primes below ",
+      "elapsedMs": 7353
+    },
+    {
+      "model": "anthropic/claude-opus-5.5",
+      "provider": "anthropic",
+      "transport": "gateway-messages",
+      "effort": "high",
+      "offered": true,
+      "wireEffort": "high",
+      "request": {
+        "thinking": {
+          "type": "adaptive",
+          "display": "summarized"
+        },
+        "output_config": {
+          "effort": "high"
+        }
+      },
+      "accepted": true,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 833,
+      "inputTokens": 58,
+      "outputTokens": 836,
+      "reasoningSummaryReturned": true,
+      "finishReason": "stop",
+      "servedBy": "anthropic",
+      "answer": "500",
+      "elapsedMs": 10179
+    },
+    {
+      "model": "anthropic/claude-opus-5.5",
+      "provider": "anthropic",
+      "transport": "gateway-messages",
+      "effort": "max",
+      "offered": true,
+      "wireEffort": "max",
+      "request": {
+        "thinking": {
+          "type": "adaptive",
+          "display": "summarized"
+        },
+        "output_config": {
+          "effort": "max"
+        }
+      },
+      "accepted": true,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 1814,
+      "inputTokens": 58,
+      "outputTokens": 1819,
+      "reasoningSummaryReturned": true,
+      "finishReason": "stop",
+      "servedBy": "anthropic",
+      "answer": "**500**",
+      "elapsedMs": 16309
+    },
+    {
+      "model": "anthropic/claude-opus-5.5",
+      "provider": "anthropic",
+      "effort": "none",
+      "offered": false,
+      "wireEffort": "none",
+      "request": {
+        "thinking": {
+          "type": "disabled"
+        }
+      },
+      "accepted": true,
+      "status": 200,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 562,
+      "elapsedMs": 6224
+    },
+    {
+      "model": "anthropic/claude-sonnet-5.5",
+      "provider": "anthropic",
+      "transport": "gateway-messages",
+      "effort": "none",
+      "offered": true,
+      "wireEffort": "none",
+      "request": {
+        "thinking": {
+          "type": "disabled"
+        }
+      },
+      "accepted": true,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 0,
+      "inputTokens": 57,
+      "outputTokens": 400,
+      "reasoningSummaryReturned": false,
+      "finishReason": "length",
+      "servedBy": "anthropic",
+      "answer": "I need the sum of primes below 400.\n\nKno",
+      "elapsedMs": 3900
+    },
+    {
+      "model": "anthropic/claude-sonnet-5.5",
+      "provider": "anthropic",
+      "transport": "gateway-messages",
+      "effort": "low",
+      "offered": true,
+      "wireEffort": "low",
+      "request": {
+        "thinking": {
+          "type": "adaptive",
+          "display": "summarized"
+        },
+        "output_config": {
+          "effort": "low"
+        }
+      },
+      "accepted": true,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 795,
+      "inputTokens": 58,
+      "outputTokens": 800,
+      "reasoningSummaryReturned": true,
+      "finishReason": "stop",
+      "servedBy": "anthropic",
+      "answer": "**500**",
+      "elapsedMs": 7549
+    },
+    {
+      "model": "anthropic/claude-sonnet-5.5",
+      "provider": "anthropic",
+      "transport": "gateway-messages",
+      "effort": "medium",
+      "offered": true,
+      "wireEffort": "medium",
+      "request": {
+        "thinking": {
+          "type": "adaptive",
+          "display": "summarized"
+        },
+        "output_config": {
+          "effort": "medium"
+        }
+      },
+      "accepted": true,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 637,
+      "inputTokens": 58,
+      "outputTokens": 642,
+      "reasoningSummaryReturned": true,
+      "finishReason": "stop",
+      "servedBy": "anthropic",
+      "answer": "**500**",
+      "elapsedMs": 7117
+    },
+    {
+      "model": "anthropic/claude-sonnet-5.5",
+      "provider": "anthropic",
+      "transport": "gateway-messages",
+      "effort": "high",
+      "offered": true,
+      "wireEffort": "high",
+      "request": {
+        "thinking": {
+          "type": "adaptive",
+          "display": "summarized"
+        },
+        "output_config": {
+          "effort": "high"
+        }
+      },
+      "accepted": true,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 787,
+      "inputTokens": 58,
+      "outputTokens": 792,
+      "reasoningSummaryReturned": true,
+      "finishReason": "stop",
+      "servedBy": "anthropic",
+      "answer": "**500**",
+      "elapsedMs": 7331
+    },
+    {
+      "model": "anthropic/claude-sonnet-5.5",
+      "provider": "anthropic",
+      "transport": "gateway-messages",
+      "effort": "max",
+      "offered": true,
+      "wireEffort": "max",
+      "request": {
+        "thinking": {
+          "type": "adaptive",
+          "display": "summarized"
+        },
+        "output_config": {
+          "effort": "max"
+        }
+      },
+      "accepted": true,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 1697,
+      "inputTokens": 58,
+      "outputTokens": 1702,
+      "reasoningSummaryReturned": true,
+      "finishReason": "stop",
+      "servedBy": "anthropic",
+      "answer": "**500**",
+      "elapsedMs": 9785
+    },
+    {
+      "model": "openai/gpt-6.1-sol",
+      "provider": "openai",
+      "transport": "gateway-responses",
+      "effort": "low",
+      "offered": true,
+      "wireEffort": "low",
+      "request": {
+        "reasoning": {
+          "effort": "low",
+          "summary": "auto"
+        }
+      },
+      "accepted": true,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 158,
+      "inputTokens": 44,
+      "outputTokens": 165,
+      "reasoningSummaryReturned": true,
+      "finishReason": "stop",
+      "servedBy": "openai",
+      "answer": "500",
+      "elapsedMs": 6931
+    },
+    {
+      "model": "openai/gpt-6.1-sol",
+      "provider": "openai",
+      "transport": "gateway-responses",
+      "effort": "medium",
+      "offered": true,
+      "wireEffort": "medium",
+      "request": {
+        "reasoning": {
+          "effort": "medium",
+          "summary": "auto"
+        }
+      },
+      "accepted": true,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 229,
+      "inputTokens": 44,
+      "outputTokens": 236,
+      "reasoningSummaryReturned": true,
+      "finishReason": "stop",
+      "servedBy": "openai",
+      "answer": "500",
+      "elapsedMs": 7145
+    },
+    {
+      "model": "openai/gpt-6.1-sol",
+      "provider": "openai",
+      "transport": "gateway-responses",
+      "effort": "high",
+      "offered": true,
+      "wireEffort": "high",
+      "request": {
+        "reasoning": {
+          "effort": "high",
+          "summary": "auto"
+        }
+      },
+      "accepted": true,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 251,
+      "inputTokens": 44,
+      "outputTokens": 258,
+      "reasoningSummaryReturned": false,
+      "finishReason": "stop",
+      "servedBy": "openai",
+      "answer": "500",
+      "elapsedMs": 8794
+    },
+    {
+      "model": "openai/gpt-6.1-sol",
+      "provider": "openai",
+      "transport": "gateway-responses",
+      "effort": "max",
+      "offered": true,
+      "wireEffort": "max",
+      "request": {
+        "reasoning": {
+          "effort": "max",
+          "summary": "auto"
+        }
+      },
+      "accepted": true,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 580,
+      "inputTokens": 44,
+      "outputTokens": 587,
+      "reasoningSummaryReturned": true,
+      "finishReason": "stop",
+      "servedBy": "openai",
+      "answer": "500",
+      "elapsedMs": 11153
+    },
+    {
+      "model": "openai/gpt-6.1-sol",
+      "provider": "openai",
+      "effort": "none",
+      "offered": false,
+      "wireEffort": "none",
+      "request": {
+        "reasoning": {
+          "effort": "none"
+        }
+      },
+      "accepted": true,
+      "status": 200,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 228,
+      "elapsedMs": 6789
+    },
+    {
+      "model": "openai/gpt-5.6-luna",
+      "provider": "openai",
+      "transport": "gateway-responses",
+      "effort": "none",
+      "offered": true,
+      "wireEffort": "none",
+      "request": {
+        "reasoning": {
+          "effort": "none"
+        }
+      },
+      "accepted": true,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 0,
+      "inputTokens": 44,
+      "outputTokens": 5,
+      "reasoningSummaryReturned": false,
+      "finishReason": "stop",
+      "servedBy": "openai",
+      "answer": "920",
+      "elapsedMs": 2087
+    },
+    {
+      "model": "openai/gpt-5.6-luna",
+      "provider": "openai",
+      "transport": "gateway-responses",
+      "effort": "low",
+      "offered": true,
+      "wireEffort": "low",
+      "request": {
+        "reasoning": {
+          "effort": "low",
+          "summary": "auto"
+        }
+      },
+      "accepted": true,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 149,
+      "inputTokens": 44,
+      "outputTokens": 156,
+      "reasoningSummaryReturned": true,
+      "finishReason": "stop",
+      "servedBy": "openai",
+      "answer": "500",
+      "elapsedMs": 3553
+    },
+    {
+      "model": "openai/gpt-5.6-luna",
+      "provider": "openai",
+      "transport": "gateway-responses",
+      "effort": "medium",
+      "offered": true,
+      "wireEffort": "medium",
+      "request": {
+        "reasoning": {
+          "effort": "medium",
+          "summary": "auto"
+        }
+      },
+      "accepted": true,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 182,
+      "inputTokens": 44,
+      "outputTokens": 189,
+      "reasoningSummaryReturned": true,
+      "finishReason": "stop",
+      "servedBy": "openai",
+      "answer": "500",
+      "elapsedMs": 4331
+    },
+    {
+      "model": "openai/gpt-5.6-luna",
+      "provider": "openai",
+      "transport": "gateway-responses",
+      "effort": "high",
+      "offered": true,
+      "wireEffort": "high",
+      "request": {
+        "reasoning": {
+          "effort": "high",
+          "summary": "auto"
+        }
+      },
+      "accepted": true,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 531,
+      "inputTokens": 44,
+      "outputTokens": 538,
+      "reasoningSummaryReturned": true,
+      "finishReason": "stop",
+      "servedBy": "openai",
+      "answer": "500",
+      "elapsedMs": 8294
+    },
+    {
+      "model": "openai/gpt-5.6-luna",
+      "provider": "openai",
+      "transport": "gateway-responses",
+      "effort": "max",
+      "offered": true,
+      "wireEffort": "max",
+      "request": {
+        "reasoning": {
+          "effort": "max",
+          "summary": "auto"
+        }
+      },
+      "accepted": true,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 681,
+      "inputTokens": 44,
+      "outputTokens": 688,
+      "reasoningSummaryReturned": true,
+      "finishReason": "stop",
+      "servedBy": "openai",
+      "answer": "500",
+      "elapsedMs": 7708
+    },
+    {
+      "model": "moonshotai/kimi-k3",
+      "provider": "moonshotai",
+      "transport": "gateway-responses",
+      "effort": "none",
+      "offered": true,
+      "wireEffort": "none",
+      "request": {
+        "reasoning": {
+          "effort": "none"
+        }
+      },
+      "accepted": true,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 0,
+      "inputTokens": 63,
+      "outputTokens": 9,
+      "reasoningSummaryReturned": false,
+      "finishReason": "stop",
+      "servedBy": "baseten",
+      "answer": "13887",
+      "elapsedMs": 926
+    },
+    {
+      "model": "moonshotai/kimi-k3",
+      "provider": "moonshotai",
+      "transport": "gateway-responses",
+      "effort": "low",
+      "offered": true,
+      "wireEffort": "low",
+      "request": {
+        "reasoning": {
+          "effort": "low",
+          "summary": "auto"
+        }
+      },
+      "accepted": true,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 850,
+      "inputTokens": 131,
+      "outputTokens": 864,
+      "reasoningSummaryReturned": true,
+      "finishReason": "stop",
+      "servedBy": "baseten",
+      "answer": "500",
+      "elapsedMs": 4679
+    },
+    {
+      "model": "moonshotai/kimi-k3",
+      "provider": "moonshotai",
+      "transport": "gateway-responses",
+      "effort": "high",
+      "offered": true,
+      "wireEffort": "high",
+      "request": {
+        "reasoning": {
+          "effort": "high",
+          "summary": "auto"
+        }
+      },
+      "accepted": true,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 707,
+      "inputTokens": 131,
+      "outputTokens": 720,
+      "reasoningSummaryReturned": true,
+      "finishReason": "stop",
+      "servedBy": "baseten",
+      "answer": "500",
+      "elapsedMs": 4237
+    },
+    {
+      "model": "moonshotai/kimi-k3",
+      "provider": "moonshotai",
+      "transport": "gateway-responses",
+      "effort": "max",
+      "offered": true,
+      "wireEffort": "max",
+      "request": {
+        "reasoning": {
+          "effort": "max",
+          "summary": "auto"
+        }
+      },
+      "accepted": true,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 1725,
+      "inputTokens": 130,
+      "outputTokens": 1738,
+      "reasoningSummaryReturned": true,
+      "finishReason": "stop",
+      "servedBy": "baseten",
+      "answer": "500",
+      "elapsedMs": 9670
+    },
+    {
+      "model": "moonshotai/kimi-k3",
+      "provider": "moonshotai",
+      "effort": "medium",
+      "offered": false,
+      "wireEffort": "medium",
+      "request": {
+        "reasoning": {
+          "effort": "medium"
+        }
+      },
+      "accepted": true,
+      "status": 200,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 987,
+      "elapsedMs": 5526
+    },
+    {
+      "model": "spacexai/grok-4.5",
+      "provider": "spacexai",
+      "transport": "gateway-responses",
+      "effort": "low",
+      "offered": true,
+      "wireEffort": "low",
+      "request": {
+        "reasoning": {
+          "effort": "low",
+          "summary": "auto"
+        }
+      },
+      "accepted": true,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 1528,
+      "inputTokens": 243,
+      "outputTokens": 1529,
+      "reasoningSummaryReturned": true,
+      "finishReason": "stop",
+      "servedBy": "xai",
+      "answer": "500",
+      "elapsedMs": 32260
+    },
+    {
+      "model": "spacexai/grok-4.5",
+      "provider": "spacexai",
+      "transport": "gateway-responses",
+      "effort": "medium",
+      "offered": true,
+      "wireEffort": "medium",
+      "request": {
+        "reasoning": {
+          "effort": "medium",
+          "summary": "auto"
+        }
+      },
+      "accepted": true,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 1832,
+      "inputTokens": 243,
+      "outputTokens": 1833,
+      "reasoningSummaryReturned": true,
+      "finishReason": "stop",
+      "servedBy": "xai",
+      "answer": "500",
+      "elapsedMs": 27527
+    },
+    {
+      "model": "spacexai/grok-4.5",
+      "provider": "spacexai",
+      "transport": "gateway-responses",
+      "effort": "high",
+      "offered": true,
+      "wireEffort": "high",
+      "request": {
+        "reasoning": {
+          "effort": "high",
+          "summary": "auto"
+        }
+      },
+      "accepted": true,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 2538,
+      "inputTokens": 243,
+      "outputTokens": 2539,
+      "reasoningSummaryReturned": true,
+      "finishReason": "stop",
+      "servedBy": "xai",
+      "answer": "500",
+      "elapsedMs": 39334
+    },
+    {
+      "model": "spacexai/grok-4.5",
+      "provider": "spacexai",
+      "effort": "none",
+      "offered": false,
+      "wireEffort": "none",
+      "request": {
+        "reasoning": {
+          "effort": "none"
+        }
+      },
+      "accepted": true,
+      "status": 200,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 1650,
+      "elapsedMs": 27325
+    },
+    {
+      "model": "spacexai/grok-4.5",
+      "provider": "spacexai",
+      "effort": "max",
+      "offered": false,
+      "wireEffort": "max",
+      "request": {
+        "reasoning": {
+          "effort": "max"
+        }
+      },
+      "accepted": true,
+      "status": 200,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 1694,
+      "elapsedMs": 27212
+    },
+    {
+      "model": "spacexai/grok-4.6",
+      "provider": "spacexai",
+      "transport": "gateway-responses",
+      "effort": "low",
+      "offered": true,
+      "wireEffort": "low",
+      "request": {
+        "reasoning": {
+          "effort": "low",
+          "summary": "auto"
+        }
+      },
+      "accepted": true,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 1422,
+      "inputTokens": 243,
+      "outputTokens": 1423,
+      "reasoningSummaryReturned": true,
+      "finishReason": "stop",
+      "servedBy": "xai",
+      "answer": "500",
+      "elapsedMs": 21594
+    },
+    {
+      "model": "spacexai/grok-4.6",
+      "provider": "spacexai",
+      "transport": "gateway-responses",
+      "effort": "medium",
+      "offered": true,
+      "wireEffort": "medium",
+      "request": {
+        "reasoning": {
+          "effort": "medium",
+          "summary": "auto"
+        }
+      },
+      "accepted": true,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 3207,
+      "inputTokens": 243,
+      "outputTokens": 3208,
+      "reasoningSummaryReturned": true,
+      "finishReason": "stop",
+      "servedBy": "xai",
+      "answer": "500",
+      "elapsedMs": 45987
+    },
+    {
+      "model": "spacexai/grok-4.6",
+      "provider": "spacexai",
+      "transport": "gateway-responses",
+      "effort": "high",
+      "offered": true,
+      "wireEffort": "high",
+      "request": {
+        "reasoning": {
+          "effort": "high",
+          "summary": "auto"
+        }
+      },
+      "accepted": true,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 2959,
+      "inputTokens": 243,
+      "outputTokens": 2960,
+      "reasoningSummaryReturned": true,
+      "finishReason": "stop",
+      "servedBy": "xai",
+      "answer": "500",
+      "elapsedMs": 44637
+    },
+    {
+      "model": "spacexai/grok-4.6",
+      "provider": "spacexai",
+      "transport": "gateway-responses",
+      "effort": "max",
+      "offered": true,
+      "wireEffort": "xhigh",
+      "request": {
+        "reasoning": {
+          "effort": "xhigh",
+          "summary": "auto"
+        }
+      },
+      "accepted": true,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 2709,
+      "inputTokens": 244,
+      "outputTokens": 2710,
+      "reasoningSummaryReturned": true,
+      "finishReason": "stop",
+      "servedBy": "xai",
+      "answer": "500",
+      "elapsedMs": 39489
+    },
+    {
+      "model": "spacexai/grok-4.6",
+      "provider": "spacexai",
+      "effort": "none",
+      "offered": false,
+      "wireEffort": "none",
+      "request": {
+        "reasoning": {
+          "effort": "none"
+        }
+      },
+      "accepted": true,
+      "status": 200,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 981,
+      "elapsedMs": 14564
+    },
+    {
+      "model": "spacexai/grok-4.7",
+      "provider": "spacexai",
+      "transport": "gateway-responses",
+      "effort": "low",
+      "offered": true,
+      "wireEffort": "low",
+      "request": {
+        "reasoning": {
+          "effort": "low",
+          "summary": "auto"
+        }
+      },
+      "accepted": true,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 2429,
+      "inputTokens": 1279,
+      "outputTokens": 2430,
+      "reasoningSummaryReturned": true,
+      "finishReason": "stop",
+      "servedBy": "xai",
+      "answer": "500",
+      "elapsedMs": 24246
+    },
+    {
+      "model": "spacexai/grok-4.7",
+      "provider": "spacexai",
+      "transport": "gateway-responses",
+      "effort": "medium",
+      "offered": true,
+      "wireEffort": "medium",
+      "request": {
+        "reasoning": {
+          "effort": "medium",
+          "summary": "auto"
+        }
+      },
+      "accepted": true,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 4419,
+      "inputTokens": 1279,
+      "outputTokens": 4420,
+      "reasoningSummaryReturned": true,
+      "finishReason": "stop",
+      "servedBy": "xai",
+      "answer": "500",
+      "elapsedMs": 45941
+    },
+    {
+      "model": "spacexai/grok-4.7",
+      "provider": "spacexai",
+      "transport": "gateway-responses",
+      "effort": "high",
+      "offered": true,
+      "wireEffort": "high",
+      "request": {
+        "reasoning": {
+          "effort": "high",
+          "summary": "auto"
+        }
+      },
+      "accepted": true,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 3330,
+      "inputTokens": 1279,
+      "outputTokens": 3331,
+      "reasoningSummaryReturned": true,
+      "finishReason": "stop",
+      "servedBy": "xai",
+      "answer": "500",
+      "elapsedMs": 35464
+    },
+    {
+      "model": "spacexai/grok-4.7",
+      "provider": "spacexai",
+      "transport": "gateway-responses",
+      "effort": "max",
+      "offered": true,
+      "wireEffort": "xhigh",
+      "request": {
+        "reasoning": {
+          "effort": "xhigh",
+          "summary": "auto"
+        }
+      },
+      "accepted": true,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 5067,
+      "inputTokens": 1280,
+      "outputTokens": 5068,
+      "reasoningSummaryReturned": true,
+      "finishReason": "stop",
+      "servedBy": "xai",
+      "answer": "500",
+      "elapsedMs": 63046
+    },
+    {
+      "model": "spacexai/grok-4.7",
+      "provider": "spacexai",
+      "effort": "none",
+      "offered": false,
+      "wireEffort": "none",
+      "request": {
+        "reasoning": {
+          "effort": "none"
+        }
+      },
+      "accepted": true,
+      "status": 200,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 2245,
+      "elapsedMs": 24045
+    },
+    {
+      "model": "google/gemini-3.8-flash",
+      "provider": "google",
+      "transport": "gateway-responses",
+      "effort": "low",
+      "offered": true,
+      "wireEffort": "low",
+      "request": {
+        "reasoning": {
+          "effort": "low",
+          "summary": "auto"
+        }
+      },
+      "accepted": true,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 763,
+      "inputTokens": 38,
+      "outputTokens": 766,
+      "reasoningSummaryReturned": true,
+      "finishReason": "stop",
+      "servedBy": "vertex",
+      "answer": "458",
+      "elapsedMs": 15742
+    },
+    {
+      "model": "google/gemini-3.8-flash",
+      "provider": "google",
+      "transport": "gateway-responses",
+      "effort": "high",
+      "offered": true,
+      "wireEffort": "high",
+      "request": {
+        "reasoning": {
+          "effort": "high",
+          "summary": "auto"
+        }
+      },
+      "accepted": true,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 6617,
+      "inputTokens": 38,
+      "outputTokens": 6620,
+      "reasoningSummaryReturned": true,
+      "finishReason": "stop",
+      "servedBy": "vertex",
+      "answer": "500",
+      "elapsedMs": 41813
+    },
+    {
+      "model": "google/gemini-3.8-flash",
+      "provider": "google",
+      "effort": "none",
+      "offered": false,
+      "wireEffort": "none",
+      "request": {
+        "reasoning": {
+          "effort": "none"
+        }
+      },
+      "accepted": true,
+      "status": 200,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 11524,
+      "elapsedMs": 67469
+    },
+    {
+      "model": "google/gemini-3.8-flash",
+      "provider": "google",
+      "effort": "medium",
+      "offered": false,
+      "wireEffort": "medium",
+      "request": {
+        "reasoning": {
+          "effort": "medium"
+        }
+      },
+      "accepted": true,
+      "status": 200,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 5757,
+      "elapsedMs": 38471
+    },
+    {
+      "model": "google/gemini-3.8-flash",
+      "provider": "google",
+      "effort": "max",
+      "offered": false,
+      "wireEffort": "max",
+      "request": {
+        "reasoning": {
+          "effort": "max"
+        }
+      },
+      "accepted": true,
+      "status": 200,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 5756,
+      "elapsedMs": 35635
+    },
+    {
+      "model": "deepseek/deepseek-v4.1-flash",
+      "provider": "deepseek",
+      "transport": "gateway-responses",
+      "effort": "none",
+      "offered": true,
+      "wireEffort": "none",
+      "request": {
+        "reasoning": {
+          "effort": "none"
+        }
+      },
+      "accepted": true,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 0,
+      "inputTokens": 40,
+      "outputTokens": 400,
+      "reasoningSummaryReturned": false,
+      "finishReason": "length",
+      "servedBy": "baseten",
+      "answer": "Let\u2019s go step by step.\n\nWe need:\n\n1. Sum",
+      "elapsedMs": 2251
+    },
+    {
+      "model": "deepseek/deepseek-v4.1-flash",
+      "provider": "deepseek",
+      "transport": "gateway-responses",
+      "effort": "low",
+      "offered": true,
+      "wireEffort": "low",
+      "request": {
+        "reasoning": {
+          "effort": "low",
+          "summary": "auto"
+        }
+      },
+      "accepted": true,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 1219,
+      "inputTokens": 65,
+      "outputTokens": 1221,
+      "reasoningSummaryReturned": true,
+      "finishReason": "stop",
+      "servedBy": "baseten",
+      "answer": "500",
+      "elapsedMs": 3654
+    },
+    {
+      "model": "deepseek/deepseek-v4.1-flash",
+      "provider": "deepseek",
+      "transport": "gateway-responses",
+      "effort": "high",
+      "offered": true,
+      "wireEffort": "high",
+      "request": {
+        "reasoning": {
+          "effort": "high",
+          "summary": "auto"
+        }
+      },
+      "accepted": true,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 2552,
+      "inputTokens": 65,
+      "outputTokens": 2552,
+      "reasoningSummaryReturned": true,
+      "finishReason": "stop",
+      "servedBy": "baseten",
+      "answer": "500",
+      "elapsedMs": 5583
+    },
+    {
+      "model": "deepseek/deepseek-v4.1-flash",
+      "provider": "deepseek",
+      "transport": "gateway-responses",
+      "effort": "max",
+      "offered": true,
+      "wireEffort": "max",
+      "request": {
+        "reasoning": {
+          "effort": "max",
+          "summary": "auto"
+        }
+      },
+      "accepted": true,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 2165,
+      "inputTokens": 65,
+      "outputTokens": 2165,
+      "reasoningSummaryReturned": true,
+      "finishReason": "stop",
+      "servedBy": "baseten",
+      "answer": "500",
+      "elapsedMs": 7346
+    },
+    {
+      "model": "deepseek/deepseek-v4.1-flash",
+      "provider": "deepseek",
+      "effort": "medium",
+      "offered": false,
+      "wireEffort": "medium",
+      "request": {
+        "reasoning": {
+          "effort": "medium"
+        }
+      },
+      "accepted": true,
+      "status": 200,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 1592,
+      "elapsedMs": 3552
+    },
+    {
+      "model": "deepseek/deepseek-v4-pro",
+      "provider": "deepseek",
+      "transport": "gateway-responses",
+      "effort": "none",
+      "offered": true,
+      "wireEffort": "none",
+      "request": {
+        "reasoning": {
+          "effort": "none"
+        }
+      },
+      "accepted": true,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 0,
+      "inputTokens": 38,
+      "outputTokens": 1,
+      "reasoningSummaryReturned": false,
+      "finishReason": "stop",
+      "servedBy": "alibaba",
+      "answer": "182",
+      "elapsedMs": 1742
+    },
+    {
+      "model": "deepseek/deepseek-v4-pro",
+      "provider": "deepseek",
+      "transport": "gateway-responses",
+      "effort": "low",
+      "offered": true,
+      "wireEffort": "low",
+      "request": {
+        "reasoning": {
+          "effort": "low",
+          "summary": "auto"
+        }
+      },
+      "accepted": true,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 1024,
+      "inputTokens": 38,
+      "outputTokens": 1065,
+      "reasoningSummaryReturned": true,
+      "finishReason": "stop",
+      "servedBy": "alibaba",
+      "answer": "The sum of primes below 400 is 13887.  \n",
+      "elapsedMs": 19712
+    },
+    {
+      "model": "deepseek/deepseek-v4-pro",
+      "provider": "deepseek",
+      "transport": "gateway-responses",
+      "effort": "high",
+      "offered": true,
+      "wireEffort": "high",
+      "request": {
+        "reasoning": {
+          "effort": "high",
+          "summary": "auto"
+        }
+      },
+      "accepted": true,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 3409,
+      "inputTokens": 38,
+      "outputTokens": 3411,
+      "reasoningSummaryReturned": true,
+      "finishReason": "stop",
+      "servedBy": "alibaba",
+      "answer": "500",
+      "elapsedMs": 56969
+    },
+    {
+      "model": "deepseek/deepseek-v4-pro",
+      "provider": "deepseek",
+      "transport": "gateway-responses",
+      "effort": "max",
+      "offered": true,
+      "wireEffort": "max",
+      "request": {
+        "reasoning": {
+          "effort": "max",
+          "summary": "auto"
+        }
+      },
+      "accepted": true,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 4067,
+      "inputTokens": 38,
+      "outputTokens": 4069,
+      "reasoningSummaryReturned": true,
+      "finishReason": "stop",
+      "servedBy": "alibaba",
+      "answer": "500",
+      "elapsedMs": 68218
+    },
+    {
+      "model": "deepseek/deepseek-v4-pro",
+      "provider": "deepseek",
+      "effort": "medium",
+      "offered": false,
+      "wireEffort": "medium",
+      "request": {
+        "reasoning": {
+          "effort": "medium"
+        }
+      },
+      "accepted": true,
+      "status": 200,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 4054,
+      "elapsedMs": 68306
+    },
+    {
+      "model": "zai/glm-5.3",
+      "provider": "zai",
+      "transport": "gateway-responses",
+      "effort": "low",
+      "offered": true,
+      "wireEffort": "low",
+      "request": {
+        "reasoning": {
+          "effort": "low",
+          "summary": "auto"
+        }
+      },
+      "accepted": true,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 593,
+      "inputTokens": 49,
+      "outputTokens": 605,
+      "reasoningSummaryReturned": true,
+      "finishReason": "stop",
+      "servedBy": "baseten",
+      "answer": "500",
+      "elapsedMs": 5461
+    },
+    {
+      "model": "zai/glm-5.3",
+      "provider": "zai",
+      "transport": "gateway-responses",
+      "effort": "high",
+      "offered": true,
+      "wireEffort": "high",
+      "request": {
+        "reasoning": {
+          "effort": "high",
+          "summary": "auto"
+        }
+      },
+      "accepted": true,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 0,
+      "inputTokens": 48,
+      "outputTokens": 907,
+      "reasoningSummaryReturned": true,
+      "finishReason": "stop",
+      "servedBy": "fireworks",
+      "answer": "500",
+      "elapsedMs": 13948
+    },
+    {
+      "model": "zai/glm-5.3",
+      "provider": "zai",
+      "transport": "gateway-responses",
+      "effort": "max",
+      "offered": true,
+      "wireEffort": "max",
+      "request": {
+        "reasoning": {
+          "effort": "max",
+          "summary": "auto"
+        }
+      },
+      "accepted": true,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 0,
+      "inputTokens": 48,
+      "outputTokens": 4753,
+      "reasoningSummaryReturned": true,
+      "finishReason": "stop",
+      "servedBy": "fireworks",
+      "answer": "**500**\n\n(Primes below 400 sum to 13,887",
+      "elapsedMs": 60552
+    },
+    {
+      "model": "zai/glm-5.3",
+      "provider": "zai",
+      "effort": "none",
+      "offered": false,
+      "wireEffort": "none",
+      "request": {
+        "reasoning": {
+          "effort": "none"
+        }
+      },
+      "accepted": true,
+      "status": 200,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 824,
+      "elapsedMs": 9909
+    },
+    {
+      "model": "zai/glm-5.3",
+      "provider": "zai",
+      "effort": "medium",
+      "offered": false,
+      "wireEffort": "medium",
+      "request": {
+        "reasoning": {
+          "effort": "medium"
+        }
+      },
+      "accepted": true,
+      "status": 200,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 0,
+      "elapsedMs": 13704
+    },
+    {
+      "model": "zai/glm-5.3-flash",
+      "provider": "zai",
+      "transport": "gateway-responses",
+      "effort": "low",
+      "offered": true,
+      "wireEffort": "low",
+      "request": {
+        "reasoning": {
+          "effort": "low",
+          "summary": "auto"
+        }
+      },
+      "accepted": true,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 442,
+      "inputTokens": 49,
+      "outputTokens": 452,
+      "reasoningSummaryReturned": true,
+      "finishReason": "stop",
+      "servedBy": "baseten",
+      "answer": "500",
+      "elapsedMs": 3096
+    },
+    {
+      "model": "zai/glm-5.3-flash",
+      "provider": "zai",
+      "transport": "gateway-responses",
+      "effort": "high",
+      "offered": true,
+      "wireEffort": "high",
+      "request": {
+        "reasoning": {
+          "effort": "high",
+          "summary": "auto"
+        }
+      },
+      "accepted": true,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 750,
+      "inputTokens": 49,
+      "outputTokens": 765,
+      "reasoningSummaryReturned": true,
+      "finishReason": "stop",
+      "servedBy": "baseten",
+      "answer": "500",
+      "elapsedMs": 4619
+    },
+    {
+      "model": "zai/glm-5.3-flash",
+      "provider": "zai",
+      "transport": "gateway-responses",
+      "effort": "max",
+      "offered": true,
+      "wireEffort": "max",
+      "request": {
+        "reasoning": {
+          "effort": "max",
+          "summary": "auto"
+        }
+      },
+      "accepted": true,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 696,
+      "inputTokens": 49,
+      "outputTokens": 713,
+      "reasoningSummaryReturned": true,
+      "finishReason": "stop",
+      "servedBy": "baseten",
+      "answer": "500",
+      "elapsedMs": 4251
+    },
+    {
+      "model": "zai/glm-5.3-flash",
+      "provider": "zai",
+      "effort": "none",
+      "offered": false,
+      "wireEffort": "none",
+      "request": {
+        "reasoning": {
+          "effort": "none"
+        }
+      },
+      "accepted": true,
+      "status": 200,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 690,
+      "elapsedMs": 4722
+    },
+    {
+      "model": "zai/glm-5.3-flash",
+      "provider": "zai",
+      "effort": "medium",
+      "offered": false,
+      "wireEffort": "medium",
+      "request": {
+        "reasoning": {
+          "effort": "medium"
+        }
+      },
+      "accepted": true,
+      "status": 200,
+      "reasoningTokensReturned": true,
+      "reasoningTokens": 817,
+      "elapsedMs": 4315
+    }
+  ]
+}

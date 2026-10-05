@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Loader2, AlertCircle, FileText, FileDown, Columns } from 'lucide-react';
 import { renderMarkdown } from '../../utils/markdownRenderer';
+import { groundedAiModelSelection } from '../../services/aiModelPreference';
 import styles from './DisclosureMatrix.module.css';
 
 /* ------------------------------------------------------------------ */
@@ -61,7 +62,8 @@ export function DisclosureMatrix({ tickers, section, filingType = '10-K', classN
         body: JSON.stringify({
           tickers,
           section,
-          filingContexts
+          filingContexts,
+          ...groundedAiModelSelection(),
         })
       });
       

@@ -1,13 +1,15 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 
-import { BookOpen, CheckSquare, Sparkles, Search, ChevronRight, Pencil, Trash2, Loader2, BellRing, Building2 } from 'lucide-react';
+import { BookOpen, CheckSquare, Sparkles, Search, ChevronRight, Pencil, Trash2, Loader2, BellRing, Building2, FileText } from 'lucide-react';
 import DataTable, { type ColumnDef } from '../components/tables/DataTable';
 import SearchFilterBar, { defaultSearchFilters, type SearchFilters } from '../components/filters/SearchFilterBar';
 import { aiAscLookup, aiSummarize, type AscGuidanceExcerpt, type AscGuidanceResult } from '../services/aiApi';
 import { buildSearchTrendSummary, executeFilingResearchSearch, type FilingResearchResult, type ResearchSearchMode } from '../services/filingResearch';
+import { SEARCH_MODE_LABEL } from '../services/filingResearchPlan';
 import { buildAccountingResearchMemoPrompt } from '../lib/systemPrompts';
 import { linkifyCitationMarkers, parseCitationMarkers } from '../lib/citation-markers';
 import SearchIntegrityNotice, { useSearchIntegrity } from '../components/research/SearchIntegrityNotice';
@@ -17,13 +19,46 @@ import { useApp } from '../context/AppState';
 import { hasResearchSearchCriteria } from '../services/researchSessions';
 import { describeBooleanQueryIssue } from '../utils/booleanSearch';
 import { scopedStorageKey } from '../services/storageNamespace';
+import { CHECKLIST_STORAGE_KEY, checklistToItem } from '../services/userDataCodecs';
+import { onUserDataHydrated, syncUserCollection } from '../services/userData';
 import {
+  ACCOUNTING_ISSUES,
   CURATED_ASC_TOPICS,
   FASB_CODIFICATION_URL,
+  accountingIssueHref,
   ascTopicUrl,
+  checklistItemLinks,
   filterCuratedAscTopics,
 } from '../config/accountingTopics';
+import AsuIndexPanel from '../components/accounting/AsuIndexPanel';
+import { asuCitationsInText, asuRowHref, fetchAsuIndex, findAsu, type AsuEntry } from '../services/asuIndex';
 import './AccountingHub.css';
+import './AccountingIssuePage.css';
+
+type HubTab = 'standards' | 'asu' | 'checklist' | 'research' | 'ai';
+
+/** Links a filing hit back to the ASU index rows of the Updates its matched text cites. */
+function AsuCitationLinks({ text }: { text: string }) {
+  const numbers = asuCitationsInText(text);
+  if (numbers.length === 0) return null;
+  return (
+    <span className="issue-asu-citations" style={{ marginTop: '4px' }}>
+      {numbers.map(number => <Link key={number} href={asuRowHref(number)} className="issue-chip">ASU {number}</Link>)}
+    </span>
+  );
+}
+
+/** The issue page and ASU a checklist item's wording points to. */
+function ChecklistItemLinks({ text, asuEntries }: { text: string; asuEntries: AsuEntry[] | null }) {
+  const links = checklistItemLinks(text, asuEntries ? number => findAsu(asuEntries, number) : undefined);
+  if (!links.issue && !links.asu) return null;
+  return (
+    <span className="checklist-item-links">
+      {links.issue && <Link href={links.issue.href} className="issue-chip">Issue: {links.issue.label}</Link>}
+      {links.asu && <Link href={links.asu.href} className="issue-chip">ASU {links.asu.number}</Link>}
+    </span>
+  );
+}
 
 const ADOPTION_SEARCHES = [
   'DISE',
@@ -33,7 +68,6 @@ const ADOPTION_SEARCHES = [
 ];
 
 const RESEARCH_DEFAULT_FORMS = '10-K,10-Q,20-F,8-K';
-const CHECKLIST_STORAGE_KEY = 'urc.accounting-review-checklist.v1';
 interface ChecklistItem { id: number; text: string; done: boolean }
 
 interface AiRendering {
@@ -82,7 +116,20 @@ export default function AccountingHub() {
   const navigate = useRouter();
   const { addSavedAlert, pendingSearchIntent, setPendingSearchIntent, setActiveSearchContext } = useApp();
 
-  const [activeTab, setActiveTab] = useState<'standards' | 'checklist' | 'research' | 'ai'>('research');
+  const [activeTab, setActiveTab] = useState<HubTab>('research');
+  const searchParams = useSearchParams();
+  const routeTab = searchParams?.get('tab') || '';
+  const routeAsu = searchParams?.get('asu') || '';
+  const [focusAsu, setFocusAsu] = useState<string | null>(null);
+  const [checklistAsuEntries, setChecklistAsuEntries] = useState<AsuEntry[] | null>(null);
+
+  // Deep links (?tab=asu&asu=2023-07) from filing hits, issue pages, and checklist items.
+  useEffect(() => {
+    if (routeTab === 'asu' || routeTab === 'standards' || routeTab === 'checklist' || routeTab === 'research' || routeTab === 'ai') {
+      setActiveTab(routeTab);
+    }
+    if (routeTab === 'asu') setFocusAsu(routeAsu || null);
+  }, [routeTab, routeAsu]);
 
   const [aiQuery, setAiQuery] = useState('');
   const [aiTopic, setAiTopic] = useState('');
@@ -143,7 +190,12 @@ export default function AccountingHub() {
   useEffect(() => {
     const storageKey = scopedStorageKey(CHECKLIST_STORAGE_KEY);
     if (storageKey) window.localStorage.setItem(storageKey, JSON.stringify(checklistItems));
+    // Signed in, the checklist is also kept on the account (no-op signed out).
+    syncUserCollection('checklists', [checklistToItem(checklistItems)]);
   }, [checklistItems]);
+
+  // Adopt the account's checklist once it has replaced the local cache.
+  useEffect(() => onUserDataHydrated('checklists', () => setChecklistItems(loadChecklistItems())), []);
 
   const researchMetrics = useMemo(() => {
     const issuers = new Set(researchResults.map(result => result.entityName)).size;
@@ -165,7 +217,12 @@ export default function AccountingHub() {
     {
       key: 'description',
       header: 'Why It Matched',
-      render: row => row.description || row.primaryDocument || 'Matched on filing metadata',
+      render: row => (
+        <>
+          {row.description || row.primaryDocument || 'Matched on filing metadata'}
+          <AsuCitationLinks text={`${row.matchSnippet || ''} ${row.matchReason || ''}`} />
+        </>
+      ),
     },
     {
       key: 'accessionNumber',
@@ -389,6 +446,18 @@ export default function AccountingHub() {
 
   useEffect(() => () => { if (undoTimerRef.current) window.clearTimeout(undoTimerRef.current); }, []);
 
+  // A checklist item that cites an ASU links that Update's issue page too,
+  // which needs the index's topic for the Update. Read it only when needed.
+  const checklistCitesAsu = checklistItems.some(item => asuCitationsInText(item.text).length > 0);
+  useEffect(() => {
+    if (activeTab !== 'checklist' || !checklistCitesAsu || checklistAsuEntries) return;
+    let cancelled = false;
+    fetchAsuIndex()
+      .then(index => { if (!cancelled) setChecklistAsuEntries(index.entries); })
+      .catch(() => { /* links fall back to the item's own wording */ });
+    return () => { cancelled = true; };
+  }, [activeTab, checklistCitesAsu, checklistAsuEntries]);
+
   return (
     <div className="accounting-hub-container">
       <div className="hub-header">
@@ -405,12 +474,26 @@ export default function AccountingHub() {
             <button type="button" aria-pressed={activeTab === 'standards'} className={`nav-btn ${activeTab === 'standards' ? 'active' : ''}`} onClick={() => setActiveTab('standards')}>
               <BookOpen size={18} /> Standards Directory
             </button>
+            <button type="button" aria-pressed={activeTab === 'asu'} className={`nav-btn ${activeTab === 'asu' ? 'active' : ''}`} onClick={() => setActiveTab('asu')}>
+              <FileText size={18} /> ASU Index
+            </button>
             <button type="button" aria-pressed={activeTab === 'checklist'} className={`nav-btn ${activeTab === 'checklist' ? 'active' : ''}`} onClick={() => setActiveTab('checklist')}>
               <CheckSquare size={18} /> Review Checklist
             </button>
             <button type="button" aria-pressed={activeTab === 'ai'} className={`nav-btn ${activeTab === 'ai' ? 'active' : ''}`} onClick={() => setActiveTab('ai')}>
               <Sparkles size={18} /> Ask AI for ASCs
             </button>
+          </nav>
+
+          <nav className="sidebar-widget mt-8" aria-label="Accounting issue pages">
+            <h4>Issue Pages</h4>
+            <ul className="hub-issue-links">
+              {ACCOUNTING_ISSUES.map(issue => (
+                <li key={issue.id}>
+                  <Link href={accountingIssueHref(issue.id)}>{issue.label}</Link>
+                </li>
+              ))}
+            </ul>
           </nav>
 
           <div className="sidebar-widget mt-8">
@@ -442,7 +525,7 @@ export default function AccountingHub() {
                     onClick={() => setResearchMode('semantic')}
                     style={{ borderColor: researchMode === 'semantic' ? 'var(--accent-primary)' : undefined }}
                   >
-                    Filing Research
+                    {SEARCH_MODE_LABEL.semantic}
                   </button>
                   <button
                     type="button"
@@ -640,6 +723,8 @@ export default function AccountingHub() {
             </div>
           )}
 
+          {activeTab === 'asu' && <AsuIndexPanel focusNumber={focusAsu} />}
+
           {activeTab === 'checklist' && (
             <div className="tab-pane fade-in">
               <div className="pane-header flex justify-between items-center">
@@ -698,7 +783,10 @@ export default function AccountingHub() {
                           <button type="button" className="secondary-btn" onClick={() => setEditingChecklistId(null)}>Cancel</button>
                         </div>
                       ) : (
-                        <span className="item-text">{item.text}</span>
+                        <span className="item-text">
+                          {item.text}
+                          <ChecklistItemLinks text={item.text} asuEntries={checklistAsuEntries} />
+                        </span>
                       )}
                       <div className="checklist-item-actions">
                         <button type="button" className="icon-btn" aria-label={`Edit ${item.text}`} onClick={() => { setEditingChecklistId(item.id); setEditingChecklistText(item.text); }}><Pencil size={16} /></button>

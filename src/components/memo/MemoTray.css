@@ -196,3 +196,26 @@
   font-size: 0.66rem;
   padding: 0 5px;
 }
+
+.memo-tray-export {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 12px 12px;
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+.memo-tray-export label { display: flex; flex-direction: column; gap: 3px; font-weight: 600; }
+.memo-tray-export input {
+  border: 1px solid var(--input-border);
+  border-radius: 4px;
+  background: var(--surface-subtle);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  font-weight: 400;
+  padding: 5px 8px;
+}
+.memo-tray-export-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.memo-tray-export-actions .el-btn { display: inline-flex; align-items: center; gap: 6px; }
+.memo-tray-export-hint { color: var(--text-muted); }

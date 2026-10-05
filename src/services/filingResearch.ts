@@ -19,6 +19,7 @@ import {
 } from './auditors';
 import { loadSicDirectoryIndex } from './referenceData';
 import { deriveSectionPath } from '../utils/sectionPath';
+import { buildHitQuery, summarizeDocumentHits } from '../utils/documentFind';
 import { isValidIsoDate } from '../lib/api-query';
 import { extractResolvedSection, resolveSectionScope } from '../utils/sectionTaxonomy';
 import {
@@ -26,7 +27,7 @@ import {
   referenceBooleanExpression,
   textCitesReference,
 } from '../utils/accountingReference';
-import { parseSearchHit } from '../hooks/useEdgarSearch';
+import { parseSearchHit } from '../utils/edgarSearchHit';
 import {
   buildCandidateQueryFromBoolean,
   booleanQueryMatches,
@@ -80,6 +81,15 @@ export interface FilingResearchResult {
    * matches, where no fetched text can vouch for a location.
    */
   matchSectionPath?: string;
+  /**
+   * Up to three distinct passages from the validated text, each with its
+   * section breadcrumb. The first is always matchSnippet / matchSectionPath;
+   * the rest are later hits whose context does not overlap it. Absent when
+   * no fetched text vouches for them (metadata and delegated matches).
+   */
+  matchSnippets?: MatchPassage[];
+  /** Hits of the query in the validated text of the matched document. */
+  matchHitCount?: number;
   matchReason: string;
   score: number;
   relevanceScore: number;
@@ -113,6 +123,25 @@ export interface FilingResearchResult {
   /** How many distinct documents in this accession matched (>1 when several
    *  exhibits hit and were rolled up into this single row). */
   matchedDocumentCount?: number;
+  /** Every exhibit of this accession that matched, rolled up under the
+   *  parent filing row — each one opens in the viewer on its own. */
+  matchedExhibits?: MatchedExhibit[];
+}
+
+export interface MatchPassage {
+  excerpt: string;
+  /** Section breadcrumb, or '' when no heading precedes the passage. */
+  sectionPath: string;
+}
+
+export interface MatchedExhibit {
+  /** The exhibit's file inside the accession (ex99-1.htm). */
+  documentName: string;
+  /** EX-99.1, EX-10.1 … */
+  documentType: string;
+  matchSnippet: string;
+  matchSectionPath?: string;
+  matchHitCount?: number;
 }
 
 interface FilingSignal {
@@ -427,6 +456,16 @@ function annotateResultMatchContext(
   // derived from the text already fetched for validation. Delegated matches
   // carry no text, so they carry no breadcrumb — never a guess.
   result.matchSectionPath = matchSnippet && filingText ? deriveSectionPath(filingText, matchSnippet) : '';
+  // Further passages and the hit count come from the same text — the row
+  // can only show places in the filing that validation actually read.
+  const hitQuery = rawQuery.trim() ? buildHitQuery(rawQuery, mode, terms) : '';
+  const hitSummary = matchSnippet && filingText && hitQuery
+    ? summarizeDocumentHits(filingText, hitQuery, {
+        lead: { excerpt: matchSnippet, sectionPath: result.matchSectionPath },
+      })
+    : null;
+  result.matchSnippets = hitSummary?.snippets;
+  result.matchHitCount = hitSummary?.hitCount;
   result.matchReason =
     proximityDistance != null
       ? proximityDistance === 0
@@ -935,12 +974,29 @@ function matchesSignalFilters(
 function rollUpExhibitMatches(results: FilingResearchResult[]): FilingResearchResult[] {
   const byFiling = new Map<string, FilingResearchResult>();
   const matchedDocs = new Map<string, Set<string>>();
+  const exhibitsByFiling = new Map<string, Map<string, MatchedExhibit>>();
 
   for (const result of results) {
     const key = `${result.cik}:${result.accessionNumber}`;
     const docs = matchedDocs.get(key) || new Set<string>();
     docs.add(result.primaryDocument || result.documentType);
     matchedDocs.set(key, docs);
+
+    // Keep every matching exhibit, with the evidence its own validation
+    // recorded, so the parent row can list them instead of "+N more".
+    if (isExhibitDocumentType(result.documentType) && result.primaryDocument) {
+      const exhibits = exhibitsByFiling.get(key) || new Map<string, MatchedExhibit>();
+      if (!exhibits.has(result.primaryDocument)) {
+        exhibits.set(result.primaryDocument, {
+          documentName: result.primaryDocument,
+          documentType: result.documentType,
+          matchSnippet: result.matchSnippet || '',
+          matchSectionPath: result.matchSectionPath || undefined,
+          matchHitCount: result.matchHitCount,
+        });
+      }
+      exhibitsByFiling.set(key, exhibits);
+    }
 
     const existing = byFiling.get(key);
     if (!existing) {
@@ -956,8 +1012,13 @@ function rollUpExhibitMatches(results: FilingResearchResult[]): FilingResearchRe
 
   return Array.from(byFiling.entries()).map(([key, result]) => {
     const count = matchedDocs.get(key)?.size ?? 1;
+    const exhibits = Array.from(exhibitsByFiling.get(key)?.values() ?? []).sort((a, b) =>
+      a.documentType.localeCompare(b.documentType, undefined, { numeric: true }) ||
+      a.documentName.localeCompare(b.documentName, undefined, { numeric: true })
+    );
+    const exhibitList = exhibits.length > 0 ? { matchedExhibits: exhibits } : {};
     if (!isExhibitDocumentType(result.documentType)) {
-      return count > 1 ? { ...result, matchedDocumentCount: count } : result;
+      return count > 1 ? { ...result, matchedDocumentCount: count, ...exhibitList } : result;
     }
 
     // Exhibit-only match: present it as the parent filing, with the exhibit
@@ -968,6 +1029,7 @@ function rollUpExhibitMatches(results: FilingResearchResult[]): FilingResearchRe
       matchedDocumentType: result.documentType,
       matchedDocumentUrl: buildFilingUrl(result.cik, result.accessionNumber, result.primaryDocument),
       matchedDocumentCount: count,
+      ...exhibitList,
     };
   });
 }
@@ -1778,3 +1840,24 @@ export async function buildSearchTrendSummary(
     .filter(Boolean)
     .join(' ');
 }
+
+/**
+ * The executor's own pure filing-domain stages, exposed as one bundle so the
+ * server-side search-job worker (src/app/api/search-jobs) drives the SAME
+ * matching, snippet, ranking and roll-up code as the browser — never a copy
+ * that could drift. Network-bound stages are not included: the worker supplies
+ * its own paced, server-side clients for those.
+ */
+export const filingResearchStages = {
+  mapSearchHit,
+  uniqueById: uniqueById<FilingResearchResult>,
+  matchesBaseFilters,
+  matchesSignalFilters,
+  annotateResultMatchContext,
+  sortResearchResults,
+  getSignalCacheKey,
+  rollUpExhibitMatches,
+  detectAuditor,
+  detectAcceleratedStatus,
+  isExhibitDocumentType,
+} as const;

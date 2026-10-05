@@ -1,0 +1,96 @@
+/* Evidence below a result card: compact by default (one line per control),
+   detail behind native disclosures. */
+
+.result-evidence-details {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 4px 12px;
+  padding: 4px 10px 8px 13px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--surface-panel);
+  font-size: 0.74rem;
+}
+
+.result-evidence-disclosure {
+  flex: 1 1 100%;
+}
+
+.result-evidence-disclosure > summary {
+  width: fit-content;
+  color: var(--accent-soft, var(--accent-primary));
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.result-evidence-disclosure > summary:focus-visible,
+.result-evidence-link:focus-visible,
+.result-evidence-exhibit:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 2px;
+}
+
+.result-evidence-passages,
+.result-evidence-exhibits {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 6px 0 2px;
+  padding: 0;
+  list-style: none;
+}
+
+.result-evidence-path {
+  margin-bottom: 2px;
+  color: var(--text-secondary);
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.result-evidence-snippet {
+  padding-left: 8px;
+  border-left: 2px solid var(--border-color);
+  color: var(--text-secondary);
+  line-height: 1.45;
+}
+
+.result-evidence-snippet mark {
+  padding: 0 2px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--status-warning) 24%, transparent);
+  color: var(--status-warning);
+}
+
+.result-evidence-link,
+.result-evidence-exhibit {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent-soft, var(--accent-primary));
+  font-size: 0.74rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.result-evidence-link:hover,
+.result-evidence-exhibit:hover {
+  text-decoration: underline;
+}
+
+.result-evidence-exhibit-type {
+  font-family: var(--font-mono);
+}
+
+.result-evidence-exhibit-name {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.result-evidence-exhibit-hits {
+  color: var(--text-muted);
+  font-weight: 500;
+}

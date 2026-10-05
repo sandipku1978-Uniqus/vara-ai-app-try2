@@ -9,16 +9,20 @@ import {
   Search, LayoutDashboard, BarChart2, MessageSquare, Menu, ChevronLeft, ChevronRight,
   BookOpen, Globe, Users, Briefcase, Handshake, LifeBuoy,
   TrendingUp, UserCheck, Mail, ShieldCheck, Gavel, Scale,
-  FileSearch, DollarSign, Mic, ClipboardList, Moon, Sun, X
+  FileSearch, DollarSign, Mic, ClipboardList, Moon, Sun, X, FolderOpen
 } from 'lucide-react';
 import { useApp } from '../../context/AppState';
 import { URCBrandLockup, URCBrandMark } from '../brand/URCBrand';
 import MemoTray from '../memo/MemoTray';
+import CartTray from '../cart/CartTray';
+import AlertBell from '../alerts/AlertBell';
 import { BRAND } from '../../config/brand';
 import { EARNINGS_SCOPE_LABEL } from '../../config/earnings';
+import { ENFORCEMENT_ROUTE_LABEL } from '../../config/enforcement';
 import { clerkEnabled } from '../../services/auth';
 import { findProductRoute } from '../../config/routes';
 import CommandPalette from './CommandPalette';
+import ProjectSwitcher from './ProjectSwitcher';
 import './Layout.css';
 
 function SidebarNavItem({
@@ -160,6 +164,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen: boolean; on
 
         <div className="nav-group-header">Research</div>
         <SidebarNavItem to="/search" label="Research Workbench" icon={<Search size={16} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
+        <SidebarNavItem to="/projects" label="Projects" icon={<FolderOpen size={16} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
         <SidebarNavItem to="/comment-letters" label="Comment Letters" icon={<Mail size={16} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
         <SidebarNavItem to="/exhibits" label="Exhibits & Agreements" icon={<FileSearch size={16} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
         <SidebarNavItem to="/no-action-letters" label="No-Action Letters" icon={<ShieldCheck size={16} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
@@ -174,7 +179,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: { mobileOpen: boolean; on
         <div className="nav-group-header">Reference</div>
         <SidebarNavItem to="/accounting" label="Accounting Standards" icon={<BookOpen size={16} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
         <SidebarNavItem to="/regulation" label="Securities Regulation" icon={<Scale size={16} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
-        <SidebarNavItem to="/enforcement" label="SEC Litigation Releases" icon={<Gavel size={16} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
+        <SidebarNavItem to="/enforcement" label={ENFORCEMENT_ROUTE_LABEL} icon={<Gavel size={16} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
 
         <div className="nav-group-header">Transactions</div>
         <SidebarNavItem to="/ipo" label="IPO Center" icon={<Briefcase size={16} />} isSidebarCollapsed={visuallyCollapsed} onNavigate={onMobileClose} />
@@ -210,7 +215,11 @@ export function Navbar({ mobileNavOpen, onMobileNavToggle, menuButtonRef }: { mo
   }, []);
 
   useEffect(() => {
-    const matchingLabel = location === '/' ? 'Home' : findProductRoute(location)?.label || 'Workspace';
+    const matchingLabel = location === '/'
+      ? 'Home'
+      : location === '/projects' || location.startsWith('/projects/')
+        ? 'Projects'
+        : findProductRoute(location)?.label || 'Workspace';
 
     setCurrentPageContext({ path: location, label: matchingLabel });
   }, [location, setCurrentPageContext]);
@@ -263,6 +272,9 @@ export function Navbar({ mobileNavOpen, onMobileNavToggle, menuButtonRef }: { mo
             <span>{mounted ? (themeMode === 'dark' ? 'Switch to light surfaces' : 'Switch to dark surfaces') : 'Loading...'}</span>
           </span>
         </button>
+        {!isLanding && <ProjectSwitcher />}
+        {!isLanding && clerkEnabled && isLoaded && isSignedIn && <AlertBell />}
+        {!isLanding && <CartTray />}
         {!isLanding && (
           <button className="copilot-entry-btn" onClick={() => setChatOpen(true)} title={`Open ${BRAND.copilotName}`}>
             <span className="copilot-entry-ping" />
@@ -313,6 +325,10 @@ function Breadcrumbs() {
   let trail: Array<{ label: string; href?: string }>;
   if (location.startsWith('/filing/')) {
     trail = [{ label: 'Research', href: '/search' }, { label: 'Filing viewer' }];
+  } else if (location === '/projects' || location.startsWith('/projects/')) {
+    trail = location === '/projects'
+      ? [{ label: 'Research' }, { label: 'Projects' }]
+      : [{ label: 'Research' }, { label: 'Projects', href: '/projects' }, { label: 'Project workspace' }];
   } else if (location.startsWith('/company/')) {
     // The dossier renders its own breadcrumb with the company name
     return null;

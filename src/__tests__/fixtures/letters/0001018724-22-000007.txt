@@ -1,0 +1,71 @@
+Document
+
+February 18, 2022
+
+Cara Wirth
+United States Securities and Exchange Commission
+Division of Corporation Finance
+Office of Trade & Services
+100 F Street, N.E.
+Washington, D.C. 20549-0405
+
+Re:Amazon.com, Inc.
+Form 10-K for Fiscal Year Ended December 31, 2020
+Filed February 3, 2021
+File No. 000-22513
+
+Dear Ms. Wirth:
+On behalf of Amazon.com, Inc., this responds to your supplemental letter of January 24, 2022 regarding our Annual Report on Form 10-K for the year ended December 31, 2020, following our initial response letter of October 21, 2021 to your letter of September 23, 2021 and our supplemental response letter of December 7, 2021 to your letter of November 8, 2021. Each of your supplemental comments is set forth below, followed by our response.
+Form 10-K for the Year Ended December 31, 2020
+General
+1.We note that your response to comment 3 regarding reputational concerns points to an analysis of period-over-period changes in sales, operating income, and categories or operating expenses. Please tell us how this analysis considered changes in interest from investors, lenders, or other third parties with respect to your operations or products that produce greenhouse gas emissions.
+Response
+We respectfully confirm that our response to prior comment 3, addressing whether there have been any material effects on (including material trends affecting) our operations or financial results attributable to any reputational concerns regarding operations or products that produce greenhouse gas emissions, considered changes in interest from investors, lenders, and others, including potential reputational impacts referenced in the Commission’s 2010 guidance regarding climate change disclosures.1 For example, our offering of $1 billion of Sustainability Notes (as 
+
+1 Commission Guidance Regarding Disclosure Related to Climate Change, Release No. 33-9106 (Feb. 2, 2010).
+
+February 18, 2022
+Page 2
+
+defined in the Prospectus Supplement filed on May 12, 2021 pursuant to Rule 424(b)(2)) was oversubscribed, resulting in a lower interest rate, but the lower interest rate on the Sustainability Notes is not material to our liquidity or financial results.
+We also confirm that investors, lenders, and others expressing interest in climate change matters have generally been supportive of our initiatives. As discussed on page 14 of our definitive proxy statement filed on April 15, 2021, we meet regularly with our shareholders to discuss business strategy, performance, compensation philosophy, corporate governance, and environmental and social topics—including climate change and related issues. This is complemented by additional periodic touchpoints with investors, lenders, employees, customers, and other stakeholders by our Investor Relations, ESG Engagement, Public Relations, Sustainability, or other teams in response to inquiries by these stakeholders. We have taken our engagement with such parties into consideration when concluding that any reputational risks with respect to our operations and products that produce greenhouse gas emissions have not been material to our business or financial results or to the market for our securities.
+2.We note that your response to prior comment 4 refers to the actions you are proactively taking to reduce greenhouse gas emissions and promote sustainability in your operations. Tell us how you considered providing disclosure that specifically addresses the challenges associated with reducing your carbon intensity (e.g., the pace of technological change necessary to meet your climate initiatives, the availability of climate-friendly assets such as electric and lower-emission vehicles, etc.).
+Response
+In connection with preparation of our annual report on Form 10-K and each quarterly report on Form 10-Q, our disclosure controls and procedures include a review of risk factors with business, finance, and legal leaders, including in our Sustainability group. As a technology company that seeks to constantly invent, the challenges and risks associated with fulfilling The Climate Pledge to date have not been materially greater or different than those we face in achieving our other business and operational objectives. In assessing this, we evaluate the specific goals and initiatives that we have announced to date and the science and resources that are available or that are needed to reach the goal, as well as our progress to date. For example, using a science-based approach that combines lab testing, machine learning, materials science, and manufacturing partnerships to scale sustainable change across our packaging supply chain, we have reduced the need for additional packaging and improved the design and materials used for our packaging assortment, reducing the weight of packaging materials while making our packaging more robust. Similarly, we believe that addressing business needs through agreements with Rivian and Stellantis for electric vehicles, through our renewable energy purchase contracts, and numerous other initiatives across our operations, have helped suppliers obtain the funding and scale needed to pursue technological advances that will support our Climate Pledge goals. 
+Through our risk factor review process, we took into account the increasing number of specific initiatives that we have announced, and recognized that a number of them are dependent on developments by third parties, and that even once our current initiatives are fully operational, progress could be limited by technological restrictions and other factors. To address those risks, we included language in the Risk Factors section of our Annual Report on Form 10-K for the year ended December 31, 2021 stating that our sustainability initiatives may be unsuccessful for a 
+
+February 18, 2022
+Page 3
+
+variety of reasons, including if we are unable to realize the expected benefits of new technologies or if we do not successfully plan or execute new strategies. 
+We appreciate the opportunity to present our view on these matters. Should you have additional questions or matters that we could elaborate on, we would welcome the opportunity to meet and discuss our climate-change related disclosures.
+Very truly yours,
+/s/ Shelley L. Reynolds
+Shelley L. Reynolds
+Vice President, Worldwide Controller
+Amazon.com, Inc.
+
+cc:Lilyanna Peyser
+Division of Corporation Finance
+
+Audit Committee of the Amazon.com, Inc. Board of Directors
+
+Andrew R. Jassy
+President and Chief Executive Officer
+Amazon.com, Inc.
+
+Brian T. Olsavsky
+Senior Vice President and Chief Financial Officer
+Amazon.com, Inc.
+
+David A. Zapolsky
+Senior Vice President, General Counsel, and Secretary
+Amazon.com, Inc.
+
+Jeff Lang
+Partner
+Ernst & Young LLP
+
+Ronald O. Mueller
+Partner
+Gibson, Dunn & Crutcher LLP

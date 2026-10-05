@@ -8,9 +8,15 @@ import {
   Gavel, Globe, HelpCircle, LayoutDashboard, LineChart, Mail,
   Mic, Scale, Search, Shield, TrendingUp, UserCheck, Users
 } from 'lucide-react';
-import { ENFORCEMENT_SCOPE_LIMITATION } from '../config/enforcement';
+import { ENFORCEMENT_ROUTE_LABEL, ENFORCEMENT_ROUTE_LIMITATION } from '../config/enforcement';
 import { EARNINGS_SCOPE_LABEL, EARNINGS_SCOPE_LIMITATION } from '../config/earnings';
 import { BRAND } from '../config/brand';
+import { useUserDataStatus } from '../hooks/useUserDataStatus';
+import {
+  isResearchAccountSynced,
+  researchStorageCopy,
+  type ResearchStorageCopy,
+} from '../components/projects/researchStorageCopy';
 import './SupportCenter.css';
 
 /* ------------------------------------------------------------------ */
@@ -52,7 +58,7 @@ const PLATFORM_LINKS = [
     { label: 'Securities Regulation', href: '/regulation', icon: Scale },
     { label: 'Comment Letters', href: '/comment-letters', icon: Mail },
     { label: 'No-Action Letters', href: '/no-action-letters', icon: FileText },
-    { label: 'SEC Litigation Releases', href: '/enforcement', icon: Gavel },
+    { label: ENFORCEMENT_ROUTE_LABEL, href: '/enforcement', icon: Gavel },
   ]},
   { group: 'Transactions', items: [
     { label: 'IPO Center', href: '/ipo', icon: TrendingUp },
@@ -66,22 +72,23 @@ const PLATFORM_LINKS = [
 /* ------------------------------------------------------------------ */
 /*  Guide content                                                      */
 /* ------------------------------------------------------------------ */
-const GUIDE_SECTIONS: GuideSection[] = [
+// Storage claims follow getUserDataStatus(): see researchStorageCopy.
+const guideSectionsFor = (copy: ResearchStorageCopy): GuideSection[] => [
   {
     id: 'start-here',
     title: 'Start Here',
     summary: 'The Research Workbench is the central hub for SEC disclosure research. Start here when you have a topic, entity, or filing type in mind and want to explore what issuers are disclosing.',
     steps: [
       'Open the Research Workbench from the sidebar or press the search bar on the Dashboard.',
-      'Enter a keyword, company name, or disclosure topic in the main search field. Filing Research mode can extract supported company, form, date, and auditor constraints from plain-language input.',
+      'Enter a keyword, company name, or disclosure topic in the main search field. Plain language mode extracts supported company, form, date, and auditor constraints from ordinary prose with fixed rules.',
       'Use form type, date range, SIC code, auditor, exchange, filer status, section keywords, and other available fields to narrow results before searching.',
-      'Toggle between Filing Research mode for assisted query preparation and Boolean mode for AND, OR, NOT, quoted phrases, w/# and p/# proximity, wildcards (crypto*, wom?n), numeric operands (#, $#, %#), and the auditor: field.',
+      'Toggle between Plain language mode for rule-based query preparation and Boolean mode for AND, OR, NOT, quoted phrases, w/# and p/# proximity, wildcards (crypto*, wom?n), numeric operands (#, $#, %#), and the auditor: field.',
       'Click any result row to open the filing in the Filing Detail viewer.',
     ],
     notes: [
       'Results are constrained by supported metadata filters and filing-text checks; missing source metadata can still affect coverage.',
       'If a search returns too many results, add form type and date range filters before further narrowing.',
-      'Natural language search automatically detects form types, date windows, auditor names, and entity references from your query.',
+      'Plain language mode detects form types, date windows, auditor names, and entity references in your query with fixed rules; it is a parser, not semantic or AI retrieval, so a concept it has no rule for is searched as words.',
     ],
     links: [
       { label: 'Open Research Workbench', href: '/search' },
@@ -93,7 +100,7 @@ const GUIDE_SECTIONS: GuideSection[] = [
     title: 'Research Workbench Deep Dive',
     summary: 'Master the full workflow: assisted filing search, Boolean search, research sessions with tabs, result insights, and saved alerts.',
     steps: [
-      'Use Filing Research mode to turn supported plain-language constraints into a deterministic SEC search. It is not conceptual or vector retrieval.',
+      'Use Plain language mode to turn supported plain-language constraints into a deterministic SEC search. It is a rule-based parser, not semantic, conceptual or vector retrieval.',
       'Switch to Boolean mode when you need exact-match results. Use AND, OR, NOT, "quoted phrases", proximity operators like w/5, near/10 or ordered p/3, single-word wildcards (crypto*, wom?n), and numeric operands (#, $#, %#). Your mode choice is authoritative — typed prose will not silently switch modes.',
       'Precedence is NOT, then proximity, then AND (explicit or implied by a space), then OR. Use parentheses to override it: (impairment OR restructuring) AND lease.',
       'Bare terms match whole words, case-insensitively, with singular/plural equivalence — lease also matches leases, and weakness also matches weaknesses. There is no broader stemming, so audit does not match auditory. Quoted phrases match a contiguous run of whole words, so "net income" does not match "planet income". Punctuation is normalised both ways, so 10-K, non-GAAP, R&D and U.S. GAAP all match their spaced forms.',
@@ -103,10 +110,10 @@ const GUIDE_SECTIONS: GuideSection[] = [
       'Save an alert if you plan to rerun the same search regularly — it will appear on your Dashboard for quick re-execution.',
     ],
     notes: [
-      'Saved alerts and annotations are browser-local. They help with repeat research but are not shared across devices.',
+      copy.supportAlertsAndAnnotationsNote,
       'Boolean results are verified matches within a bounded candidate window, not a claim about the whole EDGAR corpus. If a run hits its time or request budget, or a filing could not be retrieved for validation, the results are labelled partial — read a zero in that state as "no verified matches among the candidates checked", not "nothing exists".',
       'If a Boolean search returns nothing, check for typos in quoted phrases and try widening the date window first. Invalid syntax (a dangling AND/OR, unbalanced parentheses or quotes, or a NOT-only query) is reported inline and runs no search at all.',
-      'Research sessions are saved in the current browser and can be restored there; they are not shared across devices.',
+      copy.supportResearchTabsNote,
     ],
     links: [
       { label: 'Open Research Workbench', href: '/search' },
@@ -124,7 +131,7 @@ const GUIDE_SECTIONS: GuideSection[] = [
       'Use Print / Save PDF to open a print-friendly view, then save as PDF from your browser print dialog.',
     ],
     notes: [
-      'Annotations are stored locally in the current browser.',
+      copy.supportAnnotationsNote,
       'Some XML-based SEC documents do not preview inline and must be opened on SEC.gov.',
       'Redline compares disclosure blocks (not character-by-character) against the closest prior filing of the same form type.',
       'PDF export uses the browser print dialog — this is the most reliable client-side approach.',
@@ -136,15 +143,15 @@ const GUIDE_SECTIONS: GuideSection[] = [
   {
     id: 'dashboard',
     title: 'Dashboard Overview',
-    summary: 'The Dashboard shows filing activity for your browser-local watchlist, local saved-search alerts, and watchlist-scoped charts.',
+    summary: copy.supportDashboardSummary,
     steps: [
       'Review current-year filing volume and form mix for the companies in your watchlist.',
       'Use the watchlist to track specific companies and see their latest filings at a glance.',
-      'Use local saved-search alerts to open or manually re-check frequent queries.',
+      copy.supportDashboardAlertsStep,
       'Use filing-volume and watchlist cards to open a prefilled Research Workbench search; open a filing result there for the detailed viewer.',
     ],
     notes: [
-      'Dashboard data refreshes when you navigate to the page. Watchlist items and alerts are browser-local.',
+      copy.supportDashboardNote,
       'The quick-search bar on the Dashboard takes you directly to the Research Workbench with your query pre-filled.',
     ],
     links: [
@@ -191,7 +198,7 @@ const GUIDE_SECTIONS: GuideSection[] = [
   {
     id: 'accounting-research',
     title: 'Accounting Standards & Analytics',
-    summary: 'The Accounting Research Hub combines a standards-topic directory, SEC filing research, result-set memos, and a browser-local checklist. Accounting Analytics compares financial ratios for selected companies.',
+    summary: copy.supportAccountingSummary,
     steps: [
       'In the Accounting Research Hub, search for specific accounting standards (e.g., ASC 606, ASC 842) to find how companies describe their adoption.',
       'Filter by industry or SIC code to see how peers in your sector handle the same topic.',
@@ -209,23 +216,23 @@ const GUIDE_SECTIONS: GuideSection[] = [
   },
   {
     id: 'regulation-compliance',
-    title: 'Regulation, Comment Letters & Litigation Releases',
-    summary: 'Research SEC securities regulation, track comment letter correspondence between the SEC and registrants, review no-action letters, and monitor official SEC litigation releases.',
+    title: 'Regulation, Comment Letters & Enforcement Releases',
+    summary: 'Research SEC securities regulation, track comment letter correspondence between the SEC and registrants, review no-action letters, and monitor official SEC litigation releases and AAERs.',
     steps: [
       'Use Securities Regulation to browse and search current SEC rules and regulations.',
       'Search Comment Letters to see what the SEC staff has asked specific companies or industries about.',
       'Browse No-Action Letters for SEC staff guidance on specific regulatory questions.',
-      'Monitor SEC litigation releases for civil actions filed by the Commission.',
+      'Monitor SEC litigation releases for civil actions filed by the Commission, and Accounting and Auditing Enforcement Releases (AAERs) for actions involving accountants, auditors and financial reporting.',
     ],
     notes: [
       'Comment letter searches work best with company name or specific disclosure topic keywords.',
-      ENFORCEMENT_SCOPE_LIMITATION,
+      ENFORCEMENT_ROUTE_LIMITATION,
     ],
     links: [
       { label: 'Securities Regulation', href: '/regulation' },
       { label: 'Comment Letters', href: '/comment-letters' },
       { label: 'No-Action Letters', href: '/no-action-letters' },
-      { label: 'SEC Litigation Releases', href: '/enforcement' },
+      { label: ENFORCEMENT_ROUTE_LABEL, href: '/enforcement' },
     ],
   },
   {
@@ -306,14 +313,14 @@ const GUIDE_SECTIONS: GuideSection[] = [
   },
 ];
 
-const FAQS: FaqItem[] = [
+const faqsFor = (copy: ResearchStorageCopy): FaqItem[] => [
   {
     question: 'How do I search for a specific company\'s filings?',
     answer: 'Use the Research Workbench (/search) and enter the company name or ticker in the entity/company field. You can also navigate directly to /company/TICKER (e.g., /company/AAPL) for a dossier with recent submissions, comment letters, and financials.',
   },
   {
-    question: 'What is the difference between Filing Research and Boolean search?',
-    answer: 'Filing Research mode extracts supported constraints from plain-language input and runs a deterministic SEC search; it is not conceptual retrieval. Boolean mode supports AND, OR, NOT, quoted phrases, proximity operators — w/5 or near/10 for either order, p/3 for first-term-precedes — numeric operands (# for any number, $# for a currency amount, %# for a percentage, e.g. "goodwill impairment" w/10 $#), single-word wildcards (crypto*, wom?n — these validate against filing text but cannot widen EDGAR retrieval, so pair them with a concrete term), and an audit-firm field — auditor:Deloitte (or auditor:"Ernst & Young") — to scope results to a specific accounting firm. Boolean matching is exact: whole-word terms with singular/plural equivalence, phrases bounded to whole words, and every OR branch retrieved independently so a rare second branch is never hidden by a common first one.',
+    question: 'What is the difference between Plain language and Boolean search?',
+    answer: 'Plain language mode extracts supported constraints from ordinary prose with fixed rules and runs a deterministic SEC search; it is not semantic or conceptual retrieval. Boolean mode supports AND, OR, NOT, quoted phrases, proximity operators — w/5 or near/10 for either order, p/3 for first-term-precedes — numeric operands (# for any number, $# for a currency amount, %# for a percentage, e.g. "goodwill impairment" w/10 $#), single-word wildcards (crypto*, wom?n — these validate against filing text but cannot widen EDGAR retrieval, so pair them with a concrete term), and an audit-firm field — auditor:Deloitte (or auditor:"Ernst & Young") — to scope results to a specific accounting firm. Boolean matching is exact: whole-word terms with singular/plural equivalence, phrases bounded to whole words, and every OR branch retrieved independently so a rare second branch is never hidden by a common first one.',
   },
   {
     question: 'How do the search filters work?',
@@ -333,7 +340,7 @@ const FAQS: FaqItem[] = [
   },
   {
     question: 'Where do saved alerts and annotations live?',
-    answer: 'Both are stored locally in the browser. They are useful for your own workflow on the same machine, but they are not shared across devices and do not send background notifications.',
+    answer: copy.supportStorageFaqAnswer,
   },
   {
     question: 'How does the AI extraction work for Board Profiles?',
@@ -371,21 +378,25 @@ export default function SupportCenter() {
   const router = useRouter();
   const [query, setQuery] = useState('');
   const normalizedQuery = query.trim().toLowerCase();
+  const accountSynced = isResearchAccountSynced(useUserDataStatus());
+  const storageCopy = researchStorageCopy(accountSynced);
+  const guideSections = useMemo(() => guideSectionsFor(researchStorageCopy(accountSynced)), [accountSynced]);
+  const faqs = useMemo(() => faqsFor(researchStorageCopy(accountSynced)), [accountSynced]);
 
   const visibleSections = useMemo(() => {
-    if (!normalizedQuery) return GUIDE_SECTIONS;
-    return GUIDE_SECTIONS.filter(section =>
+    if (!normalizedQuery) return guideSections;
+    return guideSections.filter(section =>
       matchesQuery(normalizedQuery, section.title) ||
       matchesQuery(normalizedQuery, section.summary) ||
       section.steps.some(step => matchesQuery(normalizedQuery, step)) ||
       section.notes.some(note => matchesQuery(normalizedQuery, note))
     );
-  }, [normalizedQuery]);
+  }, [guideSections, normalizedQuery]);
 
   const visibleFaqs = useMemo(() => {
-    if (!normalizedQuery) return FAQS;
-    return FAQS.filter(faq => matchesQuery(normalizedQuery, faq.question) || matchesQuery(normalizedQuery, faq.answer));
-  }, [normalizedQuery]);
+    if (!normalizedQuery) return faqs;
+    return faqs.filter(faq => matchesQuery(normalizedQuery, faq.question) || matchesQuery(normalizedQuery, faq.answer));
+  }, [faqs, normalizedQuery]);
 
   const noResults = visibleSections.length === 0 && visibleFaqs.length === 0;
 
@@ -468,7 +479,7 @@ export default function SupportCenter() {
             <ul className="guide-side-notes">
               <li>PDF export uses the browser print dialog after opening a clean filing view.</li>
               <li>Redline is disclosure-block comparison, not a legal blackline.</li>
-              <li>Annotations and saved alerts are local to the current browser.</li>
+              <li>{storageCopy.supportSidebarNote}</li>
               <li>AI board extraction requires a valid Anthropic API key.</li>
               <li>XBRL financial data is live from the SEC API.</li>
             </ul>

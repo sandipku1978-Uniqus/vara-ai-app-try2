@@ -74,8 +74,15 @@ describe('taxonomy integration for the registration family', () => {
   });
 
   it('still refuses concepts with no mapping on the family', () => {
-    expect(resolveSectionScope('controls', 'S-1')).toBeNull();
-    expect(resolveSectionScope('business', 'S-1')).toBeNull();
+    expect(resolveSectionScope('cybersecurity', 'S-1')).toBeNull();
+    expect(resolveSectionScope('pay versus performance', 'S-1')).toBeNull();
+  });
+
+  it('reaches Business and Controls on a registration statement by whole-line heading (v2)', () => {
+    // The normalized-text slicer had to refuse bare "business"; a heading
+    // LINE is unambiguous, so the block slicer can take it.
+    expect(resolveSectionScope('business', 'S-1')).toMatchObject({ kind: 'block', label: 'Business' });
+    expect(resolveSectionScope('controls', 'S-1')).toMatchObject({ kind: 'block', label: 'Controls and Procedures' });
   });
 
   it('item scopes still resolve for item-numbered forms', () => {
