@@ -13,18 +13,25 @@
  * miss on text that was read is `not-found`; a read failure is `failed` with
  * its reason. None of these is ever rendered as an empty section.
  *
- * The slicer works on engine-normalized text (lowercase, punctuation
- * removed), so the downloaded section is labelled as that form, never passed
- * off as the filing's typography.
+ * The downloaded section is in the filing's own words — case, punctuation
+ * and line breaks as filed — through extractResolvedSectionOriginal, which
+ * maps the slicer's exact boundaries back onto the original text. When that
+ * mapping cannot be made exactly (it never approximates), the filing falls
+ * back to the normalized slice (lowercase, punctuation removed) and its page
+ * and CSV row say so, so normalized text is never passed off as the filing's
+ * typography.
  */
 import { HeadingLevel, Paragraph, TextRun, type Document } from 'docx';
 import type { CartFiling } from './documentCart';
-import { extractResolvedSection, resolveSectionScope, SECTION_CONCEPT_LIST } from '../utils/sectionTaxonomy';
+import { extractResolvedSection, extractResolvedSectionOriginal, resolveSectionScope, SECTION_CONCEPT_LIST } from '../utils/sectionTaxonomy';
 import { describeFilingTextFailure, type FilingTextReadOutcome } from '../utils/sectionMatrix';
 import { buildCsvRows } from '../utils/csv';
 import { buildDocument, externalLink, labelledLine, pageBreak, safeFileStem, type DocxBlock } from './docxShared';
 
 export type SectionSliceStatus = 'extracted' | 'not-mapped' | 'not-found' | 'failed';
+
+/** original: as filed. normalized: lowercase, punctuation removed (fallback). */
+export type SectionTextForm = 'original' | 'normalized';
 
 export interface CartSectionSlice {
   filing: CartFiling;
@@ -33,6 +40,8 @@ export interface CartSectionSlice {
   sectionLabel: string;
   status: SectionSliceStatus;
   text: string;
+  /** extracted only: which form `text` is in. */
+  textForm?: SectionTextForm;
   /** Primary document the text was read from, when one was read. */
   document: string;
   /** failed / not-mapped: why, in user-facing words. */
@@ -61,11 +70,18 @@ export function sliceFilingSection(
   if (!outcome.text.trim()) {
     return { ...base, sectionLabel: resolved.label, status: 'failed', text: '', reason: 'filing text was empty — retry' };
   }
-  const text = extractResolvedSection(outcome.text, resolved).trim();
-  return text
-    ? { ...base, sectionLabel: resolved.label, status: 'extracted', text }
+  const original = extractResolvedSectionOriginal(outcome.text, resolved);
+  if (original) return { ...base, sectionLabel: resolved.label, status: 'extracted', text: original, textForm: 'original' };
+  const normalized = extractResolvedSection(outcome.text, resolved).trim();
+  return normalized
+    ? { ...base, sectionLabel: resolved.label, status: 'extracted', text: normalized, textForm: 'normalized' }
     : { ...base, sectionLabel: resolved.label, status: 'not-found', text: '', reason: 'the section boundary was not found in the filing text' };
 }
+
+const TEXT_FORM_LABEL: Record<SectionTextForm, string> = {
+  original: 'As filed',
+  normalized: 'Normalized (lowercase, punctuation removed)',
+};
 
 export interface CollectDeps {
   resolvePrimaryDocument: (cik: string, accessionNumber: string) => Promise<string>;
@@ -114,7 +130,7 @@ const STATUS_LABEL: Record<SectionSliceStatus, string> = {
 
 export function sectionIndexRows(slices: readonly CartSectionSlice[]): Array<Array<string | number>> {
   return [
-    ['Page', 'Company', 'Ticker', 'Form', 'Filed', 'CIK', 'Accession', 'Section', 'Status', 'Reason', 'Characters', 'Document read', 'SEC URL'],
+    ['Page', 'Company', 'Ticker', 'Form', 'Filed', 'CIK', 'Accession', 'Section', 'Status', 'Reason', 'Text form', 'Characters', 'Document read', 'SEC URL'],
     ...slices.map((slice, index) => [
       index + 1,
       slice.filing.company,
@@ -126,6 +142,7 @@ export function sectionIndexRows(slices: readonly CartSectionSlice[]): Array<Arr
       slice.sectionLabel,
       STATUS_LABEL[slice.status],
       slice.reason || '',
+      slice.status === 'extracted' ? TEXT_FORM_LABEL[slice.textForm ?? 'normalized'] : '',
       slice.text.length,
       slice.document,
       slice.filing.sourceUrl,
@@ -140,8 +157,9 @@ export function buildSectionIndexCsv(slices: readonly CartSectionSlice[]): strin
 const PARAGRAPH_CHARS = 1200;
 
 /**
- * The slicer returns one run of normalized text; break it on word boundaries
- * into readable blocks. Breaks are presentation only — no text is dropped.
+ * Break a run of text on word boundaries into readable blocks (the
+ * normalized slice is one run). Breaks are presentation only — no text is
+ * dropped.
  */
 export function chunkSliceText(text: string, limit = PARAGRAPH_CHARS): string[] {
   const words = text.split(/\s+/).filter(Boolean);
@@ -159,19 +177,37 @@ export function chunkSliceText(text: string, limit = PARAGRAPH_CHARS): string[] 
   return chunks;
 }
 
-function sliceParagraphs(text: string): Paragraph[] {
-  return chunkSliceText(text).map(part => new Paragraph({ children: [new TextRun({ text: part })], spacing: { after: 120 } }));
+/**
+ * Paragraphs of a slice: as-filed text keeps the filing's own line breaks
+ * (one paragraph per non-blank line, an over-long line chunked on word
+ * boundaries); normalized text has none, so it is chunked as one run.
+ */
+export function sliceTextBlocks(text: string, textForm: SectionTextForm, limit = PARAGRAPH_CHARS): string[] {
+  if (textForm === 'normalized') return chunkSliceText(text, limit);
+  return text
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .filter(Boolean)
+    .flatMap(line => (line.length > limit ? chunkSliceText(line, limit) : [line]));
+}
+
+function sliceParagraphs(slice: CartSectionSlice): Paragraph[] {
+  return sliceTextBlocks(slice.text, slice.textForm ?? 'normalized')
+    .map(part => new Paragraph({ children: [new TextRun({ text: part })], spacing: { after: 120 } }));
 }
 
 export function buildSectionDocument(slices: readonly CartSectionSlice[], conceptKey: string, generatedAt: Date): Document {
   const label = conceptLabel(conceptKey);
   const extracted = slices.filter(slice => slice.status === 'extracted').length;
+  const normalized = slices.filter(slice => slice.status === 'extracted' && slice.textForm !== 'original').length;
   const children: DocxBlock[] = [
     new Paragraph({ text: `${label} — ${slices.length} selected filing${slices.length === 1 ? '' : 's'}`, heading: HeadingLevel.TITLE, spacing: { after: 200 } }),
     labelledLine('Generated', generatedAt.toISOString()),
     labelledLine('Extracted', `${extracted} of ${slices.length}; every other filing names why below and in the CSV index`),
     labelledLine('Method', 'Filing text read through the app’s shared filing-text route and sliced by the section taxonomy for each filing’s own form.'),
-    labelledLine('Text form', 'Normalized section text (lowercase, punctuation removed) — the same form section-scoped search and the YoY change matrix measure. Open each SEC link for the filing’s own typography.'),
+    labelledLine('Text form', normalized === 0
+      ? 'As filed — the filing’s own case, punctuation and line breaks, within the same section boundaries section-scoped search and the YoY change matrix measure. Tables and images are not reproduced; open each SEC link for the filing’s layout.'
+      : `As filed, except ${normalized} filing${normalized === 1 ? '' : 's'} marked “Normalized” below, whose as-filed text could not be mapped exactly to the section boundaries: those are normalized section text (lowercase, punctuation removed). Open each SEC link for the filing’s own typography.`),
   ];
 
   slices.forEach((slice, index) => {
@@ -185,7 +221,10 @@ export function buildSectionDocument(slices: readonly CartSectionSlice[], concep
     children.push(labelledLine('Accession', slice.filing.accessionNumber));
     children.push(labelledLine('Source', [externalLink(slice.filing.sourceUrl, slice.filing.sourceUrl)]));
     if (slice.status === 'extracted') {
-      children.push(...sliceParagraphs(slice.text));
+      if (slice.textForm !== 'original') {
+        children.push(labelledLine('Text form', 'Normalized (lowercase, punctuation removed) — the as-filed text could not be mapped exactly to this section’s boundaries. Open the SEC link for the filing’s own typography.'));
+      }
+      children.push(...sliceParagraphs(slice));
     } else {
       children.push(new Paragraph({
         children: [new TextRun({ text: `${STATUS_LABEL[slice.status]} — ${slice.reason || 'no further detail'}.`, italics: true })],

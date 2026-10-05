@@ -248,7 +248,7 @@ describe('cart section Word export', () => {
     addedAt: NOW.toISOString(),
   });
   const slices: CartSectionSlice[] = [
-    { filing: filing(1), conceptKey: 'risk-factors', sectionLabel: 'Risk Factors', status: 'extracted', text: 'item 1a risk factors our supply chain is concentrated', document: 'doc.htm' },
+    { filing: filing(1), conceptKey: 'risk-factors', sectionLabel: 'Risk Factors', status: 'extracted', text: 'Item 1A. Risk Factors\nOur supply chain is concentrated.', textForm: 'original', document: 'doc.htm' },
     { filing: filing(2, '8-K'), conceptKey: 'risk-factors', sectionLabel: 'Risk Factors', status: 'not-mapped', text: '', document: '', reason: 'Risk Factors is not mapped for Form 8-K' },
     { filing: filing(3), conceptKey: 'risk-factors', sectionLabel: 'Risk Factors', status: 'failed', text: '', document: 'doc.htm', reason: 'rate limited — retry' },
   ];
@@ -259,10 +259,11 @@ describe('cart section Word export', () => {
     expect(xml.match(/<w:br w:type="page"\/>/g)).toHaveLength(3);
     expect(text).toContain('Risk Factors — 3 selected filings');
     expect(text).toContain('1 of 3');
-    expect(text).toContain('our supply chain is concentrated');
+    expect(text).toContain('Item 1A. Risk FactorsOur supply chain is concentrated.');
     expect(text).toContain('Not mapped for this form — Risk Factors is not mapped for Form 8-K.');
     expect(text).toContain('Could not read filing — rate limited — retry.');
-    expect(text).toContain('Normalized section text');
+    expect(text).toContain('As filed — the filing’s own case, punctuation and line breaks');
+    expect(text).not.toContain('Normalized');
     expect(rels).toContain('https://www.sec.gov/Archives/edgar/data/1/');
   });
 
@@ -270,7 +271,9 @@ describe('cart section Word export', () => {
     const csv = buildSectionIndexCsv(slices).trim().split('\r\n');
     expect(csv).toHaveLength(4);
     expect(csv[0]).toContain('Status');
+    expect(csv[0]).toContain('Text form');
     expect(csv[1]).toContain('Extracted');
+    expect(csv[1]).toContain('As filed');
     expect(csv[2]).toContain('Not mapped for this form');
     expect(csv[3]).toContain('Could not read filing');
   });

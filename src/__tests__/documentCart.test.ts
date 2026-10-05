@@ -25,6 +25,7 @@ import {
   chunkSliceText,
   collectSectionSlices,
   sliceFilingSection,
+  sliceTextBlocks,
   type CollectDeps,
 } from '../services/cartSectionExport';
 
@@ -197,6 +198,18 @@ describe('cart bulk section download', () => {
     expect(slice.text).not.toContain('headquarters');
   });
 
+  it('exports the section in the filing\'s own case, punctuation and line breaks', () => {
+    const slice = sliceFilingSection(filing(), 'risk-factors', { ok: true, text: TEN_K }, 'aapl-2026.htm');
+    expect(slice.textForm).toBe('original');
+    // The as-filed span ends at the section's last token (P3's exact mapping).
+    expect(slice.text).toContain('Item 1A. Risk Factors\nOur supply chain is concentrated in a small number of regions');
+    expect(slice.text).not.toContain('Item 1B');
+    expect(sliceTextBlocks(slice.text, 'original')).toEqual([
+      'Item 1A. Risk Factors',
+      'Our supply chain is concentrated in a small number of regions',
+    ]);
+  });
+
   it('distinguishes not mapped, not found, empty and failed reads', () => {
     expect(sliceFilingSection(filing({ form: '8-K' }), 'risk-factors', { ok: true, text: TEN_K }, '').status).toBe('not-mapped');
     expect(sliceFilingSection(filing(), 'risk-factors', { ok: true, text: 'Item 2. Properties\nWe own it.' }, 'x.htm').status).toBe('not-found');
@@ -250,5 +263,10 @@ describe('cart bulk section download', () => {
     const chunks = chunkSliceText(words.join(' '), 200);
     expect(chunks.every(chunk => chunk.length <= 200)).toBe(true);
     expect(chunks.join(' ').split(' ')).toEqual(words);
+    // An over-long as-filed line is chunked the same way; short lines stay whole.
+    const blocks = sliceTextBlocks(`Heading.\n\n${words.join(' ')}\nLast line.`, 'original', 200);
+    expect(blocks[0]).toBe('Heading.');
+    expect(blocks[blocks.length - 1]).toBe('Last line.');
+    expect(blocks.slice(1, -1).join(' ').split(' ')).toEqual(words);
   });
 });
