@@ -12,17 +12,26 @@
 
 import { APIConnectionTimeoutError, APIError, APIUserAbortError } from '@anthropic-ai/sdk';
 import {
+  DEFAULT_MODEL_COST_WEIGHTS,
   opaqueIdentityKey,
   settleAiTokenReservation,
+  WEB_SEARCH_CALL_TOKEN_EQUIVALENT,
   type AiTokenReservation,
+  type ModelCostWeights,
 } from './rate-limit';
 import { currentCorrelationId } from './route-observability';
 
 export interface ModelUsage {
+  /** Uncached input tokens (cache reads and writes are counted separately). */
   inputTokens: number;
+  /** Output tokens, reasoning included. */
   outputTokens: number;
   cacheReadTokens: number;
   cacheWriteTokens: number;
+  /** The part of outputTokens spent on reasoning, when the provider reports it. */
+  reasoningTokens?: number;
+  /** Billable web searches (provider search tool uses). */
+  webSearchCalls?: number;
 }
 
 export const EMPTY_USAGE: ModelUsage = {
@@ -61,12 +70,19 @@ export function usageFromMessage(message: { usage?: ApiUsageLike | null } | null
 export function addUsage(first: ModelUsage | null, second: ModelUsage | null): ModelUsage | null {
   if (!first) return second;
   if (!second) return first;
-  return {
+  const sum: ModelUsage = {
     inputTokens: first.inputTokens + second.inputTokens,
     outputTokens: first.outputTokens + second.outputTokens,
     cacheReadTokens: first.cacheReadTokens + second.cacheReadTokens,
     cacheWriteTokens: first.cacheWriteTokens + second.cacheWriteTokens,
   };
+  if (first.reasoningTokens !== undefined || second.reasoningTokens !== undefined) {
+    sum.reasoningTokens = (first.reasoningTokens ?? 0) + (second.reasoningTokens ?? 0);
+  }
+  if (first.webSearchCalls !== undefined || second.webSearchCalls !== undefined) {
+    sum.webSearchCalls = (first.webSearchCalls ?? 0) + (second.webSearchCalls ?? 0);
+  }
+  return sum;
 }
 
 /**
@@ -75,12 +91,17 @@ export function addUsage(first: ModelUsage | null, second: ModelUsage | null): M
  * tokens" weights them the same way; output tokens are counted 1:1 (the
  * budget is a spend proxy, not a price list — the estimator that reserves
  * against it is deliberately coarser than this).
+ *
+ * `weights` scale a non-default model's tokens into default-model tokens,
+ * the same factors estimateModelTokenReservation reserved with; each web
+ * search adds its fixed per-call equivalent.
  */
-export function billableTokens(usage: ModelUsage): number {
-  return usage.inputTokens
-    + usage.outputTokens
-    + Math.ceil(usage.cacheWriteTokens * 1.25)
-    + Math.ceil(usage.cacheReadTokens * 0.1);
+export function billableTokens(usage: ModelUsage, weights: ModelCostWeights = DEFAULT_MODEL_COST_WEIGHTS): number {
+  return Math.ceil(usage.inputTokens * weights.input)
+    + Math.ceil(usage.outputTokens * weights.output)
+    + Math.ceil(usage.cacheWriteTokens * 1.25 * weights.input)
+    + Math.ceil(usage.cacheReadTokens * 0.1 * weights.input)
+    + (usage.webSearchCalls ?? 0) * WEB_SEARCH_CALL_TOKEN_EQUIVALENT;
 }
 
 /**
@@ -131,11 +152,26 @@ const NOT_BILLED_STATUSES = new Set([400, 401, 403, 404, 413, 422, 429, 529]);
  * status is treated the same way: it can be a mid-response disconnect.
  */
 export function classifyAnthropicFailure(error: unknown): AiCallOutcome {
-  if (error instanceof APIConnectionTimeoutError || error instanceof APIUserAbortError) return 'unknown';
-  if (error instanceof APIError && typeof error.status === 'number' && NOT_BILLED_STATUSES.has(error.status)) {
+  if (isInstance(error, APIConnectionTimeoutError) || isInstance(error, APIUserAbortError)) return 'unknown';
+  if (isInstance(error, APIError) && typeof error.status === 'number' && NOT_BILLED_STATUSES.has(error.status)) {
     return 'not-billed';
   }
   return 'unknown';
+}
+
+function isInstance<T>(value: unknown, ctor: (abstract new (...args: never[]) => T) | undefined): value is T {
+  return typeof ctor === 'function' && value instanceof ctor;
+}
+
+/**
+ * Failure outcome for any model call: the gateway client's typed errors
+ * carry their own outcome (`billingOutcome`); anything else is classified as
+ * an Anthropic SDK error.
+ */
+export function classifyAiFailure(error: unknown): AiCallOutcome {
+  const outcome = (error as { billingOutcome?: unknown } | null)?.billingOutcome;
+  if (outcome === 'completed' || outcome === 'not-billed' || outcome === 'unknown') return outcome;
+  return classifyAnthropicFailure(error);
 }
 
 export interface AiUsageRecord {
@@ -149,6 +185,18 @@ export interface AiUsageRecord {
   startedAt: number;
   /** Model calls behind this record (hierarchical jobs make several). */
   calls?: number;
+  /** Serving provider, when known. */
+  provider?: string;
+  /** Effort the call ran at, when the route chose one. */
+  reasoningEffort?: string;
+  /** The model's cost relative to the default model (see rate-limit). */
+  weights?: ModelCostWeights;
+  /**
+   * Already-weighted charge for work done outside `usage` (a web retrieval
+   * call on another model). Added to the measured charge, never on its own
+   * turning an unknown cost into a known one.
+   */
+  additionalBillableTokens?: number;
 }
 
 /**
@@ -156,10 +204,11 @@ export interface AiUsageRecord {
  * request that reserved budget, on every exit path.
  */
 export async function recordAiUsage(record: AiUsageRecord): Promise<void> {
+  const additional = Math.max(0, Math.ceil(record.additionalBillableTokens ?? 0));
   const billable = record.usage
-    ? billableTokens(record.usage)
+    ? billableTokens(record.usage, record.weights) + additional
     : record.outcome === 'not-billed'
-      ? 0
+      ? additional
       : null;
   // Metering must never turn a delivered answer into an error: a settlement
   // or logging failure is reported and the caller's own result stands.
@@ -174,6 +223,8 @@ export async function recordAiUsage(record: AiUsageRecord): Promise<void> {
       kind: 'ai-usage',
       route: record.route,
       model: record.model,
+      provider: record.provider ?? null,
+      reasoningEffort: record.reasoningEffort ?? null,
       outcome: record.outcome,
       calls: record.calls ?? 1,
       reservedTokens: record.reservation?.tokens ?? 0,
@@ -182,6 +233,8 @@ export async function recordAiUsage(record: AiUsageRecord): Promise<void> {
       outputTokens: record.usage?.outputTokens ?? null,
       cacheReadTokens: record.usage?.cacheReadTokens ?? null,
       cacheWriteTokens: record.usage?.cacheWriteTokens ?? null,
+      reasoningTokens: record.usage?.reasoningTokens ?? null,
+      webSearchCalls: record.usage?.webSearchCalls ?? null,
       adjustmentTokens,
       elapsedMs: Date.now() - record.startedAt,
       userKey: opaqueIdentityKey(record.userId),
