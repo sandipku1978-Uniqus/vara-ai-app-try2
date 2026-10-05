@@ -1,0 +1,641 @@
+{
+  "cik": "320193",
+  "issuer": {
+    "name": "Apple Inc.",
+    "tradingSymbol": "AAPL"
+  },
+  "transactions": [
+    {
+      "security": "Common Stock",
+      "derivative": false,
+      "transactionDate": "2026-09-29",
+      "code": "S",
+      "acquiredDisposed": "D",
+      "shares": 2399,
+      "pricePerShare": 336.18,
+      "sharesOwnedAfter": 41992,
+      "direct": true,
+      "natureOfOwnership": null,
+      "footnoteIds": [
+        "F1"
+      ],
+      "reportingOwner": {
+        "name": "Newstead Jennifer",
+        "cik": "1780525"
+      },
+      "relationship": {
+        "isDirector": false,
+        "isOfficer": true,
+        "isTenPercentOwner": false,
+        "isOther": false,
+        "officerTitle": "SVP, GC and Government Affairs"
+      },
+      "jointFiling": false,
+      "accession": "0001140361-26-038307",
+      "filedAt": "2026-10-01",
+      "formType": "4"
+    },
+    {
+      "security": "Restricted Stock Unit",
+      "derivative": true,
+      "transactionDate": "2026-09-27",
+      "code": "A",
+      "acquiredDisposed": "A",
+      "shares": 47645,
+      "pricePerShare": 0,
+      "sharesOwnedAfter": 47645,
+      "direct": true,
+      "natureOfOwnership": null,
+      "footnoteIds": [
+        "F1",
+        "F2"
+      ],
+      "underlyingSecurity": "Common Stock",
+      "underlyingShares": 47645,
+      "exercisePrice": null,
+      "reportingOwner": {
+        "name": "Khan Sabih",
+        "cik": "2078476"
+      },
+      "relationship": {
+        "isDirector": false,
+        "isOfficer": true,
+        "isTenPercentOwner": false,
+        "isOther": false,
+        "officerTitle": "COO"
+      },
+      "jointFiling": false,
+      "accession": "0001140361-26-038028",
+      "filedAt": "2026-09-29",
+      "formType": "4"
+    },
+    {
+      "security": "Restricted Stock Unit",
+      "derivative": true,
+      "transactionDate": "2026-09-27",
+      "code": "A",
+      "acquiredDisposed": "A",
+      "shares": 47645,
+      "pricePerShare": 0,
+      "sharesOwnedAfter": 47645,
+      "direct": true,
+      "natureOfOwnership": null,
+      "footnoteIds": [
+        "F1",
+        "F3"
+      ],
+      "underlyingSecurity": "Common Stock",
+      "underlyingShares": 47645,
+      "exercisePrice": null,
+      "reportingOwner": {
+        "name": "Khan Sabih",
+        "cik": "2078476"
+      },
+      "relationship": {
+        "isDirector": false,
+        "isOfficer": true,
+        "isTenPercentOwner": false,
+        "isOther": false,
+        "officerTitle": "COO"
+      },
+      "jointFiling": false,
+      "accession": "0001140361-26-038028",
+      "filedAt": "2026-09-29",
+      "formType": "4"
+    },
+    {
+      "security": "Restricted Stock Unit",
+      "derivative": true,
+      "transactionDate": "2026-09-27",
+      "code": "A",
+      "acquiredDisposed": "A",
+      "shares": 47645,
+      "pricePerShare": 0,
+      "sharesOwnedAfter": 47645,
+      "direct": true,
+      "natureOfOwnership": null,
+      "footnoteIds": [
+        "F1",
+        "F2"
+      ],
+      "underlyingSecurity": "Common Stock",
+      "underlyingShares": 47645,
+      "exercisePrice": null,
+      "reportingOwner": {
+        "name": "Newstead Jennifer",
+        "cik": "1780525"
+      },
+      "relationship": {
+        "isDirector": false,
+        "isOfficer": true,
+        "isTenPercentOwner": false,
+        "isOther": false,
+        "officerTitle": "SVP, GC and Government Affairs"
+      },
+      "jointFiling": false,
+      "accession": "0001140361-26-038027",
+      "filedAt": "2026-09-29",
+      "formType": "4"
+    },
+    {
+      "security": "Restricted Stock Unit",
+      "derivative": true,
+      "transactionDate": "2026-09-27",
+      "code": "A",
+      "acquiredDisposed": "A",
+      "shares": 47645,
+      "pricePerShare": 0,
+      "sharesOwnedAfter": 47645,
+      "direct": true,
+      "natureOfOwnership": null,
+      "footnoteIds": [
+        "F1",
+        "F3"
+      ],
+      "underlyingSecurity": "Common Stock",
+      "underlyingShares": 47645,
+      "exercisePrice": null,
+      "reportingOwner": {
+        "name": "Newstead Jennifer",
+        "cik": "1780525"
+      },
+      "relationship": {
+        "isDirector": false,
+        "isOfficer": true,
+        "isTenPercentOwner": false,
+        "isOther": false,
+        "officerTitle": "SVP, GC and Government Affairs"
+      },
+      "jointFiling": false,
+      "accession": "0001140361-26-038027",
+      "filedAt": "2026-09-29",
+      "formType": "4"
+    },
+    {
+      "security": "Restricted Stock Unit",
+      "derivative": true,
+      "transactionDate": "2026-09-27",
+      "code": "A",
+      "acquiredDisposed": "A",
+      "shares": 47645,
+      "pricePerShare": 0,
+      "sharesOwnedAfter": 47645,
+      "direct": true,
+      "natureOfOwnership": null,
+      "footnoteIds": [
+        "F1",
+        "F2"
+      ],
+      "underlyingSecurity": "Common Stock",
+      "underlyingShares": 47645,
+      "exercisePrice": null,
+      "reportingOwner": {
+        "name": "O'BRIEN DEIRDRE",
+        "cik": "1767094"
+      },
+      "relationship": {
+        "isDirector": false,
+        "isOfficer": true,
+        "isTenPercentOwner": false,
+        "isOther": false,
+        "officerTitle": "Senior Vice President"
+      },
+      "jointFiling": false,
+      "accession": "0001140361-26-038026",
+      "filedAt": "2026-09-29",
+      "formType": "4"
+    },
+    {
+      "security": "Restricted Stock Unit",
+      "derivative": true,
+      "transactionDate": "2026-09-27",
+      "code": "A",
+      "acquiredDisposed": "A",
+      "shares": 47645,
+      "pricePerShare": 0,
+      "sharesOwnedAfter": 47645,
+      "direct": true,
+      "natureOfOwnership": null,
+      "footnoteIds": [
+        "F1",
+        "F3"
+      ],
+      "underlyingSecurity": "Common Stock",
+      "underlyingShares": 47645,
+      "exercisePrice": null,
+      "reportingOwner": {
+        "name": "O'BRIEN DEIRDRE",
+        "cik": "1767094"
+      },
+      "relationship": {
+        "isDirector": false,
+        "isOfficer": true,
+        "isTenPercentOwner": false,
+        "isOther": false,
+        "officerTitle": "Senior Vice President"
+      },
+      "jointFiling": false,
+      "accession": "0001140361-26-038026",
+      "filedAt": "2026-09-29",
+      "formType": "4"
+    },
+    {
+      "security": "Restricted Stock Unit",
+      "derivative": true,
+      "transactionDate": "2026-09-27",
+      "code": "A",
+      "acquiredDisposed": "A",
+      "shares": 47645,
+      "pricePerShare": 0,
+      "sharesOwnedAfter": 47645,
+      "direct": true,
+      "natureOfOwnership": null,
+      "footnoteIds": [
+        "F1",
+        "F2"
+      ],
+      "underlyingSecurity": "Common Stock",
+      "underlyingShares": 47645,
+      "exercisePrice": null,
+      "reportingOwner": {
+        "name": "Parekh Kevan",
+        "cik": "2050912"
+      },
+      "relationship": {
+        "isDirector": false,
+        "isOfficer": true,
+        "isTenPercentOwner": false,
+        "isOther": false,
+        "officerTitle": "Senior Vice President,  CFO"
+      },
+      "jointFiling": false,
+      "accession": "0001140361-26-038024",
+      "filedAt": "2026-09-29",
+      "formType": "4"
+    },
+    {
+      "security": "Restricted Stock Unit",
+      "derivative": true,
+      "transactionDate": "2026-09-27",
+      "code": "A",
+      "acquiredDisposed": "A",
+      "shares": 47645,
+      "pricePerShare": 0,
+      "sharesOwnedAfter": 47645,
+      "direct": true,
+      "natureOfOwnership": null,
+      "footnoteIds": [
+        "F1",
+        "F3"
+      ],
+      "underlyingSecurity": "Common Stock",
+      "underlyingShares": 47645,
+      "exercisePrice": null,
+      "reportingOwner": {
+        "name": "Parekh Kevan",
+        "cik": "2050912"
+      },
+      "relationship": {
+        "isDirector": false,
+        "isOfficer": true,
+        "isTenPercentOwner": false,
+        "isOther": false,
+        "officerTitle": "Senior Vice President,  CFO"
+      },
+      "jointFiling": false,
+      "accession": "0001140361-26-038024",
+      "filedAt": "2026-09-29",
+      "formType": "4"
+    },
+    {
+      "security": "Restricted Stock Unit",
+      "derivative": true,
+      "transactionDate": "2026-09-27",
+      "code": "A",
+      "acquiredDisposed": "A",
+      "shares": 40315,
+      "pricePerShare": 0,
+      "sharesOwnedAfter": 40315,
+      "direct": true,
+      "natureOfOwnership": null,
+      "footnoteIds": [
+        "F1",
+        "F2"
+      ],
+      "underlyingSecurity": "Common Stock",
+      "underlyingShares": 40315,
+      "exercisePrice": null,
+      "reportingOwner": {
+        "name": "Ternus John",
+        "cik": "2148403"
+      },
+      "relationship": {
+        "isDirector": true,
+        "isOfficer": true,
+        "isTenPercentOwner": false,
+        "isOther": false,
+        "officerTitle": "CEO"
+      },
+      "jointFiling": false,
+      "accession": "0001140361-26-038022",
+      "filedAt": "2026-09-29",
+      "formType": "4"
+    },
+    {
+      "security": "Restricted Stock Unit",
+      "derivative": true,
+      "transactionDate": "2026-09-27",
+      "code": "A",
+      "acquiredDisposed": "A",
+      "shares": 120943,
+      "pricePerShare": 0,
+      "sharesOwnedAfter": 120943,
+      "direct": true,
+      "natureOfOwnership": null,
+      "footnoteIds": [
+        "F1",
+        "F3"
+      ],
+      "underlyingSecurity": "Common Stock",
+      "underlyingShares": 120943,
+      "exercisePrice": null,
+      "reportingOwner": {
+        "name": "Ternus John",
+        "cik": "2148403"
+      },
+      "relationship": {
+        "isDirector": true,
+        "isOfficer": true,
+        "isTenPercentOwner": false,
+        "isOther": false,
+        "officerTitle": "CEO"
+      },
+      "jointFiling": false,
+      "accession": "0001140361-26-038022",
+      "filedAt": "2026-09-29",
+      "formType": "4"
+    },
+    {
+      "security": "Restricted Stock Unit",
+      "derivative": true,
+      "transactionDate": "2026-09-27",
+      "code": "A",
+      "acquiredDisposed": "A",
+      "shares": 65969,
+      "pricePerShare": 0,
+      "sharesOwnedAfter": 65969,
+      "direct": true,
+      "natureOfOwnership": null,
+      "footnoteIds": [
+        "F1",
+        "F2"
+      ],
+      "underlyingSecurity": "Common Stock",
+      "underlyingShares": 65969,
+      "exercisePrice": null,
+      "reportingOwner": {
+        "name": "COOK TIMOTHY D",
+        "cik": "1214156"
+      },
+      "relationship": {
+        "isDirector": true,
+        "isOfficer": true,
+        "isTenPercentOwner": false,
+        "isOther": false,
+        "officerTitle": "Executive Chair"
+      },
+      "jointFiling": false,
+      "accession": "0001140361-26-038021",
+      "filedAt": "2026-09-29",
+      "formType": "4"
+    },
+    {
+      "security": "Restricted Stock Unit",
+      "derivative": true,
+      "transactionDate": "2026-09-27",
+      "code": "A",
+      "acquiredDisposed": "A",
+      "shares": 65969,
+      "pricePerShare": 0,
+      "sharesOwnedAfter": 65969,
+      "direct": true,
+      "natureOfOwnership": null,
+      "footnoteIds": [
+        "F1",
+        "F3"
+      ],
+      "underlyingSecurity": "Common Stock",
+      "underlyingShares": 65969,
+      "exercisePrice": null,
+      "reportingOwner": {
+        "name": "COOK TIMOTHY D",
+        "cik": "1214156"
+      },
+      "relationship": {
+        "isDirector": true,
+        "isOfficer": true,
+        "isTenPercentOwner": false,
+        "isOther": false,
+        "officerTitle": "Executive Chair"
+      },
+      "jointFiling": false,
+      "accession": "0001140361-26-038021",
+      "filedAt": "2026-09-29",
+      "formType": "4"
+    },
+    {
+      "security": "Common Stock",
+      "derivative": false,
+      "transactionDate": "2026-09-22",
+      "code": "S",
+      "acquiredDisposed": "D",
+      "shares": 2399,
+      "pricePerShare": 340.06,
+      "sharesOwnedAfter": 44391,
+      "direct": true,
+      "natureOfOwnership": null,
+      "footnoteIds": [
+        "F1"
+      ],
+      "reportingOwner": {
+        "name": "Newstead Jennifer",
+        "cik": "1780525"
+      },
+      "relationship": {
+        "isDirector": false,
+        "isOfficer": true,
+        "isTenPercentOwner": false,
+        "isOther": false,
+        "officerTitle": "SVP, GC and Government Affairs"
+      },
+      "jointFiling": false,
+      "accession": "0001140361-26-037584",
+      "filedAt": "2026-09-24",
+      "formType": "4"
+    }
+  ],
+  "owners": [
+    {
+      "owner": {
+        "name": "Newstead Jennifer",
+        "cik": "1780525"
+      },
+      "relationship": {
+        "isDirector": false,
+        "isOfficer": true,
+        "isTenPercentOwner": false,
+        "isOther": false,
+        "officerTitle": "SVP, GC and Government Affairs"
+      },
+      "filingsCount": 3,
+      "transactionsCount": 4,
+      "rowsWithoutShares": 0,
+      "netSharesOpenMarket": -4798,
+      "netSharesAllCodes": -4798,
+      "purchasesShares": 0,
+      "salesShares": 4798,
+      "lastTransactionDate": "2026-09-29",
+      "lastTransactionCode": "S",
+      "latestSharesOwnedAfter": 41992
+    },
+    {
+      "owner": {
+        "name": "Khan Sabih",
+        "cik": "2078476"
+      },
+      "relationship": {
+        "isDirector": false,
+        "isOfficer": true,
+        "isTenPercentOwner": false,
+        "isOther": false,
+        "officerTitle": "COO"
+      },
+      "filingsCount": 1,
+      "transactionsCount": 2,
+      "rowsWithoutShares": 0,
+      "netSharesOpenMarket": 0,
+      "netSharesAllCodes": 0,
+      "purchasesShares": 0,
+      "salesShares": 0,
+      "lastTransactionDate": "2026-09-27",
+      "lastTransactionCode": "A",
+      "latestSharesOwnedAfter": null
+    },
+    {
+      "owner": {
+        "name": "O'BRIEN DEIRDRE",
+        "cik": "1767094"
+      },
+      "relationship": {
+        "isDirector": false,
+        "isOfficer": true,
+        "isTenPercentOwner": false,
+        "isOther": false,
+        "officerTitle": "Senior Vice President"
+      },
+      "filingsCount": 1,
+      "transactionsCount": 2,
+      "rowsWithoutShares": 0,
+      "netSharesOpenMarket": 0,
+      "netSharesAllCodes": 0,
+      "purchasesShares": 0,
+      "salesShares": 0,
+      "lastTransactionDate": "2026-09-27",
+      "lastTransactionCode": "A",
+      "latestSharesOwnedAfter": null
+    },
+    {
+      "owner": {
+        "name": "Parekh Kevan",
+        "cik": "2050912"
+      },
+      "relationship": {
+        "isDirector": false,
+        "isOfficer": true,
+        "isTenPercentOwner": false,
+        "isOther": false,
+        "officerTitle": "Senior Vice President,  CFO"
+      },
+      "filingsCount": 1,
+      "transactionsCount": 2,
+      "rowsWithoutShares": 0,
+      "netSharesOpenMarket": 0,
+      "netSharesAllCodes": 0,
+      "purchasesShares": 0,
+      "salesShares": 0,
+      "lastTransactionDate": "2026-09-27",
+      "lastTransactionCode": "A",
+      "latestSharesOwnedAfter": null
+    },
+    {
+      "owner": {
+        "name": "Ternus John",
+        "cik": "2148403"
+      },
+      "relationship": {
+        "isDirector": true,
+        "isOfficer": true,
+        "isTenPercentOwner": false,
+        "isOther": false,
+        "officerTitle": "CEO"
+      },
+      "filingsCount": 1,
+      "transactionsCount": 2,
+      "rowsWithoutShares": 0,
+      "netSharesOpenMarket": 0,
+      "netSharesAllCodes": 0,
+      "purchasesShares": 0,
+      "salesShares": 0,
+      "lastTransactionDate": "2026-09-27",
+      "lastTransactionCode": "A",
+      "latestSharesOwnedAfter": null
+    },
+    {
+      "owner": {
+        "name": "COOK TIMOTHY D",
+        "cik": "1214156"
+      },
+      "relationship": {
+        "isDirector": true,
+        "isOfficer": true,
+        "isTenPercentOwner": false,
+        "isOther": false,
+        "officerTitle": "Executive Chair"
+      },
+      "filingsCount": 1,
+      "transactionsCount": 2,
+      "rowsWithoutShares": 0,
+      "netSharesOpenMarket": 0,
+      "netSharesAllCodes": 0,
+      "purchasesShares": 0,
+      "salesShares": 0,
+      "lastTransactionDate": "2026-09-27",
+      "lastTransactionCode": "A",
+      "latestSharesOwnedAfter": null
+    }
+  ],
+  "coverage": {
+    "source": "SEC submissions filings.recent and raw ownership XML",
+    "scope": "requested-recent-filings",
+    "cik": "320193",
+    "filingsListed": 609,
+    "filingsRequested": 8,
+    "filingsParsed": 8,
+    "filingsAboutOtherIssuers": [],
+    "filingsAboutOtherIssuersCount": 0,
+    "filingsFailed": [],
+    "filingsNotAttempted": 0,
+    "filingsOutsideLimit": 601,
+    "transactionRows": 14,
+    "rowsWithoutShares": 0,
+    "holdingsRowsSkipped": 0,
+    "olderHistoryNotRead": true,
+    "unreadHistoryFiles": 1,
+    "recentHistoryNote": "Only filings.recent is read, covering all forms and often approximately 1000 rows but potentially many more for large filers. filings.files history segments are not read. Listed ownership filings may report on other issuers; those are counted separately.",
+    "oldestFiledAt": "2026-09-24",
+    "newestFiledAt": "2026-10-01",
+    "complete": true,
+    "fetchedAt": "2026-10-05T04:28:02.661Z",
+    "aggregationNote": "Transactions and owner aggregates include only filings for the requested issuer; valid filings about other issuers are excluded and counted separately, not as failures. Non-derivative shares only: open-market net uses codes P/S; all-code net includes grants, withholding and exercises. Amendments are counted as filed, without restatement deduplication. Joint rows repeat for each owner and must not be summed across owners. Latest balance is one row, not total holdings."
+  }
+}

@@ -287,4 +287,16 @@ describe('ResearchResultsWorkspace', () => {
     const { container } = render(<ResearchResultsWorkspace {...props({ results: [filing({ matchHitCount: 1 })] })} />);
     expect(container.querySelector('.result-evidence-details')).toBeNull();
   });
+
+  it('links an ASU cited in the matched text to its ASU index row, outside the card button', () => {
+    const cited = filing({ matchSnippet: 'We adopted ASU 2023-07, Segment Reporting, and ASU No. 2016-13 in fiscal 2024.' });
+    const plain = filing({ id: 'filing-2', entityName: 'Plain Corp', companyName: 'Plain Corp' });
+    render(<ResearchResultsWorkspace {...props({ results: [cited, plain] })} />);
+
+    const chip = screen.getByRole('link', { name: 'ASU 2023-07 in the ASU index' });
+    expect(chip).toHaveAttribute('href', '/accounting?tab=asu&asu=2023-07#asu-2023-07');
+    expect(chip.closest('button')).toBeNull();
+    expect(screen.getByRole('link', { name: 'ASU 2016-13 in the ASU index' })).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: /in the ASU index/ })).toHaveLength(2);
+  });
 });
