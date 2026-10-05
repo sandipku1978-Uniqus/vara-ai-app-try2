@@ -70,7 +70,7 @@ export function AIQnAPanel() {
   const [streamingText, setStreamingText] = useState('');
   const [loadingStage, setLoadingStage] = useState('');
   // What the server reported answering each run (model, effort, web sources).
-  const availableModelIds = useAiModelAvailability(isChatOpen);
+  const { ids: availableModelIds, note: modelAvailabilityNote } = useAiModelAvailability(isChatOpen);
   const { panelWidth, handleResizeStart, handleResizeKeyDown } = useResizablePanel();
   const processingRequestIdRef = useRef<string | null>(null);
   const messageInputRef = useRef<HTMLInputElement>(null);
@@ -692,6 +692,7 @@ export function AIQnAPanel() {
       suggestions={suggestions}
       answerMeta={activeRun?.aiMetadata ?? null}
       availableModelIds={availableModelIds}
+      modelAvailabilityNote={modelAvailabilityNote}
       onResizeStart={handleResizeStart}
       onResizeKeyDown={handleResizeKeyDown}
       onClearRuns={clearAgentRuns}

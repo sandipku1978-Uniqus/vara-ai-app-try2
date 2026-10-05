@@ -29,6 +29,8 @@ export const UNAVAILABLE_MODEL_HINT = 'Not available on the gateway right now';
 interface ModelSelectorProps {
   /** Ids the gateway reports as servable; null/undefined = unknown, offer all. */
   availableModelIds?: Set<string> | null;
+  /** A short note when availability could not be checked (nothing is greyed out then). */
+  availabilityNote?: string | null;
   /** Controlled use (tests, other surfaces); defaults to the stored preference. */
   preference?: AiModelPreference;
   onChange?: (next: AiModelPreference) => void;
@@ -38,7 +40,7 @@ function optionDomId(listboxId: string, modelId: string): string {
   return `${listboxId}-${modelId.replace(/[^a-zA-Z0-9_-]/g, '-')}`;
 }
 
-export function ModelSelector({ availableModelIds, preference: controlledPreference, onChange }: ModelSelectorProps) {
+export function ModelSelector({ availableModelIds, availabilityNote, preference: controlledPreference, onChange }: ModelSelectorProps) {
   const [storedPreference, setStoredPreference] = useAiModelPreference();
   const preference = controlledPreference ?? storedPreference;
   const commit = onChange ?? setStoredPreference;
@@ -209,6 +211,7 @@ export function ModelSelector({ availableModelIds, preference: controlledPrefere
           aria-label="Model, reasoning effort and web search"
           onKeyDown={onPopoverKeyDown}
         >
+          {availabilityNote && <p className="model-selector-note" role="note">{availabilityNote}</p>}
           <div
             ref={listboxRef}
             id={listboxId}

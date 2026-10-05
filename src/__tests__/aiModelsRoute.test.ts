@@ -75,13 +75,50 @@ describe('/api/ai/models', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('offers only the default model when the listing cannot be read', async () => {
+  it('also keeps a longer-lived copy of a listing it reads, for when the gateway is down', async () => {
+    const { GET } = await import('../app/api/ai/models/route');
+    await GET(get());
+    expect(mocks.cacheSet).toHaveBeenCalledWith(
+      'ai-gateway:listed-models:last-good:v1',
+      expect.objectContaining({ ids: ['zai/glm-5.3', 'anthropic/claude-sonnet-5.5', 'someone/unlisted'] }),
+      { ex: 7 * 24 * 3600 }
+    );
+  });
+
+  it('offers the full registry, marked unavailable, when the listing cannot be read and none was read before', async () => {
     fetchMock.mockResolvedValue(new Response('down', { status: 502 }));
     const { GET } = await import('../app/api/ai/models/route');
+    const { AI_MODELS } = await import('../lib/ai-models');
     const payload = await (await GET(get())).json();
-    expect(payload.models.map((model: { id: string }) => model.id)).toEqual(['anthropic/claude-sonnet-5.5']);
+    expect(payload.models.map((model: { id: string }) => model.id)).toEqual(AI_MODELS.map(model => model.id));
+    expect(payload.defaultModelId).toBe('anthropic/claude-sonnet-5.5');
+    expect(payload.gateway).toEqual({ configured: true, listing: 'unavailable', checkedAt: null });
+    // The failure is remembered for five minutes; no listing is cached.
+    expect(mocks.cacheSet).toHaveBeenCalledTimes(1);
+    expect(mocks.cacheSet).toHaveBeenCalledWith('ai-gateway:listed-models:failed:v1', expect.anything(), { ex: 300 });
+  });
+
+  it('serves the last listing that was read when the gateway fails, still marked unavailable', async () => {
+    fetchMock.mockResolvedValue(new Response('down', { status: 502 }));
+    mocks.cacheGet.mockImplementation(async (key: string) => (key === 'ai-gateway:listed-models:last-good:v1'
+      ? { ids: ['openai/gpt-6.1-sol', 'anthropic/claude-sonnet-5.5'], checkedAt: '2026-10-03T00:00:00.000Z' }
+      : null));
+    const { GET } = await import('../app/api/ai/models/route');
+    const payload = await (await GET(get())).json();
+    expect(payload.models.map((model: { id: string }) => model.id)).toEqual(['anthropic/claude-sonnet-5.5', 'openai/gpt-6.1-sol']);
+    expect(payload.gateway).toEqual({ configured: true, listing: 'unavailable', checkedAt: null });
+  });
+
+  it('does not call the gateway again within five minutes of a failed listing', async () => {
+    mocks.cacheGet.mockImplementation(async (key: string) => (key === 'ai-gateway:listed-models:failed:v1'
+      ? { failedAt: '2026-10-04T00:00:00.000Z' }
+      : null));
+    const { GET } = await import('../app/api/ai/models/route');
+    const { AI_MODELS } = await import('../lib/ai-models');
+    const payload = await (await GET(get())).json();
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(payload.models).toHaveLength(AI_MODELS.length);
     expect(payload.gateway.listing).toBe('unavailable');
-    expect(mocks.cacheSet).not.toHaveBeenCalled();
   });
 
   it('without the gateway offers the default model only when Anthropic is configured', async () => {
