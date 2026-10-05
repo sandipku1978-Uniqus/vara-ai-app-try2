@@ -150,6 +150,14 @@ function factsPayload(cik: string) {
     sic: Number(company?.sic ?? 9999),
     sicDescription: 'Fixture Industry',
     facts: {
+      // Cover-page public float: AAPL 100B, MSFT 120B, NVDA 80B — all inside a 0.5x–2x band of each other.
+      dei: {
+        EntityPublicFloat: {
+          label: 'Entity Public Float',
+          description: 'Entity Public Float fixture',
+          units: { USD: [{ val: amount(100), accn: accession(cik, 1), fy: 2025, fp: 'FY', form: '10-K', filed: '2026-02-20', end: '2025-06-30' }] },
+        },
+      },
       'us-gaap': {
         Revenues: concept('Revenue', amount(100), amount(90), 1),
         CostOfRevenue: concept('Cost of revenue', amount(40), amount(37), 2),
@@ -377,6 +385,24 @@ export async function installGovernanceAnalyticsFixtures(
       status: 200,
       contentType: 'text/html',
       body: `<html><body><h1>Item 1. Business</h1><p>${filingText('320193', path)}</p><h1>Item 2. Properties</h1><p>Fixture properties disclosure with sufficient deterministic source evidence.</p></body></html>`,
+    });
+  });
+
+  // The company store's SIC population (urc_sec_companies), listed registrants only.
+  await page.route('**/api/peer-candidates**', async (route: Route) => {
+    const sic = new URL(route.request().url()).searchParams.get('sic') ?? '';
+    const companies = GOVERNANCE_COMPANIES.filter(company => company.sic === sic).map(company => ({
+      cik: company.cik,
+      name: company.name,
+      tickers: [company.ticker],
+      exchanges: ['Nasdaq'],
+      sic: company.sic,
+      sicDescription: company.sic === '3571' ? 'Electronic Computers' : 'Fixture Industry',
+    }));
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ sic, companies, matched: companies.length, returned: companies.length, capped: false, source: 'urc_sec_companies' }),
     });
   });
 
