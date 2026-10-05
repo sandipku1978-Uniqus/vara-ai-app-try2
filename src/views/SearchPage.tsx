@@ -60,6 +60,7 @@ import { countExactMatches, isEftsExactCountEquivalent } from '../services/exact
 import BooleanSyntaxHelp, { BooleanSyntaxHelpTrigger } from '../components/research/BooleanSyntaxHelp';
 import ResearchSessionTabs from '../components/research/ResearchSessionTabs';
 import ResearchResultsWorkspace from '../components/research/ResearchResultsWorkspace';
+import type { OpenFilingOptions } from '../components/research/ResultEvidenceDetails';
 import { generateSearchTrendReport, SEARCH_TREND_AI_FALLBACK } from '../services/searchTrendReport';
 import { planResearchSearch } from '../services/researchSearchPlan';
 import { canUseInstantEnrichedSearch } from '../services/filingResearch';
@@ -1162,7 +1163,7 @@ export default function SearchPage() {
   }, [activeTabId, setActiveSearchContext, setRouteForSession]);
 
 
-  const openFiling = useCallback((row: FilingResearchResult) => {
+  const openFiling = useCallback((row: FilingResearchResult, options: OpenFilingOptions = {}) => {
     const params = new URLSearchParams();
     params.set('company', row.companyName || row.entityName);
     params.set('date', row.fileDate);
@@ -1179,7 +1180,9 @@ export default function SearchPage() {
       ? buildResearchRouteParams(activeSession.query, activeSession.mode, activeSession.filters, activeSession.id)
       : new URLSearchParams();
     params.set('returnTo', `/search${returnParams.size ? `?${returnParams.toString()}` : ''}`);
-    navigate.push(`/filing/${row.cik}_${row.accessionNumber}_${row.primaryDocument}?${params.toString()}`);
+    if (options.panel === 'hits' && activeResolvedSearch.query) params.set('panel', 'hits');
+    const documentName = options.document || row.primaryDocument;
+    navigate.push(`/filing/${row.cik}_${row.accessionNumber}_${documentName}?${params.toString()}`);
   }, [activeResolvedSearch, activeSession, navigate]);
 
   async function handleTrendReport() {

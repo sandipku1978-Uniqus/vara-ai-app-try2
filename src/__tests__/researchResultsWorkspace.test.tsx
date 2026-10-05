@@ -220,4 +220,71 @@ describe('ResearchResultsWorkspace', () => {
     expect(getMemoCitations()[0].sourceUrl).toBe('https://www.sec.gov/Archives/edgar/data/1/000000000125000001/resolved.htm');
     clearMemoTray();
   });
+
+  it('shows the first passage, keeps later passages behind a disclosure, and opens all hits', () => {
+    const result = filing({
+      matchSnippet: 'A material weakness was remediated.',
+      matchSectionPath: 'Item 9A · Controls and Procedures',
+      matchSnippets: [
+        { excerpt: 'A material weakness was remediated.', sectionPath: 'Item 9A · Controls and Procedures' },
+        { excerpt: 'a material weakness could recur in future periods', sectionPath: 'Item 1A · Risk Factors' },
+        { excerpt: 'the auditor reported a material weakness in revenue', sectionPath: 'Item 8 · Financial Statements and Supplementary Data' },
+      ],
+      matchHitCount: 41,
+    });
+    const onOpenFiling = vi.fn();
+    render(<ResearchResultsWorkspace {...props({ results: [result], onOpenFiling })} />);
+
+    // First passage and its breadcrumb are on the card itself.
+    const leadPath = screen.getByText('Item 9A · Controls and Procedures');
+    expect(leadPath).toBeVisible();
+    const card = leadPath.closest('button')!;
+    expect(card).toHaveClass('research-hit-card');
+    expect(card.querySelector('.snippet')).toHaveTextContent('A material weakness was remediated.');
+    expect(card.querySelector('.snippet')).toBeVisible();
+
+    // The other two sit behind a closed disclosure, each with its breadcrumb.
+    const disclosure = screen.getByText('2 more passages');
+    const details = disclosure.closest('details')!;
+    expect(details).not.toHaveAttribute('open');
+    expect(screen.getByText('Item 1A · Risk Factors')).not.toBeVisible();
+    fireEvent.click(disclosure);
+    details.open = true;
+    expect(screen.getByText('Item 1A · Risk Factors')).toBeVisible();
+    expect(screen.getByText('Item 8 · Financial Statements and Supplementary Data')).toBeVisible();
+    // Query terms stay highlighted inside the extra passages.
+    expect(details.querySelectorAll('mark')).toHaveLength(2);
+
+    fireEvent.click(screen.getByRole('button', { name: /view all 41 hits/i }));
+    expect(onOpenFiling).toHaveBeenCalledWith(result, { panel: 'hits' });
+  });
+
+  it('nests matched exhibits under the parent row and opens each one in the viewer', () => {
+    const result = filing({
+      formType: '8-K',
+      documentType: 'EX-99.1',
+      primaryDocument: 'ex99-1.htm',
+      matchedDocumentType: 'EX-99.1',
+      matchedDocumentName: 'ex99-1.htm',
+      matchedDocumentCount: 2,
+      matchedExhibits: [
+        { documentName: 'ex10-1.htm', documentType: 'EX-10.1', matchSnippet: 'the material weakness covenant', matchHitCount: 1 },
+        { documentName: 'ex99-1.htm', documentType: 'EX-99.1', matchSnippet: 'remediation of the material weakness', matchHitCount: 3 },
+      ],
+    });
+    const onOpenFiling = vi.fn();
+    render(<ResearchResultsWorkspace {...props({ results: [result], onOpenFiling })} />);
+
+    // The exhibit list replaces the old "+N more" count.
+    expect(screen.queryByText(/more exhibit/)).toBeNull();
+    fireEvent.click(screen.getByText('Matched in 2 exhibits'));
+    fireEvent.click(screen.getByRole('button', { name: 'Open EX-10.1 (ex10-1.htm) in the filing viewer' }));
+    expect(onOpenFiling).toHaveBeenCalledWith(result, { document: 'ex10-1.htm', panel: 'hits' });
+    expect(screen.getByText('3 hits')).toBeInTheDocument();
+  });
+
+  it('renders no evidence extras for a row with a single passage and no exhibits', () => {
+    const { container } = render(<ResearchResultsWorkspace {...props({ results: [filing({ matchHitCount: 1 })] })} />);
+    expect(container.querySelector('.result-evidence-details')).toBeNull();
+  });
 });
