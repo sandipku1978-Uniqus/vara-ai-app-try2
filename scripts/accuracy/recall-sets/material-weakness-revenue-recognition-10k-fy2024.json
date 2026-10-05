@@ -1,0 +1,184 @@
+{
+  "id": "material-weakness-revenue-recognition-10k-fy2024",
+  "description": "Material weakness and revenue recognition in FY2024 primary 10-Ks filed March 25, 2025.",
+  "query": "\"material weakness\" AND \"revenue recognition\"",
+  "mode": "boolean",
+  "filters": {
+    "formTypes": [
+      "10-K"
+    ],
+    "dateFrom": "2025-03-25",
+    "dateTo": "2025-03-25",
+    "fiscalYear": 2024
+  },
+  "expected": [
+    {
+      "accession": "0001091818-25-000017",
+      "cik": "0000894501",
+      "companyName": "GOLD ROCK HOLDINGS, INC.  (GRHI)  (CIK 0000894501)",
+      "form": "10-K",
+      "fileDate": "2025-03-25",
+      "document": "grhi12312410k.htm",
+      "evidence": "Board of Directors\nthat we had identified a material weakness as defined under standards established by the Public Company Accounting Oversight Board (United\nStates). A material weakness is a deficie",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/894501/000109181825000017/grhi12312410k.htm"
+    },
+    {
+      "accession": "0001628280-25-014752",
+      "cik": "0001836981",
+      "companyName": "BigBear.ai Holdings, Inc.  (BBAI, BBAI-WT)  (CIK 0001836981)",
+      "form": "10-K",
+      "fileDate": "2025-03-25",
+      "document": "bbai-20241231.htm",
+      "evidence": "to the restatement, the Company identified a material weakness in its internal controls over financial reporting which failed to prevent or detect the identified misstatements requiring restatement. A",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1836981/000162828025014752/bbai-20241231.htm"
+    },
+    {
+      "accession": "0001437749-25-009075",
+      "cik": "0000352955",
+      "companyName": "CKX LANDS, INC.  (CKX)  (CIK 0000352955)",
+      "form": "10-K",
+      "fileDate": "2025-03-25",
+      "document": "ckx20241231_10k.htm",
+      "evidence": "effective as of December 31, 2024, due to a material weakness.\n\nA material weakness is a deficiency, or a combination of deficiencies, in internal control over financial reporting, such that there is",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/352955/000143774925009075/ckx20241231_10k.htm"
+    },
+    {
+      "accession": "0000950170-25-044438",
+      "cik": "0001851961",
+      "companyName": "GCT Semiconductor Holding, Inc.  (GCTS, GCTS-WT)  (CIK 0001851961)",
+      "form": "10-K",
+      "fileDate": "2025-03-25",
+      "document": "gcts-20241231.htm",
+      "evidence": "ly with Section 404 or the report by us of a material weakness may cause investors to lose confidence in our consolidated financial statements or the trading price of our Common Stock to decline. If w",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1851961/000095017025044438/gcts-20241231.htm"
+    },
+    {
+      "accession": "0001641172-25-000535",
+      "cik": "0001487718",
+      "companyName": "AMERICAN BATTERY MATERIALS, INC.  (BLTH)  (CIK 0001487718)",
+      "form": "10-K",
+      "fileDate": "2025-03-25",
+      "document": "form10-k.htm",
+      "evidence": "s and procedures were not effective and that material weaknesses exist in our internal control\nover financial reporting. The material weaknesses consist of an insufficient complement of qualified acco",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1487718/000164117225000535/form10-k.htm"
+    },
+    {
+      "accession": "0001013762-25-001863",
+      "cik": "0001830081",
+      "companyName": "Rumble Inc.  (RUM, RUMBW)  (CIK 0001830081)",
+      "form": "10-K",
+      "fileDate": "2025-03-25",
+      "document": "ea0234307-10k_rumble.htm",
+      "evidence": "ive internal controls;\n\n●\nwe have identified material weaknesses in our internal control over financial reporting as of December 31, 2024. If we are unable to remediate these material weaknesses, we m",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1830081/000101376225001863/ea0234307-10k_rumble.htm"
+    },
+    {
+      "accession": "0001410578-25-000439",
+      "cik": "0001417892",
+      "companyName": "Emeren Group Ltd  (SOL)  (CIK 0001417892)",
+      "form": "10-K",
+      "fileDate": "2025-03-25",
+      "document": "tmb-20241231x10k.htm",
+      "evidence": "er financial reporting that are deemed to be material weaknesses, we could lose investor confidence in the accuracy and completeness of our financial reports, the market price of our ADSs could declin",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1417892/000141057825000439/tmb-20241231x10k.htm"
+    },
+    {
+      "accession": "0001477932-25-001952",
+      "cik": "0001414953",
+      "companyName": "EQUATOR Beverage Co  (MOJO)  (CIK 0001414953)",
+      "form": "10-K",
+      "fileDate": "2025-03-25",
+      "document": "mojo_10k.htm",
+      "evidence": "eve that the lack of an audit committee is a material weakness.\n\nAttestation Report\n\nThis Annual Report on Form 10-K does not include an attestation report of our independent registered public account",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1414953/000147793225001952/mojo_10k.htm"
+    },
+    {
+      "accession": "0000950170-25-044366",
+      "cik": "0001880438",
+      "companyName": "AN2 Therapeutics, Inc.  (ANTX)  (CIK 0001880438)",
+      "form": "10-K",
+      "fileDate": "2025-03-25",
+      "document": "antx-20241231.htm",
+      "evidence": "e qualified personnel.\n\n•\nWe have identified material weaknesses in our internal control over financial reporting. Due to our failure to maintain effective internal control over financial reporting, w",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1880438/000095017025044366/antx-20241231.htm"
+    },
+    {
+      "accession": "0001079973-25-000476",
+      "cik": "0000888981",
+      "companyName": "NOCOPI TECHNOLOGIES INC/MD/  (NNUP)  (CIK 0000888981)",
+      "form": "10-K",
+      "fileDate": "2025-03-25",
+      "document": "nnup_10k-123124.htm",
+      "evidence": "er financial reporting that are deemed to be material weaknesses, the market price of our stock could decline\nand we could be subject to sanctions or investigations by the SEC or other regulatory auth",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/888981/000107997325000476/nnup_10k-123124.htm"
+    },
+    {
+      "accession": "0001641172-25-000565",
+      "cik": "0001828748",
+      "companyName": "ASIAFIN HOLDINGS CORP.  (ASFH)  (CIK 0001828748)",
+      "form": "10-K",
+      "fileDate": "2025-03-25",
+      "document": "form10-k.htm",
+      "evidence": "controls\nand procedures, and in light of the material weaknesses found in our internal controls over financial reporting, our chief executive\nofficer concluded that our disclosure controls and procedu",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1828748/000164117225000565/form10-k.htm"
+    },
+    {
+      "accession": "0000843006-25-000012",
+      "cik": "0000843006",
+      "companyName": "ACCESS Newswire Inc.  (ACCS)  (CIK 0000843006)",
+      "form": "10-K",
+      "fileDate": "2025-03-25",
+      "document": "accs_10k.htm",
+      "evidence": "ment oversight may be required. If we have a material weakness or significant deficiency in our internal control over financial reporting, we may not detect errors on a timely basis and our financial",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/843006/000084300625000012/accs_10k.htm"
+    },
+    {
+      "accession": "0001628280-25-014738",
+      "cik": "0001776909",
+      "companyName": "CuriosityStream Inc.  (CURI, CURIW)  (CIK 0001776909)",
+      "form": "10-K",
+      "fileDate": "2025-03-25",
+      "document": "curi-20241231.htm",
+      "evidence": "nancial and management resources. Further, a material weakness in our disclosure controls and internal control over financial reporting has been discovered in the past and may be discovered in the fut",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1776909/000162828025014738/curi-20241231.htm"
+    },
+    {
+      "accession": "0001641172-25-000512",
+      "cik": "0001695473",
+      "companyName": "Greater Cannabis Company, Inc.  (GCAN)  (CIK 0001695473)",
+      "form": "10-K",
+      "fileDate": "2025-03-25",
+      "document": "form10-k.htm",
+      "evidence": "we will not be able to remediate identified material weaknesses in our internal control over financial reporting and disclosure\ncontrols and procedures;\n\n●\nrisk\nthat we fail to meet the requirements",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1695473/000164117225000512/form10-k.htm"
+    },
+    {
+      "accession": "0001372514-25-000012",
+      "cik": "0001372514",
+      "companyName": "KIORA PHARMACEUTICALS INC  (KPRX, KPHMW)  (CIK 0001372514)",
+      "form": "10-K",
+      "fileDate": "2025-03-25",
+      "document": "kprx-20241231.htm",
+      "evidence": "your sole source of gain.\n\n•If we identify a material weakness in our internal control over financial reporting in the future or otherwise fail to maintain an effective system of internal controls, we",
+      "verifiedAt": "2026-10-05",
+      "verifiedUrl": "https://www.sec.gov/Archives/edgar/data/1372514/000137251425000012/kprx-20241231.htm"
+    }
+  ],
+  "recallFloor": 0.5,
+  "floorRationale": "UNMEASURED: conservative placeholder floor 0.50; no immutable candidate product URL available on 2026-10-05. Set a measured floor only after an actual product sample-recall run; never lower a floor to make a run pass.",
+  "notes": "Verified SAMPLE, not the complete true-positive universe. Sample recall = found/sample expected; a lower-bound-type regression check, not a statistical bound or corpus recall estimate. Selected the first 15 distinct matching primary documents in official EFTS relevance order, dropping failures of local verification. Source query \"material weakness\" AND \"revenue recognition\" returned 23 document hits in this bounded window, of which 17 were calendar-year FY2024 primary candidates; the proximity true-positive universe can be smaller. FY2024 is independently confirmed by the primary document's dei:DocumentFiscalYearFocus=2024 and EFTS period_ending=2024-12-31. Product applies form/date filters, with no fiscal-year filter; only the expected sample is constrained to FY2024. The full extracted primary text satisfies the complete product Boolean expression. Evidence is a verbatim <=200-character local window; when AND terms are distant it shows a focal query phrase, not every operand. These are textual co-occurrences, not assertions that a company has a material weakness, substantial doubt, a goodwill CAM, or any particular accounting outcome. Non-GAAP coverage uses 10-K primary text only, not earnings-release exhibits. Raw official responses are cached with URL and SHA-256 under os.tmpdir()/urc-recall-sec-documents-v1; --refresh downloads anew."
+}

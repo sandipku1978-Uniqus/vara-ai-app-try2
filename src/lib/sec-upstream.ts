@@ -149,6 +149,7 @@ function validPath(upstream: SecUpstream, pathname: string): boolean {
       || pathname === '/search-filings/standard-industrial-classification-sic-code-list'
       || pathname === '/litigation/litreleases.htm'
       || pathname === '/enforcement-litigation/litigation-releases'
+      || pathname === '/enforcement-litigation/accounting-auditing-enforcement-releases'
       || /^\/enforcement-litigation\/litigation-releases\/lr-\d+$/.test(pathname)
       || pathname === '/rules-regulations/rulemaking-activity'
       || pathname === '/rules-regulations/staff-guidance'
@@ -168,6 +169,11 @@ function validPath(upstream: SecUpstream, pathname: string): boolean {
 
 function queryAllowed(upstream: SecUpstream, pathname: string, params: URLSearchParams): boolean {
   if (params.toString().length > 6000 || [...params].length > 20) return false;
+  // AAER pagination is the sole additional proxy query surface. Do not add
+  // `page` to QUERY_KEYS: other SEC paths must continue to reject it.
+  if (upstream === 'proxy' && pathname === '/enforcement-litigation/accounting-auditing-enforcement-releases') {
+    return params.size === 0 || (params.size === 1 && /^\d{1,4}$/.test(params.get('page') ?? ''));
+  }
   if (
     upstream === 'proxy'
     && pathname !== '/cgi-bin/browse-edgar'
