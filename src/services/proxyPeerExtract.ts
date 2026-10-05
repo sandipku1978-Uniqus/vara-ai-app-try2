@@ -167,7 +167,11 @@ export function peerAnchorScore(text: string): number {
 // ---------------------------------------------------------------------------
 
 const LEADING_MARKERS = /^[\s•●▪■◦○◆♦➢►\-–—*·]+/u;
-const TRAILING_FOOTNOTE = /(?:\s*(?:\(\s*(?:\d{1,2}|[a-z])\s*\)|\*+|[†‡§]+))+$/u;
+// Each repetition consumes exactly one footnote mark (or one parenthesised
+// reference), so a run of marks is matched by the outer `+` alone: a nested
+// `\*+` inside the group let a long run of `*` or `§` backtrack exponentially
+// (CodeQL js/redos).
+const TRAILING_FOOTNOTE = /(?:\s*(?:\(\s*(?:\d{1,2}|[a-z])\s*\)|[*†‡§]))+$/u;
 const TRAILING_PUNCTUATION = /[\s,;:]+$/;
 
 /** Words that end a company name but are never one on their own. */

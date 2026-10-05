@@ -139,6 +139,17 @@ describe('name recognition', () => {
     expect(parsePeerName('Axon Enterprise, Inc. (NASDAQ: AXON)')).toEqual({ name: 'Axon Enterprise, Inc.', tickerHint: 'AXON' });
   });
 
+  it('strips long runs of footnote marks in linear time (js/redos regression)', () => {
+    // A nested quantifier used to make a run of '*' or '§' backtrack exponentially.
+    for (const mark of ['*', '§', '†']) {
+      const started = performance.now();
+      expect(parsePeerName(`Intel Corporation${mark.repeat(5_000)}`)).toEqual({ name: 'Intel Corporation', tickerHint: null });
+      expect(parsePeerName(`Intel Corporation ${mark.repeat(2_000)} ${mark.repeat(2_000)}`)).toEqual({ name: 'Intel Corporation', tickerHint: null });
+      expect(performance.now() - started).toBeLessThan(500);
+    }
+    expect(parsePeerName('Intel Corporation(2)*†')).toEqual({ name: 'Intel Corporation', tickerHint: null });
+  });
+
   it('rejects headings, figures, sentences and wrapped fragments', () => {
     for (const value of ['Company', 'Revenue ($ in billions)', '52.9', '36th', 'Intel Percentile', 'Target', 'Threshold',
       'We benchmark against these companies', 'BOARD OF', '2025 Peer Group', 'Market Capitalization']) {
