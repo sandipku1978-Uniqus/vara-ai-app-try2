@@ -91,6 +91,29 @@ describe('AIQnAPanelView', () => {
     expect(onClose).toHaveBeenCalledOnce();
   });
 
+  it('puts the model selector in the composer row and shows what answered under the answer', () => {
+    render(<AIQnAPanelView {...props({
+      answerMeta: {
+        requestedModel: 'anthropic/claude-sonnet-5.5',
+        requestedEffort: 'medium',
+        model: 'anthropic/claude-sonnet-5.5',
+        provider: 'anthropic',
+        reasoningEffort: 'medium',
+        webSources: [{ url: 'https://www.sec.gov/newsroom', title: 'SEC Newsroom' }],
+      },
+    })} />);
+
+    const form = screen.getByRole('textbox', { name: /Message URC Copilot/i }).closest('form')!;
+    expect(form).toContainElement(screen.getByRole('button', { name: /AI model:/ }));
+    expect(screen.getByText('Answered by Claude Sonnet 5.5 · medium effort')).toBeInTheDocument();
+    expect(screen.getByRole('region', { name: 'Web sources' })).toHaveTextContent('SEC Newsroom');
+  });
+
+  it('shows no model line when the server reported none', () => {
+    render(<AIQnAPanelView {...props()} />);
+    expect(screen.queryByText(/Answered by/)).not.toBeInTheDocument();
+  });
+
   it('delegates evidence navigation without interpreting the citation target', () => {
     const onOpenCitation = vi.fn();
     render(<AIQnAPanelView {...props({ tab: 'evidence', onOpenCitation })} />);

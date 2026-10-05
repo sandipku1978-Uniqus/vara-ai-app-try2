@@ -22,6 +22,8 @@ import {
 } from '../lib/systemPrompts';
 import { selectFilingText } from '../utils/filingTextSelection';
 import type { ChatGroundingInput } from '../lib/ai-input';
+import { isReasoningEffort, type AiModelSelection, type ReasoningEffort } from '../lib/ai-models';
+import { currentAiModelSelection, groundedAiModelSelection } from './aiModelPreference';
 
 const CLAUDE_API_ENDPOINT = '/api/claude';
 const CLAUDE_STREAM_ENDPOINT = '/api/stream';
@@ -31,12 +33,107 @@ interface ClaudeRequestOptions {
   messages?: Array<{ role: 'user' | 'assistant'; content: string }>;
   frameworks?: string[];
   grounding?: ChatGroundingInput;
+  /**
+   * Whether this call may honour the user's web-search toggle. Off by default:
+   * extraction, summaries and memo drafts answer from the filing text they are
+   * handed, and web results would put unread sources into a grounded answer.
+   */
+  allowWebSearch?: boolean;
+  /** Receives the model, effort and web sources the server reports for this reply. */
+  onMeta?: (meta: AiAnswerMeta) => void;
 }
 
 interface ClaudeResponsePayload {
   text?: string;
   error?: string;
   grounding?: unknown;
+  model?: unknown;
+  provider?: unknown;
+  reasoningEffort?: unknown;
+  usage?: unknown;
+  webSources?: unknown;
+}
+
+/** A web page the model read when web search was on — never an SEC filing citation. */
+export interface AiWebSource {
+  url: string;
+  title: string | null;
+}
+
+/**
+ * What the server says actually answered. Every field is as reported; a field
+ * the server did not report stays null rather than being filled from the
+ * request, so the UI never claims a model it was not told about.
+ */
+export interface AiAnswerMeta {
+  requestedModel: string | null;
+  requestedEffort: ReasoningEffort | null;
+  model: string | null;
+  provider: string | null;
+  reasoningEffort: ReasoningEffort | null;
+  webSources: AiWebSource[];
+}
+
+function normalizeWebSources(value: unknown): AiWebSource[] {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set<string>();
+  const sources: AiWebSource[] = [];
+  for (const item of value) {
+    let url: unknown;
+    let title: unknown = null;
+    if (typeof item === 'string') {
+      url = item;
+    } else if (item && typeof item === 'object') {
+      const record = item as Record<string, unknown>;
+      url = record.url ?? record.uri ?? record.link;
+      title = record.title ?? record.name ?? null;
+    }
+    if (typeof url !== 'string' || !/^https?:\/\//i.test(url.trim())) continue;
+    const trimmed = url.trim();
+    if (seen.has(trimmed)) continue;
+    seen.add(trimmed);
+    sources.push({ url: trimmed, title: typeof title === 'string' && title.trim() ? title.trim() : null });
+  }
+  return sources;
+}
+
+const META_KEYS = ['model', 'provider', 'reasoningEffort', 'webSources'] as const;
+
+function hasMetaFields(record: Record<string, unknown>): boolean {
+  return META_KEYS.some(key => record[key] !== undefined && record[key] !== null);
+}
+
+/**
+ * Read the answer metadata from a route response (or one SSE event) without
+ * trusting its shape. Returns null when the server reported none of it.
+ */
+export function readAiAnswerMeta(
+  payload: unknown,
+  requested: AiModelSelection,
+  previous: AiAnswerMeta | null = null,
+): AiAnswerMeta | null {
+  if (!payload || typeof payload !== 'object') return previous;
+  const outer = payload as Record<string, unknown>;
+  const record = outer.meta && typeof outer.meta === 'object' ? outer.meta as Record<string, unknown> : outer;
+  if (!hasMetaFields(record)) return previous;
+  const webSources = normalizeWebSources(record.webSources);
+  return {
+    requestedModel: requested.model ?? null,
+    requestedEffort: requested.reasoningEffort ?? null,
+    model: typeof record.model === 'string' && record.model.trim() ? record.model.trim() : previous?.model ?? null,
+    provider: typeof record.provider === 'string' && record.provider.trim() ? record.provider.trim() : previous?.provider ?? null,
+    reasoningEffort: isReasoningEffort(record.reasoningEffort) ? record.reasoningEffort : previous?.reasoningEffort ?? null,
+    webSources: webSources.length > 0 ? webSources : previous?.webSources ?? [],
+  };
+}
+
+/** True when the server answered with a different model from the one requested. */
+export function answeredByFallback(meta: AiAnswerMeta | null | undefined): boolean {
+  return Boolean(meta?.model && meta.requestedModel && meta.model !== meta.requestedModel);
+}
+
+function requestSelection(options: ClaudeRequestOptions): Required<AiModelSelection> {
+  return options.allowWebSearch ? currentAiModelSelection() : groundedAiModelSelection();
 }
 
 // The server intentionally makes exactly one model attempt per request (spend
@@ -54,6 +151,7 @@ async function callClaudeRaw(
   options: ClaudeRequestOptions = {}
 ): Promise<{ text: string; payload: ClaudeResponsePayload }> {
   let lastError: Error | null = null;
+  const selection = requestSelection(options);
 
   for (let attempt = 0; attempt < 2; attempt += 1) {
     if (attempt > 0) await new Promise(resolve => setTimeout(resolve, TRANSIENT_RETRY_DELAY_MS));
@@ -71,6 +169,7 @@ async function callClaudeRaw(
           maxTokens: options.maxTokens,
           frameworks: options.frameworks,
           grounding: options.grounding,
+          ...selection,
         }),
       });
     } catch (error) {
@@ -91,6 +190,8 @@ async function callClaudeRaw(
       throw new Error('Claude returned an empty response.');
     }
 
+    const meta = readAiAnswerMeta(payload, selection);
+    if (meta) options.onMeta?.(meta);
     return { text, payload: payload ?? {} };
   }
 
@@ -109,6 +210,7 @@ export async function callClaudeStreaming(
   prompt: string,
   options: ClaudeRequestOptions & { onChunk: (text: string) => void }
 ): Promise<string> {
+  const selection = requestSelection(options);
   const response = await fetch(CLAUDE_STREAM_ENDPOINT, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -117,6 +219,7 @@ export async function callClaudeStreaming(
       messages: options.messages,
       maxTokens: options.maxTokens,
       frameworks: options.frameworks,
+      ...selection,
     }),
   });
 
@@ -131,6 +234,8 @@ export async function callClaudeStreaming(
     const payload = (await response.json()) as ClaudeResponsePayload;
     const text = payload.text?.trim() || '';
     if (text) options.onChunk(text);
+    const meta = readAiAnswerMeta(payload, selection);
+    if (meta) options.onMeta?.(meta);
     return text;
   }
 
@@ -141,6 +246,7 @@ export async function callClaudeStreaming(
   const decoder = new TextDecoder();
   let accumulated = '';
   let buffer = '';
+  let meta: AiAnswerMeta | null = null;
 
   while (true) {
     const { done, value } = await reader.read();
@@ -161,12 +267,14 @@ export async function callClaudeStreaming(
           accumulated += parsed.text;
           options.onChunk(parsed.text);
         }
+        meta = readAiAnswerMeta(parsed, selection, meta);
       } catch {
         // Skip malformed SSE lines
       }
     }
   }
 
+  if (meta) options.onMeta?.(meta);
   return accumulated;
 }
 
@@ -228,7 +336,7 @@ export async function askAi(
 ): Promise<string> {
   try {
     const prompt = buildAskAiPrompt(question, context);
-    return await callClaude(prompt, { maxTokens: 2400 });
+    return await callClaude(prompt, { maxTokens: 2400, allowWebSearch: true });
   } catch (error) {
     console.error('Claude API Error:', error);
     if (options.throwOnError) throw error;
@@ -411,7 +519,8 @@ export async function planAgentRun(prompt: string, context: AgentContextSnapshot
 export async function generateAgentAnswerStreaming(
   evidence: AgentEvidencePacket,
   context: AgentContextSnapshot,
-  onChunk: (text: string) => void
+  onChunk: (text: string) => void,
+  onMeta?: (meta: AiAnswerMeta) => void,
 ): Promise<string> {
   try {
     const evidenceJson = JSON.stringify(
@@ -463,6 +572,8 @@ export async function generateAgentAnswerStreaming(
       maxTokens: 4096,
       messages: builtMessages,
       onChunk,
+      onMeta,
+      allowWebSearch: true,
     });
 
     return text || fallbackEvidenceAnswer(evidence);
@@ -500,7 +611,8 @@ export async function summarizeConversation(
 export async function generateFilingSummary(
   locator: FilingLocator,
   sections: FilingSectionSnippet[],
-  mode = 'default'
+  mode = 'default',
+  onMeta?: (meta: AiAnswerMeta) => void,
 ): Promise<string> {
   // No extracted text -> no generative summary. With only the locator
   // (company name, form, date) in the prompt, the model produces a fluent
@@ -521,7 +633,7 @@ export async function generateFilingSummary(
       mode
     );
 
-    const text = await callClaude(prompt, { maxTokens: 4096 });
+    const text = await callClaude(prompt, { maxTokens: 4096, onMeta });
     return text || fallbackFilingSummary(locator, sections, mode);
   } catch (error) {
     console.error('Claude filing summary error:', error);

@@ -29,8 +29,11 @@ import type {
   PendingAlertDraft,
 } from '../types/agent';
 import { renderMarkdown } from '../utils/markdownRenderer';
+import type { AiAnswerMeta } from '../services/aiApi';
 import ResponsibleAIBanner from './ResponsibleAIBanner';
 import type { PanelTab } from './AIQnAPanel.helpers';
+import { AnswerModelLine, WebSourcesList } from './ai/AnswerModelMeta';
+import { ModelSelector } from './ai/ModelSelector';
 
 interface AnswerTabProps {
   activeRun: AgentRun;
@@ -38,6 +41,7 @@ interface AnswerTabProps {
   loadingStage: string;
   pendingAlertDraft: PendingAlertDraft | null;
   suggestions: string[];
+  answerMeta: AiAnswerMeta | null;
   onConfirmAlert: () => void;
   onDismissAlert: () => void;
   onFillComposer: (text: string) => void;
@@ -49,6 +53,7 @@ function AnswerTab({
   loadingStage,
   pendingAlertDraft,
   suggestions,
+  answerMeta,
   onConfirmAlert,
   onDismissAlert,
   onFillComposer,
@@ -66,6 +71,17 @@ function AnswerTab({
         </div>
       ) : (
         <div className="empty-state-small">This run has no answer yet.</div>
+      )}
+
+      {activeRun.answer && answerMeta && (
+        <>
+          <div className="copilot-answer-footer">
+            <div className="copilot-answer-footer-start">
+              <AnswerModelLine meta={answerMeta} />
+            </div>
+          </div>
+          <WebSourcesList sources={answerMeta.webSources} />
+        </>
       )}
 
       {pendingAlertDraft && (
@@ -226,6 +242,10 @@ export interface AIQnAPanelViewProps {
   inputValue: string;
   pendingAlertDraft: PendingAlertDraft | null;
   suggestions: string[];
+  /** What the server reported answering the active run, when it reported it. */
+  answerMeta?: AiAnswerMeta | null;
+  /** Model ids the gateway can serve; null/undefined = unknown, offer the full registry. */
+  availableModelIds?: Set<string> | null;
   onResizeStart: MouseEventHandler<HTMLDivElement>;
   onResizeKeyDown: KeyboardEventHandler<HTMLDivElement>;
   onClearRuns: () => void;
@@ -254,6 +274,8 @@ export function AIQnAPanelView({
   inputValue,
   pendingAlertDraft,
   suggestions,
+  answerMeta = null,
+  availableModelIds = null,
   onResizeStart,
   onResizeKeyDown,
   onClearRuns,
@@ -372,6 +394,7 @@ export function AIQnAPanelView({
                 loadingStage={loadingStage}
                 pendingAlertDraft={pendingAlertDraft}
                 suggestions={suggestions}
+                answerMeta={answerMeta}
                 onConfirmAlert={onConfirmAlert}
                 onDismissAlert={onDismissAlert}
                 onFillComposer={onFillComposer}
@@ -397,6 +420,7 @@ export function AIQnAPanelView({
           placeholder={`Ask ${BRAND.shortName} to open filings, compare peers, find comment letters, or draft alerts...`}
           disabled={running}
         />
+        <ModelSelector availableModelIds={availableModelIds} />
         <button type="submit" disabled={!inputValue.trim() || running} className="send-btn" aria-label={running ? 'Copilot is working' : 'Send message to copilot'}>
           {running ? <Loader2 size={16} className="spinner" /> : <Send size={16} />}
         </button>
