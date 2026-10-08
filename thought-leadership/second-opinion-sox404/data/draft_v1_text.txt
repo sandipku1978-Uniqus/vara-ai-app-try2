@@ -1,0 +1,1424 @@
+    Executive Summary
+
+       1,596                 75 of 118               0 of 11                   12 of 118
+       Registrants the SEC   Commenters              Audit firms on the file   Commenters who
+       estimates would be    addressing the          that endorsed the $2      said anything
+       newly exempt from     attestation who         billion line as drawn;    concrete about what
+       the auditor’s         called the exemption    10 of them                a company should
+       attestation on        too broad, nine in      questioned the five-      do once the
+       internal control:     guarded terms, or       year on-ramp              attestation is gone
+       26.7% of all          said it should not be
+       registrants           expanded
+
+.
+
+
+
+
+.
+
+
+
+    Most finance leaders read the SEC’s May 2026 filer status proposal as a cost saving
+    and moved on. The large accelerated filer line rises from $700 million to $2 billion of
+    public float, every new registrant gets five years, and the SEC’s requirement for an
+    auditor’s opinion on internal control falls away for 1,596 companies.
+.
+
+
+
+
+    The comment file is less settled than that reading. It holds 192 entries from 172
+    distinct commenters, and this paper rests on a review of every one. It follows
+.
+
+
+
+
+    Section 404 through its life: how it reached this point, what the SEC has now heard,
+    and what a finance leader should do before the answer arrives.
+.
+
+
+
+
+      ? First, how did Section 404 get here, and what did it deliver?
+      It was built between 2002 and 2005 and has been scaled or narrowed four times
+.
+
+
+
+
+      since; the proposal would be the fifth. The $700 million line was set in 2005 and has
+      not moved: at adoption it captured 18% of companies, and today it captures 35.4%
+.
+
+
+
+
+      of registrants. Over the same years restatements fell and the SEC’s staff found that
+      auditor testing brought out control deficiencies management had not disclosed,
+.
+      though neither can be credited to Section 404 alone.
+      (Refer Section 1: How Section 404 Got Here)
+
+
+.
+
+
+
+
+      ? Second, what did the SEC hear?
+      Of the 118 commenters that addressed the attestation, 75 said the exemption is too
+      broad or should not be expanded, nine of them in guarded terms, and 32 supported
+      it or wanted more.
+
+      The split runs by constituency. Every company, exchange and industry association
+      that took a side supported the exemption. No accounting firm endorsed the $2
+      billion line as drawn, and 25 of the 27 investors and investor advocates that
+      addressed the exemption called it too broad or opposed any expansion.
+      (Refer Sections 3 and 4: What the SEC Heard; Two Questions the File Leaves Open)
+
+
+
+      ? Third, where could the final rule move?
+      No final rule has been adopted. The letters show where one could move: the five-
+      year on-ramp for very large new listings, a second test beside public float, and relief
+      for companies that cross today’s lines while the rule is pending.
+      (Refer Section 5: Where the Final Rule Could Move)
+
+
+
+
+                                                                                               Page 2
+      ? Fourth, will this bring the mid-market back?
+      The proposal lowers the cost of staying public. It does little to change the decision to
+      go public, because most companies making that decision are exempt already. The
+      release gives no estimate of additional listings.
+      (Refer Section 6: Capital Markets and the Mid-Market)
+
+
+
+      ? Fifth, what should a finance leader do before the final rule?
+      Fix the company’s status under both rule sets, price the saving from the auditor’s
+      own fee proposal, and take keep, drop or replace to the audit committee with
+.
+
+
+
+
+      evidence. Section 7 sets out eight decisions for the person who runs the SOX
+      program.
+.
+
+
+
+
+      (Refer Section 7: What To Do Before the Final Rule)
+
+
+.
+
+
+
+
+          Uniqus Point of View: when management’s assessment stands alone
+
+.
+
+       The file argues about where the line should sit; a finance leader has a different
+       question. Once the auditor’s opinion is optional, management’s assessment
+       under Section 404(a) is the only report on internal control an investor
+       receives. The proposal changes neither that assessment nor the certifications
+.
+
+
+
+
+       that accompany it.
+
+.
+
+
+       We would plan on the core of the proposal surviving and its edges moving.
+       Companies below $2 billion of float that have the attestation today should
+       prepare for a year in which it becomes a choice.
+.
+
+
+
+
+       That choice belongs to the audit committee, and it should be made on
+       evidence before a lender, an underwriter or an investor asks about it.
+.
+
+
+
+
+.   Sandip Khetan
+    Co-Founder, Global Head of Accounting & Reporting Consulting
+
+
+
+
+                                                                                          Page 3
+    1. How Section 404 Got Here
+    Built between 2002 and 2005. Scaled or narrowed four times since. The
+    proposal would be the fifth.
+
+    Section 404 has two halves. Under 404(a), management assesses internal control
+    over financial reporting and reports its conclusion. Under 404(b), the auditor attests
+    to that assessment.
+
+    The second half has never applied to everyone, and it has been scaled or narrowed
+    four times. In 2007 the SEC issued guidance for management and the PCAOB a risk-
+.
+
+
+    based audit standard; in 2010 Congress exempted non-accelerated filers by statute,
+    after the SEC had deferred them since 2003. The JOBS Act added emerging growth
+    companies in 2012, and in 2020 the SEC took issuers with revenue under $100 million
+.
+
+
+
+
+    out of accelerated filer status.
+
+    Exhibit 1 — The life of Section 404, 2002 to 2026
+.
+
+
+
+
+.
+
+
+
+
+.
+
+
+
+
+.
+
+
+
+
+.
+
+
+
+
+.
+
+
+
+
+.
+
+
+
+
+    Source: SEC Release 33-11419 (May 19, 2026), pp. 12, 20 to 34, 40 to 42 and 150; SEC Release 33-8392 for the 2004
+    compliance date; Uniqus presentation. The 2004 entry is the first fiscal year end (on or after November 15,
+    2004) for which accelerated filers provided the auditor’s attestation. Shares are the SEC’s estimates; the 2005
+    figures are shares of listed companies and of their float, and “nearly 95 percent” is the SEC’s wording.
+
+
+    The $700 million line was set in 2005 and has not moved. At adoption it captured 18%
+    of companies; today the same line captures 35.4% of registrants. That drift is the
+    SEC’s strongest argument: adjusted for consumer prices the line would be $1.15
+    billion, and tracking the S&P 500 it would be $3.85 billion.
+
+
+    1.1 What the record shows
+    The SEC’s own tables show the control record under each regime. Over 2021 to 2024,
+    management reported ineffective controls at 5.2% of large accelerated filers, 15.7%
+    of accelerated filers and 41.8% of non-accelerated filers.
+
+
+
+
+                                                                                                             Page 4
+    Exhibit 2 — The control record by filer status
+
+
+
+
+.
+
+
+
+
+.
+
+
+
+
+.
+
+
+
+
+    Source: SEC Release 33-11419, EA Tables 5, 6 and 7 (pp. 139 to 142), SEC staff analysis of Audit Analytics data.
+    Categories are those of the current rules. Restatements are those correcting errors material to previously
+    issued financial statements; in that table the accelerated and non-accelerated columns exclude emerging
+.
+
+
+
+
+    growth companies, whose rate was 14.7%. Of 757 accelerated filers, 125 are emerging growth companies and
+    are not subject to attestation.
+
+
+    Size explains part of that gradient, and the SEC reads its restatement table
+.
+
+
+
+
+    cautiously: the rate for non-accelerated filers is “only slightly higher” than for
+.
+    accelerated filers. The gap is widest on persistence: 24.9% of non-accelerated filers
+    reported ineffective controls in all four years, against 4.2% of accelerated filers.
+
+    Where the attestation is optional, few companies buy it. The SEC estimates that less
+.
+
+
+
+
+    than six percent of exempt registrants obtained one voluntarily in 2024.
+
+
+.
+
+
+    1.2 What the second opinion delivered
+    Cost is one side of the ledger. On the other, the SEC’s 2011 staff study concluded that
+.
+    auditor testing “has generally resulted in the disclosure of internal control
+    deficiencies” that management had not previously disclosed, and that the
+    attestation “appears to have a positive impact on the informativeness of internal
+    control disclosures and financial reporting quality”. The release repeats both
+    findings.
+
+    Restatements rose in the first three years of the Act and have fallen since. The
+    Center for Audit Quality, the audit profession’s policy body, counts a 60% decline
+    from 2006 to 2009 and a further fall from 858 in 2013 to 402 in 2022. Ideagen Audit
+    Analytics, on its own count, recorded 391 in 2025, the second lowest year in its 20-
+    year database.
+
+
+
+
+                                                                                                               Page 5
+    Exhibit 3 — Restatements announced by US-listed companies, 2013 to 2022
+
+
+
+
+.
+
+
+
+
+.
+
+    Source: Center for Audit Quality, Financial Restatement Trends in the United States: 2013 to 2022 (June 2024),
+    pp. 6 to 8 and 15, from Audit Analytics data; the count excludes 1,155 restatements by blank-check companies
+    that followed an SEC staff statement on warrants in April 2021. The 2025 figure is from Ideagen Audit Analytics,
+    Financial Restatements Report (May 2026), counted on a different basis. The Center says it is too early to tell
+.
+
+
+    whether the rise in 2022 is a turn, and the fall cannot be credited to Section 404 alone.
+
+
+    Those closest to the work came to see value in it. In a survey of corporate insiders in
+.
+    2008 and 2009, cited in the release, respondents judged the benefits of Section
+    404(b) compliance to outweigh the costs, “especially as they gained experience
+    with section 404(b)”, though fewer answered that question than others. Compliance
+.
+
+
+    costs also fell after 2007, when the PCAOB issued Auditing Standard No. 5 and the
+    SEC issued its guidance for management.
+
+.
+    The SEC names the wider benefit itself: Section 404(b) “may play a role in improving
+    overall investor confidence, encouraging investment in public markets”. None of this
+    proves cause: the Act also created the PCAOB, audit committee independence rules
+    and officer certifications, the release cites one recent study that found no decline in
+.
+
+
+
+
+    reporting quality after the 2020 exemption, and it says auditor testing “may have
+    fewer benefits” at the larger companies now affected. What the record does show is
+    what is being given up: an independent test that, in the SEC staff’s own study of
+.
+
+
+
+
+    accelerated filers, found what management had not.
+.
+
+
+
+
+                                                                                                             Page 6
+    2. What the SEC Proposed
+    One line at $2 billion, one clock at five years, and no auditor’s opinion below
+    either.
+
+
+     Element                    Today                              Proposed
+
+
+     Large accelerated filer    $700 million of public float       $2 billion of public float
+     line
+
+     How float is measured      Share price on the last            Average closing price over the last
+.                               business day of the second         10 trading days of that quarter
+                                fiscal quarter
+.
+
+
+
+
+     Moving in or out           One measurement; exit below        Two consecutive years above or
+                                $560 million for large             below the line; no separate exit
+                                accelerated status and $60         level
+.
+
+
+                                million for accelerated status
+
+     Seasoning before the       12 months of reporting             60 months, whatever the
+.
+     status applies                                                company’s size
+
+     Management’s               Required of all                    Unchanged
+     assessment, 404(a)
+.
+
+
+
+
+     Foreign private            Attestation from $75 million of    Unchanged
+     issuers on Form 20-F       float
+.
+
+
+
+
+    2.1 The filer categories, today and under the proposal
+.
+
+
+
+
+    Filer status decides three things: how fast a company must file, how much it must
+    disclose, and whether its auditor attests to internal control. Today five overlapping
+.
+    labels can apply. The proposal would leave two that matter, large accelerated and
+    non-accelerated, and add a sub-category for the smallest companies.
+
+                                                    What it carries
+.
+
+
+
+
+     Category        Who it is today                                        Under the proposal
+                                                    today
+
+
+     Large           Public float of $700 million   10-K in 60 days, 10-     $2 billion or more at each
+     accelerated     or more at the end of the      Q in 40; auditor’s       of the last two second-
+     filer           second quarter; 12             attestation; full        quarter ends and 60
+                     months of reporting; one       disclosure               months of reporting;
+                     annual report filed; not                                obligations unchanged
+                     eligible as a smaller
+                     reporting company on
+                     the revenue test
+
+     Accelerated     Float of $75 million to        10-K in 75 days, 10-     Eliminated; becomes
+     filer           under $700 million, with       Q in 40; attestation     non-accelerated
+                     the same other                 unless an emerging
+                     conditions                     growth company
+
+
+
+
+                                                                                                  Page 7
+                                                         What it carries
+      Category          Who it is today                                             Under the proposal
+                                                         today
+
+
+      Non-              Not defined in the rules:        10-K in 90 days, 10-       Any issuer that is not
+      accelerated       every other registrant           Q in 45; no                large accelerated; same
+      filer                                              attestation                deadlines; no attestation;
+                                                                                    scaled disclosure, with
+                                                                                    some exceptions; must
+                                                                                    disclose material
+                                                                                    unresolved staff
+                                                                                    comments
+
+      Smaller           Float under $250 million,        Scaled disclosure:         Eliminated; its
+      reporting         or revenue under $100            two years of               accommodations pass to
+.
+
+
+
+
+      company           million with float under         financial                  non-accelerated filers
+.
+                        $700 million                     statements and
+                                                         MD&A instead of
+                                                         three, lighter
+.
+                                                         executive pay
+                                                         disclosure
+
+      Emerging          Revenue under $1.235             No attestation;            Stays by statute, though
+      growth            billion, for up to five years    scaled disclosure;         the SEC expects it to be
+.
+
+
+
+
+      company           after IPO                        deferred adoption          unnecessary in most
+                                                         of new accounting          circumstances
+.                                                        standards
+
+      Small non-        Does not exist                   Not applicable             New: total assets of $35
+      accelerated                                                                   million or less at each of
+      filer                                                                         the last two second-
+.
+
+
+
+
+                                                                                    quarter ends; 10-K in 120
+                                                                                    days, 10-Q in 50
+.
+
+
+
+
+    Source: SEC Release 33-11419, pp. 9 to 13, 20 to 21, 28 to 33, 37 to 48, 56, 66 to 69, 83, 96 and 103. Smaller
+    reporting and emerging growth status sit on top of the other categories today. Public float is the market value
+    of common equity held by non-affiliates.
+.
+
+
+
+
+    A change of status therefore moves more than the attestation. A large accelerated
+    filer that becomes non-accelerated gains 30 days on its Form 10-K and five on its
+    Form 10-Q, may present two years of financial statements where it now presents
+.
+
+
+
+
+    three, and is exempt from say-on-pay votes. The option to defer new accounting
+    standards is narrower: it runs only for the first five years after initial registration.
+
+    The SEC estimates that large accelerated filers would fall from 2,115 to 1,146, from
+    35.4% to 19.2% of registrants, while still holding 93.5% of public float. 1,596 registrants
+    would be newly exempt from the attestation: 964 that are large accelerated filers
+    today and 632 accelerated filers.
+
+    Two groups get less than the headline suggests. Banks are counted in the 1,596 but
+    stay subject to the FDIC’s separate attestation rule, which since January 1, 2026
+    applies at $5 billion of assets or more. Foreign private issuers filing on Form 20-F or
+    40-F are outside the proposal and keep today’s $75 million trigger.
+
+    Comments closed on July 20, 2026. As of early October 2026 the rule remains at the
+    proposed stage, as do the companion proposals on semiannual reporting and
+    registered offerings.
+
+
+
+
+                                                                                                            Page 8
+    3. What the SEC Heard
+    A file that divides between those who pay for assurance and those who rely
+    on it or provide it.
+
+    The docket holds 192 entries, the latest dated September 8, 2026. Setting aside SEC
+    staff memoranda, a roundtable transcript and duplicates leaves 172 distinct
+    commenters. Of these, 118 addressed the attestation and 54 did not mention it.
+
+    Exhibit 4 — Where 118 commenters stood on the attestation exemption
+
+.
+
+
+
+
+.
+
+
+
+
+.
+
+
+
+
+.
+
+
+
+
+.
+
+
+
+
+.
+
+
+
+
+.
+
+
+
+
+.
+
+
+
+
+    Source: Uniqus coding of every entry on SEC comment file S7-2026-18 as posted on October 5, 2026; the
+    method is set out in “How we read the file”. One letter, from the Texas Society of CPAs, could not be opened on
+    the docket and was read from the society’s website. “Too broad” means the commenter accepts some
+.
+
+    widening of the exemption and objects to its extent; nine of those 32 say so in guarded terms. The counts
+    describe who wrote; they are not a forecast of how the Commission will weigh each letter.
+
+
+    Supporters are the parties that bear the cost: companies, their associations, both
+    exchanges and most of the securities lawyers who wrote. Those objecting are led by
+    investors and individual commenters, joined by academics and by most of the firms
+    and professional bodies that provide the assurance. Among investors and investor
+    advocates, 25 of the 27 that addressed the attestation called the exemption too
+    broad or said it should not be expanded.
+
+    The middle is more informative than either end. Thirty-two commenters accepted
+    that the line should move and objected to how far. Twenty of them named a
+    different line or test.
+
+           How we read the file
+
+
+        How it was read. Every entry was read and coded with AI under the direction of
+        Uniqus professionals. All but two letters went through two independent passes,
+        and differences were settled by re-reading the letter. Every quotation printed
+        here was checked against the page of the filed letter.
+
+
+
+                                                                                                            Page 9
+       What counts as a commenter. Each distinct filer, once. A letter with more than
+       100 academic signatories is one commenter, and so is a joint letter from 49
+       organizations; a signatory that also filed its own letter is counted for that letter
+       too. Staff memoranda of meetings are excluded.
+
+       What counts as a position. Only what the letter says about the attestation. A
+       letter that supports the proposal overall but never mentions Section 404(b) is
+       recorded as silent.
+
+       Who did not write. Nine of the twenty largest US accounting firms, ranked by
+       revenue in the 2026 INSIDE Public Accounting list, filed nothing. Neither did the
+       AICPA in its own name, the Institute of Internal Auditors, Financial Executives
+.
+
+       International or the Institute of Management Accountants.
+
+.
+
+
+
+
+    3.1 The audit profession, grouped by position
+.
+
+
+
+
+    Eleven of the twenty largest US accounting firms by revenue wrote, including the Big
+    Four, along with one advisory firm that does not audit. Nine of the twelve said the
+.
+
+
+    exemption is, or may be, too broad; two took no side; one supported it. None
+    endorsed the $2 billion line as drawn.
+
+     What they told
+.
+
+
+
+
+                         How many        What they asked for, and what it means for you
+     the SEC
+
+.
+
+
+     The line is too     Five: four      Each named a fix: keep the attestation above today’s
+     high, and here is   audit firms     $700 million line; a line of approximately $1.1 billion; an
+     where to put it.    and the         inflation adjustment of the thresholds; a revenue limit of
+.
+                         advisory firm   $1.235 billion beside float; or keep it after a recent
+                                         material weakness. If the SEC takes any of these, some
+                                         companies between $700 million and $2 billion of float
+                                         keep the opinion.
+.
+
+
+
+
+     The exempt          Four audit      A second look at how many companies fall out, a test
+     group may be too    firms           that looks past public float alone, and refreshed PCAOB
+.
+     wide, but we will                   guidance on auditing internal control. Even firms with no
+     not name a                          alternative of their own question the breadth, which
+     number.                             adds weight to a second test beside float.
+
+     There is not        Two audit       Ask investors first, and redo the cost estimate to count
+     enough evidence     firms           the control work an auditor must still perform. The saving
+     to decide yet.                      in the release may be overstated.
+
+     Let the market      One audit       Make the attestation a choice for most issuers. Even the
+     decide.             firm            one supporter suggested the SEC consider a line below
+                                         $2 billion.
+
+
+    Three points recur in the firms’ letters and bear directly on a company’s planning.
+
+    • The saving is smaller than the fee line implies. Seven firms said the financial
+      statement audit will absorb part of the work, because auditors must still
+      understand controls and, in many audits, test them or do more substantive work.
+
+    • Five years is too long for a very large new listing. Ten of the eleven audit firms
+      questioned a flat 60-month on-ramp.
+
+    • Fewer firms will keep the capability. One firm estimates that only six firms would
+      perform integrated audits for ten or more issuers.
+
+
+                                                                                               Page 10
+    4. Two Questions the File
+    Leaves Open
+    How much is saved, and what investors will do about it.
+
+
+    4.1 How much is actually saved
+    The release cannot isolate the attestation fee, because companies disclose total
+    audit fees only. Its own input is $202,500 of outside cost and 375 internal hours per
+    annual report, a 2020 estimate adjusted for inflation.
+.
+
+
+
+
+    Issuers put the figure higher, at or above the top of the range the release itself
+    reports. One listed company cited by Nasdaq and one biotech CFO each put it at
+.
+
+
+
+
+    $500,000 to $1 million a year. A governance association’s member survey points the
+    same way.
+.
+
+
+
+
+    Exhibit 5 — The SEC’s number and the companies’ number
+
+.
+
+
+
+
+.
+
+
+
+
+.
+
+
+
+
+.
+
+
+
+
+.
+
+
+
+
+.
+
+
+
+
+    Source: SEC Release 33-11419, pp. 153 to 155 and 214 to 218, including GAO-25-107500; comment letters of
+    Nasdaq, Inc. (p. 4), Avalo Therapeutics (p. 1) and the Society for Corporate Governance (p. 7; member survey
+    with nearly 50 responses). The CFO’s letter reads “between $500-$1M annually”. The release also cites
+    estimates on other bases, from $73,165 in audit fees for companies under $300 million to approximately
+    $800,000 all-in. The SEC’s figure is an average across registrants and the companies’ figures are individual
+    reports, so the exhibit shows a gap between them, not an error in either.
+
+
+    Neither set of numbers answers the controller’s question: what the financial
+    statement audit will cost once the auditor no longer tests controls for an opinion of
+    its own. Only a fee proposal for a specific company answers that.
+
+
+    4.2 What investors will do
+    Opponents argue that investors will charge for the missing opinion through a higher
+    cost of capital. The figures offered trace largely to one 2009 study of companies
+    whose control deficiencies were later cleared by an auditor. The one study on the file
+    that measured the cost of capital after an actual exemption, for low-revenue issuers
+    in 2020, found no significant difference.
+
+    Companies are not sure either. In the governance survey, which drew nearly 50
+    responses, 12% of respondents said they would likely keep the attestation voluntarily
+
+
+                                                                                                          Page 11
+    and 15% were confident they would drop it. 52% said it would depend on investor
+    demand.
+
+    Two statements worth putting side by side
+
+      Nasdaq, Inc., comment letter, p. 4         Ohio Public Employees Retirement
+                                                 System, comment letter, p. 9
+      • “One listed company estimated that
+        it spent between $500,000 and $1         • “Without an independent
+        million annually with independent           “gatekeeper,” management’s
+        auditors to comply with this                assessment is inherently less
+        disclosure obligation and observed          credible – in effect, investors are
+.
+
+
+        that such expenses could be better          being asked to trust the numbers
+        deployed on research &                      with one fewer check on the system
+.
+
+        development.”                               that produced them.”
+
+
+
+.
+
+
+
+
+      Both can be true. The first describes the price of the opinion. The second
+      describes what the opinion is for.
+.
+
+
+
+
+.
+
+
+
+
+.
+
+
+
+
+.
+
+
+
+
+.
+
+
+
+
+.
+
+
+
+
+                                                                                          Page 12
+    5. Where the Final Rule
+    Could Move
+    The Commission can adopt the proposal as written. If it moves, the file shows
+    where.
+
+    Exhibit 6 — Where the line could sit
+
+
+
+
+.
+
+
+
+
+.
+
+
+
+
+.
+
+
+
+
+.
+
+
+
+
+.
+
+
+
+
+.
+    Source: SEC Release 33-11419, p. 42 (inflation-adjusted and S&P 500-proportionate lines) and EA Table 13, p. 207;
+    Uniqus coding of comment file S7-2026-18. The upper axis is logarithmic. EA Table 13 varies only the float line
+    within the proposal, so its $700 million row (1,665) differs from today’s 2,115 large accelerated filers; the release
+    does not reconcile the two. Between $75 million and $700 million some companies are exempt already.
+.
+
+
+
+
+      Element                  What the file says                              What to watch for
+
+
+.     Five-year on-            55 of the 74 commenters that                    A shorter period, or size-based
+      ramp                     addressed it rejected or questioned             exits like those for emerging
+                               a flat 60 months                                growth companies
+
+      Float as the only        13 commenters proposed a revenue                A revenue limit at or near $1.235
+.
+
+
+
+
+      test                     test or asked the SEC to consider one           billion
+
+      The $2 billion           24 supported it, 15 wanted it lower, 3          A figure from $1.15 billion to $2
+      level                    higher; 9 opposed any increase                  billion, or indexing
+
+      Crossing a line in       One association and two issuers                 A grace period, or status held
+      2026                     asked for interim relief; none is               until the final rule
+                               proposed
+
+      Foreign private          Left at $75 million; law firms asked for        A statement that the exclusion is
+      issuers                  parity, now or in the foreign issuer            transitional
+                               rulemaking
+
+      Disclosure of            4 commenters asked that                         A required statement on whether
+      whether the              companies disclose whether an                   the auditor attested
+      auditor attested         attestation was obtained
+
+
+    The on-ramp is where the file comes closest to agreement, and a change there
+    would not touch a seasoned mid-market company. A second test or a lower line
+    would. None of this binds the Commission: a count of letters shows where the
+    arguments are, not how the vote will go.
+
+
+
+                                                                                                                Page 13
+    6. Capital Markets and
+    the Mid-Market
+    Will this bring the mid-market back? It lowers the cost of staying public. The
+    decision to go public turns on other things.
+
+    The proposal’s stated purpose is to encourage more companies to go and stay
+    public. The backdrop is real. The number of companies listed on US exchanges fell
+    from 8,090 in 1996 to 3,908 in 2025.
+
+.
+
+    Exhibit 7 — Fewer listed companies, but no shortage of capital
+
+.
+
+
+
+
+.
+
+
+
+
+.
+
+
+
+
+.
+
+
+
+
+.
+
+
+
+
+.   Source: World Federation of Exchanges via World Bank, indicator CM.MKT.LDOM.NO, “Listed domestic
+    companies, total”, United States, updated July 13, 2026: companies listed on US exchanges at year end,
+    including foreign companies listed only there and excluding investment funds; 1996 is the peak. Renaissance
+    Capital, US IPO Market 2025 Annual Review (December 18, 2025) and 3Q 2026 Quarterly Review (October 1,
+.   2026): IPOs and direct listings of at least $50 million of market value, excluding closed-end funds, SPACs and,
+    from 2026, unit offerings. Figures for 2026 are the sum of the three quarterly reviews. The two offerings are
+    SpaceX ($75.0 billion) and SK hynix ($26.5 billion), which was already listed in Korea.
+
+.
+
+
+    The release does not claim to know the effect. It gives no estimate of additional
+    listings and says the “magnitude and direction of the effect is difficult to predict”. It
+    also notes that approximately 88% of 2024 IPOs were by emerging growth
+    companies, which already have the exemption for up to five years.
+
+    The file does not supply the missing evidence. Supporters assert that listings will
+    follow and none estimates how many. The academic whose study the release cites
+    for the JOBS Act’s effect on IPOs supports the proposal, and wrote:
+
+
+        Professor Michael Dambra, University at Buffalo, comment letter, p. 2
+        “While I do not expect the regulation to increase IPO activity in the United
+        States, our research indicates that scaling back the burdens of being public
+        enhances the frequency and efficiency of corporate investment and
+        innovation”
+
+
+    Much of the research the release cites points elsewhere: abundant private capital
+    and small companies choosing to be acquired. The authors of one of those studies,
+    in a 2025 update, date the US listing gap to 1999, three years before Sarbanes-Oxley.
+
+
+
+                                                                                                            Page 14
+    The count of listed companies points the same way: by the end of 2001, before the
+    Act, it had fallen from 8,090 to 6,177, which is 46% of the whole decline to 2025.
+
+    Capital itself is not short. US IPOs raised $147.5 billion in the first nine months of 2026,
+    more than in all of 2021, and two offerings account for $101.5 billion of it.
+
+
+    6.1 What it does for a mid-market company
+    For a listed company below $2 billion of float that has the attestation today, the
+    benefit is direct: a lower audit bill and less risk of being moved across a line by its
+    share price.
+
+    For a private company deciding whether to list, the change is narrower than it looks.
+.
+
+
+
+
+.
+    A candidate small enough to be an emerging growth company already has five
+    years. What is new is relief for the candidate too large for that status, and one audit
+    firm described the companies between its preferred line and $2 billion as generally
+.
+    “large and seasoned public companies rather than the private companies weighing
+    whether to enter the public markets” (comment letter, p. 4).
+
+.
+    Two effects cut the other way, and both come from the one data set on the file built
+    on the companies affected (Professors Rajgopal, Wong and Zhao, comment letter,
+    pp. 2 and 4). The auditor reported ineffective controls at 8.5% of companies with
+.
+    $700 million to $2 billion of float, against 3.8% above $2 billion. The typical newly
+    exempted company, with $250 million to $2 billion of float, is followed by 4 to 6
+    analysts, against 12 for companies that stay in scope.
+.
+
+
+
+
+    For foreign issuers the proposal works against its own purpose. A foreign private
+    issuer on Form 20-F still needs the auditor’s opinion at $75 million of float while a
+.
+    domestic competitor is exempt up to $2 billion. The release concedes this “could
+    result in competitive disadvantages”, and one international law firm wrote of the
+    wider gap the proposals open between the domestic and foreign issuer regimes:
+    “We believe this gap will make U.S. listings significantly less attractive for foreign
+.
+
+
+
+
+    issuers, thereby reducing the investment opportunities available to U.S.
+    investors.” (Linklaters LLP, comment letter, p. 2).
+.
+
+
+
+
+          Uniqus Point of View: an option to be priced
+
+
+       The proposal lowers the cost of staying public. It does little to change the
+       decision to go public, because most companies making that decision are
+       exempt already and the reasons they stay private are untouched: ample
+       private capital, valuation and litigation exposure.
+
+       For a mid-market company the attraction of a US listing rests on valuation,
+       liquidity and research coverage. A control record that holds up under outside
+       testing supports all three.
+
+       Treat the exemption as an option to be priced, not a saving to be booked.
+
+
+
+
+                                                                                         Page 15
+    7. What To Do Before the
+    Final Rule
+    For the person who runs the SOX program: eight decisions, in order.
+
+    Start by locating the company. Three questions decide where it lands, and only one
+    of the three outcomes calls for work now.
+
+    Exhibit 8 — Where a company lands under the proposal
+
+.
+
+
+
+
+.
+
+
+
+
+.
+
+
+
+
+.
+
+
+
+
+.
+
+
+
+
+.
+
+
+
+
+.
+    Source: SEC Release 33-11419, pp. 43 to 48, 87 to 89, 114 to 116, 149, 152 and 205; Uniqus presentation. On
+    transition, a current large accelerated filer below $2 billion in either of the two years, or with less than 60
+    months of reporting, becomes a non-accelerated filer. Counts are the SEC’s estimates on calendar 2024 data.
+
+
+
+       Eight decisions for the SOX program leader
+.
+
+
+
+
+       1. FIX YOUR STATUS UNDER BOTH RULE SETS
+       Compute public float at the last two second-quarter ends on today’s single-day basis
+.
+
+
+
+
+       and on the proposed 10-trading-day average, and count your months of reporting
+       history.
+
+       2. IF YOU CROSSED A LINE AT JUNE 30, 2026, PLAN ON THE CURRENT RULES
+       Three commenters asked for interim relief and the release offers none.
+
+       3. LIST WHO ELSE EXPECTS THE OPINION
+       Banks stay under the FDIC’s rule at $5 billion of assets or more. Ask lenders, rating
+       agencies and your largest holders before deciding.
+
+       4. PRICE THE SAVING FROM A FEE PROPOSAL, NOT FROM THE RELEASE
+       Ask the auditor what the audit costs without an opinion on controls; seven firms told the
+       SEC the financial statement audit will absorb part of the work.
+
+       5. TAKE KEEP, DROP OR REPLACE TO THE AUDIT COMMITTEE WITH EVIDENCE
+       Material weaknesses and restatements in the last three years, turnover in finance,
+       system changes under way, and who owns the shares.
+
+       6. SET THE EVIDENCE STANDARD FOR AN ASSESSMENT NOBODY ELSE TESTS
+       Scope, sample sizes, tester independence and deficiency evaluation need to be written
+       down, because the auditor’s file will no longer supply them.
+
+
+
+                                                                                                           Page 16
+       Eight decisions for the SOX program leader, continued
+
+       7. DECIDE WHAT YOU WILL SAY
+       Beyond the cover-page check box, the proposal requires no statement on whether an
+       attestation was obtained. Four commenters asked for one. Have the answer ready for
+       the first investor who asks.
+
+       8. KEEP WHAT IS HARD TO REBUILD
+       Control documentation, IT general control evidence and trained people. A company
+       whose float stays at or above $2 billion for two consecutive years is back in scope.
+
+
+.
+
+
+
+
+    7.1 Keep, drop or replace
+
+      Option                      When it fits                                      What you give up
+.
+
+
+
+
+      Keep the integrated         A recent material weakness or                      The saving, in whole
+.
+
+
+      audit voluntarily           restatement; a capital raise ahead;
+                                  lenders who ask
+
+
+.
+      Drop it and rely on         Stable business and systems; a clean               An independent test of
+      management’s                control record; concentrated ownership             your own conclusion
+      assessment
+
+      Replace it with             A program that wants outside challenge,            Simplicity: the substitute
+.
+
+
+
+
+      something scaled            from internal audit or a periodic outside          has to be designed and
+                                  review, without an annual opinion                  explained
+.
+
+
+
+
+    7.2 When management’s assessment stands alone
+.
+
+
+
+
+    The second option carries a known risk. An advisory firm that does not audit told the
+    SEC that without the external attestation “the 404(a) process tends over time
+.
+    toward formalism” (p. 3). An academic committee’s letter, citing a 2017 study of
+    small companies, adds that Section 404(a) alone “only results in the discovery and
+    disclosure of about half of issuers with ineffective internal controls” (p. 7).
+.
+
+
+
+
+      The auditor’s work               With the attestation              Without it
+
+
+      Understanding of                 Required                          Still required, for the design and
+      controls                                                           implementation of relevant controls
+
+      Testing that controls            Required, to support an           Where the auditor relies on controls
+      operate                          opinion on internal               or cannot get enough evidence
+                                       control                           without them
+
+      Deficiencies the auditor         Reported in writing to            Unchanged
+      finds                            management and the
+                                       audit committee
+
+      Opinion on internal              Public, in the annual             None
+      control                          report
+
+      A material weakness              The auditor must say so           Goes to management and the audit
+      that management has              in its report                     committee, to weigh in
+      not reported                                                       management’s assessment
+
+
+    Source: SEC Release 33-11419, pp. 61, 62 and 139; PCAOB AS 2110, AS 2301 (including paragraph 17), AS 1305 and
+    AS 2201.
+
+
+
+
+                                                                                                            Page 17
+    Dropping the opinion does not take the auditor out of internal control. The last two
+    rows are the substance of the change: management’s conclusion becomes the only
+    public conclusion on internal control, so the evidence behind it has to stand on its
+    own.
+
+         Cross-border implications — the United States, India and the Middle East
+
+
+       Foreign private issuers. A company from India or the Gulf that lists in the US on
+       Form 20-F keeps the auditor’s opinion from $75 million of float. A domestic filer
+       of the same size would be exempt up to $2 billion.
+
+.
+       India already asks for more. Section 143(3)(i) of the Companies Act, 2013 has
+       the auditor report on whether internal financial controls with reference to
+.
+       financial statements are adequate and operating effectively, for listed and
+       unlisted companies alike, apart from certain small private companies. A US
+       parent that drops its attestation may still have an Indian subsidiary whose
+.
+       auditor reports on controls every year.
+
+       The UAE is moving the other way. Abu Dhabi’s Accountability Authority requires
+.
+       the auditor to report on the effectiveness of internal control over financial
+       reporting at the entities it oversees, and UAE listed companies are reported to be
+       in a phased move toward an auditor’s opinion on internal control; Saudi Arabia
+.      relies on the board’s annual review and the audit committee’s published
+       opinion. A group reporting in more than one of these markets should build one
+       control framework to the most demanding requirement it faces, not to the US
+.
+       floor.
+
+
+
+.
+
+
+
+
+.
+
+
+
+
+.
+
+
+
+
+                                                                                     Page 18
+    How Uniqus Can Help
+    This section is for four readers, each with a decision to take. If your company will
+    remain a large accelerated filer, or is an emerging growth company in its first five
+    years, nothing here changes your program. We do not audit, so no audit fee of ours
+    depends on whether a company keeps the attestation.
+
+
+
+      In or out?                                                    Keep, drop or replace?
+      Before fiscal 2026 audit planning closes                      Before the audit committee approves the
+                                                                    next audit plan
+      Filer status memo, one week. Public float
+.
+
+
+
+
+      on both measurement bases for the last                        Audit committee decision paper, three
+.
+
+
+      two years, months of reporting history, FDIC                  weeks. An evidence file on control history,
+      and contractual overlays, and your                            what investors and lenders expect, a fee
+      expected status under the proposal and                        comparison built from your auditor’s own
+.
+      under the two alternatives the file most                      proposal, and a recommendation the
+      supports.                                                     committee can minute.
+
+
+.
+
+
+
+
+      What stands behind a                                          Foreign private issuer or multi-
+.
+      management-only assessment?                                   market group?
+      Before the first year without the opinion                     Before your next Form 20-F
+
+      404(a) evidence standard, six weeks.                          Cross-border control map, four weeks.
+.
+      Scoping, testing and deficiency evaluation                    One framework mapped to Section 404,
+      written to the SEC’s 2007 guidance for                        India’s internal financial controls reporting
+      management, with a tester-independence                        and UAE or Saudi requirements, showing
+      model and a first-year test plan.                             where a single test serves all of them.
+.
+
+
+
+
+.
+    To start any of these, write to Sandip Khetan, Co-Founder and Global Head of
+    Accounting & Reporting Consulting, through www.uniqus.com.
+
+.
+
+
+
+
+    About Uniqus Consultech
+    Uniqus Consultech is a global tech-enabled consulting company specializing in Accounting &
+    Reporting, Governance, Risk & Compliance, Sustainability & Climate, and Tech Consulting. The
+    Company is co-founded by consulting veterans Jamil Khatri and Sandip Khetan and backed by
+    marquee investors such as Nexus Venture Partners, Sorin Investments, and UST. Anu Chaudhary, a
+    global sustainability and climate specialist with over 25 years of experience, serves as the Global Head
+    of Sustainability & Climate Consulting. Uniqus has a global team of 700+ professionals led by 85+
+    Partners & Directors across eleven offices in the USA, the Middle East, and India. The company serves
+    more than 400 clients, including marquee names in each of the markets it operates in. Uniqus is
+    committed to leveraging technology and an integrated global delivery model to provide best-in-class
+    consulting services to its clients.
+
+    This publication contains general information only and is based on the SEC’s proposing release, the public comment
+    file, regulatory materials, academic research and market data available as of October 2026, including estimates
+    from third parties that are inherently uncertain and subject to revision. The classification of comment letters reflects
+    Uniqus’s reading of each letter; positions are summarized, and readers should consult the letters themselves on the
+    SEC’s website. Rules described as proposed may be adopted in a different form or not at all. Amounts drawn from
+    different sources and bases are not additive. Nothing herein alleges any breach of accounting standards or
+    securities laws by any company or firm named, and references to commenters are included to illustrate the range of
+    views on an unsettled question. This document does not constitute accounting, investment, legal or other
+    professional advice, and Uniqus Consultech is not, by means of this publication, rendering any such advice or
+    services. Readers should consult a qualified professional advisor before making any decision or taking any action
+    that may affect their finances or business. © 2026 Uniqus Consultech. All rights reserved.
+
+
+
+
+                                                                                                                  Page 19
+
