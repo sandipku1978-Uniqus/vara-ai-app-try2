@@ -17,10 +17,10 @@ META = dict(
     footer="The Second Opinion | SOX 404: Before, Now and After",
 )
 
-NAV = ["Executive Summary", "1. How Section 404 Got Here", "2. What the SEC Proposed",
-       "3. What the SEC Heard", "4. Two Questions the File Leaves Open",
+NAV = ["Executive Summary", "1. How Section 404 Evolved", "2. What the SEC Proposed",
+       "3. What the SEC Heard", "4. Two Questions Left Open",
        "5. Where the Final Rule Could Move", "6. Capital Markets and the Mid-Market",
-       "7. What To Do Before the Final Rule", "How Uniqus Can Help"]
+       "7. Actions Before a Final Rule", "How Uniqus Can Help"]
 
 # --------------------------------------------------------------- facts
 # One number, one value, everywhere: every repeated figure is defined once.
@@ -66,7 +66,7 @@ def blocks(H):
               "Over the same years restatements fell and the SEC's staff concluded from the research that "
               "auditor testing brought out control deficiencies management had not disclosed, though neither can be "
               "credited to Section 404 alone."],
-             ref="(Refer Section 1: How Section 404 Got Here)") +
+             ref="(Refer Section 1: How Section 404 Evolved)") +
         H.qa("Second, what did the SEC hear?",
              ["Of the 118 commenters that addressed the attestation, <b>75 said the exemption is too broad "
               "or should not be expanded</b>, nine of them in guarded terms, and 32 supported it or wanted more.",
@@ -74,7 +74,7 @@ def blocks(H):
               "that took a side supported the exemption. No accounting firm endorsed the $2 billion line as drawn, and "
               "25 of the 27 investors and investor advocates that addressed the exemption called it too "
               "broad or opposed any expansion."],
-             ref="(Refer Sections 3 and 4: What the SEC Heard; Two Questions the File Leaves Open)") +
+             ref="(Refer Sections 3 and 4: What the SEC Heard; Two Questions Left Open)") +
         H.qa("Third, where could the final rule move?",
              ["No final rule has been adopted. The letters show where one could move: the five-year on-ramp "
               "for very large new listings, a second test beside public float, and relief for companies "
@@ -90,7 +90,7 @@ def blocks(H):
              ["Fix the company's status under both rule sets, price the saving from the auditor's own fee "
               "proposal, and take keep, drop or replace to the audit committee with evidence. Section 7 sets "
               "out eight decisions for the person who runs the SOX program."],
-             ref="(Refer Section 7: What To Do Before the Final Rule)") +
+             ref="(Refer Section 7: Actions to Consider Before a Final Rule)") +
         H.pov("Uniqus Point of View: when management's assessment stands alone",
               paras=["The file argues about where the line should sit; a finance leader has a different "
                      "question. <b>Once the auditor's opinion is optional, management's assessment under "
@@ -106,7 +106,7 @@ def blocks(H):
 
     # ================================================= 1
     P.append(H.sec(1,
-        H.h1("1. How Section 404 Got Here") +
+        H.h1("1. How Section 404 Evolved") +
         DECK("Built between 2002 and 2005. Scaled or narrowed four times since. The proposal would be the fifth.") +
         H.p("Section 404 has two halves. Under 404(a), management assesses internal control over financial "
             "reporting and reports its conclusion. Under 404(b), the auditor attests to that assessment.") +
@@ -128,14 +128,14 @@ def blocks(H):
             "reported ineffective controls at <b>5.2%</b> of large accelerated filers, <b>15.7%</b> of "
             "accelerated filers and <b>41.8%</b> of non-accelerated filers.") +
         H.exhibit("Exhibit 2 — The control record by filer status", "x2_record.png",
-                  "Source: SEC Release 33-11419, EA Tables 5, 6 and 7 (pp. 139 to 142), SEC staff analysis of "
+                  "Source: SEC Release 33-11419, EA Tables 5, 6 and 7 (pp. 139 to 142) and EA Table 2 (p. 132), SEC staff analysis of "
                   "Audit Analytics data. Categories are 2024 filer status under the current rules. EA Tables 5 "
                   "and 6 include emerging growth companies in each column; of 757 accelerated filers, 125 are "
                   "emerging growth companies and are not subject to attestation. Restatements are those "
                   "correcting errors material to previously issued financial statements; in that table the "
                   "accelerated and non-accelerated columns exclude emerging growth companies, whose rate was "
-                  "14.7% (31.4% in fiscal 2021, when the SEC staff's statement on SPAC warrants drove "
-                  "restatements). Differences reflect company size as well as regime.") +
+                  "14.7% (31.4% in fiscal 2021, when restatements coincided with the SEC staff's statement on SPAC "
+                  "warrants). Differences reflect company size as well as regime.") +
         H.p("Size explains part of that gradient, and the SEC reads its restatement table cautiously: the "
             "rate for non-accelerated filers is “only slightly higher” than for accelerated filers, and the "
             "non-accelerated group holds more low- or zero-revenue issuers, which restate less often. "
@@ -156,9 +156,9 @@ def blocks(H):
             "in 2024 and 391 in 2025, the second lowest year in its 20-year database after 2020.") +
         EX3(H) +
         H.p("Those closest to the work saw value in it, though on average not enough to outweigh the cost. The release says "
-            "respondents to a 2008 and 2009 survey of 2,901 corporate insiders found the benefits to outweigh the "
-            "costs, “especially as they gained experience with section 404(b)”. The study behind the survey "
-            "is less favourable: on average respondents did not judge the benefits to outweigh the costs, though "
+            "respondents to a 2008 and 2009 survey of corporate insiders found the benefits to outweigh the "
+            "costs, “especially as they gained experience with section 404(b)”. The study behind the survey, "
+            "of 2,901 insiders, is less favourable: on average respondents did not judge the benefits to outweigh the costs, though "
             "perceived net benefits were higher where an auditor attested and rose with experience.") +
         H.p("Compliance costs also fell after 2007, when the PCAOB "
             "issued Auditing Standard No. 5 and the SEC issued its guidance for management.") +
@@ -193,6 +193,14 @@ def blocks(H):
             ["<b>Foreign private issuers on Form 20-F</b>", "Attestation from $75 million of float", "<b>Unchanged</b>: "
              "$75 million of worldwide float, measured on a single day"],
         ], widths=[27, 36, 37]) +
+        H.p("Under the proposal, status would change only after two years on the same side of the threshold. "
+            "For example, a calendar-year company with 60 months of reporting whose float first reaches "
+            "$2 billion on June 30, 2027 would not be a large accelerated filer for fiscal 2027, but would "
+            "become one for fiscal 2028 if its float is still $2 billion or more on June 30, 2028; a large "
+            "accelerated filer would likewise need two years below $2 billion to leave, with no lower exit "
+            "level like today's $560 million. The transition is the exception: when a final rule takes effect, "
+            "a current large accelerated filer below $2 billion in either of the two prior years becomes "
+            "non-accelerated.") +
         H.h2("2.1 The filer categories, today and under the proposal") +
         H.p("Filer status decides three things: how fast a company must file, how much it must disclose, and "
             "whether its auditor attests to internal control. Today five overlapping labels can apply. The "
@@ -221,11 +229,12 @@ def blocks(H):
              "emerging growth companies keep confidential draft registration statements and the exemption from "
              "critical audit matters"],
             ["<b>Small non-accelerated filer</b>", "Does not exist", "Not applicable",
-             "<b>New</b>: total assets of $35 million or less at each of the last two second-quarter ends; "
-             "10-K in 120 days, 10-Q in 50. The SEC estimates 1,072 companies"],
+             "<b>New</b>: total assets of $35 million or less on the last day of the second fiscal quarter in "
+             "each of the last two years, ending once assets exceed $35 million at both; 10-K in 120 days, "
+             "10-Q in 50. The SEC estimates 1,072 companies"],
         ], widths=[17, 28, 26, 29]) +
-        H.note("Source: SEC Release 33-11419, pp. 9 to 13, 20 to 21, 28 to 33, 37 to 48, 56, 66 to 69, 83, 96 "
-               "and 103. Smaller reporting and emerging growth status sit on top of the other categories today. "
+        H.note("Source: SEC Release 33-11419, pp. 9 to 13, 20 to 21, 28 to 33, 37 to 48, 55 to 56, 61, 66 to 69, 81 "
+               "to 84, 87 to 88, 96 and 103 to 106. Smaller reporting and emerging growth status sit on top of the other categories today. "
                "Public float is the market value of common equity held by non-affiliates.") +
         H.p("A change of status therefore moves more than the attestation. A large accelerated filer that "
             "becomes non-accelerated gains 30 days on its Form 10-K and five on its Form 10-Q, may present two "
@@ -239,8 +248,8 @@ def blocks(H):
             "convert will not have it.") +
         H.p("The SEC estimates that large accelerated filers would fall from %s to %s, from %s to %s of "
             "registrants, while still holding %s of public float. <b>%s registrants</b> would be newly exempt "
-            "from the attestation: %s that are large accelerated filers today and %s accelerated filers. The "
-            "other five of today's large accelerated filers lack the float data to classify. The 1,596 are 60%% "
+            "from the attestation: %s that are large accelerated filers today and %s accelerated filers. The SEC "
+            "could not classify the other five of today's 2,115 large accelerated filers because their float data is missing. The 1,596 are 60%% "
             "of the registrants that obtain an attestation today."
             % (F["laf_now"], F["laf_new"], F["laf_pct_now"], F["laf_pct_new"], F["float_new"], F["exempt"],
                F["exempt_laf"], F["exempt_af"])) +
@@ -266,7 +275,7 @@ def blocks(H):
         H.exhibit("Exhibit 4 — Where 118 commenters stood on the attestation exemption", "x4_positions.png",
                   "Source: Uniqus coding of every entry on SEC comment file S7-2026-18 as posted on October 5, "
                   "2026; the method is set out in “How we read the file”. Not counted: three letters posted October 5 "
-                  "to 8, 2026, from a biotech CFO in support, an audit firm already counted and one other. "
+                  "to 8, 2026, from a biotech CFO in support, an audit firm already counted that restates its position, and a former PCAOB staff member who calls the exemption too broad. "
                   "The 11 with no position are associations 1, venture capital and "
                   "policy groups 1, audit profession bodies 1, accounting firms 2, academics 3, individuals 2 and "
                   "investors 1. The Texas Society of CPAs letter could not be "
@@ -309,8 +318,8 @@ def blocks(H):
              "consider a line below $2 billion.</b>"],
         ], widths=[22, 17, 61]) +
         H.h3("Three points from the firms' letters that bear on planning") +
-        H.ul(["<b>The saving is smaller than the fee line implies.</b> Seven firms said the financial statement "
-              "audit will absorb part of the work, because auditors must still understand controls and, in many "
+        H.ul(["<b>The saving is smaller than the fee line implies.</b> Seven audit firms said the financial statement "
+              "audit would absorb part of the work, because auditors must still understand controls and, in many "
               "audits, test them or do more substantive work.",
               "<b>Five years is too long for a very large new listing.</b> Ten of the eleven audit firms "
               "questioned a flat 60-month on-ramp.",
@@ -328,7 +337,7 @@ def blocks(H):
 
     # ================================================= 4
     P.append(H.sec(4,
-        H.h1("4. Two Questions the File<br/>Leaves Open") +
+        H.h1("4. Two Questions Left Open") +
         DECK("How much is saved, and what investors will do about it.") +
         H.h2("4.1 How much is actually saved") +
         H.p("The release cannot isolate the attestation fee, because companies disclose total audit fees only. "
@@ -338,10 +347,10 @@ def blocks(H):
             "at $500,000 to $1 million a year, a range that spans the top estimates the release itself reports, "
             "$759,000 and $800,000. A governance association's member survey points the same way.") +
         H.exhibit("Exhibit 5 — The SEC's number and the companies' number", "x5_cost.png",
-                  "Source: SEC Release 33-11419, pp. 153 to 155 and 214 to 218, including GAO-25-107500; comment "
-                  "letters of Nasdaq, Inc. (p. 4), Avalo Therapeutics (p. 1) and the Society for Corporate "
+                  "Source: SEC Release 33-11419, pp. 153 to 155, 215 and 218, including GAO-25-107500; comment "
+                  "letters of Nasdaq, Inc. (p. 4), Avalo Therapeutics (web comment) and the Society for Corporate "
                   "Governance (p. 7; its member survey “attracted nearly 50 responses”, p. 1, note 1). The CFO's letter reads "
-                  "“between $500–$1M annually”. In the survey, 21% of respondents put the annual cost "
+                  "“between $500-$1M annually”. In the survey, 21% of respondents put the annual cost "
                   "at $500,000 to $1 million and 18% at $1 million to $5 million; among those expecting to become "
                   "exempt, 23% and 8%. The release also cites estimates on other bases, from $73,165 in audit fees "
                   "for companies under $300 million of market capitalization to approximately $800,000 all-in for "
@@ -424,7 +433,8 @@ def blocks(H):
             "exemption for up to five years.") +
         H.p("The file does not supply the missing evidence. Supporters assert that listings will follow and "
             "none estimates how many. The academic whose study the release cites for the JOBS Act's effect on "
-            "IPOs is supportive of the five-year on-ramp but cautious about widening the exemption, and wrote:") +
+            "IPOs supports the proposal, including the five-year on-ramp, while warning that the wider exemption "
+            "is “not costless”, and wrote:") +
         H.callout("Professor Michael Dambra, University at Buffalo, comment letter, p. 2",
                   ["<em>“While I do not expect the regulation to increase IPO activity in the United States, "
                    "our research indicates that scaling back the burdens of being public enhances the frequency "
@@ -458,7 +468,7 @@ def blocks(H):
             "concedes this “could result in competitive disadvantages”. One international law firm wrote "
             "of the wider gap between the domestic and foreign issuer regimes: “We believe this gap will make "
             "U.S. listings significantly less attractive for foreign issuers, thereby reducing the investment "
-            "opportunities available to U.S. investors.” (Linklaters LLP, comment letter, p. 2).") +
+            "opportunities available to U.S. investors” (Linklaters LLP, comment letter, p. 2).") +
         H.pov("Uniqus Point of View: an option to be priced",
               paras=["<b>The proposal lowers the cost of staying public. It does little to change the decision "
                      "to go public</b>, because most companies making that decision are exempt already and the "
@@ -470,15 +480,14 @@ def blocks(H):
 
     # ================================================= 7
     P.append(H.sec(7,
-        H.h1("7. What To Do Before the<br/>Final Rule") +
+        H.h1("7. Actions to Consider Before<br/>a Final Rule") +
         DECK("For the person who runs the SOX program: eight decisions, in order.") +
         H.p("Start by locating the company. Three questions decide where it lands, and only one of the three "
             "outcomes calls for work now.") +
         EX8(H) +
-        H.rec(DECISIONS[:4], header="Eight decisions for the SOX program leader") +
-        H.rec(DECISIONS[4:], header="Eight decisions for the SOX program leader, continued")))
+        REC_OL(DECISIONS, "Eight decisions for the SOX program leader")))
     P.append(H.cont(7,
-        H.h2("7.1 Keep, drop or replace") +
+        H.h2("7.1 Retain, discontinue or replace") +
         H.table(["Option", "When it fits", "What you give up"], [
             ["<b>Keep the integrated audit voluntarily</b>", "A recent material weakness or restatement; a capital "
              "raise ahead; lenders who ask", "The saving, in whole"],
@@ -542,7 +551,7 @@ def EX1(H):
              '<div class="tlh m">Scaled or narrowed, 2007 to 2026: the proposal would be the fifth</div>' + scaled +
              '<div class="tlh">Who sits above the large accelerated filer line</div>' + above)
     return H.exhibit_html("Exhibit 1 — The life of Section 404, 2002 to 2026", inner,
-                          "Source: SEC Release 33-11419 (May 19, 2026), pp. 12, 20 to 34, 40 to 42 and 150; SEC "
+                          "Source: SEC Release 33-11419 (May 19, 2026), pp. 12, 20 to 34, 40 to 42, 150 and 207; SEC "
                           "Release 33-8392 for the 2004 compliance date; Uniqus analysis. The 2004 entry is the first "
                           "fiscal year end (on or after November 15, 2004) for which accelerated filers provided the "
                           "auditor's attestation. Shares are the SEC's estimates; the 2005 figures are shares of "
@@ -585,7 +594,7 @@ def EX8(H):
          "companies", "", "No: go to question 2"),
         ("2", "Was public float <b>$2 billion or more</b> at <b>each</b> of the last two second-quarter ends?",
          "no", "Non-accelerated filer", "The attestation is no longer required. Management's assessment continues.",
-         "4,825 registrants; 1,596 newly exempt", "na", "Yes: go to question 3"),
+         "4,825 registrants in all: 1,596 newly exempt, and 3,229 that have no attestation today", "na", "Yes: go to question 3"),
         ("3", "Has it been an SEC reporting company for <b>60 months</b> or more?", "yes",
          "Large accelerated filer", "Nothing changes. The attestation continues. If no, it is a non-accelerated filer.",
          "1,146 registrants", "", ""),
@@ -602,6 +611,11 @@ def EX8(H):
                           "Counts are the SEC's estimates on calendar 2024 data.")
 
 
+def REC_OL(items, header):
+    return ('<div class="rec"><div class="hd">%s</div><ol class="num">%s</ol></div>'
+            % (header, "".join("<li>%s</li>" % i for i in items)))
+
+
 DECISIONS = [
     "<b>Fix your status under both rule sets.</b> Compute public float at the last two second-quarter ends on "
     "today's single-day basis and on the proposed 10-trading-day average, and count your months of reporting history.",
@@ -613,7 +627,7 @@ DECISIONS = [
     "In the governance survey, 97% named investor expectations and analyst coverage among the factors that would "
     "most influence whether they use the new accommodations, and 65% debt or equity offering requirements. Ask lenders, rating agencies and your largest holders before deciding.",
     "<b>Price the saving from a fee proposal, not from the release.</b> Ask the auditor what the audit costs "
-    "without an opinion on controls; seven firms told the SEC the financial statement audit will absorb part of the work.",
+    "without an opinion on controls; seven audit firms told the SEC the financial statement audit would absorb part of the work.",
     "<b>Take keep, drop or replace to the audit committee with evidence.</b> Material weaknesses and restatements "
     "in the last three years, turnover in finance, system changes under way, and who owns the shares.",
     "<b>Set the evidence standard for an assessment nobody else tests.</b> Scope, sample sizes, tester "
@@ -621,7 +635,7 @@ DECISIONS = [
     "<b>Decide what you will say.</b> Beyond the cover-page check box, the proposal requires no statement on "
     "whether an attestation was obtained. Four commenters asked for one. Have the answer ready for the first investor who asks.",
     "<b>Keep what is hard to rebuild.</b> Control documentation, IT general control evidence and trained people. "
-    "A company whose float stays at or above $2 billion for two consecutive years is back in scope.",
+    "A company whose float stays at or above $2 billion for two consecutive years is back in scope (see the example in Section 2).",
 ]
 
 
@@ -777,6 +791,9 @@ table.help p{ font-size:7.8pt; text-align:left; margin:0; line-height:1.45; }
 .about p{ font-size:7.3pt; color:#55555F; line-height:1.45; }
 .about p.disc{ font-size:6.2pt; color:#8A8A95; }
 .rec li b{ color:#B21E7D; }
+.rec ol.num{ margin:0; padding-left:6.2mm; }
+.rec ol.num li{ font-size:8.6pt; margin:0 0 1.3mm; padding-left:1mm; }
+.rec ol.num li::marker{ color:#B21E7D; font-weight:600; }
 </style>"""
 
 

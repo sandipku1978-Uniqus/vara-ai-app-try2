@@ -88,3 +88,33 @@ S-02	<b>39% of respondents put the attestation's cost at $500,000 or more a year
 S-03	In the governance survey, 97% named investor expectations and analyst coverage as a deciding factor and 65% "     "debt or equity offering requirements.	In the governance survey, 97% named investor expectations and analyst coverage among the factors that would "     "most influence whether they use the new accommodations, and 65% debt or equity offering requirements.
 S-04	the method is set out in “How we read the file”. Constituencies are sorted from "                   "most supportive to most opposed. The 11	the method is set out in “How we read the file”. Not counted: three letters posted October 5 "                   "to 8, 2026, from a biotech CFO in support, an audit firm already counted and one other. "                 
 S-05	One letter, from the Texas Society of CPAs, could not be "                   "opened on the docket and was read from the society's website.	The Texas Society of CPAs letter could not be "                   "opened on the docket and was read from the society's website.
+F-01 quote	“between $500–$1M annually”	“between $500-$1M annually”
+F-01 cite	Avalo Therapeutics (p. 1)	Avalo Therapeutics (web comment)
+F-02	IPOs is supportive of the five-year on-ramp but cautious about widening the exemption, and wrote:")	IPOs supports the proposal, including the five-year on-ramp, while warning that the wider exemption "             "is “not costless”, and wrote:")
+F-03	The release says "             "respondents to a 2008 and 2009 survey of 2,901 corporate insiders found the benefits to outweigh the "             "costs, “espe	The release says "             "respondents to a 2008 and 2009 survey of corporate insiders found the benefits to outweigh the "             "costs, “especially as they gained experience with section 404(b)”. The study b
+F-04	14.7% (31.4% in fiscal 2021, when the SEC staff's statement on SPAC warrants drove "                   "restatements).	14.7% (31.4% in fiscal 2021, when restatements coincided with the SEC staff's statement on SPAC "                   "warrants).
+F-05	pp. 12, 20 to 34, 40 to 42 and 150; SEC 	pp. 12, 20 to 34, 40 to 42, 150 and 207; SEC 
+F-06	pp. 9 to 13, 20 to 21, 28 to 33, 37 to 48, 56, 66 to 69, 83, 96 "                "and 103. Smaller	pp. 9 to 13, 20 to 21, 28 to 33, 37 to 48, 55 to 56, 61, 66 to 69, 81 "                "to 84, 87 to 88, 96 and 103 to 106. Smaller
+F-07a	EA Tables 5, 6 and 7 (pp. 139 to 142), SEC staff analysis	EA Tables 5, 6 and 7 (pp. 139 to 142) and EA Table 2 (p. 132), SEC staff analysis
+F-07b	pp. 153 to 155 and 214 to 218, including GAO-25-107500	pp. 153 to 155, 215 and 218, including GAO-25-107500
+F-08a	Seven firms said the financial statement "               "audit will absorb part of the work	Seven audit firms said the financial statement "               "audit would absorb part of the work
+F-08b	seven firms told the SEC the financial statement audit will absorb part of the work.	seven audit firms told the SEC the financial statement audit would absorb part of the work.
+F-09	from a biotech CFO in support, an audit firm already counted and one other. 	from a biotech CFO in support, an audit firm already counted that restates its position, and a former PCAOB staff member who calls the exemption too broad. 
+F-11	opportunities available to U.S. investors.” (Linklaters LLP, comment letter, p. 2).	opportunities available to U.S. investors” (Linklaters LLP, comment letter, p. 2).
+P-01	"<b>New</b>: total assets of $35 million or less at each of the last two second-quarter ends; "              "10-K in 120 days, 10-Q in 50. The SEC estimates 1,	"<b>New</b>: total assets of $35 million or less on the last day of the second fiscal quarter in "              "each of the last two years, ending once assets exceed $35 million at both; 10-K in 120 days, "             
+P-02	        ], widths=[27, 36, 37]) +         H.h2("2.1 The filer categories, today and under the proposal") +	        ], widths=[27, 36, 37]) +         H.p("Under the proposal, status would change only after two years on the same side of the threshold. "             "For example, a calendar-year company with 60 months of reporti
+P-03	A company whose float stays at or above $2 billion for two consecutive years is back in scope.	A company whose float stays at or above $2 billion for two consecutive years is back in scope (see the example in Section 2).
+P-04	The "             "other five of today's large accelerated filers lack the float data to classify.	The SEC "             "could not classify the other five of today's 2,115 large accelerated filers because their float data is missing.
+P-05	        H.rec(DECISIONS[:4], header="Eight decisions for the SOX program leader") +         H.rec(DECISIONS[4:], header="Eight decisions for the SOX program lea	        REC_OL(DECISIONS, "Eight decisions for the SOX program leader")))
+P-05 css	.rec li b{ color:#B21E7D; }	.rec li b{ color:#B21E7D; } .rec ol.num{ margin:0; padding-left:6.2mm; } .rec ol.num li{ font-size:8.6pt; margin:0 0 1.3mm; padding-left:1mm; } .rec ol.num li::marker{ color:#B21E7D; font-weight:600; }
+P-05 fn	 DECISIONS = [	 def REC_OL(items, header):     return ('<div class="rec"><div class="hd">%s</div><ol class="num">%s</ol></div>'             % (header, "".join("<li>%s</li>" % i for i in items)))   DECISIONS = [
+P-06	"4,825 registrants; 1,596 newly exempt"	"4,825 registrants in all: 1,596 newly exempt, and 3,229 that have no attestation today"
+D-2 nav	NAV = ["Executive Summary", "1. How Section 404 Got Here", "2. What the SEC Proposed",        "3. What the SEC Heard", "4. Two Questions the File Leaves Open",	NAV = ["Executive Summary", "1. How Section 404 Evolved", "2. What the SEC Proposed",        "3. What the SEC Heard", "4. Two Questions Left Open",
+D-2 nav7	"7. What To Do Before the Final Rule", "How Uniqus Can Help"]	"7. Actions Before a Final Rule", "How Uniqus Can Help"]
+D-2 ref1	(Refer Section 1: How Section 404 Got Here)	(Refer Section 1: How Section 404 Evolved)
+D-2 ref4	Two Questions the File Leaves Open)	Two Questions Left Open)
+D-2 ref7	(Refer Section 7: What To Do Before the Final Rule)	(Refer Section 7: Actions to Consider Before a Final Rule)
+D-2 h1	H.h1("1. How Section 404 Got Here")	H.h1("1. How Section 404 Evolved")
+D-2 h4	H.h1("4. Two Questions the File<br/>Leaves Open")	H.h1("4. Two Questions Left Open")
+D-2 h7	H.h1("7. What To Do Before the<br/>Final Rule")	H.h1("7. Actions to Consider Before<br/>a Final Rule")
+D-2 h71	H.h2("7.1 Keep, drop or replace")	H.h2("7.1 Retain, discontinue or replace")
