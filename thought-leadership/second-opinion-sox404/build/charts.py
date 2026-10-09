@@ -54,14 +54,14 @@ def ex1_timeline(name="x1_timeline.png"):
     """Two-track timeline: requirement applied (purple) vs scaled or narrowed
     (magenta). Vertical stems only, no diagonal leaders."""
     ev = [  # year, frac, label, kind, side
-        (2002, .55, "Sarbanes-Oxley enacted.\nAccelerated filer line\nset at $75m of float", "a", 1),
+        (2002, .55, "Sarbanes-Oxley enacted.\nAccelerated filer\nthreshold: $75m of float", "a", 1),
         (2004, .87, "First auditor\nattestations, from\naccelerated filers", "a", -1),
-        (2005, .95, "Large accelerated\nfiler line set\nat $700m", "a", 1),
+        (2005, .95, "Large accelerated\nfiler threshold\nset at $700m", "a", 1),
         (2007, .5, "SEC guidance for\nmanagement; PCAOB\nrisk-based AS 5", "n", -1),
         (2010, .55, "Dodd-Frank: non-\naccelerated filers\nexempt by statute", "n", 1),
         (2012, .27, "JOBS Act: emerging\ngrowth companies\nexempt up to 5 years", "n", -1),
         (2020, .25, "Issuers with revenue\nunder $100m leave\naccelerated status", "n", 1),
-        (2026, .38, "Proposal: line to\n$2bn; 60 months for\nevery new registrant", "p", -1),
+        (2026, .38, "Proposal: threshold\nto $2bn; 60 months for\nevery new registrant", "p", -1),
     ]
     fig, ax = plt.subplots(figsize=(W, 2.25))
     ax.set_xlim(2000.6, 2027.6); ax.set_ylim(-1.55, 1.55); ax.axis("off")
@@ -286,7 +286,7 @@ def ex6_line(name="x6_line.png", pts=None):
     for s in ("top", "right"):
         ax.spines[s].set_visible(False)
     ax.grid(axis="y", color=GRID, lw=0.6); ax.set_axisbelow(True); ax.tick_params(length=0)
-    ax.set_xlabel("Public float line (logarithmic scale)", fontsize=6.2)
+    ax.set_xlabel("Public float threshold (logarithmic scale)", fontsize=6.2)
     return _save(fig, name)
 
 

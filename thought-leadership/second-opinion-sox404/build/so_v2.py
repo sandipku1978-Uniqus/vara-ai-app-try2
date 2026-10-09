@@ -19,7 +19,7 @@ META = dict(
 
 NAV = ["Executive Summary", "1. How Section 404 Evolved", "2. What the SEC Proposed",
        "3. What the SEC Heard", "4. Two Questions Left Open",
-       "5. Where the Final Rule Could Move", "6. Capital Markets and the Mid-Market",
+       "5. How the Final Rule Could Change", "6. Capital Markets and the Mid-Market",
        "7. Actions Before a Final Rule", "How Uniqus Can Help"]
 
 # --------------------------------------------------------------- facts
@@ -80,7 +80,7 @@ def blocks(H):
              ["No final rule has been adopted. The comment letters suggest where it could change: the five-year "
               "on-ramp for very large new listings, a second test beside public float, and relief for companies "
               "that cross today's thresholds while the rule is pending."],
-             ref="(Refer Section 5: Where the Final Rule Could Move)")))
+             ref="(Refer Section 5: How the Final Rule Could Change)")))
     P.append(H.cont(0,
         H.qa("Fourth, will this bring the mid-market back?",
              ["In our view, the proposal would lower the cost of staying public but do little to change the "
@@ -337,15 +337,16 @@ def blocks(H):
     # ================================================= 4
     P.append(H.sec(4,
         H.h1("4. Two Questions Left Open") +
-        DECK("How much is saved, and what investors will do about it.") +
-        H.h2("4.1 How much is actually saved") +
-        H.p("The release cannot isolate the attestation fee, because companies disclose total audit fees only. "
-            "Its own input is <b>$202,500 of outside cost and 375 internal hours</b> per annual report, a 2020 "
-            "estimate adjusted for inflation.") +
-        H.p("Issuers put the figure higher. One listed company cited by Nasdaq and one biotech CFO each put it "
-            "at $500,000 to $1 million a year, a range that spans the top estimates the release itself reports, "
+        DECK("What the exemption may save, and how investors may respond.") +
+        H.h2("4.1 The likely cost saving") +
+        H.p("The SEC's proposal cannot isolate the attestation fee, because companies disclose only total "
+            "audit fees. Its estimate instead rests on <b>$202,500 of outside cost and 375 internal hours</b> "
+            "per annual report, a 2020 figure adjusted for inflation.") +
+        H.p("Issuers that commented put the figure higher. One listed company cited by Nasdaq and one biotech "
+            "CFO each put it at $500,000 to $1 million a year, a range spanning the two highest estimates in "
+            "the proposing release, "
             "$759,000 and $800,000. A governance association's member survey points the same way.") +
-        H.exhibit("Exhibit 5 — The SEC's number and the companies' number", "x5_cost.png",
+        H.exhibit("Exhibit 5 — The SEC's estimate and companies' estimates", "x5_cost.png",
                   "Source: SEC Release 33-11419, pp. 153 to 155, 215 and 218, including GAO-25-107500; comment "
                   "letters of Nasdaq, Inc. (p. 4), Avalo Therapeutics (web comment) and the Society for Corporate "
                   "Governance (p. 7; its member survey “attracted nearly 50 responses”, p. 1, note 1). The CFO's letter reads "
@@ -357,23 +358,24 @@ def blocks(H):
                   "the year companies began the attestation and treats it as a proxy for its cost. The SEC's figure is an "
                   "average across registrants and the companies' figures are individual reports, so the exhibit "
                   "shows a gap between them, not an error in either.") +
-        H.p("The same survey suggests the saving companies expect is smaller than the cost they report. "
-            "<b>Taken together, its two top cost bands put the attestation's cost at $500,000 or more a year for 39% "
-            "of respondents, but only 3% expect non-accelerated status to save them more than $500,000</b>, and "
-            "55% could not quantify the saving at all (pp. 6 and 7).") +
-        H.p("Neither set of numbers answers the controller's question: what the financial statement audit will "
-            "cost once the auditor no longer tests controls for an opinion of its own. <b>Only a fee proposal "
-            "for a specific company answers that.</b>") +
-        H.h2("4.2 What investors will do") +
-        H.p("Opponents argue that investors will charge for the missing opinion through a higher cost of "
-            "capital. The figures offered trace largely to one 2009 study that measured how the cost of "
-            "equity moved when auditor-tested reports showed controls weakening or being fixed; it did not "
-            "study the removal of the auditor's opinion. The only study we found on the file that "
-            "measured the cost of capital after an actual exemption, of issuers with revenue under $100 million "
-            "in 2020, found no significant difference; it is the study the release cites on reporting quality.") +
-        H.p("Companies are not sure either. In the same survey, 12% of "
-            "respondents said they would likely keep the attestation voluntarily and 15% were confident they "
-            "would drop it. <b>52% said it would depend on investor demand.</b>") +
+        H.p("The same survey suggests that the saving companies expect is smaller than the cost they report. "
+            "<b>Taken together, its two highest cost bands put the attestation's cost at $500,000 or more a "
+            "year for 39% of respondents, yet only 3% expect non-accelerated status to save them more than "
+            "$500,000</b>, while 55% could not quantify the saving at all (pp. 6 and 7).") +
+        H.p("Neither set of figures answers the controller's central question, which is what the financial "
+            "statement audit will cost once the auditor no longer tests controls for a separate opinion. <b>In "
+            "our view, only a company-specific fee proposal can answer it.</b>") +
+        H.h2("4.2 How investors may respond") +
+        H.p("Opposing commenters argue that investors will price the missing attestation into a higher cost of "
+            "capital. The figures they cite trace largely to one 2009 study that measured how the cost of "
+            "equity moved when auditor-tested reports showed controls weakening or being remediated; it did "
+            "not study the removal of the auditor's opinion. The only study we found in the comment letters "
+            "that measured the cost of capital after an actual exemption, of issuers with revenue under $100 "
+            "million in 2020, found no significant difference; the SEC cites the same study on reporting "
+            "quality.") +
+        H.p("Companies appear undecided too. In the same survey, 12% of respondents said they would likely "
+            "retain the attestation voluntarily and 15% were confident they would discontinue it; <b>52% said "
+            "it would depend on investor demand.</b>") +
         H.compare("Nasdaq, Inc., comment letter, p. 4",
                   ["<em>“One listed company estimated that it spent between $500,000 and $1 million annually "
                    "with independent auditors to comply with this disclosure obligation and observed that such "
@@ -382,142 +384,153 @@ def blocks(H):
                   ["<em>“Without an independent “gatekeeper,” management's assessment is inherently "
                    "less credible – in effect, investors are being asked to trust the numbers with one fewer "
                    "check on the system that produced them.”</em>"]) +
-        H.objective("Both can be true. The first describes the price of the opinion. The second describes what "
-                    "the opinion is for.") +
+        H.objective("In our view, both can be true. The first speaks to the attestation's cost; the second, to "
+                    "its purpose.") +
         BAND("band_after.png")))
 
     # ================================================= 5
     P.append(H.sec(5,
-        H.h1("5. Where the Final Rule<br/>Could Move") +
-        DECK("The Commission can adopt the proposal as written. If it moves, the file shows where.") +
-        H.exhibit("Exhibit 6 — Where the line could sit, and how many companies stay in scope", "x6_line.png",
+        H.h1("5. How the Final Rule<br/>Could Change") +
+        DECK("The Commission may adopt the proposal as written. If it changes course, the comment letters "
+             "suggest where.") +
+        H.exhibit("Exhibit 6 — Alternative thresholds and the companies that would remain in scope", "x6_line.png",
                   "Source: SEC Release 33-11419, p. 42 (inflation-adjusted and S&amp;P 500-proportionate lines) and "
                   "EA Table 13, p. 207; Uniqus coding of comment file S7-2026-18 for the 51 commenters that "
                   "addressed the $2 billion figure. EA Table 13 applies the proposal's 60-month seasoning and "
                   "two-year test at each float line, so its $700 million row (1,665 large accelerated filers holding "
                   "95.2% of float) is not comparable with today's 2,115 holding 98.8%. Shares are of total public "
                   "float.") +
-        H.table(["Element", "What the file says", "What to watch for"], [
+        H.table(["Element", "What commenters said", "What to watch for"], [
             ["<b>Five-year on-ramp</b>", "<b>55 of the 74</b> commenters that addressed it rejected or "
-             "questioned a flat 60 months", "A shorter period, or size-based exits like those for emerging "
+             "questioned a uniform 60 months", "A shorter period, or size-based exits like those for emerging "
              "growth companies"],
-            ["<b>Float as the only test</b>", "13 commenters proposed a revenue test or asked the SEC to consider one",
+            ["<b>Float as the sole test</b>", "13 commenters proposed a revenue test or asked the SEC to consider one",
              "A revenue limit at or near $1.235 billion"],
             ["<b>The $2 billion level</b>", "Of the 51 that addressed the figure, 24 supported it, 15 wanted it "
              "lower, 3 higher and 9 opposed any increase",
              "A figure from $1.15 billion to $2 billion, or indexing"],
-            ["<b>Crossing a line in 2026</b>", "One association and two issuers asked for interim relief; none "
+            ["<b>Crossing a threshold in 2026</b>", "One association and two issuers asked for interim relief; none "
              "is proposed", "A grace period, or status held until the final rule"],
-            ["<b>Foreign private issuers</b>", "Left at $75 million; law firms asked for parity, now or in the "
+            ["<b>Foreign private issuers</b>", "Kept at $75 million; law firms asked for parity, now or in the "
              "foreign issuer rulemaking", "A statement that the exclusion is transitional"],
-            ["<b>Disclosure of whether the auditor attested</b>", "4 commenters asked that companies disclose "
+            ["<b>Disclosure of whether the auditor attested</b>", "Four commenters asked that companies disclose "
              "whether an attestation was obtained", "A required statement on whether the auditor attested"],
         ], widths=[24, 40, 36]) +
-        H.p("The on-ramp is where the file comes closest to agreement; a change there would not touch a "
-            "seasoned mid-market company, but a second test or a lower line would. A count of letters shows "
-            "where the arguments are, not how the vote will go.")))
+        H.p("Commenters agree most on the on-ramp; changing it would not affect a seasoned mid-market "
+            "company, but a second test or a lower threshold would. A count of letters shows where the "
+            "arguments lie rather than how the Commission will vote.")))
 
     # ================================================= 6
     P.append(H.sec(6,
         H.h1("6. Capital Markets and<br/>the Mid-Market") +
-        DECK("Will this bring the mid-market back? It lowers the cost of staying public. The decision to go "
-             "public turns on other things.") +
-        H.p("The proposal's stated purpose is to encourage more companies to go and stay public. The backdrop "
-            "is real. The number of companies listed on US exchanges fell from 8,090 in 1996 to 3,908 in 2025.") +
-        H.exhibit("Exhibit 7 — Fewer listed companies, but no shortage of capital", "x7_markets.png",
+        DECK("The proposal would lower the cost of remaining public, but the decision to go public depends "
+             "largely on other factors.") +
+        H.p("The proposal's stated purpose is to encourage more companies to go and stay public. The decline "
+            "is well documented, with the number of companies listed on US exchanges falling from 8,090 in "
+            "1996 to 3,908 in 2025.") +
+        H.exhibit("Exhibit 7 — Fewer listed companies alongside ample IPO capital", "x7_markets.png",
                   SRC7) +
-        H.p("The release does not claim to know the effect. It gives no estimate of additional listings and "
-            "says the “magnitude and direction of the effect is difficult to predict”. It also notes "
+        H.p("The SEC is careful not to quantify the effect. The proposing release gives no estimate of "
+            "additional listings and states that the “magnitude and direction of the effect is difficult to "
+            "predict”. It also notes "
             "that approximately 88% of 2024 IPOs, excluding funds and direct listings, were by emerging growth companies, which already have the "
             "exemption for up to five years.") +
-        H.p("The file does not supply the missing evidence. Supporters assert that listings will follow and "
-            "none estimates how many. The academic whose study the release cites for the JOBS Act's effect on "
-            "IPOs supports the proposal, including the five-year on-ramp, while warning that the wider exemption "
+        H.p("The comment letters do not fill that gap. Supporters argue that listings will follow, but none "
+            "estimates how many. The academic whose study the proposing release cites on the JOBS Act's effect "
+            "on IPOs supports the proposal, including the five-year on-ramp, while warning that the wider "
+            "exemption "
             "is “not costless”, and wrote:") +
         H.callout("Professor Michael Dambra, University at Buffalo, comment letter, p. 2",
                   ["<em>“While I do not expect the regulation to increase IPO activity in the United States, "
                    "our research indicates that scaling back the burdens of being public enhances the frequency "
                    "and efficiency of corporate investment and innovation …”</em>"]) +
-        H.p("Much of the research the release cites points elsewhere: abundant private capital and small "
-            "companies choosing to be acquired. Three of the authors of one of those studies, updating it in 2025 "
+        H.p("Much of the research the SEC cites points to other causes, notably abundant "
+            "private capital and small companies choosing to be acquired. Three of the authors of one of those "
+            "studies, updating it in 2025 "
             "with a co-author, date the US listing gap to 1999, three years before Sarbanes-Oxley, and find "
             "that it widened only slowly through 2023.") +
-        H.p("The count of listed companies points the same way: by the end of 2001, before the Act, it had "
-            "fallen from 8,090 to 6,177, which is 46% of the whole decline to 2025.") +
-        H.p("Capital itself is not short. US IPOs raised $147.5 billion in the first nine months of 2026, more "
-            "than in all of 2021, and two offerings account for $101.5 billion of it.")))
+        H.p("The listing data are consistent with this. By the end of 2001, before the Act took effect, the "
+            "count had fallen from 8,090 to 6,177, or 46% of the total decline to 2025.") +
+        H.p("Capital also remains available. US IPOs raised $147.5 billion in the first nine months of 2026, "
+            "more than in all of 2021, though two offerings account for $101.5 billion of it.")))
     P.append(H.cont(6,
-        H.h2("6.1 What it does for a mid-market company") +
-        H.p("For a listed company below $2 billion of float that has the attestation today, the benefit is "
-            "direct: a lower audit bill and less risk of being moved across a line by its share price.") +
-        H.p("For a private company deciding whether to list, the change is narrower than it looks. A candidate "
-            "small enough to be an emerging growth company already has five years. What is new is relief for "
-            "the candidate too large for that status, and one audit firm described the companies between its "
-            "preferred line and $2 billion as generally “large and seasoned public companies rather than the "
+        H.h2("6.1 Implications for mid-market companies") +
+        H.p("For a listed company below $2 billion of float that has the attestation today, the benefits are "
+            "direct: lower audit fees and less risk of a share price move carrying it across a threshold.") +
+        H.p("For a private company considering a listing, the change is narrower than it may appear. A "
+            "candidate small enough to qualify as an emerging growth company already has up to five years. "
+            "The new relief is for candidates too large for that status, and one audit firm described "
+            "the companies between its preferred threshold and $2 billion as generally “large and seasoned "
+            "public companies rather than the "
             "private companies weighing whether to enter the public markets” (comment letter, p. 4).") +
-        H.p("Two effects cut the other way, and both come from the one data set on the file built on the "
-            "companies affected (Professors Rajgopal, Wong and Zhao, comment letter, pp. 2 to 4). The auditor "
-            "reported ineffective controls at <b>12.8%</b> of companies with $250 million to $700 million of float "
-            "and <b>8.5%</b> at $700 million to $2 billion, against 3.8% above $2 billion. The typical newly "
-            "exempted company is followed by <b>4 to 6 analysts</b>, against 12 for companies that stay in scope.") +
-        H.p("For foreign issuers the proposal works against its own purpose: a foreign private issuer on Form "
-            "20-F would still need the auditor's opinion from $75 million of worldwide float, unless it is an "
-            "emerging growth company, while a domestic competitor is exempt up to $2 billion, and the SEC is "
-            "holding back relief until it completes the eligibility review it opened in June 2025. The release "
-            "concedes this “could result in competitive disadvantages”. One international law firm wrote "
+        H.p("Two findings point the other way, both from the only data set in the comment letters built on the "
+            "affected companies (Professors Rajgopal, Wong and Zhao, comment letter, pp. 2 to 4). Auditors "
+            "reported ineffective controls at <b>12.8%</b> of companies with $250 million to $700 million of "
+            "float "
+            "and <b>8.5%</b> at $700 million to $2 billion, compared with 3.8% above $2 billion. The typical newly "
+            "exempted company is followed by <b>4 to 6 analysts</b>, compared with 12 for companies that "
+            "remain in scope.") +
+        H.p("For foreign issuers, the proposal may work against its own purpose, since a foreign private "
+            "issuer on Form 20-F would still need the auditor's attestation from $75 million of worldwide "
+            "float, unless it is an emerging growth company, while a domestic competitor would be exempt up to "
+            "$2 billion; the SEC is deferring relief until it completes the eligibility review it opened in "
+            "June 2025. The proposing release acknowledges this “could result in competitive disadvantages”. "
+            "One international law firm wrote "
             "of the wider gap between the domestic and foreign issuer regimes: “We believe this gap will make "
             "U.S. listings significantly less attractive for foreign issuers, thereby reducing the investment "
             "opportunities available to U.S. investors” (Linklaters LLP, comment letter, p. 2).") +
-        H.pov("Uniqus Point of View: an option to be priced",
-              paras=["<b>The proposal lowers the cost of staying public. It does little to change the decision "
-                     "to go public</b>, because most companies making that decision are exempt already and the "
-                     "reasons they stay private are untouched: ample private capital, valuation and litigation "
-                     "exposure.",
-                     "For a mid-market company the attraction of a US listing rests on valuation, liquidity and "
-                     "research coverage. A control record that holds up under outside testing supports all three."],
-              kicker="Treat the exemption as an option to be priced, not a saving to be booked.", keep=True)))
+        H.pov("Uniqus Point of View: an option, not a saving",
+              paras=["<b>In our view, the proposal lowers the cost of staying public but does little to change "
+                     "the decision to go public.</b> Most companies making that decision are already exempt, "
+                     "and the main reasons companies stay private, namely ample private capital, valuation and "
+                     "litigation exposure, are unaffected.",
+                     "For a mid-market company, the appeal of a US listing rests on valuation, liquidity and "
+                     "research coverage, and a control record that withstands independent testing supports all "
+                     "three."],
+              kicker="The exemption is an option to be priced, not a saving to be booked.", keep=True)))
 
     # ================================================= 7
     P.append(H.sec(7,
         H.h1("7. Actions to Consider Before<br/>a Final Rule") +
-        DECK("For the person who runs the SOX program: eight decisions, in order.") +
-        H.p("Start by locating the company. Three questions decide where it lands, and only one of the three "
-            "outcomes calls for work now.") +
+        DECK("Eight decisions for SOX program leaders, in the order they arise.") +
+        H.p("The first step is to locate the company. Three questions decide where it lands, and only one of "
+            "the three outcomes calls for action now.") +
         EX8(H) +
-        REC_OL(DECISIONS, "Eight decisions for the SOX program leader")))
+        REC_OL(DECISIONS, "Eight decisions for SOX program leaders")))
     P.append(H.cont(7,
         H.h2("7.1 Retain, discontinue or replace") +
-        H.table(["Option", "When it fits", "What you give up"], [
-            ["<b>Keep the integrated audit voluntarily</b>", "A recent material weakness or restatement; a capital "
-             "raise ahead; lenders who ask", "The saving, in whole"],
-            ["<b>Drop it and rely on management's assessment</b>", "Stable business and systems; a clean control "
-             "record; concentrated ownership", "An independent test of your own conclusion"],
-            ["<b>Replace it with something scaled</b>", "A program that wants outside challenge, from internal "
-             "audit or a periodic outside review, without an annual opinion", "Simplicity: the substitute has to "
-             "be designed and explained"],
-        ], widths=[25, 45, 30]) +
-        H.h2("7.2 When management's assessment stands alone") +
-        H.p("The second option carries a known risk. An advisory firm that does not audit told the SEC that "
+        H.table(["Option", "When it may fit", "What is given up"], [
+            ["<b>Retain the integrated audit voluntarily</b>", "A recent material weakness or restatement; a planned "
+             "capital raise; lenders that require it", "The full cost saving"],
+            ["<b>Discontinue it and rely on management's assessment</b>", "Stable business and systems; a clean "
+             "control record; concentrated ownership", "Independent testing of management's conclusion"],
+            ["<b>Replace it with a scaled alternative</b>", "A program that seeks independent challenge, from "
+             "internal audit or a periodic external review, without an annual opinion", "Simplicity, since the "
+             "alternative must be designed and explained"],
+        ], widths=[28, 42, 30]) +
+        H.h2("7.2 Relying on management's assessment alone") +
+        H.p("The second option carries a recognized risk. An advisory firm that does not audit told the SEC that "
             "without the external attestation “the 404(a) process tends over time toward formalism” (p. 3). "
             "The American Accounting Association's Financial Reporting Policy Committee, citing a 2017 study of "
             "small companies, adds that Section 404(a) "
             "alone “only results in the discovery and disclosure of about half of issuers with ineffective "
             "internal controls” (p. 7).") +
         AUDITOR_TABLE(H) +
-        H.p("Dropping the opinion does not take the auditor out of internal control. The last two rows are the "
-            "substance of the change: management's conclusion becomes the only public conclusion on internal "
-            "control, so the evidence behind it has to stand on its own.") +
-        H.prac("Cross-border implications — the United States, India and the Middle East", CROSS)))
+        H.p("Discontinuing the attestation does not remove the auditor from internal control. The substance of "
+            "the change lies in the last two rows: management's conclusion becomes the only public conclusion "
+            "on internal control, so the evidence behind it must stand on its own.") +
+        H.prac("Cross-border implications: the United States, India and the Middle East", CROSS)))
 
     # ================================================= Help
     P.append(H.sec(8,
         H.h1("How Uniqus Can Help") +
-        H.p("This section is for four readers, each with a decision to take. If your company will remain a large "
-            "accelerated filer, or is an emerging growth company in its first five years, nothing here changes "
-            "your program. We do not audit, so no audit fee of ours depends on whether a company keeps the "
-            "attestation.") +
+        H.p("We support companies at each of the four decision points below. For a company that will remain a "
+            "large accelerated filer, or an emerging growth company in its first five years, the proposal does "
+            "not change the SOX program. Because we do not provide audits, we have no audit fee at stake in "
+            "whether a company retains the attestation.") +
         HELP(H) +
-        H.p("To start any of these, write to <b>Sandip Khetan</b>, Co-Founder and Global Head of Accounting &amp; "
+        H.p("To discuss any of these, please contact <b>Sandip Khetan</b>, Co-Founder and Global Head of "
+            "Accounting &amp; "
             "Reporting Consulting, through www.uniqus.com.") +
         ABOUT))
     return P
@@ -589,21 +602,22 @@ def EX8(H):
     rows = [
         ("1", "Does the company file as a foreign private issuer on <b>Form 20-F or 40-F</b>?", "yes",
          "Outside the new categories", "The auditor's attestation continues from $75 million of worldwide float, "
-         "unless an emerging growth company.", "1,144 filers on these forms in 2024, 498 of them emerging growth "
-         "companies", "", "No: go to question 2"),
+         "unless it is an emerging growth company.", "1,144 filers on these forms in 2024, 498 of them emerging "
+         "growth companies", "", "No: go to question 2"),
         ("2", "Was public float <b>$2 billion or more</b> at <b>each</b> of the last two second-quarter ends?",
-         "no", "Non-accelerated filer", "The attestation is no longer required. Management's assessment continues.",
+         "no", "Non-accelerated filer", "The attestation is no longer required; management's assessment continues.",
          "4,825 registrants in all: 1,596 newly exempt, and 3,229 that have no attestation today", "na", "Yes: go to question 3"),
         ("3", "Has it been an SEC reporting company for <b>60 months</b> or more?", "yes",
-         "Large accelerated filer", "Nothing changes. The attestation continues. If no, it is a non-accelerated filer.",
+         "Large accelerated filer", "No change; the attestation continues. If not, it is a non-accelerated filer.",
          "1,146 registrants", "", ""),
     ]
-    inner = X.ladder(rows, "<b>Until a final rule takes effect, today's lines still apply.</b> A company that "
-                           "crossed a line on June 30, 2026 needs the attestation for fiscal 2026 unless a final rule "
-                           "takes effect before it files that annual report: under the proposed transition, status is "
+    inner = X.ladder(rows, "<b>Until a final rule takes effect, the current thresholds still apply.</b> A "
+                           "company that crossed a threshold on June 30, 2026 needs the attestation for fiscal "
+                           "2026 unless a final rule takes effect before it files that annual report; under "
+                           "the proposed transition, status is "
                            "reassessed as of the fiscal year-end before the effective date, and relief applies from the "
-                           "next filing. <em>The release proposes no interim relief.</em>")
-    return H.exhibit_html("Exhibit 8 — Where a company lands under the proposal", inner,
+                           "next filing. <em>The proposing release provides no interim relief.</em>")
+    return H.exhibit_html("Exhibit 8 — Determining filer status under the proposal", inner,
                           "Source: SEC Release 33-11419, pp. 43 to 48, 87 to 89, 114 to 116, 149, 152 and 205; Uniqus "
                           "analysis. On transition, a current large accelerated filer below $2 billion in either of "
                           "the two years, or with less than 60 months of reporting, becomes a non-accelerated filer. "
@@ -616,67 +630,78 @@ def REC_OL(items, header):
 
 
 DECISIONS = [
-    "<b>Fix your status under both rule sets.</b> Compute public float at the last two second-quarter ends on "
-    "today's single-day basis and on the proposed 10-trading-day average, and count your months of reporting history.",
-    "<b>If you crossed a line at June 30, 2026, plan on the current rules.</b> Three commenters asked for interim "
-    "relief and the release offers none. Relief for fiscal 2026 would come only if a final rule takes effect before "
-    "you file, so watch the effective date.",
-    "<b>List who else expects the opinion.</b> A bank of $5 billion of assets or more stays under the FDIC's rule "
-    "even if its holding company is exempt. "
-    "In the governance survey, 97% named investor expectations and analyst coverage among the factors that would "
-    "most influence whether they use the new accommodations, and 65% debt or equity offering requirements. Ask lenders, rating agencies and your largest holders before deciding.",
-    "<b>Price the saving from a fee proposal, not from the release.</b> Ask the auditor what the audit costs "
-    "without an opinion on controls; seven audit firms told the SEC the financial statement audit would absorb part of the work.",
-    "<b>Take keep, drop or replace to the audit committee with evidence.</b> Material weaknesses and restatements "
-    "in the last three years, turnover in finance, system changes under way, and who owns the shares.",
-    "<b>Set the evidence standard for an assessment nobody else tests.</b> Scope, sample sizes, tester "
-    "independence and deficiency evaluation need to be written down, because the auditor's file will no longer supply them.",
-    "<b>Decide what you will say.</b> Beyond the cover-page check box, the proposal requires no statement on "
-    "whether an attestation was obtained. Four commenters asked for one. Have the answer ready for the first investor who asks.",
-    "<b>Keep what is hard to rebuild.</b> Control documentation, IT general control evidence and trained people. "
-    "A company whose float stays at or above $2 billion for two consecutive years is back in scope (see the example in Section 2).",
+    "<b>Confirm filer status under both rule sets.</b> Compute public float at the last two "
+    "second-quarter ends on today's single-day basis and on the proposed 10-trading-day average, and confirm the "
+    "months of reporting history.",
+    "<b>Plan on the current rules if the company crossed a threshold at June 30, 2026.</b> Three commenters asked "
+    "for interim relief, but the proposal offers none. Relief for fiscal 2026 would come only if a final rule takes "
+    "effect before the company files, so the effective date warrants monitoring.",
+    "<b>Identify who else relies on the attestation.</b> A bank with $5 billion or more of assets stays under the "
+    "FDIC's rule even if its holding company is exempt. In the governance survey, 97% named investor expectations "
+    "and analyst coverage among the factors that would most influence whether they use the new accommodations, and "
+    "65% debt or equity offering requirements; lenders, rating agencies and major holders are worth "
+    "consulting first.",
+    "<b>Base the saving on a fee proposal rather than the SEC's average.</b> Ask the auditor what the audit would "
+    "cost without an opinion on internal control; seven audit firms told the SEC the financial statement audit "
+    "would absorb part of the work.",
+    "<b>Take the decision to the audit committee with evidence.</b> That means "
+    "material weaknesses and restatements in the last three years, finance turnover, system changes under way and "
+    "the shareholder base.",
+    "<b>Define the evidence standard for an assessment no one else will test.</b> Scope, sample sizes, tester "
+    "independence and deficiency evaluation should be documented, as the auditor's work papers will no "
+    "longer provide them.",
+    "<b>Decide how to explain the choice.</b> Beyond the cover-page check box, the proposal requires no statement "
+    "on whether an attestation was obtained, though four commenters asked for one. An answer should be ready for "
+    "the first investor who asks.",
+    "<b>Preserve what is hard to rebuild.</b> This includes control documentation, IT general control evidence and "
+    "trained staff. A company whose float stays at or above $2 billion for two consecutive years is back in scope "
+    "(see the example in Section 2).",
 ]
 
 
 def AUDITOR_TABLE(H):
-    return (H.table(["The auditor's work", "With the attestation", "Without it"], [
+    return (H.table(["The auditor's work", "With the attestation", "Without the attestation"], [
         ["<b>Understanding of controls</b>", "Required", "Still required, for the design and implementation of "
          "relevant controls"],
-        ["<b>Testing that controls operate</b>", "Required, to support an opinion on internal control",
-         "Where the auditor relies on controls or cannot get enough evidence without them"],
+        ["<b>Testing whether controls operate</b>", "Required, to support an opinion on internal control",
+         "Where the auditor relies on controls or cannot obtain enough evidence without them"],
         ["<b>Deficiencies the auditor finds</b>", "All deficiencies in writing to management; significant "
          "deficiencies and material weaknesses also to the audit committee", "Significant deficiencies and material "
          "weaknesses still in writing to both; <b>lesser deficiencies at the auditor's discretion</b>"],
         ["<b>Opinion on internal control</b>", "Public, in the annual report", "<b>None</b>"],
         ["<b>A material weakness that management has not reported</b>", "The auditor must say so in its report",
-         "Goes in writing to management and the audit committee; <b>no public report</b>"],
+         "Communicated in writing to management and the audit committee; <b>no public report</b>"],
         ["<b>Officers' certifications</b>", "CEO and CFO certify they have disclosed significant deficiencies and "
-         "material weaknesses to the auditor and the audit committee", "<b>Unchanged</b>: the certification is now "
-         "the main formal check on what management discloses"],
+         "material weaknesses to the auditor and the audit committee", "<b>Unchanged</b>; the certification "
+         "becomes the main formal check on what management discloses"],
     ], widths=[30, 32, 38]) +
         H.note("Source: SEC Release 33-11419, pp. 61, 62 and 139; PCAOB AS 2110, AS 2301 (including paragraph 17), "
                "AS 1305 (paragraphs 4 and 7) and AS 2201 (paragraphs 78 to 81); Exchange Act Rules 13a-14 and 15d-14."))
 
 
 CROSS = [
-    "<b>Foreign private issuers.</b> A company from India or the Gulf that lists in the US on Form 20-F keeps the "
-    "auditor's opinion from $75 million of worldwide float unless it is an emerging growth company, or it can "
-    "switch to domestic forms to obtain the relief. A domestic filer of the same size would be exempt up to $2 billion.",
-    "<b>India already asks for more.</b> Section 143(3)(i) of the Companies Act, 2013 has the auditor report on "
-    "whether internal financial controls with reference to financial statements are adequate and operating "
-    "effectively, for listed and unlisted companies alike. Private companies are exempt if they are one person "
+    "<b>Foreign private issuers.</b> A company from India or the Gulf that lists in the US on Form 20-F "
+    "remains subject to the auditor's attestation from $75 million of worldwide float unless it is an emerging "
+    "growth company, although it may switch to domestic forms to obtain the relief. A domestic filer of the "
+    "same size would be exempt up to $2 billion.",
+    "<b>India already requires more.</b> Under Section 143(3)(i) of the Companies Act, 2013, the auditor "
+    "reports on whether internal financial controls with reference to financial statements are adequate and "
+    "operating "
+    "effectively, for listed and unlisted companies alike; private companies are exempt if they are one person "
     "or small companies, or have turnover under INR 50 crore or borrowings under INR 25 crore, and are up to date "
-    "with their filings (MCA notification G.S.R. 583(E), June 13, 2017). A US parent that drops its attestation may still have an Indian subsidiary whose auditor reports on controls every year.",
-    "<b>The UAE is moving the other way.</b> Abu Dhabi's Accountability Authority requires the auditor to report on "
+    "with their filings (MCA notification G.S.R. 583(E), June 13, 2017). A US parent that discontinues its "
+    "attestation may therefore still have an Indian subsidiary whose auditor reports on controls every year.",
+    "<b>The UAE is moving in the opposite direction.</b> Abu Dhabi's Accountability Authority requires the "
+    "auditor to report on "
     "the effectiveness of internal control over financial reporting at the entities it oversees (Chairman's "
     "Resolution No. 1 of 2017). The UAE's capital markets regulator requires listed public joint-stock companies "
-    "to obtain an external auditor's opinion on internal control over financial reporting for 2026, unpublished, "
-    "and to publish it with the board's internal control report from financial year 2027.",
-    "<b>Saudi Arabia asks the board and the audit committee.</b> The board reviews the effectiveness of internal "
+    "to obtain, but not yet publish, an external auditor's opinion on internal control over financial "
+    "reporting for 2026, and to publish it with the board's internal control report from financial year 2027.",
+    "<b>Saudi Arabia looks to the board and the audit committee.</b> The board reviews the effectiveness of internal "
     "control each year and the audit committee publishes its opinion on its adequacy (CMA Corporate Governance "
-    "Regulations, Articles 21, 87 and 88). A group reporting in more "
-    "than one of these markets should build one control framework to the most demanding requirement it faces, not "
-    "to the US floor.",
+    "Regulations, Articles 21, 87 and 88). In our view, a group reporting in more than one of these markets "
+    "should build one control framework to the most demanding requirement it faces, rather than to the US "
+    "minimum.",
 ]
 
 
@@ -685,22 +710,23 @@ def HELP(H):
         '<td class="hc%s"><div class="h">%s</div><div class="w">%s</div><p><b>%s</b> %s</p></td>'
         % (" m" if m else "", t, when, out, desc))
     return ('<table class="help"><tr>' +
-            cell("In or out?", "Before fiscal 2026 audit planning closes", "Filer status memo, one week.",
-                 "Public float on both measurement bases for the last two years, months of reporting history, FDIC "
-                 "and contractual overlays, and your expected status under the proposal and under the two "
-                 "alternatives the file most supports.") +
-            cell("Keep, drop or replace?", "Before the audit committee approves the next audit plan",
-                 "Audit committee decision paper, three weeks.", "An evidence file on control history, what "
-                 "investors and lenders expect, a fee comparison built from your auditor's own proposal, and a "
-                 "recommendation the committee can minute.", True) +
+            cell("Confirming filer status", "Before fiscal 2026 audit planning closes", "Filer status memo, one week.",
+                 "An analysis of public float on both measurement bases for the last two years, months of "
+                 "reporting history, FDIC and contractual requirements, and your expected status under the "
+                 "proposal and the two alternatives commenters most support.") +
+            cell("Retain, discontinue or replace", "Before the audit committee approves the next audit plan",
+                 "Audit committee decision paper, three weeks.", "An evidence base on control history and investor "
+                 "and lender expectations, a fee comparison built from your auditor's own proposal, and a "
+                 "recommendation the committee can record in its minutes.", True) +
             '</tr><tr>' +
-            cell("What stands behind a management-only assessment?", "Before the first year without the opinion",
-                 "404(a) evidence standard, six weeks.", "Scoping, testing and deficiency evaluation written to the "
-                 "SEC's 2007 guidance for management, with a tester-independence model and a first-year test plan.") +
-            cell("Foreign private issuer or multi-market group?", "Before your next Form 20-F",
-                 "Cross-border control map, four weeks.", "One framework mapped to Section 404, India's internal "
-                 "financial controls reporting and UAE or Saudi requirements, showing where a single test serves "
-                 "all of them.", True) +
+            cell("Supporting a management-only assessment", "Before the first year without the auditor's attestation",
+                 "404(a) evidence standard, six weeks.", "Scoping, testing and deficiency evaluation documented in "
+                 "line with the SEC's 2007 guidance for management, together with a tester-independence model and "
+                 "a first-year test plan.") +
+            cell("Foreign private issuers and multi-market groups", "Before your next Form 20-F",
+                 "Cross-border control map, four weeks.", "A single framework mapped to Section 404, India's "
+                 "internal financial controls reporting and UAE or Saudi requirements, identifying where one test "
+                 "can satisfy several regimes.", True) +
             '</tr></table>')
 
 
