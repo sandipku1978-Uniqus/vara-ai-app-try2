@@ -1,0 +1,2699 @@
+[
+ {
+  "id": "L-F01",
+  "section": "Cover and navigation",
+  "cur": [
+   [
+    "",
+    "The SEC proposes to stop requiring the auditor's opinion on internal control / at 1,596 companies. A review of every comment letter, and what comes next."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "The SEC proposes to stop requiring the auditor's opinion on internal control / for 1,596 companies. We review every comment letter and what may come next."
+   ]
+  ],
+  "where": "1 (cover); so_v2.py 12 to 13",
+  "len": "153 to 154 characters (+1%)",
+  "tags": "AI-tell, hedge",
+  "note": "second line is a verbless fragment; \"what comes next\" asserts an outcome. Line breaks preserved; line 2 is one character longer."
+ },
+ {
+  "id": "L-F02",
+  "section": "Cover and navigation",
+  "cur": [
+   [
+    "",
+    "1. How Section 404 Got Here"
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "1. How Section 404 Evolved"
+   ]
+  ],
+  "where": "sidebar (all pages); so_v2.py 20",
+  "len": "27 to 26 characters (-4%)",
+  "tags": "heading, register",
+  "note": "must match h1 at line 109 (L-F24) and the ref at line 69 (L-F10)."
+ },
+ {
+  "id": "L-F03",
+  "section": "Cover and navigation",
+  "cur": [
+   [
+    "",
+    "4. Two Questions the File Leaves Open"
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "4. Two Questions Left Open"
+   ]
+  ],
+  "where": "sidebar; so_v2.py 21",
+  "len": "37 to 26 characters (-30%)",
+  "tags": "shorthand, heading",
+  "note": "shorter nav label; h1 at line 331 is the other editor's. Ref at line 77 updated in L-F11."
+ },
+ {
+  "id": "L-F04",
+  "section": "Cover and navigation",
+  "cur": [
+   [
+    "",
+    "7. What To Do Before the Final Rule"
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "7. Actions Before a Final Rule"
+   ]
+  ],
+  "where": "sidebar; so_v2.py 23",
+  "len": "35 to 30 characters (-14%)",
+  "tags": "heading, register",
+  "note": "suggested h1 for line 473 (other editor): \"7. Actions to Consider Before a Final Rule\". \"a final rule\" avoids implying adoption is certain. Ref at line 93 updated in L-F14."
+ },
+ {
+  "id": "L-F05",
+  "section": "Executive Summary (pp. 2 to 3)",
+  "cur": [
+   [
+    "",
+    "Commenters addressing the attestation who called the exemption too broad, nine in guarded terms, or said it should not be expanded"
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Commenters addressing the attestation who called the exemption too broad (nine in guarded terms) or said it should not be expanded"
+   ]
+  ],
+  "where": "2 (tile 2); so_v2.py 45 to 46",
+  "len": "130 to 130 characters (+0%)",
+  "tags": "flow",
+  "note": "the qualifier currently splits the \"or\" pair. Length unchanged."
+ },
+ {
+  "id": "L-F06",
+  "section": "Executive Summary (pp. 2 to 3)",
+  "cur": [
+   [
+    "",
+    "Audit firms on the file that endorsed the $2 billion line as drawn; 10 of them questioned the five-year on-ramp"
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Audit firms commenting that endorsed the $2 billion threshold as proposed; 10 questioned the five-year on-ramp"
+   ]
+  ],
+  "where": "2 (tile 3); so_v2.py 47 to 48",
+  "len": "111 to 110 characters (-1%)",
+  "tags": "shorthand",
+  "note": "\"as proposed\" replaces the drafting metaphor \"as drawn\" throughout (see L-F11, L-F57)."
+ },
+ {
+  "id": "L-F07",
+  "section": "Executive Summary (pp. 2 to 3)",
+  "cur": [
+   [
+    "",
+    "Commenters who said anything concrete about what a company should do once the attestation is gone"
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Commenters who offered concrete guidance on what a company should do once the attestation is not required"
+   ]
+  ],
+  "where": "2 (tile 4); so_v2.py 49 to 50",
+  "len": "97 to 105 characters (+8%)",
+  "tags": "register",
+  "note": "still shorter than tile 2, which sets the tile height. \"is gone\" overstates (a company may still obtain one)."
+ },
+ {
+  "id": "L-F08",
+  "section": "Executive Summary (pp. 2 to 3)",
+  "cur": [
+   [
+    "",
+    "Most finance leaders read the SEC's filer status proposal of May 19, 2026 (Release No. 33-11419, *Enhancement of Emerging Growth Company Accommodations and Simplification of Filer Status for Reporting Companies*) as a cost saving and moved on. The large accelerated filer line rises from $700 million to $2 billion of public float, every new registrant gets five years, and the SEC's requirement for an auditor's opinion on internal control falls away for **1,596 companies**."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Many finance leaders have read the SEC's filer status proposal of May 19, 2026 (Release No. 33-11419, *Enhancement of Emerging Growth Company Accommodations and Simplification of Filer Status for Reporting Companies*) as a cost saving. The large accelerated filer threshold would rise from $700 million to $2 billion of public float, every new registrant would have five years of seasoning, and the auditor's opinion on internal control would no longer be required at **1,596 companies**."
+   ]
+  ],
+  "where": "2; so_v2.py 52 to 57",
+  "len": "470 to 482 characters (+3%)",
+  "tags": "register, hedge, shorthand, AI-tell",
+  "note": "\"Most ... moved on\" is an unsupported generalization and glib; the proposal is described as if adopted. \"gets five years\" does not say five years of what."
+ },
+ {
+  "id": "L-F09",
+  "section": "Executive Summary (pp. 2 to 3)",
+  "cur": [
+   [
+    "",
+    "The comment file is less settled than that reading. It holds 192 entries from **172 distinct commenters**, and this paper rests on a review of every one. It follows Section 404 through its life: how it reached this point, what the SEC has now heard, and what a finance leader should do before the answer arrives."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "The public comment record suggests the matter is less settled. It holds 192 entries from **172 distinct commenters**, and this paper draws on a review of each one. We trace how Section 404 reached this point, summarize what the SEC has heard, and consider what finance leaders may wish to do before a final rule."
+   ]
+  ],
+  "where": "2; so_v2.py 58 to 61",
+  "len": "308 to 308 characters (+0%)",
+  "tags": "shorthand, AI-tell, register",
+  "note": "removes the colon-then-list and \"before the answer arrives\". Keep `%s` placeholders for 192 and 172."
+ },
+ {
+  "id": "L-F10",
+  "section": "Executive Summary (pp. 2 to 3)",
+  "cur": [
+   [
+    "",
+    "Q: First, how did Section 404 get here, and what did it deliver? / A: It was built between 2002 and 2005 and has been scaled or narrowed four times since; the proposal would be the fifth. The $700 million line was set in 2005 and has not moved: at adoption it captured 18% of companies on US markets, and today it captures **35.4% of registrants**. Over the same years restatements fell and the SEC's staff concluded from the research that auditor testing brought out control deficiencies management had not disclosed, though neither can be credited to Section 404 alone. / (Refer Section 1: How Section 404 Got Here)"
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Q: First, how has Section 404 evolved, and what has it delivered? / A: The requirement was put in place between 2002 and 2005 and has been scaled or narrowed four times since; the proposal would be the fifth. The $700 million threshold set in 2005 has not moved; it captured 18% of companies on US markets at adoption and captures **35.4% of registrants** today. Over the same period restatements fell, and the SEC staff concluded from the research that auditor testing brought out control deficiencies management had not disclosed, though neither can be credited to Section 404 alone. / (Refer Section 1: How Section 404 Evolved)"
+   ]
+  ],
+  "where": "2 (Q1); so_v2.py 62 to 69",
+  "len": "613 to 626 characters (+2%)",
+  "tags": "shorthand, AI-tell, register, heading",
+  "note": "\"It was built\" has no clear antecedent after the question; colon-reveal removed."
+ },
+ {
+  "id": "L-F11",
+  "section": "Executive Summary (pp. 2 to 3)",
+  "cur": [
+   [
+    "",
+    "Q: Second, what did the SEC hear? / A: Of the 118 commenters that addressed the attestation, **75 said the exemption is too broad or should not be expanded**, nine of them in guarded terms, and 32 supported it or wanted more. / The split runs by constituency. Every company, both exchanges and every business trade association that took a side supported the exemption. No accounting firm endorsed the $2 billion line as drawn, and 25 of the 27 investors and investor advocates that addressed the exemption called it too broad or opposed any expansion. / (Refer Sections 3 and 4: What the SEC Heard; Two Questions the File Leaves Open)"
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Q: Second, what did commenters tell the SEC? / A: Of the 118 commenters who addressed the attestation, **75 said the exemption is too broad or should not be expanded**, nine of them in guarded terms, and 32 supported it or sought a wider one. / Views split by constituency. Every company, both exchanges and every business trade association that took a side supported the exemption. No accounting firm endorsed the $2 billion threshold as proposed, and 25 of the 27 investors and investor advocates that addressed the exemption called it too broad or opposed any expansion. / (Refer Sections 3 and 4: What the SEC Heard; Two Questions Left Open)"
+   ]
+  ],
+  "where": "2 (Q2); so_v2.py 70 to 77",
+  "len": "630 to 641 characters (+2%)",
+  "tags": "shorthand, register, AI-tell, heading",
+  "note": "\"wanted more\" is colloquial. The ref title must match the Section 4 h1 the other editor settles on."
+ },
+ {
+  "id": "L-F12",
+  "section": "Executive Summary (pp. 2 to 3)",
+  "cur": [
+   [
+    "",
+    "Q: Third, where could the final rule move? / A: No final rule has been adopted. The letters show where one could move: the five-year on-ramp for very large new listings, a second test beside public float, and relief for companies that cross today's lines while the rule is pending."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Q: Third, where could the final rule move? / A: No final rule has been adopted. The comment letters suggest where it could change: the five-year on-ramp for very large new listings, a second test beside public float, and relief for companies that cross today's thresholds while the rule is pending."
+   ]
+  ],
+  "where": "3 (Q3); so_v2.py 78 to 82",
+  "len": "281 to 298 characters (+6%)",
+  "tags": "shorthand, register, hedge",
+  "note": "\"show\" overstates what letters can establish about a final rule. Ref \"(Refer Section 5: Where the Final Rule Could Move)\" left unchanged so it matches the Section 5 title; only the question wording changes."
+ },
+ {
+  "id": "L-F13",
+  "section": "Executive Summary (pp. 2 to 3)",
+  "cur": [
+   [
+    "",
+    "Q: Fourth, will this bring the mid-market back? / A: The proposal lowers the cost of staying public. It does little to change the decision to go public, because most companies making that decision are exempt already. The release gives no estimate of additional listings."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Q: Fourth, will this bring the mid-market back? / A: In our view, the proposal would lower the cost of staying public but do little to change the decision to go public, as most companies making that decision are already exempt. The proposing release gives no estimate of additional listings."
+   ]
+  ],
+  "where": "3 (Q4); so_v2.py 84 to 88",
+  "len": "270 to 291 characters (+8%)",
+  "tags": "AI-tell, register, shorthand, hedge",
+  "note": "merges two stacked short sentences. The question is unchanged."
+ },
+ {
+  "id": "L-F14",
+  "section": "Executive Summary (pp. 2 to 3)",
+  "cur": [
+   [
+    "",
+    "Q: Fifth, what should a finance leader do before the final rule? / A: Fix the company's status under both rule sets, price the saving from the auditor's own fee proposal, and take keep, drop or replace to the audit committee with evidence. Section 7 sets out eight decisions for the person who runs the SOX program. / (Refer Section 7: What To Do Before the Final Rule)"
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Q: Fifth, what should finance leaders do before a final rule? / A: Companies may wish to confirm their status under both rule sets, estimate the saving from the auditor's own fee proposal, and bring keep, discontinue or replace to the audit committee with evidence. Section 7 sets out eight decisions for the SOX program lead. / (Refer Section 7: Actions to Consider Before a Final Rule)"
+   ]
+  ],
+  "where": "3 (Q5); so_v2.py 89 to 93",
+  "len": "369 to 387 characters (+5%)",
+  "tags": "register, AI-tell, heading",
+  "note": "three imperatives and two glib verbs (\"price\", \"drop\"). \"discontinue\" depends on the framework decision (see Cross-editor dependencies); if the label stays, use \"keep, drop or replace\". FORCE FLAG: if the authors want this to read as a firm recommendation, use \"We would recommend that companies confirm ...\" in place of \"Companies may wish to confirm ...\"."
+ },
+ {
+  "id": "L-F15",
+  "section": "Executive Summary (pp. 2 to 3)",
+  "cur": [
+   [
+    "",
+    "The file argues about where the line should sit; a finance leader has a different question. **Once the auditor's opinion is optional, management's assessment under Section 404(a) is the only report on internal control an investor receives.** The proposal changes neither that assessment nor the certifications that accompany it."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Much of the comment record debates where the threshold should sit; finance leaders face a different question. **Once the auditor's opinion is optional, management's assessment under Section 404(a) becomes the only report on internal control an investor receives.** The proposal changes neither that assessment nor the certifications that accompany it."
+   ]
+  ],
+  "where": "3 (Point of View, para 1); so_v2.py 95 to 98",
+  "len": "324 to 347 characters (+7%)",
+  "tags": "shorthand, register, AI-tell",
+  "note": "the owner's example. Kept to three sentences (house rule) by joining the first two with a semicolon, as the original does. The owner's two-sentence wording (\"Much of the public comment focuses on where the threshold should be set. For finance leaders, the more pressing question is a different one.\") would put the paragraph at four sentences, so this one merges the two. FORCE FLAG: the bold sentence is the paper's thesis and stays declarative; only \"is\" becomes \"becomes\" so it reads as a consequence of the proposal."
+ },
+ {
+  "id": "L-F16",
+  "section": "Executive Summary (pp. 2 to 3)",
+  "cur": [
+   [
+    "",
+    "We would plan on the core of the proposal surviving and its edges moving. Companies below $2 billion of float that have the attestation today should prepare for a year in which it becomes a choice."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "We would expect the core of the proposal to survive, with changes at the margins. Companies below $2 billion of float that obtain the attestation today should prepare for a year in which it becomes optional."
+   ]
+  ],
+  "where": "3 (Point of View, para 2); so_v2.py 99 to 101",
+  "len": "197 to 207 characters (+5%)",
+  "tags": "AI-tell, register",
+  "note": "\"its edges moving\" is glib. FORCE FLAG: \"should prepare\" is kept deliberately; softening to \"may wish to\" would undercut the paper's main call to action."
+ },
+ {
+  "id": "L-F17",
+  "section": "Executive Summary (pp. 2 to 3)",
+  "cur": [
+   [
+    "",
+    "That choice belongs to the audit committee, and it should be made on evidence before a lender, an underwriter or an investor asks about it."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "That decision rests with the audit committee, and it should be grounded in evidence before a lender, underwriter or investor raises the question."
+   ]
+  ],
+  "where": "3 (Point of View, kicker); so_v2.py 102 to 103",
+  "len": "139 to 145 characters (+4%)",
+  "tags": "register",
+  "note": "FORCE FLAG: the \"should\" is kept; it is the closing point of the POV."
+ },
+ {
+  "id": "L-F18",
+  "section": "What this means for you (WHO exhibit, p. 4)",
+  "cur": [
+   [
+    "",
+    "What changes: The auditor's opinion on internal control becomes a choice the committee makes, not a requirement it oversees. / Decision: Keep, drop or replace, minuted on evidence before the next audit plan is approved."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "What changes: The auditor's opinion on internal control would become the committee's choice rather than a requirement. / Decision: Keep, discontinue or replace, recorded on evidence before the next audit plan is approved."
+   ]
+  ],
+  "where": "4 (audit committee row); so_v2.py 718 to 720",
+  "len": "219 to 221 characters (+1%)",
+  "tags": "AI-tell, spelling, register, hedge",
+  "note": "\"minuted\" is British usage; \"X, not Y\" softened. Framework label per Cross-editor dependencies."
+ },
+ {
+  "id": "L-F19",
+  "section": "What this means for you (WHO exhibit, p. 4)",
+  "cur": [
+   [
+    "",
+    "What changes: Certifications and management's 404(a) assessment are unchanged; the audit fee and the filing calendar may move. / Decision: Price the saving from the auditor's fee proposal, and decide what to tell investors."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "What changes: Certifications and management's 404(a) assessment are unchanged; the audit fee and filing deadlines may change. / Decision: Estimate the saving from the auditor's fee proposal, and decide what to tell investors."
+   ]
+  ],
+  "where": "4 (CFO row); so_v2.py 721 to 723",
+  "len": "223 to 225 characters (+1%)",
+  "tags": "AI-tell, register",
+  "note": "imperatives are acceptable in a \"decision in front of you\" column; only the glib verb is replaced."
+ },
+ {
+  "id": "L-F20",
+  "section": "What this means for you (WHO exhibit, p. 4)",
+  "cur": [
+   [
+    "",
+    "What changes: No external test of management's conclusion; the auditor still understands, and may test, controls. / Decision: Write down the evidence standard: scope, samples, tester independence and deficiency evaluation."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "What changes: No external test of management's conclusion, though the auditor must still understand, and may test, controls. / Decision: Document the evidence standard for scope, sampling, tester independence and deficiency evaluation."
+   ]
+  ],
+  "where": "4 (SOX program leader row); so_v2.py 724 to 726",
+  "len": "222 to 235 characters (+6%)",
+  "tags": "AI-tell, register",
+  "note": "\"the auditor still understands\" is ungrammatical as a statement of requirement; colon list removed."
+ },
+ {
+  "id": "L-F21",
+  "section": "What this means for you (WHO exhibit, p. 4)",
+  "cur": [
+   [
+    "",
+    "What changes: Covenants, bank regulators and investors may still expect the opinion. / Decision: List who expects it, and prepare the answer for the first investor who asks."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "What changes: Covenants, bank regulators and investors may still expect the auditor's opinion. / Decision: Identify who expects it, and prepare a response for the first investor who asks."
+   ]
+  ],
+  "where": "4 (Treasurer row); so_v2.py 727 to 729",
+  "len": "173 to 187 characters (+8%)",
+  "tags": "shorthand, register"
+ },
+ {
+  "id": "L-F22",
+  "section": "What this means for you (WHO exhibit, p. 4)",
+  "cur": [
+   [
+    "",
+    "What changes: Five years without the attestation for every new registrant, not only emerging growth companies. / Decision: Build controls to the standard the listing will need in year six, not year one."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "What changes: Every new registrant, not only emerging growth companies, has five years before the attestation can apply. / Decision: Build controls to the standard the company will need in year six, not year one."
+   ]
+  ],
+  "where": "4 (IPO candidate row); so_v2.py 730 to 732",
+  "len": "202 to 212 characters (+5%)",
+  "tags": "AI-tell, hedge",
+  "note": "fragment made a sentence, and \"can apply\" reflects that the attestation follows only if large accelerated status is reached. FORCE FLAG: \"year six, not year one\" is a deliberate, memorable contrast and is kept."
+ },
+ {
+  "id": "L-F23",
+  "section": "What this means for you (WHO exhibit, p. 4)",
+  "cur": [
+   [
+    "",
+    "What changes: Nothing, on Form 20-F: the opinion still starts at $75 million of float. / Decision: Build one control framework to the most demanding market it reports in."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "What changes: No change on Form 20-F; the attestation still applies from $75 million of float. / Decision: Build one control framework to the most demanding market it reports in."
+   ]
+  ],
+  "where": "4 (Foreign private issuer row); so_v2.py 733 to 735",
+  "len": "170 to 178 characters (+5%)",
+  "tags": "AI-tell, shorthand, register"
+ },
+ {
+  "id": "L-F24",
+  "section": "Section 1 (pp. 5 to 7)",
+  "cur": [
+   [
+    "",
+    "1. How Section 404 Got Here"
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "1. How Section 404 Evolved"
+   ]
+  ],
+  "where": "5; so_v2.py 109",
+  "len": "27 to 26 characters (-4%)",
+  "tags": "heading, register",
+  "note": "matches L-F02 and L-F10."
+ },
+ {
+  "id": "L-F25",
+  "section": "Section 1 (pp. 5 to 7)",
+  "cur": [
+   [
+    "",
+    "Built between 2002 and 2005. Scaled or narrowed four times since. The proposal would be the fifth."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Introduced between 2002 and 2005, and scaled or narrowed four times since; the proposal would be the fifth."
+   ]
+  ],
+  "where": "5 (deck); so_v2.py 110",
+  "len": "98 to 107 characters (+9%)",
+  "tags": "AI-tell",
+  "note": "three stacked fragments."
+ },
+ {
+  "id": "L-F26",
+  "section": "Section 1 (pp. 5 to 7)",
+  "cur": [
+   [
+    "",
+    "Section 404 has two halves. Under 404(a), management assesses internal control over financial reporting and reports its conclusion. Under 404(b), the auditor attests to that assessment."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Section 404 has two parts. Under 404(a), management assesses internal control over financial reporting and reports its conclusion; under 404(b), the auditor attests to that assessment."
+   ]
+  ],
+  "where": "5; so_v2.py 111 to 112",
+  "len": "185 to 184 characters (-1%)",
+  "tags": "AI-tell, flow",
+  "note": "light touch; reduces three short sentences to two."
+ },
+ {
+  "id": "L-F27",
+  "section": "Section 1 (pp. 5 to 7)",
+  "cur": [
+   [
+    "",
+    "The second half has never applied to everyone, and it has been scaled or narrowed four times. In 2007 the SEC issued guidance for management and the PCAOB a risk-based audit standard; in 2010 Congress exempted non-accelerated filers from the auditor's attestation by statute, after the SEC had repeatedly deferred it for them. The JOBS Act added emerging growth companies in 2012, and in 2020 the SEC took issuers eligible to be smaller reporting companies with revenue under $100 million out of accelerated and large accelerated filer status."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "The attestation has never applied to everyone, and it has been scaled or narrowed four times. In 2007 the SEC issued guidance for management and the PCAOB a risk-based audit standard; in 2010 Congress exempted non-accelerated filers from the auditor's attestation by statute, after the SEC had repeatedly deferred it for them. The JOBS Act exempted emerging growth companies in 2012, and in 2020 the SEC removed issuers eligible to be smaller reporting companies with revenue under $100 million from accelerated and large accelerated filer status."
+   ]
+  ],
+  "where": "5; so_v2.py 113 to 118",
+  "len": "543 to 547 characters (+1%)",
+  "tags": "register, flow",
+  "note": "\"The second half\" relies on the previous paragraph's metaphor; \"took ... out of\" is colloquial."
+ },
+ {
+  "id": "L-F28",
+  "section": "Section 1 (pp. 5 to 7)",
+  "cur": [
+   [
+    "",
+    "The $700 million line was set in 2005 and has not moved. At adoption it captured 18% of companies on US markets; today the same line captures **35.4% of registrants**. The SEC did not index it: adjusted for consumer prices the line would be $1.15 billion, and tracking the S&P 500 it would be $3.85 billion. It chose $2 billion to restore coverage of \"nearly 95 percent\" of public float, and estimates that line covers 93.5%."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "The $700 million threshold set in 2005 has not moved since; it captured 18% of companies on US markets at adoption and captures **35.4% of registrants** today. The SEC did not index it; adjusted for consumer prices the threshold would be $1.15 billion, and tracking the S&P 500, $3.85 billion. Instead, the SEC chose $2 billion to restore coverage of \"nearly 95 percent\" of public float, and estimates that the new threshold covers 93.5%."
+   ]
+  ],
+  "where": "5; so_v2.py 120 to 124",
+  "len": "421 to 434 characters (+3%)",
+  "tags": "shorthand, AI-tell, flow (house rule: 4 sentences to 3)",
+  "note": "HOUSE RULE: the current paragraph has four sentences. Quotation unchanged."
+ },
+ {
+  "id": "L-F29",
+  "section": "Section 1 (pp. 5 to 7)",
+  "cur": [
+   [
+    "",
+    "The SEC's own tables show the control record under each regime. Over 2021 to 2024, management reported ineffective controls at **5.2%** of large accelerated filers, **15.7%** of accelerated filers and **41.8%** of non-accelerated filers."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "The SEC's own tables show the control record under each regime. From 2021 to 2024, management reported ineffective controls at **5.2%** of large accelerated filers, **15.7%** of accelerated filers and **41.8%** of non-accelerated filers."
+   ]
+  ],
+  "where": "6; so_v2.py 127 to 129",
+  "len": "225 to 225 characters (+0%)",
+  "tags": "flow",
+  "note": "minor (\"Over 2021 to 2024\" is non-idiomatic). Otherwise reads well."
+ },
+ {
+  "id": "L-F30",
+  "section": "Section 1 (pp. 5 to 7)",
+  "cur": [
+   [
+    "",
+    "Size explains part of that gradient, and the SEC reads its restatement table cautiously: the rate for non-accelerated filers is \"only slightly higher\" than for accelerated filers, and the non-accelerated group holds more low- or zero-revenue issuers, which restate less often. The gap is widest on persistence: **24.9% of non-accelerated filers reported ineffective controls in all four years**, against 4.2% of accelerated filers."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Size explains part of that gradient, and the SEC reads its restatement table cautiously, noting that the rate for non-accelerated filers is \"only slightly higher\" than for accelerated filers and that the non-accelerated group holds more low- or zero-revenue issuers, which restate less often. The gap is widest on persistence, with **24.9% of non-accelerated filers reporting ineffective controls in all four years**, against 4.2% of accelerated filers."
+   ]
+  ],
+  "where": "6; so_v2.py 139 to 143",
+  "len": "427 to 449 characters (+5%)",
+  "tags": "AI-tell, register",
+  "note": "two colon-reveals."
+ },
+ {
+  "id": "L-F31",
+  "section": "Section 1 (pp. 5 to 7)",
+  "cur": [
+   [
+    "",
+    "Where the attestation is optional, few companies buy it. The SEC estimates that less than six percent of exempt registrants obtained one voluntarily in 2024."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Where the attestation is optional, few companies obtain it; the SEC estimates that less than six percent of exempt registrants did so voluntarily in 2024."
+   ]
+  ],
+  "where": "6; so_v2.py 144 to 145",
+  "len": "157 to 154 characters (-2%)",
+  "tags": "AI-tell, register",
+  "note": "\"buy it\" is glib; joins a stacked short sentence."
+ },
+ {
+  "id": "L-F32",
+  "section": "Section 1 (pp. 5 to 7)",
+  "cur": [
+   [
+    "",
+    "1.2 What the second opinion delivered"
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "1.2 What the second opinion has delivered"
+   ]
+  ],
+  "where": "6; so_v2.py 146",
+  "len": "37 to 41 characters (+11%)",
+  "tags": "heading",
+  "note": "optional. \"Second opinion\" is the paper's title motif and is worth keeping in one heading; the tense change matches L-F10. If the authors prefer a plainer heading: \"1.2 What the auditor's attestation has delivered\"."
+ },
+ {
+  "id": "L-F33",
+  "section": "Section 1 (pp. 5 to 7)",
+  "cur": [
+   [
+    "",
+    "Cost is one side of the ledger. On the other, the SEC's 2011 staff study concluded that auditor testing \"has generally resulted in the disclosure of internal control deficiencies\" that management had not previously disclosed, and that the attestation \"appears to have a positive impact on the informativeness of internal control disclosures and financial reporting quality\". The release repeats both findings."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Cost is only one side of the ledger; on the other, the SEC's 2011 staff study concluded that auditor testing \"has generally resulted in the disclosure of internal control deficiencies\" that management had not previously disclosed, and that the attestation \"appears to have a positive impact on the informativeness of internal control disclosures and financial reporting quality\". The proposing release cites both findings."
+   ]
+  ],
+  "where": "6; so_v2.py 147 to 151",
+  "len": "409 to 422 characters (+3%)",
+  "tags": "AI-tell, shorthand",
+  "note": "quotations untouched."
+ },
+ {
+  "id": "L-F34",
+  "section": "Section 1 (pp. 5 to 7)",
+  "cur": [
+   [
+    "",
+    "Restatements rose in the first three years of the Act and have fallen since. The Center for Audit Quality, the audit profession's policy body, counts a 60% decline from 2006 to 2009 and a further fall from **858 in 2013 to 402 in 2022**. Ideagen Audit Analytics, counting from the same database without the Center's adjustment for blank-check companies, recorded 434 in 2023, 477 in 2024 and 391 in 2025, the second lowest year in its 20-year database after 2020."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Restatements rose in the first three years of the Act and have declined since. The Center for Audit Quality, the audit profession's policy body, reports a 60% decline from 2006 to 2009 and a further fall from **858 in 2013 to 402 in 2022**. Ideagen Audit Analytics, counting from the same database without the Center's adjustment for blank-check companies, recorded 434 in 2023, 477 in 2024 and 391 in 2025, the second-lowest year in its 20-year database after 2020."
+   ]
+  ],
+  "where": "6; so_v2.py 152 to 156",
+  "len": "459 to 462 characters (+1%)",
+  "tags": "flow",
+  "note": "light touch only; the paragraph reads well."
+ },
+ {
+  "id": "L-F35",
+  "section": "Section 1 (pp. 5 to 7)",
+  "cur": [
+   [
+    "",
+    "Those closest to the work saw value in it, though on average not enough to outweigh the cost. The release says respondents to a 2008 and 2009 survey of 2,901 corporate insiders found the benefits to outweigh the costs, \"especially as they gained experience with section 404(b)\". The study behind the survey is less favourable: on average respondents did not judge the benefits to outweigh the costs, though perceived net benefits were higher where an auditor attested and rose with experience."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Those closest to the work saw value in it, though on average not enough to outweigh the cost. The proposing release says respondents to a 2008 and 2009 survey of 2,901 corporate insiders found the benefits to outweigh the costs, \"especially as they gained experience with section 404(b)\". The underlying study is less favorable, finding that on average respondents did not judge the benefits to outweigh the costs, though perceived net benefits were higher where an auditor attested and rose with experience."
+   ]
+  ],
+  "where": "7; so_v2.py 158 to 162",
+  "len": "493 to 508 characters (+3%)",
+  "tags": "spelling, shorthand, AI-tell",
+  "note": "HOUSE RULE: \"favourable\" to \"favorable\". Colon-reveal removed. Quotation unchanged."
+ },
+ {
+  "id": "L-F36",
+  "section": "Section 1 (pp. 5 to 7)",
+  "cur": [
+   [
+    "",
+    "The SEC names the wider benefit itself: Section 404(b) \"may play a role in improving overall investor confidence, encouraging investment in public markets\". None of this proves cause: the Act also created the PCAOB, audit committee independence rules and officer certifications, the release cites a 2024 working paper that found no decline in internal control or financial reporting quality at issuers exempted in 2020, and it says auditor testing \"may have fewer benefits\" at the larger companies now affected."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "The SEC itself notes a wider benefit: Section 404(b) \"may play a role in improving overall investor confidence, encouraging investment in public markets\". None of this proves cause, since the Act also created the PCAOB, audit committee independence rules and officer certifications. The proposing release also cites a 2024 working paper that found no decline in internal control or financial reporting quality at issuers exempted in 2020, and says auditor testing \"may have fewer benefits\" at the larger companies now affected."
+   ]
+  ],
+  "where": "7; so_v2.py 165 to 170",
+  "len": "511 to 527 characters (+3%)",
+  "tags": "AI-tell, shorthand",
+  "note": "two colon-reveals; the run-on list mixed a causal caveat with the release's counter-evidence, now separated. Three sentences. Quotations unchanged."
+ },
+ {
+  "id": "L-F37",
+  "section": "Section 1 (pp. 5 to 7)",
+  "cur": [
+   [
+    "",
+    "What the record does show is what is being given up: **an independent test that, in the research the SEC staff reviewed in 2011, brought out deficiencies management had not disclosed.** That study covered companies with $75 million to $250 million of float and recommended against widening the exemption."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "What the record does show is what would be given up: **an independent test that, in the research the SEC staff reviewed in 2011, brought out deficiencies management had not disclosed.** That study covered companies with $75 million to $250 million of float and recommended against widening the exemption."
+   ]
+  ],
+  "where": "7; so_v2.py 171 to 174",
+  "len": "300 to 300 characters (+0%)",
+  "tags": "hedge",
+  "note": "FORCE FLAG: this is the section's landing point, and the colon before the bold clause is a deliberate emphasis, so it stays. Only \"is being\" becomes \"would be\", because nothing has yet been given up. A softer version, if wanted: \"In our view, the record shows clearly what would be given up: ...\"."
+ },
+ {
+  "id": "L-F38",
+  "section": "Exhibit 1 (EX1, p. 5) and Exhibit 3 (EX3, p. 7)",
+  "cur": [
+   [
+    "",
+    "2002: Sarbanes-Oxley enacted; accelerated filer line set at $75 million of float / 2005: Large accelerated filer line set at $700 million / 2026: Proposal: line to $2 billion; 60 months for every new registrant"
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "2002: Sarbanes-Oxley enacted; accelerated filer threshold set at $75 million of float / 2005: Large accelerated filer threshold set at $700 million / 2026: Proposal: $2 billion threshold; 60 months for every new registrant"
+   ]
+  ],
+  "where": "5 (Exhibit 1, chain items); so_v2.py 526, 528, 533",
+  "len": "210 to 222 characters (+6%)",
+  "tags": "shorthand",
+  "note": "the 2002 and 2005 boxes are wide enough for the five extra characters; the 2026 item is the same length."
+ },
+ {
+  "id": "L-F39",
+  "section": "Exhibit 1 (EX1, p. 5) and Exhibit 3 (EX3, p. 7)",
+  "cur": [
+   [
+    "",
+    "Built, 2002 to 2005: the requirement applied / Scaled or narrowed, 2007 to 2026: the proposal would be the fifth / Who sits above the large accelerated filer line"
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Introduced, 2002 to 2005: the requirement takes effect / Scaled or narrowed, 2007 to 2026: the proposal would be the fifth / Who sits above the large accelerated filer threshold"
+   ]
+  ],
+  "where": "5 (Exhibit 1, band headers); so_v2.py 541 to 543",
+  "len": "162 to 177 characters (+9%)",
+  "tags": "shorthand, flow",
+  "note": "\"Built ... the requirement applied\" is terse. These headers are one line in uppercase small caps with plenty of room."
+ },
+ {
+  "id": "L-F40",
+  "section": "Exhibit 1 (EX1, p. 5) and Exhibit 3 (EX3, p. 7)",
+  "cur": [
+   [
+    "",
+    "2024, same $700 million line / Proposed $2 billion line"
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "2024, same $700 million threshold / Proposed $2 billion threshold"
+   ]
+  ],
+  "where": "5 (Exhibit 1, share tiles); so_v2.py 537, 539",
+  "len": "55 to 65 characters (+18%)",
+  "tags": "shorthand",
+  "note": "tile labels are one line at 6.8pt in one-third width, with room for the extra characters."
+ },
+ {
+  "id": "L-F41",
+  "section": "Section 2 (pp. 8 to 10)",
+  "cur": [
+   [
+    "",
+    "One line at $2 billion, one clock at five years, and no auditor's opinion below either."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "A $2 billion threshold, a five-year seasoning period, and no auditor's opinion below either."
+   ]
+  ],
+  "where": "8 (deck); so_v2.py 180",
+  "len": "87 to 92 characters (+6%)",
+  "tags": "shorthand, AI-tell",
+  "note": "\"one line ... one clock\" is a stylized triplet. the deck already wraps to two lines."
+ },
+ {
+  "id": "L-F42",
+  "section": "Section 2 (pp. 8 to 10)",
+  "cur": [
+   [
+    "",
+    "Large accelerated filer line / Two consecutive years above or below the line; no separate exit level"
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Large accelerated filer threshold / Two consecutive years above or below the threshold; no separate exit level"
+   ]
+  ],
+  "where": "8 (summary table, row 1 label and row 3 cell); so_v2.py 182, 188 to 189",
+  "len": "100 to 110 characters (+10%)",
+  "tags": "shorthand",
+  "note": "the row 1 label already wraps to two lines; the row 3 cell gains one word inside a three-line cell. Other cells read well."
+ },
+ {
+  "id": "L-F43",
+  "section": "Section 2 (pp. 8 to 10)",
+  "cur": [
+   [
+    "",
+    "Filer status decides three things: how fast a company must file, how much it must disclose, and whether its auditor attests to internal control. Today five overlapping labels can apply. The proposal would leave two that matter, large accelerated and non-accelerated, and add a sub-category for the smallest companies."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Filer status determines three things: how fast a company must file, how much it must disclose, and whether its auditor attests to internal control. Today five overlapping categories can apply. The proposal would keep two main categories, large accelerated and non-accelerated, and add a sub-category for the smallest companies."
+   ]
+  ],
+  "where": "8; so_v2.py 197 to 200",
+  "len": "317 to 327 characters (+3%)",
+  "tags": "register, AI-tell",
+  "note": "\"two that matter\" is glib. The colon list is a true list, so it stays."
+ },
+ {
+  "id": "L-F44",
+  "section": "Section 2 (pp. 8 to 10)",
+  "cur": [
+   [
+    "",
+    "Stays by statute; the SEC expects reliance on it to be unnecessary in most circumstances."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Retained by statute; the SEC expects reliance on it to be unnecessary in most circumstances."
+   ]
+  ],
+  "where": "9 (filer categories table); so_v2.py 220",
+  "len": "89 to 92 characters (+3%)",
+  "tags": "register",
+  "note": "the rest of the table reads well and is left alone."
+ },
+ {
+  "id": "L-F45",
+  "section": "Section 2 (pp. 8 to 10)",
+  "cur": [
+   [
+    "",
+    "A change of status therefore moves more than the attestation. A large accelerated filer that becomes non-accelerated gains 30 days on its Form 10-K and five on its Form 10-Q, ..."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "A change of status therefore affects more than the attestation. A large accelerated filer that becomes non-accelerated gains 30 days on its Form 10-K and five on its Form 10-Q, ..."
+   ]
+  ],
+  "where": "9 to 10; so_v2.py 230 to 234",
+  "len": "178 to 180 characters (+1%)",
+  "tags": "register",
+  "note": "first sentence only; the remainder reads well."
+ },
+ {
+  "id": "L-F46",
+  "section": "Section 2 (pp. 8 to 10)",
+  "cur": [
+   [
+    "",
+    "... The option to defer new accounting standards to private-company dates is limited to a filer's first five years after registration, so most large accelerated filers that convert will not have it."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "... The option to defer new accounting standards to private-company dates is limited to a filer's first five years after registration, so most large accelerated filers that change status would not have it."
+   ]
+  ],
+  "where": "10; so_v2.py 237 to 239",
+  "len": "198 to 205 characters (+4%)",
+  "tags": "hedge, register",
+  "note": "second sentence only. \"convert\" is jargon, and \"will\" assumes adoption."
+ },
+ {
+  "id": "L-F47",
+  "section": "Section 2 (pp. 8 to 10)",
+  "cur": [
+   [
+    "",
+    "The SEC estimates that large accelerated filers would fall from 2,115 to 1,146, from 35.4% to 19.2% of registrants, while still holding 93.5% of public float. **1,596 registrants** would be newly exempt from the attestation: 964 that are large accelerated filers today and 632 accelerated filers. The other five of today's large accelerated filers lack the float data to classify. The 1,596 are 60% of the registrants that obtain an attestation today."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "The SEC estimates that large accelerated filers would fall from 2,115 to 1,146, or from 35.4% to 19.2% of registrants, while still holding 93.5% of public float. In all, **1,596 registrants**, 60% of those that obtain an attestation today, would be newly exempt, comprising 964 current large accelerated filers and 632 accelerated filers. The other five of today's large accelerated filers lack the float data needed to classify them."
+   ]
+  ],
+  "where": "10; so_v2.py 240 to 246",
+  "len": "447 to 430 characters (-4%)",
+  "tags": "flow (house rule: 4 sentences to 3), AI-tell",
+  "note": "HOUSE RULE: four sentences currently. Also avoids starting a sentence with a numeral. Keep the `%s` placeholders and the `%%` escape for \"60%\". Figures unchanged."
+ },
+ {
+  "id": "L-F48",
+  "section": "Section 2 (pp. 8 to 10)",
+  "cur": [
+   [
+    "",
+    "Two groups get less than the headline suggests. Banks are counted in the 1,596, but an insured bank with $5 billion or more of total assets remains subject to the FDIC's attestation requirement under 12 CFR Part 363, a threshold in effect since January 1, 2026. The FDIC rule applies to the bank, not the holding company, so a holding company that drops the attestation may still need one for its bank; ..."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Two groups gain less than the headline suggests. Banks are counted in the 1,596, but an insured bank with $5 billion or more of total assets remains subject to the FDIC's attestation requirement under 12 CFR Part 363, a threshold in effect since January 1, 2026. The FDIC rule applies to the bank, not the holding company, so a holding company that discontinues the attestation may still need one for its bank; ..."
+   ]
+  ],
+  "where": "10; so_v2.py 247 to 252",
+  "len": "406 to 414 characters (+2%)",
+  "tags": "register, AI-tell",
+  "note": "\"get less\" and \"drops\" are colloquial. Remainder unchanged."
+ },
+ {
+  "id": "L-F49",
+  "section": "Section 2 (pp. 8 to 10)",
+  "cur": [
+   [
+    "",
+    "Foreign private issuers filing on Form 20-F or 40-F stay outside the new categories and keep today's $75 million trigger, measured on a single day."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Foreign private issuers filing on Form 20-F or 40-F remain outside the new categories and retain today's $75 million trigger, measured on a single day."
+   ]
+  ],
+  "where": "10; so_v2.py 253 to 254",
+  "len": "147 to 151 characters (+3%)",
+  "tags": "register"
+ },
+ {
+  "id": "L-F50",
+  "section": "Where the rule stands (CAL exhibit, p. 10)",
+  "cur": [
+   [
+    "",
+    "Proposal issued May 19, beside proposals on semiannual reporting (May 5) and registered offering reform (May 19) / No final rule; the docket holds 192 entries / Timing and effective date not yet set; the release proposes no interim relief"
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Proposal issued May 19, alongside proposals on semiannual reporting (May 5) and registered offering reform (May 19) / No final rule yet; the docket holds 192 entries / Timing and effective date not yet set; the proposal includes no interim relief"
+   ]
+  ],
+  "where": "10; so_v2.py 742, 745, 746",
+  "len": "238 to 246 characters (+3%)",
+  "tags": "register, shorthand",
+  "note": "each cell keeps its line count. Keep the `%s` placeholder for 192. Title, the other two cells and the source line are left as is."
+ },
+ {
+  "id": "L-F51",
+  "section": "Section 3 (pp. 11 to 12)",
+  "cur": [
+   [
+    "",
+    "A file that divides between those who pay for assurance and those who rely on it or provide it."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Comment letters that divide between those who pay for assurance and those who rely on it or provide it."
+   ]
+  ],
+  "where": "11 (deck); so_v2.py 260",
+  "len": "95 to 103 characters (+8%)",
+  "tags": "shorthand",
+  "note": "a minimal swap that keeps the deck's shape. As a full sentence: \"The letters divide between those who pay for assurance and those who rely on it or provide it.\""
+ },
+ {
+  "id": "L-F52",
+  "section": "Section 3 (pp. 11 to 12)",
+  "cur": [
+   [
+    "",
+    "As posted on October 5, 2026, the docket held 192 entries, the latest dated September 8, 2026; letters posted since are not counted here. Setting aside SEC staff memoranda, a roundtable transcript and duplicates leaves **172 distinct commenters**. Of these, 118 addressed the attestation and 54 did not mention it."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "As posted on October 5, 2026, the comment docket held 192 entries, the latest dated September 8, 2026; letters posted since are not counted here. Excluding SEC staff memoranda, a roundtable transcript and duplicates leaves **172 distinct commenters**, of whom 118 addressed the attestation and 54 did not mention it."
+   ]
+  ],
+  "where": "11; so_v2.py 261 to 264",
+  "len": "310 to 312 characters (+1%)",
+  "tags": "flow, shorthand",
+  "note": "keep `%s` placeholders."
+ },
+ {
+  "id": "L-F53",
+  "section": "Section 3 (pp. 11 to 12)",
+  "cur": [
+   [
+    "",
+    "... the method is set out in \"How we read the file\". ..."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "... the method is set out in \"How we reviewed the comment letters\". ..."
+   ]
+  ],
+  "where": "11 (Exhibit 4 source line); so_v2.py 268",
+  "len": "56 to 71 characters (+27%)",
+  "tags": "shorthand",
+  "note": "changes only if L-F61 is adopted. This is the one source-line edit in my scope (shorthand, as permitted). The rest of the source line is unchanged."
+ },
+ {
+  "id": "L-F54",
+  "section": "Section 3 (pp. 11 to 12)",
+  "cur": [
+   [
+    "",
+    "Supporters are the parties that bear the cost: companies, their associations, both exchanges and most of the securities lawyers who wrote. Those objecting are led by investors and individual commenters, joined by academics and by most of the firms and professional bodies that provide the assurance. ..."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Support came mainly from the parties that bear the cost: companies, their associations, both exchanges and most of the securities lawyers who commented. Opposition was led by investors and individual commenters, joined by academics and by most of the firms and professional bodies that provide the assurance. ..."
+   ]
+  ],
+  "where": "11; so_v2.py 277 to 281",
+  "len": "303 to 312 characters (+3%)",
+  "tags": "register, hedge",
+  "note": "\"Supporters are\" overstates (some supporters are not cost-bearers, as the rest of the paper shows). The third sentence is unchanged."
+ },
+ {
+  "id": "L-F55",
+  "section": "Section 3 (pp. 11 to 12)",
+  "cur": [
+   [
+    "",
+    "The middle is more informative than either end. Thirty-two commenters accepted that the line should move and objected to how far. Twenty of them named a different line or test."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "The middle ground is more informative than either end. Thirty-two commenters accepted that the threshold should rise but objected to its extent; 20 proposed a different threshold or test."
+   ]
+  ],
+  "where": "11; so_v2.py 282 to 283",
+  "len": "176 to 188 characters (+7%)",
+  "tags": "shorthand, AI-tell, register",
+  "note": "three stacked short sentences. If the authors want the judgment marked as theirs, start with \"In our view,\" (about +7%)."
+ },
+ {
+  "id": "L-F56",
+  "section": "Section 3 (pp. 11 to 12)",
+  "cur": [
+   [
+    "",
+    "3.1 The audit profession, grouped by position"
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "3.1 The audit profession's positions"
+   ]
+  ],
+  "where": "11; so_v2.py 285",
+  "len": "45 to 36 characters (-20%)",
+  "tags": "heading"
+ },
+ {
+  "id": "L-F57",
+  "section": "Section 3 (pp. 11 to 12)",
+  "cur": [
+   [
+    "",
+    "Eleven of the twenty largest US accounting firms, ranked by revenue in the 2026 INSIDE Public Accounting list, wrote, including the Big Four, along with one advisory firm that does not audit; the other nine filed nothing, and nor did the AICPA in its own name, the Institute of Internal Auditors, Financial Executives International or the Institute of Management Accountants. **Nine of the twelve said the exemption is, or may be, too broad; two took no side; one supported it. None endorsed the $2 billion line as drawn.**"
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Eleven of the twenty largest US accounting firms, ranked by revenue in the 2026 INSIDE Public Accounting list, commented, including the four largest, as did one advisory firm that does not audit; the other nine did not comment, nor did the AICPA in its own name, the Institute of Internal Auditors, Financial Executives International or the Institute of Management Accountants. **Nine of the twelve said the exemption is, or may be, too broad, two took no position and one supported it; none endorsed the $2 billion threshold as proposed.**"
+   ]
+  ],
+  "where": "11 to 12; so_v2.py 286 to 291",
+  "len": "519 to 536 characters (+3%)",
+  "tags": "shorthand, flow, register",
+  "note": "HOUSE RULE (borderline): \"the Big Four\" is a collective brand term for named firms, so it is replaced with \"the four largest\" and the fact is preserved. Two sentences, down from three. \"wrote, including ..., along with\" was hard to parse."
+ },
+ {
+  "id": "L-F58",
+  "section": "Section 3 (pp. 11 to 12)",
+  "cur": [
+   [
+    "",
+    "The line is too high, and here is where to put it. / The exempt group may be too wide, but we will not name a number. / There is not enough evidence to decide yet. / Let the market decide."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "The threshold is too high; an alternative is named. / The exempt group may be too wide; no number is named. / The evidence is not yet sufficient to decide. / The market should decide."
+   ]
+  ],
+  "where": "12 (table 3.1, column 1 row labels); so_v2.py 293, 299, 304, 307",
+  "len": "188 to 183 characters (-3%)",
+  "tags": "AI-tell, shorthand, register",
+  "note": "the paraphrased first-person voice (\"here is where to put it\", \"we will not name a number\") is a stylized device that reads as quotation without being one. Labels are the same length or shorter."
+ },
+ {
+  "id": "L-F59",
+  "section": "Section 3 (pp. 11 to 12)",
+  "cur": [
+   [
+    "",
+    "Row 1: Each named a fix: keep the attestation above today's $700 million line; a line of approximately $1.1 billion; an inflation adjustment of the thresholds; a revenue limit of $1.235 billion beside float; or keep it after a recent material weakness. **If the SEC takes any of these, some companies between $700 million and $2 billion of float keep the opinion.** / Row 2: A second look at how many companies fall out, a test that looks past public float alone, and refreshed PCAOB guidance on auditing internal control, which is not on the PCAOB's standard-setting agenda of September 30, 2026. **Even firms with no alternative of their own question the breadth, which adds weight to a second test beside float.** / Row 3: Ask investors first, and redo the cost estimate to count the control work an auditor must still perform. **The saving in the release may be overstated.** / Row 4: Make the attestation a choice for most issuers. **Even the one supporter suggested the SEC consider a line below $2 billion.**"
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Row 1: Each named an alternative: keep the attestation above today's $700 million threshold; a threshold of approximately $1.1 billion; an inflation adjustment of the thresholds; a revenue limit of $1.235 billion beside float; or keep it after a recent material weakness. **If the SEC adopts any of these, some companies with $700 million to $2 billion of float would keep the attestation.** / Row 2: A second look at how many companies would be exempted, a test that looks beyond public float alone, and refreshed PCAOB guidance on auditing internal control, which is not on the PCAOB's standard-setting agenda of September 30, 2026. **Even firms with no alternative of their own question the breadth, which adds weight to a second test beside float.** / Row 3: Consult investors first, and revise the cost estimate to include the control work an auditor must still perform. **The saving in the SEC's proposal may be overstated.** / Row 4: Make the attestation optional for most issuers. **Even this supporter suggested the SEC consider a threshold below $2 billion.**"
+   ]
+  ],
+  "where": "12 (table 3.1, column 3); so_v2.py 295 to 309",
+  "len": "999 to 1053 characters (+5%)",
+  "tags": "shorthand, register, hedge, AI-tell",
+  "note": "rows 3 and 4 summarize what the firms asked for, so the imperative mood is acceptable as reported request; only the casual verbs change. The row 2 bold now says whose judgment it is. Each cell stays within about one line of its current depth."
+ },
+ {
+  "id": "L-F60",
+  "section": "Section 3 (pp. 11 to 12)",
+  "cur": [
+   [
+    "",
+    "**The saving is smaller than the fee line implies.** Seven firms said the financial statement audit will absorb part of the work, because auditors must still understand controls and, in many audits, test them or do more substantive work. / **Five years is too long for a very large new listing.** Ten of the eleven audit firms questioned a flat 60-month on-ramp. / **Fewer firms will keep the capability.** One firm estimates, \"based on current data\", that only six firms would likely perform integrated audits for ten or more issuers."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "**The net saving may be smaller than the fee suggests.** Seven firms said the financial statement audit will absorb part of the work, because auditors must still understand controls and, in many audits, test them or do more substantive work. / **Five years may be too long for very large new listings.** Ten of the eleven audit firms questioned a flat 60-month on-ramp. / **Fewer firms may retain the capability.** One firm estimates, \"based on current data\", that only six firms would likely perform integrated audits for ten or more issuers."
+   ]
+  ],
+  "where": "12 (bullets); so_v2.py 312 to 318",
+  "len": "523 to 531 characters (+2%)",
+  "tags": "AI-tell, hedge",
+  "note": "the owner cited \"the saving is smaller than the fee line implies\" as a glib line. The bold leads state the firms' views as fact, but they are attributed claims. FORCE FLAG: if the authors want the first lead to land harder, use \"**Expect a smaller net saving than the fee suggests.**\" (keeps the point, drops the glib verb)."
+ },
+ {
+  "id": "L-F61",
+  "section": "Section 3 (pp. 11 to 12)",
+  "cur": [
+   [
+    "",
+    "Title: How we read the file / **How it was read.** Every entry was read and coded with AI under the direction of Uniqus professionals. All but two letters went through two independent passes, and differences were settled by re-reading the letter. Every quotation printed here was checked against the page of the filed letter."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Title: How we reviewed the comment letters / **Approach.** Every entry was read and coded with AI under the direction of Uniqus professionals. All but two letters went through two independent passes, with differences resolved by re-reading the letter. Every quotation in this paper was checked against the relevant page of the filed letter."
+   ]
+  ],
+  "where": "12 (\"How we read the file\" box); so_v2.py 319 to 323",
+  "len": "321 to 336 characters (+5%)",
+  "tags": "shorthand, heading, register",
+  "note": "the title change requires L-F53. The box sits at the foot of p. 12 with spare room, so a two-word-longer title is safe."
+ },
+ {
+  "id": "L-F62",
+  "section": "Section 3 (pp. 11 to 12)",
+  "cur": [
+   [
+    "",
+    "**What counts.** Each distinct filer, once: a letter with 115 signatories, most of them academics, and a joint letter from 49 organizations each count once, and staff memoranda of meetings are excluded. A position is only what the letter says about the attestation; a letter that never mentions Section 404(b) is recorded as silent."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "**What is counted.** Each distinct filer is counted once, so a letter with 115 signatories, most of them academics, and a joint letter from 49 organizations each count as one; staff memoranda of meetings are excluded. A position reflects only what the letter says about the attestation, and a letter that never mentions Section 404(b) is recorded as silent."
+   ]
+  ],
+  "where": "12 (box, second item); so_v2.py 324 to 327",
+  "len": "328 to 353 characters (+8%)",
+  "tags": "AI-tell, flow",
+  "note": "\"Each distinct filer, once:\" is a fragment followed by a colon-reveal."
+ },
+ {
+  "id": "L-B01",
+  "section": "Section 4 (v2 pages 13-14)",
+  "cur": [
+   [
+    "(h1)",
+    "4. Two Questions the File<br/>Leaves Open"
+   ],
+   [
+    "(NAV)",
+    "4. Two Questions the File Leaves Open"
+   ]
+  ],
+  "new": [
+   [
+    "(h1)",
+    "4. Two Questions the Comment<br/>Letters Leave Open"
+   ],
+   [
+    "(NAV)",
+    "4. Two Open Questions"
+   ]
+  ],
+  "where": "13 (and sidebar on every page); so_v2.py lines 331 (h1) and 21 (NAV)",
+  "tags": "shorthand, heading"
+ },
+ {
+  "id": "L-B02",
+  "section": "Section 4 (v2 pages 13-14)",
+  "cur": [
+   [
+    "",
+    "How much is saved, and what investors will do about it."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "What the exemption may save, and how investors may respond."
+   ]
+  ],
+  "where": "13; line 332 (deck)",
+  "tags": "register, hedge"
+ },
+ {
+  "id": "L-B03",
+  "section": "Section 4 (v2 pages 13-14)",
+  "cur": [
+   [
+    "",
+    "4.1 How much is actually saved"
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "4.1 The likely cost saving"
+   ]
+  ],
+  "where": "13; line 333 (h2)",
+  "tags": "heading"
+ },
+ {
+  "id": "L-B04",
+  "section": "Section 4 (v2 pages 13-14)",
+  "cur": [
+   [
+    "",
+    "The release cannot isolate the attestation fee, because companies disclose total audit fees only. Its own input is <b>$202,500 of outside cost and 375 internal hours</b> per annual report, a 2020 estimate adjusted for inflation."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "The SEC's proposal cannot isolate the attestation fee, because companies disclose only total audit fees. Its estimate instead rests on <b>$202,500 of outside cost and 375 internal hours</b> per annual report, a 2020 figure adjusted for inflation."
+   ]
+  ],
+  "where": "13; lines 334-336",
+  "tags": "shorthand, register (\"its own input\" is modeling jargon)"
+ },
+ {
+  "id": "L-B05",
+  "section": "Section 4 (v2 pages 13-14)",
+  "cur": [
+   [
+    "",
+    "Issuers put the figure higher. One listed company cited by Nasdaq and one biotech CFO each put it at $500,000 to $1 million a year, a range that spans the top estimates the release itself reports, $759,000 and $800,000. A governance association's member survey points the same way."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Issuers that commented put the figure higher. One listed company cited by Nasdaq and one biotech CFO each put it at $500,000 to $1 million a year, a range spanning the two highest estimates in the proposing release, $759,000 and $800,000. A governance association's member survey points the same way."
+   ]
+  ],
+  "where": "13; lines 337-339",
+  "tags": "shorthand, AI-tell (opening fragment), hedge (attributes \"issuers\" to commenters)"
+ },
+ {
+  "id": "L-B06",
+  "section": "Section 4 (v2 pages 13-14)",
+  "cur": [
+   [
+    "",
+    "Exhibit 5 — The SEC's number and the companies' number"
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Exhibit 5 — The SEC's estimate and companies' estimates"
+   ]
+  ],
+  "where": "13; line 340 (exhibit title only; source line untouched)",
+  "tags": "heading, register"
+ },
+ {
+  "id": "L-B07",
+  "section": "Section 4 (v2 pages 13-14)",
+  "cur": [
+   [
+    "",
+    "The same survey suggests the saving companies expect is smaller than the cost they report. <b>Taken together, its two top cost bands put the attestation's cost at $500,000 or more a year for 39% of respondents, but only 3% expect non-accelerated status to save them more than $500,000</b>, and 55% could not quantify the saving at all (pp. 6 and 7)."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "The same survey suggests that the saving companies expect is smaller than the cost they report. <b>Taken together, its two highest cost bands put the attestation's cost at $500,000 or more a year for 39% of respondents, yet only 3% expect non-accelerated status to save them more than $500,000</b>, while 55% could not quantify the saving at all (pp. 6 and 7)."
+   ]
+  ],
+  "where": "13; lines 352-355",
+  "tags": "flow (already reads well; minor polish only)"
+ },
+ {
+  "id": "L-B08",
+  "section": "Section 4 (v2 pages 13-14)",
+  "cur": [
+   [
+    "",
+    "Neither set of numbers answers the controller's question: what the financial statement audit will cost once the auditor no longer tests controls for an opinion of its own. <b>Only a fee proposal for a specific company answers that.</b>"
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Neither set of figures answers the controller's central question, which is what the financial statement audit will cost once the auditor no longer tests controls for a separate opinion. <b>In our view, only a company-specific fee proposal can answer it.</b>"
+   ]
+  ],
+  "where": "13; lines 356-358",
+  "tags": "AI-tell (colon-then-reveal, punchy closer), hedge"
+ },
+ {
+  "id": "L-B09",
+  "section": "Section 4 (v2 pages 13-14)",
+  "cur": [
+   [
+    "",
+    "4.2 What investors will do"
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "4.2 How investors may respond"
+   ]
+  ],
+  "where": "13; line 359 (h2)",
+  "tags": "heading, hedge"
+ },
+ {
+  "id": "L-B10",
+  "section": "Section 4 (v2 pages 13-14)",
+  "cur": [
+   [
+    "",
+    "Opponents argue that investors will charge for the missing opinion through a higher cost of capital. The figures offered trace largely to one 2009 study that measured how the cost of equity moved when auditor-tested reports showed controls weakening or being fixed; it did not study the removal of the auditor's opinion. The only study we found on the file that measured the cost of capital after an actual exemption, of issuers with revenue under $100 million in 2020, found no significant difference; it is the study the release cites on reporting quality."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Opposing commenters argue that investors will price the missing attestation into a higher cost of capital. The figures they cite trace largely to one 2009 study that measured how the cost of equity moved when auditor-tested reports showed controls weakening or being remediated; it did not study the removal of the auditor's opinion. The only study we found in the comment letters that measured the cost of capital after an actual exemption, of issuers with revenue under $100 million in 2020, found no significant difference; the SEC cites the same study on reporting quality."
+   ]
+  ],
+  "where": "13-14; lines 360-365",
+  "tags": "shorthand, register (\"charge for the missing opinion\", \"being fixed\")",
+  "len": "+6 words on a paragraph that straddles p13/p14; p14 has slack."
+ },
+ {
+  "id": "L-B11",
+  "section": "Section 4 (v2 pages 13-14)",
+  "cur": [
+   [
+    "",
+    "Companies are not sure either. In the same survey, 12% of respondents said they would likely keep the attestation voluntarily and 15% were confident they would drop it. <b>52% said it would depend on investor demand.</b>"
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Companies appear undecided too. In the same survey, 12% of respondents said they would likely retain the attestation voluntarily and 15% were confident they would discontinue it; <b>52% said it would depend on investor demand.</b>"
+   ]
+  ],
+  "where": "14; lines 366-368",
+  "tags": "AI-tell (fragment opener; sentence starting with a numeral), register (\"drop it\")"
+ },
+ {
+  "id": "L-B12",
+  "section": "Section 4 (v2 pages 13-14)",
+  "cur": [
+   [
+    "",
+    "Both can be true. The first describes the price of the opinion. The second describes what the opinion is for."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "In our view, both can be true. The first speaks to the attestation's cost; the second, to its purpose."
+   ]
+  ],
+  "where": "14; lines 377-378 (objective box)",
+  "tags": "AI-tell (three stacked short sentences), shorthand, register"
+ },
+ {
+  "id": "L-B13",
+  "section": "Section 5 (v2 page 15)",
+  "cur": [
+   [
+    "",
+    "5. Where the Final Rule<br/>Could Move"
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "5. How the Final Rule<br/>Could Change"
+   ]
+  ],
+  "where": "15; line 383 (h1), NAV line 22",
+  "tags": "heading (optional; current heading is acceptable)"
+ },
+ {
+  "id": "L-B14",
+  "section": "Section 5 (v2 page 15)",
+  "cur": [
+   [
+    "",
+    "The Commission can adopt the proposal as written. If it moves, the file shows where."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "The Commission may adopt the proposal as written. If it changes course, the comment letters suggest where."
+   ]
+  ],
+  "where": "15; line 384 (deck)",
+  "tags": "shorthand, AI-tell (clipped second sentence), hedge"
+ },
+ {
+  "id": "L-B15",
+  "section": "Section 5 (v2 page 15)",
+  "cur": [
+   [
+    "",
+    "Exhibit 6 — Where the line could sit, and how many companies stay in scope"
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Exhibit 6 — Alternative thresholds and the companies that would remain in scope"
+   ]
+  ],
+  "where": "15; line 385 (exhibit title; source line untouched)",
+  "tags": "shorthand, heading"
+ },
+ {
+  "id": "L-B16",
+  "section": "Section 5 (v2 page 15)",
+  "cur": [
+   [
+    "",
+    "Element | What the file says | What to watch for"
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Element | What commenters said | What to watch for"
+   ]
+  ],
+  "where": "15; line 392 (table header)",
+  "tags": "shorthand"
+ },
+ {
+  "id": "L-B17",
+  "section": "Section 5 (v2 page 15)",
+  "cur": [
+   [
+    "",
+    "<b>55 of the 74</b> commenters that addressed it rejected or questioned a flat 60 months"
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "<b>55 of the 74</b> commenters that addressed it rejected or questioned a uniform 60 months"
+   ]
+  ],
+  "where": "15; lines 393-395 (row 1, middle cell)",
+  "tags": "register"
+ },
+ {
+  "id": "L-B18",
+  "section": "Section 5 (v2 page 15)",
+  "cur": [
+   [
+    "",
+    "Float as the only test"
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Float as the sole test"
+   ]
+  ],
+  "where": "15; line 396 (row 2, first cell)",
+  "tags": "register"
+ },
+ {
+  "id": "L-B19",
+  "section": "Section 5 (v2 page 15)",
+  "cur": [
+   [
+    "",
+    "Crossing a line in 2026 | One association and two issuers asked for interim relief; none is proposed | A grace period, or status held until the final rule"
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Crossing a threshold in 2026 | One association and two issuers asked for interim relief; none is proposed | A grace period, or status held until the final rule"
+   ]
+  ],
+  "where": "15; lines 401-402 (row 4)",
+  "tags": "shorthand, register"
+ },
+ {
+  "id": "L-B20",
+  "section": "Section 5 (v2 page 15)",
+  "cur": [
+   [
+    "",
+    "Left at $75 million; law firms asked for parity, now or in the foreign issuer rulemaking"
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Kept at $75 million; law firms asked for parity, now or in the foreign issuer rulemaking"
+   ]
+  ],
+  "where": "15; lines 403-404 (row 5, middle cell)",
+  "tags": "AI-tell (subjectless fragment), flow"
+ },
+ {
+  "id": "L-B21",
+  "section": "Section 5 (v2 page 15)",
+  "cur": [
+   [
+    "",
+    "4 commenters asked that companies disclose whether an attestation was obtained"
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Four commenters asked that companies disclose whether an attestation was obtained"
+   ]
+  ],
+  "where": "15; lines 405-406 (row 6, middle cell)",
+  "tags": "register (numeral at start of a cell; \"Four\" matches DECISIONS #7)"
+ },
+ {
+  "id": "L-B22",
+  "section": "Section 5 (v2 page 15)",
+  "cur": [
+   [
+    "",
+    "The on-ramp is where the file comes closest to agreement; a change there would not touch a seasoned mid-market company, but a second test or a lower line would. A count of letters shows where the arguments are, not how the vote will go."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "The on-ramp is where commenters come closest to agreement; a change there would not affect a seasoned mid-market company, whereas a second test or a lower threshold would. A count of letters shows where the arguments lie rather than how the Commission will vote."
+   ]
+  ],
+  "where": "15; lines 408-410",
+  "tags": "shorthand, AI-tell (\"not X, not Y\" closer), register"
+ },
+ {
+  "id": "L-B23",
+  "section": "Section 6 (v2 pages 16-17)",
+  "cur": [
+   [
+    "",
+    "Will this bring the mid-market back? It lowers the cost of staying public. The decision to go public turns on other things."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "The proposal would lower the cost of remaining public, but the decision to go public depends largely on other factors."
+   ]
+  ],
+  "where": "16; lines 415-416 (deck)",
+  "tags": "AI-tell (rhetorical question, stacked sentences), register"
+ },
+ {
+  "id": "L-B24",
+  "section": "Section 6 (v2 pages 16-17)",
+  "cur": [
+   [
+    "",
+    "The proposal's stated purpose is to encourage more companies to go and stay public. The backdrop is real. The number of companies listed on US exchanges fell from 8,090 in 1996 to 3,908 in 2025."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "The proposal's stated purpose is to encourage more companies to go and stay public. The decline is well documented, with the number of companies listed on US exchanges falling from 8,090 in 1996 to 3,908 in 2025."
+   ]
+  ],
+  "where": "16; lines 417-418",
+  "tags": "AI-tell (three-word sentence), flow"
+ },
+ {
+  "id": "L-B25",
+  "section": "Section 6 (v2 pages 16-17)",
+  "cur": [
+   [
+    "",
+    "Exhibit 7 — Fewer listed companies, but no shortage of capital"
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Exhibit 7 — Fewer listed companies alongside ample IPO capital"
+   ]
+  ],
+  "where": "16; line 419 (exhibit title; SRC7 untouched)",
+  "tags": "AI-tell (\"X, but Y\"), heading. Optional; current title is serviceable."
+ },
+ {
+  "id": "L-B26",
+  "section": "Section 6 (v2 pages 16-17)",
+  "cur": [
+   [
+    "",
+    "The release does not claim to know the effect. It gives no estimate of additional listings and says the “magnitude and direction of the effect is difficult to predict”. It also notes that approximately 88% of 2024 IPOs, excluding funds and direct listings, were by emerging growth companies, which already have the exemption for up to five years."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "The SEC is careful not to quantify the effect. The proposing release gives no estimate of additional listings and states that the “magnitude and direction of the effect is difficult to predict”. It also notes that approximately 88% of 2024 IPOs, excluding funds and direct listings, were by emerging growth companies, which already have the exemption for up to five years."
+   ]
+  ],
+  "where": "16; lines 421-424",
+  "tags": "shorthand, register"
+ },
+ {
+  "id": "L-B27",
+  "section": "Section 6 (v2 pages 16-17)",
+  "cur": [
+   [
+    "",
+    "The file does not supply the missing evidence. Supporters assert that listings will follow and none estimates how many. The academic whose study the release cites for the JOBS Act's effect on IPOs is supportive of the five-year on-ramp but cautious about widening the exemption, and wrote:"
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "The comment letters do not fill that gap. Supporters argue that listings will follow, but none estimates how many. The academic whose study the proposing release cites on the JOBS Act's effect on IPOs supports the five-year on-ramp but is cautious about widening the exemption, and wrote:"
+   ]
+  ],
+  "where": "16; lines 425-427",
+  "tags": "shorthand, AI-tell (blunt opener), register"
+ },
+ {
+  "id": "L-B28",
+  "section": "Section 6 (v2 pages 16-17)",
+  "cur": [
+   [
+    "",
+    "Much of the research the release cites points elsewhere: abundant private capital and small companies choosing to be acquired. Three of the authors of one of those studies, updating it in 2025 with a co-author, date the US listing gap to 1999, three years before Sarbanes-Oxley, and find that it widened only slowly through 2023."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Much of the research the SEC cites attributes the decline to other factors, notably abundant private capital and small companies choosing to be acquired. Three of the authors of one of those studies, updating it in 2025 with a co-author, date the US listing gap to 1999, three years before Sarbanes-Oxley, and find that it widened only slowly through 2023."
+   ]
+  ],
+  "where": "16-17; lines 432-435",
+  "tags": "shorthand, AI-tell (colon-then-reveal)"
+ },
+ {
+  "id": "L-B29",
+  "section": "Section 6 (v2 pages 16-17)",
+  "cur": [
+   [
+    "",
+    "The count of listed companies points the same way: by the end of 2001, before the Act, it had fallen from 8,090 to 6,177, which is 46% of the whole decline to 2025."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "The listing data are consistent with this. By the end of 2001, before the Act took effect, the count had fallen from 8,090 to 6,177, or 46% of the total decline to 2025."
+   ]
+  ],
+  "where": "17; lines 436-437",
+  "tags": "AI-tell (colon-then-reveal), flow",
+  "note": "\"before the Act took effect\" is a touch more precise than \"before the Act\" (enacted July 2002); if the owner prefers no added words, keep \"before the Act\"."
+ },
+ {
+  "id": "L-B30",
+  "section": "Section 6 (v2 pages 16-17)",
+  "cur": [
+   [
+    "",
+    "Capital itself is not short. US IPOs raised $147.5 billion in the first nine months of 2026, more than in all of 2021, and two offerings account for $101.5 billion of it."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Capital also remains available. US IPOs raised $147.5 billion in the first nine months of 2026, more than in all of 2021, though two offerings account for $101.5 billion of it."
+   ]
+  ],
+  "where": "17; lines 438-439",
+  "tags": "AI-tell (punchy fragment), hedge (\"although\" makes the concentration caveat do its work)"
+ },
+ {
+  "id": "L-B31",
+  "section": "Section 6 (v2 pages 16-17)",
+  "cur": [
+   [
+    "",
+    "6.1 What it does for a mid-market company"
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "6.1 Implications for mid-market companies"
+   ]
+  ],
+  "where": "17; line 441 (h2)",
+  "tags": "heading"
+ },
+ {
+  "id": "L-B32",
+  "section": "Section 6 (v2 pages 16-17)",
+  "cur": [
+   [
+    "",
+    "For a listed company below $2 billion of float that has the attestation today, the benefit is direct: a lower audit bill and less risk of being moved across a line by its share price."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "For a listed company below $2 billion of float that has the attestation today, the benefits are direct: lower audit fees and less risk of a share price move carrying it across a threshold."
+   ]
+  ],
+  "where": "17; lines 442-443",
+  "tags": "shorthand, register (\"audit bill\")"
+ },
+ {
+  "id": "L-B33",
+  "section": "Section 6 (v2 pages 16-17)",
+  "cur": [
+   [
+    "",
+    "For a private company deciding whether to list, the change is narrower than it looks. A candidate small enough to be an emerging growth company already has five years. What is new is relief for the candidate too large for that status, and one audit firm described the companies between its preferred line and $2 billion as generally “large and seasoned public companies rather than the private companies weighing whether to enter the public markets” (comment letter, p. 4)."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "For a private company considering a listing, the change is narrower than it may appear. A candidate small enough to qualify as an emerging growth company already has up to five years of relief. The new relief is for candidates too large for that status, and one audit firm described the companies between its preferred threshold and $2 billion as generally “large and seasoned public companies rather than the private companies weighing whether to enter the public markets” (comment letter, p. 4)."
+   ]
+  ],
+  "where": "17; lines 444-448",
+  "tags": "shorthand, AI-tell (\"What is new is...\"), register",
+  "note": "\"up to five years\" matches the paper's own wording at lines 424 and 532; not a change of fact."
+ },
+ {
+  "id": "L-B34",
+  "section": "Section 6 (v2 pages 16-17)",
+  "cur": [
+   [
+    "",
+    "Two effects cut the other way, and both come from the one data set on the file built on the companies affected (Professors Rajgopal, Wong and Zhao, comment letter, pp. 2 to 4). The auditor reported ineffective controls at <b>12.8%</b> ... against 3.8% above $2 billion. The typical newly exempted company is followed by <b>4 to 6 analysts</b>, against 12 for companies that stay in scope."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Two findings point the other way, both from the only data set in the comment letters built on the affected companies (Professors Rajgopal, Wong and Zhao, comment letter, pp. 2 to 4). Auditors reported ineffective controls at <b>12.8%</b> ... compared with 3.8% above $2 billion. The typical newly exempted company is followed by <b>4 to 6 analysts</b>, compared with 12 for companies that remain in scope."
+   ]
+  ],
+  "where": "17; lines 449-453",
+  "tags": "shorthand, register (\"cut the other way\")",
+  "note": "the middle of sentence 2 is unchanged (\"of companies with $250 million to $700 million of float and <b>8.5%</b> at $700 million to $2 billion,\")."
+ },
+ {
+  "id": "L-B35",
+  "section": "Section 6 (v2 pages 16-17)",
+  "cur": [
+   [
+    "",
+    "For foreign issuers the proposal works against its own purpose: a foreign private issuer on Form 20-F would still need the auditor's opinion from $75 million of worldwide float, unless it is an emerging growth company, while a domestic competitor is exempt up to $2 billion, and the SEC is holding back relief until it completes the eligibility review it opened in June 2025. The release concedes this “could result in competitive disadvantages”. One international law firm wrote of the wider gap between the domestic and foreign issuer regimes: “We believe this gap will make U.S. listings significantly less attractive for foreign issuers, thereby reducing the investment opportunities available to U.S. investors.” (Linklaters LLP, comment letter, p. 2)."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "For foreign issuers, the proposal may work against its own purpose, since a foreign private issuer on Form 20-F would still need the auditor's attestation from $75 million of worldwide float, unless it is an emerging growth company, while a domestic competitor would be exempt up to $2 billion; the SEC is deferring relief until it completes the eligibility review it opened in June 2025. The proposing release acknowledges this “could result in competitive disadvantages”. One international law firm wrote of the wider gap between the domestic and foreign issuer regimes: “We believe this gap will make U.S. listings significantly less attractive for foreign issuers, thereby reducing the investment opportunities available to U.S. investors” (Linklaters LLP, comment letter, p. 2)."
+   ]
+  ],
+  "where": "17; lines 454-461",
+  "tags": "hedge, shorthand, register (\"concedes\", \"holding back\"), AI-tell (colon-then-reveal), flow (double full stop after the quotation; dropping the closing stop inside the quotation before a parenthetical citation is standard and does not alter the quoted words)"
+ },
+ {
+  "id": "L-B36",
+  "section": "Section 6 (v2 pages 16-17)",
+  "cur": [
+   [
+    "",
+    "Uniqus Point of View: an option to be priced"
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Uniqus Point of View: an option, not a saving"
+   ]
+  ],
+  "where": "17; line 462 (POV title)",
+  "tags": "heading. Optional alternative that avoids the contrast: \"Uniqus Point of View: valuing the exemption as an option\"."
+ },
+ {
+  "id": "L-B37",
+  "section": "Section 6 (v2 pages 16-17)",
+  "cur": [
+   [
+    "",
+    "<b>The proposal lowers the cost of staying public. It does little to change the decision to go public</b>, because most companies making that decision are exempt already and the reasons they stay private are untouched: ample private capital, valuation and litigation exposure."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "<b>In our view, the proposal lowers the cost of staying public but does little to change the decision to go public.</b> Most companies making that decision are already exempt, and the main reasons companies stay private, namely ample private capital, valuation and litigation exposure, are unaffected."
+   ]
+  ],
+  "where": "17; lines 463-466 (POV para 1)",
+  "tags": "AI-tell (stacked short sentences; colon-then-list reveal), hedge (POV is explicitly attributed)"
+ },
+ {
+  "id": "L-B38",
+  "section": "Section 6 (v2 pages 16-17)",
+  "cur": [
+   [
+    "",
+    "For a mid-market company the attraction of a US listing rests on valuation, liquidity and research coverage. A control record that holds up under outside testing supports all three."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "For a mid-market company, the appeal of a US listing rests on valuation, liquidity and research coverage, and a control record that withstands independent testing supports all three."
+   ]
+  ],
+  "where": "17; lines 467-468 (POV para 2)",
+  "tags": "AI-tell (short closer sentence), flow"
+ },
+ {
+  "id": "L-B39",
+  "section": "Section 6 (v2 pages 16-17)",
+  "cur": [
+   [
+    "",
+    "Treat the exemption as an option to be priced, not a saving to be booked."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "The exemption is best treated as an option to be priced, not a saving to be booked."
+   ]
+  ],
+  "where": "17; line 469 (POV kicker)",
+  "tags": "register (imperative), AI-tell (\"not X\")"
+ },
+ {
+  "id": "L-B40",
+  "section": "Section 7 (v2 pages 18-21)",
+  "cur": [
+   [
+    "(h1)",
+    "7. What To Do Before the<br/>Final Rule"
+   ],
+   [
+    "(NAV)",
+    "7. What To Do Before the Final Rule"
+   ]
+  ],
+  "new": [
+   [
+    "(h1)",
+    "7. Actions to Consider<br/>Before a Final Rule"
+   ],
+   [
+    "(NAV)",
+    "7. Actions Before a Final Rule"
+   ]
+  ],
+  "where": "18 (and sidebar); line 473 (h1), NAV line 23",
+  "tags": "heading, register"
+ },
+ {
+  "id": "L-B41",
+  "section": "Section 7 (v2 pages 18-21)",
+  "cur": [
+   [
+    "",
+    "For the person who runs the SOX program: eight decisions, in order."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Eight decisions for SOX program leaders, in the order they arise."
+   ]
+  ],
+  "where": "18; line 474 (deck)",
+  "tags": "AI-tell (colon-then-reveal), register"
+ },
+ {
+  "id": "L-B42",
+  "section": "Section 7 (v2 pages 18-21)",
+  "cur": [
+   [
+    "",
+    "Start by locating the company. Three questions decide where it lands, and only one of the three outcomes calls for work now."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "The first step is to locate the company. Three questions decide where it lands, and only one of the three outcomes calls for action now."
+   ]
+  ],
+  "where": "18; lines 475-476",
+  "tags": "register (imperative), AI-tell (clipped opener)"
+ },
+ {
+  "id": "L-B43",
+  "section": "Section 7 (v2 pages 18-21)",
+  "cur": [
+   [
+    "",
+    "Exhibit 8 — Where a company lands under the proposal"
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Exhibit 8 — Determining filer status under the proposal"
+   ]
+  ],
+  "where": "18; line 598 (EX8 title; source line untouched)",
+  "tags": "heading, register"
+ },
+ {
+  "id": "L-B44",
+  "section": "Section 7 (v2 pages 18-21)",
+  "cur": [
+   [
+    "",
+    "The auditor's attestation continues from $75 million of worldwide float, unless an emerging growth company."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "The auditor's attestation continues from $75 million of worldwide float, unless it is an emerging growth company."
+   ]
+  ],
+  "where": "18; lines 583-584 (EX8 row 1 outcome text)",
+  "tags": "flow (elliptical clause)"
+ },
+ {
+  "id": "L-B45",
+  "section": "Section 7 (v2 pages 18-21)",
+  "cur": [
+   [
+    "",
+    "The attestation is no longer required. Management's assessment continues."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "The attestation is no longer required; management's assessment continues."
+   ]
+  ],
+  "where": "18; line 587 (EX8 row 2 outcome text)",
+  "tags": "AI-tell (stacked short sentences). Minor."
+ },
+ {
+  "id": "L-B46",
+  "section": "Section 7 (v2 pages 18-21)",
+  "cur": [
+   [
+    "",
+    "Nothing changes. The attestation continues. If no, it is a non-accelerated filer."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "No change; the attestation continues. If not, it is a non-accelerated filer."
+   ]
+  ],
+  "where": "18; line 590 (EX8 row 3 outcome text)",
+  "tags": "AI-tell (stacked fragments), flow (\"If no\" is ambiguous in a ladder whose labels are yes/no)",
+  "len": "+4 words in a three-line cell; if the cell must not grow, use \"No change; the attestation continues. If not, it is a non-accelerated filer.\""
+ },
+ {
+  "id": "L-B47",
+  "section": "Section 7 (v2 pages 18-21)",
+  "cur": [
+   [
+    "",
+    "<b>Until a final rule takes effect, today's lines still apply.</b> A company that crossed a line on June 30, 2026 needs the attestation for fiscal 2026 unless a final rule takes effect before it files that annual report: under the proposed transition, status is reassessed as of the fiscal year-end before the effective date, and relief applies from the next filing. <em>The release proposes no interim relief.</em>"
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "<b>Until a final rule takes effect, the current thresholds still apply.</b> A company that crossed a threshold on June 30, 2026 needs the attestation for fiscal 2026 unless a final rule takes effect before it files that annual report; under the proposed transition, status is reassessed as of the fiscal year-end before the effective date, and relief applies from the next filing. <em>The proposing release provides no interim relief.</em>"
+   ]
+  ],
+  "where": "18; lines 593-597 (EX8 footer band)",
+  "tags": "shorthand, flow (colon to semicolon)"
+ },
+ {
+  "id": "L-B48",
+  "section": "Section 7 (v2 pages 18-21)",
+  "cur": [
+   [
+    "",
+    "Eight decisions for the SOX program leader / Eight decisions for the SOX program leader, continued"
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Eight decisions for SOX program leaders (single header once the two boxes are merged into one numbered list)"
+   ]
+  ],
+  "where": "19; line 478-479 (rec box header)",
+  "tags": "heading"
+ },
+ {
+  "id": "L-B49",
+  "section": "Section 7 (v2 pages 18-21)",
+  "cur": [
+   [
+    "",
+    "<b>Fix your status under both rule sets.</b> Compute public float at the last two second-quarter ends on today's single-day basis and on the proposed 10-trading-day average, and count your months of reporting history."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "<b>Confirm filer status under the current and proposed rules.</b> Compute public float at the last two second-quarter ends on today's single-day basis and on the proposed 10-trading-day average, and confirm the months of reporting history."
+   ]
+  ],
+  "where": "19; lines 606-607",
+  "tags": "register (imperative, \"fix\"), heading"
+ },
+ {
+  "id": "L-B50",
+  "section": "Section 7 (v2 pages 18-21)",
+  "cur": [
+   [
+    "",
+    "<b>If you crossed a line at June 30, 2026, plan on the current rules.</b> Three commenters asked for interim relief and the release offers none. Relief for fiscal 2026 would come only if a final rule takes effect before you file, so watch the effective date."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "<b>Plan on the current rules if the company crossed a threshold at June 30, 2026.</b> Three commenters asked for interim relief, but the proposal offers none. Relief for fiscal 2026 would come only if a final rule takes effect before the company files, so the effective date warrants monitoring."
+   ]
+  ],
+  "where": "19; lines 608-610",
+  "tags": "shorthand, register (imperative; second person)"
+ },
+ {
+  "id": "L-B51",
+  "section": "Section 7 (v2 pages 18-21)",
+  "cur": [
+   [
+    "",
+    "<b>List who else expects the opinion.</b> A bank of $5 billion of assets or more stays under the FDIC's rule even if its holding company is exempt. In the governance survey, 97% named investor expectations and analyst coverage among the factors that would most influence whether they use the new accommodations, and 65% debt or equity offering requirements. Ask lenders, rating agencies and your largest holders before deciding."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "<b>Identify who else relies on the attestation.</b> A bank with $5 billion or more of assets stays under the FDIC's rule even if its holding company is exempt. In the governance survey, 97% named investor expectations and analyst coverage among the factors that would most influence whether they use the new accommodations, and 65% debt or equity offering requirements; lenders, rating agencies and the largest holders are worth consulting before deciding."
+   ]
+  ],
+  "where": "19; lines 611-614",
+  "tags": "shorthand, register (imperative), house rule (4 sentences today counting the bold lead; 3 proposed)",
+  "note": "\"$5 billion of assets or more\" to \"$5 billion or more of assets\" is word order only."
+ },
+ {
+  "id": "L-B52",
+  "section": "Section 7 (v2 pages 18-21)",
+  "cur": [
+   [
+    "",
+    "<b>Price the saving from a fee proposal, not from the release.</b> Ask the auditor what the audit costs without an opinion on controls; seven firms told the SEC the financial statement audit will absorb part of the work."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "<b>Base the saving on a fee proposal rather than the SEC's average.</b> Ask the auditor what the audit would cost without an opinion on internal control; seven firms told the SEC the financial statement audit will absorb part of the work."
+   ]
+  ],
+  "where": "19; lines 615-616",
+  "tags": "shorthand, register (\"price the saving\"), AI-tell (\"not X\")"
+ },
+ {
+  "id": "L-B53",
+  "section": "Section 7 (v2 pages 18-21)",
+  "cur": [
+   [
+    "",
+    "<b>Take keep, drop or replace to the audit committee with evidence.</b> Material weaknesses and restatements in the last three years, turnover in finance, system changes under way, and who owns the shares."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "<b>Take the retain, discontinue or replace decision to the audit committee with evidence.</b> That means material weaknesses and restatements in the last three years, finance turnover, system changes under way and the shareholder base."
+   ]
+  ],
+  "where": "19; lines 617-618",
+  "tags": "register, AI-tell (verbless second sentence), shorthand (\"keep, drop or replace\")"
+ },
+ {
+  "id": "L-B54",
+  "section": "Section 7 (v2 pages 18-21)",
+  "cur": [
+   [
+    "",
+    "<b>Set the evidence standard for an assessment nobody else tests.</b> Scope, sample sizes, tester independence and deficiency evaluation need to be written down, because the auditor's file will no longer supply them."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "<b>Define the evidence standard for an assessment no one else will test.</b> Scope, sample sizes, tester independence and deficiency evaluation should be documented, because the auditor's work papers will no longer provide them."
+   ]
+  ],
+  "where": "19; lines 619-620",
+  "tags": "register, shorthand (\"the auditor's file\")"
+ },
+ {
+  "id": "L-B55",
+  "section": "Section 7 (v2 pages 18-21)",
+  "cur": [
+   [
+    "",
+    "<b>Decide what you will say.</b> Beyond the cover-page check box, the proposal requires no statement on whether an attestation was obtained. Four commenters asked for one. Have the answer ready for the first investor who asks."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "<b>Decide how to explain the choice.</b> Beyond the cover-page check box, the proposal requires no statement on whether an attestation was obtained, though four commenters asked for one. An answer should be ready for the first investor who asks."
+   ]
+  ],
+  "where": "19; lines 621-622",
+  "tags": "register, AI-tell (stacked short sentences), house rule (4 sentences today counting the bold lead; 3 proposed)"
+ },
+ {
+  "id": "L-B56",
+  "section": "Section 7 (v2 pages 18-21)",
+  "cur": [
+   [
+    "",
+    "<b>Keep what is hard to rebuild.</b> Control documentation, IT general control evidence and trained people. A company whose float stays at or above $2 billion for two consecutive years is back in scope."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "<b>Preserve what is hard to rebuild.</b> This includes control documentation, IT general control evidence and trained staff. A company whose float stays at or above $2 billion for two consecutive years is back in scope."
+   ]
+  ],
+  "where": "19; lines 623-624",
+  "tags": "register, AI-tell (verbless fragment)"
+ },
+ {
+  "id": "L-B57",
+  "section": "Section 7 (v2 pages 18-21)",
+  "cur": [
+   [
+    "",
+    "7.1 Keep, drop or replace"
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "7.1 Retain, discontinue or replace"
+   ]
+  ],
+  "where": "19; line 481 (h2)",
+  "tags": "heading, register (no nav impact; h2)"
+ },
+ {
+  "id": "L-B58",
+  "section": "Section 7 (v2 pages 18-21)",
+  "cur": [
+   [
+    "",
+    "Option | When it fits | What you give up"
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Option | When it may fit | What is given up"
+   ]
+  ],
+  "where": "19-20; line 482 (table header)",
+  "tags": "register, hedge"
+ },
+ {
+  "id": "L-B59",
+  "section": "Section 7 (v2 pages 18-21)",
+  "cur": [
+   [
+    "",
+    "<b>Keep the integrated audit voluntarily</b> | A recent material weakness or restatement; a capital raise ahead; lenders who ask | The saving, in whole"
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "<b>Retain the integrated audit voluntarily</b> | A recent material weakness or restatement; a planned capital raise; lenders that require it | The full cost saving"
+   ]
+  ],
+  "where": "19; lines 483-484 (row 1)",
+  "tags": "AI-tell (quip cell), register"
+ },
+ {
+  "id": "L-B60",
+  "section": "Section 7 (v2 pages 18-21)",
+  "cur": [
+   [
+    "",
+    "<b>Drop it and rely on management's assessment</b> | Stable business and systems; a clean control record; concentrated ownership | An independent test of your own conclusion"
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "<b>Discontinue it and rely on management's assessment</b> | Stable business and systems; a clean control record; concentrated ownership | Independent testing of management's conclusion"
+   ]
+  ],
+  "where": "19; lines 485-486 (row 2)",
+  "tags": "register (\"drop it\"; second person)"
+ },
+ {
+  "id": "L-B61",
+  "section": "Section 7 (v2 pages 18-21)",
+  "cur": [
+   [
+    "",
+    "<b>Replace it with something scaled</b> | A program that wants outside challenge, from internal audit or a periodic outside review, without an annual opinion | Simplicity: the substitute has to be designed and explained"
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "<b>Replace it with a scaled alternative</b> | A program that seeks independent challenge, from internal audit or a periodic external review, without an annual opinion | Simplicity, since the alternative must be designed and explained"
+   ]
+  ],
+  "where": "20; lines 487-489 (row 3)",
+  "tags": "AI-tell (colon quip), register"
+ },
+ {
+  "id": "L-B62",
+  "section": "Section 7 (v2 pages 18-21)",
+  "cur": [
+   [
+    "",
+    "7.2 When management's assessment stands alone"
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "7.2 Relying on management's assessment alone"
+   ]
+  ],
+  "where": "20; line 491 (h2)",
+  "tags": "heading. Optional; current heading reads well."
+ },
+ {
+  "id": "L-B63",
+  "section": "Section 7 (v2 pages 18-21)",
+  "cur": [
+   [
+    "",
+    "The second option carries a known risk. An advisory firm that does not audit told the SEC that without the external attestation ..."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "The second option carries a recognized risk. An advisory firm that does not audit told the SEC that without the external attestation ..."
+   ]
+  ],
+  "where": "20; lines 492-493 (first sentences only; quotations unchanged)",
+  "tags": "register. Rest of the paragraph reads well."
+ },
+ {
+  "id": "L-B64",
+  "section": "Section 7 (v2 pages 18-21)",
+  "cur": [
+   [
+    "(header)",
+    "The auditor's work | With the attestation | Without it"
+   ],
+   [
+    "(row 2 label)",
+    "Testing that controls operate"
+   ],
+   [
+    "(row 2, col 3)",
+    "Where the auditor relies on controls or cannot get enough evidence without them"
+   ],
+   [
+    "(row 5, col 3)",
+    "Goes in writing to management and the audit committee; <b>no public report</b>"
+   ],
+   [
+    "(row 6, col 3)",
+    "<b>Unchanged</b>: the certification is now the main formal check on what management discloses"
+   ]
+  ],
+  "new": [
+   [
+    "(header)",
+    "The auditor's work | With the attestation | Without the attestation"
+   ],
+   [
+    "(row 2 label)",
+    "Testing whether controls operate"
+   ],
+   [
+    "(row 2, col 3)",
+    "Where the auditor relies on controls or cannot obtain enough evidence without them"
+   ],
+   [
+    "(row 5, col 3)",
+    "Communicated in writing to management and the audit committee; <b>no public report</b>"
+   ],
+   [
+    "(row 6, col 3)",
+    "<b>Unchanged</b>; the certification becomes the main formal check on what management discloses"
+   ]
+  ],
+  "where": "20; lines 629, 632-633, 638-639, 641-642 (AUDITOR_TABLE)",
+  "tags": "register, AI-tell (colon reveal). Rows 1, 3 and 4 read well; source note untouched."
+ },
+ {
+  "id": "L-B65",
+  "section": "Section 7 (v2 pages 18-21)",
+  "cur": [
+   [
+    "",
+    "Dropping the opinion does not take the auditor out of internal control. The last two rows are the substance of the change: management's conclusion becomes the only public conclusion on internal control, so the evidence behind it has to stand on its own."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Discontinuing the attestation does not remove the auditor from internal control. The substance of the change lies in the last two rows: management's conclusion becomes the only public conclusion on internal control, so the evidence behind it must stand on its own."
+   ]
+  ],
+  "where": "20; lines 499-501",
+  "tags": "shorthand, register (\"dropping the opinion\"), AI-tell (colon-then-reveal)"
+ },
+ {
+  "id": "L-B66",
+  "section": "Section 7 (v2 pages 18-21)",
+  "cur": [
+   [
+    "",
+    "Cross-border implications — the United States, India and the Middle East"
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Cross-border implications: the United States, India and the Middle East"
+   ]
+  ],
+  "where": "20; line 502 (practice box header)",
+  "tags": "AI-tell (em dash). Exhibit titles keep the house \"Exhibit N —\" form."
+ },
+ {
+  "id": "L-B67",
+  "section": "Section 7 (v2 pages 18-21)",
+  "cur": [
+   [
+    "",
+    "<b>Foreign private issuers.</b> A company from India or the Gulf that lists in the US on Form 20-F keeps the auditor's opinion from $75 million of worldwide float unless it is an emerging growth company, or it can switch to domestic forms to obtain the relief. A domestic filer of the same size would be exempt up to $2 billion."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "<b>Foreign private issuers.</b> A company from India or the Gulf that lists in the US on Form 20-F remains subject to the auditor's attestation from $75 million of worldwide float unless it is an emerging growth company, although it may switch to domestic forms to obtain the relief. A domestic filer of the same size would be exempt up to $2 billion."
+   ]
+  ],
+  "where": "20-21; lines 649-651",
+  "tags": "shorthand (\"keeps the auditor's opinion\" reads as a choice), flow"
+ },
+ {
+  "id": "L-B68",
+  "section": "Section 7 (v2 pages 18-21)",
+  "cur": [
+   [
+    "",
+    "<b>India already asks for more.</b> Section 143(3)(i) of the Companies Act, 2013 has the auditor report on whether internal financial controls with reference to financial statements are adequate and operating effectively, for listed and unlisted companies alike. Private companies are exempt if they are one person or small companies, or have turnover under INR 50 crore or borrowings under INR 25 crore, and are up to date with their filings (MCA notification G.S.R. 583(E), June 13, 2017). A US parent that drops its attestation may still have an Indian subsidiary whose auditor reports on controls every year."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "<b>India already requires more.</b> Under Section 143(3)(i) of the Companies Act, 2013, the auditor reports on whether internal financial controls with reference to financial statements are adequate and operating effectively, for listed and unlisted companies alike; private companies are exempt if they are one person or small companies, or have turnover under INR 50 crore or borrowings under INR 25 crore, and are up to date with their filings (MCA notification G.S.R. 583(E), June 13, 2017). A US parent that discontinues its attestation may therefore still have an Indian subsidiary whose auditor reports on controls every year."
+   ]
+  ],
+  "where": "21; lines 652-656",
+  "tags": "register (\"asks\", \"drops\"), house rule (4 sentences counting the bold lead; 3 proposed)",
+  "note": "the semicolon join makes sentence 2 long. If the owner does not count the bold lead as a sentence, keep the current split and change only the verbs (\"requires\", \"Under ... the auditor reports\", \"discontinues\")."
+ },
+ {
+  "id": "L-B69",
+  "section": "Section 7 (v2 pages 18-21)",
+  "cur": [
+   [
+    "",
+    "<b>The UAE is moving the other way.</b> ... The UAE's capital markets regulator requires listed public joint-stock companies to obtain an external auditor's opinion on internal control over financial reporting for 2026, unpublished, and to publish it with the board's internal control report from financial year 2027."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "<b>The UAE is moving in the opposite direction.</b> ... The UAE's capital markets regulator requires listed public joint-stock companies to obtain, but not yet publish, an external auditor's opinion on internal control over financial reporting for 2026, and to publish it with the board's internal control report from financial year 2027."
+   ]
+  ],
+  "where": "21; lines 657-661",
+  "tags": "flow (\"for 2026, unpublished,\" is clipped). The Abu Dhabi sentence is unchanged."
+ },
+ {
+  "id": "L-B70",
+  "section": "Section 7 (v2 pages 18-21)",
+  "cur": [
+   [
+    "",
+    "<b>Saudi Arabia asks the board and the audit committee.</b> The board reviews ... (CMA Corporate Governance Regulations, Articles 21, 87 and 88). A group reporting in more than one of these markets should build one control framework to the most demanding requirement it faces, not to the US floor."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "<b>Saudi Arabia looks to the board and the audit committee.</b> The board reviews ... (CMA Corporate Governance Regulations, Articles 21, 87 and 88). In our view, a group reporting in more than one of these markets should build one control framework to the most demanding requirement it faces, rather than to the US minimum."
+   ]
+  ],
+  "where": "21; lines 662-666",
+  "tags": "register (\"asks\"), hedge, AI-tell (\"not X\")"
+ },
+ {
+  "id": "L-B71",
+  "section": "How Uniqus Can Help (v2 page 22)",
+  "cur": [
+   [
+    "",
+    "This section is for four readers, each with a decision to take. If your company will remain a large accelerated filer, or is an emerging growth company in its first five years, nothing here changes your program. We do not audit, so no audit fee of ours depends on whether a company keeps the attestation."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "We support companies at each of the four decision points below. For a company that will remain a large accelerated filer, or an emerging growth company in its first five years, the proposal does not change the SOX program. Because we do not provide audits, we have no audit fee at stake in whether a company retains the attestation."
+   ]
+  ],
+  "where": "22; lines 507-510",
+  "tags": "register (services-page voice), flow",
+  "note": "the last sentence keeps the factual claim exactly (no audit fee depends on the choice) and does not add an \"independence\" claim."
+ },
+ {
+  "id": "L-B72",
+  "section": "How Uniqus Can Help (v2 page 22)",
+  "cur": [
+   [
+    "",
+    "In or out? | Before fiscal 2026 audit planning closes | <b>Filer status memo, one week.</b> Public float on both measurement bases for the last two years, months of reporting history, FDIC and contractual overlays, and your expected status under the proposal and under the two alternatives the file most supports."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Confirming filer status | Before fiscal 2026 audit planning closes | <b>Filer status memo, one week.</b> An analysis of public float on both measurement bases for the last two years, months of reporting history, FDIC and contractual requirements, and your expected status under the proposal and the two alternatives commenters most support."
+   ]
+  ],
+  "where": "22; lines 675-678",
+  "tags": "AI-tell (question as title), shorthand, register (\"overlays\")"
+ },
+ {
+  "id": "L-B73",
+  "section": "How Uniqus Can Help (v2 page 22)",
+  "cur": [
+   [
+    "",
+    "Keep, drop or replace? | Before the audit committee approves the next audit plan | <b>Audit committee decision paper, three weeks.</b> An evidence file on control history, what investors and lenders expect, a fee comparison built from your auditor's own proposal, and a recommendation the committee can minute."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Retain, discontinue or replace | Before the audit committee approves the next audit plan | <b>Audit committee decision paper, three weeks.</b> An evidence base on control history and investor and lender expectations, a fee comparison built from your auditor's own proposal, and a recommendation the committee can record in its minutes."
+   ]
+  ],
+  "where": "22; lines 679-682",
+  "tags": "AI-tell (question title), register, shorthand"
+ },
+ {
+  "id": "L-B74",
+  "section": "How Uniqus Can Help (v2 page 22)",
+  "cur": [
+   [
+    "",
+    "What stands behind a management-only assessment? | Before the first year without the opinion | <b>404(a) evidence standard, six weeks.</b> Scoping, testing and deficiency evaluation written to the SEC's 2007 guidance for management, with a tester-independence model and a first-year test plan."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Supporting a management-only assessment | Before the first year without the auditor's attestation | <b>404(a) evidence standard, six weeks.</b> Scoping, testing and deficiency evaluation documented in line with the SEC's 2007 guidance for management, together with a tester-independence model and a first-year test plan."
+   ]
+  ],
+  "where": "22; lines 684-686",
+  "tags": "AI-tell (question title), shorthand, register"
+ },
+ {
+  "id": "L-B75",
+  "section": "How Uniqus Can Help (v2 page 22)",
+  "cur": [
+   [
+    "",
+    "Foreign private issuer or multi-market group? | Before your next Form 20-F | <b>Cross-border control map, four weeks.</b> One framework mapped to Section 404, India's internal financial controls reporting and UAE or Saudi requirements, showing where a single test serves all of them."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Foreign private issuers and multi-market groups | Before your next Form 20-F | <b>Cross-border control map, four weeks.</b> A single framework mapped to Section 404, India's internal financial controls reporting and UAE or Saudi requirements, identifying where one test can satisfy several regimes."
+   ]
+  ],
+  "where": "22; lines 687-690",
+  "tags": "AI-tell (question title), register"
+ },
+ {
+  "id": "L-B76",
+  "section": "How Uniqus Can Help (v2 page 22)",
+  "cur": [
+   [
+    "",
+    "To start any of these, write to <b>Sandip Khetan</b>, Co-Founder and Global Head of Accounting &amp; Reporting Consulting, through www.uniqus.com."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "To discuss any of these, please contact <b>Sandip Khetan</b>, Co-Founder and Global Head of Accounting &amp; Reporting Consulting, through www.uniqus.com."
+   ]
+  ],
+  "where": "22; lines 512-513",
+  "tags": "register"
+ },
+ {
+  "id": "L-B77",
+  "section": "How Uniqus Can Help (v2 page 22)",
+  "cur": [
+   [
+    "",
+    "Uniqus Consultech is an AI and global tech-enabled consulting company that specializes in Accounting &amp; Reporting Consulting, Governance, Risk &amp; Compliance, Sustainability &amp; Climate Consulting, Tech Consulting, and Valuations. The Company is co-founded by consulting veterans Jamil Khatri and Sandip Khetan and backed by marquee investors such as Nexus Venture Partners, Sorin Investments, and UST. Uniqus has a global team of 800 professionals, led by 100 Partners and Directors, across 13 offices in the USA, the Middle East, and India. The company serves more than 400 clients, including marquee names in each of the markets it operates in."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "Uniqus Consultech is a global, AI- and technology-enabled consulting firm specializing in Accounting &amp; Reporting Consulting, Governance, Risk &amp; Compliance, Sustainability &amp; Climate Consulting, Tech Consulting and Valuations. The firm was co-founded by consulting veterans Jamil Khatri and Sandip Khetan and is backed by investors including Nexus Venture Partners, Sorin Investments and UST. Uniqus has a global team of 800 professionals, led by 100 partners and directors, across 13 offices in the United States, the Middle East and India, and serves more than 400 clients, including leading organizations in each of its markets."
+   ]
+  ],
+  "where": "22; lines 694-700",
+  "tags": "register (\"marquee\" twice reads as hype), flow (\"The Company is co-founded\" tense; \"The Company\"/\"The company\" capitalization; Oxford comma used here but not elsewhere in the paper; \"USA\" vs \"US\" elsewhere), house rule (4 sentences today; 3 proposed)",
+  "note": "About text is often corporate boilerplate fixed by marketing. All numbers kept; confirm with the owner whether the standard boilerplate may be edited. If not, the minimum fix is \"The Company is co-founded\" to \"The Company was co-founded\" and \"The company serves\" to \"The Company serves\"."
+ },
+ {
+  "id": "L-B78",
+  "section": "How Uniqus Can Help (v2 page 22)",
+  "cur": [
+   [
+    "",
+    "...is based on the SEC’s proposing release, the public comment file, regulatory materials..."
+   ]
+  ],
+  "new": [
+   [
+    "",
+    "...is based on the SEC’s proposing release, the public comment letters, regulatory materials..."
+   ]
+  ],
+  "where": "22; lines 701-702",
+  "tags": "shorthand. Rest of the disclaimer is legal text and reads appropriately; no other change."
+ }
+]
