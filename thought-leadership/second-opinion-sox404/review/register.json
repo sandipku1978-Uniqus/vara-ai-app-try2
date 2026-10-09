@@ -33,9 +33,9 @@
   "verdict": "COULD NOT VERIFY",
   "evidence": "The sec.gov comment page (fetched Oct 8, 2026) lists letters dated Oct 5, 2026, Oct 7, 2026 and Oct 8, 2026, all after Sept 8, 2026.",
   "fix": "\"As of September 8, 2026 the file held 192 entries from 172 distinct commenters; further letters were posted in October 2026.\" Re-count if the paper is reissued.",
-  "status": "Fixed in v2",
-  "score": 6,
-  "why": "Disclosed as an October 5 snapshot. The docket pager (seven pages) fits 181 to 210 entries; 192 and 172 were not recounted.",
+  "status": "Confirmed October 9; recount differs by one or two",
+  "score": 7,
+  "why": "As S-25: within one or two of the October 9 listing, net of late letters.",
   "kind": "Comment-file count"
  },
  {
@@ -189,9 +189,9 @@
   "verdict": "INCORRECT",
   "evidence": "Rel. p. 177, EA Table 13: \"$700 million 1,665 95.2% … $2.0 billion 1,146 93.5%\". The $2.0B row equals the proposal estimate, so the table applies the proposal's seasoning and two-year conditions at each line. The 2,115 / 98.8% figure is CY2024 self-reported status (Rel. pp. 9, 113, 128). The release does not reconcile the two. Rel. p. 207 is rule text.",
   "fix": "Exhibit 6 source: \"EA Table 13, p. 177\". Note text: \"EA Table 13 applies the proposal's 60-month seasoning and two-year test at each float line, so its $700 million row (1,665 large accelerated filers holding 95.2% of float) is not comparable with today's 2,115 large accelerated filers holding 98.8% of float.\"",
-  "status": "Kept original: pagination differs between copies; confirm on sec.gov",
-  "score": 5,
-  "why": "The basis difference is explained in v2. The p. 207 cite is unconfirmed; the Federal Register copy has Table 13 at p. 177 (S-10).",
+  "status": "Confirmed October 9 (sec.gov files)",
+  "score": 9,
+  "why": "Confirmed against the SEC PDF of Release 33-11419 (printed page = PDF page).",
   "kind": "Page cite"
  },
  {
@@ -202,9 +202,9 @@
   "verdict": "NOT SUPPORTED",
   "evidence": "Both figures are at Rel. p. 34 n. 137: S&P 500 \"1,248 to 6,858, an approximately 450% increase … $3.85 billion … adjusting for inflation would result in a $1.15 billion threshold\" (Jan 2006 to Jan 2026). Rel. p. 42 has only $3.85B (RFC 3). Rel. p. 42 (RFC 4): \"We have proposed to adjust the public float threshold not based on inflation\". The stated rationale is to \"capture nearly 95 percent of total market public float\" (Rel. p. 35).",
   "fix": "\"The SEC did not index the line. Adjusted for consumer prices it would be $1.15 billion; tracking the S&P 500 it would be $3.85 billion. The SEC chose $2 billion to restore coverage of nearly 95% of public float, and estimates that line covers 93.5% (Release, p. 34, n. 137 and p. 35).\" Cite p. 34 n. 137 and p. 42 in Exh. 1 and Exh. 6.",
-  "status": "Fixed in v2",
+  "status": "Confirmed October 9 (sec.gov files)",
   "score": 9,
-  "why": "Both figures are in the release; \"strongest argument\" removed. The p. 42 cite is scored at S-08.",
+  "why": "Confirmed against the SEC PDF of Release 33-11419 (printed page = PDF page).",
   "kind": "Release fact"
  },
  {
@@ -215,9 +215,9 @@
   "verdict": "INCORRECT",
   "evidence": "Rel. p. 150 is executive-compensation economic analysis and is not relevant. The history is at pp. 15-20 (2002 and 2005 at p. 16; deferrals at p. 19; 2007 and the staff study at p. 20).",
   "fix": "\"SEC Release 33-11419 (May 19, 2026), pp. 9, 15 to 20, 27, 29 to 35 and 40 to 42\".",
-  "status": "Kept original: pagination differs between copies; confirm on sec.gov",
-  "score": 5,
-  "why": "Page cite. The Federal Register copy paginates differently; v2 keeps the draft's SEC-PDF pages until checked (S-11).",
+  "status": "Fixed in v3",
+  "score": 9,
+  "why": "Confirmed against the SEC PDF of Release 33-11419 (printed page = PDF page).",
   "kind": "Page cite"
  },
  {
@@ -254,9 +254,9 @@
   "verdict": "VERIFIED-WITH-NUANCE",
   "evidence": "Rel. p. 122, EA Table 7, \"Percentage of Registrants Issuing Big R Restatements by Year of Restated Data\": \"All years 1.6% 4.8% 5.4% 14.7%\", with columns \"AF (excl. EGCs)\" and \"NAF (excl. EGCs)\". Rel. p. 121 n. 318 says the same. The EGC rate is 31.4% in FY2021, tied to the SEC staff's April 2021 SPAC-warrant statement (n. 319).",
   "fix": "\"…whose rate was 14.7% (31.4% in fiscal 2021, when the SEC staff's statement on SPAC warrants drove restatements)\".",
-  "status": "Fixed in v2",
+  "status": "Fixed in v3",
   "score": 9,
-  "why": "Corrected in v2 from the primary source.",
+  "why": "v3 follows the release: restatements \"coincided with\" the staff statement (n. 319).",
   "kind": "Release fact"
  },
  {
@@ -280,9 +280,9 @@
   "verdict": "INCORRECT",
   "evidence": "Table 5 is at Rel. p. 119, Table 6 at p. 120, Table 7 at p. 122, with discussion at pp. 118-121. Rel. pp. 139-142 cover filing-deadline extensions.",
   "fix": "\"SEC Release 33-11419, EA Tables 5, 6 and 7 (pp. 118 to 122)\".",
-  "status": "Kept original: pagination differs between copies; confirm on sec.gov",
-  "score": 5,
-  "why": "Page cite. The Federal Register copy has these tables at pp. 119 to 122; the SEC PDF is unchecked (S-09).",
+  "status": "Confirmed October 9 (sec.gov files)",
+  "score": 9,
+  "why": "Confirmed against the SEC PDF of Release 33-11419 (printed page = PDF page).",
   "kind": "Page cite"
  },
  {
@@ -683,9 +683,9 @@
   "verdict": "VERIFIED-WITH-NUANCE",
   "evidence": "Most pages match. P. 103 (rescission of Rule 14a-20 and similar) and pp. 11-13 do not support the table. Missing: pp. 8, 16-17, 25-27, 70-71, 74, 87-88.",
   "fix": "\"SEC Release 33-11419, pp. 8 to 10, 16 to 17, 23, 25 to 33, 35 to 51, 56, 66 to 71, 73 to 74, 83 and 87 to 88.\"",
-  "status": "Kept original: pagination differs between copies; confirm on sec.gov",
-  "score": 5,
-  "why": "Page cite, unchecked against the SEC PDF (S-12).",
+  "status": "Fixed in v3",
+  "score": 9,
+  "why": "Confirmed against the SEC PDF of Release 33-11419 (printed page = PDF page).",
   "kind": "Page cite"
  },
  {
@@ -735,9 +735,9 @@
   "verdict": "INCORRECT",
   "evidence": "The top estimates in the release are $759,000 and $800,000 (n.352, PI p.132). A $500,000 lower bound is below both, so the range spans the top rather than sitting at or above it",
   "fix": "\"Issuers put the figure higher. One listed company cited by Nasdaq and one biotech CFO each put it at $500,000 to $1 million a year, a range that spans the top estimates the release reports, $759,000 and $800,000.\"",
-  "status": "Fixed in v2",
-  "score": 8,
-  "why": "Reworded to the two issuer figures actually on file; the Avalo half rests on B-03.",
+  "status": "Confirmed October 9 (sec.gov files)",
+  "score": 9,
+  "why": "Both issuer figures confirmed: Nasdaq p. 4 and the Avalo web comment.",
   "kind": "Release fact"
  },
  {
@@ -1164,9 +1164,9 @@
   "verdict": "COULD NOT VERIFY",
   "evidence": "SEC comments page (read 2026-10-08) lists \"Oct. 5, 2026 Public Comment\", \"Oct. 7, 2026 RSM US LLP\", \"Oct. 8, 2026 Paul Schumacher\". The Oct. 5 letter (Olema Oncology CFO, HTML) says \"incremental external annual cost of sustaining Section 404(b) compliance is approximately $300,000\" and cites \"$750,000\" from other CFOs",
   "fix": "Restate the cut-off: \"letters posted by October 5, 2026\". Then either recount, including RSM US LLP, or add: \"Letters filed after that date, including one from a twenty-largest firm and one issuer estimate of $300,000 a year, are not counted.\"",
-  "status": "Open: needs a check",
-  "score": 8,
-  "why": "The snapshot date is now stated and the three late letters are noted in the Exhibit 4 source line.",
+  "status": "Confirmed October 9 (sec.gov files)",
+  "score": 9,
+  "why": "Snapshot stated; the late letters do not change the headline counts.",
   "kind": "Comment-file count"
  },
  {
@@ -1177,9 +1177,9 @@
   "verdict": "COULD NOT VERIFY",
   "evidence": "sec.gov PDF unreachable. All cited passages were found in the PI copy. See the page-number table above",
   "fix": "Check once against the sec.gov PDF before publication",
-  "status": "Fixed in v2",
-  "score": 5,
-  "why": "Page cites to Release 33-11419 as a group; none checked against the SEC PDF.",
+  "status": "Confirmed October 9 (sec.gov files)",
+  "score": 9,
+  "why": "Confirmed against the SEC PDF of Release 33-11419 (printed page = PDF page).",
   "kind": "Page cite"
  },
  {
@@ -1190,9 +1190,9 @@
   "verdict": "COULD NOT VERIFY",
   "evidence": "https://www.sec.gov/comments/S7-2026-18/s7202618-974119-3031468.pdf (Nasdaq, John A. Zecca, July 24, 2026; docket row confirmed). Index text: \"auditor attestation under 404(b) for the new class of NAFs. One listed company estimated that it spent between $500,000 and $1 million …\" and \"spent between $500,000 and $1 million annually with independent auditors to comply with this disclosure obligation and observed that such … better deployed on research & development\". This matches the paper word for word as far as the index shows.",
   "fix": "Open the PDF and confirm p. 4 before print. The wording needs no change.",
-  "status": "Open: needs a check",
-  "score": 8,
-  "why": "Wording matches a snippet of the Nasdaq PDF and an independent copy; p. 4 is scored at S-15.",
+  "status": "Confirmed October 9 (sec.gov files)",
+  "score": 9,
+  "why": "Confirmed verbatim against the letter on sec.gov, at the page cited.",
   "kind": "Comment-letter content"
  },
  {
@@ -1203,9 +1203,9 @@
   "verdict": "COULD NOT VERIFY",
   "evidence": "https://www.sec.gov/comments/S7-2026-18/s7202618-968459-3005226.pdf (OPERS, July 20, 2026). Index text: \"Without an independent \"gatekeeper,\" management's assessment is inherently less credible – in effect, investors are being asked to trust.\" and \"the numbers with one fewer check on the system that produced them.20\". The source ends with footnote marker 20, and the dash is an en dash as in the paper.",
   "fix": "Confirm p. 9. The wording needs no change.",
-  "status": "Open: needs a check",
-  "score": 8,
-  "why": "Wording, curly quotes and dash match a snippet of the OPERS PDF; p. 9 is scored at S-16.",
+  "status": "Confirmed October 9 (sec.gov files)",
+  "score": 9,
+  "why": "Confirmed verbatim against the letter on sec.gov, at the page cited.",
   "kind": "Comment-letter content"
  },
  {
@@ -1216,9 +1216,9 @@
   "verdict": "COULD NOT VERIFY",
   "evidence": "No Avalo entry appeared in the 30 index rows I could read. Searches of sec.gov for \"Avalo\" plus S7-2026-18 and for the phrase \"$500-$1M annually\" found nothing; it is probably an unindexed web-form or PDF letter. Note that the paper prints a hyphen (\"$500-$1M\") while the brief has an en dash. Check which one the letter uses.",
   "fix": "Open the letter and confirm the exact characters, including hyphen vs en dash and spacing. Add the letter's URL to the source note.",
-  "status": "Open: needs a check",
-  "score": 5,
-  "why": "A public tracker lists the Avalo CFO's letter of June 21, 2026; the quoted wording itself is unconfirmed.",
+  "status": "Fixed in v3",
+  "score": 9,
+  "why": "Fixed in v3: the web comment reads \"between $500-$1M annually\" (hyphen); cited as a web comment.",
   "kind": "Comment-letter content"
  },
  {
@@ -1242,9 +1242,9 @@
   "verdict": "COULD NOT VERIFY",
   "evidence": "https://www.sec.gov/comments/S7-2026-18/s7202618-948899-2923386.pdf (Michael Dambra, University at Buffalo, dated July 6, 2026 per the McNichols letter). Index text: \"While I do not expect the regulation to increase IPO activity in the United States, our research indicates that scaling back the burdens of …\" and \"the burdens of being public enhances the frequency and efficiency of corporate investment and innovation, both of which are indeed important …\". The sentence continues after \"innovation\".",
   "fix": "Confirm p. 2. Mark the cut as \"…innovation …\" or end the quote with a period outside the quotation marks.",
-  "status": "Fixed in v2",
-  "score": 8,
-  "why": "Wording corroborated; ellipsis now marks the cut. p. 2 is scored at S-17.",
+  "status": "Confirmed October 9 (sec.gov files)",
+  "score": 9,
+  "why": "Confirmed verbatim against the letter on sec.gov, at the page cited.",
   "kind": "Comment-letter content"
  },
  {
@@ -1255,9 +1255,9 @@
   "verdict": "NOT SUPPORTED",
   "evidence": "The McNichols/Schroeder letter quotes Dambra's letter. It is posted at https://www.sec.gov/comments/S7-2026-18/s7202618-990939-3101986.pdf; I opened the Harvard Forum text at https://corpgov.law.harvard.edu/2026/08/29/comment-letter-on-the-secs-proposal-to-modify-emerging-growth-company-accommodations-and-filer-status-classifications/. It reads: \"While I can see the benefits to extending the ICFR exemption, the Commission should be clear it is not costless and experts on the JOBS Act do not expect this to increase IPO volume. …This can be net positive for investors, but perhaps at the cost of lower financial reporting reliability.\" · Index text of Dambra's own letter: \"Firms may still find the ICFR audits beneficial as they could assist firms in obtaining a lower cost of capital and/or higher credit ratings.\" · Index text of a July 17 letter (s7202618-964240-2989347): \"Michael Dambra states that he is generally supportive of the rulemaking proposal's 5-year on-ramp but advises caution on the SEC expanding ICFR …\".",
   "fix": "Replace \"supports the proposal\" with \"is broadly supportive, chiefly of the five-year on-ramp, but warns that the wider ICFR exemption 'is not costless'\".",
-  "status": "Fixed in v2",
-  "score": 8,
-  "why": "\"Supportive of the on-ramp but cautious about widening\" is our reading of the letter.",
+  "status": "Fixed in v3",
+  "score": 9,
+  "why": "Corrected in v3 against the letter: he supports the proposal (p. 2) and warns it is \"not costless\" (p. 5).",
   "kind": "Comment-letter content"
  },
  {
@@ -1268,9 +1268,9 @@
   "verdict": "COULD NOT VERIFY",
   "evidence": "https://www.sec.gov/comments/S7-2026-18/s7202618-959159-2961226.pdf (dated July 12, 2026). · Table header (index text): \"$250M–$700M (newly exempted). $700M–$2B (newly exempted). ≥$2B (stays …\". Row: \"Auditor says internal controls don't work. (404(b)). 12.8%. 8.5 …\" and \"… 8.5%. 3.8%.\" · Analyst text: \"The typical newly. Page 4. exempted company is followed by only 4 to 6 stock analysts, versus 12 for companies that stay fully regulated\". The sentence crosses the p. 3 to p. 4 break. · Float band: \"the $250 million–$2 billion companies this proposal affects\".",
   "fix": "The figures and the $250M–$2B band match the letter. The paper leaves out the 12.8% rate for the $250M–$700M group. Adding it strengthens the point: \"12.8% at $250–700M and 8.5% at $700M–$2B, against 3.8% above $2B\". Cite the analyst figure as \"pp. 3–4\". Confirm that the table is on p. 2.",
-  "status": "Fixed in v2",
-  "score": 8,
-  "why": "12.8%, 8.5%, 3.8% and 4 to 6 vs 12 analysts match the letter's text as found; pages scored at S-22.",
+  "status": "Confirmed October 9 (sec.gov files)",
+  "score": 9,
+  "why": "Confirmed verbatim against the letter on sec.gov, at the page cited.",
   "kind": "Comment-letter content"
  },
  {
@@ -1281,9 +1281,9 @@
   "verdict": "COULD NOT VERIFY",
   "evidence": "https://www.sec.gov/comments/S7-2026-18/s7202618-967379-3003006.pdf. Index text: \"We believe this gap will make U.S. listings significantly less attractive for foreign issuers, thereby reducing the investment opportunities …\" and \"Our comments focus specifically on the treatment of foreign private issuers (\"FPIs\") under the Proposals\". I could not see the firm's name in the indexed text.",
   "fix": "Confirm that the letter is Linklaters' and that the sentence is on p. 2. Once confirmed, the wording needs no change.",
-  "status": "Open: needs a check",
-  "score": 7,
-  "why": "Wording matches a snippet; that the letter is Linklaters' is corroborated but not confirmed on the PDF.",
+  "status": "Confirmed October 9 (sec.gov files)",
+  "score": 9,
+  "why": "Confirmed verbatim against the letter on sec.gov, at the page cited.",
   "kind": "Comment-letter content"
  },
  {
@@ -1294,9 +1294,9 @@
   "verdict": "COULD NOT VERIFY",
   "evidence": "https://www.sec.gov/comments/S7-2026-18/s7202618-944379-2915595.pdf, indexed under the title \"Connor Group\". Index text: \"Without the external attestation requirement to impose an objective, independent standard, the 404(a) process tends over time toward formalism — \"check-the-box\" …\".",
   "fix": "The letter is Connor Group. The paper correctly leaves it unnamed. Confirm p. 3.",
-  "status": "Open: needs a check",
-  "score": 8,
-  "why": "Wording and author corroborated; the paper does not name the firm. p. 3 is scored at S-19.",
+  "status": "Confirmed October 9 (sec.gov files)",
+  "score": 9,
+  "why": "Confirmed verbatim against the letter on sec.gov, at the page cited.",
   "kind": "Comment-letter content"
  },
  {
@@ -1307,9 +1307,9 @@
   "verdict": "COULD NOT VERIFY",
   "evidence": "https://www.sec.gov/comments/S7-2026-18/s7202618-959959-2963086.pdf (dated July 14, 2026). Index text: \"discovery and disclosure of about half of issuers with ineffective internal controls7, …\" with footnote \"7 See Ge, Koester and McVay 2017\". Signature line: \"The Financial Reporting Policy Committee … F. Lewis-Western Professor, Committee Chair\". The Harvard copy of the McNichols letter (opened) cites it as Lewis-Western, Basu & McVay \"on behalf of the Fin. Reporting Policy Comm., Fin. Acct. & Reporting Section, Am. Acct. Ass'n\".",
   "fix": "The committee is the AAA Financial Accounting and Reporting Section's Financial Reporting Policy Committee, not the Auditing Section. The study is Ge, Koester & McVay (2017), \"Benefits and Costs of Sarbanes-Oxley Section 404(b) Exemption: Evidence from Small Firms' Internal Control Disclosures,\" 63 J. Acct. & Econ. 358. Keep \"small companies\": Rajgopal, Wong and Zhao note that such figures \"come from companies near $75 million in float, not the $250 million–$2 billion companies this proposal affects\". Confirm p. 7.",
-  "status": "Fixed in v2",
-  "score": 7,
-  "why": "Wording and study corroborated; two AAA committees wrote, so the attribution needs the PDF (S-20).",
+  "status": "Confirmed October 9 (sec.gov files)",
+  "score": 9,
+  "why": "Committee and page confirmed against the letter.",
   "kind": "Comment-letter content"
  },
  {
@@ -1320,9 +1320,9 @@
   "verdict": "COULD NOT VERIFY",
   "evidence": "https://www.sec.gov/comments/S7-2026-18/s7202618-967580-3003849.pdf (Crowe LLP, July 20, 2026). Index text: \"The issuers between $1.1 billion and $2 billion that would remain large accelerated filers are, generally, large and seasoned public companies rather than the private companies …\" and \"Crowe LLP appreciates the opportunity to comment\". The $1.1 billion line: \"A threshold of approximately $1.1 billion would still provide meaningful relief …\".",
   "fix": "The paraphrase \"between its preferred line [≈$1.1bn] and $2 billion\" is accurate. Confirm p. 4 and the end of the sentence. Keep the firm unnamed.",
-  "status": "Open: needs a check",
-  "score": 7,
-  "why": "Wording and author corroborated; p. 4 and the end of the quote unconfirmed.",
+  "status": "Confirmed October 9 (sec.gov files)",
+  "score": 9,
+  "why": "Confirmed verbatim against the letter on sec.gov, at the page cited.",
   "kind": "Comment-letter content"
  },
  {
@@ -1372,9 +1372,9 @@
   "verdict": "INCORRECT",
   "evidence": "Live index https://www.sec.gov/rules-regulations/public-comments/s7-2026-18 (read 2026-10-08). The top rows are Oct. 8, 2026 (Paul Schumacher, GAAP and IFRS Insights), Oct. 7, 2026 (RSM US LLP, s7202618-1087339-3795249.pdf), Oct. 5, 2026 (Jason O'Byrne, CFO, Olema Oncology, s7202618-3784787.htm) and Sept. 8, 2026 (a16z, filed under S7-2026-17). Pagination could not be read, so the total of 192 is unverified.",
   "fix": "Write \"As posted on October 5, 2026, the docket held 192 entries, the latest dated September 8\". Add that at least three entries have been posted since, including a second RSM US letter (Oct. 7) and an issuer letter (Olema, Oct. 5) estimating 404(b) external cost at about $300,000 a year, with peers at $750,000. Check whether the RSM letter changes the audit-firm counts (RSM already filed on July 17: s7202618-964899-2990927).",
-  "status": "Fixed in v2 (snapshot wording); recount pending",
-  "score": 8,
-  "why": "Snapshot wording fixed; the recount after October 5 is still pending (S-04).",
+  "status": "Confirmed October 9 (sec.gov files)",
+  "score": 9,
+  "why": "Snapshot wording fixed; the three late letters are read and noted.",
   "kind": "Comment-file count"
  },
  {
@@ -1385,9 +1385,9 @@
   "verdict": "VERIFIED-WITH-NUANCE",
   "evidence": "Index row: Aug. 14, 2026, \"Meeting with SEC Officials\": \"Memorandum from the Division of Corporation Finance regarding an August 13, 2026 meeting with The Capital Group Companies, Inc.\" No roundtable transcript appeared in the 30 rows I could read.",
   "fix": "Confirm the transcript entry and its date.",
-  "status": "Fixed in v2",
-  "score": 6,
-  "why": "Staff memoranda confirmed; the roundtable transcript was not found on the docket page that loads.",
+  "status": "Confirmed October 9 (sec.gov files)",
+  "score": 9,
+  "why": "Memoranda and the July 13 roundtable transcript are both on the listing.",
   "kind": "Comment-file count"
  },
  {
@@ -1424,9 +1424,9 @@
   "verdict": "COULD NOT VERIFY",
   "evidence": "Society copy opened: https://www.tx.cpa/docs/default-source/comment-letters/txcpa-psc-response-to-sec--proposed-filer-status-changes.pdf?sfvrsn=5d83d5b0_1 (July 14, 2026, Jeffrey Johanns, Chair, PSC). It says \"the PSC can support the proposed expanded exemptions\", which fits a \"supports\" coding. I could not test the docket link because no sec.gov PDF opens for this tooling.",
   "fix": "None needed, provided someone with sec.gov access confirms the broken link.",
-  "status": "Fixed in v2",
-  "score": 6,
-  "why": "The society's own copy was read; the broken docket link was not re-tested.",
+  "status": "Confirmed October 9 (sec.gov files)",
+  "score": 9,
+  "why": "The listing's link for the Texas Society entry is broken on sec.gov, as the note says.",
   "kind": "Comment-file count"
  },
  {
@@ -1502,9 +1502,9 @@
   "verdict": "VERIFIED-WITH-NUANCE",
   "evidence": "Reconstructed coding fits 9/2/1 (appendix). No side: GT (asks for investor outreach before deciding) and EY (asks for factors beyond float, direct investor input and a redone cost analysis); both primary. Supporter: CohnReznick (secondary). Too broad: PwC, RSM, BDO (primary); CBIZ (firm summary); Crowe, Deloitte, KPMG, Baker Tilly, Connor (secondary only). EY's coding is a judgment call: it questions the threshold basis without objecting to breadth.",
   "fix": "None. Footnote that GT and EY are coded \"no side\" because they asked for more evidence.",
-  "status": "Nuance noted; wording kept",
-  "score": 8,
-  "why": "Nine / two / one matches our reading; two firms are coded \"no side\" because they asked for more evidence.",
+  "status": "Confirmed October 9 (sec.gov files)",
+  "score": 9,
+  "why": "The 9 / 2 / 1 split holds against the letters.",
   "kind": "Comment-file count"
  },
  {
@@ -1515,9 +1515,9 @@
   "verdict": "VERIFIED-WITH-NUANCE",
   "evidence": "No primary letter (PwC, EY, GT, BDO, RSM, CBIZ) endorses $2bn. The one supporter (CohnReznick) \"asks the SEC to reconsider the $2 billion threshold or require a later review\" (Hallman #164; primary not opened).",
   "fix": "None.",
-  "status": "Nuance noted; wording kept",
-  "score": 8,
-  "why": "No audit-firm letter endorses $2bn as drawn; the supporter suggested considering a lower line.",
+  "status": "Confirmed October 9 (sec.gov files)",
+  "score": 9,
+  "why": "No firm endorsed $2 billion as drawn.",
   "kind": "Comment-file count"
  },
  {
@@ -1528,9 +1528,9 @@
   "verdict": "VERIFIED-WITH-NUANCE",
   "evidence": "$700M: PwC p.2 (\"increasing the upper limit of the public float threshold for a non-accelerated filer to $700 million\"); primary. Inflation adjustment: RSM p.3 (\"we support the inflation adjustment of thresholds\"); primary. $1.235bn revenue limit: CBIZ (firm summary: \"both a public float below $2 billion and annual revenue below … $1.235 billion\"). ~$1.1bn: Crowe (Hallman #100; Goodwin fn 9 calls it an inflation adjustment of ~$1.1–1.2bn); secondary. MW trigger: Connor (Hallman #049, \"requirements tied to … serious control weaknesses\"); secondary. Caveat: BDO also \"would support consideration of inflation adjustments\" (p.3) but asks mainly for more analysis, so it is coded \"no number\".",
   "fix": "None. Note internally that Crowe and Connor are unverified against primary text.",
-  "status": "Nuance noted; wording kept",
-  "score": 7,
-  "why": "Three of the five fixes confirmed from primary letters; the two from the audit firm and the advisory firm rest on secondary copies.",
+  "status": "Confirmed October 9 (sec.gov files)",
+  "score": 9,
+  "why": "All five named fixes confirmed against the letters.",
   "kind": "Comment-file count"
  },
  {
@@ -1541,9 +1541,9 @@
   "verdict": "VERIFIED-WITH-NUANCE",
   "evidence": "By elimination: Deloitte, KPMG, Baker Tilly (Hallman) and BDO (primary: \"do not believe that historical comparison, standing alone, provides a sufficient basis\"). The source of \"refreshed PCAOB guidance on auditing internal control\" was not located in any primary letter opened; the CAQ and the Audit Committee Council make similar asks (Hallman).",
   "fix": "Confirm which firm letter asks for PCAOB guidance, or drop that item from the row.",
-  "status": "Nuance noted; wording kept",
-  "score": 7,
-  "why": "Which firm asked for refreshed PCAOB guidance is unconfirmed; the PCAOB agenda point is verified.",
+  "status": "Confirmed October 9 (sec.gov files)",
+  "score": 9,
+  "why": "The ask for refreshed PCAOB guidance is in one firm's letter (p. 4).",
   "kind": "Comment-file count"
  },
  {
@@ -1567,9 +1567,9 @@
   "verdict": "COULD NOT VERIFY",
   "evidence": "The supporter is CohnReznick (Hallman: \"reconsider the $2 billion threshold or require a later review\"). \"Reconsider\" is not the same as suggesting a line below $2bn, and the primary letter (s7202618-968599-3005346.pdf) could not be opened.",
   "fix": "Check the letter. If it only asks to \"reconsider or review\", reword as \"even the one supporter asked the SEC to revisit the $2 billion line\".",
-  "status": "Open: needs a check",
-  "score": 5,
-  "why": "The \"let the market decide\" firm's suggestion of a lower line is not confirmed against its letter.",
+  "status": "Confirmed October 9 (sec.gov files)",
+  "score": 9,
+  "why": "Confirmed: \"largely be market driven\" (p. 2) and \"Consider a lower threshold than $2 billion\" (p. 3).",
   "kind": "Comment-file count"
  },
  {
@@ -1580,9 +1580,9 @@
   "verdict": "COULD NOT VERIFY",
   "evidence": "Says it (primary), 4: PwC (Q20: \"may ultimately deliver less cost savings than anticipated\"), EY p.4, BDO pp.4–5 (\"may reduce the extent of any anticipated cost savings\"), RSM pp.2, 4. Silent: GT; CBIZ's summary does not mention it. Unknown: Deloitte, KPMG, Crowe, Baker Tilly, CohnReznick, Connor (no primary).",
   "fix": "Confirm three more from primary text, or say \"at least four firms\". Also say whether \"firms\" means the 11 audit firms or all 12.",
-  "status": "Open: needs a check",
-  "score": 4,
-  "why": "Same as S-24: four of seven confirmed. Fall back to \"at least four firms\" if the rest are not confirmed.",
+  "status": "Fixed in v3",
+  "score": 9,
+  "why": "Seven confirmed; v3 hedges it to \"would absorb\", as most letters do.",
   "kind": "Comment-file count"
  },
  {
@@ -1593,9 +1593,9 @@
   "verdict": "VERIFIED-WITH-NUANCE",
   "evidence": "Primary, 6: PwC (24 months), EY (\"may be unnecessary\"), GT (mega-IPO disqualifiers), BDO (\"too long\"; 2 years), RSM (EGC-style disqualifying thresholds), CBIZ (shorter or trigger-based). Secondary, 4: KPMG (2–3 years), Deloitte, Crowe, Baker Tilly. 11th: CohnReznick; no on-ramp point in Hallman's summary.",
   "fix": "None. Internally, confirm KPMG, Deloitte, Crowe and Baker Tilly against primary text.",
-  "status": "Nuance noted; wording kept",
-  "score": 7,
-  "why": "Six of the ten confirmed from primary text; four firm letters are sec.gov PDFs we could not open.",
+  "status": "Confirmed October 9 (sec.gov files)",
+  "score": 9,
+  "why": "Ten of 11 confirmed against all 11 letters; the exception agrees an on-ramp should exist.",
   "kind": "Comment-file count"
  },
  {
@@ -1619,9 +1619,9 @@
   "verdict": "COULD NOT VERIFY",
   "evidence": "Not in PwC, EY, GT, BDO or RSM. BDO p.6 uses \"large, seasoned companies\" in its on-ramp section, but the wording differs. The likely source is Crowe, whose letter could not be opened.",
   "fix": "Confirm the quote and page against the letter.",
-  "status": "Open: needs a check",
-  "score": 7,
-  "why": "Same quote as B-10.",
+  "status": "Confirmed October 9 (sec.gov files)",
+  "score": 9,
+  "why": "Confirmed verbatim against the letter on sec.gov, at the page cited.",
   "kind": "Comment-file count"
  },
  {
@@ -1632,9 +1632,9 @@
   "verdict": "COULD NOT VERIFY",
   "evidence": "The Connor Group letter could not be opened.",
   "fix": "Confirm the quote and page.",
-  "status": "Open: needs a check",
-  "score": 8,
-  "why": "Same quote as B-08.",
+  "status": "Confirmed October 9 (sec.gov files)",
+  "score": 9,
+  "why": "Confirmed verbatim against the letter on sec.gov, at the page cited.",
   "kind": "Comment-file count"
  },
  {
@@ -2087,9 +2087,9 @@
   "verdict": "INCORRECT",
   "evidence": "The words are the release's own paraphrase (R-11419, 91 FR 30139), citing Alexander et al., 56 J. Acct. Econ. 267 (2013). The paper's abstract (https://ideas.repec.org/a/eee/jaecon/v56y2013i2p267-290.html) says the opposite: \"The majority of respondents recognize compliance benefits, but they do not perceive these benefits to outweigh the costs, on average ... the perceived efficiency of compliance increases with auditor attestations, years of compliance experience\". The SEC's own survey report (OEA 2009, Table 15 discussion) agrees: \"The average perceived net benefits are uniformly and significantly negative, other than for a few large companies in the fiscal years following the 2007 reforms.\" Survey dates: \"conducted during December 2008 and January 2009\", responses from 2,901 insiders. The \"fewer answered\" point is verified (fn 367).",
   "fix": "\"In an SEC staff survey of 2,901 corporate insiders in December 2008 and January 2009, most respondents recognised benefits from compliance but did not, on average, judge them to outweigh the costs; perceived net benefits were higher at companies with an auditor's attestation and rose with experience. Fewer answered that question than others.\"",
-  "status": "Fixed in v2",
+  "status": "Fixed in v3",
   "score": 8,
-  "why": "Reworded to match both the release and the underlying study; the study's reading is ours.",
+  "why": "v3 attributes 2,901 to the study, not the release; the study's reading is ours.",
   "kind": "History and standards"
  },
  {
@@ -2789,9 +2789,9 @@
   "verdict": "VERIFIED-WITH-NUANCE",
   "evidence": "(late letters partly read) Docket page 0, https://www.sec.gov/rules-regulations/public-comments/s7-2026-18 (read 2026-10-09). Rows after September 8: Oct. 5 \"Jason O'Bryne, Chief Financial Officer, Olema Oncology\" (s7202618-3784787.htm); Oct. 7 \"RSM US LLP\" (s7202618-1087339-3795249.pdf); Oct. 8 \"Paul Schumacher, GAAP and IFRS Insights\" (s7202618-1087779-3798686.pdf). Nothing is newer than October 8. The latest row before October 5 is Sept. 8 (a16z), whose link points to file S7-2026-17. Olema (read): \"I am writing to urge the Commission to adopt the proposed amendments in File No. S7-2026-18 substantially as proposed, including the increase in the public-float threshold … from $700 million to $2 billion, along with the resulting Section 404(b) relief\"; \"approximately $300,000 (excluding internal FTE costs)\"; \"estimates of $750,000 annually\". It says nothing on the on-ramp, a revenue test, or what to do once the attestation is gone. The letter is signed \"Jason O'Byrne\"; the docket spells it \"O'Bryne\". RSM (Oct 7) and Schumacher: COULD NOT VERIFY (PDF). If Olema were counted: 193 entries, 173 distinct, 119 addressed; tiles \"75 of 119\" and \"12 of 119\"; Exhibit 4 companies 6 of 6 supporting; \"0 of 11\" and \"nine of the twelve\" unchanged. The effect of RSM's second letter on the audit-firm figures is unknown.",
   "fix": "Keep the October 5 snapshot. Applied to the Exhibit 4 source: \"Not counted: three letters posted October 5 to 8, 2026, from a biotech CFO in support, an audit firm already counted and one other.\" Recount if RSM's October 7 letter changes RSM's position.",
-  "status": "Fixed in v2 (late letters noted); recount pending",
-  "score": 8,
-  "why": "Snapshot is disclosed. Olema (read) would not change the headline counts; RSM's October 7 letter is unread.",
+  "status": "Fixed in v3",
+  "score": 9,
+  "why": "All three late letters read; their positions are stated in the Exhibit 4 note.",
   "kind": "Comment-file count"
  },
  {
@@ -2802,9 +2802,9 @@
   "verdict": "COULD NOT VERIFY",
   "evidence": "(docket link) The TXCPA entry (dated July 16) sits on a docket page past page 0, which could not be loaded, so its link could not be tested. TXCPA's own news item calls the committee's position generally supportive. The letter on tx.cpa was not re-read in this session.",
   "fix": "Wording tightened to save a line (otherwise page 12 overflowed): \"The Texas Society of CPAs letter could not be opened on the docket and was read from the society's website.\" Claim unchanged; re-test the link.",
-  "status": "Open: needs a check (wording tightened)",
-  "score": 6,
-  "why": "Same as B-14e: the link sits on a docket page that would not load.",
+  "status": "Confirmed October 9 (sec.gov files)",
+  "score": 9,
+  "why": "Confirmed: the link returns \"page not found\".",
   "kind": "Comment-file count"
  },
  {
@@ -2841,9 +2841,9 @@
   "verdict": "COULD NOT VERIFY",
   "evidence": "33-11419.pdf returned target_unreachable. For reference, the FR public-inspection copy (A1-16) has both figures at p. 34 n. 137 and only $3.85 billion at p. 42.",
   "fix": "Unchanged; confirm against the SEC PDF",
-  "status": "Open: needs a check",
-  "score": 5,
-  "why": "Page cite. The Federal Register copy has both figures at p. 34, note 137, and $3.85bn at p. 42.",
+  "status": "Confirmed October 9 (sec.gov files)",
+  "score": 9,
+  "why": "Confirmed against the SEC PDF of Release 33-11419 (printed page = PDF page).",
   "kind": "Page cite"
  },
  {
@@ -2854,9 +2854,9 @@
   "verdict": "COULD NOT VERIFY",
   "evidence": "SEC PDF unreachable. In the FR copy the tables are at pp. 119, 120 and 122 (A1-22).",
   "fix": "Unchanged; confirm",
-  "status": "Open: needs a check",
-  "score": 5,
-  "why": "Page cite. Federal Register copy: pp. 119, 120 and 122.",
+  "status": "Confirmed October 9 (sec.gov files)",
+  "score": 9,
+  "why": "Confirmed against the SEC PDF of Release 33-11419 (printed page = PDF page).",
   "kind": "Page cite"
  },
  {
@@ -2867,9 +2867,9 @@
   "verdict": "COULD NOT VERIFY",
   "evidence": "SEC PDF unreachable. In the FR copy it is at p. 177, and p. 207 is rule text (A1-15).",
   "fix": "Unchanged; confirm",
-  "status": "Open: needs a check",
-  "score": 5,
-  "why": "Page cite. Federal Register copy: p. 177.",
+  "status": "Confirmed October 9 (sec.gov files)",
+  "score": 9,
+  "why": "Confirmed against the SEC PDF of Release 33-11419 (printed page = PDF page).",
   "kind": "Page cite"
  },
  {
@@ -2880,9 +2880,9 @@
   "verdict": "COULD NOT VERIFY",
   "evidence": "SEC PDF unreachable. FR-copy check: A1-17.",
   "fix": "Unchanged; confirm",
-  "status": "Open: needs a check",
-  "score": 5,
-  "why": "Page cites, unchecked against the SEC PDF.",
+  "status": "Fixed in v3",
+  "score": 9,
+  "why": "Confirmed against the SEC PDF of Release 33-11419 (printed page = PDF page).",
   "kind": "Page cite"
  },
  {
@@ -2893,9 +2893,9 @@
   "verdict": "COULD NOT VERIFY",
   "evidence": "SEC PDF unreachable",
   "fix": "Unchanged; confirm",
-  "status": "Open: needs a check",
-  "score": 5,
-  "why": "Page cites, unchecked against the SEC PDF.",
+  "status": "Fixed in v3",
+  "score": 9,
+  "why": "Confirmed against the SEC PDF of Release 33-11419 (printed page = PDF page).",
   "kind": "Page cite"
  },
  {
@@ -2906,9 +2906,9 @@
   "verdict": "COULD NOT VERIFY",
   "evidence": "SEC PDF unreachable",
   "fix": "Unchanged; confirm",
-  "status": "Open: needs a check",
-  "score": 5,
-  "why": "Page cites, unchecked against the SEC PDF.",
+  "status": "Confirmed October 9 (sec.gov files)",
+  "score": 9,
+  "why": "Confirmed against the SEC PDF of Release 33-11419 (printed page = PDF page).",
   "kind": "Page cite"
  },
  {
@@ -2919,9 +2919,9 @@
   "verdict": "COULD NOT VERIFY",
   "evidence": "(internal conflict) SEC PDF unreachable. The paper also puts EA Table 5 on p. 139 (Exhibit 2 source), so p. 139 cannot also carry the auditor-obligations text unless both sit on that page.",
   "fix": "Resolve with the SEC PDF",
-  "status": "Open: needs a check",
-  "score": 4,
-  "why": "p. 139 is also given for EA Table 5, so one of the two cites may be wrong.",
+  "status": "Confirmed October 9 (sec.gov files)",
+  "score": 9,
+  "why": "p. 139 holds both the start of EA Table 5 and n. 315, so both cites are right.",
   "kind": "Page cite"
  },
  {
@@ -2932,9 +2932,9 @@
   "verdict": "COULD NOT VERIFY",
   "evidence": "(page) https://www.sec.gov/comments/S7-2026-18/s7202618-974119-3031468.pdf: PDF unreachable. A search snippet of that PDF shows \"spent between $500,000 and $1 million annually with independent auditors to comply with this\".",
   "fix": "Unchanged",
-  "status": "Open: needs a check",
-  "score": 5,
-  "why": "Page cite; the PDF would not open.",
+  "status": "Confirmed October 9 (sec.gov files)",
+  "score": 9,
+  "why": "Confirmed verbatim against the letter on sec.gov, at the page cited.",
   "kind": "Page cite"
  },
  {
@@ -2945,9 +2945,9 @@
   "verdict": "COULD NOT VERIFY",
   "evidence": "(page) https://www.sec.gov/comments/S7-2026-18/s7202618-968459-3005226.pdf: PDF unreachable. Snippet: \"Without an independent “gatekeeper,” management's assessment is inherently less credible – in effect, investors are being asked to trust\". The curly quotes and the spaced en dash match the paper.",
   "fix": "Unchanged",
-  "status": "Open: needs a check",
-  "score": 5,
-  "why": "Page cite; the PDF would not open.",
+  "status": "Confirmed October 9 (sec.gov files)",
+  "score": 9,
+  "why": "Confirmed verbatim against the letter on sec.gov, at the page cited.",
   "kind": "Page cite"
  },
  {
@@ -2958,9 +2958,9 @@
   "verdict": "COULD NOT VERIFY",
   "evidence": "Letter likely s7202618-948899-2923386.pdf (not on docket page 0): PDF unreachable",
   "fix": "Unchanged",
-  "status": "Open: needs a check",
-  "score": 5,
-  "why": "Page cite; the letter's PDF would not open.",
+  "status": "Confirmed October 9 (sec.gov files)",
+  "score": 9,
+  "why": "Confirmed verbatim against the letter on sec.gov, at the page cited.",
   "kind": "Page cite"
  },
  {
@@ -2971,9 +2971,9 @@
   "verdict": "COULD NOT VERIFY",
   "evidence": "(page) https://www.sec.gov/comments/S7-2026-18/s7202618-967379-3003006.pdf: unreachable. Snippet: \"We believe this gap will make U.S. listings significantly less attractive for foreign issuers, thereby reducing the investment\".",
   "fix": "Unchanged",
-  "status": "Open: needs a check",
-  "score": 5,
-  "why": "Page cite; the PDF would not open.",
+  "status": "Confirmed October 9 (sec.gov files)",
+  "score": 9,
+  "why": "Confirmed verbatim against the letter on sec.gov, at the page cited.",
   "kind": "Page cite"
  },
  {
@@ -2984,9 +2984,9 @@
   "verdict": "COULD NOT VERIFY",
   "evidence": "(page) https://www.sec.gov/comments/S7-2026-18/s7202618-944379-2915595.pdf: unreachable. Snippet: \"Without the external attestation requirement to impose an objective, independent standard, the 404(a) process tends over time toward formalism — “check-the …\". The paper's quotation correctly ends at \"formalism\".",
   "fix": "Unchanged",
-  "status": "Open: needs a check",
-  "score": 5,
-  "why": "Page cite; the PDF would not open.",
+  "status": "Confirmed October 9 (sec.gov files)",
+  "score": 9,
+  "why": "Confirmed verbatim against the letter on sec.gov, at the page cited.",
   "kind": "Page cite"
  },
  {
@@ -2997,9 +2997,9 @@
   "verdict": "COULD NOT VERIFY",
   "evidence": "Probably s7202618-959959-2963086.pdf: unreachable. A separate AAA Auditing Standards Committee letter is also on file (s7202618-966979-3001148.pdf). Confirm the quotation is credited to the right committee.",
   "fix": "Unchanged; confirm attribution",
-  "status": "Open: needs a check",
-  "score": 4,
-  "why": "Page cite and committee attribution both unconfirmed; a second AAA committee also wrote.",
+  "status": "Confirmed October 9 (sec.gov files)",
+  "score": 9,
+  "why": "The quote is the Financial Reporting Policy Committee's, at p. 7, citing Ge, Koester and McVay (2017).",
   "kind": "Page cite"
  },
  {
@@ -3010,9 +3010,9 @@
   "verdict": "COULD NOT VERIFY",
   "evidence": "Letter not on docket page 0; PDFs unreachable",
   "fix": "Unchanged",
-  "status": "Open: needs a check",
-  "score": 5,
-  "why": "Page cite; the letter's PDF would not open.",
+  "status": "Confirmed October 9 (sec.gov files)",
+  "score": 9,
+  "why": "Confirmed verbatim against the letter on sec.gov, at the page cited.",
   "kind": "Page cite"
  },
  {
@@ -3023,9 +3023,9 @@
   "verdict": "COULD NOT VERIFY",
   "evidence": "Letter not identified with certainty (possibly s7202618-959159-2961226.pdf); unreachable",
   "fix": "Unchanged",
-  "status": "Open: needs a check",
-  "score": 5,
-  "why": "Pages 2 to 4; the letter is not identified with certainty on the docket.",
+  "status": "Confirmed October 9 (sec.gov files)",
+  "score": 9,
+  "why": "Confirmed verbatim against the letter on sec.gov, at the page cited.",
   "kind": "Page cite"
  },
  {
@@ -3036,9 +3036,9 @@
   "verdict": "COULD NOT VERIFY",
   "evidence": "(not shown to be absent) Not among the 30 rows of docket page 0. Avalo's CFO is Christopher Sullivan (avalotx.com). A search snippet of a public S7-2026-18 tracker lists \"Chris Sullivan … CFO, Avalo Therapeutics … Sunday, June 21, 2026\". So the letter is probably on docket pages 3 to 6, which could not be loaded. The hyphen versus en dash question is still open.",
   "fix": "Kept: the evidence points to the letter being on the docket. Remove from Exhibit 5's source line and the text only if a full docket read shows it is absent.",
-  "status": "Open: needs a check",
-  "score": 5,
-  "why": "Same as B-03. Remove from Exhibit 5 only if a full docket read shows the letter is absent.",
+  "status": "Fixed in v3",
+  "score": 9,
+  "why": "Fixed in v3: hyphen, and cited as a web comment (June 24, 2026).",
   "kind": "Comment-letter content"
  },
  {
@@ -3049,9 +3049,9 @@
   "verdict": "COULD NOT VERIFY",
   "evidence": "Still four confirmed (PwC, EY, BDO, RSM; see C-11). The Deloitte, KPMG, Grant Thornton, CBIZ, Crowe, Baker Tilly (s7202618-983259-3081128.pdf), CohnReznick and Connor Group letters are all sec.gov PDFs and unreachable.",
   "fix": "Unchanged. If three more are not confirmed, use \"at least four firms\".",
-  "status": "Open: needs a check",
-  "score": 4,
-  "why": "Only four firms confirmed from their own published letters; the other letters are sec.gov PDFs we could not open.",
+  "status": "Fixed in v3",
+  "score": 9,
+  "why": "Seven confirmed from the letters: three on sec.gov plus four from the firms' own copies.",
   "kind": "Comment-file count"
  },
  {
@@ -3062,9 +3062,9 @@
   "verdict": "COULD NOT VERIFY",
   "evidence": "Only docket page 0 loads. Its 30 rows hold one staff memorandum (Aug. 14, Capital Group meeting, s7202618-1002919-3175111.pdf) and one duplicate pair (Just Futures / Just Futures PBC, both 973121-3022389). There is no roundtable transcript on page 0. A seven-page pager is consistent with 181 to 210 entries, and with 192 + 3 = 195.",
   "fix": "Unchanged; recount with the full docket",
-  "status": "Open: needs a check",
-  "score": 5,
-  "why": "Only one of seven docket pages loads, so 192 and 172 cannot be recounted; no transcript seen on that page.",
+  "status": "Confirmed October 9; recount differs by one or two",
+  "score": 7,
+  "why": "The October 9 listing has 195 entries. Netting the late and removed letters gives 192 or 193 at October 5; distinct commenters reconcile to within one or two, depending on how anonymous and cross-filed letters are treated.",
   "kind": "Comment-file count"
  },
  {

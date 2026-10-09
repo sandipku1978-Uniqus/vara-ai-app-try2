@@ -108,6 +108,43 @@ OVR = {
     "E-35": (9, "Updated boilerplate, Valuations added."),
 }
 
+# October 9 pass: checked against the files downloaded from sec.gov (plan/check_release.md,
+# plan/check_letters.md). These override the scores above.
+_REL = "Confirmed against the SEC PDF of Release 33-11419 (printed page = PDF page)."
+_LET = "Confirmed verbatim against the letter on sec.gov, at the page cited."
+V3 = {
+    **{k: (9, _REL) for k in ("S-08", "S-09", "S-10", "S-11", "S-12", "S-13", "A1-15", "A1-17", "A1-22",
+                              "A1-53", "A2-38", "A1-16")},
+    "S-14": (9, "p. 139 holds both the start of EA Table 5 and n. 315, so both cites are right."),
+    **{k: (9, _LET) for k in ("S-15", "S-16", "S-17", "S-18", "S-19", "S-21", "S-22", "B-01", "B-02", "B-05a",
+                              "B-06", "B-07", "B-08", "C-15", "B-10", "C-14")},
+    "S-20": (9, "The quote is the Financial Reporting Policy Committee's, at p. 7, citing Ge, Koester and McVay (2017)."),
+    "B-09": (9, "Committee and page confirmed against the letter."),
+    "B-03": (9, "Fixed in v3: the web comment reads \"between $500-$1M annually\" (hyphen); cited as a web comment."),
+    "S-23": (9, "Fixed in v3: hyphen, and cited as a web comment (June 24, 2026)."),
+    "A2-04": (9, "Both issuer figures confirmed: Nasdaq p. 4 and the Avalo web comment."),
+    "B-05b": (9, "Corrected in v3 against the letter: he supports the proposal (p. 2) and warns it is \"not costless\" (p. 5)."),
+    "S-24": (9, "Seven confirmed from the letters: three on sec.gov plus four from the firms' own copies."),
+    "C-11": (9, "Seven confirmed; v3 hedges it to \"would absorb\", as most letters do."),
+    "C-12": (9, "Ten of 11 confirmed against all 11 letters; the exception agrees an on-ramp should exist."),
+    "C-10": (9, "Confirmed: \"largely be market driven\" (p. 2) and \"Consider a lower threshold than $2 billion\" (p. 3)."),
+    "C-05": (9, "The 9 / 2 / 1 split holds against the letters."),
+    "C-06": (9, "No firm endorsed $2 billion as drawn."),
+    "C-07": (9, "All five named fixes confirmed against the letters."),
+    "C-08": (9, "The ask for refreshed PCAOB guidance is in one firm's letter (p. 4)."),
+    "S-04": (9, "All three late letters read; their positions are stated in the Exhibit 4 note."),
+    "B-14a": (9, "Snapshot wording fixed; the three late letters are read and noted."),
+    "A2-37": (9, "Snapshot stated; the late letters do not change the headline counts."),
+    "B-14b": (9, "Memoranda and the July 13 roundtable transcript are both on the listing."),
+    "B-14e": (9, "The listing's link for the Texas Society entry is broken on sec.gov, as the note says."),
+    "S-05": (9, "Confirmed: the link returns \"page not found\"."),
+    "S-25": (7, "The October 9 listing has 195 entries. Netting the late and removed letters gives 192 or 193 at October 5; distinct commenters reconcile to within one or two, depending on how anonymous and cross-filed letters are treated."),
+    "A1-03": (7, "As S-25: within one or two of the October 9 listing, net of late letters."),
+    "A1-20": (9, "v3 follows the release: restatements \"coincided with\" the staff statement (n. 319)."),
+    "D-23": (8, "v3 attributes 2,901 to the study, not the release; the study's reading is ours."),
+}
+OVR.update(V3)
+
 EXTRA = [
     {"reg": "R", "id": "R-01", "page": "6 (Exh. 3)", "claim": "Exhibit 3, Ideagen basis: 391 restatements in 2025",
      "verdict": "VERIFIED", "status": "Added in v2", "score": 9,
