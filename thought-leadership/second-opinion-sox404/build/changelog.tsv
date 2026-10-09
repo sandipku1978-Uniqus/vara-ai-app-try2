@@ -170,3 +170,7 @@ H2-css4	.grc td{ width:50%; vertical-align:top; background:#F5F1F9; border-radiu
 H3-call	H.prac("Why Uniqus", WHY_GRC) +	WHY() +
 H3-data	WHY_GRC = [     "<b>Risk UniVerse.</b> Our GRC platform centralizes controls data, automates workflows and dashboards, and "     "uses AI to automate control te	WHY_GRC = [     ("Risk UniVerse", "Our GRC platform centralizes controls data and workflows, uses AI to automate control "      "testing, and turns meeting transcripts and recordings into process narratives, flow diagram
 H3-css	.grc td{ width:50%;	.grc td{ width:50%;
+H4-sec	        H.p("Our Governance, Risk &amp; Compliance practice supports companies at each of the four decision "             "points below. For a company that will	        H.p("Our Governance, Risk &amp; Compliance practice helps companies design, test and sustain internal "             "control across the US, India and the Middle East. For a company that will remain a large "     
+H4-boxes	            cell("Confirming filer status", "Before fiscal 2026 audit planning closes", "Filer status memo, one week.",                  "An analysis of public 	            cell("Internal controls design and testing", "For a company relying on management's assessment alone",                  "SOX, IFC and ICOFR programs.", "Control design and management testing, scoped and docum
+H4-fns	GRC_ITEMS = [	_GRC_REMOVED = [
+H4-fns-cleanup	GRC_ITEMS, WHY_GRC, GRC(), WHY() and .grc CSS	removed (content now in HELP boxes)

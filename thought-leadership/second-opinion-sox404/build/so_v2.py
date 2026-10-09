@@ -523,21 +523,14 @@ def blocks(H):
     # ================================================= Help
     P.append(H.sec(8,
         H.h1("How Uniqus Can Help") +
-        H.p("Our Governance, Risk &amp; Compliance practice supports companies at each of the four decision "
-            "points below. For a company that will remain a large accelerated filer, or an emerging growth "
-            "company in its first five years, the proposal does not change the SOX program.") +
+        H.p("Our Governance, Risk &amp; Compliance practice helps companies design, test and sustain internal "
+            "control across the US, India and the Middle East. For a company that will remain a large "
+            "accelerated filer, or an emerging growth company in its first five years, the proposal does not "
+            "change the SOX program.") +
         HELP(H) +
         H.p("To discuss any of these, please contact <b>Sandip Khetan</b>, Co-Founder and Global Head of "
             "Accounting &amp; Reporting Consulting, or <b>Nagaraj Uchil</b>, who leads our Governance, Risk "
-            "&amp; Compliance practice, through www.uniqus.com.")))
-    P.append(H.cont(8,
-        '<div style="page-break-before:always"></div>' +
-        H.h2("Our Governance, Risk &amp; Compliance practice") +
-        H.p("We help organizations identify and manage risk, strengthen governance, drive end-to-end "
-            "compliance, design and test internal controls, and build resilience. We also deploy platforms "
-            "that digitize, automate and apply AI to these functions.") +
-        GRC() +
-        WHY() +
+            "&amp; Compliance practice, through www.uniqus.com.") +
         ABOUT))
     return P
 
@@ -716,63 +709,24 @@ def HELP(H):
         '<td class="hc%s"><div class="h">%s</div><div class="w">%s</div><p><b>%s</b> %s</p></td>'
         % (" m" if m else "", t, when, out, desc))
     return ('<table class="help"><tr>' +
-            cell("Confirming filer status", "Before fiscal 2026 audit planning closes", "Filer status memo, one week.",
-                 "An analysis of public float on both measurement bases for the last two years, months of "
-                 "reporting history, FDIC and contractual requirements, and your expected status under the "
-                 "proposal and the two alternatives commenters most support.") +
-            cell("Retain, discontinue or replace", "Before the audit committee approves the next audit plan",
-                 "Audit committee decision paper, three weeks.", "An evidence base on control history and investor "
-                 "and lender expectations, a fee comparison built from your auditor's own proposal, and a "
-                 "recommendation the committee can record in its minutes.", True) +
+            cell("Internal controls design and testing", "For a company relying on management's assessment alone",
+                 "SOX, IFC and ICOFR programs.", "Control design and management testing, scoped and documented "
+                 "in line with the SEC's 2007 guidance, so the Section 404(a) conclusion rests on its own "
+                 "evidence; one framework for groups reporting in more than one market.") +
+            cell("Internal audit", "For a company replacing the attestation with a scaled alternative",
+                 "Independent challenge without an annual opinion.", "Risk-based internal audit under the IIA's "
+                 "Global Internal Audit Standards, covering financial, IT and AI controls, with periodic reviews "
+                 "the audit committee can rely on.", True) +
             '</tr><tr>' +
-            cell("Supporting a management-only assessment", "Before the first year without the auditor's attestation",
-                 "404(a) evidence standard, six weeks.", "Scoping, testing and deficiency evaluation documented in "
-                 "line with the SEC's 2007 guidance for management, together with a tester-independence model and "
-                 "a first-year test plan.") +
-            cell("Foreign private issuers and multi-market groups", "Before your next Form 20-F",
-                 "Cross-border control map, four weeks.", "A single framework mapped to Section 404, India's "
-                 "internal financial controls reporting and UAE or Saudi requirements, identifying where one test "
-                 "can satisfy several regimes.", True) +
+            cell("Risk, compliance and governance", "For boards and audit committees",
+                 "Oversight that does not depend on the auditor.", "Enterprise risk frameworks, risk appetite and "
+                 "key risk indicators, compliance obligation registers, board and committee charters, delegation "
+                 "of authority and business continuity.") +
+            cell("Risk UniVerse", "For every option, including a retained attestation",
+                 "Our AI-enabled GRC platform.", "Centralizes controls data and workflows, automates control "
+                 "testing, and turns walkthrough recordings into process narratives, flow diagrams and risk and "
+                 "control matrices.", True) +
             '</tr></table>')
-
-
-GRC_ITEMS = [
-    ("Internal controls design and testing", "Design of controls and management testing under SOX in the US, "
-     "internal financial controls in India and ICOFR requirements in the Middle East, including the evidence "
-     "behind a management-only assessment."),
-    ("Internal audit", "Risk-based internal audit guided by the IIA's Global Internal Audit Standards: "
-     "financial and controls audits, IT and AI audits, compliance, operational and capital project audits, "
-     "and special investigations."),
-    ("Enterprise risk management", "ERM maturity assessments and program implementation, frameworks and "
-     "policy, risk appetite and tolerance, key risk indicators, risk culture, and monitoring and reporting."),
-    ("Compliance", "Regulatory risk assessments, compliance obligation registers, monitoring and reporting, "
-     "and updates on regulatory developments."),
-    ("Policies and procedures", "Board and committee charters, delegation of authority, codes of conduct "
-     "and conflict-of-interest policies, with training and support."),
-    ("Organizational resilience", "Business impact analysis, business continuity and IT disaster recovery, "
-     "and cyber and supply chain resilience."),
-]
-
-WHY_GRC = [
-    ("Risk UniVerse", "Our GRC platform centralizes controls data and workflows, uses AI to automate control "
-     "testing, and turns meeting transcripts and recordings into process narratives, flow diagrams and risk "
-     "and control matrices."),
-    ("Experienced leadership", "Nagaraj Uchil leads the practice, with more than 20 years in internal controls "
-     "and SOX, enterprise risk, compliance, governance and IPO readiness."),
-    ("One team, three markets", "An integrated team across the US, India and the Middle East combines onsite "
-     "presence with offshore delivery and close partner involvement."),
-]
-
-
-def WHY():
-    cells = "".join('<td><div class="g">%s</div><p>%s</p></td>' % (t, d) for t, d in WHY_GRC)
-    return ('<div class="grc why"><div class="gh">Why Uniqus</div><table><tr>%s</tr></table></div>' % cells)
-
-
-def GRC():
-    cells = ['<td><div class="g">%s</div><p>%s</p></td>' % (t, d) for t, d in GRC_ITEMS]
-    rows = "".join("<tr>%s</tr>" % "".join(cells[i:i + 2]) for i in range(0, 6, 2))
-    return '<div class="grc"><table>%s</table></div>' % rows
 
 
 ABOUT = ('<div class="about"><div class="ah">About Uniqus Consultech</div><p>Uniqus Consultech is an AI and global '
@@ -861,14 +815,6 @@ table.help p{ font-size:7.8pt; text-align:left; margin:0; line-height:1.45; }
 .about p{ font-size:7.3pt; color:#55555F; line-height:1.45; }
 .about p.disc{ font-size:6.2pt; color:#8A8A95; }
 .rec li b{ color:#B21E7D; }
-.grc{ margin:1mm 0 2.4mm 0; page-break-inside:avoid; }
-.grc.why td{ width:33.3%; background:#fff; border:1px dashed #E8B7D3; }
-.grc.why p{ font-size:7.1pt; }
-.grc .gh{ font-weight:600; font-size:9.4pt; color:#482879; margin:0 0 1.4mm 0; }
-.grc table{ border-collapse:separate; border-spacing:2mm 1.6mm; margin:0 0 0 -2mm; width:102.7%; }
-.grc td{ width:50%; vertical-align:top; background:#F5F1F9; border-radius:2mm; padding:2.6mm 3.2mm; border:none; }
-.grc .g{ font-weight:600; font-size:8.6pt; color:#B21E7D; margin-bottom:0.6mm; }
-.grc p{ font-size:7.6pt; line-height:1.42; text-align:left; margin:0; color:#33333D; }
 .rec ol.num{ margin:0; padding-left:6.2mm; }
 .rec ol.num li{ font-size:8.6pt; margin:0 0 1.3mm; padding-left:1mm; }
 .rec ol.num li::marker{ color:#B21E7D; font-weight:600; }

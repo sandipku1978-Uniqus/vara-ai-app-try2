@@ -1,7 +1,7 @@
 # The Second Opinion (SOX 404) — v2 working set
 
 Editorial review and rebuild of the Uniqus Insights paper *The Second Opinion: SOX 404 Before, Now and After* (October 2026).
-v1 draft: `output/The_Second_Opinion_v1_draft.pdf`. v2: `output/The_Second_Opinion_v2.pdf`. **Current: `output/The_Second_Opinion_v3.1.pdf` (23 pages, October 9, 2026)**: v3 plus the comment-letter counts re-derived from the double-coded re-read (`build/patch_v3_coding.py`, `plan/coding/`) and How Uniqus Can Help rebuilt around the GRC practice (`build/patch_v3_help*.py`). v3 (22 pages) is kept for reference. `build.py` still writes `build/The_Second_Opinion_v2.pdf`; copy it to `output/` under the version name.
+v1 draft: `output/The_Second_Opinion_v1_draft.pdf`. v2: `output/The_Second_Opinion_v2.pdf`. **Current: `output/The_Second_Opinion_v3.2.pdf` (22 pages, October 9, 2026)**: v3 plus the comment-letter counts re-derived from the double-coded re-read (`build/patch_v3_coding.py`, `plan/coding/`) and How Uniqus Can Help rebuilt around the GRC practice, with the GRC content inside the four existing boxes (`build/patch_v3_help*.py`; help4 is the trimmed version). v3 and v3.1 (23 pages, separate GRC page) are kept for reference. `build.py` still writes `build/The_Second_Opinion_v2.pdf`; copy it to `output/` under the version name.
 
 v3 applied the plan in `plan/` (see `plan/README.md`): fact fixes from the sec.gov files and structure edits (`build/patch_v3_facts.py`), then the language pass (`plan/lang_front_applied.md`, `plan/lang_back_applied.md`).
 Review page (private): https://claude.ai/artifact/ENePofky5VFNGCW18WM8Nq
@@ -38,4 +38,4 @@ The sec.gov checks are closed (see `plan/check_release.md`, `plan/check_letters.
 
 - The India 2017 exemption (G.S.R. 583(E)) is still in force per July–August 2026 practitioner guides. Confirm on mca.gov.in.
 - The full Ideagen May 2026 restatements report is behind a sign-up form. Downloading it would give the 2023-2024 SPAC counts, which would let Exhibit 3 sit on one basis.
-- Durations and scope in "How Uniqus Can Help" are proposals until Sandip confirms them.
+- The GRC box wording in "How Uniqus Can Help" follows the Uniqus GRC brochure; Sandip approved putting it in the four boxes.
