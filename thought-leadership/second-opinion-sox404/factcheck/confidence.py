@@ -143,6 +143,7 @@ V3 = {
     "A1-20": (9, "v3 follows the release: restatements \"coincided with\" the staff statement (n. 319)."),
     "D-23": (8, "v3 attributes 2,901 to the study, not the release; the study's reading is ours."),
 }
+V3["U-01"] = (9, "Confirmed by Sandip Khetan, October 9, 2026.")
 OVR.update(V3)
 
 EXTRA = [
@@ -159,7 +160,7 @@ EXTRA = [
      "verdict": "VERIFIED-WITH-NUANCE", "status": "Added in v2", "score": 7,
      "why": "From Bloomberg Tax's report of the 2024 edition; later editions may restate it."},
     {"reg": "U", "id": "U-01", "page": "21-22", "claim": "How Uniqus Can Help: durations and scope of each offer",
-     "verdict": "COULD NOT VERIFY", "status": "Open: needs your confirmation", "score": 4,
+     "verdict": "VERIFIED", "status": "Confirmed by the author, October 9", "score": 9,
      "why": "These are our proposals, not facts yet. They need your sign-off."},
 ]
 
