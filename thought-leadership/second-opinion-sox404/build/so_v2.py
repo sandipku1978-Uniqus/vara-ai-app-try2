@@ -265,10 +265,11 @@ def blocks(H):
             % (F["entries"], F["commenters"], F["addressed"], F["silent"])) +
         H.exhibit("Exhibit 4 — Where 118 commenters stood on the attestation exemption", "x4_positions.png",
                   "Source: Uniqus coding of every entry on SEC comment file S7-2026-18 as posted on October 5, "
-                  "2026; the method is set out in “How we read the file”. Constituencies are sorted from "
-                  "most supportive to most opposed. The 11 with no position are associations 1, venture capital and "
+                  "2026; the method is set out in “How we read the file”. Not counted: three letters posted October 5 "
+                  "to 8, 2026, from a biotech CFO in support, an audit firm already counted and one other. "
+                  "The 11 with no position are associations 1, venture capital and "
                   "policy groups 1, audit profession bodies 1, accounting firms 2, academics 3, individuals 2 and "
-                  "investors 1. One letter, from the Texas Society of CPAs, could not be "
+                  "investors 1. The Texas Society of CPAs letter could not be "
                   "opened on the docket and was read from the society's website. “Too broad” means the "
                   "commenter accepts some widening of the exemption and objects to its extent; nine of those 32 "
                   "say so in guarded terms. Positions are on the exemption, not on the $2 billion figure. The "
@@ -339,7 +340,7 @@ def blocks(H):
         H.exhibit("Exhibit 5 — The SEC's number and the companies' number", "x5_cost.png",
                   "Source: SEC Release 33-11419, pp. 153 to 155 and 214 to 218, including GAO-25-107500; comment "
                   "letters of Nasdaq, Inc. (p. 4), Avalo Therapeutics (p. 1) and the Society for Corporate "
-                  "Governance (pp. 6 to 8; member survey that “attracted nearly 50 responses”). The CFO's letter reads "
+                  "Governance (p. 7; its member survey “attracted nearly 50 responses”, p. 1, note 1). The CFO's letter reads "
                   "“between $500–$1M annually”. In the survey, 21% of respondents put the annual cost "
                   "at $500,000 to $1 million and 18% at $1 million to $5 million; among those expecting to become "
                   "exempt, 23% and 8%. The release also cites estimates on other bases, from $73,165 in audit fees "
@@ -349,8 +350,9 @@ def blocks(H):
                   "average across registrants and the companies' figures are individual reports, so the exhibit "
                   "shows a gap between them, not an error in either.") +
         H.p("The same survey suggests the saving companies expect is smaller than the cost they report. "
-            "<b>39% of respondents put the attestation's cost at $500,000 or more a year, but only 3% expect to "
-            "save more than $500,000</b>, and 55% could not quantify the saving at all (pp. 6 and 7).") +
+            "<b>Taken together, its two top cost bands put the attestation's cost at $500,000 or more a year for 39% "
+            "of respondents, but only 3% expect non-accelerated status to save them more than $500,000</b>, and "
+            "55% could not quantify the saving at all (pp. 6 and 7).") +
         H.p("Neither set of numbers answers the controller's question: what the financial statement audit will "
             "cost once the auditor no longer tests controls for an opinion of its own. <b>Only a fee proposal "
             "for a specific company answers that.</b>") +
@@ -608,8 +610,8 @@ DECISIONS = [
     "you file, so watch the effective date.",
     "<b>List who else expects the opinion.</b> A bank of $5 billion of assets or more stays under the FDIC's rule "
     "even if its holding company is exempt. "
-    "In the governance survey, 97% named investor expectations and analyst coverage as a deciding factor and 65% "
-    "debt or equity offering requirements. Ask lenders, rating agencies and your largest holders before deciding.",
+    "In the governance survey, 97% named investor expectations and analyst coverage among the factors that would "
+    "most influence whether they use the new accommodations, and 65% debt or equity offering requirements. Ask lenders, rating agencies and your largest holders before deciding.",
     "<b>Price the saving from a fee proposal, not from the release.</b> Ask the auditor what the audit costs "
     "without an opinion on controls; seven firms told the SEC the financial statement audit will absorb part of the work.",
     "<b>Take keep, drop or replace to the audit committee with evidence.</b> Material weaknesses and restatements "
