@@ -146,21 +146,22 @@ def ex3_restatements(name="x3_restatements.png", years=None, counts=None, note=N
 
 
 # --------------------------------------------------------------- Exhibit 4
-def ex4_positions(name="x4_positions.png", rows=None, totals=(32, 11, 32, 43)):
+def ex4_positions(name="x4_positions.png", rows=None, totals=(31, 6, 33, 47)):
     # constituency, addressed, support, no position, too broad, do not expand
+    # from the double-coded re-read (plan/coding/final_batch*.jsonl)
     rows = rows or [
         ("Company and industry associations", 9, 8, 1, 0, 0),
         ("Companies", 5, 5, 0, 0, 0),
         ("Law firms and bar committee", 6, 5, 0, 1, 0),
         ("Stock exchanges", 2, 2, 0, 0, 0),
-        ("Venture capital and policy groups", 2, 1, 1, 0, 0),
-        ("Government and state regulators", 2, 1, 0, 0, 1),
+        ("Venture capital and policy groups", 4, 1, 2, 1, 0),
+        ("Government and state regulators", 2, 1, 0, 1, 0),
         ("Data and filing vendors", 1, 0, 0, 0, 1),
-        ("Audit profession bodies", 7, 1, 1, 5, 0),
-        ("Accounting firms", 12, 1, 2, 9, 0),
-        ("Academics", 16, 2, 3, 6, 5),
-        ("Individuals", 29, 5, 2, 4, 18),
-        ("Investors and investor advocates", 27, 1, 1, 7, 18),
+        ("Audit profession bodies", 5, 1, 0, 4, 0),
+        ("Accounting and advisory firms", 12, 0, 0, 12, 0),
+        ("Academics", 19, 2, 2, 6, 9),
+        ("Individuals", 28, 6, 1, 4, 17),
+        ("Investors and investor advocates", 24, 0, 0, 4, 20),
     ]
     sup, nop, tb, dne = totals
     assert sum(r[2] for r in rows) == sup and sum(r[3] for r in rows) == nop
@@ -185,9 +186,9 @@ def ex4_positions(name="x4_positions.png", rows=None, totals=(32, 11, 32, 43)):
     a0.set_xlim(0, 1); a0.set_ylim(-0.55, 2.0)
     a0.annotate("", xy=(1.0, -0.62), xytext=((sup + nop) / tot, -0.62), xycoords="data",
                 arrowprops=dict(arrowstyle="-", color=MAGENTA, lw=1.2))
-    a0.text(1.0, -0.8, "75 of 118 say too broad or do not expand", ha="right", va="top",
+    a0.text(1.0, -0.8, "80 of 117 say too broad or do not expand", ha="right", va="top",
             fontsize=6.4, weight="bold", color=MAGENTA)
-    a0.text(0.0, -0.8, "All 118 commenters that addressed the attestation", ha="left", va="top",
+    a0.text(0.0, -0.8, "All 117 commenters that addressed the attestation", ha="left", va="top",
             fontsize=6.0, color=MUTED)
 
     # --- diverging rows
@@ -252,7 +253,7 @@ def ex5_cost(name="x5_cost.png"):
 def ex6_line(name="x6_line.png", pts=None):
     pts = pts or [(0.7, 1665, 95.2), (1.0, 1480, 94.8), (1.5, 1285, 94.1),
                   (2.0, 1146, 93.5), (2.5, 1030, 92.7), (3.0, 944, 92.1)]
-    fig, ax = plt.subplots(figsize=(W, 2.15))
+    fig, ax = plt.subplots(figsize=(W, 2.0))
     xs = [p[0] for p in pts]; ys = [p[1] for p in pts]
     ax.plot(xs, ys, color=PMID, lw=1.6, zorder=3)
     for x, y, s in pts:
@@ -271,10 +272,10 @@ def ex6_line(name="x6_line.png", pts=None):
     ax.text(2.0, 2010, "$2bn\nthe proposal", ha="center", va="top", fontsize=5.8, color=MAGENTA, weight="bold", linespacing=1.15)
     # commenter positions on the level
     ax.annotate("", xy=(0.72, 560), xytext=(1.9, 560), arrowprops=dict(arrowstyle="->", color=PURPLE, lw=0.9))
-    ax.text(1.17, 585, "15 commenters wanted it lower", ha="center", va="bottom", fontsize=5.8, color=PURPLE)
+    ax.text(1.17, 585, "16 commenters wanted it lower", ha="center", va="bottom", fontsize=5.8, color=PURPLE)
     ax.annotate("", xy=(4.3, 560), xytext=(2.1, 560), arrowprops=dict(arrowstyle="->", color=PURPLE, lw=0.9))
-    ax.text(3.0, 585, "3 wanted it higher", ha="center", va="bottom", fontsize=5.8, color=PURPLE)
-    ax.text(2.0, 560, "24 supported\n$2bn", ha="center", va="center", fontsize=5.8, color=MAGENTA, weight="bold",
+    ax.text(3.0, 585, "4 wanted it higher", ha="center", va="bottom", fontsize=5.8, color=PURPLE)
+    ax.text(2.0, 560, "18 supported\n$2bn", ha="center", va="center", fontsize=5.8, color=MAGENTA, weight="bold",
             bbox=dict(boxstyle="round,pad=0.25", fc="white", ec="none"), linespacing=1.1)
     ax.set_xscale("log"); ax.set_xlim(0.6, 4.6)
     ticks = [0.7, 1.0, 1.5, 2.0, 3.0, 4.0]

@@ -1,7 +1,7 @@
 # The Second Opinion (SOX 404) — v2 working set
 
 Editorial review and rebuild of the Uniqus Insights paper *The Second Opinion: SOX 404 Before, Now and After* (October 2026).
-v1 draft: `output/The_Second_Opinion_v1_draft.pdf`. v2: `output/The_Second_Opinion_v2.pdf`. **Current v3: `output/The_Second_Opinion_v3.pdf` (22 pages, October 9, 2026).** `build.py` still writes `build/The_Second_Opinion_v2.pdf`; copy it to `output/` under the version name.
+v1 draft: `output/The_Second_Opinion_v1_draft.pdf`. v2: `output/The_Second_Opinion_v2.pdf`. **Current: `output/The_Second_Opinion_v3.1.pdf` (23 pages, October 9, 2026)**: v3 plus the comment-letter counts re-derived from the double-coded re-read (`build/patch_v3_coding.py`, `plan/coding/`) and How Uniqus Can Help rebuilt around the GRC practice (`build/patch_v3_help*.py`). v3 (22 pages) is kept for reference. `build.py` still writes `build/The_Second_Opinion_v2.pdf`; copy it to `output/` under the version name.
 
 v3 applied the plan in `plan/` (see `plan/README.md`): fact fixes from the sec.gov files and structure edits (`build/patch_v3_facts.py`), then the language pass (`plan/lang_front_applied.md`, `plan/lang_back_applied.md`).
 Review page (private): https://claude.ai/artifact/ENePofky5VFNGCW18WM8Nq
@@ -31,7 +31,7 @@ python3 verify_nav.py The_Second_Opinion_v2.pdf nav_rects.json "Executive Summar
 
 The sec.gov checks are closed (see `plan/check_release.md`, `plan/check_letters.md`). What remains:
 
-1. **Coding counts.** "12 of 118", "Twenty of them", "55 of 74", "13" (revenue test), the 24/15/3/9 split of 51 and "four commenters" on disclosure come from the original coding and can only be re-derived by re-reading all 188 public comments (index: `plan/S7-2026-18_docket_index_2026-10-09.csv`).
+1. **Coding counts.** Settled: all 188 letters double-coded with a third read on every dispute (`plan/coding/`, `tally_2026-10-09.txt`); v3.1 prints the re-derived counts.
 2. **Docket snapshot.** v3 keeps the October 5 coded snapshot (192 entries, 172 commenters) and states the three later letters' positions. The October 9 listing has 195 entries.
 
 ## Other open items

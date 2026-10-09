@@ -144,6 +144,13 @@ V3 = {
     "D-23": (8, "v3 attributes 2,901 to the study, not the release; the study's reading is ours."),
 }
 V3["U-01"] = (9, "Confirmed by Sandip Khetan, October 9, 2026.")
+
+# Coding re-read (plan/coding/): every letter double-coded, disputes resolved by a third read.
+_COD = "Re-derived from the double-coded re-read of all 188 letters (plan/coding/); v3.1 prints the re-derived figure."
+for _k in ("C-20", "C-21", "C-22", "C-25", "S-26", "A1-02", "C-05", "C-06"):
+    V3[_k] = (9, _COD)
+V3["S-25"] = (9, "192 entries at October 5 confirmed; 174 distinct commenters on the paper's definition, from the re-read.")
+V3["A1-03"] = (9, "192 entries and 174 distinct commenters, from the re-read; v3.1 prints 174.")
 OVR.update(V3)
 
 EXTRA = [

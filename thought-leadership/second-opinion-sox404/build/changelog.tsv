@@ -118,3 +118,55 @@ D-2 h1	H.h1("1. How Section 404 Got Here")	H.h1("1. How Section 404 Evolved")
 D-2 h4	H.h1("4. Two Questions the File<br/>Leaves Open")	H.h1("4. Two Questions Left Open")
 D-2 h7	H.h1("7. What To Do Before the<br/>Final Rule")	H.h1("7. Actions to Consider Before<br/>a Final Rule")
 D-2 h71	H.h2("7.1 Keep, drop or replace")	H.h2("7.1 Retain, discontinue or replace")
+C-F	entries="192", commenters="172", addressed="118", silent="54",     oppose="75", support="32", nopos="11", toobroad="32", dne="43",	entries="192", commenters="174", addressed="117", silent="57",     oppose="80", support="31", nopos="6", toobroad="33", dne="47",
+C-tile2	("75 of 118", "Commenters addressing the attestation who called the exemption too broad "                           "(nine in guarded terms) or said it should n	("80 of 117", "Commenters addressing the attestation who called the exemption too broad "                           "(16 in guarded terms) or said it should not be expanded"),
+C-tile4	("12 of 118", "Commenters who offered concrete guidance on what a company should do "                           "once the attestation is not required"),	("58 of 75", "Commenters addressing the five-year on-ramp who rejected or questioned a "                          "uniform 60 months"),
+C-Q2a	Of the 118 commenters who addressed the attestation, <b>75 said the exemption is too broad "               "or should not be expanded</b>, nine of them in guard	Of the 117 commenters who addressed the attestation, <b>80 said the exemption is too broad "               "or should not be expanded</b>, 16 of them in guarded terms, and 31 supported it or sought a wider one.
+C-Q2b	"25 of the 27 investors and investor advocates that addressed the exemption called it too "               "broad or opposed any expansion."	"all 24 investors and investor advocates that addressed the exemption called it too "               "broad or opposed any expansion."
+C-ex4title	Exhibit 4 — Where 118 commenters stood	Exhibit 4 — Where 117 commenters stood
+C-ex4nopos	"The 11 with no position are associations 1, venture capital and "                   "policy groups 1, audit profession bodies 1, accounting firms 2, academics 	"The 6 with no position are business associations 1, venture capital and "                   "policy groups 2, academics 2 and individuals 1. 
+C-ex4guard	nine of those 32 "                   "say so in guarded terms.	16 of those 33 "                   "say so in guarded terms.
+C-inv	<b>25 of the 27</b> that addressed the	<b>all 24</b> that addressed the
+C-middle	Thirty-two commenters accepted that the "             "threshold should rise but objected to its extent; 20 proposed another threshold or test.	Thirty-three commenters accepted that the "             "threshold should rise but objected to its extent; 26 proposed another threshold or test.
+C-31	<b>Nine of "             "the twelve said the exemption is, or may be, too broad, two took no position and one supported it; "             "none endorsed the $2	<b>Read on "             "what each letter leads with, nine of the twelve said the exemption is, or may be, too broad, two "             "asked for more evidence and one would leave the choice to the market; none endorse
+C-method	"<b>Approach.</b> Every entry was read and coded with AI under the direction of Uniqus "             "professionals. All but two letters had two independent pas	"<b>Approach.</b> Every letter was coded twice, independently, with AI under the direction of "             "Uniqus professionals, and every difference was resolved by a third reading of the letter. Each "             "c
+C-onramp	"<b>55 of the 74</b> commenters that addressed it rejected or "	"<b>58 of the 75</b> commenters that addressed it rejected or "
+C-rev	"13 commenters proposed a revenue test or asked the SEC to consider one"	"14 commenters proposed a revenue test or asked the SEC to consider one"
+C-2bn	"Of the 51 that addressed the figure, 24 supported it, 15 wanted it "              "lower, 3 higher and 9 opposed any increase",	"Of the 51 that addressed the figure, 18 supported it, 16 wanted it "              "lower, 4 higher and 12 opposed any increase; one gave no direction",
+C-disc	"Four commenters asked that companies disclose "	"Five commenters asked that companies disclose "
+C-dec7	though four commenters asked for one.	though five commenters asked for one.
+C-ex4rows	def ex4_positions(name="x4_positions.png", rows=None, totals=(32, 11, 32, 43)):     # constituency, addressed, support, no position, too broad, do not expand   	def ex4_positions(name="x4_positions.png", rows=None, totals=(31, 6, 33, 47)):     # constituency, addressed, support, no position, too broad, do not expand     # from the double-coded re-read (plan/coding/final_batch*.j
+C-ex4lab	"75 of 118 say too broad or do not expand"	"80 of 117 say too broad or do not expand"
+C-ex4all	"All 118 commenters that addressed the attestation"	"All 117 commenters that addressed the attestation"
+C-ex6a	"15 commenters wanted it lower"	"16 commenters wanted it lower"
+C-ex6b	"3 wanted it higher"	"4 wanted it higher"
+C-ex6c	"24 supported\n$2bn"	"18 supported\n$2bn"
+C-h1	The cover claims "172 commenters, one dot each"	The cover claims "174 commenters, one dot each"
+C-h2	COUNTS = dict(oppose=75, support=32, nopos=11, silent=54)   # 118 addressed + 54 silent assert sum(COUNTS.values()) == 172 and COUNTS["oppose"] + COUNTS["suppor	COUNTS = dict(oppose=80, support=31, nopos=6, silent=57)    # 117 addressed + 57 silent N = sum(COUNTS.values()) assert N == 174 and COUNTS["oppose"] + COUNTS["support"] + COUNTS["nopos"] == 117
+C-h3	# 172 dots, one per distinct commenter	# 174 dots, one per distinct commenter
+C-h4	while len(pts) < 172:                       # blue-noise	while len(pts) < N:                         # blue-noise
+C-h5	sizes = rng.uniform(9, 26, 172)	sizes = rng.uniform(9, 26, N)
+C-h6	assert len(pts) == 172	assert len(pts) == N
+C-h7	"172 commenters, one dot each"	"174 commenters, one dot each"
+C-h8	items = [(PINK, "Too broad or do not expand (75)"), (LAV, "Supports the exemption (32)"),              (WHITE, "No position (11)"), (SILENT, "Silent on attestat	items = [(PINK, "Too broad or do not expand (80)"), (LAV, "Supports the exemption (31)"),              (WHITE, "No position (6)"), (SILENT, "Silent on attestation (57)")]
+C-h9	cols = ([PINK] * 75 + [LAV] * 32 + [WHITE] * 11 + [SILENT] * 54); rng.shuffle(cols)	cols = ([PINK] * COUNTS["oppose"] + [LAV] * COUNTS["support"] + [WHITE] * COUNTS["nopos"] +                 [SILENT] * COUNTS["silent"]); rng.shuffle(cols)
+C-h10	        while len(pts) < 172:             p = (rng.uniform	        while len(pts) < N:             p = (rng.uniform
+C-h11	s=rng.uniform(2, 7, 172)	s=rng.uniform(2, 7, N)
+C-h12	what 172 commenters said	what 174 commenters said
+FIT-ex4end	 Positions are on the exemption, not on the $2 billion figure. The "                   "counts describe who wrote, not how the Commission will weigh each letter	 Positions are on the exemption, not on the $2 billion figure.")
+FIT-31	 Because those three also ask for a narrower exemption in some respect, "             "Exhibit 4 counts all twelve as too broad."	 Exhibit 4 counts all twelve as too broad, as those "             "three also seek a narrower exemption."
+FIT-2bn	"Of the 51 that addressed the figure, 18 supported it, 16 wanted it "              "lower, 4 higher and 12 opposed any increase; one gave no direction",	"Of the 50 that took a view on the figure, 18 supported it, 16 wanted "              "it lower, 4 higher and 12 opposed any increase",
+FIT-5close	H.p("Commenters agree most on the on-ramp; changing it would not affect a seasoned mid-market "             "company, but a second test or a lower threshold wou	H.p("Commenters agree most on the on-ramp, which would not affect a seasoned mid-market company; a "             "second test or a lower threshold would. The counts show where the arguments lie, not the vote.")))
+H-intro	H.p("We support companies at each of the four decision points below. For a company that will remain a "             "large accelerated filer, or an emerging gro	H.p("Our Governance, Risk &amp; Compliance practice supports companies at each of the four decision "             "points below. For a company that will remain a large accelerated filer, or an emerging growth "          
+H-fn	  ABOUT = (	  GRC_ITEMS = [     ("Internal controls", "Design and management testing of controls under SOX in the US, internal financial "      "controls in India and ICOFR requirements in the Middle East."),     ("Internal audit", 
+H-css	.rec li b{ color:#B21E7D; }	.rec li b{ color:#B21E7D; } .grc{ margin:1mm 0 2.4mm 0; page-break-inside:avoid; } .grc .gh{ font-weight:600; font-size:9.4pt; color:#482879; margin:0 0 1.4mm 0; } .grc table{ border-collapse:separate; border-spacing:2mm
+H2-move	        HELP(H) +         GRC() +         H.p("To discuss any of these, please contact <b>Sandip Khetan</b>, Co-Founder and Global Head of "             "Accoun	        HELP(H) +         H.p("To discuss any of these, please contact <b>Sandip Khetan</b>, Co-Founder and Global Head of "             "Accounting &amp; Reporting Consulting, or <b>Nagaraj Uchil</b>, who leads our Gove
+H2-items	GRC_ITEMS = [     ("Internal controls", "Design and management testing of controls under SOX in the US, internal financial "      "controls in India and ICOFR r	GRC_ITEMS = [     ("Internal controls design and testing", "Design of controls and management testing under SOX in the US, "      "internal financial controls in India and ICOFR requirements in the Middle East, including
+H2-grid	    rows = "".join("<tr>%s</tr>" % "".join(cells[i:i + 3]) for i in range(0, 6, 3))     return ('<div class="grc"><div class="gh">Our Governance, Risk &amp; Com	    rows = "".join("<tr>%s</tr>" % "".join(cells[i:i + 2]) for i in range(0, 6, 2))     return '<div class="grc"><table>%s</table></div>' % rows
+H2-css	.grc td{ width:33.3%;	.grc td{ width:50%;
+H2-css2	.grc p{ font-size:6.9pt; line-height:1.38;	.grc p{ font-size:7.6pt; line-height:1.42;
+H2-css3	.grc .g{ font-weight:600; font-size:7.6pt;	.grc .g{ font-weight:600; font-size:8.6pt;
+H2-css4	.grc td{ width:50%; vertical-align:top; background:#F5F1F9; border-radius:2mm; padding:1.8mm 2.4mm;	.grc td{ width:50%; vertical-align:top; background:#F5F1F9; border-radius:2mm; padding:2.6mm 3.2mm;
+H3-call	H.prac("Why Uniqus", WHY_GRC) +	WHY() +
+H3-data	WHY_GRC = [     "<b>Risk UniVerse.</b> Our GRC platform centralizes controls data, automates workflows and dashboards, and "     "uses AI to automate control te	WHY_GRC = [     ("Risk UniVerse", "Our GRC platform centralizes controls data and workflows, uses AI to automate control "      "testing, and turns meeting transcripts and recordings into process narratives, flow diagram
+H3-css	.grc td{ width:50%;	.grc td{ width:50%;

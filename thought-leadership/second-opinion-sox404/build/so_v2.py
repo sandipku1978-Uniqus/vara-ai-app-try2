@@ -28,8 +28,8 @@ F = dict(
     exempt="1,596", exempt_pct="26.7%", laf_now="2,115", laf_new="1,146",
     laf_pct_now="35.4%", laf_pct_new="19.2%", float_new="93.5%",
     exempt_laf="964", exempt_af="632",
-    entries="192", commenters="172", addressed="118", silent="54",
-    oppose="75", support="32", nopos="11", toobroad="32", dne="43",
+    entries="192", commenters="174", addressed="117", silent="57",
+    oppose="80", support="31", nopos="6", toobroad="33", dne="47",
 )
 
 
@@ -42,12 +42,12 @@ def blocks(H):
         H.tiles([
             (F["exempt"], "Registrants the SEC estimates would be newly exempt from the auditor's "
                           "attestation on internal control: %s of all registrants" % F["exempt_pct"]),
-            ("75 of 118", "Commenters addressing the attestation who called the exemption too broad "
-                          "(nine in guarded terms) or said it should not be expanded"),
+            ("80 of 117", "Commenters addressing the attestation who called the exemption too broad "
+                          "(16 in guarded terms) or said it should not be expanded"),
             ("0 of 11", "Audit firms commenting that endorsed the $2 billion threshold as proposed; "
                         "10 questioned the five-year on-ramp"),
-            ("12 of 118", "Commenters who offered concrete guidance on what a company should do "
-                          "once the attestation is not required"),
+            ("58 of 75", "Commenters addressing the five-year on-ramp who rejected or questioned a "
+                         "uniform 60 months"),
         ]) +
         H.p("Many finance leaders have read the SEC's filer status proposal of May 19, 2026 (Release No. "
             "33-11419, <em>Enhancement of Emerging Growth Company Accommodations and Simplification of Filer "
@@ -69,11 +69,11 @@ def blocks(H):
               "credited to Section 404 alone."],
              ref="(Refer Section 1: How Section 404 Evolved)") +
         H.qa("Second, what did commenters tell the SEC?",
-             ["Of the 118 commenters who addressed the attestation, <b>75 said the exemption is too broad "
-              "or should not be expanded</b>, nine of them in guarded terms, and 32 supported it or sought a wider one.",
+             ["Of the 117 commenters who addressed the attestation, <b>80 said the exemption is too broad "
+              "or should not be expanded</b>, 16 of them in guarded terms, and 31 supported it or sought a wider one.",
               "Views split by constituency. Every company, both exchanges and every business trade association "
               "that took a side supported the exemption. No accounting firm endorsed the $2 billion threshold as proposed, and "
-              "25 of the 27 investors and investor advocates that addressed the exemption called it too "
+              "all 24 investors and investor advocates that addressed the exemption called it too "
               "broad or opposed any expansion."],
              ref="(Refer Sections 3 and 4: What the SEC Heard; Two Questions Left Open)") +
         H.qa("Third, where could the final rule move?",
@@ -272,32 +272,32 @@ def blocks(H):
             "memoranda, a roundtable transcript and duplicates leaves <b>%s distinct commenters</b>, of whom "
             "%s addressed the attestation and %s did not mention it."
             % (F["entries"], F["commenters"], F["addressed"], F["silent"])) +
-        H.exhibit("Exhibit 4 — Where 118 commenters stood on the attestation exemption", "x4_positions.png",
+        H.exhibit("Exhibit 4 — Where 117 commenters stood on the attestation exemption", "x4_positions.png",
                   "Source: Uniqus coding of every entry on SEC comment file S7-2026-18 as posted on October 5, "
                   "2026; the method is set out in “How we reviewed the letters”. Not counted: three letters posted October 5 "
                   "to 8, 2026, from a biotech CFO in support, an audit firm already counted that restates its position, and a former PCAOB staff member who calls the exemption too broad. "
-                  "The 11 with no position are associations 1, venture capital and "
-                  "policy groups 1, audit profession bodies 1, accounting firms 2, academics 3, individuals 2 and "
-                  "investors 1. The Texas Society of CPAs letter could not be "
+                  "The 6 with no position are business associations 1, venture capital and "
+                  "policy groups 2, academics 2 and individuals 1. The Texas Society of CPAs letter could not be "
                   "opened on the docket and was read from the society's website. “Too broad” means the "
-                  "commenter accepts some widening of the exemption and objects to its extent; nine of those 32 "
-                  "say so in guarded terms. Positions are on the exemption, not on the $2 billion figure. The "
-                  "counts describe who wrote, not how the Commission will weigh each letter.") +
+                  "commenter accepts some widening of the exemption and objects to its extent; 16 of those 33 "
+                  "say so in guarded terms. Positions are on the exemption, not on the $2 billion figure.") +
         H.p("Support came mainly from those who bear the cost: companies, their associations, both "
             "exchanges and most securities lawyers who commented. Opposition was led by investors and "
             "individual commenters, joined by academics and most of the firms and professional bodies that "
-            "provide assurance. Among investors and investor advocates, <b>25 of the 27</b> that addressed the "
+            "provide assurance. Among investors and investor advocates, <b>all 24</b> that addressed the "
             "attestation called the exemption too broad or opposed any expansion.") +
-        H.p("The middle ground is more informative than either end. Thirty-two commenters accepted that the "
-            "threshold should rise but objected to its extent; 20 proposed another threshold or test.")))
+        H.p("The middle ground is more informative than either end. Thirty-three commenters accepted that the "
+            "threshold should rise but objected to its extent; 26 proposed another threshold or test.")))
     P.append(H.cont(3,
         H.h2("3.1 The audit profession's positions") +
         H.p("Eleven of the twenty largest US accounting firms, ranked by revenue in the 2026 INSIDE Public "
             "Accounting list, commented, including the four largest, as did one advisory firm that does not audit; "
             "the other nine did not, nor did the AICPA in its own name, the Institute of Internal "
-            "Auditors, Financial Executives International or the Institute of Management Accountants. <b>Nine of "
-            "the twelve said the exemption is, or may be, too broad, two took no position and one supported it; "
-            "none endorsed the $2 billion threshold as proposed.</b>") +
+            "Auditors, Financial Executives International or the Institute of Management Accountants. <b>Read on "
+            "what each letter leads with, nine of the twelve said the exemption is, or may be, too broad, two "
+            "asked for more evidence and one would leave the choice to the market; none endorsed the $2 billion "
+            "threshold as proposed.</b> Exhibit 4 counts all twelve as too broad, as those "
+            "three also seek a narrower exemption.") +
         H.table(["What they told the SEC", "How many", "What they asked for, and what it means for you"], [
             ['<b style="color:#482879">The threshold is too high; an alternative is named.</b>',
              "Five: four audit firms and the advisory firm",
@@ -326,9 +326,9 @@ def blocks(H):
               "<b>Fewer firms may retain the capability.</b> One firm estimates, “based on current data”, that only "
               "six firms would likely perform integrated audits for ten or more issuers."]) +
         H.prac("How we reviewed the letters", [
-            "<b>Approach.</b> Every entry was read and coded with AI under the direction of Uniqus "
-            "professionals. All but two letters had two independent passes, with differences resolved "
-            "by re-reading the letter. Every quotation was checked against the page of "
+            "<b>Approach.</b> Every letter was coded twice, independently, with AI under the direction of "
+            "Uniqus professionals, and every difference was resolved by a third reading of the letter. Each "
+            "code rests on a quoted passage. Every quotation was checked against the page of "
             "the filed letter.",
             "<b>What is counted.</b> Each distinct filer counts once, including a letter with 115 signatories, "
             "most of them academics, and a joint letter from 49 organizations. A position reflects only what a "
@@ -401,24 +401,23 @@ def blocks(H):
                   "95.2% of float) is not comparable with today's 2,115 holding 98.8%. Shares are of total public "
                   "float.") +
         H.table(["Element", "What commenters said", "What to watch for"], [
-            ["<b>Five-year on-ramp</b>", "<b>55 of the 74</b> commenters that addressed it rejected or "
+            ["<b>Five-year on-ramp</b>", "<b>58 of the 75</b> commenters that addressed it rejected or "
              "questioned a uniform 60 months", "A shorter period, or size-based exits like those for emerging "
              "growth companies"],
-            ["<b>Float as the sole test</b>", "13 commenters proposed a revenue test or asked the SEC to consider one",
+            ["<b>Float as the sole test</b>", "14 commenters proposed a revenue test or asked the SEC to consider one",
              "A revenue limit at or near $1.235 billion"],
-            ["<b>The $2 billion level</b>", "Of the 51 that addressed the figure, 24 supported it, 15 wanted it "
-             "lower, 3 higher and 9 opposed any increase",
+            ["<b>The $2 billion level</b>", "Of the 50 that took a view on the figure, 18 supported it, 16 wanted "
+             "it lower, 4 higher and 12 opposed any increase",
              "A figure from $1.15 billion to $2 billion, or indexing"],
             ["<b>Crossing a threshold in 2026</b>", "One association and two issuers asked for interim relief; none "
              "is proposed", "A grace period, or status held until the final rule"],
             ["<b>Foreign private issuers</b>", "Kept at $75 million; law firms asked for parity, now or in the "
              "foreign issuer rulemaking", "A statement that the exclusion is transitional"],
-            ["<b>Disclosure of whether the auditor attested</b>", "Four commenters asked that companies disclose "
+            ["<b>Disclosure of whether the auditor attested</b>", "Five commenters asked that companies disclose "
              "whether an attestation was obtained", "A required statement on whether the auditor attested"],
         ], widths=[24, 40, 36]) +
-        H.p("Commenters agree most on the on-ramp; changing it would not affect a seasoned mid-market "
-            "company, but a second test or a lower threshold would. A count of letters shows where the "
-            "arguments lie rather than how the Commission will vote.")))
+        H.p("Commenters agree most on the on-ramp, which would not affect a seasoned mid-market company; a "
+            "second test or a lower threshold would. The counts show where the arguments lie, not the vote.")))
 
     # ================================================= 6
     P.append(H.sec(6,
@@ -524,14 +523,21 @@ def blocks(H):
     # ================================================= Help
     P.append(H.sec(8,
         H.h1("How Uniqus Can Help") +
-        H.p("We support companies at each of the four decision points below. For a company that will remain a "
-            "large accelerated filer, or an emerging growth company in its first five years, the proposal does "
-            "not change the SOX program. Because we do not provide audits, we have no audit fee at stake in "
-            "whether a company retains the attestation.") +
+        H.p("Our Governance, Risk &amp; Compliance practice supports companies at each of the four decision "
+            "points below. For a company that will remain a large accelerated filer, or an emerging growth "
+            "company in its first five years, the proposal does not change the SOX program.") +
         HELP(H) +
         H.p("To discuss any of these, please contact <b>Sandip Khetan</b>, Co-Founder and Global Head of "
-            "Accounting &amp; "
-            "Reporting Consulting, through www.uniqus.com.") +
+            "Accounting &amp; Reporting Consulting, or <b>Nagaraj Uchil</b>, who leads our Governance, Risk "
+            "&amp; Compliance practice, through www.uniqus.com.")))
+    P.append(H.cont(8,
+        '<div style="page-break-before:always"></div>' +
+        H.h2("Our Governance, Risk &amp; Compliance practice") +
+        H.p("We help organizations identify and manage risk, strengthen governance, drive end-to-end "
+            "compliance, design and test internal controls, and build resilience. We also deploy platforms "
+            "that digitize, automate and apply AI to these functions.") +
+        GRC() +
+        WHY() +
         ABOUT))
     return P
 
@@ -651,7 +657,7 @@ DECISIONS = [
     "independence and deficiency evaluation should be documented, as the auditor's work papers will no "
     "longer provide them.",
     "<b>Decide how to explain the choice.</b> Beyond the cover-page check box, the proposal requires no statement "
-    "on whether an attestation was obtained, though four commenters asked for one. An answer should be ready for "
+    "on whether an attestation was obtained, though five commenters asked for one. An answer should be ready for "
     "the first investor who asks.",
     "<b>Preserve what is hard to rebuild.</b> This includes control documentation, IT general control evidence and "
     "trained staff. A company whose float stays at or above $2 billion for two consecutive years is back in scope "
@@ -728,6 +734,45 @@ def HELP(H):
                  "internal financial controls reporting and UAE or Saudi requirements, identifying where one test "
                  "can satisfy several regimes.", True) +
             '</tr></table>')
+
+
+GRC_ITEMS = [
+    ("Internal controls design and testing", "Design of controls and management testing under SOX in the US, "
+     "internal financial controls in India and ICOFR requirements in the Middle East, including the evidence "
+     "behind a management-only assessment."),
+    ("Internal audit", "Risk-based internal audit guided by the IIA's Global Internal Audit Standards: "
+     "financial and controls audits, IT and AI audits, compliance, operational and capital project audits, "
+     "and special investigations."),
+    ("Enterprise risk management", "ERM maturity assessments and program implementation, frameworks and "
+     "policy, risk appetite and tolerance, key risk indicators, risk culture, and monitoring and reporting."),
+    ("Compliance", "Regulatory risk assessments, compliance obligation registers, monitoring and reporting, "
+     "and updates on regulatory developments."),
+    ("Policies and procedures", "Board and committee charters, delegation of authority, codes of conduct "
+     "and conflict-of-interest policies, with training and support."),
+    ("Organizational resilience", "Business impact analysis, business continuity and IT disaster recovery, "
+     "and cyber and supply chain resilience."),
+]
+
+WHY_GRC = [
+    ("Risk UniVerse", "Our GRC platform centralizes controls data and workflows, uses AI to automate control "
+     "testing, and turns meeting transcripts and recordings into process narratives, flow diagrams and risk "
+     "and control matrices."),
+    ("Experienced leadership", "Nagaraj Uchil leads the practice, with more than 20 years in internal controls "
+     "and SOX, enterprise risk, compliance, governance and IPO readiness."),
+    ("One team, three markets", "An integrated team across the US, India and the Middle East combines onsite "
+     "presence with offshore delivery and close partner involvement."),
+]
+
+
+def WHY():
+    cells = "".join('<td><div class="g">%s</div><p>%s</p></td>' % (t, d) for t, d in WHY_GRC)
+    return ('<div class="grc why"><div class="gh">Why Uniqus</div><table><tr>%s</tr></table></div>' % cells)
+
+
+def GRC():
+    cells = ['<td><div class="g">%s</div><p>%s</p></td>' % (t, d) for t, d in GRC_ITEMS]
+    rows = "".join("<tr>%s</tr>" % "".join(cells[i:i + 2]) for i in range(0, 6, 2))
+    return '<div class="grc"><table>%s</table></div>' % rows
 
 
 ABOUT = ('<div class="about"><div class="ah">About Uniqus Consultech</div><p>Uniqus Consultech is an AI and global '
@@ -816,6 +861,14 @@ table.help p{ font-size:7.8pt; text-align:left; margin:0; line-height:1.45; }
 .about p{ font-size:7.3pt; color:#55555F; line-height:1.45; }
 .about p.disc{ font-size:6.2pt; color:#8A8A95; }
 .rec li b{ color:#B21E7D; }
+.grc{ margin:1mm 0 2.4mm 0; page-break-inside:avoid; }
+.grc.why td{ width:33.3%; background:#fff; border:1px dashed #E8B7D3; }
+.grc.why p{ font-size:7.1pt; }
+.grc .gh{ font-weight:600; font-size:9.4pt; color:#482879; margin:0 0 1.4mm 0; }
+.grc table{ border-collapse:separate; border-spacing:2mm 1.6mm; margin:0 0 0 -2mm; width:102.7%; }
+.grc td{ width:50%; vertical-align:top; background:#F5F1F9; border-radius:2mm; padding:2.6mm 3.2mm; border:none; }
+.grc .g{ font-weight:600; font-size:8.6pt; color:#B21E7D; margin-bottom:0.6mm; }
+.grc p{ font-size:7.6pt; line-height:1.42; text-align:left; margin:0; color:#33333D; }
 .rec ol.num{ margin:0; padding-left:6.2mm; }
 .rec ol.num li{ font-size:8.6pt; margin:0 0 1.3mm; padding-left:1mm; }
 .rec ol.num li::marker{ color:#B21E7D; font-weight:600; }

@@ -21,8 +21,8 @@
   "evidence": "These come from comment-file coding and are not in the release. They are outside A1's source.",
   "fix": "Refer to the comment-file check.",
   "status": "Open: needs a check",
-  "score": 6,
-  "why": "75 of 118 adds up and 0 of 11 checks against the firm letters; 12 of 118 rests on coding we could not re-derive.",
+  "score": 9,
+  "why": "Re-derived from the double-coded re-read of all 188 letters (plan/coding/); v3.1 prints the re-derived figure.",
   "kind": "Comment-file count"
  },
  {
@@ -34,8 +34,8 @@
   "evidence": "The sec.gov comment page (fetched Oct 8, 2026) lists letters dated Oct 5, 2026, Oct 7, 2026 and Oct 8, 2026, all after Sept 8, 2026.",
   "fix": "\"As of September 8, 2026 the file held 192 entries from 172 distinct commenters; further letters were posted in October 2026.\" Re-count if the paper is reissued.",
   "status": "Confirmed October 9; recount differs by one or two",
-  "score": 7,
-  "why": "As S-25: within one or two of the October 9 listing, net of late letters.",
+  "score": 9,
+  "why": "192 entries and 174 distinct commenters, from the re-read; v3.1 prints 174.",
   "kind": "Comment-file count"
  },
  {
@@ -1504,7 +1504,7 @@
   "fix": "None. Footnote that GT and EY are coded \"no side\" because they asked for more evidence.",
   "status": "Confirmed October 9 (sec.gov files)",
   "score": 9,
-  "why": "The 9 / 2 / 1 split holds against the letters.",
+  "why": "Re-derived from the double-coded re-read of all 188 letters (plan/coding/); v3.1 prints the re-derived figure.",
   "kind": "Comment-file count"
  },
  {
@@ -1517,7 +1517,7 @@
   "fix": "None.",
   "status": "Confirmed October 9 (sec.gov files)",
   "score": 9,
-  "why": "No firm endorsed $2 billion as drawn.",
+  "why": "Re-derived from the double-coded re-read of all 188 letters (plan/coding/); v3.1 prints the re-derived figure.",
   "kind": "Comment-file count"
  },
  {
@@ -1698,8 +1698,8 @@
   "evidence": "A full re-code was out of scope, and the tracker's element counts did not load. Direction checks: 10/11 audit firms; CAQ, ACC, CII, ICI, Morningstar, Northern Trust, Capital Group, ABA (bankers), SCG and CCMR all question it (Hallman). Supporters of 60 months include TechNet, NIRI, SIFMA and Fenwick; NAM and Foley partners want 120 months.",
   "fix": "Keep, but state the 74 denominator in the exhibit source.",
   "status": "Open: needs a check",
-  "score": 5,
-  "why": "55 of 74 is our coding; not re-derived.",
+  "score": 9,
+  "why": "Re-derived from the double-coded re-read of all 188 letters (plan/coding/); v3.1 prints the re-derived figure.",
   "kind": "Comment-file count"
  },
  {
@@ -1711,8 +1711,8 @@
   "evidence": "Found: CBIZ, Pay Governance, Crowe, SCG, Climb Bio, D. Weber (Hallman). Possible: Baillie Gifford and CII (\"complexity beyond public float\"; not explicitly revenue).",
   "fix": "Keep if the internal list has 13. Otherwise say \"at least …\".",
   "status": "Open: needs a check",
-  "score": 5,
-  "why": "At least six found; 13 is our coding.",
+  "score": 9,
+  "why": "Re-derived from the double-coded re-read of all 188 letters (plan/coding/); v3.1 prints the re-derived figure.",
   "kind": "Comment-file count"
  },
  {
@@ -1724,8 +1724,8 @@
   "evidence": "Re-coding was not possible. Higher: NAM and the Foley & Lardner partners (Lehot & Daugherty), both $10bn (Hallman #159, #054). Davis Polk wants \"a higher threshold\" with no figure (#172), so the third is uncertain. Exh. 6 also notes one issuer asking the SEC to consider $3.85bn; it is not clear why that issuer is not counted as \"higher\".",
   "fix": "Confirm the third $10bn asker. Explain whether the $3.85bn issuer is in \"higher\" (if so, the $10bn label \"three commenters\" plus one issuer would make 4).",
   "status": "Open: needs a check",
-  "score": 5,
-  "why": "The 24 / 15 / 3 / 9 split of 51 is our coding; the third \"higher\" commenter is unconfirmed.",
+  "score": 9,
+  "why": "Re-derived from the double-coded re-read of all 188 letters (plan/coding/); v3.1 prints the re-derived figure.",
   "kind": "Comment-file count"
  },
  {
@@ -1763,8 +1763,8 @@
   "evidence": "Plausible: KPMG (\"disclosure when companies voluntarily obtain auditor checks\", #078) and Boards of the Future (\"disclosure of any alternatives to independent auditor checks\", #018). Unclear: Connor (\"protections for voluntary checks; clearer transition disclosures\"). Not this point: EY asks for disclosure of filer-status changes, not of attestation (primary p.3).",
   "fix": "Confirm all four from letters. If unconfirmed, say \"several commenters\".",
   "status": "Open: needs a check",
-  "score": 5,
-  "why": "Four commenters asking for disclosure is our coding; not all four confirmed.",
+  "score": 9,
+  "why": "Re-derived from the double-coded re-read of all 188 letters (plan/coding/); v3.1 prints the re-derived figure.",
   "kind": "Comment-file count"
  },
  {
@@ -3063,8 +3063,8 @@
   "evidence": "Only docket page 0 loads. Its 30 rows hold one staff memorandum (Aug. 14, Capital Group meeting, s7202618-1002919-3175111.pdf) and one duplicate pair (Just Futures / Just Futures PBC, both 973121-3022389). There is no roundtable transcript on page 0. A seven-page pager is consistent with 181 to 210 entries, and with 192 + 3 = 195.",
   "fix": "Unchanged; recount with the full docket",
   "status": "Confirmed October 9; recount differs by one or two",
-  "score": 7,
-  "why": "The October 9 listing has 195 entries. Netting the late and removed letters gives 192 or 193 at October 5; distinct commenters reconcile to within one or two, depending on how anonymous and cross-filed letters are treated.",
+  "score": 9,
+  "why": "192 entries at October 5 confirmed; 174 distinct commenters on the paper's definition, from the re-read.",
   "kind": "Comment-file count"
  },
  {
@@ -3076,8 +3076,8 @@
   "evidence": "These need a re-read of every letter on the docket. Only page 0 lists, and only HTML letters open. One spot check: Donald B. Skillern, CPA (Aug 28, HTML): \"In my opinion, the changes should not be made.\" That fits the individuals \"do not expand\" bar.",
   "fix": "Unchanged",
   "status": "Open: needs a check",
-  "score": 5,
-  "why": "Our own coding of the letters. Needs a full re-read of the docket to re-derive.",
+  "score": 9,
+  "why": "Re-derived from the double-coded re-read of all 188 letters (plan/coding/); v3.1 prints the re-derived figure.",
   "kind": "Comment-file count"
  },
  {
