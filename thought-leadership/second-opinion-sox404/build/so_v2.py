@@ -529,7 +529,7 @@ def blocks(H):
             "change the SOX program.") +
         HELP(H) +
         H.p("To discuss any of these, please contact <b>Sandip Khetan</b>, Co-Founder and Global Head of "
-            "Accounting &amp; Reporting Consulting, or <b>Nagaraj Uchil</b>, who leads our Governance, Risk "
+            "Accounting &amp; Reporting Consulting, or <b>Sharad Chaudhary</b>, who leads our Governance, Risk "
             "&amp; Compliance practice, through www.uniqus.com.") +
         ABOUT))
     return P

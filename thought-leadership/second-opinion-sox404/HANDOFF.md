@@ -38,4 +38,4 @@ The sec.gov checks are closed (see `plan/check_release.md`, `plan/check_letters.
 
 - The India 2017 exemption (G.S.R. 583(E)) is still in force per July–August 2026 practitioner guides. Confirm on mca.gov.in.
 - The full Ideagen May 2026 restatements report is behind a sign-up form. Downloading it would give the 2023-2024 SPAC counts, which would let Exhibit 3 sit on one basis.
-- The GRC box wording in "How Uniqus Can Help" follows the Uniqus GRC brochure; Sandip approved putting it in the four boxes.
+- The GRC box wording in "How Uniqus Can Help" follows the Uniqus GRC brochure; Sandip approved putting it in the four boxes; GRC contact is Sharad Chaudhary (role line "who leads our Governance, Risk & Compliance practice" to confirm).
