@@ -132,7 +132,9 @@ jobs:
     timeout-minutes: 10
     services:
       postgres:
-        image: postgres:17-alpine
+        # The Docker official image, served from the public ECR mirror:
+        # anonymous Docker Hub pulls from shared runners hit the rate limit.
+        image: public.ecr.aws/docker/library/postgres:17-alpine
         env:
           POSTGRES_PASSWORD: test
         ports:

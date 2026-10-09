@@ -1,0 +1,33 @@
+records 187 | public comments on listing 188 | uncoded [] | extra []
+Entries as of Oct 5 (listing minus late, plus memos): 192
+not_a_comment 7 ['Transcript from “Rethinking th', 'Matthew Lykken', 'John M Tracy II', 'D. Bishop', 'David Clark, Market Analyst', 'Lawrence J. Trautman', 'American Public']
+duplicates 9
+DISTINCT COMMENTERS 168 (paper 172)
+ADDRESSED 117 (paper 118) | silent 51 (paper 54)
+POSITION {'do_not_expand': 47, 'support': 31, 'too_broad': 33, 'no_position': 6} (paper support 32, no_position 11, too_broad 32, do_not_expand 43)
+75 of 118 -> 80 of 117
+guarded among too_broad 16 (paper 9) | named alternative among too_broad 26 (paper 20)
+guidance_for_companies 3 (paper 12)
+investors addressing 23 too_broad+dne 23 (paper 25 of 27)
+BY CONSTITUENCY:
+  individual                   {'do_not_expand': 17, 'support': 6, 'too_broad': 4, 'no_position': 1}
+  investor                     {'too_broad': 3, 'do_not_expand': 20}
+  academic                     {'support': 2, 'too_broad': 6, 'do_not_expand': 9, 'no_position': 2}
+  accounting_firm              {'too_broad': 11}
+  business_trade_association   {'support': 8, 'no_position': 1}
+  securities_law_firm          {'support': 5, 'too_broad': 1}
+  company                      {'support': 5}
+  other                        {'no_position': 1, 'do_not_expand': 1, 'too_broad': 2, 'support': 1}
+  audit_profession_body        {'support': 1, 'too_broad': 4}
+  vc_policy_group              {'support': 1, 'too_broad': 1, 'no_position': 1}
+  exchange                     {'support': 2}
+  advisory_firm                {'too_broad': 1}
+ONRAMP addressed 75 rejects/questions 58 (paper 55 of 74)
+REVENUE TEST 14 (paper 13)
+2BN addressed 51 {'oppose_any_increase': 12, 'supports': 18, 'lower': 16, 'higher': 4, None: 1} (paper 51: 24 supports / 15 lower / 3 higher / 9 oppose)
+DISCLOSURE 5 (paper 4) ['Corey Saunders, CPA, Part', 'KPMG LLC', 'Ms. Scott', 'Paul Wroten', 'Will Allen, Chief Operati']
+INTERIM RELIEF 3 [('Jerry P. Franklin, Corpor', 'company'), ('Paul F. Washington, Presi', 'business_trade_association'), ('Thomas A. Ciccone, Vice P', 'company')] (paper: 1 association + 2 issuers)
+FPI PARITY 8 [('Linklaters LLP', 'securities_law_firm'), ('American Bar Association', 'securities_law_firm'), ('Davis Polk & Wardwell LLP', 'securities_law_firm'), ('Louis Lehot & Patrick Dau', 'securities_law_firm'), ('Kalenike Uridia, Founder,', 'individual'), ('Fenwick & West LLP, Ran D', 'securities_law_firm'), ('Andrew Beck, Peter Castel', 'securities_law_firm'), ('Allen Overy Shearman Ster', 'securities_law_firm')]
+  company taking a side: {'support': 5}
+  exchange taking a side: {'support': 2}
+  business_trade_association taking a side: {'support': 8}

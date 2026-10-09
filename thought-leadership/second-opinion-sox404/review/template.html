@@ -1,0 +1,355 @@
+<title>Second Opinion Review</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
+<style>
+/* Layout: an editor's review memo. Masthead, verdict strip, corrections, open items, exhibit before/after, register. */
+:root{
+  --bg:#FBFAFD; --surface:#FFFFFF; --ink:#22202B; --muted:#6B6878; --line:#E4DFEC;
+  --purple:#482879; --magenta:#B21E7D; --lav:#F1ECF7; --pink:#FBEFF5;
+  --ok:#2F7D4F; --okbg:#E8F4EC; --warn:#9A5B00; --warnbg:#FFF4E0; --bad:#B42318; --badbg:#FDECEA;
+  --display:'Poppins', 'Segoe UI', system-ui, sans-serif;
+  --body:'Source Serif 4', Georgia, 'Times New Roman', serif;
+  --ui:'Poppins', 'Segoe UI', system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --bg:#15121D; --surface:#1E1A28; --ink:#ECE8F4; --muted:#A9A3B8; --line:#352F44;
+  --purple:#B9A2E6; --magenta:#F07FBE; --lav:#2A2338; --pink:#33202D;
+  --ok:#6FCF97; --okbg:#1B3125; --warn:#F2C26B; --warnbg:#362A12; --bad:#F59A8F; --badbg:#3A1C1A; color-scheme:dark } }
+:root[data-theme="dark"]{
+  --bg:#15121D; --surface:#1E1A28; --ink:#ECE8F4; --muted:#A9A3B8; --line:#352F44;
+  --purple:#B9A2E6; --magenta:#F07FBE; --lav:#2A2338; --pink:#33202D;
+  --ok:#6FCF97; --okbg:#1B3125; --warn:#F2C26B; --warnbg:#362A12; --bad:#F59A8F; --badbg:#3A1C1A; color-scheme:dark }
+*{ box-sizing:border-box }
+body{ background:var(--bg); color:var(--ink); font-family:var(--body); font-size:16px; line-height:1.55; margin:0 }
+.wrap{ max-width:1080px; margin:0 auto; padding-inline:20px; padding-block:32px 64px }
+h1,h2,h3{ font-family:var(--display); text-wrap:balance; margin:0 }
+h1{ font-weight:300; font-size:clamp(28px,5vw,42px); color:var(--purple); letter-spacing:-0.01em }
+h2{ font-weight:600; font-size:22px; color:var(--magenta); margin-bottom:14px }
+h3{ font-weight:600; font-size:16px; color:var(--purple) }
+.eyebrow{ font-family:var(--ui); font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:var(--magenta); font-weight:600 }
+.lede{ font-size:18px; max-width:68ch; color:var(--ink); margin:12px 0 0 }
+.meta{ font-family:var(--ui); font-size:13px; color:var(--muted); margin-top:10px }
+section{ margin-top:48px }
+p{ max-width:72ch }
+a{ color:var(--purple) }
+a:focus-visible, button:focus-visible, input:focus-visible{ outline:2px solid var(--magenta); outline-offset:2px }
+
+.strip{ display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:12px; margin-top:28px }
+.stat{ background:var(--surface); border:1px solid var(--line); border-top:3px solid var(--purple); border-radius:6px; padding:14px 16px }
+.stat:nth-child(even){ border-top-color:var(--magenta) }
+.stat .v{ font-family:var(--display); font-weight:700; font-size:28px; color:var(--purple); font-variant-numeric:tabular-nums; line-height:1.1 }
+.stat:nth-child(even) .v{ color:var(--magenta) }
+.stat .c{ font-family:var(--ui); font-size:12.5px; color:var(--muted); margin-top:4px; line-height:1.4 }
+
+.files{ display:flex; flex-wrap:wrap; gap:10px; margin-top:22px }
+.btn{ font-family:var(--ui); font-size:14px; font-weight:500; text-decoration:none; padding:9px 14px; border-radius:6px;
+      border:1px solid var(--purple); color:var(--purple); background:var(--surface) }
+.btn.primary{ background:var(--purple); color:var(--bg) }
+
+.fixes{ display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:14px }
+.fix{ background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:16px 18px; min-width:0 }
+.fix .tag{ font-family:var(--ui); font-size:11px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; padding:3px 8px; border-radius:4px; display:inline-block }
+.fix .tag.bad{ background:var(--badbg); color:var(--bad) } .fix .tag.warn{ background:var(--warnbg); color:var(--warn) }
+.fix h3{ margin:10px 0 6px }
+.fix p{ margin:0 0 8px; font-size:15px }
+.fix .was, .fix .now{ font-size:14px; padding:8px 10px; border-radius:4px; margin:6px 0 }
+.fix .was{ background:var(--lav); color:var(--muted); text-decoration:line-through; text-decoration-color:var(--magenta); text-decoration-thickness:1px }
+.fix .now{ background:var(--pink) }
+.fix .ref{ font-family:var(--ui); font-size:12px; color:var(--muted) }
+
+.open{ display:grid; gap:10px; padding:0; margin:0; list-style:none }
+.open li{ background:var(--surface); border:1px solid var(--line); border-left:4px solid var(--warn); border-radius:6px; padding:12px 16px; max-width:none }
+.open li b{ font-family:var(--ui); font-weight:600; font-size:15px; color:var(--ink) }
+.open li span{ display:block; font-size:14.5px; color:var(--muted); margin-top:2px }
+
+.exh{ display:grid; gap:18px }
+.ex{ background:var(--surface); border:1px solid var(--line); border-radius:8px; overflow:hidden }
+.ex .hd{ display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:10px; padding:14px 18px; border-bottom:1px solid var(--line) }
+.seg{ display:inline-flex; border:1px solid var(--line); border-radius:6px; overflow:hidden }
+.seg button{ font-family:var(--ui); font-size:13px; border:0; background:transparent; color:var(--muted); padding:6px 12px; cursor:pointer }
+.seg button[aria-pressed="true"]{ background:var(--purple); color:var(--bg) }
+.ex .body{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:0 }
+.ex .body.single{ grid-template-columns:minmax(0,1fr) }
+.ex figure{ margin:0; padding:14px; background:#fff; border-right:1px solid var(--line) }
+.ex figure:last-child{ border-right:0 }
+.ex figure img{ width:100%; height:auto; display:block }
+.ex figcaption{ font-family:var(--ui); font-size:12px; color:#6B6878; margin-bottom:8px; letter-spacing:.04em; text-transform:uppercase }
+.ex .why{ padding:12px 18px 16px; font-size:15px; border-top:1px solid var(--line) }
+.ex .why ul{ margin:6px 0 0; padding-left:20px } .ex .why li{ margin:3px 0 }
+
+.adds{ display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:12px }
+.add{ background:var(--lav); border-radius:8px; padding:14px 16px }
+.add b{ font-family:var(--ui); font-weight:600; color:var(--purple); display:block; margin-bottom:4px; font-size:15px }
+.add span{ font-size:14.5px }
+
+.filters{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:14px }
+.filters input{ font-family:var(--ui); font-size:14px; padding:8px 12px; border:1px solid var(--line); border-radius:6px; background:var(--surface); color:var(--ink); min-width:0; flex:1 1 220px }
+.chips{ display:flex; flex-wrap:wrap; gap:6px }
+.chip{ font-family:var(--ui); font-size:12.5px; border:1px solid var(--line); background:var(--surface); color:var(--ink); padding:5px 10px; border-radius:999px; cursor:pointer }
+.chip[aria-pressed="true"]{ background:var(--purple); border-color:var(--purple); color:var(--bg) }
+.count{ font-family:var(--ui); font-size:13px; color:var(--muted) }
+.tablewrap{ overflow-x:auto; border:1px solid var(--line); border-radius:8px; background:var(--surface) }
+table{ border-collapse:collapse; width:100%; min-width:760px; font-size:14px }
+th{ font-family:var(--ui); font-weight:600; font-size:12px; text-align:left; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); padding:10px 12px; border-bottom:1px solid var(--line); position:sticky; top:0; background:var(--surface) }
+td{ padding:10px 12px; border-bottom:1px solid var(--line); vertical-align:top }
+td.id{ font-family:var(--ui); font-size:12.5px; white-space:nowrap; color:var(--muted); font-variant-numeric:tabular-nums }
+.pill{ font-family:var(--ui); font-size:11.5px; font-weight:600; padding:2px 8px; border-radius:4px; white-space:nowrap; display:inline-block }
+.p-VERIFIED{ background:var(--okbg); color:var(--ok) }
+.p-VERIFIED-WITH-NUANCE{ background:var(--lav); color:var(--purple) }
+.p-INCORRECT, .p-NOT-SUPPORTED{ background:var(--badbg); color:var(--bad) }
+.p-COULD-NOT-VERIFY{ background:var(--warnbg); color:var(--warn) }
+.st{ font-family:var(--ui); font-size:12.5px; color:var(--muted) }
+.st.fixed{ color:var(--ok) } .st.openx{ color:var(--warn) }
+details summary{ cursor:pointer; font-family:var(--ui); font-size:12.5px; color:var(--purple) }
+details div{ font-size:13.5px; margin-top:6px; color:var(--muted); overflow-wrap:anywhere }
+details div b{ color:var(--ink); font-family:var(--ui); font-weight:600; font-size:12px }
+.sc{ font-family:var(--ui); font-weight:700; font-size:13px; font-variant-numeric:tabular-nums; display:inline-grid; place-items:center; min-width:30px; height:26px; border-radius:4px; padding:0 6px }
+.s-hi{ background:var(--okbg); color:var(--ok) } .s-mid{ background:var(--lav); color:var(--purple) }
+.s-lo{ background:var(--warnbg); color:var(--warn) } .s-bad{ background:var(--badbg); color:var(--bad) } .s-na{ background:transparent; color:var(--muted); font-weight:500 }
+.conf{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.25fr); gap:18px; align-items:start }
+.panel{ background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:16px 18px; min-width:0 }
+.panel h3{ margin-bottom:12px }
+.hist{ display:grid; gap:6px }
+.hist .r{ display:grid; grid-template-columns:34px minmax(0,1fr) 36px; gap:10px; align-items:center; font-family:var(--ui); font-size:13px }
+.hist .bar{ height:14px; border-radius:3px; min-width:2px }
+.hist .n{ color:var(--muted); font-variant-numeric:tabular-nums; text-align:right }
+.kinds{ width:100%; min-width:0; font-size:13.5px } .kinds td, .kinds th{ padding:7px 8px } .kinds td.num{ font-family:var(--ui); font-variant-numeric:tabular-nums; text-align:right; white-space:nowrap }
+.scale{ display:grid; gap:6px; margin:14px 0 0; padding:0; list-style:none; font-size:14px }
+.scale li{ display:grid; grid-template-columns:44px minmax(0,1fr); gap:10px; align-items:start; max-width:none }
+.low{ display:grid; gap:8px; padding:0; margin:0; list-style:none }
+.low li{ display:grid; grid-template-columns:36px minmax(0,1fr); gap:12px; background:var(--surface); border:1px solid var(--line); border-radius:6px; padding:10px 14px; max-width:none }
+.low li > div > b{ font-family:var(--ui); font-weight:600; font-size:14.5px } .low li > div > span{ display:block; font-size:14px; color:var(--muted); margin-top:2px }
+.low li .ids{ font-family:var(--ui); font-size:12px; color:var(--muted) }
+@media (max-width:760px){ .conf{ grid-template-columns:minmax(0,1fr) } }
+.foot{ margin-top:40px; font-family:var(--ui); font-size:12.5px; color:var(--muted); border-top:1px solid var(--line); padding-top:14px }
+@media (max-width:640px){ .ex .body{ grid-template-columns:minmax(0,1fr) } .ex figure{ border-right:0; border-bottom:1px solid var(--line) } }
+@media (prefers-reduced-motion:reduce){ *{ scroll-behavior:auto } }
+</style>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">Uniqus Insights · editorial review · October 8, 2026 · v3 October 9</div>
+  <h1>The Second Opinion, reviewed</h1>
+  <p class="lede">Every claim in the October 2026 draft was checked against its source, every exhibit was redrawn, and a v2 was rebuilt in the house engine with the corrections applied. Five corrections change what the paper argues; the rest tighten wording, sourcing and pages.</p>
+  <div class="meta">Reviewed draft: <em>The Second Opinion: SOX 404 Before, Now and After</em>, 19 pages. v2: 22 pages. Sources: SEC Release 33-11419, comment file S7-2026-18, CAQ, GAO, World Bank/WFE, Renaissance Capital, FDIC, PCAOB, MCA (India), ADAA and the UAE and Saudi capital-markets regulators.</div>
+  <div class="files">
+    <a class="btn primary" href="The_Second_Opinion_v3.pdf" target="_blank" rel="noopener">Open v3 PDF</a>
+    <a class="btn" href="The_Second_Opinion_v2.pdf" target="_blank" rel="noopener">v2 PDF</a>
+    <a class="btn" href="#confidence">Confidence scores</a>
+    <a class="btn" href="#register">Jump to the full register</a>
+  </div>
+</header>
+
+<div class="strip" aria-label="Fact-check summary">
+  <div class="stat"><div class="v">242</div><div class="c">claims checked across the registers</div></div>
+  <div class="stat"><div class="v">41</div><div class="c">confirmed on October 9 against the SEC release and comment letters</div></div>
+  <div class="stat"><div class="v">82</div><div class="c">corrected: 70 in v2, 12 more in v3</div></div>
+  <div class="stat"><div class="v">7</div><div class="c">still score 6 or lower: mostly counts from our own coding of the letters</div></div>
+  <div class="stat"><div class="v">8.8</div><div class="c">average confidence out of 10, up from 8.2</div></div>
+</div>
+</div>
+
+<section id="confidence">
+  <h2>How sure are we, claim by claim</h2>
+  <p>Every claim is scored from 1 to 10 for how confident we are that it is right as v2 prints it. Facts drawn from the release, statutes, standards and market data score 9 or 10. The weak spots are page numbers and counts from our own reading of the comment letters, both waiting on the sec.gov files. No claim in v2 is known to be wrong.</p>
+  <div class="conf">
+    <div class="panel">
+      <h3>Scores across <span id="nscored"></span> claims</h3>
+      <div class="hist" id="hist"></div>
+      <ul class="scale">
+        <li><span class="sc s-hi">10</span><span>Arithmetic or internal consistency, checked.</span></li>
+        <li><span class="sc s-hi">9</span><span>Matches the primary source: release, statute, rule, standard, data series or the letter itself.</span></li>
+        <li><span class="sc s-mid">8</span><span>Matches the source, but the wording carries a judgement a reader could press.</span></li>
+        <li><span class="sc s-mid">7</span><span>Partly checked: one element rests on secondary sources or our own reading.</span></li>
+        <li><span class="sc s-lo">5–6</span><span>Corroborated but not confirmed: a search snippet, the commenter's own site, or a page cite the Federal Register copy does not match.</span></li>
+        <li><span class="sc s-bad">4</span><span>Known gap: the evidence so far falls short of what is printed.</span></li>
+      </ul>
+    </div>
+    <div class="panel">
+      <h3>By kind of claim</h3>
+      <div class="tablewrap" style="border:0"><table class="kinds"><thead><tr><th>Kind</th><th class="num">Claims</th><th class="num">Average</th><th class="num">Lowest</th></tr></thead><tbody id="kinds"></tbody></table></div>
+    </div>
+  </div>
+  <h3 style="margin:26px 0 12px">The claims to fix or confirm before print (score 4 or 5)</h3>
+  <ul class="low">
+    <li><span class="sc s-bad">4</span><div><b>"Seven firms said the financial statement audit will absorb part of the work"</b><span>Four confirmed from the firms' own published letters. If three more are not confirmed, print "at least four firms".</span><div class="ids">§3.1, decision 4 · C-11, S-24</div></div></li>
+    <li><span class="sc s-bad">4</span><div><b>AAA committee quotation, p. 7</b><span>Two AAA committees wrote. The page and which committee said it both need the PDF.</span><div class="ids">§7.2 · S-20</div></div></li>
+    <li><span class="sc s-bad">4</span><div><b>§7.2 table source, p. 139</b><span>The Exhibit 2 source also puts EA Table 5 on p. 139, so one of the two cites is probably wrong.</span><div class="ids">S-14</div></div></li>
+    <li><span class="sc s-bad">4</span><div><b>How Uniqus Can Help: durations and scope</b><span>These are our proposals, not facts yet. They need your sign-off.</span><div class="ids">pp. 21–22 · U-01</div></div></li>
+    <li><span class="sc s-lo">5</span><div><b>Release page numbers</b><span>Page cites to Release 33-11419 across the exhibit and table sources. The Federal Register copy paginates differently, so they stay as drafted until checked against the SEC PDF. The figures themselves score 9.</span><div class="ids">A1-15, A1-17, A1-22, A1-53, A2-38, S-08 to S-13</div></div></li>
+    <li><span class="sc s-lo">5</span><div><b>Comment-letter page numbers</b><span>Nasdaq p. 4, OPERS p. 9, Dambra p. 2, Linklaters p. 2, the advisory firm p. 3, the audit firm p. 4, Rajgopal, Wong and Zhao pp. 2–4. The wording of each quote scores 7 or 8.</span><div class="ids">S-15 to S-22</div></div></li>
+    <li><span class="sc s-lo">5</span><div><b>Counts from our coding of the letters</b><span>"12 of 118", "Twenty of them", "55 of 74", "13" on a revenue test, the 24/15/3/9 split of 51, "four commenters" on disclosure, and the supporter who suggested a lower line. Re-deriving them needs every letter on the docket.</span><div class="ids">C-10, C-20 to C-22, C-25, S-26</div></div></li>
+    <li><span class="sc s-lo">5</span><div><b>192 entries and 172 commenters; the roundtable transcript</b><span>Only one of seven docket pages loads. The pager fits 181 to 210 entries. The cover's 172 dots rest on this count.</span><div class="ids">S-25</div></div></li>
+    <li><span class="sc s-lo">5</span><div><b>Avalo Therapeutics, "between $500–$1M annually"</b><span>A public tracker lists the CFO's letter of June 21, 2026; the wording itself is unconfirmed.</span><div class="ids">B-03, S-23</div></div></li>
+  </ul>
+</section>
+
+<section>
+  <h2>Corrections that change the argument</h2>
+  <div class="fixes">
+    <div class="fix"><span class="tag bad">Contradicted by source</span>
+      <h3>The 2008–09 insider survey</h3>
+      <p>The draft says respondents judged 404(b)'s benefits to outweigh its costs. That is the release's paraphrase. The study behind it (Alexander et al., 2013) found that on average they did not, though net benefits were higher where an auditor attested and rose with experience.</p>
+      <div class="was">respondents judged the benefits of Section 404(b) compliance to outweigh the costs</div>
+      <div class="now">The study behind the survey is less favourable: on average respondents did not judge the benefits to outweigh the costs…</div>
+      <div class="ref">§1.2 · Register D-23</div></div>
+    <div class="fix"><span class="tag bad">Incorrect</span>
+      <h3>What the auditor still reports without 404(b)</h3>
+      <p>"Unchanged" was wrong. In an integrated audit all deficiencies go to management in writing (AS 2201.81). In a financial-statement audit only significant deficiencies and material weaknesses must; lesser ones are at the auditor's discretion (AS 1305.04, .07). v2 also adds the SOX 302 certification row, which is unchanged.</p>
+      <div class="ref">§7.2 table · D-27, A2-24</div></div>
+    <div class="fix"><span class="tag bad">Not supported</span>
+      <h3>"The SEC's strongest argument"</h3>
+      <p>The SEC explicitly chose not to index the $700m line (p. 42). It set $2bn to restore coverage of "nearly 95 percent" of float. v2 says that instead.</p>
+      <div class="ref">§1 · A1-16</div></div>
+    <div class="fix"><span class="tag bad">Not supported</span>
+      <h3>Dambra "supports the proposal"</h3>
+      <p>He is supportive of the five-year on-ramp but cautious about widening the exemption, and other letters quote him saying it "is not costless". The quote itself is kept, with its cut marked.</p>
+      <div class="ref">§6 · B-05b</div></div>
+    <div class="fix"><span class="tag warn">Overstated</span>
+      <h3>Banks and the FDIC rule</h3>
+      <p>The $5bn threshold comes from the FDIC (effective January 1, 2026), not the release. The rule applies to the insured bank, not the holding company, so a holding company that drops 404(b) may still need an attestation for its bank. The SEC estimates 87 of 153 banking large accelerated filers would become non-accelerated.</p>
+      <div class="ref">§2, decision 3 · A1-50, D-30</div></div>
+    <div class="fix"><span class="tag warn">Missing a caveat</span>
+      <h3>"In scope for fiscal 2026"</h3>
+      <p>True only if no final rule takes effect before the FY2026 10-K is filed. Under the proposed transition, status is reassessed as of the fiscal year-end before the effective date, and relief applies from the next filing.</p>
+      <div class="ref">Exhibit 8, decision 2 · A2-17</div></div>
+  </div>
+</section>
+
+<section>
+  <h2>Other corrections in v2</h2>
+  <div class="adds">
+    <div class="add"><b>Say-on-pay</b><span>Correct as a proposal, but it is an EGC accommodation the SEC would extend under exemptive authority. v2 also lists the other disclosure that non-accelerated filers could drop: risk factors, market risk, CD&amp;A, pay ratio and pay versus performance.</span></div>
+    <div class="add"><b>Accounting-standards deferral</b><span>Limited to a filer's first five years after registration and irrevocable, so most converting large accelerated filers will not have it.</span></div>
+    <div class="add"><b>964 vs 969</b><span>Reconciled: five of today's large accelerated filers lack the float data to classify. v2 says so, and adds that the 1,596 are 60% of the registrants that obtain an attestation today.</span></div>
+    <div class="add"><b>Exhibit 2 legend</b><span>EA Tables 5 and 6 include EGCs in the accelerated column, so "auditor attests" now reads "unless EGC".</span></div>
+    <div class="add"><b>Rajgopal, Wong and Zhao</b><span>v2 adds their 12.8% rate for the $250m–$700m band, which strengthens the point.</span></div>
+    <div class="add"><b>The 2009 cost-of-equity study</b><span>It measured cost-of-equity moves when auditor-tested reports showed controls weakening or being fixed, not only remediation.</span></div>
+    <div class="add"><b>Cost range</b><span>$500k–$1m spans the release's top estimates ($759k, $800k); it is not "at or above" them.</span></div>
+    <div class="add"><b>Foreign private issuers</b><span>The $75m trigger is on worldwide float, with an EGC carve-out and the option to switch to domestic forms; the SEC is holding FPI relief until its June 2025 eligibility review is done.</span></div>
+    <div class="add"><b>UAE</b><span>"Reported to be" is replaced by the primary source: the capital markets regulator's 2025 AGM circular requires an auditor's ICFR opinion for 2026 (unpublished) and publication from 2027.</span></div>
+    <div class="add"><b>India</b><span>The 2017 exemption is wider than "certain small private companies": it uses "or" between the turnover and borrowings limbs.</span></div>
+    <div class="add"><b>About Uniqus</b><span>The 700+ / 85+ / eleven offices figures were stale. v2 uses 800 / 100 / 13 (uniqus.com, September 7, 2026) and adds Valuations.</span></div>
+    <div class="add"><b>Docket snapshot</b><span>Letters dated October 5, 7 and 8 are now posted, including a second RSM letter. v2 scopes the count to "as posted on October 5, 2026".</span></div>
+    <div class="add"><b>October 9 pass (register S)</b><span>The governance survey is now cited to the right pages (p. 7; survey size at p. 1, n. 1). The 39% is labelled as our sum of two cost bands; the 3% and 97% now carry the survey's own scope. The Exhibit 4 note records the three letters posted October 5 to 8. The Olema CFO's letter supports the proposal as drawn.</span></div>
+  </div>
+</section>
+
+<section>
+  <h2>Added for stakeholders</h2>
+  <div class="adds">
+    <div class="add"><b>"What this means for you"</b><span>A one-page map for six readers: audit committee chair, CFO/CAO, SOX lead and CAE, treasurer and IR, IPO candidates, and FPIs or groups spanning the US, India and the Gulf. Each gets what changes, the decision and a section pointer.</span></div>
+    <div class="add"><b>"Where the rule stands"</b><span>A five-step calendar from the May 2026 proposals to the unset final-rule date.</span></div>
+    <div class="add"><b>The savings gap</b><span>39% of surveyed companies put the attestation's cost at $500k or more, but only 3% expect to save over $500k, and 55% couldn't quantify the saving.</span></div>
+    <div class="add"><b>What drives keep or drop</b><span>In the same survey, 97% named investor expectations and analyst coverage and 65% named offering requirements (decision 3).</span></div>
+    <div class="add"><b>PCAOB agenda</b><span>No project on auditing internal control in the September 30, 2026 standard-setting agenda, which answers the firms' ask for "refreshed guidance".</span></div>
+    <div class="add"><b>Saudi Arabia</b><span>Now its own paragraph, citing the CMA Corporate Governance Regulations, Articles 21, 87 and 88.</span></div>
+  </div>
+</section>
+
+<section>
+  <h2>Settled on October 9, and what is still open</h2>
+  <p>The SEC release and 21 comment letters, downloaded from sec.gov, settled the open items. Every release page cite and every quoted letter checks out. The "seven firms" and "ten of 11" counts hold. v3 corrects the Avalo quote, Dambra's position, the attribution of the 2,901-insider survey and two source notes, and the language pass recasts the text in a measured, advisory register.</p>
+  <ul class="open">
+    <li><b>Counts from our coding of the letters.</b><span>"12 of 118", "Twenty of them", "55 of 74", 13 on a revenue test, the 24/15/3/9 split and four on disclosure need a re-read of all 188 public comments.</span></li>
+    <li><b>Docket count.</b><span>v3 keeps the October 5 snapshot (192 entries, 172 commenters) and states the three later letters' positions. The October 9 listing holds 195 entries.</span></li>
+    <li><b>India exemption still in force.</b><span>Practitioner guides dated July and August 2026 treat it as current; mca.gov.in not yet checked.</span></li>
+    <li><b>How Uniqus Can Help.</b><span>Durations and scope are proposals until you confirm them.</span></li>
+  </ul>
+</section>
+
+<section>
+  <h2>Exhibits, before and after</h2>
+  <div class="exh" id="exhibits"></div>
+</section>
+
+<section id="register">
+  <h2>Full fact-check register</h2>
+  <div class="filters">
+    <input id="q" type="search" placeholder="Search claims, evidence or fixes" aria-label="Search the register">
+    <span class="count" id="count"></span>
+  </div>
+  <div class="filters"><div class="chips" id="vchips" aria-label="Filter by verdict"></div></div>
+  <div class="filters"><div class="chips" id="rchips" aria-label="Filter by register"></div></div>
+  <div class="filters"><div class="chips" id="schips" aria-label="Filter by confidence"></div></div>
+  <div class="tablewrap"><table>
+    <thead><tr><th>ID</th><th>Page</th><th>Claim</th><th>Score</th><th>Verdict</th><th>In v2</th><th>Evidence and fix</th></tr></thead>
+    <tbody id="rows"></tbody>
+  </table></div>
+</section>
+
+<div class="foot">Registers: A1 release (Sections 1–2) · A2 release economic analysis · B comment-letter quotations · C audit profession and counts · D history, restatements, PCAOB, FDIC · S sec.gov checks (October 9) · E markets, cross-border, About. Every verdict rests on a document an agent opened; where only a search index was available, the row is marked could-not-verify. Internal QA appendices that name firms are kept out of this page.</div>
+</div>
+
+<script>
+const DATA = __DATA__;
+const EXH = [
+ {k:'cover', t:'Cover', why:['The art claimed "172 commenters, one dot each" but the dots could not be counted. The new hero is generated from the coded counts: 75 / 32 / 11 / 54, asserted in code.','Strapline restored; legend now carries the counts.']},
+ {k:'x1', t:'Exhibit 1: The life of Section 404', why:['Diagonal leader lines and colliding labels are replaced by two chains, "Built" and "Scaled or narrowed", so the story reads at a glance.','The "who sits above the line" panel now says plainly that 2005 and 2024 are on different bases.','Built in HTML, so the text is vector and editable in Word.']},
+ {k:'x2', t:'Exhibit 2: The control record by filer status', why:['Same data, clearer hierarchy: the bold value marks the management-only group.','Legend corrected: the accelerated column includes EGCs that have no attestation.']},
+ {k:'x3', t:'Exhibit 3: Restatements, 2013 to 2025', why:['Extended to 2025 with Ideagen Audit Analytics counts: 434 in 2023, 477 in 2024 and 391 in 2025.','Two bases kept apart. The CAQ series excludes SPAC warrant restatements; Ideagen\'s includes them, so 2022 is shown on both (402 and 458) and a dashed break separates the segments. Joining them would show a false 8% rise into 2023; on one basis the count fell.','The draft\'s side callouts quoted figures outside the plotted range; those now sit in the text.']},
+ {k:'x4', t:'Exhibit 4: Where 118 commenters stood', why:['Constituencies are sorted from most supportive to most opposed, so the split between those who pay for assurance and those who rely on it is visible.','The grey sub-lines under each row are removed and the labels enlarged; the per-row no-position counts move to the source line, so no data is lost.','The palette is checked for colour-blind readers (purple vs magenta, with a lighter magenta for the middle step). A note adds that positions are on the exemption, not on the $2bn figure.']},
+ {k:'x5', t:'Exhibit 5: The SEC\'s number and the companies\' number', why:['A dot-and-range chart replaces the bars: a single estimate is a dot, a range is a range.','The GAO label now says what GAO measured, not the release\'s reading of it.']},
+ {k:'x6', t:'Exhibit 6: Where the line could sit', why:['The log number line and a strip of tiny bars become one chart: filers left at each line, with float share, the CPI and S&P markers and the commenter split on the level.','The base of 51 commenters is now printed.']},
+ {k:'x7', t:'Exhibit 7: Listed companies and IPOs', why:['The full 1990–2025 World Bank series is plotted instead of selected points; 6,177 now sits at 2001, where the text puts it.','The panel title matches the indicator\'s scope; the 2026 bar is marked partial, with proceeds under each bar.']},
+ {k:'x8', t:'Exhibit 8: Where a company lands', why:['The crossing "no" arrow is gone: three questions read top to bottom, each with its outcome beside it.','The footer now carries the fiscal 2026 transition caveat and the FPI/EGC carve-out.']},
+];
+const ex = document.getElementById('exhibits');
+EXH.forEach(e=>{
+  const d=document.createElement('article'); d.className='ex';
+  d.innerHTML=`<div class="hd"><h3>${e.t}</h3><div class="seg" role="group" aria-label="View">
+    <button type="button" data-v="both" aria-pressed="true">Side by side</button><button type="button" data-v="old" aria-pressed="false">Draft</button><button type="button" data-v="new" aria-pressed="false">v2</button></div></div>
+    <div class="body"><figure data-f="old"><figcaption>Draft</figcaption><img loading="lazy" src="img/${e.k}_old.jpg" alt="${e.t}, draft version"></figure>
+    <figure data-f="new"><figcaption>v2</figcaption><img loading="lazy" src="img/${e.k}_new.jpg" alt="${e.t}, v2 version"></figure></div>
+    <div class="why"><b style="font-family:var(--ui);font-size:13px;color:var(--purple)">What changed</b><ul>${e.why.map(w=>`<li>${w}</li>`).join('')}</ul></div>`;
+  d.querySelectorAll('.seg button').forEach(b=>b.addEventListener('click',()=>{
+    d.querySelectorAll('.seg button').forEach(x=>x.setAttribute('aria-pressed', x===b?'true':'false'));
+    const v=b.dataset.v, body=d.querySelector('.body');
+    body.classList.toggle('single', v!=='both');
+    d.querySelectorAll('figure').forEach(f=>f.hidden = (v!=='both' && f.dataset.f!==v));
+  }));
+  ex.appendChild(d);
+});
+
+const VERD=['INCORRECT','NOT SUPPORTED','COULD NOT VERIFY','VERIFIED-WITH-NUANCE','VERIFIED'];
+const LAB={'INCORRECT':'Incorrect','NOT SUPPORTED':'Not supported','COULD NOT VERIFY':'Could not verify','VERIFIED-WITH-NUANCE':'Verified, nuance','VERIFIED':'Verified'};
+const REGS=[['A1','Release §1–2'],['A2','Release EA'],['B','Letters'],['C','Audit firms'],['D','History & PCAOB'],['E','Markets & cross-border'],['S','sec.gov checks'],['R','Exhibit 3 data'],['U','Uniqus offer']];
+let vsel=new Set(), rsel=new Set(), ssel=new Set(['lo','bad']);
+const BANDS=[['bad','4 or lower',x=>x!=null&&x<=4],['lo','5–6',x=>x>=5&&x<=6],['mid','7–8',x=>x>=7&&x<=8],['hi','9–10',x=>x>=9],['na','Not in v2',x=>x==null]];
+const band=x=>BANDS.find(b=>b[2](x))[0];
+const scbox=x=>`<span class="sc s-${band(x)}">${x==null?'–':x}</span>`;
+function chip(host,label,key,set){ const b=document.createElement('button'); b.type='button'; b.className='chip'; b.textContent=label;
+  const n = host.id==='vchips' ? DATA.filter(r=>r.verdict===key).length : host.id==='schips' ? DATA.filter(r=>band(r.score)===key).length : DATA.filter(r=>r.reg===key).length; b.textContent=`${label} · ${n}`;
+  b.setAttribute('aria-pressed', set.has(key)?'true':'false');
+  b.onclick=()=>{ set.has(key)?set.delete(key):set.add(key); b.setAttribute('aria-pressed', set.has(key)?'true':'false'); render(); };
+  host.appendChild(b); }
+VERD.forEach(v=>chip(document.getElementById('vchips'),LAB[v],v,vsel));
+REGS.forEach(([k,l])=>chip(document.getElementById('rchips'),`${k} ${l}`,k,rsel));
+BANDS.forEach(([k,l])=>chip(document.getElementById('schips'),`Score ${l}`,k,ssel));
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function render(){
+  const q=document.getElementById('q').value.trim().toLowerCase();
+  const rows=DATA.filter(r=>(!vsel.size||vsel.has(r.verdict))&&(!rsel.size||rsel.has(r.reg))&&(!ssel.size||ssel.has(band(r.score)))&&
+    (!q||(r.claim+' '+r.evidence+' '+r.fix+' '+r.id+' '+r.why).toLowerCase().includes(q))).sort((a,b)=>(a.score??11)-(b.score??11));
+  document.getElementById('count').textContent=`${rows.length} of ${DATA.length} claims`;
+  document.getElementById('rows').innerHTML=rows.map(r=>{
+    const sc=r.status.startsWith('Fixed')?'st fixed':(r.status.startsWith('Open')||r.status.startsWith('Kept'))?'st openx':'st';
+    return `<tr><td class="id">${esc(r.id)}</td><td class="id">${esc(r.page)}</td><td>${esc(r.claim)}</td>
+    <td>${scbox(r.score)}</td>
+    <td><span class="pill p-${r.verdict.replace(/ /g,'-')}">${LAB[r.verdict]||esc(r.verdict)}</span></td>
+    <td class="${sc}">${esc(r.status)}</td>
+    <td><details><summary>Why this score, evidence, fix</summary><div><b>Why this score</b><br>${esc(r.why)}</div><div><b>Evidence</b><br>${esc(r.evidence)}</div><div><b>Fix proposed</b><br>${esc(r.fix)}</div></details></td></tr>`}).join('');
+}
+document.getElementById('q').addEventListener('input',render);
+(()=>{ const sc=DATA.filter(r=>r.score!=null); document.getElementById('nscored').textContent=sc.length;
+  const max=Math.max(...[4,5,6,7,8,9,10].map(v=>sc.filter(r=>r.score===v).length));
+  document.getElementById('hist').innerHTML=[10,9,8,7,6,5,4].map(v=>{const n=sc.filter(r=>r.score===v).length;
+    const col={hi:'var(--ok)',mid:'var(--purple)',lo:'var(--warn)',bad:'var(--bad)'}[band(v)];
+    return `<div class="r">${scbox(v)}<div class="bar" style="width:${n/max*100}%;background:${col}"></div><span class="n">${n}</span></div>`}).join('');
+  const K=['Release fact','Market data','Cross-border','History and standards','About Uniqus','Comment-letter content','Comment-file count','Page cite'];
+  document.getElementById('kinds').innerHTML=K.map(k=>{const xs=sc.filter(r=>r.kind===k).map(r=>r.score); if(!xs.length) return '';
+    const m=xs.reduce((a,b)=>a+b,0)/xs.length, lo=Math.min(...xs);
+    return `<tr><td>${k}</td><td class="num">${xs.length}</td><td class="num">${m.toFixed(1)}</td><td class="num">${scbox(lo)}</td></tr>`}).join('');
+})();
+render();
+</script>
